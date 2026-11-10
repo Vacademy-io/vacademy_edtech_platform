@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
 import com.getcapacitor.WebViewListener;
 
 import io.vacademy.admin.app.panel.PanelDevicePlugin;
@@ -54,6 +55,13 @@ public class MainActivity extends BridgeActivity {
             // Must be registered before super.onCreate(): BridgeActivity.onCreate calls load(),
             // which creates the bridge with the plugins registered so far.
             registerPlugin(PanelDevicePlugin.class);
+            // The in-app updater exists only in the direct build type (src/direct/java), and
+            // only that build type names it (R.string.panel_updater_class, from build.gradle).
+            // Store builds have an empty name, no such class, and register nothing.
+            String updaterClass = getString(R.string.panel_updater_class);
+            if (getResources().getBoolean(R.bool.panel_self_update) && !updaterClass.isEmpty()) {
+                registerOptionalPlugin(updaterClass);
+            }
         }
 
         super.onCreate(savedInstanceState);
@@ -139,6 +147,21 @@ public class MainActivity extends BridgeActivity {
     }
 
     // --- panel mode helpers --------------------------------------------------------------
+
+    /** Registers a plugin that only some build types contain; absent → nothing happens. */
+    @SuppressWarnings("unchecked")
+    private void registerOptionalPlugin(String className) {
+        try {
+            Class<?> type = Class.forName(className);
+            if (Plugin.class.isAssignableFrom(type)) {
+                registerPlugin((Class<? extends Plugin>) type);
+            } else {
+                Log.w(PANEL_TAG, className + " is not a plugin");
+            }
+        } catch (ClassNotFoundException e) {
+            Log.i(PANEL_TAG, "No " + className + " in this build");
+        }
+    }
 
     private int getMinWebViewMajor() {
         int min = getResources().getInteger(R.integer.panel_min_webview_major);

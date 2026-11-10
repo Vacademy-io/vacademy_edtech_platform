@@ -28,6 +28,7 @@
 import fs from 'node:fs';
 import { createGateway, assertLocalUpstream } from '../local-gateway.mjs';
 import { createMockBackend } from '../mock-backend.mjs';
+import { extendHarness, phase2Scenarios } from './phase2.mjs';
 
 const PUB = '/auth-service/public/v1/panel';
 const BEARER = '/auth-service/v1/panel';
@@ -215,6 +216,11 @@ async function harness() {
             cfg = await h.control('scenario-config');
             h.cfg = cfg;
         },
+        /** Fresh sign-in tokens after a long clock jump (login tokens last 30 days). */
+        async reloadMockConfig() {
+            cfg = await h.control('scenario-config');
+            h.cfg = cfg;
+        },
         close: async () => {
             await gateway.close();
             if (gateway2) await gateway2.close();
@@ -300,7 +306,7 @@ async function harness() {
         refresh: (device, session) =>
             h.pub('/session/refresh', { ...device.creds, session_token: session.session_token }),
     };
-    return h;
+    return extendHarness(h, { good, Skip });
 }
 
 // ---------------------------------------------------------------- scenarios ---
@@ -1906,6 +1912,7 @@ const SCENARIOS = [
             );
         },
     ],
+    ...phase2Scenarios({ ok, eq, code, good }),
 ];
 
 // -------------------------------------------------------------------- runner ---
@@ -1939,6 +1946,8 @@ for (const [id, title, run] of SCENARIOS) {
             console.log(`FAIL ${id}  ${title}\n     ${error.message}`);
             if (!(error instanceof Failure)) console.log(error.stack);
         }
+    } finally {
+        await h.runCleanups();
     }
 }
 await h.close();

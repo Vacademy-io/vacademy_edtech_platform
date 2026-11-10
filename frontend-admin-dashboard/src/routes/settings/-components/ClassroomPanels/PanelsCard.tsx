@@ -1,9 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ArrowsLeftRight, DotsThree, Plus, Prohibit, SignOut } from '@phosphor-icons/react';
+import {
+    ArrowsLeftRight,
+    DotsThree,
+    Plus,
+    Prohibit,
+    SignOut,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import type { ClassroomRoom, PanelDeviceRow, PanelDeviceStatus } from '@/classroom-shared/apiTypes';
 import { MyButton } from '@/components/design-system/button';
 import { MyPagination } from '@/components/design-system/pagination';
@@ -16,6 +23,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { formatDateTime, formatRelative, getActiveLocale } from '@/lib/formatters';
@@ -32,8 +40,24 @@ import {
 import { ConfirmActionDialog } from './ConfirmActionDialog';
 import { MovePanelDialog } from './MovePanelDialog';
 import { StaleNote, TableEmpty, TableError, TableSearch, useClientPage } from './TableParts';
+import {
+    SEVERITY_CHIP,
+    alertKindLabel,
+    fleetQueryKey,
+    useFleetQuery,
+    worstAlertByDevice,
+} from './alerts/api';
+import { useAlertsAvailability } from './alerts/probe';
+import { ApproveDialog, PendingApprovalBanner } from './installers/ApprovalParts';
+import { approveDevice, isPendingApproval, rejectDevice } from './installers/api';
+import { ROOM_LICENCE_CHIP, ROOM_LICENCE_LABEL, licenceQueryKey } from './licence/api';
 
 function statusChip(row: PanelDeviceRow): { key: string; status: StatusType } {
+    // Phase 2: an installer's set-up waits for the school; a rejected one reads as such.
+    if (isPendingApproval(row)) return { key: 'installers.approval.chip', status: 'WARNING' };
+    if (row.status === 'REVOKED' && row.approval_state === 'REJECTED') {
+        return { key: 'installers.approval.rejectedChip', status: 'DANGER' };
+    }
     const byStatus: Partial<Record<PanelDeviceStatus, { key: string; status: StatusType }>> = {
         CLAIMED: { key: 'panels.status.waiting', status: 'WARNING' },
         REVOKED: { key: 'panels.status.removed', status: 'DANGER' },
@@ -60,13 +84,40 @@ export function PanelsCard({
 }) {
     const { t } = useTranslation('settingsClassroomPanels');
     const devices = useDevicesQuery(instituteId);
-    const refresh = useRefreshPanels(instituteId);
+    const refreshLists = useRefreshPanels(instituteId);
+    const queryClient = useQueryClient();
+    // Alerts share the Alerts tab's answer, and are read only once that feature answers.
+    const alertsOn = useAlertsAvailability(instituteId) === 'on';
+    const fleet = useFleetQuery(instituteId, { enabled: alertsOn });
+    const worstAlert = useMemo(
+        () => worstAlertByDevice(alertsOn ? fleet.data?.alerts ?? [] : []),
+        [alertsOn, fleet.data]
+    );
+    // Approving, rejecting or removing a panel can change its seat and its alerts too.
+    const refresh = useCallback(
+        () =>
+            Promise.all([
+                refreshLists(),
+                // Marked stale only: the Licences tab reads it again when opened, and a
+                // switched-off licence feature is not asked again.
+                queryClient.invalidateQueries({
+                    queryKey: licenceQueryKey(instituteId),
+                    refetchType: 'none',
+                }),
+                alertsOn
+                    ? queryClient.invalidateQueries({ queryKey: fleetQueryKey(instituteId) })
+                    : Promise.resolve(),
+            ]),
+        [refreshLists, queryClient, instituteId, alertsOn]
+    );
 
     const [search, setSearch] = useState('');
     const [showRemoved, setShowRemoved] = useState(false);
     const [moveTarget, setMoveTarget] = useState<PanelDeviceRow | null>(null);
     const [revokeTarget, setRevokeTarget] = useState<PanelDeviceRow | null>(null);
     const [endTarget, setEndTarget] = useState<PanelDeviceRow | null>(null);
+    const [approveTarget, setApproveTarget] = useState<PanelDeviceRow | null>(null);
+    const [rejectTarget, setRejectTarget] = useState<PanelDeviceRow | null>(null);
 
     const allRows = useMemo(() => devices.data ?? [], [devices.data]);
     const removedCount = allRows.filter((row) => row.status === 'REVOKED').length;
@@ -108,13 +159,36 @@ export function PanelsCard({
                 size: 165,
                 cell: ({ row }) => {
                     const chip = statusChip(row.original);
+                    const licenceState = row.original.licence_state;
+                    const alert =
+                        row.original.status === 'REVOKED'
+                            ? undefined
+                            : worstAlert.get(row.original.id);
                     return (
                         <div className="flex flex-col gap-1">
-                            <StatusChip
-                                text={t(chip.key)}
-                                textSize="text-caption"
-                                status={chip.status}
-                            />
+                            <div className="flex flex-wrap gap-1">
+                                <StatusChip
+                                    text={t(chip.key)}
+                                    textSize="text-caption"
+                                    status={chip.status}
+                                />
+                                {licenceState &&
+                                    licenceState !== 'UNMANAGED' &&
+                                    row.original.status !== 'REVOKED' && (
+                                        <StatusChip
+                                            text={t(ROOM_LICENCE_LABEL[licenceState])}
+                                            textSize="text-caption"
+                                            status={ROOM_LICENCE_CHIP[licenceState]}
+                                        />
+                                    )}
+                                {alert && alert.kind !== 'AWAITING_APPROVAL' && (
+                                    <StatusChip
+                                        text={t(alertKindLabel(alert.kind))}
+                                        textSize="text-caption"
+                                        status={SEVERITY_CHIP[alert.severity]}
+                                    />
+                                )}
+                            </div>
                             <span className="text-caption text-neutral-500">
                                 {row.original.last_seen_at
                                     ? t('panels.lastSeen', {
@@ -203,6 +277,13 @@ export function PanelsCard({
                         <span className="text-caption text-neutral-500">
                             {formatDateTime(row.original.claimed_at)}
                         </span>
+                        {row.original.installed_by && (
+                            <span className="break-words text-caption text-neutral-500">
+                                {t('installers.approval.installedBy', {
+                                    name: row.original.installed_by,
+                                })}
+                            </span>
+                        )}
                     </div>
                 ),
             },
@@ -229,9 +310,34 @@ export function PanelsCard({
             {
                 id: 'actions',
                 header: t('panels.columns.actions'),
-                size: 70,
+                size: 100,
                 cell: ({ row }) =>
-                    row.original.status === 'REVOKED' ? null : (
+                    row.original.status === 'REVOKED' ? null : isPendingApproval(row.original) ? (
+                        <div className="flex flex-col items-start gap-1">
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                aria-label={t('installers.approval.approveFor', {
+                                    room: row.original.room.name,
+                                })}
+                                onClick={() => setApproveTarget(row.original)}
+                            >
+                                {t('installers.approval.approve')}
+                            </MyButton>
+                            <MyButton
+                                type="button"
+                                buttonType="text"
+                                scale="small"
+                                aria-label={t('installers.approval.rejectFor', {
+                                    room: row.original.room.name,
+                                })}
+                                onClick={() => setRejectTarget(row.original)}
+                            >
+                                {t('installers.approval.reject')}
+                            </MyButton>
+                        </div>
+                    ) : (
                         // Non-modal: a modal menu that opens a dialog as it closes can leave the
                         // page unable to take pointer events.
                         <DropdownMenu modal={false}>
@@ -279,11 +385,17 @@ export function PanelsCard({
         ],
         // togglePassword.mutate is stable across renders.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [t, togglingId]
+        [t, togglingId, worstAlert]
     );
 
     const liveCount = allRows.length - removedCount;
     const hasData = !!devices.data;
+    // Panels with something to look at, beyond waiting for approval (that has its own banner).
+    const needAttention = allRows.filter((row) => {
+        if (row.status === 'REVOKED') return false;
+        const alert = worstAlert.get(row.id);
+        return !!alert && alert.kind !== 'AWAITING_APPROVAL' && alert.severity !== 'info';
+    }).length;
 
     return (
         <Card>
@@ -325,6 +437,23 @@ export function PanelsCard({
                 {hasData && (
                     <>
                         {devices.isError && <StaleNote onRetry={() => void devices.refetch()} />}
+                        <PendingApprovalBanner rows={allRows} />
+                        {needAttention > 0 && (
+                            <Alert role="status">
+                                <AlertDescription className="flex items-start gap-2 text-neutral-700">
+                                    <WarningCircle
+                                        size={18}
+                                        className="mt-0.5 shrink-0 text-warning-600"
+                                    />
+                                    <span>
+                                        {t('alerts.summary', { count: needAttention })}{' '}
+                                        <span className="text-neutral-500">
+                                            {t('alerts.summaryHelp')}
+                                        </span>
+                                    </span>
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         {allRows.length > 0 && (
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <TableSearch
@@ -418,6 +547,33 @@ export function PanelsCard({
                     await refresh();
                     setRevokeTarget(null);
                     toast.success(t('revoke.success', { room }));
+                }}
+            />
+            <ApproveDialog
+                device={approveTarget}
+                onCancel={() => setApproveTarget(null)}
+                onConfirm={async (target) => {
+                    await approveDevice(target.id);
+                    await refresh();
+                    setApproveTarget(null);
+                    toast.success(t('installers.approval.approved', { room: target.room.name }));
+                }}
+            />
+            <ConfirmActionDialog
+                open={!!rejectTarget}
+                title={t('installers.approval.rejectTitle', {
+                    room: rejectTarget?.room.name ?? '',
+                })}
+                body={t('installers.approval.rejectBody', { room: rejectTarget?.room.name ?? '' })}
+                confirmLabel={t('installers.approval.rejectConfirm')}
+                onCancel={() => setRejectTarget(null)}
+                onConfirm={async () => {
+                    if (!rejectTarget) return;
+                    const room = rejectTarget.room.name;
+                    await rejectDevice(rejectTarget.id);
+                    await refresh();
+                    setRejectTarget(null);
+                    toast.success(t('installers.approval.rejected', { room }));
                 }}
             />
             <ConfirmActionDialog

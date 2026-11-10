@@ -8,15 +8,24 @@
  * presenting, 1 s presenting with a phone connected, 10 s with a meeting screen open. One request at a time; a response
  * about a session that is no longer the current one is ignored. Network failure, 5xx,
  * BUSY and any 429 never touch the session: they only set the offline state.
+ *
+ * Phase 2: a signed-in sync carries the queued activity of its session (activityLog) and
+ * acks it from activity_acked_seq (an answer without one counts toward the no-ack backoff;
+ * a failed request does not); a pending end carries the unsent events of its session; the
+ * snapshot publishes the licence block, the update offer and the device's approval state
+ * for the signed-out screens.
  */
 import { useSyncExternalStore } from 'react';
 import type {
     EndedResponse,
+    PanelApprovalState,
     PanelFlags,
     PanelPolicy,
+    PanelSyncLicence,
     PanelSyncRequest,
     PanelSyncResponse,
     PanelSyncSession,
+    PanelSyncUpdate,
 } from '@/classroom-shared/apiTypes';
 import {
     DEVICE_REVOKED_KEEP_MS,
@@ -36,8 +45,18 @@ import { applyDeviceBranding } from '../lib/branding';
 import { endSessionLocally } from '../lib/session';
 import { applyNavCounter, getRemoteTargetInfo, subscribeRemoteTarget } from '../seams/remoteTarget';
 import { isMeetingOpen, notePanelActivity } from './activity';
+import {
+    ACTIVITY_PER_SESSION,
+    ACTIVITY_PER_SYNC,
+    ackActivity,
+    discardActivity,
+    drainForEnd,
+    drainForSync,
+    noteActivityUnacked,
+} from './activityLog';
 import { getAppVersionCode, getWebViewMajor } from './deviceInfo';
 import { isBackendReachable, isOfflineFailure, isPublicError, postPublic } from './publicApi';
+import { getAppChannelForSync, noteUpdateOffer } from './updateOffer';
 import {
     clearDeviceRevoked,
     clearPendingEnd,
@@ -73,6 +92,12 @@ export interface PanelSyncSnapshot {
     flags: PanelFlags;
     policy: PanelPolicy;
     minAppVersionCode: number | null;
+    /** Phase 2: the room's seat, from a signed-out sync. Null when the server sent none. */
+    licence: PanelSyncLicence | null;
+    /** Phase 2: an app update on offer, from a signed-out sync. Null when none. */
+    update: PanelSyncUpdate | null;
+    /** Phase 2: null until a phase 2 server answers. */
+    approvalState: PanelApprovalState | null;
 }
 
 let snapshot: PanelSyncSnapshot = {
@@ -82,6 +107,9 @@ let snapshot: PanelSyncSnapshot = {
     flags: DEFAULT_PANEL_FLAGS,
     policy: DEFAULT_PANEL_POLICY,
     minAppVersionCode: null,
+    licence: null,
+    update: null,
+    approvalState: null,
 };
 
 const listeners = new Set<() => void>();
@@ -169,18 +197,40 @@ function forgetIfRevokedTooLong(): boolean {
     return true;
 }
 
+/** Batches one flush may send: enough for a whole session's queue. */
+const PENDING_END_MAX_BATCHES = Math.ceil(ACTIVITY_PER_SESSION / ACTIVITY_PER_SYNC);
+
+/**
+ * Delivers an end that sign-out could not, with the unsent events of that session, at
+ * most ACTIVITY_PER_SYNC per request (the server takes no more from one). Ending an
+ * ended session again changes nothing on the server and repeated seqs are ignored, so
+ * each batch is one more /session/end. panel.pendingEnd stays until the queue of its
+ * session is empty; an older record without session_id only ends the session.
+ */
 async function flushPendingEnd(): Promise<void> {
     const pending = readPendingEnd();
     const device = readDevice();
     if (!pending || !device) return;
     if (pending.session_token === getRefreshToken()) return;
+    const sessionId = pending.session_id ?? null;
     try {
-        await postPublic<EndedResponse>('/session/end', {
-            ...deviceCredentials(device),
-            session_token: pending.session_token,
-            reason: pending.reason,
-        });
-        clearPendingEnd();
+        for (let batch = 0; batch < PENDING_END_MAX_BATCHES; batch += 1) {
+            const activity = sessionId ? drainForEnd(sessionId) : [];
+            await postPublic<EndedResponse>('/session/end', {
+                ...deviceCredentials(device),
+                session_token: pending.session_token,
+                reason: pending.reason,
+                ...(activity.length > 0 ? { activity } : {}),
+            });
+            if (!sessionId || activity.length === 0) break;
+            // /session/end answers no ack: delivered is stored, or past what the server keeps.
+            ackActivity(sessionId, activity[activity.length - 1]?.seq ?? 0);
+            if (drainForEnd(sessionId).length === 0) {
+                discardActivity(sessionId);
+                break;
+            }
+        }
+        if (!sessionId || drainForEnd(sessionId).length === 0) clearPendingEnd();
     } catch (error) {
         // Only a network-class failure is worth another try.
         if (!isOfflineFailure(error)) clearPendingEnd();
@@ -237,6 +287,8 @@ async function tick(): Promise<void> {
     const sessionToken = meta ? getRefreshToken() : null;
     const sentSessionId = meta && sessionToken ? meta.session_id : null;
     const target = getRemoteTargetInfo();
+    const activity = sentSessionId ? drainForSync(sentSessionId) : [];
+    const appChannel = getAppChannelForSync();
     const request: PanelSyncRequest = {
         ...deviceCredentials(device),
         app_version_code: getAppVersionCode(),
@@ -245,6 +297,8 @@ async function tick(): Promise<void> {
         in_meeting: !!sentSessionId && isMeetingOpen(),
         ...(sentSessionId ? { session_id: sentSessionId, session_token: sessionToken } : {}),
         ...(sentSessionId && target.state ? { state: target.state } : {}),
+        ...(activity.length > 0 ? { activity } : {}),
+        ...(appChannel ? { app_channel: appChannel } : {}),
     };
 
     inFlight = true;
@@ -273,7 +327,19 @@ async function tick(): Promise<void> {
                 flags: response.flags,
                 policy: response.policy,
                 minAppVersionCode: response.min_app_version_code,
+                licence: response.licence ?? null,
+                update: response.update ?? null,
+                approvalState: response.device.approval_state ?? null,
             });
+            noteUpdateOffer(response.update ?? null);
+            if (sentSessionId && activity.length > 0) {
+                // Only an answer counts here: a failed request leaves the backoff alone.
+                if (typeof response.activity_acked_seq === 'number') {
+                    ackActivity(sentSessionId, response.activity_acked_seq);
+                } else {
+                    noteActivityUnacked(sentSessionId);
+                }
+            }
             // An answer about a session that has since been replaced says nothing about this one.
             const currentId = readSessionMeta()?.session_id ?? null;
             if (sentSessionId && sentSessionId === currentId) {

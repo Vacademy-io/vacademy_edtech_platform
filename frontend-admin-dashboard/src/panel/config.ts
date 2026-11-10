@@ -85,7 +85,14 @@ export const PANEL_STORAGE_KEYS = {
     offlineIndex: 'panel.offline.index',
     /** Set while the offline caches are being wiped, so a restart finishes the job. */
     offlineWipe: 'panel.offline.wipe',
+    /** Phase 2: the "what was shown" queue, {session_id, next_seq, items[]} (device/activityLog.ts). */
+    activity: 'panel.activity',
+    /** Phase 2: the downloaded or offered app update and the last install result (device/updateOffer.ts). */
+    update: 'panel.update',
 } as const;
+
+/** Phase 2: a refused sign-in (licence or approval) is retried this often while its card is up. */
+export const PANEL_LICENCE_RECHECK_MS = 5 * 60 * 1000;
 
 /** Shared with the admin app (same names, same meaning). */
 export const SHARED_STORAGE_KEYS = {

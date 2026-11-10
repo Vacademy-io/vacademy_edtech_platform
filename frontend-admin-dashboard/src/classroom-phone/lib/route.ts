@@ -3,6 +3,7 @@
  *   #c=<t>                  approve a panel's QR
  *   #pair=<code>            pair a new panel
  *   #s=<scheduleId>&i=<id>  start a class
+ *   #installer              an installer adds a school or sets up a panel for one
  *   (empty)                 the remote if a token is stored, else code entry
  *
  * The fragment can hold a one-time code, so it is moved to sessionStorage for
@@ -26,7 +27,12 @@ export type PhoneRoute =
           tappedBy?: string;
       }
     | { kind: 'pair'; code: string }
-    | { kind: 'start'; scheduleId: string; instituteId: string };
+    | { kind: 'start'; scheduleId: string; instituteId: string }
+    | {
+          kind: 'installer';
+          /** A panel code to go back to once a school is linked. Never read from a URL. */
+          resume?: string;
+      };
 
 interface Stash {
     route: PhoneRoute;
@@ -48,6 +54,8 @@ export function parseFragment(hash: string): PhoneRoute | null {
     const scheduleId = clean(params.get('s'));
     const instituteId = clean(params.get('i'));
     if (scheduleId && instituteId) return { kind: 'start', scheduleId, instituteId };
+    // Any value is ignored: a school's code is typed on the page, never carried in a link.
+    if (params.has('installer')) return { kind: 'installer' };
     return null;
 }
 

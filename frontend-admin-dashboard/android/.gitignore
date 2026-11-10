@@ -70,6 +70,7 @@ captures/
 
 # Release signing — NEVER commit the keystore or its passwords.
 keystore.properties
+keystore-direct.properties
 *.jks
 *.keystore
 

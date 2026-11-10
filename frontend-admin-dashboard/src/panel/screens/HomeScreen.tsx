@@ -30,6 +30,7 @@ import { PanelLoading } from '../components/PanelScreenState';
 import { PanelTopBar } from '../components/PanelTopBar';
 import { PanelStage, PanelStageBody, PanelFullscreenButton } from '../components/PanelStage';
 import { PanelTile } from '../components/PanelTile';
+import { useActivityLog } from '../device/activityLog';
 import { subscribeDeviceEvents, useDeviceRecord, usesDeviceAuth } from '../device/store';
 import { canUseDeviceSettings, usePanelSession } from '../lib/session';
 import { isNativePanel, openDeviceSettings, type PanelSettingsTarget } from '../lib/native';
@@ -52,6 +53,7 @@ export default function HomeScreen() {
     const paired = usesDeviceAuth();
     const showDeviceSettings = isNativePanel() && canUseDeviceSettings();
     useArrowFocus();
+    useActivityLog(isSignedIn ? { kind: 'HOME' } : null);
 
     const open = (screen: PanelScreen, needsSignIn: boolean) => {
         if (needsSignIn && !isSignedIn) {

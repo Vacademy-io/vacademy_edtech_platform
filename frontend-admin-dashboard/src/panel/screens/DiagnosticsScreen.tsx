@@ -25,9 +25,11 @@ import { StatusChip, type StatusType } from '@/components/design-system/status-c
 import { DOMAIN_ROUTING_RESOLVE } from '@/constants/urls';
 import { PANEL_MIN_CHROME, PANEL_STORAGE_KEYS } from '../config';
 import { isPanelDateWrong } from '../device/activity';
+import { getActivityStats } from '../device/activityLog';
 import { getAppVersionCode } from '../device/deviceInfo';
 import { useDeviceRecord } from '../device/store';
 import { isPanelOffline, useSyncSnapshot } from '../device/syncLoop';
+import { getAppChannelForSync, useUpdateState } from '../device/updateOffer';
 import { canUseDeviceSettings, usePanelSession } from '../lib/session';
 import { PanelTopBar } from '../components/PanelTopBar';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
@@ -217,6 +219,33 @@ function shortDeviceId(id: string): string {
     return id.length > 8 ? id.slice(0, 8) : id;
 }
 
+/** Phase 2: the build's channel, the last update result and the activity queue. */
+function PhaseTwoRows() {
+    const { t } = useTranslation('panel');
+    const last = useUpdateState().last;
+    const channel = getAppChannelForSync();
+    const activity = getActivityStats();
+    return (
+        <>
+            {channel && <InfoRow label={t('update.diagChannel')}>{channel}</InfoRow>}
+            {last && (
+                <InfoRow label={t('update.diagLast')}>
+                    {/* Raw codes on purpose: this row is for whoever supports the panel. */}
+                    {[last.version_code, last.outcome, last.code].filter(Boolean).join(' · ')}
+                </InfoRow>
+            )}
+            {activity.sessionId && (
+                <InfoRow label={t('activity.diagLabel')}>
+                    {t('activity.diagValue', {
+                        queued: activity.queued,
+                        dropped: activity.dropped,
+                    })}
+                </InfoRow>
+            )}
+        </>
+    );
+}
+
 function PairingSection() {
     const { t } = useTranslation('device');
     const device = useDeviceRecord();
@@ -282,6 +311,7 @@ function PairingSection() {
                             : appVersion}
                     </InfoRow>
                 )}
+                <PhaseTwoRows />
             </dl>
         </Section>
     );

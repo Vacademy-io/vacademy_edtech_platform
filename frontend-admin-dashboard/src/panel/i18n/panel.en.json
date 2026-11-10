@@ -155,5 +155,13 @@
         "touchActive": "fingers touching now",
         "touchMax": "Most at once: {{count}}",
         "touchHint": "Put several fingers on this box"
+    },
+    "activity": {
+        "diagLabel": "Activity to send",
+        "diagValue": "{{queued}} waiting, {{dropped}} over the limit"
+    },
+    "update": {
+        "diagChannel": "App channel",
+        "diagLast": "Last update"
     }
 }

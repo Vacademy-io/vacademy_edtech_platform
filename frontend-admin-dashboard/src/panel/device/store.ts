@@ -48,6 +48,8 @@ export interface PanelSessionMeta {
 export interface PanelPendingEnd {
     session_token: string;
     reason: PanelClientEndReason;
+    /** Phase 2: whose queued activity goes with the end. Absent in records written before. */
+    session_id?: string;
 }
 
 export type PanelDeviceEvent =
@@ -240,7 +242,9 @@ export function clearSessionMeta(): void {
 
 export function readPendingEnd(): PanelPendingEnd | null {
     const pending = readJson<PanelPendingEnd>(PANEL_STORAGE_KEYS.pendingEnd);
-    return pending && typeof pending.session_token === 'string' ? pending : null;
+    if (!pending || typeof pending.session_token !== 'string') return null;
+    if (typeof pending.session_id === 'string') return pending;
+    return { session_token: pending.session_token, reason: pending.reason };
 }
 
 export function writePendingEnd(pending: PanelPendingEnd): void {

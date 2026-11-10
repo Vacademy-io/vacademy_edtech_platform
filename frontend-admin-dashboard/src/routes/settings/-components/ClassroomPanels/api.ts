@@ -193,6 +193,13 @@ const CODES_WITH_COPY = new Set<string>([
     'ROOM_NAME_TAKEN',
     'ROOM_HAS_DEVICE',
     'DEVICE_NOT_ACTIVE',
+    'LICENCE_REQUIRED',
+    'AWAITING_APPROVAL',
+    'UPDATE_REQUIRED',
+    'FEATURE_OFF',
+    'NOT_INSTALLER',
+    'INVITE_INVALID',
+    'NO_SEAT',
 ]);
 
 /** Text for a failure. Switches on `code` and never shows the server's own message. */

@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { PanelEmpty, PanelError } from '../components/PanelScreenState';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
 import { PanelTopBar } from '../components/PanelTopBar';
+import { useActivityLog } from '../device/activityLog';
 import { useSyncSnapshot } from '../device/syncLoop';
 import { goBack, navigate } from '../router';
 import {
@@ -99,6 +100,7 @@ export function PanelDeckView({ presentationId }: { presentationId: string }) {
     const [liveOpen, setLiveOpen] = useState(false);
     const deck = deckQuery.data;
     const first = deck?.slides[0];
+    useActivityLog(deck ? { kind: 'DECK', ref_id: presentationId, title: deck.title } : null);
 
     const startLive = async (options: Parameters<typeof createLiveSession>[2]) => {
         if (!voltLiveEnabled) return;

@@ -36,6 +36,7 @@ import type {
 import { MyButton } from '@/components/design-system/button';
 import { PanelConfirmDialog } from '../components/PanelConfirmDialog';
 import { PanelFullscreenButton, PanelStage } from '../components/PanelStage';
+import { useActivityLog } from '../device/activityLog';
 import { goBack } from '../router';
 import { PanelWhiteboardToolbar } from './PanelWhiteboardToolbar';
 import { EmptyBoardError, exportPng } from './whiteboardExport';
@@ -110,6 +111,7 @@ interface LatestScene {
 export function PanelWhiteboard() {
     const { t } = useTranslation('whiteboard');
     const { t: tPanel } = useTranslation('panel');
+    useActivityLog({ kind: 'WHITEBOARD' });
 
     const [loadResult] = useState(loadBoard);
     const [initialData] = useState(() => buildInitialData(loadResult));

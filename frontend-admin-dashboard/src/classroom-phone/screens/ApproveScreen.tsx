@@ -39,9 +39,25 @@ type View =
     | { kind: 'not-staff'; institute: string | null }
     | { kind: 'other-user' }
     | { kind: 'denied' }
+    | { kind: 'refused'; refusal: Refusal }
     | { kind: 'failed'; failure: 'network' | 'busy' | 'error'; retry: () => void };
 
 const CLOSED_STATES = new Set(['DEAD', 'EXPIRED']);
+
+/** Why this panel cannot start a session, by the code the server sends. Scanning again will not help. */
+const REFUSALS = {
+    LICENCE_REQUIRED: 'refusedLicence',
+    AWAITING_APPROVAL: 'refusedAwaiting',
+    UPDATE_REQUIRED: 'refusedUpdate',
+    PANEL_DISABLED: 'refusedOff',
+} as const;
+
+type Refusal = (typeof REFUSALS)[keyof typeof REFUSALS];
+
+const refusalOf = (code: string | null): Refusal | null =>
+    code && Object.prototype.hasOwnProperty.call(REFUSALS, code)
+        ? REFUSALS[code as keyof typeof REFUSALS]
+        : null;
 
 export function ApproveScreen({
     route,
@@ -69,7 +85,11 @@ export function ApproveScreen({
             return;
         }
         const code = errorCode(error);
-        if (code === 'EXPIRED' || code === 'NOT_FOUND') {
+        const refusal = refusalOf(code);
+        if (refusal) {
+            forgetStash();
+            setView({ kind: 'refused', refusal });
+        } else if (code === 'EXPIRED' || code === 'NOT_FOUND') {
             forgetStash();
             setView({ kind: 'expired' });
         } else if (code === 'WRONG_NUMBER') {
@@ -210,6 +230,19 @@ export function ApproveScreen({
             );
         case 'failed':
             return <FailureCard kind={view.failure} onRetry={view.retry} />;
+        case 'refused':
+            return (
+                <StateCard
+                    tone="warning"
+                    testId="refused"
+                    title={s[`${view.refusal}Title`]}
+                    body={s[`${view.refusal}Body`]}
+                >
+                    <ActionButton secondary onClick={clearRoute}>
+                        {s.done}
+                    </ActionButton>
+                </StateCard>
+            );
         default:
             break;
     }

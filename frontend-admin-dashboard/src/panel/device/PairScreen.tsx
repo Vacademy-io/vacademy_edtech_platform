@@ -1,7 +1,8 @@
 /**
  * #/pair. Every state in the pairing table: code with QR and number, dimmed after an
  * hour, the claim waiting for one Confirm tap, offline, wrong date, disabled, and the
- * "removed from its institute" notice after DEVICE_REVOKED.
+ * "removed from its institute" notice after DEVICE_REVOKED. Phase 2 slots: the update bar,
+ * and the installer's name on the claim when an installer set the panel up.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
@@ -26,7 +27,9 @@ import { navigate } from '../router';
 import { getCachedDeviceInfo, loadPanelDeviceInfo } from './deviceInfo';
 import { formatCode } from './formatCode';
 import { createPairingFlow, type PairingFlow, type PairView } from './pairingFlow';
+import { ensurePhase2Strings } from './phase2Strings';
 import { useDeviceRecord } from './store';
+import { UpdateBar } from './UpdateBar';
 import { useQrSize } from './useQrSize';
 
 function PairActions({ wifi, date }: { wifi?: boolean; date?: boolean }) {
@@ -133,6 +136,8 @@ function ClaimedState({
     flow: PairingFlow;
 }) {
     const { t } = useTranslation('device');
+    ensurePhase2Strings();
+    const { t: tp } = useTranslation('panel');
     const confirmRef = useRef<HTMLButtonElement>(null);
     useEffect(() => {
         confirmRef.current?.focus();
@@ -151,6 +156,11 @@ function ClaimedState({
                     ? t('pair.confirmBody', values)
                     : t('pair.confirmBodyNoName', values)}
             </p>
+            {claim.installed_by && (
+                <p className="text-title text-neutral-500">
+                    {tp('approval.installedBy', { installer: claim.installed_by })}
+                </p>
+            )}
             <div className="flex justify-center space-x-4 pt-2">
                 <MyButton
                     ref={confirmRef}
@@ -310,6 +320,7 @@ export default function PairScreen() {
             <PanelTopBar title={t('pair.title')} />
             <PanelStageBody className="flex flex-col items-center justify-center p-8">
                 <div className="w-full">{body}</div>
+                {!claiming && <UpdateBar placement="pair" />}
                 {!claiming && (
                     <div className="pt-8">
                         <PairActions

@@ -11,6 +11,10 @@
  *   from an abandoned poll can never overwrite tokens from a newer one.
  * - Network failure, 5xx, BUSY and 429: one quiet retry, then the offline state,
  *   retrying every 15 s until the window ends.
+ * - Phase 2: LICENCE_REQUIRED, AWAITING_APPROVAL and UPDATE_REQUIRED each have their own
+ *   view (licence, awaiting, updateRequired). Like PANEL_DISABLED they keep the panel
+ *   signed out, but they stay up past the window and recheck every 5 minutes; retry()
+ *   ("Check again") rechecks at once.
  */
 import type {
     ChallengePollResponse,
@@ -21,6 +25,7 @@ import {
     CHALLENGE_RENEW_BEFORE_MS,
     FIRST_RETRY_MS,
     OFFLINE_RETRY_MS,
+    PANEL_LICENCE_RECHECK_MS,
     SIGN_IN_WINDOW_MS,
 } from '../config';
 import { getRefreshToken, handleSessionEnded } from '../lib/api';
@@ -38,7 +43,21 @@ export type SignInView =
     | { view: 'dimmed' }
     | { view: 'offline' }
     | { view: 'wrongDate' }
-    | { view: 'unavailable' };
+    | { view: 'unavailable' }
+    /** Phase 2: LICENCE_REQUIRED. This room has no seat. */
+    | { view: 'licence' }
+    /** Phase 2: AWAITING_APPROVAL. An installer set this panel up; the school has not approved it. */
+    | { view: 'awaiting' }
+    /** Phase 2: UPDATE_REQUIRED. This app build is below the minimum. */
+    | { view: 'updateRequired' };
+
+/** The views a refused sign-in maps to. Null for every other failure. */
+export function refusalView(error: unknown): 'licence' | 'awaiting' | 'updateRequired' | null {
+    if (hasCode(error, 'LICENCE_REQUIRED')) return 'licence';
+    if (hasCode(error, 'AWAITING_APPROVAL')) return 'awaiting';
+    if (hasCode(error, 'UPDATE_REQUIRED')) return 'updateRequired';
+    return null;
+}
 
 export type SignInOutcome =
     | ({ kind: 'signedIn' } & AdoptResult)
@@ -117,6 +136,15 @@ export function createSignInFlow(options: SignInFlowOptions): SignInFlow {
         if (isPublicError(error) && error.kind === 'revoked') {
             // The store has it; the router is already leaving this screen.
             stop();
+            return;
+        }
+        const refused = refusalView(error);
+        if (refused) {
+            // Not dimmed when the window ends: the card says why nobody can sign in.
+            networkFailures = 0;
+            otherFailures = 0;
+            options.onView({ view: refused });
+            after(PANEL_LICENCE_RECHECK_MS, again);
             return;
         }
         if (windowOver()) {

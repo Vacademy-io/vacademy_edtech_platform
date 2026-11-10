@@ -36,7 +36,7 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn() }));
 vi.mock('@/lib/auth/axiosInstance', () => ({ default: api }));
 
 import ClassroomPanelsSettings from './ClassroomPanelsSettings';
-import { normaliseSetupCode, parseRoomList } from './api';
+import { normaliseSetupCode, panelErrorMessage, parseRoomList } from './api';
 
 const BEARER = 'http://api.test/auth-service/v1/panel';
 
@@ -720,5 +720,22 @@ describe('catalogs', () => {
         expect(quoted.length).toBeGreaterThan(3);
         expect(codes.length).toBeGreaterThan(8);
         [...used, ...quoted, ...codes].forEach((key) => expect(reference[key], key).toBeDefined());
+    });
+});
+
+describe('panelErrorMessage, phase 2 codes', () => {
+    const t = ((key: string) => key) as never;
+    it.each([
+        'LICENCE_REQUIRED',
+        'AWAITING_APPROVAL',
+        'UPDATE_REQUIRED',
+        'FEATURE_OFF',
+        'NOT_INSTALLER',
+        'INVITE_INVALID',
+        'NO_SEAT',
+    ])('%s has its own words, never the generic ones', (code) => {
+        const error = { response: { status: 403, data: { code, message: 'server text' } } };
+        expect(panelErrorMessage(t, error)).toBe(`errors.${code}`);
+        expect(en.errors[code as keyof typeof en.errors]).toBeTruthy();
     });
 });

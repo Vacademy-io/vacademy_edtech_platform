@@ -13,6 +13,16 @@ describe('parseFragment', () => {
         });
     });
 
+    it('reads the installer page and never takes a code from the link', () => {
+        expect(parseFragment('#installer')).toEqual({ kind: 'installer' });
+        expect(parseFragment('#installer=K7QF2M9X')).toEqual({ kind: 'installer' });
+        // The older forms still win, so a panel's own links are unchanged.
+        expect(parseFragment('#pair=K7QF2M9X&installer')).toEqual({
+            kind: 'pair',
+            code: 'K7QF2M9X',
+        });
+    });
+
     it('ignores empty, partial and oversized values', () => {
         expect(parseFragment('')).toBeNull();
         expect(parseFragment('#c=')).toBeNull();

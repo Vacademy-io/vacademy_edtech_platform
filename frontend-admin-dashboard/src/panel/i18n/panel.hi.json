@@ -155,5 +155,13 @@
         "touchActive": "उंगलियाँ अभी छू रही हैं",
         "touchMax": "एक साथ सबसे ज़्यादा: {{count}}",
         "touchHint": "इस बॉक्स पर कई उंगलियाँ रखें"
+    },
+    "activity": {
+        "diagLabel": "भेजने के लिए गतिविधि",
+        "diagValue": "{{queued}} बाकी, {{dropped}} सीमा से ज़्यादा"
+    },
+    "update": {
+        "diagChannel": "ऐप चैनल",
+        "diagLast": "पिछला अपडेट"
     }
 }

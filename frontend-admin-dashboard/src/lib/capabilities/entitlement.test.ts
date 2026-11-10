@@ -34,9 +34,9 @@ const allIds = (pick: (g: (typeof catalog.modules)[0]['features'][0]['governs'])
     Array.from(new Set(catalog.modules.flatMap((m) => m.features.flatMap((f) => pick(f.governs)))));
 
 describe('catalogue', () => {
-    it('normalizes the real catalogue (13 modules, 53 features)', () => {
+    it('normalizes the real catalogue (13 modules, 54 features)', () => {
         expect(catalog.modules).toHaveLength(13);
-        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(53);
+        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(54);
     });
 
     it('rejects malformed bodies (fail open = no catalogue)', () => {

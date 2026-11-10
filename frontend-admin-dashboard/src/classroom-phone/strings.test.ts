@@ -10,6 +10,20 @@ describe('strings', () => {
         }
     });
 
+    it('translates the installer and refusal copy, and names no company', () => {
+        const keys = (Object.keys(STRINGS.en) as Array<keyof typeof STRINGS.en>).filter((key) =>
+            /^(installer|addSchool|school|panelCode|notInstaller|noSchools|refused|installUntil|continuePanel|enterSchoolCode)/.test(
+                key
+            )
+        );
+        expect(keys.length).toBeGreaterThan(20);
+        for (const key of keys) {
+            expect(STRINGS.hi[key], key).not.toBe(STRINGS.en[key]);
+            // Copy says "installer" or "school" and carries no currency amount.
+            expect(STRINGS.en[key], key).not.toMatch(/₹|\$/);
+        }
+    });
+
     it('fills known values', () => {
         expect(fill('Slide {index} of {total}', { index: 4, total: 20 })).toBe('Slide 4 of 20');
     });

@@ -344,6 +344,116 @@ describe('sync loop', () => {
         expect(readPendingEnd()).toBeNull();
     });
 
+    const queueOf = (sessionId: string, count: number) => ({
+        session_id: sessionId,
+        next_seq: count + 1,
+        items: Array.from({ length: count }, (_, i) => ({
+            seq: i + 1,
+            kind: 'LESSON',
+            ref_id: `slide-${i + 1}`,
+            parent_id: null,
+            title: null,
+            at_ms: 1000 + i,
+        })),
+        dropped: 0,
+        last_key: `LESSON|slide-${count}|`,
+    });
+    const endBodies = () =>
+        post.mock.calls.filter(([p]) => p === '/session/end').map(([, body]) => body);
+    const seqsOf = (body: { activity?: { seq: number }[] }) =>
+        (body.activity ?? []).map((event) => event.seq);
+
+    it('a pending end carries its session queue, 20 per call, and clears when it is empty', async () => {
+        localStorage.setItem(
+            'panel.pendingEnd',
+            JSON.stringify({ session_token: 'old', reason: 'SIGN_OUT', session_id: 'session-old' })
+        );
+        localStorage.setItem('panel.activity', JSON.stringify(queueOf('session-old', 30)));
+        token.value = null;
+        localStorage.removeItem('panel.sessionMeta');
+        const { startSyncLoop, readPendingEnd } = await load();
+        post.mockImplementation(async (path: string) =>
+            path === '/session/end' ? { ended: true } : okBody(undefined, 300000)
+        );
+        startSyncLoop();
+        await vi.advanceTimersByTimeAsync(0);
+        const ends = endBodies();
+        expect(ends.map(seqsOf)).toEqual([
+            Array.from({ length: 20 }, (_, i) => i + 1),
+            Array.from({ length: 10 }, (_, i) => i + 21),
+        ]);
+        expect(ends[0]).toMatchObject({ session_token: 'old', reason: 'SIGN_OUT' });
+        expect(readPendingEnd()).toBeNull();
+        expect(localStorage.getItem('panel.activity')).toBeNull();
+    });
+
+    it('a pending end keeps what is not delivered for the next try', async () => {
+        localStorage.setItem(
+            'panel.pendingEnd',
+            JSON.stringify({ session_token: 'old', reason: 'IDLE', session_id: 'session-old' })
+        );
+        localStorage.setItem('panel.activity', JSON.stringify(queueOf('session-old', 30)));
+        token.value = null;
+        localStorage.removeItem('panel.sessionMeta');
+        const { startSyncLoop, readPendingEnd, PanelPublicError } = await load();
+        let ends = 0;
+        post.mockImplementation(async (path: string) => {
+            if (path !== '/session/end') return okBody(undefined, 300000);
+            ends += 1;
+            if (ends === 2) throw new PanelPublicError('offline', null, null);
+            return { ended: true };
+        });
+        startSyncLoop();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(readPendingEnd()).not.toBeNull();
+        await vi.advanceTimersByTimeAsync(61 * 1000);
+        expect(
+            endBodies()
+                .map(seqsOf)
+                .map((seqs) => [seqs[0], seqs.length])
+        ).toEqual([
+            [1, 20],
+            [21, 10],
+            [21, 10],
+        ]);
+        expect(readPendingEnd()).toBeNull();
+    });
+
+    it('a pending end for an older session never wipes the current queue', async () => {
+        localStorage.setItem(
+            'panel.pendingEnd',
+            JSON.stringify({ session_token: 'old', reason: 'SIGN_OUT', session_id: 'session-old' })
+        );
+        localStorage.setItem('panel.activity', JSON.stringify(queueOf('session-1', 3)));
+        const { startSyncLoop, readPendingEnd } = await load();
+        post.mockImplementation(async (path: string) =>
+            path === '/session/end' ? { ended: true } : okBody(activeSession(), 300000)
+        );
+        startSyncLoop();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(endBodies()).toHaveLength(1);
+        expect(endBodies()[0]).not.toHaveProperty('activity');
+        expect(readPendingEnd()).toBeNull();
+        expect(JSON.parse(localStorage.getItem('panel.activity') ?? 'null')?.items).toHaveLength(3);
+    });
+
+    it('failed syncs do not stop the queue: the first answered sync still carries it', async () => {
+        localStorage.setItem('panel.activity', JSON.stringify(queueOf('session-1', 2)));
+        const { startSyncLoop, PanelPublicError } = await load();
+        let calls = 0;
+        post.mockImplementation(async () => {
+            calls += 1;
+            if (calls <= 3) throw new PanelPublicError('offline', null, null);
+            return { ...okBody(activeSession(), 300000), activity_acked_seq: 2 };
+        });
+        startSyncLoop();
+        await vi.advanceTimersByTimeAsync(200 * 1000);
+        const bodies = post.mock.calls.filter(([p]) => p === '/sync').map(([, body]) => body);
+        expect(bodies.length).toBeGreaterThanOrEqual(4);
+        expect(seqsOf(bodies[3])).toEqual([1, 2]);
+        expect(JSON.parse(localStorage.getItem('panel.activity') ?? 'null')?.items).toEqual([]);
+    });
+
     it('does nothing with no device, and starts when one appears', async () => {
         localStorage.removeItem('panel.device');
         post.mockResolvedValue(okBody());

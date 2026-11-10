@@ -14,6 +14,7 @@ import {
     type HostProvider,
     type HostTarget,
 } from '@/classroom-shared/hostActions';
+import { logActivity } from '../device/activityLog';
 import type { PanelOpenResult } from '../lib/native';
 import { classCapability, type ClassCapability } from './capability';
 
@@ -59,6 +60,17 @@ export interface StartDeps {
     isCancelled: () => boolean;
 }
 
+/** The class was opened here or handed to another app or device: the end-of-class clock and the activity log. */
+function noteOpened(item: TodayClass, deps: StartDeps): void {
+    deps.setOpenedClassEnd(item.ends_at_ms);
+    logActivity({
+        kind: 'CLASS',
+        ref_id: item.schedule_id,
+        parent_id: item.session_id,
+        title: item.title,
+    });
+}
+
 export function hostTargetOf(item: TodayClass): HostTarget {
     return {
         sessionId: item.session_id,
@@ -78,7 +90,7 @@ export function providerOfClass(item: TodayClass): HostProvider | 'external' | n
 
 function openInMeetingScreen(item: TodayClass, url: string, deps: StartDeps): StartOutcome {
     if (deps.isMeetingOpen()) return { kind: 'already-open' };
-    deps.setOpenedClassEnd(item.ends_at_ms);
+    noteOpened(item, deps);
     deps.setMeetingOpen(true);
     void deps.openMeeting(url).then((result) => {
         // ALREADY_OPEN: the earlier meeting is still up and still owns the flag.
@@ -96,7 +108,7 @@ async function openInAnotherApp(
 ): Promise<StartOutcome> {
     const opened = await deps.openExternal(url);
     if (deps.isCancelled()) return { kind: 'cancelled' };
-    deps.setOpenedClassEnd(item.ends_at_ms);
+    noteOpened(item, deps);
     return opened.opened
         ? { kind: 'external', noHostLink }
         : { kind: 'device', reason: 'no-browser' };
@@ -124,7 +136,7 @@ export async function finishStart(
         case 'open-route':
         case 'provisioning':
             // Zoom and Meet go to the teacher's device before reaching here.
-            deps.setOpenedClassEnd(item.ends_at_ms);
+            noteOpened(item, deps);
             return { kind: 'device', reason: 'unsupported' };
         case 'failed':
             return { kind: 'failed' };
@@ -138,7 +150,7 @@ export async function startClass(item: TodayClass, deps: StartDeps): Promise<Sta
     if (deps.isCancelled()) return { kind: 'cancelled' };
     const capability = classCapability(action.provider, major, deps.bbbInAppMinWebview());
     if (capability === 'device' || (capability === 'here' && !deps.hasMeetingScreen())) {
-        deps.setOpenedClassEnd(item.ends_at_ms);
+        noteOpened(item, deps);
         return {
             kind: 'device',
             reason: capability === 'device' ? 'unsupported' : 'no-meeting-screen',

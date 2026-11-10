@@ -50,8 +50,10 @@ import {
     usesDeviceAuth,
     writePendingEnd,
     writeSessionMeta,
+    type PanelPendingEnd,
 } from '../device/store';
 import { setOpenedClassEnd } from '../device/activity';
+import { ackActivity, discardActivity, drainForEnd, getActivityStats } from '../device/activityLog';
 import { resetNavBaseline } from '../seams/remoteTarget';
 import { AUTH_REQUIRED_SCREENS, getCurrentRoute, navigate } from '../router';
 import {
@@ -414,23 +416,58 @@ function clearDeviceSession(): void {
 }
 
 const SIGN_OUT_END_TIMEOUT_MS = 3000;
+/** All /session/end calls of one sign-out together; what is left goes to the sync loop. */
+const SIGN_OUT_END_TOTAL_MS = 6000;
+/** A further batch is sent only with at least this much of the total left. */
+const SIGN_OUT_END_MIN_CALL_MS = 1000;
 const LIVE_WORK_LIMIT_MS = 5000;
 
-/** Tells the server, with a short limit; a miss goes to panel.pendingEnd for the sync loop. */
+/**
+ * Tells the server, with a short limit; a miss goes to panel.pendingEnd for the sync loop.
+ * Phase 2: the session's queued activity goes along, so the last minutes are kept. The
+ * server takes ACTIVITY_PER_SYNC events per request, so a longer queue goes in further
+ * /session/end calls (ending an ended session again changes nothing, repeated seqs are
+ * ignored). Whatever does not fit in the time limit is left to the sync loop through
+ * panel.pendingEnd, which names the session whose queue it carries.
+ */
 async function endOnServer(reason: PanelClientEndReason): Promise<void> {
     const sessionToken = getRefreshToken();
     const device = readDevice();
     if (!sessionToken || !device) return;
+    const sessionId = readSessionMeta()?.session_id ?? null;
+    const pending: PanelPendingEnd = sessionId
+        ? { session_token: sessionToken, reason, session_id: sessionId }
+        : { session_token: sessionToken, reason };
+    const startedAt = Date.now();
     try {
-        await postPublic(
-            '/session/end',
-            { ...deviceCredentials(device), session_token: sessionToken, reason },
-            { timeout: SIGN_OUT_END_TIMEOUT_MS }
-        );
-    } catch (error) {
-        if (!isPublicError(error) || error.kind === 'offline') {
-            writePendingEnd({ session_token: sessionToken, reason });
+        let activity = sessionId ? drainForEnd(sessionId) : [];
+        for (;;) {
+            const left = SIGN_OUT_END_TOTAL_MS - (Date.now() - startedAt);
+            await postPublic(
+                '/session/end',
+                {
+                    ...deviceCredentials(device),
+                    session_token: sessionToken,
+                    reason,
+                    ...(activity.length > 0 ? { activity } : {}),
+                },
+                { timeout: Math.min(SIGN_OUT_END_TIMEOUT_MS, left) }
+            );
+            if (!sessionId || activity.length === 0) return;
+            // /session/end answers no ack: what it was given is stored or past the cap.
+            ackActivity(sessionId, activity[activity.length - 1]?.seq ?? 0);
+            activity = drainForEnd(sessionId);
+            if (activity.length === 0) {
+                discardActivity(sessionId);
+                return;
+            }
+            if (SIGN_OUT_END_TOTAL_MS - (Date.now() - startedAt) < SIGN_OUT_END_MIN_CALL_MS) {
+                writePendingEnd(pending);
+                return;
+            }
         }
+    } catch (error) {
+        if (!isPublicError(error) || error.kind === 'offline') writePendingEnd(pending);
     }
 }
 
@@ -511,9 +548,17 @@ export function endSessionLocally(
     return singleEnd(async () => {
         void closeMeeting();
         await withLimit(endLiveWork(), LIVE_WORK_LIMIT_MS);
-        if (options.tellServer) {
-            const sessionToken = getRefreshToken();
-            if (sessionToken) writePendingEnd({ session_token: sessionToken, reason: 'SIGN_OUT' });
+        const sessionToken = getRefreshToken();
+        const sessionId = readSessionMeta()?.session_id;
+        const stats = getActivityStats();
+        // An end the server already made still takes the unsent events within its grace.
+        const unsent = !!sessionId && stats.sessionId === sessionId && stats.queued > 0;
+        if (sessionToken && (options.tellServer || unsent)) {
+            writePendingEnd(
+                sessionId
+                    ? { session_token: sessionToken, reason: 'SIGN_OUT', session_id: sessionId }
+                    : { session_token: sessionToken, reason: 'SIGN_OUT' }
+            );
         }
         clearDeviceSession();
         await runHandlers(afterSignOutHandlers);
@@ -557,7 +602,8 @@ export async function adoptRedeemedSession(body: PanelRedeemedSession): Promise<
     // A class opened from a card, and an end notice nobody saw, belong to whoever was here.
     if (!sameUser) setOpenedClassEnd(null);
     undeliveredEnd = null;
-    // The approval already ended whatever an undelivered /session/end was for.
+    // The approval already ended whatever an undelivered /session/end was for. Its unsent
+    // events, if any, are given up: this session's first event replaces that queue.
     clearPendingEnd();
     const now = Date.now();
     writeSessionMeta({
@@ -578,8 +624,20 @@ export type DevicePasswordErrorCode =
     | 'BAD_CREDENTIALS'
     | 'NOT_STAFF'
     | 'PASSWORD_DISABLED'
+    | 'LICENCE_REQUIRED'
+    | 'AWAITING_APPROVAL'
+    | 'UPDATE_REQUIRED'
+    | 'PANEL_DISABLED'
     | 'OFFLINE'
     | 'SERVER';
+
+/** Refusals about the panel, not the teacher: the sign-in card has the view that explains each. */
+export const PANEL_REFUSAL_CODES = [
+    'LICENCE_REQUIRED',
+    'AWAITING_APPROVAL',
+    'UPDATE_REQUIRED',
+    'PANEL_DISABLED',
+] as const;
 
 export class DevicePasswordError extends Error {
     code: DevicePasswordErrorCode;
@@ -609,6 +667,9 @@ export async function loginWithDevicePassword(
         if (hasCode(error, 'BAD_CREDENTIALS')) throw new DevicePasswordError('BAD_CREDENTIALS');
         if (hasCode(error, 'NOT_STAFF')) throw new DevicePasswordError('NOT_STAFF');
         if (hasCode(error, 'PASSWORD_DISABLED')) throw new DevicePasswordError('PASSWORD_DISABLED');
+        for (const code of PANEL_REFUSAL_CODES) {
+            if (hasCode(error, code)) throw new DevicePasswordError(code);
+        }
         throw new DevicePasswordError('SERVER');
     }
 }

@@ -33,6 +33,7 @@ import { ensureNamespaces } from '../i18n';
 import { goBack, navigate } from '../router';
 import { useLessonFileUrl, type LessonFileKind } from '../seams/fileSource';
 import { useRemoteTarget } from '../seams/remoteTarget';
+import { useActivityLog } from '../device/activityLog';
 import { useAiVideoRender, useSlides } from './lessonApi';
 import { lessonPathFrom, slideScopeOf, toParams } from './lessonPath';
 import { EmbedPlayer } from './EmbedPlayer';
@@ -318,6 +319,16 @@ export function PanelPlayer({ params }: { params: Record<string, string> }) {
     const source = slide ? resolveSlideSource(slide) : null;
     const typeLabel = source ? t(`types.${source.type}`) : '';
     const slideTitle = slide?.title || typeLabel;
+    useActivityLog(
+        slide
+            ? {
+                  kind: 'LESSON',
+                  ref_id: slide.id,
+                  parent_id: path.chapterId || path.psId,
+                  title: slideTitle,
+              }
+            : null
+    );
 
     useRemoteTarget(
         slide && source && REMOTE_SLIDE_KINDS.indexOf(source.kind) >= 0

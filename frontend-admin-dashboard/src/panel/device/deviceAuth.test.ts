@@ -130,7 +130,9 @@ function route(table: Record<string, Handler>): void {
 /** Moves the monotonic timer past the gap in which an ambiguous 403 does not refresh. */
 function pastAmbiguousRefreshGap(): void {
     const real = performance.now.bind(performance);
-    vi.spyOn(performance, 'now').mockImplementation(() => real() + AMBIGUOUS_403_REFRESH_GAP_MS + 1_000);
+    vi.spyOn(performance, 'now').mockImplementation(
+        () => real() + AMBIGUOUS_403_REFRESH_GAP_MS + 1_000
+    );
 }
 
 describe('paired device auth', () => {
@@ -531,7 +533,11 @@ describe('paired device auth', () => {
         await adoptRedeemedSession(session());
         route({ '/session/end': () => 'network' });
         await signOut('IDLE');
-        expect(readPendingEnd()).toEqual({ session_token: 'token-session-1', reason: 'IDLE' });
+        expect(readPendingEnd()).toEqual({
+            session_token: 'token-session-1',
+            reason: 'IDLE',
+            session_id: 'session-1',
+        });
         expect(isSignedIn()).toBe(false);
     });
 

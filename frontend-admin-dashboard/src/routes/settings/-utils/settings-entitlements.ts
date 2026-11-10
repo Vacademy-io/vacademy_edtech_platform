@@ -23,6 +23,7 @@ const LMS_SIDE = [
     'lms.doubts',
     'lms.engagement',
     'lms.mentorship',
+    'lms.classroom_panels',
     'assessments.tests',
     'assessments.question_banks',
     'assessments.scanned_evaluation',
@@ -93,7 +94,7 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     [SettingsTabs.LiveSession]: ['live_classes.sessions'], // LIVE_SESSION_SETTING
     [SettingsTabs.DoubtManagement]: ['lms.doubts'], // DOUBT_MANAGEMENT_SETTING
     [SettingsTabs.ContentProtection]: ['lms.courses'], // SLIDE_*_SETTING
-    [SettingsTabs.ClassroomPanels]: LMS_SIDE,
+    [SettingsTabs.ClassroomPanels]: ['lms.classroom_panels'],
     [SettingsTabs.StudentDisplay]: LMS_SIDE,
     [SettingsTabs.LearnerActivity]: LMS_SIDE,
     [SettingsTabs.LearnerCredentials]: LMS_SIDE,

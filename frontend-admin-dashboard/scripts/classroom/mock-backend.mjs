@@ -4,7 +4,7 @@
  * page and console work. node:http only, no dependencies, nothing on disk.
  *
  *   node scripts/classroom/mock-backend.mjs [--port 8761] [--host 0.0.0.0]
- *        [--approve-base http://localhost:5199]
+ *        [--approve-base http://localhost:5199] [--phase2]
  *
  * Implements the auth_service panel API and its state machines, the admin_core
  * today endpoint and join APIs, the community presenter-key API, and just enough
@@ -21,6 +21,19 @@
  *   POST /__mock/today {classes}       replace the today list (null restores it)
  *   GET  /__mock/state                 internal rows, secrets excluded
  *   GET  /__mock/scenario-config       institutes and users with tokens
+ *   GET  /__mock/now                   the mock's clock
+ *   POST /__mock/licence {...}         seats: enforcement, grants, auto-trial template
+ *   POST /__mock/release {...}         put an app release straight in
+ *
+ * Phase 2 (usage, seats, installer set-up, releases, fleet alerts) follows the same
+ * contract as auth_service. Every feature has a switch in /__mock/config that starts
+ * off, like the service's properties, so with nothing set the mock behaves as phase 1
+ * and the new routes answer 404 FEATURE_OFF:
+ *   usage_enabled, usage_recording, licence_enabled, licence_default_enforcement,
+ *   licence_never_block, partners_enabled, releases_enabled, fleet_enabled
+ * --phase2 starts the mock with every feature on. Platform-staff routes accept the
+ * users in super_admin_user_ids (seeded: super_admin); /internal/ routes need the
+ * clientName and Signature headers listed in internal_clients.
  *
  * Seeded accounts all use the password `mock-password`, and OTP `123456`.
  * Every value here is fake and only valid against this process.
@@ -50,6 +63,73 @@ const LOGIN_TTL_S = 30 * 24 * 60 * 60;
 const MOCK_PASSWORD = 'mock-password';
 const MOCK_OTP = '123456';
 const SESSION_ZONE = 'Asia/Kolkata';
+const DAY = 24 * 60 * MIN;
+const HOUR = 60 * MIN;
+
+// Phase 2. Same numbers as auth_service (PanelCompat, PanelActivityIngest, the usage rules).
+const FIRST_PHASE2_VERSION_CODE = 3;
+const ACTIVITY_KINDS = new Set(['LESSON', 'DECK', 'DECK_LIVE', 'CLASS', 'WHITEBOARD', 'HOME']);
+const ACTIVITY_PER_REQUEST = 20;
+const ACTIVITY_PER_SESSION = 100;
+const ACTIVITY_REF_MAX = 64;
+const ACTIVITY_TITLE_MAX = 200;
+const ACTIVITY_AFTER_END_MS = 10 * MIN;
+const IDLE_COUNTDOWN_S = 60;
+const CONTENT_CAP_MS = 4 * HOUR;
+const USAGE_ZONE = 'Asia/Kolkata';
+const USAGE_MULTI_MAX = 50;
+const USAGE_SESSIONS_MAX_SIZE = 200;
+const INVITE_TTL_MS = 7 * DAY;
+const INVITE_INSTALL_DAYS_MAX = 90;
+const INTERNAL_PAGE = 500;
+const OFFLINE_BAD_MS = 7 * DAY;
+const NOT_CONFIRMED_MS = DAY;
+const LICENCE_ENDING_MS = 14 * DAY;
+const REFUSAL_MESSAGES = {
+    LICENCE_REQUIRED: 'This classroom needs a licence',
+    AWAITING_APPROVAL: "This panel is waiting for the school's approval",
+    UPDATE_REQUIRED: 'This panel needs an app update',
+};
+
+/**
+ * Phase 2 switches mirror PanelPhase2Properties and all default to off, so with nothing set
+ * the mock answers exactly like phase 1 plus 404 FEATURE_OFF on the new routes.
+ */
+const PHASE2_DEFAULTS = {
+    usage_enabled: false,
+    usage_recording: false,
+    usage_max_days: 92,
+    licence_enabled: false,
+    licence_default_enforcement: 'OFF',
+    licence_never_block: false,
+    partners_enabled: false,
+    installer_roles: ['ADMIN'],
+    releases_enabled: false,
+    fleet_enabled: false,
+    alerts_offline_hours: 48,
+    alerts_outdated_days: 14,
+    alerts_webview_warn_major: 0,
+    alerts_unused_days: 7,
+    /** panel.partners.default-install-days: a staff link without install_until gets this window. */
+    partners_default_install_days: 30,
+    /** panel.releases.direct-package-name and .signing-cert-sha256: the pinned direct build identity. */
+    release_package_name: 'io.vacademy.classroom.direct',
+    release_signing_cert_sha256: 'b'.repeat(64),
+    /** SUPER_ADMIN_USER_IDS. Empty refuses everyone, as the real check fails closed. */
+    super_admin_user_ids: ['super_admin'],
+    /** clientName -> Signature accepted on /internal/ paths. */
+    internal_clients: { admin_core_service: 'mock-internal-signature' },
+};
+
+/** --phase2 on the command line: every phase 2 feature on, for console and panel work. */
+const PHASE2_ALL_ON = {
+    usage_enabled: true,
+    usage_recording: true,
+    licence_enabled: true,
+    partners_enabled: true,
+    releases_enabled: true,
+    fleet_enabled: true,
+};
 
 const DEFAULT_CONFIG = {
     panel_enabled: true,
@@ -64,6 +144,7 @@ const DEFAULT_CONFIG = {
     pending_cap: 10000,
     rate_limits: true,
     directory_available: true,
+    ...PHASE2_DEFAULTS,
 };
 
 const RATE_LIMITS = {
@@ -74,7 +155,82 @@ const RATE_LIMITS = {
     describe: 10,
     approve_code: 10,
     login_password: 5,
+    link_redeem: 10,
 };
+
+/** Windows longer than the default minute. */
+const RATE_WINDOWS = {
+    link_redeem: HOUR,
+};
+
+// ------------------------------------------------------------- zone helpers ---
+
+/** An IANA zone the runtime knows, else the default (ZoneId.of with a fallback). */
+function validZone(zone) {
+    if (typeof zone !== 'string' || !zone) return USAGE_ZONE;
+    try {
+        new Intl.DateTimeFormat('en-US', { timeZone: zone });
+        return zone;
+    } catch {
+        return USAGE_ZONE;
+    }
+}
+
+function zoneParts(ms, zone) {
+    const parts = {};
+    const format = new Intl.DateTimeFormat('en-US', {
+        timeZone: zone,
+        hourCycle: 'h23',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    });
+    for (const { type, value } of format.formatToParts(new Date(ms))) parts[type] = value;
+    return parts;
+}
+
+function zoneOffsetMs(ms, zone) {
+    const p = zoneParts(ms, zone);
+    const wall = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+    return wall - Math.floor(ms / 1000) * 1000;
+}
+
+/** yyyy-MM-dd of an instant in a zone. */
+function localDate(ms, zone) {
+    const p = zoneParts(ms, zone);
+    return `${p.year}-${p.month}-${p.day}`;
+}
+
+function isLocalDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [y, m, d] = value.split('-').map(Number);
+    const back = new Date(Date.UTC(y, m - 1, d));
+    return back.getUTCFullYear() === y && back.getUTCMonth() === m - 1 && back.getUTCDate() === d;
+}
+
+const dayNumber = (date) => {
+    const [y, m, d] = date.split('-').map(Number);
+    return Date.UTC(y, m - 1, d) / DAY;
+};
+
+const addDays = (date, n) => new Date((dayNumber(date) + n) * DAY).toISOString().slice(0, 10);
+
+/** 0 is Sunday. */
+const weekdayOf = (date) => new Date(dayNumber(date) * DAY).getUTCDay();
+
+/** The instant a local date starts in a zone. */
+function localMidnight(date, zone) {
+    const guess = dayNumber(date) * DAY;
+    let t = guess - zoneOffsetMs(guess, zone);
+    t = guess - zoneOffsetMs(t, zone);
+    return t;
+}
+
+const hours1 = (ms) => Math.round((ms / HOUR) * 10) / 10;
+const minutesOf = (ms) => Math.round(ms / MIN);
 
 /**
  * What the shared security chain answers when a Bearer does not get through: JSON with
@@ -280,6 +436,33 @@ function seedUsers() {
             { [a]: [['TEACHER', 'ACTIVE']] },
             { session_limited: true }
         ),
+        // Phase 2: installer staff hold an installer role at their own organisation's institute.
+        row('installer_p', 'Ishan Installer', { partner_org: [['ADMIN', 'ACTIVE']] }),
+        row('installer_q', 'Qasim Installer', { partner_org_2: [['ADMIN', 'ACTIVE']] }),
+        // Platform staff: no institute roles, listed in super_admin_user_ids.
+        row('super_admin', 'Suri Staff', {}),
+    ];
+}
+
+/** Installer organisations. Names are data, as in panel_partner. */
+function seedPartners() {
+    return [
+        {
+            id: 'partner-1',
+            name: 'Installer One',
+            partner_institute_id: 'partner_org',
+            status: 'ACTIVE',
+            created_by: 'seed',
+            created_at: 0,
+        },
+        {
+            id: 'partner-2',
+            name: 'Installer Two',
+            partner_institute_id: 'partner_org_2',
+            status: 'ACTIVE',
+            created_by: 'seed',
+            created_at: 0,
+        },
     ];
 }
 
@@ -298,6 +481,18 @@ function seedInstitutes() {
             theme_code: 'blue',
             admin_portal_url: null,
             max_active_sessions: 1,
+        },
+        {
+            id: 'partner_org',
+            name: 'Installer Org One',
+            theme_code: 'blue',
+            admin_portal_url: null,
+        },
+        {
+            id: 'partner_org_2',
+            name: 'Installer Org Two',
+            theme_code: 'blue',
+            admin_portal_url: null,
         },
     ];
 }
@@ -429,6 +624,19 @@ export function createMockBackend(options = {}) {
             zoomSignatures: new Set(),
             voltSessions: new Map(),
             refreshTokens: new Map(),
+            // phase 2
+            activity: [],
+            activityId: 0,
+            licenceSettings: new Map(),
+            grants: new Map(),
+            templates: new Map(),
+            licenceEvents: [],
+            licenceEventId: 0,
+            seatSeq: 0,
+            partners: new Map(seedPartners().map((row) => [row.id, row])),
+            links: new Map(),
+            invites: new Map(),
+            releases: new Map(),
         };
     }
     reset();
@@ -497,7 +705,7 @@ export function createMockBackend(options = {}) {
         const t = now();
         let window = db.rate.get(id);
         if (!window || window.reset_at <= t) {
-            window = { count: 0, reset_at: t + MIN };
+            window = { count: 0, reset_at: t + (RATE_WINDOWS[kind] ?? MIN) };
             db.rate.set(id, window);
         }
         window.count += 1;
@@ -666,6 +874,7 @@ export function createMockBackend(options = {}) {
             remote_nav_at: null,
             remote_seen_at: null,
             panel_seen_at: null,
+            active_until: null,
             state_index: null,
             state_total: null,
             state_title: null,
@@ -810,6 +1019,10 @@ export function createMockBackend(options = {}) {
             password_login_allowed: device.password_login_allowed,
             claimed_by_name: device.claimed_by_name,
             claimed_at: iso(device.claimed_at),
+            approval_state: device.approval_state ?? 'APPROVED',
+            app_channel: device.app_channel ?? null,
+            installed_by: partnerNameOf(device),
+            licence_state: deviceLicenceState(device),
             current_session: live
                 ? {
                       id: live.id,
@@ -909,6 +1122,8 @@ export function createMockBackend(options = {}) {
             theme_code: institute?.theme_code ?? null,
             room: { id: room.id, name: room.name },
             claimed_by_name: device.claimed_by_name,
+            // Phase 2: omitted unless an installer set the panel up (NON_NULL on the server).
+            ...(partnerNameOf(device) ? { installed_by: partnerNameOf(device) } : {}),
             poll_after_ms: pollAfter,
         };
     }
@@ -922,6 +1137,8 @@ export function createMockBackend(options = {}) {
         if (ctx.body.accept === true) {
             device.status = 'ACTIVE';
             device.confirmed_at = now();
+            // Only the call that moved CLAIMED to ACTIVE reaches the seat logic.
+            onActivated(device);
             return { status: 'ACTIVE' };
         }
         revokeDevice(device, null);
@@ -943,9 +1160,17 @@ export function createMockBackend(options = {}) {
             device.app_version_code = body.app_version_code;
         }
         if (typeof body.webview_major === 'number') device.webview_major = body.webview_major;
+        if (
+            body.app_channel === 'PLAY' ||
+            body.app_channel === 'DIRECT' ||
+            body.app_channel === 'DEV'
+        ) {
+            device.app_channel = body.app_channel;
+        }
 
         let sessionBody;
         let phoneSeen = false;
+        let activityAck = null;
         if (body.session_id || body.session_token) {
             const session = sessionBySessionToken(device, body.session_token);
             const matches = session && session.id === body.session_id;
@@ -992,6 +1217,9 @@ export function createMockBackend(options = {}) {
                     session.state_title = null;
                     session.state_updated_at = t;
                 }
+                activityAck = config.usage_recording
+                    ? ingestActivity(device, session, body.activity)
+                    : null;
                 phoneSeen =
                     session.remote_seen_at !== null &&
                     t - session.remote_seen_at < PHONE_CONNECTED_MS;
@@ -1016,6 +1244,12 @@ export function createMockBackend(options = {}) {
             nextPoll = Math.min(nextPoll, 10 * 1000);
         }
 
+        // Licence and update offers are for the signed-out screens only: never during a class.
+        const signedIn = sessionBody !== undefined && sessionBody.status === 'ACTIVE';
+        const licenceBlock = signedIn ? null : syncLicenceBlock(device);
+        const updateBlock = signedIn ? null : updateOffer(device);
+        const required = requiredVersionCode(device);
+
         const institute = db.institutes.get(device.institute_id);
         return {
             server_time_ms: t,
@@ -1027,6 +1261,7 @@ export function createMockBackend(options = {}) {
                 theme_code: institute?.theme_code ?? null,
                 approve_base_url: device.approve_base_url,
                 password_login_allowed: device.password_login_allowed,
+                approval_state: device.approval_state ?? 'APPROVED',
             },
             ...(sessionBody ? { session: sessionBody } : {}),
             flags: {
@@ -1035,7 +1270,10 @@ export function createMockBackend(options = {}) {
             },
             policy: { idle_minutes: config.idle_minutes, session_hours: config.session_hours },
             next_poll_ms: poll(nextPoll),
-            min_app_version_code: config.min_app_version_code,
+            min_app_version_code: required ?? config.min_app_version_code,
+            ...(licenceBlock ? { licence: licenceBlock } : {}),
+            ...(updateBlock ? { update: updateBlock } : {}),
+            ...(activityAck !== null ? { activity_acked_seq: activityAck } : {}),
         };
     }
 
@@ -1047,6 +1285,9 @@ export function createMockBackend(options = {}) {
         if (body.purpose !== 'ATTACH_REMOTE' && body.purpose !== 'SIGN_IN') {
             throw new ApiError(400, 'BAD_REQUEST', 'Unknown purpose');
         }
+        // Phase 2 approval, seat and version checks, for sign-in only, so the panel shows why
+        // instead of a QR that can only fail at approve. ATTACH_REMOTE is never checked.
+        if (purpose === 'SIGN_IN') requireCanStart(device);
         let attachSession = null;
         if (purpose === 'ATTACH_REMOTE') {
             attachSession = sessionBySessionToken(device, body.session_token);
@@ -1133,9 +1374,11 @@ export function createMockBackend(options = {}) {
         } else if (t - challenge.redeemed_at > REPEAT_WINDOW_MS) {
             return { state: 'EXPIRED', poll_after_ms: pollAfter };
         }
-        // First redeem, or a retry inside the window: only the newest token works.
+        // First redeem, or a retry inside the window: only the newest token works. The panel
+        // is polling now, so it is also marked seen (setSessionToken does the same).
         session.session_token = token(32);
         session.last_refreshed_at = t;
+        session.panel_seen_at = t;
         return { state: 'REDEEMED', ...redeemedBody(session, user) };
     }
 
@@ -1190,11 +1433,36 @@ export function createMockBackend(options = {}) {
         if (reason !== 'SIGN_OUT' && reason !== 'IDLE' && reason !== 'CLASS_END') {
             throw new ApiError(400, 'BAD_REQUEST', 'Unknown reason');
         }
-        const session = ctx.body.session_token
-            ? sessionBySessionToken(device, ctx.body.session_token)
-            : activeSessionForDevice(device.id);
-        if (session) endSession(session, reason);
+        if (ctx.body.session_token) {
+            const session = sessionBySessionToken(device, ctx.body.session_token);
+            if (session) endFromPanel(device, session, ctx.body);
+        } else {
+            // Without the session token no activity is stored (the owner cannot be proven).
+            const session = activeSessionForDevice(device.id);
+            if (session) endSession(session, reason);
+        }
         return { ended: true };
+    }
+
+    /**
+     * Activity first, so the last minutes' events land before the session closes. With recording
+     * on, an IDLE end also records active_until: idle_minutes plus the countdown back from now.
+     */
+    function endFromPanel(device, session, body) {
+        if (config.usage_recording && Array.isArray(body.activity) && body.activity.length > 0) {
+            const live = isLive(session);
+            const recent =
+                !live &&
+                session.ended_at !== null &&
+                now() - session.ended_at < ACTIVITY_AFTER_END_MS;
+            if (live || recent) ingestActivity(device, session, body.activity);
+        }
+        if (session.status !== 'ACTIVE') return;
+        endSession(session, body.reason);
+        if (config.usage_recording && body.reason === 'IDLE') {
+            const back = (config.idle_minutes * 60 + IDLE_COUNTDOWN_S) * 1000;
+            session.active_until = Math.max(session.created_at, session.ended_at - back);
+        }
     }
 
     function loginPassword(ctx) {
@@ -1205,6 +1473,7 @@ export function createMockBackend(options = {}) {
         if (!device.password_login_allowed) {
             throw new ApiError(403, 'PASSWORD_DISABLED', 'Password sign-in is off for this panel');
         }
+        requireCanStart(device); // before any credential check, as the service does
         const user = [...db.users.values()].find((u) => u.username === body.username);
         if (!user || body.password !== MOCK_PASSWORD) {
             throw new ApiError(401, 'BAD_CREDENTIALS', 'Wrong username or password');
@@ -1360,6 +1629,12 @@ export function createMockBackend(options = {}) {
             confirmed_at: null,
             revoked_by: null,
             revoked_at: null,
+            // Admin claims stay approved, as in phase 1.
+            approval_state: 'APPROVED',
+            installed_by_partner_id: null,
+            approved_by: null,
+            approved_at: null,
+            app_channel: null,
         };
         db.devices.set(device.id, device);
         pairing.state = 'CLAIMED';
@@ -1427,7 +1702,9 @@ export function createMockBackend(options = {}) {
             room.name = clean;
         }
         if (ctx.body.status === 'ACTIVE' || ctx.body.status === 'ARCHIVED') {
+            const archiving = room.status === 'ACTIVE' && ctx.body.status === 'ARCHIVED';
             room.status = ctx.body.status;
+            if (archiving) onRoomArchived(room, user.id);
         }
         return roomRow(room);
     }
@@ -1572,6 +1849,8 @@ export function createMockBackend(options = {}) {
             challenge.state = 'REDEEMED';
             challenge.redeemed_at = t;
         } else {
+            // Checked again at approve: the seat or approval can change while the QR is up.
+            requireCanStart(device);
             session = startSession(device, user, 'QR');
             challenge.session_id = session.id;
             challenge.state = 'APPROVED';
@@ -1983,6 +2262,15 @@ export function createMockBackend(options = {}) {
                 strip(s, 'session_token', 'remote_token')
             ),
             challenges: [...db.challenges.values()].map((c) => strip(c, 'token')),
+            activity: db.activity,
+            licence_settings: Object.fromEntries(db.licenceSettings),
+            grants: [...db.grants.values()],
+            templates: Object.fromEntries(db.templates),
+            licence_events: db.licenceEvents,
+            partners: [...db.partners.values()],
+            links: [...db.links.values()],
+            invites: [...db.invites.values()].map((i) => strip(i, 'code_hash')),
+            releases: [...db.releases.values()],
         };
     }
 
@@ -2003,8 +2291,24 @@ export function createMockBackend(options = {}) {
                 a: { id: 'inst-a', name: 'Alpha School' },
                 b: { id: 'inst-b', name: 'Beta Academy' },
                 limited: { id: 'inst-limited', name: 'Limited Institute' },
+                partner: { id: 'partner_org', name: 'Installer Org One' },
+                partner2: { id: 'partner_org_2', name: 'Installer Org Two' },
             },
             users,
+            // Phase 2: the mock switches features itself through /__mock/config, so every one
+            // is available. A real service lists the ones it was started with.
+            features: {
+                usage: true,
+                usage_recording: true,
+                licence: true,
+                partners: true,
+                releases: true,
+                fleet: true,
+            },
+            internal: {
+                client_name: 'admin_core_service',
+                signature: config.internal_clients?.admin_core_service ?? null,
+            },
         };
     }
 
@@ -2023,12 +2327,2071 @@ export function createMockBackend(options = {}) {
         return { ok: true };
     }
 
+    // ================================================================ phase 2 ===
+    // Each feature answers 404 FEATURE_OFF while its switch in config is off, after the
+    // usual sign-in check, as auth_service does. Platform-staff routes check the staff list
+    // first. Internal routes are checked for the client signature in handle().
+
+    function requireFeature(name) {
+        if (config[name] !== true) {
+            throw new ApiError(404, 'FEATURE_OFF', 'This feature is not available');
+        }
+    }
+
+    /** PanelCompat.refusal: panels older than phase 2 (or of unknown version) get PANEL_DISABLED. */
+    function refusal(device, refusalCode) {
+        const version = device.app_version_code;
+        if (typeof version !== 'number' || version < FIRST_PHASE2_VERSION_CODE) {
+            return new ApiError(
+                403,
+                'PANEL_DISABLED',
+                'Classroom panels are not available for this institute'
+            );
+        }
+        return new ApiError(403, refusalCode, REFUSAL_MESSAGES[refusalCode]);
+    }
+
+    /** Session starts only (challenge, approve, password): approval, then seat, then version. */
+    function requireCanStart(device) {
+        if ((device.approval_state ?? 'APPROVED') !== 'APPROVED') {
+            throw refusal(device, 'AWAITING_APPROVAL');
+        }
+        if (config.licence_enabled) {
+            const view = licenceView(device.institute_id);
+            const state = view.roomState(device.room_id);
+            if (view.enforced && state !== 'LICENSED' && state !== 'GRACE') {
+                throw refusal(device, 'LICENCE_REQUIRED');
+            }
+        }
+        if (belowFloor(device)) throw refusal(device, 'UPDATE_REQUIRED');
+    }
+
+    const roomRef = (roomId) => {
+        const room = db.rooms.get(roomId);
+        return { id: roomId, name: room?.name ?? null };
+    };
+    const userRef = (userId) => ({ id: userId, name: db.users.get(userId)?.name ?? null });
+    const partnerNameOf = (device) =>
+        device.installed_by_partner_id
+            ? db.partners.get(device.installed_by_partner_id)?.name ?? null
+            : null;
+    const isLiveDevice = (d) => d.status === 'CLAIMED' || d.status === 'ACTIVE';
+    const isApproved = (d) => (d.approval_state ?? 'APPROVED') === 'APPROVED';
+
+    // ------------------------------------------------------------ licence ---
+
+    const grantsOf = (instituteId) =>
+        [...db.grants.values()].filter((g) => g.institute_id === instituteId);
+
+    /**
+     * The institute's seat picture, computed on read as PanelLicenceService does. Rooms are
+     * ranked by licensed_at (ties by assignment order); a rank past the seats is OVER_LIMIT.
+     */
+    function licenceView(instituteId) {
+        const t = now();
+        const enforcement =
+            db.licenceSettings.get(instituteId)?.enforcement ?? config.licence_default_enforcement;
+        const all = grantsOf(instituteId);
+        const active = all.filter((g) => g.status === 'ACTIVE');
+        const covering = active.filter((g) => g.starts_at <= t && t < g.ends_at);
+        const grace = active.filter((g) => g.ends_at <= t && t < g.ends_at + g.grace_days * DAY);
+        let state;
+        if (covering.some((g) => g.kind !== 'TRIAL')) state = 'ACTIVE';
+        else if (covering.length > 0) state = 'TRIAL';
+        else if (grace.length > 0) state = 'GRACE';
+        else if (all.length > 0) state = 'EXPIRED';
+        else state = 'NONE';
+        const sum = (rows) => rows.reduce((total, g) => total + g.seats, 0);
+        const seats = sum(covering) + (state === 'GRACE' ? sum(grace) : 0);
+        const basis = covering.length > 0 ? covering : grace;
+        const ending = basis.reduce(
+            (best, g) => (!best || g.ends_at > best.ends_at ? g : best),
+            null
+        );
+        const graceEndsAt =
+            state === 'GRACE'
+                ? Math.max(...grace.map((g) => g.ends_at + g.grace_days * DAY))
+                : null;
+        const licensed = [...db.rooms.values()]
+            .filter(
+                (r) =>
+                    r.institute_id === instituteId && r.status === 'ACTIVE' && r.licensed_at != null
+            )
+            .sort((x, y) => x.licensed_at - y.licensed_at || x.licensed_seq - y.licensed_seq);
+        const rank = new Map(licensed.map((r, index) => [r.id, index + 1]));
+        const instituteState = enforcement === 'OFF' ? 'UNMANAGED' : state;
+        const roomState = (roomId) => {
+            if (instituteState === 'UNMANAGED') return 'UNMANAGED';
+            if (state === 'EXPIRED' || state === 'NONE') return 'EXPIRED';
+            const position = rank.get(roomId);
+            if (!position) return 'UNLICENSED';
+            if (position > seats) return 'OVER_LIMIT';
+            return state === 'GRACE' ? 'GRACE' : 'LICENSED';
+        };
+        return {
+            enforcement,
+            enforced: enforcement === 'LIVE' && !config.licence_never_block,
+            state: instituteState,
+            grantState: state,
+            seats,
+            seatsUsed: licensed.length,
+            endsAt: ending ? ending.ends_at : null,
+            graceEndsAt,
+            endingGrantId: ending ? ending.id : null,
+            roomState,
+        };
+    }
+
+    function deviceLicenceState(device) {
+        if (!config.licence_enabled) return null;
+        const state = licenceView(device.institute_id).roomState(device.room_id);
+        return state === 'UNMANAGED' ? null : state;
+    }
+
+    function syncLicenceBlock(device) {
+        if (!config.licence_enabled) return null;
+        const view = licenceView(device.institute_id);
+        const state = view.roomState(device.room_id);
+        const managed = state !== 'UNMANAGED';
+        return {
+            state,
+            enforced: view.enforced,
+            ends_at: managed ? iso(view.endsAt) : null,
+            grace_ends_at: managed ? iso(view.graceEndsAt) : null,
+        };
+    }
+
+    function seatEvent(room, action, reason, actor) {
+        db.licenceEventId += 1;
+        db.licenceEvents.push({
+            id: db.licenceEventId,
+            institute_id: room.institute_id,
+            room_id: room.id,
+            action,
+            reason,
+            partner_id: room.partner_id ?? null,
+            actor: actor ?? null,
+            at: now(),
+        });
+    }
+
+    function assignSeat(room, reason, actor) {
+        db.seatSeq += 1;
+        room.licensed_at = now();
+        room.licensed_seq = db.seatSeq;
+        room.licensed_by = actor ?? null;
+        seatEvent(room, 'ASSIGNED', reason, actor);
+    }
+
+    function releaseSeat(room, reason, actor) {
+        if (room.licensed_at == null) return;
+        room.licensed_at = null;
+        room.licensed_seq = null;
+        room.licensed_by = null;
+        seatEvent(room, 'RELEASED', reason, actor);
+    }
+
+    /** Creates the automatic trial from the template, once, for an institute that never had a grant. */
+    function maybeAutoTrial(instituteId) {
+        const template = db.templates.get('auto_trial');
+        const view = licenceView(instituteId);
+        if (!template || !template.active || view.enforcement === 'OFF') return;
+        if (grantsOf(instituteId).length > 0) return;
+        const t = now();
+        const grant = newGrant(instituteId, {
+            kind: template.kind,
+            seats: template.seats,
+            starts_at: t,
+            ends_at: t + template.days * DAY,
+            grace_days: template.grace_days,
+            created_by: 'SYSTEM',
+        });
+        db.grants.set(grant.id, grant);
+    }
+
+    /** A free seat goes to the room when an approved panel becomes active there. Never throws. */
+    function trySeat(device, reason) {
+        if (!config.licence_enabled || !isApproved(device) || device.status !== 'ACTIVE') return;
+        const room = db.rooms.get(device.room_id);
+        if (!room || room.status !== 'ACTIVE' || room.licensed_at != null) return;
+        maybeAutoTrial(device.institute_id);
+        const view = licenceView(device.institute_id);
+        if (view.seats - view.seatsUsed > 0) assignSeat(room, reason, null);
+    }
+
+    const onActivated = (device) => trySeat(device, 'AUTO_ACTIVATE');
+
+    function onRoomArchived(room, actor) {
+        if (config.licence_enabled) releaseSeat(room, 'ROOM_ARCHIVED', actor);
+    }
+
+    function newGrant(instituteId, fields) {
+        return {
+            id: uuid(),
+            institute_id: instituteId,
+            kind: fields.kind,
+            seats: fields.seats,
+            starts_at: fields.starts_at,
+            ends_at: fields.ends_at,
+            grace_days: fields.grace_days ?? 0,
+            status: 'ACTIVE',
+            partner_id: fields.partner_id ?? null,
+            external_ref: fields.external_ref ?? null,
+            note: fields.note ?? null,
+            created_by: fields.created_by,
+            created_at: now(),
+            cancelled_by: null,
+            cancelled_at: null,
+        };
+    }
+
+    const grantView = (g) => ({
+        kind: g.kind,
+        seats: g.seats,
+        starts_at: iso(g.starts_at),
+        ends_at: iso(g.ends_at),
+        grace_days: g.grace_days,
+    });
+
+    const grantDetail = (g) => ({
+        id: g.id,
+        institute_id: g.institute_id,
+        ...grantView(g),
+        status: g.status,
+        partner_id: g.partner_id,
+        external_ref: g.external_ref,
+        note: g.note,
+        created_by: g.created_by,
+        created_at: iso(g.created_at),
+        cancelled_by: g.cancelled_by,
+        cancelled_at: iso(g.cancelled_at),
+    });
+
+    /** Rooms that matter for seats: active rooms with a live panel, or holding a seat. */
+    function licenceRooms(instituteId, view) {
+        return activeRooms(instituteId)
+            .map((room) => ({ room, device: liveDeviceInRoom(room.id) }))
+            .filter(({ room, device }) => device || room.licensed_at != null)
+            .sort((x, y) => x.room.name.localeCompare(y.room.name))
+            .map(({ room, device }) => ({
+                room: { id: room.id, name: room.name },
+                licence_state: view.roomState(room.id),
+                licensed_at: iso(room.licensed_at ?? null),
+                device_id: device?.id ?? null,
+            }));
+    }
+
+    function adminLicence(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('licence_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        requireInstituteAdmin(user, instituteId);
+        const view = licenceView(instituteId);
+        return {
+            state: view.state,
+            enforcement: view.enforcement,
+            seats_granted: view.seats,
+            seats_used: view.seatsUsed,
+            ends_at: iso(view.endsAt),
+            grace_ends_at: iso(view.graceEndsAt),
+            grants: grantsOf(instituteId)
+                .filter((g) => g.status === 'ACTIVE')
+                .sort((x, y) => x.starts_at - y.starts_at)
+                .map(grantView),
+            rooms: licenceRooms(instituteId, view),
+        };
+    }
+
+    function adminRoomForSeat(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('licence_enabled');
+        const room = db.rooms.get(ctx.params.id);
+        if (!room) throw new ApiError(404, 'NOT_FOUND', 'No such room');
+        requireInstituteAdmin(user, room.institute_id);
+        return { user, room };
+    }
+
+    function adminSeatAssign(ctx) {
+        const { user, room } = adminRoomForSeat(ctx);
+        if (room.status !== 'ACTIVE') {
+            throw new ApiError(400, 'BAD_REQUEST', 'This room is archived');
+        }
+        if (room.licensed_at == null) {
+            const view = licenceView(room.institute_id);
+            if (view.seats - view.seatsUsed <= 0) {
+                throw new ApiError(409, 'NO_SEAT', 'No free seat is left');
+            }
+            assignSeat(room, 'ADMIN', user.id);
+        }
+        return {
+            room_id: room.id,
+            licence_state: licenceView(room.institute_id).roomState(room.id),
+        };
+    }
+
+    function adminSeatRelease(ctx) {
+        const { user, room } = adminRoomForSeat(ctx);
+        releaseSeat(room, 'ADMIN', user.id);
+        return { room_id: room.id, licence_state: 'UNLICENSED' };
+    }
+
+    // ----------------------------------------------------------- approvals ---
+
+    function adminDeviceForApproval(ctx) {
+        const user = requireUser(ctx);
+        // As the service: no feature switch, so panels already waiting can still be settled
+        // after installers are switched off.
+        const device = db.devices.get(ctx.params.id);
+        if (!device) throw new ApiError(404, 'NOT_FOUND', 'No such panel');
+        requireInstituteAdmin(user, device.institute_id);
+        return { user, device };
+    }
+
+    function adminDeviceApprove(ctx) {
+        const { user, device } = adminDeviceForApproval(ctx);
+        if (!isLiveDevice(device)) {
+            throw new ApiError(409, 'DEVICE_NOT_ACTIVE', 'This panel was removed');
+        }
+        if (device.approval_state === 'PENDING') {
+            device.approval_state = 'APPROVED';
+            device.approved_by = user.id;
+            device.approved_at = now();
+            trySeat(device, 'AUTO_APPROVE');
+        }
+        return deviceRow(device);
+    }
+
+    function adminDeviceReject(ctx) {
+        const { user, device } = adminDeviceForApproval(ctx);
+        if (device.approval_state === 'REJECTED') return { status: 'REVOKED' };
+        if (device.approval_state !== 'PENDING' || !isLiveDevice(device)) {
+            throw new ApiError(
+                400,
+                'BAD_REQUEST',
+                'Only a panel waiting for approval can be rejected'
+            );
+        }
+        revokeDevice(device, user.id);
+        device.approval_state = 'REJECTED';
+        return { status: 'REVOKED' };
+    }
+
+    // ------------------------------------------------------------ activity ---
+
+    const hasControlChars = (value) =>
+        [...value].some((ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127);
+
+    /** As PanelActivityRecorder: an id that is too long or carries control characters becomes null. */
+    function cleanRef(value) {
+        if (typeof value !== 'string') return null;
+        if (value.length > ACTIVITY_REF_MAX || hasControlChars(value)) return null;
+        return value;
+    }
+
+    /**
+     * PanelActivityIngest: at most 20 events a request and 100 a session, unknown kinds dropped,
+     * bad ids cleared to null, replays ignored (session_id, client_seq). The ack is the largest seq the
+     * request carried, so the panel drops what was ignored too. Null when no event had a seq.
+     */
+    function ingestActivity(device, session, events) {
+        if (!Array.isArray(events) || events.length === 0) return null;
+        let ack = null;
+        for (const event of events) {
+            const seq = event && typeof event === 'object' ? event.seq : undefined;
+            if (Number.isInteger(seq) && seq >= 0 && seq <= 2147483647) {
+                ack = ack === null ? seq : Math.max(ack, seq);
+            }
+        }
+        const t = now();
+        const stored = db.activity.filter((row) => row.session_id === session.id);
+        const seen = new Set(stored.map((row) => row.client_seq));
+        let count = stored.length;
+        for (const event of events.slice(0, ACTIVITY_PER_REQUEST)) {
+            if (count >= ACTIVITY_PER_SESSION) break;
+            if (!event || typeof event !== 'object') continue;
+            const seq = event.seq;
+            if (!Number.isInteger(seq) || seq < 0 || seq > 2147483647 || seen.has(seq)) continue;
+            if (!ACTIVITY_KINDS.has(event.kind)) continue;
+            const at = Number.isFinite(event.at_ms) ? event.at_ms : t;
+            db.activityId += 1;
+            db.activity.push({
+                id: db.activityId,
+                session_id: session.id,
+                device_id: device.id,
+                institute_id: session.institute_id,
+                room_id: session.room_id,
+                user_id: session.user_id,
+                client_seq: seq,
+                kind: event.kind,
+                ref_id: cleanRef(event.ref_id),
+                parent_id: cleanRef(event.parent_id),
+                title:
+                    typeof event.title === 'string'
+                        ? event.title.slice(0, ACTIVITY_TITLE_MAX)
+                        : null,
+                started_at: Math.min(Math.max(at, session.created_at), t),
+                created_at: t,
+            });
+            seen.add(seq);
+            count += 1;
+        }
+        return ack;
+    }
+
+    // --------------------------------------------------------------- usage ---
+
+    /**
+     * Effective end: LEAST(ended_at or now, panel_seen_at + 90 s, active_until). An abandoned
+     * session is ended only when something next looks at it, so ended_at alone over-counts.
+     */
+    function effectiveEnd(session) {
+        let end = session.ended_at ?? now();
+        if (session.panel_seen_at !== null)
+            end = Math.min(end, session.panel_seen_at + PANEL_ONLINE_MS);
+        if (session.active_until != null) end = Math.min(end, session.active_until);
+        // As PanelUsageMath: never later than the session cap either.
+        if (typeof session.expires_at === 'number') end = Math.min(end, session.expires_at);
+        return Math.max(end, session.created_at);
+    }
+
+    /** Listed events with durations: each lasts until the next one, or the session's end, at most 4 h. */
+    function sessionEvents(session, endAt) {
+        const rows = db.activity
+            .filter((row) => row.session_id === session.id)
+            .sort((x, y) => x.started_at - y.started_at || x.client_seq - y.client_seq);
+        const out = [];
+        rows.forEach((row, index) => {
+            const next = rows[index + 1];
+            const until = next ? next.started_at : Math.max(endAt, row.started_at);
+            if (row.kind === 'HOME') return;
+            out.push({ row, ms: Math.min(Math.max(0, until - row.started_at), CONTENT_CAP_MS) });
+        });
+        return { all: rows, listed: out };
+    }
+
+    function usageWindow(query) {
+        const from = query.get('from');
+        const to = query.get('to');
+        if (!isLocalDate(from) || !isLocalDate(to)) {
+            throw new ApiError(400, 'BAD_REQUEST', 'from and to must be yyyy-MM-dd dates');
+        }
+        const span = dayNumber(to) - dayNumber(from) + 1;
+        if (span < 1 || span > config.usage_max_days) {
+            throw new ApiError(
+                400,
+                'BAD_REQUEST',
+                `The range must be 1 to ${config.usage_max_days} days`
+            );
+        }
+        const tz = validZone(query.get('tz'));
+        return {
+            from,
+            to,
+            tz,
+            start: localMidnight(from, tz),
+            end: localMidnight(addDays(to, 1), tz),
+        };
+    }
+
+    /** Counted sessions: seen by the panel at least once (redeem marks it seen). */
+    const countedSessions = (filter) =>
+        [...db.sessions.values()].filter((s) => s.panel_seen_at !== null && filter(s));
+
+    function usageRows(instituteId, window) {
+        return countedSessions(
+            (s) =>
+                s.institute_id === instituteId &&
+                s.created_at >= window.start &&
+                s.created_at < window.end
+        ).map((session) => {
+            const endAt = effectiveEnd(session);
+            return {
+                session,
+                endAt,
+                ms: Math.max(0, Math.min(endAt, window.end) - session.created_at),
+                date: localDate(session.created_at, window.tz),
+                events: sessionEvents(session, endAt),
+            };
+        });
+    }
+
+    function contentGroups(rows, cap, full) {
+        const groups = new Map();
+        for (const row of rows) {
+            for (const { row: event, ms } of row.events.listed) {
+                const key = `${event.kind}|${event.ref_id ?? `title:${event.title ?? ''}`}`;
+                let group = groups.get(key);
+                if (!group) {
+                    group = {
+                        kind: event.kind,
+                        ref_id: event.ref_id,
+                        title: null,
+                        titleAt: -1,
+                        ms: 0,
+                        sessions: new Set(),
+                        teachers: new Set(),
+                    };
+                    groups.set(key, group);
+                }
+                group.ms += ms;
+                if (event.started_at >= group.titleAt) {
+                    group.title = event.title;
+                    group.titleAt = event.started_at;
+                }
+                group.sessions.add(row.session.id);
+                group.teachers.add(row.session.user_id);
+            }
+        }
+        return [...groups.values()]
+            .sort((x, y) => y.ms - x.ms)
+            .slice(0, cap)
+            .map((g) =>
+                full
+                    ? {
+                          kind: g.kind,
+                          ref_id: g.ref_id,
+                          title: g.title,
+                          minutes: minutesOf(g.ms),
+                          sessions: g.sessions.size,
+                          teachers: g.teachers.size,
+                      }
+                    : { kind: g.kind, title: g.title, minutes: minutesOf(g.ms) }
+            );
+    }
+
+    function computeUsage(instituteId, window) {
+        const t = now();
+        const rows = usageRows(instituteId, window);
+        const sumMs = (list) => list.reduce((total, row) => total + row.ms, 0);
+        const distinct = (list, pick) => new Set(list.map(pick)).size;
+
+        const panelRooms = activeRooms(instituteId)
+            .map((room) => ({ room, device: liveDeviceInRoom(room.id) }))
+            .filter(({ device }) => device && isApproved(device));
+        const usedRooms = new Set(rows.map((row) => row.session.room_id));
+        const idle = panelRooms
+            .filter(({ room }) => !usedRooms.has(room.id))
+            .map(({ room, device }) => {
+                // As the real report: the start of the panel's last counted session.
+                const before = countedSessions((s) => s.device_id === device.id).map(
+                    (s) => s.created_at
+                );
+                return {
+                    room: { id: room.id, name: room.name },
+                    device_id: device.id,
+                    last_used_at: before.length ? iso(Math.max(...before)) : null,
+                    online:
+                        device.last_seen_at !== null && t - device.last_seen_at < DEVICE_ONLINE_MS,
+                };
+            });
+
+        const withEvents = rows.filter((row) => row.events.all.length > 0).length;
+        const classes = rows.reduce(
+            (total, row) => total + row.events.all.filter((e) => e.kind === 'CLASS').length,
+            0
+        );
+        const totals = {
+            panel_hours: hours1(sumMs(rows)),
+            sessions: rows.length,
+            teachers: distinct(rows, (row) => row.session.user_id),
+            rooms_used: usedRooms.size,
+            rooms_with_panel: panelRooms.length,
+            idle_rooms: idle.length,
+            classes_started: classes,
+            coverage_pct: rows.length ? Math.round((100 * withEvents) / rows.length) : null,
+        };
+
+        const byDay = [];
+        for (
+            let date = window.from;
+            dayNumber(date) <= dayNumber(window.to);
+            date = addDays(date, 1)
+        ) {
+            const day = rows.filter((row) => row.date === date);
+            byDay.push({
+                date,
+                panel_hours: hours1(sumMs(day)),
+                sessions: day.length,
+                rooms_used: distinct(day, (row) => row.session.room_id),
+            });
+        }
+
+        const groupBy = (pick) => {
+            const map = new Map();
+            for (const row of rows) {
+                const key = pick(row);
+                if (!map.has(key)) map.set(key, []);
+                map.get(key).push(row);
+            }
+            return [...map.entries()];
+        };
+        const withoutSortKey = (row) => {
+            const copy = { ...row };
+            delete copy.ms;
+            return copy;
+        };
+        const byRoom = groupBy((row) => row.session.room_id)
+            .map(([roomId, list]) => ({
+                room: roomRef(roomId),
+                panel_hours: hours1(sumMs(list)),
+                sessions: list.length,
+                teachers: distinct(list, (row) => row.session.user_id),
+                last_used_at: iso(Math.max(...list.map((row) => row.session.created_at))),
+                days_used: distinct(list, (row) => row.date),
+                ms: sumMs(list),
+            }))
+            .sort((x, y) => y.ms - x.ms)
+            .map(withoutSortKey);
+        const byTeacher = groupBy((row) => row.session.user_id)
+            .map(([userId, list]) => ({
+                user: userRef(userId),
+                panel_hours: hours1(sumMs(list)),
+                sessions: list.length,
+                rooms: distinct(list, (row) => row.session.room_id),
+                days_active: distinct(list, (row) => row.date),
+                top_content: contentGroups(list, 3, false),
+                ms: sumMs(list),
+            }))
+            .sort((x, y) => y.ms - x.ms)
+            .map(withoutSortKey);
+
+        const recorded = db.activity.filter((row) => row.institute_id === instituteId);
+        const firstRecorded = recorded.length
+            ? Math.min(...recorded.map((row) => row.started_at))
+            : null;
+        return {
+            institute_id: instituteId,
+            from: window.from,
+            to: window.to,
+            tz: window.tz,
+            generated_at: iso(t),
+            totals,
+            by_day: byDay,
+            by_room: byRoom,
+            by_teacher: byTeacher,
+            idle_rooms: idle,
+            content: contentGroups(rows, 20, true),
+            notes: {
+                content_recorded_from:
+                    firstRecorded === null ? null : localDate(firstRecorded, window.tz),
+            },
+        };
+    }
+
+    function usage(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('usage_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        requireInstituteAdmin(user, instituteId);
+        return computeUsage(instituteId, usageWindow(ctx.query));
+    }
+
+    function usageSessions(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('usage_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        requireInstituteAdmin(user, instituteId);
+        const window = usageWindow(ctx.query);
+        const roomId = ctx.query.get('room_id');
+        const userId = ctx.query.get('user_id');
+        const page = Math.max(0, parseInt(ctx.query.get('page') ?? '0', 10) || 0);
+        const size = Math.min(
+            USAGE_SESSIONS_MAX_SIZE,
+            Math.max(1, parseInt(ctx.query.get('size') ?? '50', 10) || 50)
+        );
+        const rows = usageRows(instituteId, window)
+            .filter((row) => !roomId || row.session.room_id === roomId)
+            .filter((row) => !userId || row.session.user_id === userId)
+            .sort((x, y) => y.session.created_at - x.session.created_at);
+        return {
+            sessions: rows.slice(page * size, page * size + size).map((row) => ({
+                id: row.session.id,
+                room: roomRef(row.session.room_id),
+                user: userRef(row.session.user_id),
+                started_at: iso(row.session.created_at),
+                end_at: iso(row.endAt),
+                minutes: minutesOf(row.endAt - row.session.created_at),
+                end_reason: row.session.end_reason,
+                started_via: row.session.started_via,
+                events: row.events.listed.map(({ row: event, ms }) => ({
+                    kind: event.kind,
+                    title: event.title,
+                    started_at: iso(event.started_at),
+                    minutes: minutesOf(ms),
+                })),
+            })),
+            page,
+            size,
+            total: rows.length,
+        };
+    }
+
+    function usageMulti(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('usage_enabled');
+        const ids = [
+            ...new Set(
+                String(ctx.query.get('institute_ids') ?? '')
+                    .split(',')
+                    .map((id) => id.trim())
+                    .filter(Boolean)
+            ),
+        ];
+        if (ids.length === 0 || ids.length > USAGE_MULTI_MAX) {
+            throw new ApiError(400, 'BAD_REQUEST', `Give 1 to ${USAGE_MULTI_MAX} institute ids`);
+        }
+        // ADMIN in every listed institute, or nothing.
+        ids.forEach((id) => requireInstituteAdmin(user, id));
+        const window = usageWindow(ctx.query);
+        return ids.map((id) => ({ institute_id: id, totals: computeUsage(id, window).totals }));
+    }
+
+    /** Internal summary for the weekly report: lists capped, rooms worst first. */
+    function usageSummary(ctx) {
+        requireFeature('usage_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        if (!instituteId) throw new ApiError(400, 'BAD_REQUEST', 'institute_id is required');
+        const full = computeUsage(instituteId, usageWindow(ctx.query));
+        const roomsAscending = [...full.by_room].sort((x, y) => x.panel_hours - y.panel_hours);
+        return {
+            ...full,
+            by_room: roomsAscending.slice(0, 15),
+            idle_rooms: full.idle_rooms.slice(0, 10),
+            by_teacher: full.by_teacher.slice(0, 10),
+            content: full.content.slice(0, 5),
+        };
+    }
+
+    // ------------------------------------------------------------ releases ---
+
+    const deviceChannel = (device) => device.app_channel ?? 'DIRECT';
+    const liveReleases = (channel) =>
+        [...db.releases.values()].filter((r) => r.channel === channel && r.status === 'LIVE');
+
+    /** Null while releases are off: the floor is then panel.min-app-version-code and not enforced. */
+    function requiredVersionCode(device) {
+        if (!config.releases_enabled) return null;
+        let floor = config.min_app_version_code;
+        for (const release of liveReleases(deviceChannel(device))) {
+            if (release.required) floor = Math.max(floor, release.version_code);
+        }
+        return floor;
+    }
+
+    /** An unknown version is never refused by the floor: it cannot be shown to be below it. */
+    function belowFloor(device) {
+        const floor = requiredVersionCode(device);
+        return (
+            floor !== null &&
+            typeof device.app_version_code === 'number' &&
+            device.app_version_code < floor
+        );
+    }
+
+    /** floorMod(first 4 bytes of sha256(device_id) as a signed int, 100). */
+    function rolloutBucket(deviceId) {
+        const digest = crypto.createHash('sha256').update(String(deviceId), 'utf8').digest();
+        return ((digest.readInt32BE(0) % 100) + 100) % 100;
+    }
+
+    /**
+     * Signed-out offer for a direct-channel panel, as PanelReleaseService.syncBlock: the highest
+     * offerable build in this panel's rollout (a required build ignores rollout). A panel below the
+     * floor with nothing in rollout that lifts it gets the smallest build that does. An unknown
+     * version or SDK gets nothing.
+     */
+    function updateOffer(device) {
+        if (!config.releases_enabled || deviceChannel(device) !== 'DIRECT') return null;
+        if (typeof device.sdk_int !== 'number' || typeof device.app_version_code !== 'number') {
+            return null;
+        }
+        const current = device.app_version_code;
+        const floor = requiredVersionCode(device);
+        const below = current < floor;
+        const bucket = rolloutBucket(device.id);
+        const offerable = liveReleases('DIRECT').filter(
+            (r) =>
+                r.version_code > current &&
+                r.min_sdk <= device.sdk_int &&
+                r.sha256 !== null &&
+                Number.isInteger(r.size_bytes) &&
+                r.size_bytes > 0 &&
+                typeof r.apk_url === 'string' &&
+                r.apk_url.startsWith('https://')
+        );
+        let best = offerable
+            .filter((r) => r.required || bucket < r.rollout_percent)
+            .reduce((top, r) => (!top || r.version_code > top.version_code ? r : top), null);
+        if (below && (!best || best.version_code < floor)) {
+            const lift = offerable
+                .filter((r) => r.version_code >= floor)
+                .reduce((low, r) => (!low || r.version_code < low.version_code ? r : low), null);
+            if (lift) best = lift;
+        }
+        if (!best) return null;
+        return {
+            version_code: best.version_code,
+            version_name: best.version_name,
+            apk_url: best.apk_url,
+            sha256: best.sha256,
+            size_bytes: best.size_bytes,
+            required: below,
+        };
+    }
+
+    const releaseRow = (r) => ({
+        id: r.id,
+        channel: r.channel,
+        version_code: r.version_code,
+        version_name: r.version_name,
+        apk_url: r.apk_url,
+        sha256: r.sha256,
+        size_bytes: r.size_bytes,
+        min_sdk: r.min_sdk,
+        rollout_percent: r.rollout_percent,
+        required: r.required,
+        status: r.status,
+        notes: r.notes,
+        created_by: r.created_by,
+        created_at: iso(r.created_at),
+        published_at: iso(r.published_at),
+        package_name: r.channel === 'DIRECT' ? config.release_package_name : null,
+        signing_cert_sha256: r.channel === 'DIRECT' ? config.release_signing_cert_sha256 : null,
+    });
+
+    const normaliseDigest = (value) => {
+        const hex = String(value ?? '')
+            .trim()
+            .toLowerCase()
+            .replace(/:/g, '');
+        return /^[0-9a-f]{64}$/.test(hex) ? hex : null;
+    };
+
+    function releaseFromBody(body, createdBy) {
+        const bad = (message) => new ApiError(400, 'BAD_REQUEST', message);
+        if (body.channel !== 'PLAY' && body.channel !== 'DIRECT')
+            throw bad('channel is PLAY or DIRECT');
+        if (!Number.isInteger(body.version_code) || body.version_code < 1) {
+            throw bad('version_code must be a positive whole number');
+        }
+        const name = String(body.version_name ?? '').trim();
+        if (!name || name.length > 32) throw bad('version_name must be 1 to 32 characters');
+        if (
+            body.apk_url != null &&
+            (typeof body.apk_url !== 'string' ||
+                body.apk_url.length > 500 ||
+                !body.apk_url.startsWith('https://'))
+        ) {
+            throw bad('apk_url must be an https URL');
+        }
+        if (body.sha256 != null && !/^[0-9a-f]{64}$/.test(String(body.sha256))) {
+            throw bad('sha256 must be 64 lower-case hex characters');
+        }
+        if (body.channel === 'DIRECT') {
+            // As the real registry: a direct build needs its link, digest, size and the pinned identity.
+            if (body.apk_url == null) throw bad('apk_url must be an https link on an allowed host');
+            if (body.sha256 == null) throw bad("sha256 must be the file's SHA-256 in hex");
+            if (!Number.isInteger(body.size_bytes) || body.size_bytes < 1) {
+                throw bad('size_bytes is out of range');
+            }
+            if (String(body.package_name ?? '').trim() !== config.release_package_name) {
+                throw bad('package_name does not match the direct build');
+            }
+            if (normaliseDigest(body.signing_cert_sha256) !== config.release_signing_cert_sha256) {
+                throw bad('signing_cert_sha256 does not match the direct signing certificate');
+            }
+        } else if (body.apk_url != null) {
+            throw bad('PLAY releases carry no apk_url');
+        }
+        const rollout = body.rollout_percent ?? 0;
+        if (!Number.isInteger(rollout) || rollout < 0 || rollout > 100)
+            throw bad('rollout_percent is 0 to 100');
+        const minSdk = body.min_sdk ?? 24;
+        if (!Number.isInteger(minSdk) || minSdk < 1)
+            throw bad('min_sdk must be a positive whole number');
+        if (
+            [...db.releases.values()].some(
+                (r) => r.channel === body.channel && r.version_code === body.version_code
+            )
+        ) {
+            throw new ApiError(
+                409,
+                'RELEASE_EXISTS',
+                'This channel already has a release with that version code'
+            );
+        }
+        return {
+            id: uuid(),
+            channel: body.channel,
+            version_code: body.version_code,
+            version_name: name,
+            apk_url: body.apk_url ?? null,
+            sha256: body.sha256 ?? null,
+            size_bytes: Number.isInteger(body.size_bytes) ? body.size_bytes : null,
+            min_sdk: minSdk,
+            rollout_percent: rollout,
+            required: body.required === true,
+            status: 'DRAFT',
+            notes: typeof body.notes === 'string' ? body.notes.slice(0, 500) : null,
+            created_by: createdBy,
+            created_at: now(),
+            published_at: null,
+        };
+    }
+
+    function patchRelease(release, body) {
+        const bad = (message) => new ApiError(400, 'BAD_REQUEST', message);
+        if (body.status !== undefined && !['DRAFT', 'LIVE', 'PULLED'].includes(body.status)) {
+            throw bad('status is DRAFT, LIVE or PULLED');
+        }
+        if (
+            body.rollout_percent !== undefined &&
+            (!Number.isInteger(body.rollout_percent) ||
+                body.rollout_percent < 0 ||
+                body.rollout_percent > 100)
+        ) {
+            throw bad('rollout_percent is 0 to 100');
+        }
+        if (body.required !== undefined && typeof body.required !== 'boolean')
+            throw bad('required is true or false');
+        const status = body.status ?? release.status;
+        const required = body.required ?? release.required;
+        const raisesFloor =
+            status === 'LIVE' &&
+            required &&
+            release.channel === 'DIRECT' &&
+            !(release.status === 'LIVE' && release.required);
+        if (raisesFloor && body.force_floor !== true) {
+            // As the service: panels this build cannot reach would be held below the floor.
+            const stranded = [...db.devices.values()].filter(
+                (d) =>
+                    d.status === 'ACTIVE' &&
+                    isApproved(d) &&
+                    (d.app_channel || 'DIRECT') === 'DIRECT' &&
+                    typeof d.app_version_code === 'number' &&
+                    d.app_version_code < release.version_code &&
+                    (typeof d.sdk_int !== 'number' ||
+                        d.sdk_int < release.min_sdk ||
+                        d.app_version_code < FIRST_PHASE2_VERSION_CODE)
+            ).length;
+            if (stranded > 0) {
+                throw new ApiError(
+                    409,
+                    'FLOOR_WITHOUT_UPDATE',
+                    `${stranded} panels below this build cannot be offered it; send force_floor to go ahead`,
+                    { panels: stranded }
+                );
+            }
+        }
+        if (body.status !== undefined) {
+            release.status = body.status;
+            if (body.status === 'LIVE' && release.published_at === null)
+                release.published_at = now();
+        }
+        if (body.rollout_percent !== undefined) release.rollout_percent = body.rollout_percent;
+        if (body.required !== undefined) release.required = body.required;
+        return release;
+    }
+
+    // --------------------------------------------------------------- fleet ---
+
+    /** Start of the oldest of the last N school days (Mon to Sat, today included), in the zone. */
+    function schoolDaysStart(t, days, zone) {
+        let date = localDate(t, zone);
+        let counted = 0;
+        for (let i = 0; i < 400; i += 1) {
+            if (weekdayOf(date) !== 0) {
+                counted += 1;
+                if (counted >= days) break;
+            }
+            date = addDays(date, -1);
+        }
+        return localMidnight(date, zone);
+    }
+
+    const SEVERITY_RANK = { bad: 0, warn: 1, info: 2 };
+
+    function fleet(instituteId) {
+        const t = now();
+        const alerts = [];
+        const view = config.licence_enabled ? licenceView(instituteId) : null;
+        const managed = view !== null && view.enforcement !== 'OFF';
+        const offlineMs = config.alerts_offline_hours * HOUR;
+        const unusedStart = schoolDaysStart(t, config.alerts_unused_days, USAGE_ZONE);
+        const devices = [...db.devices.values()].filter(
+            (d) => d.institute_id === instituteId && isLiveDevice(d)
+        );
+        for (const d of devices) {
+            const room = roomRef(d.room_id);
+            const push = (kind, severity, since, key, detail) =>
+                alerts.push({
+                    kind,
+                    severity,
+                    device_id: d.id,
+                    room,
+                    since: iso(since),
+                    incident_key: String(key),
+                    detail,
+                });
+            const approved = isApproved(d);
+            if (d.status === 'ACTIVE' && approved) {
+                const seen = d.last_seen_at ?? d.confirmed_at;
+                if (seen !== null && seen < t - offlineMs) {
+                    push(
+                        'OFFLINE',
+                        t - seen > OFFLINE_BAD_MS ? 'bad' : 'warn',
+                        seen,
+                        Math.floor(seen / 1000),
+                        {
+                            last_seen_at: iso(d.last_seen_at),
+                            app_version_code: d.app_version_code,
+                        }
+                    );
+                }
+            }
+            if (d.status === 'CLAIMED' && d.claimed_at < t - NOT_CONFIRMED_MS) {
+                push('NOT_CONFIRMED', 'warn', d.claimed_at, Math.floor(d.claimed_at / 1000), {
+                    claimed_at: iso(d.claimed_at),
+                });
+            }
+            if (d.approval_state === 'PENDING') {
+                push('AWAITING_APPROVAL', 'warn', d.claimed_at, d.id, {
+                    installed_by: partnerNameOf(d),
+                });
+            }
+            // As PanelFleetService: the floor only exists while releases are on.
+            const floor = requiredVersionCode(d);
+            if (
+                floor !== null &&
+                typeof d.app_version_code === 'number' &&
+                d.app_version_code < floor
+            ) {
+                push('UPDATE_REQUIRED', 'bad', null, floor, {
+                    app_version_code: d.app_version_code,
+                    required_version_code: floor,
+                });
+            }
+            if (config.releases_enabled && typeof d.app_version_code === 'number') {
+                const outdatedBy = t - config.alerts_outdated_days * DAY;
+                const newer = liveReleases(deviceChannel(d))
+                    .filter(
+                        (r) =>
+                            r.version_code > d.app_version_code &&
+                            r.published_at !== null &&
+                            r.published_at <= outdatedBy
+                    )
+                    .reduce(
+                        (top, r) => (!top || r.version_code > top.version_code ? r : top),
+                        null
+                    );
+                if (newer) {
+                    push('APP_OUTDATED', 'info', newer.published_at, newer.version_code, {
+                        app_version_code: d.app_version_code,
+                        latest_version_code: newer.version_code,
+                    });
+                }
+            }
+            const warnMajor = config.alerts_webview_warn_major;
+            if (
+                warnMajor > 0 &&
+                typeof d.webview_major === 'number' &&
+                d.webview_major < warnMajor
+            ) {
+                push(
+                    'WEBVIEW_OLD',
+                    d.app_channel === 'PLAY' ? 'warn' : 'info',
+                    null,
+                    d.webview_major,
+                    {
+                        webview_major: d.webview_major,
+                    }
+                );
+            }
+            const settledBefore = (d.confirmed_at ?? d.claimed_at) < unusedStart;
+            if (
+                d.status === 'ACTIVE' &&
+                approved &&
+                settledBefore &&
+                d.last_seen_at !== null &&
+                d.last_seen_at >= unusedStart
+            ) {
+                const counted = countedSessions((s) => s.device_id === d.id);
+                if (!counted.some((s) => s.created_at >= unusedStart)) {
+                    const last = counted.reduce(
+                        (top, s) => (!top || s.created_at > top.created_at ? s : top),
+                        null
+                    );
+                    push(
+                        'UNUSED',
+                        'warn',
+                        last ? effectiveEnd(last) : d.confirmed_at,
+                        last ? last.id : 'none',
+                        {
+                            last_used_at: last ? iso(effectiveEnd(last)) : null,
+                        }
+                    );
+                }
+            }
+            if (managed && approved) {
+                const state = view.roomState(d.room_id);
+                if (state === 'OVER_LIMIT' || state === 'UNLICENSED') {
+                    const licensedAt = db.rooms.get(d.room_id)?.licensed_at ?? null;
+                    push(
+                        'LICENCE_ROOM',
+                        'warn',
+                        null,
+                        `${state}:${licensedAt === null ? '' : Math.floor(licensedAt / 1000)}`,
+                        {
+                            licence_state: state,
+                        }
+                    );
+                }
+            }
+        }
+        if (managed) {
+            const ending =
+                ((view.state === 'ACTIVE' || view.state === 'TRIAL') &&
+                    view.endsAt !== null &&
+                    view.endsAt - t <= LICENCE_ENDING_MS) ||
+                view.state === 'GRACE';
+            if (ending) {
+                const grace = view.state === 'GRACE';
+                const grantKey = view.endingGrantId == null ? 'none' : String(view.endingGrantId);
+                alerts.push({
+                    kind: 'LICENCE_ENDING',
+                    severity: 'warn',
+                    device_id: null,
+                    room: null,
+                    // In grace the key changes, so a digest notices the move into grace.
+                    since: grace ? iso(view.endsAt) : null,
+                    incident_key: grace ? `GRACE:${grantKey}` : grantKey,
+                    detail: {
+                        state: view.state,
+                        ends_at: iso(view.endsAt),
+                        grace_ends_at: iso(view.graceEndsAt),
+                    },
+                });
+            }
+        }
+        alerts.sort(
+            (x, y) =>
+                SEVERITY_RANK[x.severity] - SEVERITY_RANK[y.severity] ||
+                x.kind.localeCompare(y.kind)
+        );
+        const counts = {};
+        for (const alert of alerts) counts[alert.kind] = (counts[alert.kind] ?? 0) + 1;
+        return { generated_at: iso(t), counts, alerts };
+    }
+
+    function adminFleet(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('fleet_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        requireInstituteAdmin(user, instituteId);
+        return fleet(instituteId);
+    }
+
+    // ----------------------------------------------------------- installers ---
+
+    /** An ACTIVE installer role at an ACTIVE partner's own institute. JWT authorities are not read. */
+    function installerPartner(user) {
+        const roles = new Set(config.installer_roles.map((role) => String(role).toUpperCase()));
+        for (const partner of db.partners.values()) {
+            if (partner.status !== 'ACTIVE') continue;
+            const held = (user.roles[partner.partner_institute_id] ?? []).some(
+                ([name, status]) => status === 'ACTIVE' && roles.has(String(name).toUpperCase())
+            );
+            if (held) return partner;
+        }
+        return null;
+    }
+
+    function requireInstaller(user) {
+        const partner = installerPartner(user);
+        if (!partner) throw new ApiError(403, 'NOT_INSTALLER', 'This account is not an installer');
+        return partner;
+    }
+
+    const activeLink = (partnerId, instituteId) =>
+        [...db.links.values()].find(
+            (l) =>
+                l.partner_id === partnerId &&
+                l.institute_id === instituteId &&
+                l.status === 'ACTIVE'
+        );
+
+    function requireLinked(partner, instituteId) {
+        const link = instituteId ? activeLink(partner.id, instituteId) : null;
+        if (!link)
+            throw new ApiError(
+                403,
+                'NOT_INSTALLER',
+                'This school has not linked your organisation'
+            );
+        return link;
+    }
+
+    /** The school name is filled in the background, as directory.refreshLinkAsync does. */
+    function fillLinkNameLater(link) {
+        setImmediate(() => {
+            link.institute_name = db.institutes.get(link.institute_id)?.name ?? null;
+        });
+    }
+
+    function linkOrExtend(partnerId, instituteId, via, installUntil, createdBy) {
+        const existing = activeLink(partnerId, instituteId);
+        if (existing) {
+            if (existing.install_until !== null) {
+                existing.install_until =
+                    installUntil === null ? null : Math.max(existing.install_until, installUntil);
+            }
+            return existing;
+        }
+        const link = {
+            id: uuid(),
+            partner_id: partnerId,
+            institute_id: instituteId,
+            institute_name: null,
+            status: 'ACTIVE',
+            linked_via: via,
+            install_until: installUntil,
+            created_by: createdBy,
+            created_at: now(),
+            revoked_by: null,
+            revoked_at: null,
+        };
+        db.links.set(link.id, link);
+        fillLinkNameLater(link);
+        return link;
+    }
+
+    function partnerMe(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const partner = requireInstaller(user);
+        return { partner: { id: partner.id, name: partner.name } };
+    }
+
+    function partnerRedeem(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        rateLimit('link_redeem', user.id);
+        const partner = requireInstaller(user);
+        const hash = crypto.createHash('sha256').update(normaliseCode(ctx.body.code)).digest('hex');
+        const t = now();
+        const invite = [...db.invites.values()].find((i) => i.code_hash === hash);
+        if (!invite || invite.state !== 'PENDING' || invite.expires_at <= t) {
+            throw new ApiError(404, 'INVITE_INVALID', 'This code is not valid');
+        }
+        invite.state = 'USED';
+        invite.used_by_partner_id = partner.id;
+        invite.used_at = t;
+        const link = linkOrExtend(
+            partner.id,
+            invite.institute_id,
+            'SCHOOL_CODE',
+            t + invite.install_days * DAY,
+            user.id
+        );
+        return {
+            link_id: link.id,
+            institute_id: link.institute_id,
+            institute_name: link.institute_name,
+            install_until: iso(link.install_until),
+        };
+    }
+
+    function partnerCustomers(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const partner = requireInstaller(user);
+        return [...db.links.values()]
+            .filter((l) => l.partner_id === partner.id && l.status === 'ACTIVE')
+            .map((l) => ({
+                institute_id: l.institute_id,
+                institute_name: l.institute_name,
+                install_until: iso(l.install_until),
+            }));
+    }
+
+    function partnerRooms(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const partner = requireInstaller(user);
+        const instituteId = ctx.query.get('institute_id');
+        requireLinked(partner, instituteId);
+        return activeRooms(instituteId)
+            .sort((x, y) => x.name.localeCompare(y.name))
+            .map((room) => ({
+                id: room.id,
+                name: room.name,
+                has_panel: !!liveDeviceInRoom(room.id),
+            }));
+    }
+
+    /** The admin claim for installers: never replaces, lands PENDING, attributes the room. */
+    function partnerClaim(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        rateLimit('claim', user.id);
+        const body = ctx.body;
+        if (!config.directory_available) {
+            throw new ApiError(503, 'TRY_AGAIN', 'Please try again in a moment');
+        }
+        const partner = requireInstaller(user);
+        const link = requireLinked(partner, body.institute_id);
+        if (link.install_until !== null && link.install_until <= now()) {
+            throw new ApiError(
+                403,
+                'NOT_INSTALLER',
+                'This school has not linked your organisation'
+            );
+        }
+        const existingRoom = body.room_id ? roomIn(body.institute_id, body.room_id) : null;
+        if (!existingRoom && !String(body.new_room_name ?? '').trim()) {
+            throw new ApiError(400, 'BAD_REQUEST', 'Pick a room or name a new one');
+        }
+        const code = normaliseCode(body.code);
+        const t = now();
+        const pairing = [...db.pairings.values()].find(
+            (p) => p.code === code && p.state === 'PENDING' && p.expires_at > t
+        );
+        if (!pairing) throw new ApiError(404, 'NOT_FOUND', 'No panel is showing this code');
+        if (body.match_code !== pairing.match_code) {
+            pairing.state = 'CANCELLED';
+            throw new ApiError(409, 'WRONG_NUMBER', 'That number did not match');
+        }
+        if (existingRoom && liveDeviceInRoom(existingRoom.id)) {
+            throw new ApiError(
+                409,
+                'ROOM_OCCUPIED',
+                'Ask the school to remove the old panel first'
+            );
+        }
+        const room = existingRoom ?? createRoom(body.institute_id, body.new_room_name, user.id);
+        if (!room.partner_id) room.partner_id = partner.id; // sticky attribution
+        const institute = db.institutes.get(body.institute_id);
+        const device = {
+            id: uuid(),
+            institute_id: body.institute_id,
+            room_id: room.id,
+            secret: token(32),
+            status: 'CLAIMED',
+            install_id: pairing.install_id,
+            approve_base_url: normaliseApproveBase(institute?.admin_portal_url, defaultBaseUrl),
+            password_login_allowed: false,
+            manufacturer: pairing.device.manufacturer ?? null,
+            model: pairing.device.model ?? null,
+            sdk_int: pairing.device.sdk_int ?? null,
+            webview_major: pairing.device.webview_major ?? null,
+            app_version_code: pairing.device.app_version_code ?? null,
+            last_seen_at: null,
+            last_ip: null,
+            claimed_by: user.id,
+            claimed_by_name: user.name,
+            claimed_at: t,
+            confirmed_at: null,
+            revoked_by: null,
+            revoked_at: null,
+            approval_state: 'PENDING',
+            installed_by_partner_id: partner.id,
+            approved_by: null,
+            approved_at: null,
+            app_channel: null,
+        };
+        db.devices.set(device.id, device);
+        pairing.state = 'CLAIMED';
+        pairing.device_id = device.id;
+        return { device_id: device.id, status: 'CLAIMED', room: { id: room.id, name: room.name } };
+    }
+
+    /** Health only, for panels this installer set up: no teachers, no usage, no sessions. */
+    function partnerInstalls(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const partner = requireInstaller(user);
+        const instituteId = ctx.query.get('institute_id');
+        requireLinked(partner, instituteId);
+        const t = now();
+        return [...db.devices.values()]
+            .filter(
+                (d) => d.institute_id === instituteId && d.installed_by_partner_id === partner.id
+            )
+            .map((d) => ({
+                device_id: d.id,
+                room: roomRef(d.room_id),
+                status: d.status,
+                approval_state: d.approval_state ?? 'APPROVED',
+                online: d.last_seen_at !== null && t - d.last_seen_at < DEVICE_ONLINE_MS,
+                last_seen_at: iso(d.last_seen_at),
+                app_version_code: d.app_version_code,
+                webview_major: d.webview_major,
+            }));
+    }
+
+    function adminPartners(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        requireInstituteAdmin(user, instituteId);
+        return [...db.links.values()]
+            .filter((l) => l.institute_id === instituteId && l.status === 'ACTIVE')
+            .map((l) => ({
+                link_id: l.id,
+                partner_name: db.partners.get(l.partner_id)?.name ?? null,
+                linked_via: l.linked_via,
+                install_until: iso(l.install_until),
+                created_at: iso(l.created_at),
+                installs: [...db.devices.values()].filter(
+                    (d) =>
+                        d.institute_id === instituteId &&
+                        d.installed_by_partner_id === l.partner_id &&
+                        isLiveDevice(d)
+                ).length,
+            }));
+    }
+
+    function adminInviteCreate(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const { institute_id: instituteId, install_days: days } = ctx.body;
+        requireInstituteAdmin(user, instituteId);
+        if (!Number.isInteger(days) || days < 1 || days > INVITE_INSTALL_DAYS_MAX) {
+            throw new ApiError(
+                400,
+                'BAD_REQUEST',
+                `install_days is 1 to ${INVITE_INSTALL_DAYS_MAX}`
+            );
+        }
+        const code = randomCode();
+        const t = now();
+        const invite = {
+            id: uuid(),
+            institute_id: instituteId,
+            code_hash: crypto.createHash('sha256').update(code).digest('hex'),
+            state: 'PENDING',
+            install_days: days,
+            expires_at: t + INVITE_TTL_MS,
+            created_by: user.id,
+            created_at: t,
+            used_by_partner_id: null,
+            used_at: null,
+        };
+        db.invites.set(invite.id, invite);
+        return { id: invite.id, code, expires_at: iso(invite.expires_at) };
+    }
+
+    function adminInviteCancel(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const invite = db.invites.get(ctx.params.id);
+        if (!invite) throw new ApiError(404, 'INVITE_INVALID', 'This code is not valid');
+        requireInstituteAdmin(user, invite.institute_id);
+        if (invite.state === 'PENDING') invite.state = 'CANCELLED';
+        if (invite.state !== 'CANCELLED') {
+            throw new ApiError(404, 'INVITE_INVALID', 'This code is not valid');
+        }
+        return { status: 'CANCELLED' };
+    }
+
+    function revokeLink(link, by) {
+        if (link.status === 'ACTIVE') {
+            link.status = 'REVOKED';
+            link.revoked_by = by;
+            link.revoked_at = now();
+        }
+        return { status: 'REVOKED' };
+    }
+
+    function adminPartnerRevoke(ctx) {
+        const user = requireUser(ctx);
+        requireFeature('partners_enabled');
+        const link = db.links.get(ctx.params.id);
+        if (!link) throw new ApiError(404, 'NOT_FOUND', 'No such link');
+        requireInstituteAdmin(user, link.institute_id);
+        // Pending installs stay pending for the school to decide.
+        return revokeLink(link, user.id);
+    }
+
+    // ------------------------------------------------------ platform staff ---
+
+    function requireSuperAdmin(ctx, feature) {
+        const user = requireUser(ctx);
+        if (!(config.super_admin_user_ids ?? []).includes(user.id)) {
+            throw new ApiError(403, 'FORBIDDEN', 'Super admin access required');
+        }
+        requireFeature(feature);
+        return user;
+    }
+
+    function superEnforcement(ctx) {
+        const user = requireSuperAdmin(ctx, 'licence_enabled');
+        const instituteId = ctx.params.id;
+        if (ctx.req.method === 'PUT') {
+            const value = String(ctx.body.enforcement ?? '').toUpperCase();
+            if (!['OFF', 'SHADOW', 'LIVE'].includes(value)) {
+                throw new ApiError(400, 'BAD_REQUEST', 'enforcement is OFF, SHADOW or LIVE');
+            }
+            db.licenceSettings.set(instituteId, {
+                enforcement: value,
+                updated_by: user.id,
+                updated_at: now(),
+            });
+        }
+        return { institute_id: instituteId, enforcement: licenceView(instituteId).enforcement };
+    }
+
+    function superLicence(ctx) {
+        requireSuperAdmin(ctx, 'licence_enabled');
+        const instituteId = ctx.params.id;
+        const view = licenceView(instituteId);
+        return {
+            institute_id: instituteId,
+            state: view.state,
+            enforcement: view.enforcement,
+            seats_granted: view.seats,
+            seats_used: view.seatsUsed,
+            ends_at: iso(view.endsAt),
+            grace_ends_at: iso(view.graceEndsAt),
+            grants: grantsOf(instituteId)
+                .sort((x, y) => x.created_at - y.created_at)
+                .map(grantDetail),
+            rooms: licenceRooms(instituteId, view),
+        };
+    }
+
+    function superGrantCreate(ctx) {
+        const user = requireSuperAdmin(ctx, 'licence_enabled');
+        const body = ctx.body;
+        const bad = (message) => new ApiError(400, 'BAD_REQUEST', message);
+        if (!['TRIAL', 'PAID', 'COMPLIMENTARY'].includes(body.kind)) {
+            throw bad('kind is TRIAL, PAID or COMPLIMENTARY');
+        }
+        if (!Number.isInteger(body.seats) || body.seats < 1) throw bad('seats must be at least 1');
+        const startsAt = Date.parse(body.starts_at);
+        const endsAt = Date.parse(body.ends_at);
+        if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt) || endsAt <= startsAt) {
+            throw bad('ends_at must be after starts_at');
+        }
+        const graceDays = body.grace_days ?? 0;
+        if (!Number.isInteger(graceDays) || graceDays < 0)
+            throw bad('grace_days must be 0 or more');
+        if (body.partner_id != null && !db.partners.has(body.partner_id))
+            throw bad('Unknown partner_id');
+        if (body.external_ref != null && String(body.external_ref).length > 120) {
+            throw bad('external_ref is at most 120 characters');
+        }
+        if (body.note != null && String(body.note).length > 500)
+            throw bad('note is at most 500 characters');
+        const grant = newGrant(ctx.params.id, {
+            kind: body.kind,
+            seats: body.seats,
+            starts_at: startsAt,
+            ends_at: endsAt,
+            grace_days: graceDays,
+            partner_id: body.partner_id ?? null,
+            external_ref: body.external_ref ?? null,
+            note: body.note ?? null,
+            created_by: user.id,
+        });
+        db.grants.set(grant.id, grant);
+        return grantDetail(grant);
+    }
+
+    function superGrantCancel(ctx) {
+        const user = requireSuperAdmin(ctx, 'licence_enabled');
+        const grant = db.grants.get(ctx.params.id);
+        if (!grant) throw new ApiError(404, 'NOT_FOUND', 'No such grant');
+        if (grant.status === 'ACTIVE') {
+            grant.status = 'CANCELLED';
+            grant.cancelled_by = user.id;
+            grant.cancelled_at = now();
+            if (typeof ctx.body.note === 'string') grant.note = ctx.body.note.slice(0, 500);
+        }
+        return grantDetail(grant);
+    }
+
+    const templateRow = (key, row) => ({
+        key,
+        kind: row.kind,
+        seats: row.seats,
+        days: row.days,
+        grace_days: row.grace_days,
+        active: row.active,
+        updated_by: row.updated_by,
+        updated_at: iso(row.updated_at),
+    });
+
+    function superTemplate(ctx) {
+        const user = requireSuperAdmin(ctx, 'licence_enabled');
+        const key = ctx.params.id;
+        if (!/^[a-z_]{1,32}$/.test(key))
+            throw new ApiError(400, 'BAD_REQUEST', 'Unknown template key');
+        if (ctx.req.method === 'PUT') {
+            const body = ctx.body;
+            const bad = (message) => new ApiError(400, 'BAD_REQUEST', message);
+            if (!['TRIAL', 'PAID', 'COMPLIMENTARY'].includes(body.kind)) throw bad('Unknown kind');
+            if (!Number.isInteger(body.seats) || body.seats < 1)
+                throw bad('seats must be at least 1');
+            if (!Number.isInteger(body.days) || body.days < 1) throw bad('days must be at least 1');
+            const graceDays = body.grace_days ?? 0;
+            if (!Number.isInteger(graceDays) || graceDays < 0)
+                throw bad('grace_days must be 0 or more');
+            db.templates.set(key, {
+                kind: body.kind,
+                seats: body.seats,
+                days: body.days,
+                grace_days: graceDays,
+                active: body.active !== false,
+                updated_by: user.id,
+                updated_at: now(),
+            });
+        }
+        const row = db.templates.get(key);
+        if (!row) throw new ApiError(404, 'NOT_FOUND', 'No such template');
+        return templateRow(key, row);
+    }
+
+    /** Monthly counts from the seat history. Counts only: the system computes no money. */
+    function superLicenceUsage(ctx) {
+        requireSuperAdmin(ctx, 'licence_enabled');
+        const month = ctx.query.get('month') ?? '';
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+            throw new ApiError(400, 'BAD_REQUEST', 'month is yyyy-MM');
+        }
+        const zone = validZone(ctx.query.get('zone'));
+        const first = `${month}-01`;
+        const [y, m] = month.split('-').map(Number);
+        const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        const edges = Array.from({ length: days + 1 }, (_, i) =>
+            localMidnight(addDays(first, i), zone)
+        );
+        const institutes = new Set([
+            ...[...db.grants.values()].map((g) => g.institute_id),
+            ...db.licenceEvents.map((e) => e.institute_id),
+            ...db.licenceSettings.keys(),
+        ]);
+        const rows = [];
+        for (const instituteId of [...institutes].sort()) {
+            // Seat intervals per room, replayed from the history.
+            const intervals = new Map();
+            const open = new Map();
+            for (const event of db.licenceEvents.filter((e) => e.institute_id === instituteId)) {
+                if (event.action === 'ASSIGNED') {
+                    open.set(event.room_id, event);
+                } else if (open.has(event.room_id)) {
+                    const started = open.get(event.room_id);
+                    open.delete(event.room_id);
+                    if (!intervals.has(event.room_id)) intervals.set(event.room_id, []);
+                    intervals
+                        .get(event.room_id)
+                        .push({ from: started.at, to: event.at, partner: started.partner_id });
+                }
+            }
+            for (const [roomId, started] of open) {
+                if (!intervals.has(roomId)) intervals.set(roomId, []);
+                intervals
+                    .get(roomId)
+                    .push({ from: started.at, to: Infinity, partner: started.partner_id });
+            }
+            // As PanelLicenceUsageService: a cancelled grant counts until it was cancelled.
+            const grants = grantsOf(instituteId).map((g) => ({
+                ...g,
+                ends_at:
+                    g.status === 'CANCELLED' && g.cancelled_at !== null
+                        ? Math.min(g.ends_at, g.cancelled_at)
+                        : g.ends_at,
+            }));
+            const t = now();
+            let seatsPeak = 0;
+            let roomsPeak = 0;
+            let roomDays = 0;
+            const licensedRooms = new Map();
+            for (let i = 0; i < days; i += 1) {
+                const [from, to] = [edges[i], edges[i + 1]];
+                if (from > t) break; // only days that have started
+                const seats = grants
+                    .filter((g) => g.starts_at < to && g.ends_at > from)
+                    .reduce((total, g) => total + g.seats, 0);
+                seatsPeak = Math.max(seatsPeak, seats);
+                let count = 0;
+                for (const [roomId, list] of intervals) {
+                    const hit = list.find((iv) => iv.from < to && iv.to > from);
+                    if (hit) {
+                        count += 1;
+                        licensedRooms.set(roomId, hit.partner);
+                    }
+                }
+                roomsPeak = Math.max(roomsPeak, count);
+                roomDays += count;
+            }
+            const used = new Set(
+                countedSessions(
+                    (s) =>
+                        s.institute_id === instituteId &&
+                        s.created_at >= edges[0] &&
+                        s.created_at < edges[days]
+                ).map((s) => s.room_id)
+            );
+            const active = [...licensedRooms.entries()].filter(([roomId]) => used.has(roomId));
+            const byPartner = new Map();
+            for (const [, partnerId] of active) {
+                if (partnerId) byPartner.set(partnerId, (byPartner.get(partnerId) ?? 0) + 1);
+            }
+            const view = licenceView(instituteId);
+            const lastWithPartner = grants
+                .filter((g) => g.partner_id && g.starts_at < edges[days] && g.ends_at > edges[0])
+                .sort((x, yy) => yy.starts_at - x.starts_at)[0];
+            rows.push({
+                institute_id: instituteId,
+                partner_id: lastWithPartner?.partner_id ?? null,
+                enforcement: view.enforcement,
+                state: view.state,
+                seats_granted_peak: seatsPeak,
+                licensed_rooms_peak: roomsPeak,
+                licensed_room_days: roomDays,
+                active_licensed_rooms: active.length,
+                rooms_by_partner: [...byPartner.entries()].map(([partnerId, count]) => ({
+                    partner_id: partnerId,
+                    active_licensed_rooms: count,
+                })),
+            });
+        }
+        return { month, rows };
+    }
+
+    const partnerRow = (p) => ({
+        id: p.id,
+        name: p.name,
+        partner_institute_id: p.partner_institute_id,
+        status: p.status,
+        created_at: iso(p.created_at),
+    });
+
+    const linkRow = (l) => ({
+        id: l.id,
+        partner_id: l.partner_id,
+        institute_id: l.institute_id,
+        institute_name: l.institute_name,
+        status: l.status,
+        linked_via: l.linked_via,
+        install_until: iso(l.install_until),
+        created_at: iso(l.created_at),
+    });
+
+    function superPartners(ctx) {
+        const user = requireSuperAdmin(ctx, 'partners_enabled');
+        if (ctx.req.method === 'POST') {
+            const name = String(ctx.body.name ?? '').trim();
+            const instituteId = String(ctx.body.partner_institute_id ?? '').trim();
+            if (!name || name.length > 120 || !instituteId) {
+                throw new ApiError(
+                    400,
+                    'BAD_REQUEST',
+                    'name (1 to 120) and partner_institute_id are required'
+                );
+            }
+            if ([...db.partners.values()].some((p) => p.partner_institute_id === instituteId)) {
+                throw new ApiError(
+                    409,
+                    'ALREADY_EXISTS',
+                    'This institute is already an installer organisation'
+                );
+            }
+            const partner = {
+                id: uuid(),
+                name,
+                partner_institute_id: instituteId,
+                status: 'ACTIVE',
+                created_by: user.id,
+                created_at: now(),
+            };
+            db.partners.set(partner.id, partner);
+            return partnerRow(partner);
+        }
+        return [...db.partners.values()].map(partnerRow);
+    }
+
+    function superPartnerPatch(ctx) {
+        requireSuperAdmin(ctx, 'partners_enabled');
+        const partner = db.partners.get(ctx.params.id);
+        if (!partner) throw new ApiError(404, 'NOT_FOUND', 'No such partner');
+        if (ctx.body.status !== 'ACTIVE' && ctx.body.status !== 'SUSPENDED') {
+            throw new ApiError(400, 'BAD_REQUEST', 'status is ACTIVE or SUSPENDED');
+        }
+        partner.status = ctx.body.status;
+        return partnerRow(partner);
+    }
+
+    function superPartnerLink(ctx) {
+        const user = requireSuperAdmin(ctx, 'partners_enabled');
+        const partner = db.partners.get(ctx.params.id);
+        if (!partner) throw new ApiError(404, 'NOT_FOUND', 'No such partner');
+        const instituteId = String(ctx.body.institute_id ?? '').trim();
+        if (!instituteId) throw new ApiError(400, 'BAD_REQUEST', 'institute_id is required');
+        let installUntil = null;
+        if (ctx.body.install_until != null && ctx.body.install_until !== '') {
+            installUntil = Date.parse(ctx.body.install_until);
+            if (!Number.isFinite(installUntil)) {
+                throw new ApiError(400, 'BAD_REQUEST', 'install_until must be an instant');
+            }
+        }
+        // As the real service: a given install_until is set exactly; otherwise a new link gets the
+        // default window and an existing one is extended by it (a null window could never install).
+        const existing = activeLink(partner.id, instituteId);
+        const windowMs = config.partners_default_install_days * DAY;
+        if (existing) {
+            existing.install_until =
+                installUntil !== null
+                    ? installUntil
+                    : Math.max(existing.install_until ?? now(), now() + windowMs);
+            return linkRow(existing);
+        }
+        return linkRow(
+            linkOrExtend(
+                partner.id,
+                instituteId,
+                'SUPER_ADMIN',
+                installUntil ?? now() + windowMs,
+                user.id
+            )
+        );
+    }
+
+    function superLinkRevoke(ctx) {
+        const user = requireSuperAdmin(ctx, 'partners_enabled');
+        const link = db.links.get(ctx.params.id);
+        if (!link) throw new ApiError(404, 'NOT_FOUND', 'No such link');
+        return revokeLink(link, user.id);
+    }
+
+    function superRoomPartner(ctx) {
+        requireSuperAdmin(ctx, 'partners_enabled');
+        const room = db.rooms.get(ctx.params.id);
+        if (!room) throw new ApiError(404, 'NOT_FOUND', 'No such room');
+        const partnerId = ctx.body.partner_id ?? null;
+        if (partnerId !== null && !db.partners.has(partnerId)) {
+            throw new ApiError(404, 'NOT_FOUND', 'No such partner');
+        }
+        room.partner_id = partnerId;
+        return { status: 'UPDATED' };
+    }
+
+    function superReleases(ctx) {
+        const user = requireSuperAdmin(ctx, 'releases_enabled');
+        if (ctx.req.method === 'POST') {
+            const release = releaseFromBody(ctx.body, user.id);
+            db.releases.set(release.id, release);
+            return releaseRow(release);
+        }
+        return [...db.releases.values()]
+            .sort((x, y) => x.channel.localeCompare(y.channel) || y.version_code - x.version_code)
+            .map(releaseRow);
+    }
+
+    function superReleasePatch(ctx) {
+        requireSuperAdmin(ctx, 'releases_enabled');
+        const release = db.releases.get(ctx.params.id);
+        if (!release) throw new ApiError(404, 'NOT_FOUND', 'No such release');
+        return releaseRow(patchRelease(release, ctx.body));
+    }
+
+    // ------------------------------------------------------------ internal ---
+    // Reached only with a valid client signature (handle() checks it first).
+
+    function internalFeature(...names) {
+        if (!names.some((name) => config[name] === true)) {
+            throw new ApiError(404, 'FEATURE_OFF', 'This feature is not available');
+        }
+    }
+
+    function internalInstitutes(ctx) {
+        internalFeature('usage_enabled', 'fleet_enabled');
+        const page = Math.max(0, parseInt(ctx.query.get('page') ?? '0', 10) || 0);
+        const byInstitute = new Map();
+        for (const device of db.devices.values()) {
+            const row = byInstitute.get(device.institute_id) ?? { devices: [], first: Infinity };
+            row.first = Math.min(row.first, device.claimed_at);
+            if (isLiveDevice(device)) row.devices.push(device);
+            byInstitute.set(device.institute_id, row);
+        }
+        const all = [...byInstitute.entries()]
+            .filter(([, row]) => row.devices.length > 0)
+            .sort(([x], [y]) => x.localeCompare(y))
+            .map(([instituteId, row]) => ({
+                institute_id: instituteId,
+                rooms_with_panel: new Set(row.devices.map((d) => d.room_id)).size,
+                devices: row.devices.length,
+                first_paired_at: iso(row.first),
+            }));
+        return {
+            institutes: all.slice(page * INTERNAL_PAGE, (page + 1) * INTERNAL_PAGE),
+            page,
+            has_more: all.length > (page + 1) * INTERNAL_PAGE,
+        };
+    }
+
+    function internalHasPanels(ctx) {
+        internalFeature('usage_enabled', 'fleet_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        return {
+            has_panels: [...db.devices.values()].some(
+                (d) => d.institute_id === instituteId && isLiveDevice(d)
+            ),
+        };
+    }
+
+    function internalFleet(ctx) {
+        requireFeature('fleet_enabled');
+        const instituteId = ctx.query.get('institute_id');
+        if (!instituteId) throw new ApiError(400, 'BAD_REQUEST', 'institute_id is required');
+        return fleet(instituteId);
+    }
+
+    /** True when the request carries a client name and its signature (InternalAuthFilter). */
+    function internalClientValid(headers) {
+        const name = headers.clientname;
+        const expected = typeof name === 'string' ? config.internal_clients?.[name] : undefined;
+        return typeof expected === 'string' && headers.signature === expected;
+    }
+
+    // ------------------------------------------------------- phase 2 controls ---
+
+    /**
+     * POST /__mock/licence: seat set-up without platform-staff calls.
+     * {institute_id, enforcement?, clear_grants?, grants?: [{kind, seats, starts_in_ms?,
+     * ends_in_ms, grace_days?}], template?: {kind, seats, days, grace_days?, active?} | null}
+     * Times are relative to the mock clock.
+     */
+    function controlLicence(ctx) {
+        const body = ctx.body;
+        const instituteId = body.institute_id;
+        if (!instituteId) throw new ApiError(400, 'BAD_REQUEST', 'institute_id is required');
+        if (body.enforcement) {
+            db.licenceSettings.set(instituteId, {
+                enforcement: body.enforcement,
+                updated_by: 'mock',
+                updated_at: now(),
+            });
+        }
+        if (body.clear_grants) {
+            for (const grant of grantsOf(instituteId)) db.grants.delete(grant.id);
+        }
+        for (const spec of body.grants ?? []) {
+            const t = now();
+            const grant = newGrant(instituteId, {
+                kind: spec.kind ?? 'PAID',
+                seats: spec.seats ?? 1,
+                starts_at: t + (spec.starts_in_ms ?? 0),
+                ends_at: t + (spec.ends_in_ms ?? 30 * DAY),
+                grace_days: spec.grace_days ?? 0,
+                created_by: 'mock',
+            });
+            db.grants.set(grant.id, grant);
+        }
+        if (body.template === null) db.templates.delete('auto_trial');
+        else if (body.template) {
+            db.templates.set('auto_trial', {
+                kind: body.template.kind ?? 'TRIAL',
+                seats: body.template.seats ?? 1,
+                days: body.template.days ?? 30,
+                grace_days: body.template.grace_days ?? 0,
+                active: body.template.active !== false,
+                updated_by: 'mock',
+                updated_at: now(),
+            });
+        }
+        const view = licenceView(instituteId);
+        return {
+            state: view.state,
+            enforcement: view.enforcement,
+            seats: view.seats,
+            seats_used: view.seatsUsed,
+            grants: grantsOf(instituteId).map(grantDetail),
+        };
+    }
+
+    /**
+     * POST /__mock/release: a release row straight in, LIVE and at 100% unless said otherwise.
+     * published_ago_ms backdates published_at, for the outdated alert.
+     */
+    function controlRelease(ctx) {
+        const body = ctx.body;
+        const release = releaseFromBody(
+            {
+                channel: 'DIRECT',
+                version_name: `0.${body.version_code}.0`,
+                rollout_percent: 100,
+                ...body,
+            },
+            'mock'
+        );
+        release.status = body.status ?? 'LIVE';
+        if (release.status === 'LIVE') release.published_at = now() - (body.published_ago_ms ?? 0);
+        db.releases.set(release.id, release);
+        return releaseRow(release);
+    }
+
     // ------------------------------------------------------------ routes table ---
 
     const PUB = '/auth-service/public/v1/panel';
     const BEARER = '/auth-service/v1/panel';
     const MEETING = '/admin-core-service/live-sessions/provider/meeting';
     const ENGAGE = '/community-service/engage/admin';
+    const SUPER = '/auth-service/super-admin/v1/panel';
+
+    const INTERNAL = '/auth-service/internal/panel/v1';
+
+    /** Phase 2 routes. Each answers 404 FEATURE_OFF while its switch is off. */
+    const PHASE2_ROUTES = [
+        // usage
+        ['GET', `${BEARER}/admin/usage`, usage],
+        ['GET', `${BEARER}/admin/usage/sessions`, usageSessions],
+        ['GET', `${BEARER}/admin/usage/multi`, usageMulti],
+        // fleet
+        ['GET', `${BEARER}/admin/fleet`, adminFleet],
+        // seats
+        ['GET', `${BEARER}/admin/licence`, adminLicence],
+        ['POST', `${BEARER}/admin/licence/rooms/:id/assign`, adminSeatAssign],
+        ['POST', `${BEARER}/admin/licence/rooms/:id/release`, adminSeatRelease],
+        // approvals and installers, admin side
+        ['POST', `${BEARER}/admin/devices/:id/approve`, adminDeviceApprove],
+        ['POST', `${BEARER}/admin/devices/:id/reject`, adminDeviceReject],
+        ['GET', `${BEARER}/admin/partners`, adminPartners],
+        ['POST', `${BEARER}/admin/partner-invites`, adminInviteCreate],
+        ['POST', `${BEARER}/admin/partner-invites/:id/cancel`, adminInviteCancel],
+        ['POST', `${BEARER}/admin/partners/:id/revoke`, adminPartnerRevoke],
+        // installer side
+        ['GET', `${BEARER}/partner/me`, partnerMe],
+        ['POST', `${BEARER}/partner/links/redeem`, partnerRedeem],
+        ['GET', `${BEARER}/partner/customers`, partnerCustomers],
+        ['GET', `${BEARER}/partner/rooms`, partnerRooms],
+        ['POST', `${BEARER}/partner/devices/claim`, partnerClaim],
+        ['GET', `${BEARER}/partner/installs`, partnerInstalls],
+        // platform staff
+        ['GET', `${SUPER}/institutes/:id/licence/enforcement`, superEnforcement],
+        ['PUT', `${SUPER}/institutes/:id/licence/enforcement`, superEnforcement],
+        ['GET', `${SUPER}/institutes/:id/licence`, superLicence],
+        ['POST', `${SUPER}/institutes/:id/licence/grants`, superGrantCreate],
+        ['POST', `${SUPER}/licence/grants/:id/cancel`, superGrantCancel],
+        ['GET', `${SUPER}/licence/templates/:id`, superTemplate],
+        ['PUT', `${SUPER}/licence/templates/:id`, superTemplate],
+        ['GET', `${SUPER}/licence/usage`, superLicenceUsage],
+        ['GET', `${SUPER}/partners`, superPartners],
+        ['POST', `${SUPER}/partners`, superPartners],
+        ['PATCH', `${SUPER}/partners/:id`, superPartnerPatch],
+        ['POST', `${SUPER}/partners/:id/links`, superPartnerLink],
+        ['POST', `${SUPER}/partner-links/:id/revoke`, superLinkRevoke],
+        ['PATCH', `${SUPER}/rooms/:id/partner`, superRoomPartner],
+        ['GET', `${SUPER}/releases`, superReleases],
+        ['POST', `${SUPER}/releases`, superReleases],
+        ['PATCH', `${SUPER}/releases/:id`, superReleasePatch],
+        // internal, behind the client signature
+        ['GET', `${INTERNAL}/institutes`, internalInstitutes],
+        ['GET', `${INTERNAL}/has-panels`, internalHasPanels],
+        ['GET', `${INTERNAL}/usage-summary`, usageSummary],
+        ['GET', `${INTERNAL}/fleet`, internalFleet],
+    ];
 
     const routes = [
         ['POST', `${PUB}/pair/start`, pairStart],
@@ -2060,6 +4423,7 @@ export function createMockBackend(options = {}) {
         ['POST', `${BEARER}/challenge/approve`, challengeApprove],
         ['GET', `${BEARER}/my-session`, mySession],
         ['POST', `${BEARER}/my-session/end`, mySessionEnd],
+        ...PHASE2_ROUTES,
 
         ['GET', '/admin-core-service/classroom/v1/today', today],
         ['GET', `${MEETING}/join`, bbbJoin],
@@ -2159,6 +4523,9 @@ export function createMockBackend(options = {}) {
         ['GET', '/__mock/scenario-config', scenarioConfig],
         ['POST', '/__mock/short-token', shortLivedToken],
         ['POST', '/__mock/roles', setRoles],
+        ['GET', '/__mock/now', () => ({ now: now() })],
+        ['POST', '/__mock/licence', controlLicence],
+        ['POST', '/__mock/release', controlRelease],
         [
             'POST',
             '/__mock/reset',
@@ -2271,6 +4638,16 @@ export function createMockBackend(options = {}) {
         const url = new URL(req.url, 'http://mock');
         const path = url.pathname.replace(/\/+$/, '') || '/';
         try {
+            // InternalAuthFilter: any "internal" path segment needs a known client and signature.
+            if (path.split('/').includes('internal') && !internalClientValid(req.headers)) {
+                return send(
+                    res,
+                    cors,
+                    401,
+                    { 'Content-Type': 'text/plain' },
+                    'Invalid client authentication'
+                );
+            }
             const isPublicPanel = path.startsWith(`${PUB}/`);
             if (isPublicPanel && config.public_busy) {
                 throw new ApiError(429, 'BUSY', 'Try again shortly', { retry_after_ms: 2000 });
@@ -2377,7 +4754,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     const port = Number(argValue('--port', process.env.MOCK_PORT ?? 8761));
     const host = argValue('--host', '127.0.0.1');
     const approveBase = argValue('--approve-base', process.env.MOCK_APPROVE_BASE_URL);
-    const mock = createMockBackend({ approveBase });
+    const phase2 = process.argv.includes('--phase2') ? PHASE2_ALL_ON : {};
+    const mock = createMockBackend({ approveBase, config: phase2 });
     const bound = await mock.listen(port, host);
     console.log(`[mock-backend] listening on http://${host}:${bound}`);
 }

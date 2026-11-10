@@ -28,6 +28,13 @@ export interface PanelDeviceInfo {
     appId: string;
     appVersionName: string;
     appVersionCode: number;
+    /** Phase 2 builds: PLAY, DIRECT or DEV. Absent on phase 1 APKs. */
+    channel?: string;
+    /** Phase 2 builds: true only where the in-app updater exists. */
+    selfUpdate?: boolean;
+    /** Phase 2 builds, diagnostics only. */
+    packageName?: string;
+    installerPackage?: string | null;
     totalRamMb: number;
     screenWidthPx: number;
     screenHeightPx: number;

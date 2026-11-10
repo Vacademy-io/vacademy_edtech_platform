@@ -2,12 +2,13 @@
  * The QR sign-in card, used on the signed-out Home and full-screen at #/signin.
  * Every state in the table: QR with no number, scanned with the number, approving,
  * dimmed, offline, wrong date, unavailable. No number shows before a scan, so a
- * photo of the QR does not carry it.
+ * photo of the QR does not carry it. Phase 2 slots: the licence, awaiting and
+ * updateRequired views, and the update bar while signed out.
  *
  *   <SignInCard onDone={...} />                       signed-out Home
  *   <SignInCard purpose="ATTACH_REMOTE" onDone=... /> Connect phone
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ import { PanelLoading } from '../components/PanelScreenState';
 import { openDeviceSettings, type PanelSettingsTarget } from '../lib/native';
 import { navigate } from '../router';
 import { formatCode } from './formatCode';
+import { LicenceGraceChip } from './LicenceGraceChip';
 import {
     createSignInFlow,
     type SignInFlow,
@@ -35,7 +37,19 @@ import {
     type SignInView,
 } from './signInFlow';
 import { useDeviceRecord } from './store';
+import { UpdateBar } from './UpdateBar';
 import { useQrSize } from './useQrSize';
+
+// Shown only when a sign-in is refused: kept out of the first load.
+const LicenceCard = lazy(() =>
+    import('./refusedViews').then((module) => ({ default: module.LicenceCard }))
+);
+const AwaitingCard = lazy(() =>
+    import('./refusedViews').then((module) => ({ default: module.AwaitingCard }))
+);
+const UpdateRequiredCard = lazy(() =>
+    import('./refusedViews').then((module) => ({ default: module.UpdateRequiredCard }))
+);
 
 export interface SignInCardProps {
     purpose?: PanelChallengePurpose;
@@ -224,6 +238,27 @@ export function SignInCard({
                 </div>
             );
             break;
+        case 'licence':
+            body = (
+                <Suspense fallback={<PanelLoading />}>
+                    <LicenceCard onRetry={() => flow.retry()} />
+                </Suspense>
+            );
+            break;
+        case 'awaiting':
+            body = (
+                <Suspense fallback={<PanelLoading />}>
+                    <AwaitingCard onRetry={() => flow.retry()} />
+                </Suspense>
+            );
+            break;
+        case 'updateRequired':
+            body = (
+                <Suspense fallback={<PanelLoading />}>
+                    <UpdateRequiredCard onRetry={() => flow.retry()} />
+                </Suspense>
+            );
+            break;
     }
 
     const passwordAllowed =
@@ -234,6 +269,10 @@ export function SignInCard({
     return (
         <section className={cn('rounded-lg border border-border bg-card p-4', className)}>
             {body}
+            {purpose === 'SIGN_IN' && view.view !== 'licence' && <LicenceGraceChip />}
+            {purpose === 'SIGN_IN' && view.view !== 'updateRequired' && (
+                <UpdateBar placement="signin" />
+            )}
             {(showActions || passwordAllowed) && (
                 <div className="flex flex-wrap items-center justify-center space-x-4 pt-4">
                     {showActions && (

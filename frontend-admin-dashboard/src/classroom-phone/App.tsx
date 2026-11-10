@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActionButton, StateCard } from './components/ui';
 import { ApproveScreen } from './screens/ApproveScreen';
 import { CodeEntryScreen } from './screens/CodeEntryScreen';
+import { InstallerScreen } from './screens/InstallerScreen';
 import { PairScreen } from './screens/PairScreen';
 import { RemoteScreen } from './screens/RemoteScreen';
 import { StartScreen } from './screens/StartScreen';
@@ -56,6 +57,8 @@ export function App() {
         screen = <ApproveScreen key={revision} route={route} onSignOutRetry={signOutOfPhone} />;
     } else if (route?.kind === 'pair') {
         screen = <PairScreen key={revision} route={route} onSignOutRetry={signOutOfPhone} />;
+    } else if (route?.kind === 'installer') {
+        screen = <InstallerScreen key={revision} route={route} onSignOutRetry={signOutOfPhone} />;
     } else if (route?.kind === 'start') {
         screen = <StartScreen key={revision} route={route} onSignOutRetry={signOutOfPhone} />;
     } else if (remote) {

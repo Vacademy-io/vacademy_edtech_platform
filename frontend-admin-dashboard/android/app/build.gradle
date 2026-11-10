@@ -33,6 +33,9 @@ def flavorSpecs = new JsonSlurper().parse(file("mobile-flavors.json"))
             minWebViewMajor: (cfg.minWebViewMajor ?: 0) as int,
             // Hosts PanelDevice.openMeeting may open (exact names). Absent → none.
             meetingHosts   : (cfg.meetingHosts ?: []) as List,
+            // Hosts the direct-channel app updater may download an APK from (exact
+            // names, https only). Absent → none, so the updater refuses every URL.
+            updateHosts    : (cfg.updateHosts ?: []) as List,
         ]
     }
 
@@ -46,6 +49,18 @@ if (keystorePropsFile.exists()) {
     keystoreProps.load(new FileInputStream(keystorePropsFile))
 }
 
+// --- Direct-channel signing (classroom APK outside the store) ----------------
+// Reads android/keystore-direct.properties (git-ignored, same keys as above). It
+// must hold a key of its own, never the store upload key: installed direct apps
+// accept an update only when it carries the SAME certificate, so this key signs
+// every future direct build. Absent → debug signing (lab builds only;
+// scripts/panel/publish-direct-apk.mjs refuses a debug-signed APK).
+def directKeystorePropsFile = rootProject.file('keystore-direct.properties')
+def directKeystoreProps = new Properties()
+if (directKeystorePropsFile.exists()) {
+    directKeystoreProps.load(new FileInputStream(directKeystorePropsFile))
+}
+
 android {
     namespace = "io.vacademy.admin.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -56,6 +71,13 @@ android {
         versionCode 3
         versionName "1.0.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Distribution channel, read by the panel app (PanelDevicePlugin.getInfo →
+        // app_channel on /sync). Store builds report PLAY; the build types below
+        // override it. panel_self_update and panel_updater_class gate the in-app
+        // updater: store builds carry neither the class nor its name.
+        resValue "bool", "panel_self_update", "false"
+        resValue "string", "panel_channel", "PLAY"
+        resValue "string", "panel_updater_class", ""
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -71,12 +93,38 @@ android {
                 keyPassword keystoreProps['keyPassword']
             }
         }
+        direct {
+            if (directKeystorePropsFile.exists()) {
+                storeFile file(directKeystoreProps['storeFile'])
+                storePassword directKeystoreProps['storePassword']
+                keyAlias directKeystoreProps['keyAlias']
+                keyPassword directKeystoreProps['keyPassword']
+            }
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+        debug {
+            resValue "string", "panel_channel", "DEV"
+        }
+        // Classroom APK for panels without a store (assembleVacademyClassroomDirect).
+        // Own package, so it never collides with the store install; carries the
+        // in-app updater from src/direct/ (plugin + REQUEST_INSTALL_PACKAGES), which
+        // no other variant has. Enabled for the vacademyClassroom flavor only (see
+        // androidComponents below).
+        direct {
+            initWith release
+            applicationIdSuffix ".direct"
+            versionNameSuffix "-direct"
+            matchingFallbacks = ['release']
+            signingConfig directKeystorePropsFile.exists() ? signingConfigs.direct : signingConfigs.debug
+            resValue "bool", "panel_self_update", "true"
+            resValue "string", "panel_channel", "DIRECT"
+            resValue "string", "panel_updater_class", "io.vacademy.admin.app.panel.update.PanelUpdaterPlugin"
         }
     }
 
@@ -100,7 +148,18 @@ android {
                 resValue "bool", "panel_mode", spec.panelMode ? "true" : "false"
                 resValue "integer", "panel_min_webview_major", "${spec.minWebViewMajor}"
                 resValue "string", "panel_meeting_hosts", spec.meetingHosts.join(',')
+                resValue "string", "panel_update_hosts", spec.updateHosts.join(',')
             }
+        }
+    }
+}
+
+// The direct build type exists for the classroom app only: no admin or other
+// white-label variant gets one (AGP variant API, part of the Android plugin).
+androidComponents {
+    beforeVariants(selector().withBuildType('direct')) { variantBuilder ->
+        if (variantBuilder.flavorName != 'vacademyClassroom') {
+            variantBuilder.enable = false
         }
     }
 }
@@ -172,9 +231,13 @@ googleServices {
 android.applicationVariants.all { v ->
     def guard = tasks.register("verify${v.name.capitalize()}CapConfig") {
         group = 'verification'
-        description = "Checks that the synced capacitor.config.json belongs to ${v.applicationId}."
+        // The FLAVOR's applicationId (from mobile-flavors.json), not the variant's: a
+        // build-type suffix (the direct build's ".direct") changes the package name but
+        // not the synced web bundle, which `cap sync` writes for the flavor's appId.
+        // (v.mergedFlavor.applicationId already carries the suffix in AGP 8.)
+        def expectedId = flavorSpecs.find { it.flavorName == v.flavorName }?.applicationId ?: v.applicationId
+        description = "Checks that the synced capacitor.config.json belongs to ${expectedId}."
         def configFile = file('src/main/assets/capacitor.config.json')
-        def expectedId = v.applicationId
         def variantName = v.name
         def flavorKey = (v.flavorName ?: '').toLowerCase()
         def requested = flavorKey && gradle.startParameter.taskNames.any { it.toLowerCase().contains(flavorKey) }

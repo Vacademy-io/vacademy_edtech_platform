@@ -13,6 +13,7 @@ import { SessionLeaderboardModal } from '@/components/common/slides/components/S
 import { PanelEmpty, PanelError, PanelLoading } from '../components/PanelScreenState';
 import { PanelStage, PanelStageBody } from '../components/PanelStage';
 import { PanelTopBar } from '../components/PanelTopBar';
+import { useActivityLog } from '../device/activityLog';
 import { goBack, navigate } from '../router';
 import { DeckLoading } from './PanelDeckView';
 import { PanelVoltPresenter } from './PanelVoltPresenter';
@@ -45,6 +46,17 @@ export function PanelVoltLive({
     const [leaving, setLeaving] = useState(false);
     const deck = deckQuery.data;
     const title = deck?.title || live.record?.title || t('list.title');
+    const loadedTitle = deck?.title || live.record?.title;
+    useActivityLog(
+        loadedTitle
+            ? {
+                  kind: 'DECK_LIVE',
+                  ref_id: presentationId,
+                  parent_id: sessionId,
+                  title: loadedTitle,
+              }
+            : null
+    );
 
     const backToDeck = useCallback(
         () => navigate('volt', { view: 'deck', id: presentationId }, { replace: true }),

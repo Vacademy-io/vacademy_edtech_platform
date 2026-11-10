@@ -1,5 +1,399 @@
 {
     "notAdmin": "Seul un administrateur de l'établissement peut gérer les écrans de classe.",
+    "tabs": {
+        "label": "Sections des écrans de classe",
+        "panels": "Écrans et salles",
+        "usage": "Utilisation",
+        "licence": "Licences",
+        "installers": "Installateurs",
+        "alerts": "Alertes",
+        "empty": "Rien à afficher ici pour le moment."
+    },
+    "usage": {
+        "title": "Utilisation des écrans",
+        "description": "L'utilisation des écrans de classe par salle, enseignant et contenu. Les dates et heures sont dans votre fuseau horaire ({{tz}}).",
+        "loadError": "Impossible de charger l'utilisation des écrans.",
+        "featureOffTitle": "Utilisation indisponible",
+        "featureOff": "Les rapports d'utilisation ne sont pas activés pour cet établissement.",
+        "unknownTeacher": "Enseignant inconnu",
+        "unknownRoom": "Salle inconnue",
+        "range": {
+            "label": "Dates",
+            "last7": "7 derniers jours",
+            "thisWeek": "Cette semaine",
+            "lastWeek": "Semaine dernière",
+            "last30": "30 derniers jours",
+            "term": "Trimestre ({{days}} derniers jours)",
+            "custom": "Personnalisé",
+            "from": "Du",
+            "to": "Au",
+            "showing": "Du {{from}} au {{to}}",
+            "incomplete": "Choisissez une date de début et une date de fin.",
+            "order": "La date de début doit précéder ou égaler la date de fin.",
+            "tooLong": "Choisissez au plus {{days}} jours."
+        },
+        "mySchools": {
+            "label": "Mes écoles"
+        },
+        "kpi": {
+            "hours": "Heures d'écran",
+            "hoursCaption": "Sessions : {{count}}",
+            "rooms": "Salles utilisées",
+            "roomsValue": "{{used}} sur {{total}}",
+            "roomsCaption": "Salles équipées d'un écran qui ont servi",
+            "teachers": "Enseignants",
+            "teachersCaption": "Cours en direct lancés : {{count}}",
+            "idle": "Salles inactives",
+            "idleCaption": "Ces salles ont un écran que personne n'a utilisé",
+            "idleNone": "Toutes les salles équipées ont servi"
+        },
+        "chart": {
+            "title": "Heures d'écran par jour",
+            "description": "Temps pendant lequel des enseignants étaient connectés à un écran, chaque jour.",
+            "aria": "Graphique en barres des heures d'écran par jour du {{from}} au {{to}}",
+            "hours": "Heures : {{value}}",
+            "sessions": "Sessions : {{value}}"
+        },
+        "rooms": {
+            "title": "Salles",
+            "description": "Les plus utilisées d'abord. Ouvrez une salle pour voir ses sessions.",
+            "open": "Voir les sessions de {{room}}",
+            "emptyTitle": "Aucune salle utilisée",
+            "emptyBody": "Aucune salle n'a eu de session sur un écran pendant ces dates.",
+            "columns": {
+                "room": "Salle",
+                "hours": "Heures",
+                "sessions": "Sessions",
+                "teachers": "Enseignants",
+                "days": "Jours d'utilisation",
+                "lastUsed": "Dernière utilisation"
+            }
+        },
+        "teachers": {
+            "title": "Enseignants",
+            "description": "Le plus de temps d'écran d'abord. Ouvrez un enseignant pour voir ses sessions.",
+            "open": "Voir les sessions de {{teacher}}",
+            "emptyTitle": "Aucun enseignant",
+            "emptyBody": "Aucun enseignant ne s'est connecté à un écran pendant ces dates.",
+            "columns": {
+                "teacher": "Enseignant",
+                "hours": "Heures",
+                "sessions": "Sessions",
+                "rooms": "Salles",
+                "days": "Jours actifs",
+                "topContent": "Contenu le plus utilisé"
+            }
+        },
+        "idle": {
+            "title": "Salles inactives",
+            "description": "Salles avec un écran en état de marche sur lequel personne ne s'est connecté pendant ces dates.",
+            "online": "En ligne",
+            "offline": "Hors ligne",
+            "never": "Pas encore utilisée",
+            "emptyTitle": "Aucune salle inactive",
+            "emptyBody": "Toutes les salles équipées d'un écran ont servi pendant ces dates.",
+            "columns": {
+                "room": "Salle",
+                "status": "Écran",
+                "lastUsed": "Dernière utilisation"
+            }
+        },
+        "content": {
+            "title": "Ce qui a été enseigné",
+            "description": "Leçons, présentations, cours en direct et tableaux blancs ouverts sur les écrans.",
+            "coverage": "Le contenu a été enregistré pour {{pct}} % des sessions.",
+            "coverageWhy": "Les écrans sous une ancienne version de l'application n'enregistrent pas le contenu : cette liste peut être incomplète.",
+            "recordedFrom": "Enregistré depuis le {{date}}.",
+            "notRecorded": "Non enregistré",
+            "notRecordedBody": "Aucun contenu n'a été enregistré pendant ces dates. Les écrans l'enregistrent dès qu'ils utilisent la dernière version de l'application.",
+            "untitled": "Sans titre",
+            "columns": {
+                "kind": "Type",
+                "title": "Titre",
+                "time": "Durée",
+                "sessions": "Sessions",
+                "teachers": "Enseignants"
+            }
+        },
+        "kinds": {
+            "LESSON": "Leçon",
+            "DECK": "Présentation",
+            "DECK_LIVE": "Présentation en direct",
+            "CLASS": "Cours en direct",
+            "WHITEBOARD": "Tableau blanc"
+        },
+        "sessions": {
+            "titleRoom": "Sessions dans {{name}}",
+            "titleTeacher": "Sessions de {{name}}",
+            "loadError": "Impossible de charger les sessions.",
+            "emptyTitle": "Aucune session",
+            "emptyBody": "Il n'y a eu aucune session pendant ces dates.",
+            "noContent": "Aucun contenu enregistré"
+        },
+        "endReasons": {
+            "ACTIVE": "Toujours connecté",
+            "SIGN_OUT": "Déconnecté",
+            "IDLE": "Déconnecté pour inactivité",
+            "CLASS_END": "Fin du cours",
+            "ADMIN": "Terminée par un administrateur",
+            "PHONE": "Terminée depuis un téléphone",
+            "REPLACED": "Écran remplacé",
+            "SUPERSEDED": "Remplacée par une autre connexion",
+            "UNBOUND": "Écran déplacé",
+            "EXPIRED": "Session expirée",
+            "ACCESS_REMOVED": "Accès retiré",
+            "DEAD_MAN": "L'écran ne répondait plus"
+        },
+        "startedVia": {
+            "QR": "QR code du téléphone",
+            "PASSWORD": "Mot de passe"
+        },
+        "duration": {
+            "hm": "{{h}} h {{m}} min",
+            "m": "{{m}} min"
+        },
+        "empty": {
+            "title": "Aucune utilisation pendant ces dates",
+            "body": "Personne ne s'est connecté à un écran du {{from}} au {{to}}. Essayez d'autres dates."
+        },
+        "export": {
+            "button": "Exporter en CSV",
+            "working": "Préparation…",
+            "done": "Sessions exportées : {{count}}.",
+            "doneSchools": "Écoles exportées : {{count}}.",
+            "truncated": "Les {{count}} premières sessions ont été exportées. Choisissez moins de jours pour exporter le reste.",
+            "error": "Impossible d'exporter.",
+            "empty": "Il n'y a aucune session à exporter.",
+            "columns": {
+                "date": "Date",
+                "room": "Salle",
+                "teacher": "Enseignant",
+                "started": "Début",
+                "ended": "Fin",
+                "minutes": "Minutes",
+                "endReason": "Fin de session",
+                "startedVia": "Connexion par",
+                "content": "Contenu",
+                "roomsUsed": "Salles utilisées",
+                "roomsWithPanel": "Salles équipées d'un écran"
+            }
+        },
+        "multi": {
+            "title": "Mes écoles",
+            "description": "Utilisation des écrans dans chaque école dont vous êtes administrateur ({{count}}).",
+            "loadError": "Impossible de charger l'utilisation de vos écoles.",
+            "emptyTitle": "Aucune école",
+            "emptyBody": "Aucune utilisation d'écran à comparer pendant ces dates.",
+            "fallbackName": "École {{id}}",
+            "columns": {
+                "school": "École",
+                "hours": "Heures d'écran",
+                "sessions": "Sessions",
+                "rooms": "Salles utilisées",
+                "teachers": "Enseignants",
+                "idle": "Salles inactives"
+            }
+        }
+    },
+    "licence": {
+        "title": "Licences",
+        "description": "Une place permet aux enseignants de se connecter sur l'écran d'une salle. La place appartient à la salle : elle reste quand un écran est remplacé.",
+        "loadError": "Impossible de charger les licences.",
+        "summary": {
+            "state": "Statut",
+            "seats": "Places utilisées",
+            "seatsValue": "{{used}} sur {{granted}}",
+            "endsOn": "Fin le",
+            "graceUntil": "Période de grâce jusqu'au"
+        },
+        "state": {
+            "UNMANAGED": "Non gérée",
+            "ACTIVE": "Active",
+            "TRIAL": "Essai",
+            "GRACE": "Période de grâce",
+            "EXPIRED": "Terminée",
+            "NONE": "Aucune licence"
+        },
+        "note": {
+            "shadow": "Pas encore appliqué. Les enseignants peuvent toujours se connecter sur tous les écrans, quel que soit le statut de la place.",
+            "unmanaged": "Les places ne sont pas gérées pour cet établissement. Les enseignants peuvent se connecter sur tous les écrans.",
+            "overLimit": "Plus de salles ont une place que vous n'avez de places. Libérez la place d'une salle que vous n'utilisez plus.",
+            "ended": "Votre licence est terminée. Les enseignants ne peuvent pas se connecter sur les écrans qui ont besoin d'une place."
+        },
+        "grants": {
+            "title": "Périodes de licence",
+            "kind": {
+                "TRIAL": "Essai",
+                "PAID": "Licence",
+                "COMPLIMENTARY": "Offerte"
+            },
+            "seats": "Places : {{seats}}",
+            "period": "du {{from}} au {{to}}",
+            "grace": "Période de grâce après la fin, en jours : {{days}}"
+        },
+        "rooms": {
+            "title": "Salles",
+            "search": "Rechercher des salles",
+            "noMatch": "Aucune salle ne correspond à cette recherche.",
+            "noPanel": "Aucun écran",
+            "hasPanel": "A un écran",
+            "empty": {
+                "title": "Aucune salle avec un écran pour le moment",
+                "body": "Les salles apparaissent ici dès qu'un écran y est associé."
+            },
+            "columns": {
+                "room": "Salle",
+                "state": "Place",
+                "since": "Place depuis",
+                "actions": "Actions"
+            },
+            "assignFor": "Attribuer une place à {{room}}",
+            "releaseFor": "Libérer la place de {{room}}",
+            "assign": "Attribuer",
+            "release": "Libérer"
+        },
+        "roomState": {
+            "LICENSED": "Sous licence",
+            "GRACE": "Période de grâce",
+            "OVER_LIMIT": "Au-delà de la limite",
+            "UNLICENSED": "Sans place",
+            "EXPIRED": "Terminée",
+            "UNMANAGED": "Non gérée"
+        },
+        "assign": {
+            "title": "Attribuer une place à {{room}} ?",
+            "body": "Les enseignants pourront se connecter sur l'écran de {{room}}. Cela utilise une de vos places libres.",
+            "confirm": "Attribuer la place",
+            "success": "{{room}} a maintenant une place."
+        },
+        "release": {
+            "title": "Libérer la place de {{room}} ?",
+            "body": "Tant que les places sont appliquées, les enseignants ne peuvent pas se connecter sur l'écran de {{room}}. Un cours en cours n'est pas interrompu. La place devient libre pour une autre salle.",
+            "confirm": "Libérer la place",
+            "success": "Place de {{room}} libérée."
+        },
+        "errors": {
+            "NO_SEAT": "Toutes les places sont utilisées. Libérez d'abord la place d'une autre salle."
+        }
+    },
+    "installers": {
+        "title": "Installateurs",
+        "description": "Un installateur peut installer des écrans dans vos salles. Chaque écran qu'il installe attend votre approbation dans Écrans et salles.",
+        "loadError": "Impossible de charger les installateurs.",
+        "empty": {
+            "title": "Aucun installateur pour le moment",
+            "body": "Créez un code et donnez-le à l'installateur qui installe vos écrans."
+        },
+        "columns": {
+            "name": "Installateur",
+            "linked": "Associé le",
+            "until": "Peut installer jusqu'au",
+            "installs": "Écrans installés",
+            "actions": "Actions"
+        },
+        "via": {
+            "SCHOOL_CODE": "Avec votre code",
+            "SUPER_ADMIN": "Par l'assistance"
+        },
+        "noEnd": "Pas de date de fin",
+        "ended": "Terminé",
+        "revokeFor": "Retirer {{name}}",
+        "invite": {
+            "open": "Autoriser un installateur",
+            "title": "Autoriser un installateur à installer des écrans",
+            "intro": "Vous obtenez un code à donner à l'installateur. Il le saisit dans l'application Classroom sur son téléphone après s'être connecté.",
+            "daysLabel": "L'installateur peut installer des écrans pendant",
+            "days": "{{days}} jours",
+            "create": "Créer le code",
+            "codeLabel": "Code installateur",
+            "shownOnce": "Ce code n'est affiché qu'une seule fois. Copiez-le maintenant.",
+            "expires": "À utiliser avant le {{when}}.",
+            "copy": "Copier le code",
+            "copied": "Code copié.",
+            "copyFailed": "Copie impossible. Sélectionnez le code et copiez-le vous-même.",
+            "cancel": "Annuler ce code",
+            "cancelled": "Code annulé. Il ne peut plus être utilisé."
+        },
+        "revoke": {
+            "title": "Retirer {{name}} ?",
+            "body": "{{name}} ne pourra plus installer d'écrans ici. Les écrans déjà installés restent, et ceux en attente d'approbation vous attendent toujours.",
+            "confirm": "Retirer l'installateur",
+            "success": "{{name}} retiré."
+        },
+        "approval": {
+            "banner": "Installés par {{name}} et en attente de votre approbation : {{count}}",
+            "bannerMixed": "Installés par des installateurs et en attente de votre approbation : {{count}}",
+            "bannerHelp": "Vérifiez que chaque écran est dans la bonne salle, puis approuvez-le ou refusez-le.",
+            "chip": "En attente d'approbation",
+            "rejectedChip": "Refusé",
+            "installedBy": "Installé par {{name}}",
+            "approve": "Approuver",
+            "reject": "Refuser",
+            "approveFor": "Approuver l'écran de {{room}}",
+            "rejectFor": "Refuser l'écran de {{room}}",
+            "approveTitle": "Approuver l'écran de {{room}} ?",
+            "approveBody": "Les enseignants pourront s'y connecter une fois approuvé. {{room}} reçoit une place s'il en reste une libre.",
+            "approveConfirm": "Approuver l'écran",
+            "approved": "Écran de {{room}} approuvé.",
+            "rejectTitle": "Refuser l'écran de {{room}} ?",
+            "rejectBody": "L'écran revient à son écran de configuration et {{room}} se libère. Pour réutiliser cet écran, il faut un nouveau code de configuration.",
+            "rejectConfirm": "Refuser l'écran",
+            "rejected": "Écran de {{room}} refusé."
+        }
+    },
+    "alerts": {
+        "title": "Alertes",
+        "description": "Les écrans à vérifier, les plus urgents en premier.",
+        "loadError": "Impossible de charger les alertes.",
+        "empty": {
+            "title": "Rien à signaler",
+            "body": "Tous les écrans sont en ligne, à jour et utilisés."
+        },
+        "severity": {
+            "bad": "Action requise",
+            "warn": "À vérifier bientôt",
+            "info": "Pour information"
+        },
+        "kind": {
+            "OFFLINE": "Hors ligne",
+            "NOT_CONFIRMED": "Non confirmé",
+            "AWAITING_APPROVAL": "En attente d'approbation",
+            "UPDATE_REQUIRED": "Mise à jour requise",
+            "APP_OUTDATED": "Mise à jour disponible",
+            "WEBVIEW_OLD": "WebView ancien",
+            "UNUSED": "Non utilisé",
+            "LICENCE_ROOM": "Sans place",
+            "LICENCE_ENDING": "Licence bientôt terminée",
+            "other": "À vérifier"
+        },
+        "todo": {
+            "OFFLINE": "Vérifiez que l'écran est allumé et connecté au Wi-Fi.",
+            "NOT_CONFIRMED": "Touchez Confirmer sur l'écran, ou retirez-le et ajoutez-le à nouveau.",
+            "AWAITING_APPROVAL": "Approuvez-le ou refusez-le dans Écrans et salles.",
+            "UPDATE_REQUIRED": "Ouvrez l'écran et installez la mise à jour.",
+            "APP_OUTDATED": "Ouvrez l'écran et installez la mise à jour.",
+            "WEBVIEW_OLD": "Mettez à jour Android System WebView sur l'écran.",
+            "UNUSED": "Montrez aux enseignants comment se connecter.",
+            "LICENCE_ROOM": "Attribuez une place à cette salle dans Licences.",
+            "LICENCE_ENDING": "Renouvelez avant la date de fin pour que les enseignants puissent continuer à se connecter.",
+            "other": "Quelque chose sur ce panneau est à vérifier. Rechargez cette page pour les détails."
+        },
+        "institute": "Tout l'établissement",
+        "since": "Depuis {{when}}",
+        "summary": "Écrans à vérifier : {{count}}",
+        "summaryHelp": "Consultez l'onglet Alertes pour savoir quoi faire.",
+        "notify": {
+            "title": "Alertes par e-mail",
+            "description": "Un e-mail par jour aux administrateurs de l'établissement, avec uniquement les nouveaux problèmes. Rien n'est envoyé un jour sans nouveauté.",
+            "email": "Envoyer les alertes par e-mail",
+            "hour": "Envoyer à",
+            "timezone": "Fuseau horaire : {{zone}}",
+            "save": "Enregistrer",
+            "saved": "Paramètres d'alerte enregistrés.",
+            "loadError": "Impossible de charger les paramètres d'alerte.",
+            "saveError": "Impossible d'enregistrer les paramètres d'alerte. Réessayez."
+        }
+    },
     "common": {
         "cancel": "Annuler",
         "done": "Terminé",
@@ -24,6 +418,13 @@
         "ROOM_OTHER_INSTITUTE": "Cette salle appartient à un autre établissement.",
         "TRY_AGAIN": "L'opération n'a pas pu aboutir. Réessayez dans un instant.",
         "WRONG_NUMBER": "Ce nombre ne correspond pas.",
+        "LICENCE_REQUIRED": "Cette salle a besoin d'une place avant que les enseignants puissent se connecter. Attribuez-en une dans Licences.",
+        "AWAITING_APPROVAL": "Ce panneau attend une approbation dans Panneaux et salles.",
+        "UPDATE_REQUIRED": "Ce panneau doit mettre à jour son application avant de pouvoir être utilisé.",
+        "FEATURE_OFF": "Cette fonction n'est pas activée pour votre établissement.",
+        "NOT_INSTALLER": "Cet installateur ne peut plus installer de panneaux pour votre établissement.",
+        "INVITE_INVALID": "Ce code n'est pas valide. Il a peut-être déjà été utilisé, annulé ou a expiré.",
+        "NO_SEAT": "Toutes les places sont utilisées. Libérez d'abord la place d'une autre salle.",
         "generic": "Une erreur est survenue. Réessayez.",
         "network": "Impossible de joindre le serveur. Vérifiez votre connexion, puis réessayez."
     },

@@ -1,3 +1,4 @@
+import { BACKEND_BASE_URL } from '@/config/baseUrl';
 import {
     PANEL_BEARER_BASE,
     PANEL_PUBLIC_BASE,
@@ -13,13 +14,21 @@ import {
     type EndedResponse,
     type MySessionResponse,
     type PairPreviewResponse,
+    type PanelPartnerClaimRequest,
+    type PanelPartnerCustomerRow,
+    type PanelPartnerLinkRedeemResponse,
+    type PanelPartnerMeResponse,
+    type PanelPartnerRef,
+    type PanelPartnerRoomRow,
     type RemoteNavResponse,
     type RemoteStateResponse,
     type RoomListResponse,
     type TodayResponse,
     type TodayScope,
+    isPanelApiError,
 } from '@/classroom-shared/apiTypes';
-import { PhoneApiError, request } from './http';
+import { expireSignIn, getAccessToken } from './auth';
+import { isSignInFailure, PhoneApiError, request } from './http';
 
 const NAV_TIMEOUT_MS = 6000;
 const STATE_TIMEOUT_MS = 8000;
@@ -120,6 +129,95 @@ export const adminRooms = (instituteId: string) =>
 export const deviceClaim = (body: DeviceClaimRequest) =>
     data(
         request<DeviceClaimResponse>(`${PANEL_BEARER_BASE}/admin/devices/claim`, {
+            method: 'POST',
+            body,
+            bearer: true,
+        })
+    );
+
+// -------------------------------------------------------------- installer ---
+
+const PROBE_TIMEOUT_MS = 8000;
+
+/**
+ * The installer org this account sets up panels for, or null for everyone else.
+ *
+ * Not sent through request(): this asks a question of every account that pairs a
+ * panel, so an answer about the account (not an installer, the feature switched off,
+ * a server without this route) must never sign the phone out: those mean null. A
+ * refused sign-in (the rules of request(), for a panel path) does end it, as any other
+ * Bearer call would, and throws kind 'sign-in'. It throws too when there is no answer
+ * at all, so the screen can offer a retry.
+ */
+export async function installerProbe(): Promise<PanelPartnerRef | null> {
+    const token = getAccessToken();
+    if (!token) return null;
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), PROBE_TIMEOUT_MS);
+    let response: Response;
+    let body: Partial<PanelPartnerMeResponse> | null = null;
+    try {
+        response = await fetch(`${BACKEND_BASE_URL}${PANEL_BEARER_BASE}/partner/me`, {
+            headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+            signal: abort.signal,
+        });
+        const text = await response.text();
+        try {
+            body = text ? JSON.parse(text) : null;
+        } catch {
+            body = null;
+        }
+    } catch {
+        throw new PhoneApiError('network', null, null, null);
+    } finally {
+        clearTimeout(timer);
+    }
+    if (response.ok) return body?.partner?.id ? body.partner : null;
+    const status = response.status;
+    if (status === 429 || status === 503) throw new PhoneApiError('busy', status, null, null);
+    const code = isPanelApiError(body) ? body.code : null;
+    const refusal = body as { error?: unknown; path?: unknown } | null;
+    // A server without this route: an answer about the server, never about the sign-in.
+    const noRoute =
+        status === 404 ||
+        (status === 403 && refusal?.error === 'ACCESS_DENIED' && refusal.path === '/error');
+    if (!noRoute && isSignInFailure(status, body, token, true)) {
+        expireSignIn();
+        throw new PhoneApiError('sign-in', status, code, body);
+    }
+    if (status >= 500) throw new PhoneApiError('api', status, code, null);
+    return null;
+}
+
+export const redeemPartnerCode = (code: string) =>
+    data(
+        request<PanelPartnerLinkRedeemResponse>(`${PANEL_BEARER_BASE}/partner/links/redeem`, {
+            method: 'POST',
+            body: { code },
+            bearer: true,
+        })
+    );
+
+export const partnerCustomers = () =>
+    data(
+        request<PanelPartnerCustomerRow[]>(`${PANEL_BEARER_BASE}/partner/customers`, {
+            bearer: true,
+        })
+    );
+
+export const partnerRooms = (instituteId: string) =>
+    data(
+        request<PanelPartnerRoomRow[]>(`${PANEL_BEARER_BASE}/partner/rooms`, {
+            query: { institute_id: instituteId },
+            bearer: true,
+        })
+    );
+
+/** The panel lands waiting for the school's approval. There is no replace. */
+export const partnerClaim = (body: PanelPartnerClaimRequest) =>
+    data(
+        request<DeviceClaimResponse>(`${PANEL_BEARER_BASE}/partner/devices/claim`, {
             method: 'POST',
             body,
             bearer: true,

@@ -45,7 +45,9 @@ import java.io.OutputStream;
  *   <li>{@code getInfo() → {webViewPackage, webViewVersion, webViewMajor, minWebViewMajor, sdkInt,
  *       release, androidRelease, manufacturer, brand, model, board, hardware, abis, abi,
  *       isDefaultHome, panelMode, appId, appVersionName, appVersionCode, totalRamMb,
- *       screenWidthPx, screenHeightPx, densityDpi}}</li>
+ *       screenWidthPx, screenHeightPx, densityDpi, channel, selfUpdate, packageName,
+ *       installerPackage}}. {@code channel} is PLAY, DIRECT or DEV (the build type; see
+ *       android/app/build.gradle); {@code installerPackage} is diagnostics only.</li>
  *   <li>{@code openSettings({target:'home'|'settings'|'app'|'developer'|'wifi'|'date'}) → {action}}
  *       (rejects with code NO_ACTIVITY / INVALID_TARGET)</li>
  *   <li>{@code saveImage({base64, fileName, mimeType}) → {uri, displayPath}}
@@ -115,6 +117,11 @@ public class PanelDevicePlugin extends Plugin {
         }
         ret.put("appVersionName", versionName);
         ret.put("appVersionCode", versionCode);
+        ret.put("channel", ctx.getString(R.string.panel_channel));
+        ret.put("selfUpdate", ctx.getResources().getBoolean(R.bool.panel_self_update));
+        ret.put("packageName", ctx.getPackageName());
+        String installer = installerPackage(ctx);
+        ret.put("installerPackage", installer == null ? JSObject.NULL : installer);
 
         long totalRamMb = 0;
         try {
@@ -392,6 +399,20 @@ public class PanelDevicePlugin extends Plugin {
             }
         }
         return null;
+    }
+
+    /** Who installed this app (a store, a package installer, adb), or null. Diagnostics only. */
+    @SuppressWarnings("deprecation")
+    static String installerPackage(Context ctx) {
+        try {
+            PackageManager pm = ctx.getPackageManager();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                return pm.getInstallSourceInfo(ctx.getPackageName()).getInstallingPackageName();
+            }
+            return pm.getInstallerPackageName(ctx.getPackageName());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** True when this app is the device's default Home (launcher) app. */

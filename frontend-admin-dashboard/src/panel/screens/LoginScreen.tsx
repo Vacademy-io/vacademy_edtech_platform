@@ -22,6 +22,7 @@ import { readDevice, usesDeviceAuth } from '../device/store';
 import { refreshBranding } from '../lib/branding';
 import {
     DevicePasswordError,
+    PANEL_REFUSAL_CODES,
     PanelLoginError,
     loginWithDevicePassword,
     loginWithPassword,
@@ -76,6 +77,12 @@ export default function LoginScreen() {
                 else goNext();
             } catch (error) {
                 const code = error instanceof DevicePasswordError ? error.code : 'SERVER';
+                if ((PANEL_REFUSAL_CODES as readonly string[]).indexOf(code) >= 0) {
+                    // About the panel, not the teacher: back to the sign-in card, whose new
+                    // check lands on the view that explains it (seat, approval, update).
+                    goBack();
+                    return;
+                }
                 setFormError(
                     td(`password.errors.${code}`, { institute: readDevice()?.institute_name ?? '' })
                 );
