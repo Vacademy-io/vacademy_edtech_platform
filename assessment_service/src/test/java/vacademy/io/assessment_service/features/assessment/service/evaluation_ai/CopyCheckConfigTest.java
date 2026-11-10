@@ -178,4 +178,18 @@ class CopyCheckConfigTest {
         assertThat(CopyCheckConfig.write(CopyCheckConfig.Settings.builder().answerLanguage("ur").build()))
                 .isEqualTo("{\"answer_language\":\"ur\"}");
     }
+
+    @Test
+    void a_confirmed_language_replaces_the_assessments_own_for_that_run() {
+        CopyCheckConfig.Settings own = settings("English", null, "Be fair.", "HIGHLIGHT");
+        CopyCheckConfig.Settings run = CopyCheckConfig.withAnswerLanguage(own, "hi");
+        assertThat(run.getAnswerLanguage()).isEqualTo("hi");
+        assertThat(run.getInstructions()).isEqualTo("Be fair.");
+        Map<String, Object> ctx = CopyCheckConfig.examContext(run, null);
+        assertThat(ctx).containsEntry("answer_language", "hi");
+
+        assertThat(CopyCheckConfig.withAnswerLanguage(null, "ur").getAnswerLanguage()).isEqualTo("ur");
+        assertThat(CopyCheckConfig.withAnswerLanguage(settings("English", null, null, null), null).getAnswerLanguage()).isNull();
+        assertThat(CopyCheckConfig.withAnswerLanguage(settings("English", null, null, null), "klingon").getAnswerLanguage()).isNull();
+    }
 }

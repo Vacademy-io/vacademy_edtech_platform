@@ -97,6 +97,14 @@ public class CopyCheckGradeRequestDto {
     @JsonProperty("student_name")
     private String studentName;
 
+    /**
+     * True only for a Bulk AI check copy with no confirmed language: a copy written
+     * in another language than its paper then stops for the teacher's "Check in
+     * &lt;language&gt;" instead of being checked in it. Null (not sent) everywhere else.
+     */
+    @JsonProperty("confirm_other_language")
+    private Boolean confirmOtherLanguage;
+
     /** {level, subject, instructions, answer_language} for the grader persona. */
     @JsonProperty("exam_context")
     private Map<String, Object> examContext;

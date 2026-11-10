@@ -122,6 +122,17 @@ public final class CopyCheckConfig {
     }
 
     /** The settings kept on the assessment; empty when none or unreadable. */
+    /**
+     * The settings with a language the teacher confirmed for one copy in place of
+     * the assessment's own; an unknown or blank code leaves them as they are.
+     */
+    public static Settings withAnswerLanguage(Settings settings, String confirmed) {
+        String code = answerLanguage(confirmed);
+        Settings s = settings == null ? new Settings() : settings;
+        if (code != null) s.setAnswerLanguage(code);
+        return s;
+    }
+
     public static Settings on(Assessment assessment) {
         return read(assessment == null ? null : assessment.getCopyCheckConfig());
     }

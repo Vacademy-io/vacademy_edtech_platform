@@ -13,6 +13,8 @@ import re
 
 COPY_UNREADABLE = "copy_unreadable"
 LANGUAGE_NOT_SUPPORTED = "language_not_supported"
+# The copy is in another language than the paper; the teacher confirms first.
+LANGUAGE_NEEDS_CONFIRMATION = "language_needs_confirmation"
 FILE_MISSING = "file_missing"
 FILE_UNAVAILABLE = "file_unavailable"
 NO_GRADABLE_QUESTIONS = "no_gradable_questions"
@@ -21,7 +23,7 @@ CANCELLED = "cancelled"
 ENGINE_UNAVAILABLE = "engine_unavailable"
 
 FAILURE_CODES = frozenset({
-    COPY_UNREADABLE, LANGUAGE_NOT_SUPPORTED, FILE_MISSING, FILE_UNAVAILABLE,
+    COPY_UNREADABLE, LANGUAGE_NOT_SUPPORTED, LANGUAGE_NEEDS_CONFIRMATION, FILE_MISSING, FILE_UNAVAILABLE,
     NO_GRADABLE_QUESTIONS, TIMED_OUT, CANCELLED, ENGINE_UNAVAILABLE,
     # set by assessment_service, listed so a code from there round-trips
     "insufficient_credits", "identify_failed",

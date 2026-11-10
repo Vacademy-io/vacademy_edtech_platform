@@ -29,6 +29,7 @@ from .failure import (
     COPY_UNREADABLE,
     ENGINE_UNAVAILABLE,
     FILE_MISSING,
+    LANGUAGE_NEEDS_CONFIRMATION,
     LANGUAGE_NOT_SUPPORTED,
     NO_GRADABLE_QUESTIONS,
     CANCELLED as FAILURE_CANCELLED,
@@ -777,9 +778,10 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             except Exception:
                 logger.warning("Answer language: could not render sample pages; reading as before", exc_info=True)
                 samples = {}
+            paper_text = language_vision.paper_text(questions)
             detected = await answer_language.detect(
                 llm, language_vision.language_model(), samples, page_ids,
-                language_vision.paper_text(questions), institute_id=institute_id, token_sink=grader,
+                paper_text, institute_id=institute_id, token_sink=grader,
             )
             if detected.unsupported is not None:
                 raise CopyCheckFailure(
@@ -787,6 +789,15 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                     f"answers are written in {detected.unsupported.name}; handwriting in this language "
                     "cannot be read reliably yet - needs manual evaluation",
                 )
+            # A copy in another language than the paper (a Hindi copy of an
+            # English paper) waits for the teacher instead of being checked in
+            # that language unasked. Not billed; confirming sends the language
+            # back declared, which skips this whole block. Only callers that
+            # can show the confirmation ask for it (Bulk AI check).
+            if req.get("confirm_other_language") and answer_language.confirm_enabled():
+                other = answer_language.mismatch(detected, paper_text)
+                if other is not None:
+                    raise CopyCheckFailure(LANGUAGE_NEEDS_CONFIRMATION, answer_language.mismatch_message(other))
             reading_ctx = answer_language.with_detected(reading_ctx, detected)
 
         # 1b. Re-read the handwriting with a vision model, and merge the OCR's

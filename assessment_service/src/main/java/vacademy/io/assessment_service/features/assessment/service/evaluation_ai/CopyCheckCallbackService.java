@@ -321,7 +321,13 @@ public class CopyCheckCallbackService {
         process.setErrorMessage(withErrorCode(payload.getErrorCode(), payload.getErrorMessage()));
         process.setCompletedAt(new Date());
         processRepository.save(process);
-        notifyIntake(payload.getProcessId(), false, payload.getErrorMessage());
+        // A copy waiting for the teacher's language confirmation keeps its code in
+        // front, so the batch panel can offer "Check in <language>"; other
+        // failures show their message as before.
+        notifyIntake(payload.getProcessId(), false,
+                "language_needs_confirmation".equals(payload.getErrorCode())
+                        ? withErrorCode(payload.getErrorCode(), payload.getErrorMessage())
+                        : payload.getErrorMessage());
         cancellationService.clearFlag(payload.getProcessId());
         log.warn("[copy-check] process {} failed: {}", payload.getProcessId(), payload.getErrorMessage());
     }

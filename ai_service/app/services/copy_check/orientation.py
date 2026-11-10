@@ -22,11 +22,19 @@ Per page, two cheap steps:
      degrees. A page is sideways only when the vertical total beats the
      horizontal one SIDEWAYS_MIN_RATIO times. Measured 2026-10-26 on 140 real
      pages: the 14 sideways ones won by 11.9x to 17,000x, and none of the 126
-     upright ones won at all.
+     upright ones won at all. 2026-11-10: an upright Hindi page on unruled
+     paper (wide gaps between words, a printed margin line) won by 4.5x and
+     was turned sideways, so the bar went from 4x to 8x.
   2. **Which way** (vision model, sideways pages only): turned 90 or 270
      degrees. The model is shown both and asked which reads the right way up,
      twice with the order swapped; the answer counts only when both agree
      (production request shape: 0 wrong on 17 pages x 4 rotations).
+  3. **Really sideways?** (vision model, borderline pages only): step 2 only
+     offers two turned versions, so it picks one even for an upright page. A
+     page under SURE_SIDEWAYS_RATIO is turned only when the model, asked twice
+     with the order swapped, also prefers the turned page over the page as
+     uploaded. Clear sideways pages (most phone photos win by far more) skip
+     this question.
 
 Pages that are not clearly sideways are never sent to the model and never
 turned. That includes upside-down pages: asking the model about every upright
@@ -62,7 +70,10 @@ MODEL_IMAGE_EDGE = 768
 # The winning axis must have this many times more line width than the other.
 AXIS_MIN_RATIO = 1.5
 # A page counts as sideways only with this much more vertical line width.
-SIDEWAYS_MIN_RATIO = 4.0
+SIDEWAYS_MIN_RATIO = 8.0
+# Below this, a sideways page is also compared with the page as uploaded
+# before it is turned (step 3).
+SURE_SIDEWAYS_RATIO = 20.0
 # Pages beyond this are left as they are (the cost and time stay bounded).
 MAX_PAGES = 60
 # Concurrent model calls per copy.
@@ -75,6 +86,13 @@ DIRECTION_PROMPT = (
     "handwritten answer-sheet page, and one of them is turned upside down. Which one shows the "
     "writing the right way up, so it reads normally left to right and top to bottom? "
     'Reply with JSON only: {"upright":"A"} or {"upright":"B"}.'
+)
+
+CONFIRM_PROMPT = (
+    "You are shown two images, A (the first image) and B (the second image). They are the same "
+    "handwritten answer-sheet page; one of them may be turned on its side. Which one shows the "
+    "writing the right way up, so the lines run left to right and it reads normally from top to "
+    'bottom? Reply with JSON only: {"upright":"A"} or {"upright":"B"}.'
 )
 
 
@@ -124,9 +142,10 @@ def _line_width(binary: Any) -> int:
     return total
 
 
-def detect_axis(gray: Any) -> Optional[bool]:
-    """True = the lines run vertically (page is sideways), False = horizontally,
-    None = cannot tell (blank page, a full-page diagram, too little writing)."""
+def measure_axis(gray: Any) -> tuple[Optional[bool], float]:
+    """(axis, ratio). axis: True = the lines run vertically (page is sideways),
+    False = horizontally, None = cannot tell (blank page, a full-page diagram,
+    too little writing). ratio: how many times the winning axis beat the other."""
     import cv2
 
     binary = _ink(gray)
@@ -134,10 +153,15 @@ def detect_axis(gray: Any) -> Optional[bool]:
     vertical = _line_width(cv2.rotate(binary, cv2.ROTATE_90_CLOCKWISE))
     ratio = (max(horizontal, vertical) + 1) / float(min(horizontal, vertical) + 1)
     if ratio < AXIS_MIN_RATIO:
-        return None
+        return None, ratio
     if vertical > horizontal:
-        return True if ratio >= SIDEWAYS_MIN_RATIO else None
-    return False
+        return (True if ratio >= SIDEWAYS_MIN_RATIO else None), ratio
+    return False, ratio
+
+
+def detect_axis(gray: Any) -> Optional[bool]:
+    """True = sideways, False = upright, None = cannot tell (see measure_axis)."""
+    return measure_axis(gray)[0]
 
 
 def rotate_image(img: Any, clockwise: int) -> Any:
@@ -197,10 +221,11 @@ def fill_undecided(axes: list[Optional[bool]], decided: dict[int, int]) -> dict[
 # ---------------------------------------------------------------------------
 
 async def _ask(llm: Any, model: str, first_b64: str, second_b64: str,
-               institute_id: Optional[str], token_sink: Optional[Any]) -> Optional[str]:
+               institute_id: Optional[str], token_sink: Optional[Any],
+               prompt: str = DIRECTION_PROMPT) -> Optional[str]:
     messages = [{
         "role": "user",
-        "content": DIRECTION_PROMPT,
+        "content": prompt,
         "attachments": [
             {"type": "image", "url": f"data:image/jpeg;base64,{first_b64}"},
             {"type": "image", "url": f"data:image/jpeg;base64,{second_b64}"},
@@ -238,25 +263,39 @@ async def decide_direction(llm: Any, model: str, img: Any, base: int,
     return None
 
 
+async def confirm_turn(llm: Any, model: str, img: Any, degrees: int,
+                       institute_id: Optional[str] = None,
+                       token_sink: Optional[Any] = None) -> bool:
+    """True only when the page turned by `degrees` reads upright better than the
+    page as uploaded, in both orders of the question."""
+    shown = _encode(img)
+    turned = _encode(rotate_image(img, degrees))
+    first, second = await asyncio.gather(
+        _ask(llm, model, shown, turned, institute_id, token_sink, CONFIRM_PROMPT),
+        _ask(llm, model, turned, shown, institute_id, token_sink, CONFIRM_PROMPT),
+    )
+    return first == "B" and second == "A"
+
+
 # ---------------------------------------------------------------------------
 # PDF in, PDF out
 # ---------------------------------------------------------------------------
 
 def page_images(pdf_bytes: bytes, max_pages: int = MAX_PAGES) -> list[Any]:
     """Each page as shown (its /Rotate applied) as a BGR array at ~ANALYSIS_EDGE."""
-    return [img for img, _axis in _scan_pages(pdf_bytes, max_pages, keep_edge=ANALYSIS_EDGE)]
+    return [img for img, _axis, _ratio in _scan_pages(pdf_bytes, max_pages, keep_edge=ANALYSIS_EDGE)]
 
 
 def _scan_pages(pdf_bytes: bytes, max_pages: int = MAX_PAGES,
-                keep_edge: int = MODEL_IMAGE_EDGE) -> list[tuple[Any, Optional[bool]]]:
-    """(page image as shown, axis) per page. The axis is measured on the
+                keep_edge: int = MODEL_IMAGE_EDGE) -> list[tuple[Any, Optional[bool], float]]:
+    """(page image as shown, axis, ratio) per page. The axis is measured on the
     ANALYSIS_EDGE render and only a `keep_edge` copy is kept, so a long copy
     never holds every page at full analysis size in memory."""
     import cv2
     import fitz  # PyMuPDF
     import numpy as np
 
-    out: list[tuple[Any, Optional[bool]]] = []
+    out: list[tuple[Any, Optional[bool], float]] = []
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
         for index, page in enumerate(doc):
@@ -267,12 +306,12 @@ def _scan_pages(pdf_bytes: bytes, max_pages: int = MAX_PAGES,
             pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False, colorspace=fitz.csRGB)
             arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
             img = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
-            axis = detect_axis(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+            axis, ratio = measure_axis(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
             h, w = img.shape[:2]
             scale = keep_edge / float(max(h, w))
             if scale < 1.0:
                 img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
-            out.append((img, axis))
+            out.append((img, axis, ratio))
     finally:
         doc.close()
     return out
@@ -301,18 +340,28 @@ async def plan_rotations(pdf_bytes: bytes, llm: Any, model: str,
                          token_sink: Optional[Any] = None) -> dict[int, int]:
     """{page index: clockwise degrees} for the pages that need turning."""
     scanned = await asyncio.to_thread(_scan_pages, pdf_bytes)
-    images = [img for img, _axis in scanned]
-    axes = [axis for _img, axis in scanned]
+    images = [img for img, _axis, _ratio in scanned]
+    axes = [axis for _img, axis, _ratio in scanned]
+    ratios = [ratio for _img, _axis, ratio in scanned]
 
     gate = asyncio.Semaphore(MODEL_CONCURRENCY)
 
     async def _one(index: int) -> tuple[int, Optional[int]]:
+        borderline = ratios[index] < SURE_SIDEWAYS_RATIO
         async with gate:
             try:
-                return index, await decide_direction(llm, model, images[index], 90, institute_id, token_sink)
+                deg = await decide_direction(llm, model, images[index], 90, institute_id, token_sink)
+                if borderline:
+                    # Step 3: a borderline page is turned only when the turned
+                    # page also beats the page as uploaded; otherwise it stays
+                    # (0, so it does not follow the other pages either).
+                    if deg is None or not await confirm_turn(
+                            llm, model, images[index], deg, institute_id, token_sink):
+                        return index, 0
+                return index, deg
             except Exception as e:  # one page failing must not stop the rest
                 logger.warning("orientation: page %d direction check failed: %s", index + 1, e)
-                return index, None
+                return index, 0 if borderline else None
 
     sideways = [i for i, axis in enumerate(axes) if axis is True]
     if not sideways:
@@ -320,8 +369,9 @@ async def plan_rotations(pdf_bytes: bytes, llm: Any, model: str,
     answers = await asyncio.gather(*(_one(i) for i in sideways))
     decided = {i: deg for i, deg in answers if deg is not None}
     final = fill_undecided(axes, decided)
-    logger.info("orientation: axes=%s decided=%s final=%s",
-                ["side" if a else ("up" if a is False else "?") for a in axes], decided, final)
+    logger.info("orientation: axes=%s ratios=%s decided=%s final=%s",
+                ["side" if a else ("up" if a is False else "?") for a in axes],
+                [round(r, 1) for r in ratios], decided, final)
     return {i: deg for i, deg in final.items() if deg % 360}
 
 

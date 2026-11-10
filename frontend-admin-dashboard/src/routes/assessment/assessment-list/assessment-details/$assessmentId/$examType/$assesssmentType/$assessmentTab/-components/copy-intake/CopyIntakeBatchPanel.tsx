@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import {
     getCopyIntakeBatch,
     isCopyIntakeSettled,
+    languageConfirmationOf,
     listCheckedCopies,
     listCopyIntakeBatches,
     resolveCopyIntakeItem,
@@ -292,6 +293,9 @@ export const CopyIntakeBatchPanel = ({
 };
 
 const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; instituteId: string }) => {
+    const otherLanguage = (batch.items ?? []).filter(
+        (i) => languageConfirmationOf(i) !== null
+    ).length;
     const { t } = useTranslation('assessmentCopyIntake');
     // Settled one way or another; skipped copies are done too, not "in progress".
     const done = batch.evaluated + batch.failed + batch.skipped;
@@ -377,6 +381,11 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                 )}
                 <Stat label={t('stats.failed')} value={batch.failed} tone="text-danger-600" />
             </div>
+            {otherLanguage > 0 && (
+                <div className="rounded-md border border-warning-200 bg-warning-50 px-3 py-2 text-caption text-warning-700">
+                    {t('stats.otherLanguage', { count: otherLanguage })}
+                </div>
+            )}
             <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
         </div>
     );
@@ -465,6 +474,10 @@ type ItemContext = {
 const needsPerson = (item: CopyIntakeItem) =>
     item.status === 'AMBIGUOUS' || item.status === 'UNMATCHED';
 
+/** A copy waiting for the teacher: no student picked yet, or written in another language. */
+const needsTeacher = (item: CopyIntakeItem) =>
+    needsPerson(item) || languageConfirmationOf(item) !== null;
+
 const FileCell = ({ item }: { item: CopyIntakeItem }) => {
     const { t } = useTranslation('assessmentCopyIntake');
     return (
@@ -530,6 +543,25 @@ const StudentCell = ({ item }: { item: CopyIntakeItem }) => {
 
 const StatusCell = ({ item }: { item: CopyIntakeItem }) => {
     const { t } = useTranslation('assessmentCopyIntake');
+    const language = languageConfirmationOf(item);
+    if (language) {
+        return (
+            <>
+                <StatusChip
+                    text={t('itemStatus.LANGUAGE_CONFIRM')}
+                    textSize="text-caption"
+                    status="WARNING"
+                    showIcon
+                />
+                <div className="mt-1 max-w-72 text-caption text-warning-700">
+                    {t('table.languageNote', {
+                        language: language.language,
+                        paper: language.paper,
+                    })}
+                </div>
+            </>
+        );
+    }
     return (
         <>
             <div className="flex items-center gap-1.5">
@@ -583,6 +615,15 @@ const ItemActions = ({
         },
         onError: () => toast.error(t('errors.actionFailed')),
     });
+    const language = languageConfirmationOf(item);
+    const checkInLanguage = useMutation({
+        mutationFn: () => retryCopyIntakeItem(item.id, instituteId, language?.code),
+        onSuccess: () => {
+            toast.success(t('toasts.languageConfirmed', { language: language?.language }));
+            onChanged();
+        },
+        onError: () => toast.error(t('errors.actionFailed')),
+    });
 
     return (
         <>
@@ -608,7 +649,39 @@ const ItemActions = ({
                         </MyButton>
                     </>
                 )}
-                {item.status === 'FAILED' && (
+                {language && (
+                    <>
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="small"
+                            disabled={checkInLanguage.isPending || skip.isPending}
+                            onClick={() => checkInLanguage.mutate()}
+                        >
+                            {t('actions.checkInLanguage', { language: language.language })}
+                        </MyButton>
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="small"
+                            disabled={checkInLanguage.isPending || skip.isPending}
+                            onClick={() => skip.mutate()}
+                        >
+                            {t('actions.skip')}
+                        </MyButton>
+                        {!checkOnly && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => setPickerOpen(true)}
+                            >
+                                {t('actions.pickStudent')}
+                            </MyButton>
+                        )}
+                    </>
+                )}
+                {item.status === 'FAILED' && !language && (
                     <>
                         <MyButton
                             type="button"
@@ -660,7 +733,7 @@ const ItemActions = ({
 const ItemRow = (ctx: ItemContext) => {
     const { item } = ctx;
     return (
-        <tr className={cn(needsPerson(item) && 'bg-warning-50/40')}>
+        <tr className={cn(needsTeacher(item) && 'bg-warning-50/40')}>
             <td className="max-w-64 py-2 pr-3">
                 <FileCell item={item} />
             </td>
@@ -690,7 +763,7 @@ const ItemCard = (ctx: ItemContext) => {
         <li
             className={cn(
                 'flex flex-col gap-2 rounded-md border border-neutral-200 p-3',
-                needsPerson(item) ? 'bg-warning-50/40' : 'bg-white'
+                needsTeacher(item) ? 'bg-warning-50/40' : 'bg-white'
             )}
         >
             <div className="flex items-start justify-between gap-2">

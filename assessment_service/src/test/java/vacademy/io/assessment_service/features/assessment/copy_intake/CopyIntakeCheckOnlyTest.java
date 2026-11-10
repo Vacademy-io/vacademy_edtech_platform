@@ -69,6 +69,7 @@ class CopyIntakeCheckOnlyTest {
     private StudentAttemptService attempts;
     private AiEvaluationService evaluation;
     private AdminCoreServiceClient adminCore;
+    private AiEvaluationProcessRepository processes;
     private CopyIntakeService service;
     private HttpServer media;
 
@@ -86,6 +87,7 @@ class CopyIntakeCheckOnlyTest {
         attempts = mock(StudentAttemptService.class);
         evaluation = mock(AiEvaluationService.class);
         adminCore = mock(AdminCoreServiceClient.class);
+        processes = mock(AiEvaluationProcessRepository.class);
 
         TransactionTemplate tx = mock(TransactionTemplate.class);
         org.mockito.Mockito.doAnswer(inv -> {
@@ -98,7 +100,7 @@ class CopyIntakeCheckOnlyTest {
         when(ownership.notOwnedBy(anyString(), any())).thenReturn(List.of());
 
         service = new CopyIntakeService(batches, items, assessments,
-                mock(AiEvaluationProcessRepository.class), registrations,
+                processes, registrations,
                 mock(AssessmentBatchRegistrationRepository.class), adminCore, aiClient,
                 offline, evaluation, attempts, mock(CopyIntakeNotifier.class),
                 mock(AssessmentAuditClient.class), new ObjectMapper(), tx,
@@ -325,5 +327,42 @@ class CopyIntakeCheckOnlyTest {
         verify(offline, never()).createOfflineAttempt(any(), anyString(), anyString(), anyString(), any());
         assertThat(item.getStatus()).isEqualTo(AiCopyIntakeItem.QUEUED);
         assertThat(item.getErrorMessage()).isNull();
+    }
+
+    @Test
+    void checkInAnotherLanguagePutsTheLanguageOnTheNewRunOnly() {
+        checkOnlyBatch();
+        AiCopyIntakeItem item = AiCopyIntakeItem.builder().id("item-1").batchId("batch-1").fileId("f1")
+                .status(AiCopyIntakeItem.FAILED).attemptId("att-1").registrationId("reg-1")
+                .errorMessage("language_needs_confirmation: This copy is written in Hindi [hi] but the question paper is in English.")
+                .build();
+        when(items.findById("item-1")).thenReturn(Optional.of(item));
+        StudentAttempt attempt = offlineAttemptIsCreated();
+        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean())).thenReturn("proc-2");
+        vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess run =
+                new vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess();
+        when(processes.findById("proc-2")).thenReturn(Optional.of(run));
+
+        service.retry(admin, "item-1", "hi");
+
+        assertThat(item.getStatus()).isEqualTo(AiCopyIntakeItem.QUEUED);
+        assertThat(item.getErrorMessage()).isNull();
+        assertThat(run.getAnswerLanguage()).isEqualTo("hi");
+        verify(processes).save(run);
+    }
+
+    @Test
+    void anUnknownLanguageRetriesAsConfigured() {
+        checkOnlyBatch();
+        AiCopyIntakeItem item = AiCopyIntakeItem.builder().id("item-1").batchId("batch-1").fileId("f1")
+                .status(AiCopyIntakeItem.FAILED).attemptId("att-1").registrationId("reg-1").build();
+        when(items.findById("item-1")).thenReturn(Optional.of(item));
+        StudentAttempt attempt = offlineAttemptIsCreated();
+        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean())).thenReturn("proc-2");
+
+        service.retry(admin, "item-1", "klingon");
+
+        assertThat(item.getStatus()).isEqualTo(AiCopyIntakeItem.QUEUED);
+        verify(processes, never()).findById("proc-2");
     }
 }

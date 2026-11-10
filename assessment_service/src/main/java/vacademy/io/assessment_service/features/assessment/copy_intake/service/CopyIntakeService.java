@@ -773,13 +773,39 @@ public class CopyIntakeService {
         return itemRepository.save(item);
     }
 
+    @Transactional
+    public AiCopyIntakeItem retry(CustomUserDetails user, String itemId) {
+        return retry(user, itemId, null);
+    }
+
     /**
      * Try a failed copy again. A copy that already sits on a student's attempt
      * (the AI check itself failed) is just queued again; one that never got
      * that far is read from scratch.
+     *
+     * <p>{@code answerLanguage}: the teacher's "Check in &lt;language&gt;" for a copy
+     * that stopped because it is written in another language than its paper. It
+     * goes on the new run only (ai_service then reads the copy in it and does not
+     * ask again); blank or unknown = retried as configured.
      */
     @Transactional
-    public AiCopyIntakeItem retry(CustomUserDetails user, String itemId) {
+    public AiCopyIntakeItem retry(CustomUserDetails user, String itemId, String answerLanguage) {
+        AiCopyIntakeItem item = retryQueued(user, itemId);
+        String language = CopyCheckConfig.answerLanguage(answerLanguage);
+        if (language != null && StringUtils.hasText(item.getProcessId())) {
+            processRepository.findById(item.getProcessId()).ifPresent(p -> {
+                p.setAnswerLanguage(language);
+                processRepository.save(p);
+            });
+            batchRepository.findById(item.getBatchId()).ifPresent(batch ->
+                    auditClient.record(user, batch.getInstituteId(), "BULK_AI_CHECK", batch.getAssessmentId(),
+                            "confirmed checking an uploaded copy in " + language,
+                            Map.of("item_id", itemId, "answer_language", language)));
+        }
+        return item;
+    }
+
+    private AiCopyIntakeItem retryQueued(CustomUserDetails user, String itemId) {
         AiCopyIntakeItem item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new VacademyException("Copy not found"));
         AiCopyIntakeBatch batch = batchRepository.findById(item.getBatchId())

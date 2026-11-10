@@ -177,10 +177,12 @@ public class CopyIntakeController {
     public ResponseEntity<CopyIntakeDtos.ItemDto> retry(@RequestAttribute("user") CustomUserDetails user,
                                                         @RequestHeader(value = "clientId", required = false) String clientId,
                                                         @RequestParam("instituteId") String instituteId,
-                                                        @PathVariable String itemId) {
+                                                        @PathVariable String itemId,
+                                                        // "Check in Hindi" on a copy written in another language than its paper
+                                                        @RequestParam(value = "answerLanguage", required = false) String answerLanguage) {
         requireItem(user, clientId, instituteId, itemId);
         accessValidator.requireStaffRole(user);
-        AiCopyIntakeItem item = service.retry(user, itemId);
+        AiCopyIntakeItem item = service.retry(user, itemId, answerLanguage);
         runner.run(item.getBatchId());
         return ResponseEntity.ok(service.toDto(item));
     }

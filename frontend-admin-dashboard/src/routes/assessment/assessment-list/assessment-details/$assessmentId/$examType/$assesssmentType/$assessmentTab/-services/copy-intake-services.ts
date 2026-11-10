@@ -273,16 +273,45 @@ export const skipCopyIntakeItem = async (
     return response.data;
 };
 
+/**
+ * Try a failed copy again. `answerLanguage` (a code such as "hi") is the
+ * teacher's "Check in <language>" for a copy that stopped because it is
+ * written in another language than its question paper.
+ */
 export const retryCopyIntakeItem = async (
     itemId: string,
-    instituteId: string
+    instituteId: string,
+    answerLanguage?: string
 ): Promise<CopyIntakeItem> => {
     const response = await authenticatedAxiosInstance({
         method: 'POST',
         url: `${COPY_INTAKE_BASE_URL}/item/${itemId}/retry`,
-        params: { instituteId },
+        params: answerLanguage ? { instituteId, answerLanguage } : { instituteId },
     });
     return response.data;
+};
+
+/** ai_service's code for a copy written in another language than its paper. */
+export const LANGUAGE_CONFIRM_CODE = 'language_needs_confirmation';
+
+export type LanguageConfirmation = { code: string; language: string; paper: string };
+
+/**
+ * The language a failed copy is waiting to be confirmed in, read from its
+ * error ("language_needs_confirmation: This copy is written in Hindi [hi]
+ * but the question paper is in English. ..."); null for any other copy.
+ */
+export const languageConfirmationOf = (item: {
+    status: string;
+    error_message?: string | null;
+}): LanguageConfirmation | null => {
+    if (item.status !== 'FAILED' || !item.error_message?.startsWith(LANGUAGE_CONFIRM_CODE))
+        return null;
+    const m = item.error_message.match(
+        /written in (.+?) \[([a-z]{2,3})\] but the question paper is in (.+?)\./
+    );
+    if (!m) return null;
+    return { language: m[1]!, code: m[2]!, paper: m[3]! };
 };
 
 /** Nothing in the batch moves on its own any more. */

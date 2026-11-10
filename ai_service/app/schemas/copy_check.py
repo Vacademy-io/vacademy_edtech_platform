@@ -142,6 +142,11 @@ class CopyCheckGradeRequest(BaseModel):
     # location pass. Sent by assignment AI evaluation, where the single question's
     # answer IS the whole copy. Absent/False keeps the usual behaviour.
     skip_answer_location: bool = False
+    # True = a copy written in another language than its paper stops and waits
+    # for the teacher (language_needs_confirmation). Sent only for Bulk AI check
+    # copies, whose panel offers "Check in <language>"; every other caller
+    # (single-copy checks, partner API) is checked exactly as before.
+    confirm_other_language: bool = False
     # Checked-copy template. INSIDE = remarks written on the copy in pen;
     # OUTSIDE = marks on the copy, remarks typed in a "Teacher comments" panel
     # beside it. Absent (or any other value) keeps the usual behaviour - never a
@@ -257,7 +262,7 @@ class CompleteCallback(BaseModel):
 # Machine codes for a failed copy (spec 8.3). ai_service emits the ones it can
 # detect; the rest are set by assessment_service.
 CopyFailureCode = Literal[
-    "copy_unreadable", "language_not_supported", "file_missing", "file_unavailable",
+    "copy_unreadable", "language_not_supported", "language_needs_confirmation", "file_missing", "file_unavailable",
     "no_gradable_questions", "timed_out", "cancelled", "insufficient_credits",
     "engine_unavailable", "identify_failed",
 ]

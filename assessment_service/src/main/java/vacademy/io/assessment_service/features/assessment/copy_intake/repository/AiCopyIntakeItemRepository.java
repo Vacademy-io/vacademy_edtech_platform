@@ -73,4 +73,7 @@ public interface AiCopyIntakeItemRepository extends JpaRepository<AiCopyIntakeIt
     @Query("UPDATE AiCopyIntakeItem i SET i.status = :to, i.updatedAt = CURRENT_TIMESTAMP"
             + " WHERE i.id = :id AND i.status = :from")
     int transition(@Param("id") String id, @Param("from") String from, @Param("to") String to);
+
+    /** Copies of a batch in a status whose error starts with a machine code ("language_needs_confirmation"). */
+    long countByBatchIdAndStatusAndErrorMessageStartingWith(String batchId, String status, String prefix);
 }

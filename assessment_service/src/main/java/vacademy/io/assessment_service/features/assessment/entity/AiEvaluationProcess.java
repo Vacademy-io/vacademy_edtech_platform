@@ -122,6 +122,14 @@ public class AiEvaluationProcess {
         @Column(name = "rate_snapshot", columnDefinition = "jsonb")
         private String rateSnapshot;
 
+        /**
+         * The answer language a teacher confirmed for this run (V63): a copy written
+         * in another language than its paper is checked in it only after "Check in
+         * &lt;language&gt;". Sent as exam_context.answer_language; NULL = as configured.
+         */
+        @Column(name = "answer_language", length = 16)
+        private String answerLanguage;
+
         /** The partner API key that created this run; NULL for dashboard runs. */
         @Column(name = "api_key_id", length = 36)
         private String apiKeyId;
