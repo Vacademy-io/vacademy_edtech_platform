@@ -1610,7 +1610,9 @@ export const SlideMaterial = ({
                 activeItem &&
                 MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
                   activeItem.source_type || ""
-                ) && (
+                ) &&
+                // A discussion completes by posting a reply, not by hand.
+                activeItem.document_slide?.type !== "DISCUSSION" && (
                   <MarkCompleteButton
                     slideId={activeItem.id}
                     slideType={activeItem.source_type as string}
