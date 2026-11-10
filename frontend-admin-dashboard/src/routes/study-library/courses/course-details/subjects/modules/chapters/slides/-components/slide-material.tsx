@@ -4973,6 +4973,10 @@ export const SlideMaterial = ({
                               // overflow-hidden clips the lower tabs' content with
                               // no scrollbar. Let the outer page-scroll reveal it.
                               activeItem?.document_slide?.type === 'CODE' ||
+                              // DISCUSSION stacks the question editor, the
+                              // settings and the responses list; let the
+                              // outer page-scroll reveal all of it.
+                              activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
                               activeItem?.source_type === 'ASSIGNMENT' ||
                               // VIDEO / HTML_VIDEO stack the player on top of a
                               // timeline, add-question form and questions list
