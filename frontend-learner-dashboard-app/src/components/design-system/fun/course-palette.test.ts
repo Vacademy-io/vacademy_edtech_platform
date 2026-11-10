@@ -67,8 +67,11 @@ describe("COURSE_PALETTE contrast (WCAG 2.x)", () => {
     expect(contrastRatio(colour.onBand, colour.solid)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colour.text, WHITE)).toBeGreaterThanOrEqual(7);
     expect(contrastRatio(colour.text, colour.tint)).toBeGreaterThanOrEqual(6.2);
-    // The highlight fill reads against the band as a graphic (3:1 is not required
-    // for a bar fill, but ink text on it must read).
+    // The band bar's yellow fill is 3:1 or more against the band it sits on, but
+    // against the track it is only 1.50 (lime) to 3.39 (indigo), the approved
+    // colours. So the bar never carries the reading alone: the percent is shown
+    // as text beside it (FunProgress). Ink text on the yellow must read.
+    expect(contrastRatio(HIGHLIGHT, colour.solid)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(INK, HIGHLIGHT)).toBeGreaterThanOrEqual(4.5);
   });
 });
@@ -85,6 +88,19 @@ describe("styles/fun/base.css", () => {
     expect(value("deco")).toBe(colour.deco);
     expect(value("lip")).toBe(colour.lip);
     expect(value("track")).toBe(colour.track);
+  });
+  it("keeps the QUIZ colour readable where text may go, and its tint for the icon only", () => {
+    const root = /html\.ui-fun\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    const value = (name: string) => new RegExp(`--fun-${name}:\\s*(#[0-9a-fA-F]{6})`).exec(root)?.[1];
+    const quiz = value("quiz")!;
+    expect(contrastRatio(quiz, WHITE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(quiz, value("test-tint")!)).toBeGreaterThanOrEqual(4.5);
+    // Icon only: 3:1 is enough, and text on it would fail AA (4.49).
+    expect(contrastRatio(quiz, value("quiz-tint")!)).toBeGreaterThanOrEqual(3);
+  });
+  it("draws a white focus ring only inside a coloured band", () => {
+    const whiteRing = [...css.matchAll(/([^{}]+)\{\s*outline-color:\s*var\(--fun-ground\)/g)].map((m) => m[1]!.trim());
+    expect(whiteRing).toEqual(["html.ui-fun .fun-on-colour .fun-btn:focus-visible"]);
   });
   it("falls back to the brand rule's own shades when no brand can be read", () => {
     const root = /html\.ui-fun\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";

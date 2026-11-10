@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils";
  *
  * - primary: the institute's brand solid, white text, brand lip. One per card.
  * - onColour: white on a course band, the course's text shade and lip. Put it
- *   inside an element with a fun-course-N class (courseColourClass).
+ *   inside the band: an element with a fun-course-N class (courseColourClass)
+ *   and the fun-on-colour class, which turns its focus ring white.
  * - outline: white with a grey border and lip. While Join is live, Continue
  *   becomes this one.
  *
  * Pressed moves it down by the lip; focus-visible draws a 3px ink ring with a
- * 2px gap (white on a coloured band). Only styled under html.ui-fun.
+ * 2px gap (white inside a fun-on-colour band). Only styled under html.ui-fun.
  */
 export type FunButtonVariant = "primary" | "onColour" | "outline";
 

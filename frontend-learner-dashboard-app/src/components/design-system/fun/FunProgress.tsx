@@ -4,7 +4,9 @@ import { cn } from "@/lib/utils";
 /**
  * A course progress bar. `band`: on a course-coloured band, highlight yellow on
  * the course's track. `plain`: on white, the course colour on its tint. Put it
- * inside an element with a fun-course-N class.
+ * inside an element with a fun-course-N class. Show the percent as text next to
+ * a `band` bar, as every board does: the yellow against some tracks is below
+ * 3:1, so the bar alone must not carry the reading.
  *
  * A percent that is not known (null or undefined) draws nothing, never 0%.
  */

@@ -42,7 +42,8 @@ html.ui-fun {
   --fun-test-text-2: #713F12;
   --fun-test-icon-bg: #FDE68A;
   --fun-quiz: #A16207;           /* QUIZ icon and tag: 4.92 on white, 4.58 on the test tint */
-  --fun-quiz-tint: #FFF4D6;
+  --fun-quiz-tint: #FFF4D6;      /* behind the QUIZ icon only (3:1 is enough there). QUIZ text
+                                    on it is 4.49, below AA: put the text on white or the test tint */
 
   --fun-info: #1D4ED8;           /* white on it 6.70 */
   --fun-info-tint: #EAF2FF;
@@ -127,7 +128,8 @@ html.ui-fun .fun-t-eyebrow { font-size: 0.75rem; line-height: calc(1rem * var(--
 
 /* ── Lip button ────────────────────────────────────────────────────── */
 /* Radius 16, lip 0 4px 0. Pressed: down 4px with no lip. Focus: 3px ink
-   ring with a 2px gap (white on a coloured band). One filled button per card. */
+   ring with a 2px gap; white only inside a coloured band, which carries the
+   fun-on-colour class. One filled button per card. */
 html.ui-fun .fun-btn {
   --fun-btn-lip: var(--fun-line-button);
   position: relative;
@@ -168,7 +170,6 @@ html.ui-fun .fun-btn[data-pressed="true"] {
   box-shadow: none;
 }
 html.ui-fun .fun-btn:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
-html.ui-fun .fun-btn--on-colour:focus-visible,
 html.ui-fun .fun-on-colour .fun-btn:focus-visible { outline-color: var(--fun-ground); }
 html.ui-fun .fun-btn:disabled,
 html.ui-fun .fun-btn[aria-disabled="true"] {
@@ -260,7 +261,9 @@ html.ui-fun .fun-chip--new { background: var(--fun-highlight); color: var(--fun-
 
 /* ── Progress bar ──────────────────────────────────────────────────── */
 /* On a course band: yellow fill on the course's track. On white: course
-   colour on its tint. */
+   colour on its tint. The band bar always sits beside its percent as text,
+   which carries the reading: the yellow is 3.79:1 or more against the band
+   itself but only 1.50 to 3.39 against the track (see course-palette.test.ts). */
 html.ui-fun .fun-progress { position: relative; flex: 1; min-width: 0; height: 8px; border-radius: 4px; overflow: hidden; background: var(--fc-tint, var(--fun-line-nav)); }
 html.ui-fun .fun-progress__fill { height: 100%; border-radius: inherit; background: var(--fc-solid, var(--fun-brand)); }
 html.ui-fun .fun-progress--band { height: 12px; border-radius: 6px; background: var(--fc-track, rgba(255, 255, 255, 0.35)); }
