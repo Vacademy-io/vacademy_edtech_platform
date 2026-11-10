@@ -10,6 +10,9 @@
 @import './styles/cleaner-play-theme.css';
 /* Corporate Theme - restrained, dense, structural skin */
 @import './styles/corporate-theme.css';
+/* Fun Theme - a colour per course, lip buttons, Nunito; every rule is scoped
+   to html.ui-fun, which only that skin puts on <html> */
+@import './styles/fun/index.css';
 /* Institute UI axes - corners / density / gradient (data-ui-* on <html>).
    Imported last of the skin sheets so its --play-radius-* definitions,
    which express the Play radii against --radius, win over the literals

@@ -1,0 +1,9 @@
+{
+  "done": "पूरा",
+  "review": "दोहराएँ",
+  "liveNow": "अभी लाइव",
+  "new": "नया",
+  "progress": "प्रगति",
+  "percentDone": "{{percent}}% पूरा",
+  "notStarted": "शुरू नहीं किया"
+}

@@ -1,0 +1,270 @@
+/* =====================================================================
+   Fun skin: tokens and shared primitives.
+   White ground, a colour per course, chunky lip buttons, Nunito.
+   Applied via the ui-fun class on <html> (mutually exclusive with the other
+   skins; see __root.tsx applyUiType). EVERY selector in the styles/fun/
+   files starts with html.ui-fun, so nothing here reaches another skin.
+
+   Specificity: html.ui-fun (0,1,1) outranks :root (0,1,0) inside @layer base.
+
+   Lanes: home.css, course.css and quiz.css hold each screen's rules. This
+   file is shared; a lane asks for a change here instead of editing it.
+   ===================================================================== */
+
+html.ui-fun {
+  /* ── Ink and lines (WCAG 2.x against white) ──────────────────────── */
+  --fun-ink: #1F2333;            /* text, 15.60 */
+  --fun-ink-2: #3E4456;          /* laptop nav text, captions, 9.70 */
+  --fun-muted: #5B6275;          /* labels, meta, inactive nav, 6.09 */
+  --fun-line-control: #8A91A5;   /* input borders, dashed notes, 3.15: UI only */
+  --fun-line-card: #ECEEF4;      /* 2px card border, decoration */
+  --fun-line-nav: #F0F1F6;       /* nav divider, skeleton shapes */
+  --fun-line-button: #D6D9E3;    /* outline button border and lip, not-started circle */
+  --fun-ground: #FFFFFF;
+
+  /* ── Status ──────────────────────────────────────────────────────── */
+  --fun-success: #16A34A;        /* icons only, 3.30 */
+  --fun-success-strong: #15803D; /* solid and text, 5.02 */
+  --fun-success-tint: #E9FBEF;
+  --fun-success-text: #166534;   /* on tint 6.62 */
+  --fun-success-text-strong: #14532D; /* on tint 8.46 */
+  --fun-success-track: #BBF0CC;  /* goal ring track */
+
+  --fun-live: #E11D48;           /* white on it 4.70 */
+  --fun-live-text: #BE123C;      /* on white 6.29 */
+  --fun-live-tint: #FFEFF4;
+  --fun-live-tint-text: #881337; /* 8.61 */
+  --fun-live-tint-text-2: #9F1239; /* 7.22 */
+
+  --fun-test-tint: #FFF7D6;
+  --fun-test-text: #854D0E;      /* 6.37 */
+  --fun-test-text-strong: #422006; /* 13.55 */
+  --fun-test-text-2: #713F12;
+  --fun-test-icon-bg: #FDE68A;
+  --fun-quiz: #A16207;           /* QUIZ icon and tag: 4.92 on white, 4.58 on the test tint */
+  --fun-quiz-tint: #FFF4D6;
+
+  --fun-info: #1D4ED8;           /* white on it 6.70 */
+  --fun-info-tint: #EAF2FF;
+  --fun-info-text: #1E40AF;      /* on tint 7.74 */
+
+  --fun-highlight: #FDE047;      /* bar fill on bands, NEW chip with ink: never text on white */
+  --fun-highlight-text: #422006;
+
+  --fun-streak-bg: #FFF4E5;
+  --fun-streak-text: #9A3412;
+  --fun-flame: #FB923C;
+  --fun-flame-core: #FDE047;
+
+  /* ── Brand (institute primary) ───────────────────────────────────── */
+  /* Only the main call to action, the active nav item and links use it.
+     use-fun-skin-runtime.ts writes these inline on <html> from the live brand
+     (brand-colours.ts); the values here are only for a brand that cannot be
+     read. */
+  --fun-brand: #1D4ED8;
+  --fun-brand-tint: #E4EAFA;
+  --fun-brand-lip: #193B9A;
+
+  /* ── Shape and space ─────────────────────────────────────────────── */
+  --fun-radius-band: 28px;       /* course header band, result card, laptop hero */
+  --fun-radius-hero: 24px;       /* phone hero card */
+  --fun-radius-card: 22px;       /* chapter card, list row */
+  --fun-radius-tile: 20px;       /* tiles, today cards */
+  --fun-radius-control: 16px;    /* buttons, rows, nav pill */
+  --fun-radius-badge: 12px;      /* number badge */
+  --fun-space-1: 4px;
+  --fun-space-2: 8px;
+  --fun-space-3: 12px;
+  --fun-space-4: 16px;
+  --fun-space-5: 20px;
+  --fun-space-6: 24px;
+  --fun-gutter: 20px;            /* phone */
+  --fun-column-gap: 24px;        /* laptop */
+  --fun-touch: 44px;
+  --fun-lip: 4px;
+
+  /* ── Type ────────────────────────────────────────────────────────── */
+  --fun-font-family: 'Nunito', 'Noto Sans Devanagari', 'Noto Naskh Arabic', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Devanagari needs more room between lines (+25%). Multiply line heights by it. */
+  --fun-leading: 1;
+}
+
+html.ui-fun:is([lang="hi"], [lang="mr"]) {
+  --fun-leading: 1.25;
+}
+
+/* The app shell and anything portalled into <body> (dialogs, menus). <body>
+   itself carries an inline font from the branding flow, so its children are
+   styled instead. */
+html.ui-fun body > * {
+  font-family: var(--fun-font-family);
+}
+
+/* ── Course colours ────────────────────────────────────────────────── */
+/* Mirrors COURSE_PALETTE in components/design-system/fun/course-palette.ts
+   (a test keeps them in step). --fc-* is "this course's colour". */
+html.ui-fun .fun-course-0 { --fc-solid: #6D28D9; --fc-on-band: #EDE4FF; --fc-text: #5B21B6; --fc-tint: #F1EBFF; --fc-deco: #7C3AED; --fc-lip: #4C1D95; --fc-track: #8B5CF6; }
+html.ui-fun .fun-course-1 { --fc-solid: #0F766E; --fc-on-band: #E6F4F1; --fc-text: #115E59; --fc-tint: #E6F4F1; --fc-deco: #0D9488; --fc-lip: #134E4A; --fc-track: #14B8A6; }
+html.ui-fun .fun-course-2 { --fc-solid: #C2410C; --fc-on-band: #FDEEE6; --fc-text: #9A3412; --fc-tint: #FDEEE6; --fc-deco: #EA580C; --fc-lip: #7C2D12; --fc-track: #F97316; }
+html.ui-fun .fun-course-3 { --fc-solid: #BE185D; --fc-on-band: #FCE7F1; --fc-text: #9D174D; --fc-tint: #FCE7F1; --fc-deco: #DB2777; --fc-lip: #831843; --fc-track: #EC4899; }
+html.ui-fun .fun-course-4 { --fc-solid: #4338CA; --fc-on-band: #ECEBFA; --fc-text: #3730A3; --fc-tint: #ECEBFA; --fc-deco: #4F46E5; --fc-lip: #312E81; --fc-track: #6366F1; }
+html.ui-fun .fun-course-5 { --fc-solid: #0369A1; --fc-on-band: #E6F1F8; --fc-text: #075985; --fc-tint: #E6F1F8; --fc-deco: #0284C7; --fc-lip: #0C4A6E; --fc-track: #0EA5E9; }
+html.ui-fun .fun-course-6 { --fc-solid: #A21CAF; --fc-on-band: #F6E8F7; --fc-text: #86198F; --fc-tint: #F6E8F7; --fc-deco: #C026D3; --fc-lip: #701A75; --fc-track: #D946EF; }
+html.ui-fun .fun-course-7 { --fc-solid: #4D7C0F; --fc-on-band: #FFFFFF; --fc-text: #3F6212; --fc-tint: #EDF2E7; --fc-deco: #65A30D; --fc-lip: #365314; --fc-track: #84CC16; }
+
+/* ── Type scale (rem, so it follows the reader's text size) ────────── */
+html.ui-fun .fun-t-display { font-size: 2.125rem; line-height: calc(2.5rem * var(--fun-leading)); font-weight: 900; letter-spacing: -0.01em; }
+html.ui-fun .fun-t-title { font-size: 1.75rem; line-height: calc(2rem * var(--fun-leading)); font-weight: 900; letter-spacing: -0.01em; }
+html.ui-fun .fun-t-hero { font-size: 1.625rem; line-height: calc(1.875rem * var(--fun-leading)); font-weight: 900; letter-spacing: -0.01em; }
+html.ui-fun .fun-t-section { font-size: 1.25rem; line-height: calc(1.625rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-t-card { font-size: 1.125rem; line-height: calc(1.375rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-t-body { font-size: 1rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 700; }
+html.ui-fun .fun-t-meta { font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; }
+html.ui-fun .fun-t-eyebrow { font-size: 0.75rem; line-height: calc(1rem * var(--fun-leading)); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+@media (min-width: 1024px) {
+  html.ui-fun .fun-t-section { font-size: 1.375rem; }
+}
+
+/* ── Lip button ────────────────────────────────────────────────────── */
+/* Radius 16, lip 0 4px 0. Pressed: down 4px with no lip. Focus: 3px ink
+   ring with a 2px gap (white on a coloured band). One filled button per card. */
+html.ui-fun .fun-btn {
+  --fun-btn-lip: var(--fun-line-button);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 3.375rem;
+  min-width: var(--fun-touch);
+  padding: 0 var(--fun-space-5);
+  border: 0;
+  border-radius: var(--fun-radius-control);
+  box-shadow: 0 var(--fun-lip) 0 var(--fun-btn-lip);
+  font-family: inherit;
+  font-size: 1.125rem;
+  line-height: calc(1.375rem * var(--fun-leading));
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+html.ui-fun .fun-btn > svg { flex: none; width: 1.125rem; height: 1.125rem; }
+html.ui-fun .fun-btn--primary { --fun-btn-lip: var(--fun-brand-lip); background: var(--fun-brand); color: var(--fun-ground); }
+html.ui-fun .fun-btn--on-colour { --fun-btn-lip: var(--fc-lip, var(--fun-line-button)); background: var(--fun-ground); color: var(--fc-text, var(--fun-ink)); }
+html.ui-fun .fun-btn--outline {
+  border: 2px solid var(--fun-line-button);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  font-size: 1.0625rem;
+}
+html.ui-fun .fun-btn--compact { min-height: var(--fun-touch); padding: 0 var(--fun-space-4); font-size: 1rem; }
+html.ui-fun .fun-btn--block { display: flex; width: 100%; }
+html.ui-fun .fun-btn:active:not(:disabled):not([aria-disabled="true"]),
+html.ui-fun .fun-btn[data-pressed="true"] {
+  transform: translateY(var(--fun-lip));
+  box-shadow: none;
+}
+html.ui-fun .fun-btn:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-btn--on-colour:focus-visible,
+html.ui-fun .fun-on-colour .fun-btn:focus-visible { outline-color: var(--fun-ground); }
+html.ui-fun .fun-btn:disabled,
+html.ui-fun .fun-btn[aria-disabled="true"] {
+  --fun-btn-lip: var(--fun-line-button);
+  background: var(--fun-line-nav);
+  color: var(--fun-muted);
+  border-color: var(--fun-line-button);
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ui-fun .fun-btn { transition: none; }
+}
+
+/* ── Course art: course image on the tint, else the plain shape ────── */
+html.ui-fun .fun-course-art {
+  position: relative;
+  overflow: hidden;
+  background: var(--fc-solid, var(--fun-line-nav));
+}
+html.ui-fun .fun-course-art--image { background: var(--fc-tint, var(--fun-line-nav)); }
+html.ui-fun .fun-course-art__image { display: block; width: 100%; height: 100%; object-fit: cover; }
+html.ui-fun .fun-course-art__deco {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: -12%;
+  width: 72%;
+  aspect-ratio: 1;
+  max-height: 140%;
+  border-radius: 50%;
+  background: var(--fc-deco);
+  transform: translateY(-50%);
+}
+html.ui-fun .fun-course-art__mark {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34%;
+  max-width: 4rem;
+  aspect-ratio: 1;
+  border-radius: 28%;
+  background: var(--fun-ground);
+  color: var(--fc-text);
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+html.ui-fun .fun-course-art > .fun-tick {
+  position: absolute;
+  inset-block-start: var(--fun-space-2);
+  inset-inline-end: var(--fun-space-2);
+}
+
+/* ── Finished tick: white circle, green check ──────────────────────── */
+html.ui-fun .fun-tick { display: inline-block; flex: none; width: 20px; height: 20px; }
+html.ui-fun .fun-tick__disc { fill: var(--fun-ground); }
+html.ui-fun .fun-tick__check { fill: none; stroke: var(--fun-success-strong); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html.ui-fun .fun-review { color: var(--fun-success-strong); font-weight: 800; }
+
+/* ── Chips ─────────────────────────────────────────────────────────── */
+html.ui-fun .fun-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+html.ui-fun .fun-chip > svg { flex: none; width: 12px; height: 12px; }
+/* LIVE NOW, only while a class is actually live. On the rose card: white chip. */
+html.ui-fun .fun-chip--live { background: var(--fun-ground); color: var(--fun-live-text); }
+html.ui-fun .fun-chip--live .fun-chip__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fun-live); }
+/* On white: the solid rose chip. */
+html.ui-fun .fun-chip--live-solid { background: var(--fun-live); color: var(--fun-ground); }
+html.ui-fun .fun-chip--live-solid .fun-chip__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fun-ground); }
+/* A later class: white chip with a calendar, never "LIVE". */
+html.ui-fun .fun-chip--calendar { background: var(--fun-ground); color: var(--fun-live-tint-text-2); letter-spacing: 0; padding: 0 7px; gap: 4px; }
+html.ui-fun .fun-chip--calendar > svg { fill: none; stroke: var(--fun-live-text); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+html.ui-fun .fun-chip--new { background: var(--fun-highlight); color: var(--fun-highlight-text); }
+
+/* ── Progress bar ──────────────────────────────────────────────────── */
+/* On a course band: yellow fill on the course's track. On white: course
+   colour on its tint. */
+html.ui-fun .fun-progress { position: relative; flex: 1; min-width: 0; height: 8px; border-radius: 4px; overflow: hidden; background: var(--fc-tint, var(--fun-line-nav)); }
+html.ui-fun .fun-progress__fill { height: 100%; border-radius: inherit; background: var(--fc-solid, var(--fun-brand)); }
+html.ui-fun .fun-progress--band { height: 12px; border-radius: 6px; background: var(--fc-track, rgba(255, 255, 255, 0.35)); }
+html.ui-fun .fun-progress--band .fun-progress__fill { background: var(--fun-highlight); }
+
+/* ── Skeleton ──────────────────────────────────────────────────────── */
+html.ui-fun .fun-skeleton { background: var(--fun-line-nav); border-radius: var(--fun-radius-tile); }

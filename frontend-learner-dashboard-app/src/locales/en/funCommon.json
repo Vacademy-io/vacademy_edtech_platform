@@ -1,0 +1,9 @@
+{
+  "done": "Done",
+  "review": "Review",
+  "liveNow": "LIVE NOW",
+  "new": "NEW",
+  "progress": "Progress",
+  "percentDone": "{{percent}}% done",
+  "notStarted": "Not started"
+}
