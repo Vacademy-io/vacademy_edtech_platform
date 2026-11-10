@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
 import { isPasswordlessLandingRoute } from "@/lib/auth/passwordless-landing-routes";
@@ -92,6 +92,10 @@ let globalDomainRoutingState: DomainRoutingState | null = null;
 export const useDomainRouting = () => {
   const navigate = useNavigate();
   const router = useRouter();
+  // See the redirect effect: a decision deferred while a navigation was in
+  // flight, and the page it was deferred on.
+  const [navigationSettled, setNavigationSettled] = useState(0);
+  const redirectDeferredFrom = useRef<string | null>(null);
   const { setPrimaryColor } = useTheme();
   const { setInstituteId } = useInstituteFeatureStore();
 
@@ -629,6 +633,28 @@ export const useDomainRouting = () => {
   // Handle redirect when state changes
   useEffect(() => {
     if (!state.isLoading && state.redirectPath) {
+      // Routes are code-split, so a page that has just called navigate() stays
+      // mounted until the next page's code has loaded, while the URL already
+      // shows the destination. Deciding then judged the wrong page: live-class
+      // registration without a sessionId navigates to /dashboard, and a signed-
+      // in learner was bounced on to /login. So wait for the navigation to land.
+      if (router.state?.status === "pending" && typeof router.subscribe === "function") {
+        // "" (never equal to a real path) if the page on screen is unknown.
+        redirectDeferredFrom.current = router.state.resolvedLocation?.pathname ?? "";
+        const unsubscribe = router.subscribe("onResolved", () => {
+          unsubscribe();
+          setNavigationSettled((n) => n + 1);
+        });
+        return unsubscribe;
+      }
+      if (redirectDeferredFrom.current !== null) {
+        const deferredFrom = redirectDeferredFrom.current;
+        redirectDeferredFrom.current = null;
+        // This page navigated away meanwhile: it is leaving, and the page it
+        // went to runs its own guards. Only a same-page (search) change goes on.
+        if (window.location.pathname !== deferredFrom) return;
+      }
+
       // State updated, redirecting to: ${state.redirectPath}
 
       // Don't redirect if we're on public routes or course details page
@@ -712,7 +738,7 @@ export const useDomainRouting = () => {
         console.log("[Domain Routing] On public route, skipping redirect to:", state.redirectPath);
       }
     }
-  }, [state.isLoading, state.redirectPath]);
+  }, [state.isLoading, state.redirectPath, navigationSettled]);
 
   return {
     ...state,
