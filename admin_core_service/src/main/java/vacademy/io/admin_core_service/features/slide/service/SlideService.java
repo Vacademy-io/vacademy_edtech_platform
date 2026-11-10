@@ -1118,6 +1118,8 @@ public class SlideService {
             newQuestionSlide.setReAttemptCount(questionSlide.getReAttemptCount());
             newQuestionSlide.setPoints(questionSlide.getPoints());
             newQuestionSlide.setSourceType(questionSlide.getSourceType());
+            // CBE_RESPONSE: the solution and marking scheme live apart from auto_evaluation_json.
+            newQuestionSlide.setEvaluationSecretJson(questionSlide.getEvaluationSecretJson());
             // The question text and its options used to be dropped, so a copied
             // QUESTION slide opened blank with no answers to pick from. Same
             // treatment the QUIZ path already gives its questions.

@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.entity.QuestionS
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.QuestionSlideTrackedRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluationScorer;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.entity.Option;
 import vacademy.io.admin_core_service.features.slide.entity.QuestionSlide;
 import vacademy.io.admin_core_service.features.slide.entity.Slide;
@@ -21,6 +22,7 @@ import vacademy.io.admin_core_service.features.slide.repository.SlideRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -56,6 +58,16 @@ public class QuestionSlideActivityLogService {
             activityLog = activityLogService.saveActivityLog(activityLogDTO, user.getUserId(), slideId);
         } else {
             activityLog = activityLogService.updateActivityLog(activityLogDTO, user.getUserId());
+        }
+        // CBE_RESPONSE answers are graded by AI and recorded only through /cbe/submit. Here
+        // a client could otherwise write its own marks and status onto such a slide, or
+        // replace the graded rows of an attempt. The activity row (time on the slide) stays.
+        // Judged on the slide the activity really belongs to, not on the slideId parameter.
+        String recordedSlideId = activityLog.getSlideId() != null ? activityLog.getSlideId() : slideId;
+        if (isCbeSlide(recordedSlideId) || (!Objects.equals(recordedSlideId, slideId) && isCbeSlide(slideId))) {
+            log.warn("Ignoring question-slide responses posted to the legacy endpoint for CBE slide {} "
+                    + "(user {}, activity {})", recordedSlideId, user.getUserId(), activityLog.getId());
+            return activityLog.getId();
         }
         // Grade before persisting: the learner app posts a placeholder status of
         // "SUBMITTED" with marks 0 for every question-slide answer, so without this the
@@ -96,6 +108,10 @@ public class QuestionSlideActivityLogService {
                 return;
             }
             QuestionSlide question = questionOpt.get();
+            if (CbeConfigSecrets.isCbe(question.getQuestionType(), question.getAutoEvaluationJson())) {
+                // AI-graded; nothing here may set its marks.
+                return;
+            }
             List<String> optionIds = question.getOptions() == null
                     ? List.of()
                     : question.getOptions().stream().map(Option::getId).toList();
@@ -117,6 +133,26 @@ public class QuestionSlideActivityLogService {
             // Scoring must never cost a learner their submission.
             log.error("Server-side question-slide scoring failed for slide {}; "
                     + "falling back to client-reported status", slideId, e);
+        }
+    }
+
+    /** Whether this slide is a CBE_RESPONSE question slide. Unknown or unreadable: false. */
+    private boolean isCbeSlide(String slideId) {
+        if (slideId == null) {
+            return false;
+        }
+        try {
+            Optional<Slide> slide = slideRepository.findById(slideId);
+            if (slide.isEmpty() || slide.get().getSourceId() == null
+                    || !"QUESTION".equalsIgnoreCase(slide.get().getSourceType())) {
+                return false;
+            }
+            return questionSlideRepository.findById(slide.get().getSourceId())
+                    .map(q -> CbeConfigSecrets.isCbe(q.getQuestionType(), q.getAutoEvaluationJson()))
+                    .orElse(false);
+        } catch (RuntimeException e) {
+            log.warn("Could not tell whether slide {} is a CBE question slide", slideId, e);
+            return false;
         }
     }
 

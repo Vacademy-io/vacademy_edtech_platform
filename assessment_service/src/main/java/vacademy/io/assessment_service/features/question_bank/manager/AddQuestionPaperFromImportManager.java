@@ -236,6 +236,11 @@ public class AddQuestionPaperFromImportManager {
                 // initializeQuestion already copied over. No options to build,
                 // no validAnswers to parse — nothing else to do here.
                 break;
+            case CBE_RESPONSE:
+                // Same as CODING: the full CBE config (parts, templates and the secret
+                // solution / marking scheme) is auto_evaluation_json, stored verbatim by
+                // initializeQuestion. Learner payloads redact it (CbeConfigRedactor).
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported question type: " + questionRequest.getQuestionType());
         }
@@ -427,6 +432,9 @@ public class AddQuestionPaperFromImportManager {
                 break;
             case "CODING":
                 question.setQuestionResponseType(QuestionResponseTypes.CODE.name());
+                break;
+            case "CBE_RESPONSE":
+                question.setQuestionResponseType(QuestionResponseTypes.CBE.name());
                 break;
             default:
                 break;

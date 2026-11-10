@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentQuestionPreviewDto;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.SectionDto;
 import vacademy.io.assessment_service.features.question_core.enums.QuestionTypes;
 import vacademy.io.assessment_service.features.assessment.entity.*;
@@ -211,6 +212,7 @@ public class LearnerAssessmentAttemptStartManager {
             AssessmentQuestionPreviewDto question = new AssessmentQuestionPreviewDto(mapping.getQuestion(), mapping);
             question.fillOptionsOfQuestion(mapping.getQuestion());
             redactHiddenTestExpectedStdout(question);
+            redactCbeSecrets(question);
             questions.add(question);
         }
         return questions;
@@ -254,6 +256,18 @@ public class LearnerAssessmentAttemptStartManager {
             preview.setEvaluationJson(mapper.writeValueAsString(root));
         } catch (Exception ignored) {
             // If parsing fails, fall through and leave the original JSON; the client must still tolerate it.
+        }
+    }
+
+    // CBE_RESPONSE: the config carries the model solution, marking scheme, solution
+    // file and grading notes. The learner gets the parts, prompts and templates only.
+    // Covers preview, start and restart/resume (all build their sections here).
+    static void redactCbeSecrets(AssessmentQuestionPreviewDto preview) {
+        if (preview == null) return;
+        String evaluationJson = preview.getEvaluationJson();
+        String redacted = CbeConfigRedactor.redact(evaluationJson, preview.getQuestionType());
+        if (redacted != evaluationJson) {
+            preview.setEvaluationJson(redacted);
         }
     }
 

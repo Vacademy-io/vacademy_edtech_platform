@@ -1080,7 +1080,7 @@ public class StudentReportHtmlV2Builder {
             return;
         }
         if (response != null) {
-            List<String> answers = htmlBuilderService.extractResponseContent(response);
+            List<String> answers = htmlBuilderService.extractResponseContent(response, row.getCorrectOptions());
             if (!answers.isEmpty()) {
                 String color = QuestionResponseEnum.CORRECT.name().equals(status) ? GREEN
                         : (QuestionResponseEnum.INCORRECT.name().equals(status) ? RED : INK);
@@ -1106,7 +1106,8 @@ public class StudentReportHtmlV2Builder {
         if (correct.isEmpty()) {
             return;
         }
-        appendQuestionRow(sb, "CODING".equals(row.getQuestionType()) ? "Graded On" : "Correct Answer",
+        appendQuestionRow(sb, "CODING".equals(row.getQuestionType()) || "CBE_RESPONSE".equals(row.getQuestionType())
+                        ? "Graded On" : "Correct Answer",
                 String.join(", ", correct), GREEN);
     }
 

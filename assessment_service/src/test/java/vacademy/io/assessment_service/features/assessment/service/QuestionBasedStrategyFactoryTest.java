@@ -112,6 +112,28 @@ class QuestionBasedStrategyFactoryTest {
     }
 
     @Test
+    void cbeResponseIsRegisteredAndAlwaysZeroPending() throws Exception {
+        // Spreadsheet & Written Response: graded by the AI + teacher, never on submit.
+        String marking = "{\"type\":\"CBE_RESPONSE\",\"data\":{\"totalMark\":20,\"negativeMark\":0}}";
+        String config = "{\"type\":\"CBE_RESPONSE\",\"data\":{\"parts\":[{\"id\":\"p1\",\"kind\":\"DOCUMENT\",\"marks\":20}]}}";
+        String response = "{\"responseData\":{\"type\":\"CBE_RESPONSE\",\"answer\":{\"parts\":{\"p1\":"
+                + "{\"kind\":\"DOCUMENT\",\"html\":\"<p>IAS 38</p>\"}}}}}";
+
+        QuestionWiseBasicDetailDto result =
+                QuestionBasedStrategyFactory.calculateMarks(marking, config, response, "CBE_RESPONSE");
+        assertThat(result.getMarks()).isZero();
+        assertThat(result.getAnswerStatus()).isEqualTo(QuestionResponseEnum.PENDING.name());
+
+        QuestionWiseBasicDetailDto broken =
+                QuestionBasedStrategyFactory.calculateMarks("nope", null, "{", "CBE_RESPONSE");
+        assertThat(broken.getMarks()).isZero();
+        assertThat(broken.getAnswerStatus()).isEqualTo(QuestionResponseEnum.PENDING.name());
+
+        assertThat(QuestionBasedStrategyFactory.getResponseOptionIds(response, "CBE_RESPONSE")).isEmpty();
+        assertThat(QuestionBasedStrategyFactory.getCorrectOptionIds(config, "CBE_RESPONSE")).isEmpty();
+    }
+
+    @Test
     void unknownQuestionType_failsLoudlyRatherThanNullPointer() {
         // getStrategy returned null for an unrecognised type and several call sites
         // dereferenced it straight away.

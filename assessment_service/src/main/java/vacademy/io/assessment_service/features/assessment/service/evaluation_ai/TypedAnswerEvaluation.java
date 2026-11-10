@@ -12,6 +12,8 @@ import vacademy.io.assessment_service.features.assessment.repository.QuestionAss
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
 import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +35,14 @@ import java.util.Set;
 public class TypedAnswerEvaluation {
 
     /** Question types the AI grades on an online attempt. */
-    public static final List<String> AI_GRADED_TYPES = List.of("LONG_ANSWER");
+    public static final List<String> AI_GRADED_TYPES = List.of("LONG_ANSWER", CbeConfigRedactor.CBE_TYPE);
+
+    /**
+     * Question types that are never auto-scored (always 0 / PENDING on submit), so an
+     * attempt that answered one is held for the teacher even when the assessment's AI
+     * evaluation is off - otherwise the 0 would be auto-released as the result.
+     */
+    public static final List<String> TEACHER_GRADED_TYPES = List.of(CbeConfigRedactor.CBE_TYPE);
 
     private final EvaluationUtilityService evaluationUtilityService;
     private final QuestionAssessmentSectionMappingRepository questionMappingRepository;
@@ -85,14 +94,73 @@ public class TypedAnswerEvaluation {
         }
     }
 
-    /** The text the learner typed, from question_wise_marks.response_json ({responseData: {answer}}). */
+    /**
+     * An online attempt that answered a question nobody auto-scores (CBE_RESPONSE). It
+     * is held - result PENDING, report not released - whether or not AI evaluation is on:
+     * its stored 0 is a placeholder, not a mark. Decided on the question's own type
+     * (question_wise_marks -> question), never on the type the client sent.
+     */
+    public boolean awaitsTeacherGrading(StudentAttempt attempt, Assessment assessment) {
+        if (attempt == null || assessment == null || attempt.getId() == null) return false;
+        if (!isTypedAttempt(attempt, assessment)) return false;
+        try {
+            if (!questionMappingRepository.existsQuestionOfTypesInAssessment(assessment.getId(), TEACHER_GRADED_TYPES)) {
+                return false;
+            }
+            for (QuestionWiseMarks marks : questionWiseMarksRepository.findByStudentAttemptId(attempt.getId())) {
+                Question q = marks.getQuestion();
+                if (q != null && q.getQuestionType() != null
+                        && TEACHER_GRADED_TYPES.contains(q.getQuestionType().toUpperCase())
+                        && typedAnswer(marks) != null) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] could not check teacher-graded answers for attempt {}: {}",
+                    attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * The text the learner typed, from question_wise_marks.response_json ({responseData: {answer}}).
+     * For a CBE_RESPONSE question the answer is an object ({parts: {...}}): it comes back as
+     * its JSON string, or null when every part is blank (nothing beyond the template).
+     */
     public String typedAnswer(QuestionWiseMarks marks) {
         if (marks == null || marks.getResponseJson() == null || marks.getResponseJson().isBlank()) return null;
+        if (isCbeQuestion(marks)) {
+            return cbeAnswer(marks);
+        }
         try {
             JsonNode answer = objectMapper.readTree(marks.getResponseJson()).path("responseData").path("answer");
             return answer.isValueNode() && !answer.isNull() ? answer.asText() : null;
         } catch (Exception e) {
             log.warn("[AI-EVAL-TYPED] unreadable response_json on question_wise_marks {}: {}",
+                    marks.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean isCbeQuestion(QuestionWiseMarks marks) {
+        try {
+            Question q = marks.getQuestion();
+            return q != null && CbeConfigRedactor.isCbe(q.getQuestionType());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String cbeAnswer(QuestionWiseMarks marks) {
+        try {
+            JsonNode answer = CbeAnswers.answerFromResponseJson(marks.getResponseJson());
+            if (answer == null) return null;
+            JsonNode config = CbeAnswers.configData(marks.getQuestion().getAutoEvaluationJson());
+            if (!CbeAnswers.isAnswered(answer, config)) return null;
+            return objectMapper.writeValueAsString(answer);
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] unreadable CBE answer on question_wise_marks {}: {}",
                     marks.getId(), e.getMessage());
             return null;
         }

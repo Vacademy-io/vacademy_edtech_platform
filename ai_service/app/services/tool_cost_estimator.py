@@ -91,6 +91,19 @@ DEFAULT_TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "unit_field": "pages",
         "params": {"fixed_price": True, "typed_per_answer": 1},
     },
+    # Instant AI check of a Spreadsheet & Written Response (CBE_RESPONSE)
+    # answer on an LMS question slide (POST /copy-check/v1/grade-cbe-sync):
+    # 1 credit per check, charge = max(this, real token cost) like the other
+    # metered tools (NOT fixed-price: a large workbook costs more to read).
+    # Fallback for an environment without an `ai_tool_pricing` row of this key;
+    # once a row exists, tune that instead.
+    "cbe_answer_check": {
+        "request_type": "evaluation",
+        "flat_base_credits": Decimal("1"),
+        "per_unit_credits": Decimal("0"),
+        "unit_field": "flat",
+        "params": {},
+    },
     # Vsmart Extract: digitising an EXISTING paper (mode=extract on
     # pdf-to-questions). A digital PDF is read locally for free, so the only
     # cost is the model (≈ ₹3 for a 60-question paper with solutions) — priced

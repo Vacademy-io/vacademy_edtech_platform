@@ -87,6 +87,15 @@ SEEDED_LATER: Dict[str, Tuple[str, Tuple[str, ...]]] = {
 }
 SEEDED_LATER_TOOL_KEYS = {k for _m, keys in SEEDED_LATER.values() for k in keys}
 
+# Tool keys whose every charge passes its catalog use_case explicitly (explicit
+# key > tool_key in resolution), so they need no tool_keys entry to be metered
+# correctly. tool_key -> the use_case the caller passes.
+#   cbe_answer_check: services/copy_check/cbe_sync.py charges with UC.EVALUATION.
+#   Also appended to the evaluation row's tool_keys by admin_core V656 (this test parses V586 only).
+EXPLICIT_USE_CASE_TOOL_KEYS: Dict[str, str] = {
+    "cbe_answer_check": "evaluation",
+}
+
 # Model use cases that are not a billable feature of their own.
 NOT_BILLED: Dict[str, str] = {
     "platform_default": "base model tier; the caller's own request_type / use case is what bills",
@@ -337,6 +346,9 @@ def test_every_request_type_maps_to_a_real_use_case(catalog):
 
 def test_every_tool_key_maps_to_a_real_use_case(catalog):
     keys = (set(_code_tool_keys()) | set(PROD_TOOL_KEYS)) - SEEDED_LATER_TOOL_KEYS
+    for key, use_case in EXPLICIT_USE_CASE_TOOL_KEYS.items():
+        assert use_case in catalog, f"EXPLICIT_USE_CASE_TOOL_KEYS[{key!r}] -> {use_case!r} is not a catalog row"
+        keys.discard(key)
     unmapped = sorted(k for k in keys if _resolve(catalog, tool_key=k) == "unknown")
     assert not unmapped, f"ai_tool_pricing tool keys with no catalog row: {unmapped}"
 

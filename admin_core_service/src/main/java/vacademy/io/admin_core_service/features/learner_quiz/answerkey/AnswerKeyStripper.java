@@ -24,7 +24,8 @@ public class AnswerKeyStripper {
     private static final Set<String> ANSWER_FIELDS = Set.of(
             "auto_evaluation_json", "autoEvaluationJson",
             "explanation_text", "explanationText",
-            "explanation_text_data", "explanationTextData");
+            "explanation_text_data", "explanationTextData",
+            "evaluation_secret_json", "evaluationSecretJson");
 
     private static final List<String> SOURCE_TYPE_FIELDS = List.of("source_type", "sourceType");
     private static final List<String> DESCRIPTION_FIELDS = List.of("description", "slideDescription", "slide_description");

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
 import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
@@ -357,7 +358,8 @@ public class AssessmentDataEnrichmentService {
             }
 
             // Student's selected answer as readable text
-            String studentAnswer = extractStudentAnswer(questionNode.get("responseData"), options);
+            String studentAnswer = extractStudentAnswer(questionNode.get("responseData"), options,
+                    question != null ? question.getAutoEvaluationJson() : null);
             eq.put("student_answer", studentAnswer);
 
             // Marks status from question_wise_marks
@@ -435,7 +437,7 @@ public class AssessmentDataEnrichmentService {
      * NUMERIC responses (which use {@code validAnswer}) and CODING submissions reached the
      * model as no answer at all — indistinguishable from a skipped question.
      */
-    private String extractStudentAnswer(JsonNode responseData, List<Option> options) {
+    private String extractStudentAnswer(JsonNode responseData, List<Option> options, String autoEvaluationJson) {
         if (responseData == null || responseData.isNull()) {
             return "";
         }
@@ -449,6 +451,11 @@ public class AssessmentDataEnrichmentService {
             }
             if ("CODING".equals(type)) {
                 return summariseCodingAnswer(responseData);
+            }
+            if ("CBE_RESPONSE".equals(type)) {
+                // Spreadsheet / document parts: a short summary, never the raw sheet JSON.
+                return CbeAnswers.summary(CbeAnswers.answerObject(responseData.path("answer")),
+                        CbeAnswers.configData(autoEvaluationJson));
             }
             return stripForAI(responseData.path("answer").asText(""));
         } catch (Exception e) {

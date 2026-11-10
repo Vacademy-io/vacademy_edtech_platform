@@ -171,7 +171,10 @@ public class StudentAttemptService {
         // An online attempt whose written answers the AI is about to grade is held
         // the same way: until then those answers carry only the word-overlap score,
         // and the AI's marks are a draft the teacher reviews and releases.
-        boolean heldForAi = !isManualEvaluation && awaitsAiGrading(attempt);
+        // A Spreadsheet & Written Response (CBE) answer is never auto-scored: it is
+        // stored as 0 / PENDING, so the attempt is held for the teacher even when
+        // the assessment's AI evaluation is off - releasing it would publish that 0.
+        boolean heldForAi = !isManualEvaluation && (awaitsAiGrading(attempt) || awaitsTeacherGrading(attempt));
         if (heldForAi) {
             // Still an AUTO attempt: keep result_marks as the release path expects;
             // the AI run replaces both totals when it completes.
@@ -226,6 +229,15 @@ public class StudentAttemptService {
             return typedAnswerEvaluation.awaitsAiGrading(attempt, attempt.getRegistration().getAssessment());
         } catch (Exception e) {
             log.error("Failed to resolve AI grading for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean awaitsTeacherGrading(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsTeacherGrading(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve teacher grading for attempt {}: {}", attempt.getId(), e.getMessage());
             return false;
         }
     }

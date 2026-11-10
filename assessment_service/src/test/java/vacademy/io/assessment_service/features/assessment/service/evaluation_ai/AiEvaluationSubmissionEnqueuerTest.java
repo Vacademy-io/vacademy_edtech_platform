@@ -69,7 +69,7 @@ class AiEvaluationSubmissionEnqueuerTest {
                 StudentAttempt online = new StudentAttempt();
                 online.setId("attempt-online");
                 online.setAttemptData("{\"sections\":[]}");
-                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", List.of("LONG_ANSWER")))
+                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", TypedAnswerEvaluation.AI_GRADED_TYPES))
                                 .thenReturn(false);
                 assertNull(enqueuer.enqueueIfEnabled(online, assessment(true)));
                 verify(repository, never()).save(any(AiEvaluationProcess.class));
@@ -80,7 +80,7 @@ class AiEvaluationSubmissionEnqueuerTest {
                 StudentAttempt online = new StudentAttempt();
                 online.setId("attempt-essay");
                 online.setAttemptData("{\"sections\":[]}");
-                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", List.of("LONG_ANSWER")))
+                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", TypedAnswerEvaluation.AI_GRADED_TYPES))
                                 .thenReturn(true);
                 assertThat(enqueuer.enqueueIfEnabled(online, assessment(true))).isEqualTo("process-1");
         }
@@ -218,7 +218,7 @@ class AiEvaluationSubmissionEnqueuerTest {
                 StudentAttempt online = new StudentAttempt();
                 online.setId("attempt-essay");
                 online.setAttemptData("{\"sections\":[]}");
-                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", List.of("LONG_ANSWER")))
+                when(mappingRepository.existsQuestionOfTypesInAssessment("assessment-1", TypedAnswerEvaluation.AI_GRADED_TYPES))
                                 .thenReturn(true);
 
                 enqueuer.enqueueIfEnabled(online, assessment(true));

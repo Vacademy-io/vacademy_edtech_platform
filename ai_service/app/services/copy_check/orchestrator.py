@@ -23,7 +23,7 @@ from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
 from ...repositories import copy_check_render_snapshot_repository as render_snapshot
-from . import annotator, answer_language, callbacks, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, answer_language, callbacks, cbe_render, cancellation, copy_structure, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -47,6 +47,10 @@ from .enforce_bridge import apply_enforcement
 
 logger = logging.getLogger(__name__)
 
+# A spreadsheet & written response (CBE_RESPONSE) prompt carries the rendered
+# answer and the model solution (each capped by cbe_render), far above the
+# per-question allowance a typed essay needs.
+TOKENS_PER_CBE_QUESTION = 60_000
 # Every cut mark is re-checked against a picture of the answer (deduction_check.py)
 # unless this is "off".
 DEDUCTION_CHECK = os.getenv("COPY_CHECK_DEDUCTION_CHECK", "on").strip().lower() != "off"
@@ -214,7 +218,13 @@ async def _grade_typed(
     graded = 0
     for q in questions:
         check_cancelled()
-        answer = typed_answers.answer_text(q.get("student_answer"))
+        cbe = cbe_render.is_cbe(q)
+        if cbe:
+            # Spreadsheet & written response: blank = no cell or text beyond
+            # the template; what the teacher reads is the rendered answer.
+            answer = "" if cbe_render.answer_is_blank(q) else cbe_render.answer_display_text(q)
+        else:
+            answer = typed_answers.answer_text(q.get("student_answer"))
         if not answer:
             verdict = typed_answers.unattempted_verdict(q)
         else:
@@ -223,6 +233,8 @@ async def _grade_typed(
                 rubric = await rubric_resolver.resolve(q, preferred_model)
                 raw = await grader.grade_typed_question(q, rubric, preferred_model)
                 verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                if cbe:
+                    cbe_render.reconcile_breakdown(verdict)
             except cancellation.Cancelled:
                 raise
             except Exception as e:
@@ -233,6 +245,8 @@ async def _grade_typed(
                     rubric = await rubric_resolver.resolve(q, retry_model)
                     raw = await grader.grade_typed_question(q, rubric, retry_model)
                     verdict = attach_criteria_max(validate_and_cap(raw, q, _EMPTY_LAYOUT), rubric)
+                    if cbe:
+                        cbe_render.reconcile_breakdown(verdict)
                 except cancellation.Cancelled:
                     raise
                 except Exception as retry_err:
@@ -565,8 +579,10 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
     check_llm = ChatLLMClient(ApiKeyResolver(db))
     if hasattr(check_llm, "provider_prefs"):
         check_llm.provider_prefs = {"zdr": True, "data_collection": "deny"}
+    cbe_count = sum(1 for q in questions if cbe_render.is_cbe(q))
     grader = CopyCheckGrader(
-        llm, institute_id=institute_id, token_budget=token_budget_for(len(questions)),
+        llm, institute_id=institute_id,
+        token_budget=token_budget_for(len(questions)) + cbe_count * TOKENS_PER_CBE_QUESTION,
         exam_context=req.get("exam_context"), default_model=eval_model,
         grading_instructions=not is_api_actor(billing["billing_actor"]),
     )
@@ -588,6 +604,11 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
     # grader reads them as the reference for a full-marks answer, and the
     # criteria generator below builds its rubric from them (T0.24).
     for q in questions:
+        if cbe_render.is_cbe(q) and q.get("model_answer") and not q.get("cbe_config"):
+            # A CBE question's model_answer is its config (solution + marking
+            # scheme). Keep it: a model answer the teacher saved replaces
+            # model_answer below and is shown to the grader beside it.
+            q["cbe_config"] = q["model_answer"]
         model_answer = rubric_snapshot.model_answers.get(q["question_id"])
         if model_answer:
             q["model_answer"] = model_answer
@@ -628,7 +649,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # and reuse for every student — so two students on the same question are
         # graded against identical criteria, not a fresh per-copy invention.
         cancellation.check(job_id, process_id)
-        missing = [q for q in questions if not rubric_resolver.has_rubric(q["question_id"])]
+        missing = [q for q in questions if rubric_resolver.needs_generation(q)]
         if missing:
             generated: dict[str, Any] = {}
             for q in missing:

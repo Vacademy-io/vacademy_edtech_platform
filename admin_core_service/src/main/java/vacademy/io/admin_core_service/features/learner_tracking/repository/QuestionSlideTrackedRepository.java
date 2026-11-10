@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.entity.QuestionS
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 
 public interface QuestionSlideTrackedRepository extends JpaRepository<QuestionSlideTracked, String> {
     @Modifying
@@ -65,4 +66,50 @@ public interface QuestionSlideTrackedRepository extends JpaRepository<QuestionSl
             @Param("userId") String userId,
             @Param("start") Timestamp start,
             @Param("end") Timestamp end);
+
+    // ---- CBE_RESPONSE question slides (CbeSlideSubmitService) ----
+    // Only rows written by the CBE submit carry these three statuses, so older answers on
+    // a slide whose type later changed are never counted. Keep apostrophes out of comments
+    // inside the SQL text below: Spring Data parses these strings at boot.
+
+    /**
+     * AI checks the learner has used on this slide: graded ones, plus one still being graded
+     * (EVALUATING) unless it is older than the grading timeout allows, which means the pod
+     * died mid-call and the check never happened.
+     */
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+              AND (t.response_status = 'EVALUATED'
+                   OR (t.response_status = 'EVALUATING' AND t.created_at > LOCALTIMESTAMP - INTERVAL '5 minutes'))
+            """, nativeQuery = true)
+    long countCbeChecksUsed(@Param("userId") String userId, @Param("slideId") String slideId);
+
+    /** Every CBE submission the learner made on this slide, graded or not. */
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+              AND t.response_status IN ('EVALUATED', 'EVALUATING', 'EVALUATION_FAILED')
+            """, nativeQuery = true)
+    long countCbeSubmissions(@Param("userId") String userId, @Param("slideId") String slideId);
+
+    /** The learner's latest CBE submission on this slide. */
+    @Query(value = """
+            SELECT t.*
+            FROM question_slide_tracked t
+            JOIN activity_log al ON al.id = t.activity_id
+            WHERE al.user_id = :userId
+              AND al.slide_id = :slideId
+              AND t.response_status IN ('EVALUATED', 'EVALUATING', 'EVALUATION_FAILED')
+            ORDER BY t.created_at DESC, t.attempt_number DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<QuestionSlideTracked> findLatestCbeSubmission(@Param("userId") String userId,
+            @Param("slideId") String slideId);
 }

@@ -628,6 +628,7 @@ TOOL_LABELS = {
     "tutor_avatar_create": "Live AI Tutor: create a custom teacher avatar (one-time, per avatar)",
     "copy_check_evaluation": "AI evaluation — dashboard (per page)",
     "copy_check_evaluation_api": "AI evaluation — API partners (fixed price)",
+    "cbe_answer_check": "AI answer check — spreadsheet & written response on a question slide (per check)",
 }
 
 

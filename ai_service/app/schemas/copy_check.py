@@ -49,7 +49,11 @@ class LayoutMap(BaseModel):
 class GradeQuestionInput(BaseModel):
     question_id: str
     question_text: str
-    question_type: str                # MCQ | ONE_WORD | LONG_ANSWER | CODING
+    # MCQ | ONE_WORD | LONG_ANSWER | CODING | CBE_RESPONSE. CBE_RESPONSE
+    # (spreadsheet & written response, TYPED only): student_answer = JSON of
+    # the answer {parts}, model_answer = JSON of the full config data
+    # (solution + marking scheme); see services/copy_check/cbe_render.py.
+    question_type: str
     max_marks: float
     subject: Optional[str] = None     # used by criteria-gen prompt (#22)
     options: Optional[list[dict[str, Any]]] = None
@@ -163,6 +167,44 @@ class CopyCheckGradeRequest(BaseModel):
         if self.answer_mode == "COPY" and not self.pdf_url:
             raise ValueError("pdf_url is required when answer_mode is COPY")
         return self
+
+
+class CbeSyncGradeRequest(BaseModel):
+    """POST /copy-check/v1/grade-cbe-sync (docs/CBE_RESPONSE_QUESTION.md 5.2):
+    admin_core grades a learner's Spreadsheet & Written Response answer on an
+    LMS question slide and waits for the result. `user_id` is the learner,
+    taken by admin_core from the learner's token."""
+    institute_id: str = Field(..., min_length=1, max_length=255)
+    user_id: str = Field(..., min_length=1, max_length=255)
+    source_id: str = Field(..., min_length=1, max_length=255)   # the slide id
+    question_text: Optional[str] = None
+    scenario_text: Optional[str] = None
+    # The FULL config ({type, data} or data; with solution + marking scheme),
+    # as an object or its JSON string.
+    config: Any = None
+    # The learner's answer {parts: {...}} (or the whole responseData), object or JSON string.
+    answer: Any = None
+    max_marks: Optional[float] = Field(None, ge=0)
+    preferred_model: Optional[str] = Field(None, max_length=200)
+    # Optional caller id for the charge; derived from source/user/answer when absent.
+    request_id: Optional[str] = Field(None, max_length=200)
+
+
+class CbeCriterionResult(BaseModel):
+    criteria_name: str
+    marks: float
+    max_marks: Optional[float] = None
+    reason: str = ""
+
+
+class CbeSyncGradeResponse(BaseModel):
+    marks_awarded: float
+    max_marks: float
+    verdict: str                      # CORRECT | PARTIAL | WRONG | UNATTEMPTED
+    feedback: str = ""
+    confidence: float = 0.0
+    criteria_breakdown: list[CbeCriterionResult] = Field(default_factory=list)
+    credits_charged: float = 0.0
 
 
 class CopyCheckGradeResponse(BaseModel):

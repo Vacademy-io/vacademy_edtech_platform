@@ -44,6 +44,8 @@ public class QuestionBasedStrategyFactory {
         strategies.put(QuestionTypes.NUMERIC.name(), NUMERICQuestionTypeBasedStrategy::new);
         strategies.put(QuestionTypes.TRUE_FALSE.name(), MCQSQuestionTypeBasedStrategy::new);
         strategies.put(QuestionTypes.CODING.name(), CodingQuestionTypeBasedStrategy::new);
+        // Always 0 / PENDING: graded by the AI copy-check + teacher, never on submit.
+        strategies.put(QuestionTypes.CBE_RESPONSE.name(), CbeResponseQuestionTypeBasedStrategy::new);
         // Add more strategies here
     }
 

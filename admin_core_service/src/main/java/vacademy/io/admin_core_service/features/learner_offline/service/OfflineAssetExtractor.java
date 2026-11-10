@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.learner_study_library.dto.Learner
 import vacademy.io.admin_core_service.features.slide.dto.AssignmentSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.AudioSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.DocumentSlideDTO;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.dto.QuestionSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.VideoSlideDTO;
@@ -101,6 +102,10 @@ public class OfflineAssetExtractor {
             case "QUESTION": {
                 QuestionSlideDTO q = slide.getQuestionSlide();
                 if (q == null) {
+                    return notDownloadable();
+                }
+                if (CbeConfigSecrets.isCbe(q.getQuestionType(), q.getAutoEvaluationJson())) {
+                    // Spreadsheet & Written Response is checked by AI on submit: online only.
                     return notDownloadable();
                 }
                 return new Extraction(true, List.of(), q);

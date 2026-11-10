@@ -12,9 +12,12 @@
   - DELETE /copy-check/rubric/{assessment_id}
   - PUT  /copy-check/rubric/{assessment_id}/question/{question_id}   (PATCH semantics)
   - DELETE /copy-check/rubric/{assessment_id}/question/{question_id}
+  - POST /copy-check/v1/grade-cbe-sync  (admin_core: instant AI check of a
+                                       Spreadsheet & Written Response answer on
+                                       a question slide; 402 when out of credits)
 
-All gated by X-Internal-Service-Token (Java assessment_service is the only
-intended caller). The rubric endpoints will be proxied through Java for the FE.
+All gated by X-Internal-Service-Token (Java assessment_service is the main
+caller; admin_core uses grade and grade-cbe-sync). The rubric endpoints will be proxied through Java for the FE.
 
 Tenant check: a rubric row belongs to the institute that created it. A write
 naming another institute is refused (403), and the rubric endpoints take an
@@ -44,6 +47,8 @@ from ..repositories.copy_check_rubric_repository import (
     ensure_same_institute,
 )
 from ..schemas.copy_check import (
+    CbeSyncGradeRequest,
+    CbeSyncGradeResponse,
     CopyCheckGradeRequest,
     CopyCheckGradeResponse,
     CopyCheckIdentifyRequest,
@@ -58,7 +63,7 @@ from ..schemas.copy_check import (
     UpsertQuestionAnswerRequest,
     UpsertRubricRequest,
 )
-from ..services.copy_check import cancellation, job_guard, pen_preview, re_render, upload_inspect
+from ..services.copy_check import cancellation, cbe_sync, job_guard, pen_preview, re_render, upload_inspect
 from ..services.copy_check.orchestrator import _new_job_id, grade_copy, run
 
 logger = logging.getLogger(__name__)
@@ -475,3 +480,41 @@ async def re_render_copy(req: ReRenderRequest, db: Session = Depends(db_dependen
     except re_render.RenderFailed:
         raise HTTPException(status_code=502, detail="Could not draw the checked copy")
     return ReRenderResponse(**out)
+
+
+@router.post(
+    "/v1/grade-cbe-sync",
+    response_model=CbeSyncGradeResponse,
+    dependencies=[Depends(require_internal_service_token)],
+)
+async def grade_cbe_sync(req: CbeSyncGradeRequest, db: Session = Depends(db_dependency)):
+    """Grade one Spreadsheet & Written Response answer and wait for it
+    (docs/CBE_RESPONSE_QUESTION.md 5.2). admin_core sends the full config
+    (with the solution and marking scheme) and the learner's answer; credits
+    are checked before any model call (402 when short) and `cbe_answer_check`
+    is charged once per answer. 502 = could not be graded (not charged)."""
+    try:
+        result = await cbe_sync.grade_cbe_sync(req.model_dump(), db)
+    except cbe_sync.InsufficientCredits as exc:
+        estimate = exc.estimate
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "INSUFFICIENT_CREDITS",
+                "message": (
+                    f"The institute's AI credits are not enough to check this answer: it needs about "
+                    f"{float(estimate.get('estimated_credits') or 0):g} credits and "
+                    f"{float(estimate.get('current_balance') or 0):g} are available."
+                ),
+                "estimated_credits": estimate.get("estimated_credits"),
+                "current_balance": estimate.get("current_balance"),
+            },
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except cbe_sync.CbeGradingFailed as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={"error": "EVALUATION_FAILED", "message": str(exc)[:500]},
+        )
+    return CbeSyncGradeResponse(**result)

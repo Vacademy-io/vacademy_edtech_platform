@@ -28,6 +28,8 @@ import vacademy.io.assessment_service.features.learner_assessment.repository.Que
 import vacademy.io.assessment_service.features.question_core.entity.Option;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.repository.OptionRepository;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -251,7 +253,7 @@ public class CopyCheckOrchestratorService {
             // ones need reading, and only those are charged for.
             marksList = marksList.stream().filter(m -> TypedAnswerEvaluation.isAiGraded(m.getQuestion())).toList();
             if (marksList.isEmpty()) {
-                failProcess(process, "no uploaded answer sheet and no written (long answer) question on attempt "
+                failProcess(process, "no uploaded answer sheet and no written (long answer / CBE) question on attempt "
                         + attemptId + " — nothing for the AI to grade");
                 return null;
             }
@@ -564,7 +566,9 @@ public class CopyCheckOrchestratorService {
         Question q = marks.getQuestion();
         String[] printed = printedLabel(q);
         double maxMarks = evaluationUtilityService.extractMaxMarksFromSectionMapping(marks, q);
-        String questionText = q.getTextData() != null ? q.getTextData().getContent() : "";
+        String questionText = CbeConfigRedactor.isCbe(q.getQuestionType())
+                ? cbeQuestionText(q)
+                : q.getTextData() != null ? q.getTextData().getContent() : "";
         List<Option> storedOptions = loadOptions(q);
         List<Map<String, Object>> options = storedOptions.isEmpty() ? parseOptions(q) : optionsPayload(storedOptions);
         String correctAnswer = correctAnswerFor(q, storedOptions);
@@ -699,6 +703,12 @@ public class CopyCheckOrchestratorService {
         try {
             String json = q.getAutoEvaluationJson();
             if (json == null || json.isEmpty()) return null;
+            if (CbeConfigRedactor.isCbe(q.getQuestionType())) {
+                // The FULL config data, secrets included: the solution and marking scheme
+                // are what ai_service builds the rubric from (docs/CBE_RESPONSE_QUESTION.md §5.1).
+                JsonNode data = objectMapper.readTree(json).path("data");
+                return data.isObject() ? objectMapper.writeValueAsString(data) : null;
+            }
             JsonNode answer = objectMapper.readTree(json).path("data").path("answer");
             String html = answer.isTextual() ? answer.asText() : answer.path("content").asText(null);
             String text = plainText(html);
@@ -706,6 +716,25 @@ public class CopyCheckOrchestratorService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * A CBE question as the grader reads it: the scenario (the question's passage,
+     * parent_rich_text) and the requirement (question text), HTML turned into text
+     * with paragraphs, list items and table rows kept on their own lines.
+     */
+    static String cbeQuestionText(Question q) {
+        String scenario = CbeAnswers.htmlToText(q.getParentRichText() != null ? q.getParentRichText().getContent() : null);
+        String requirement = CbeAnswers.htmlToText(q.getTextData() != null ? q.getTextData().getContent() : null);
+        StringBuilder sb = new StringBuilder();
+        if (!scenario.isBlank()) {
+            sb.append("Scenario:\n").append(scenario);
+        }
+        if (!requirement.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("Requirement:\n").append(requirement);
+        }
+        return sb.toString();
     }
 
     private static String plainText(String html) {

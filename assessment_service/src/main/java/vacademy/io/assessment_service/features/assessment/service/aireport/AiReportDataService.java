@@ -518,7 +518,7 @@ public class AiReportDataService {
         String response = row.getStudentResponseOptions();
         if (response != null && !"CODING".equals(row.getQuestionType())) {
             try {
-                List<String> answers = htmlBuilderService.extractResponseContent(response);
+                List<String> answers = htmlBuilderService.extractResponseContent(response, row.getCorrectOptions());
                 if (answers != null && !answers.isEmpty()) return clean(String.join(", ", answers), 600);
             } catch (Exception ignored) {
                 // fall through to the generic labels below

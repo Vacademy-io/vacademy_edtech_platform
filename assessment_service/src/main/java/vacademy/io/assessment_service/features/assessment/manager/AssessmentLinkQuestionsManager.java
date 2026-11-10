@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentStatus;
 import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
@@ -237,10 +238,30 @@ public class AssessmentLinkQuestionsManager {
         return sectionRepository.save(section);
     }
 
+    private static final Set<String> STAFF_AUTHORITIES = Set.of("ADMIN", "EVALUATOR", "TEACHER", "CREATOR");
+
+    /**
+     * Staff of the institute in the request's clientId: a known staff role, or any
+     * custom role on a user who is not a STUDENT there (custom staff roles must keep
+     * the full config - the assessment editor loads and re-saves it from here).
+     * Deliberately no root-user bypass: on prod nearly every learner is a "root" user.
+     */
+    static boolean hasStaffAuthority(CustomUserDetails user) {
+        if (user == null || user.getAuthorities() == null) return false;
+        Set<String> authorities = new HashSet<>();
+        user.getAuthorities().forEach(a -> authorities.add(a.getAuthority() == null ? "" : a.getAuthority().toUpperCase()));
+        authorities.remove("");
+        if (authorities.stream().anyMatch(STAFF_AUTHORITIES::contains)) return true;
+        return !authorities.isEmpty() && !authorities.contains("STUDENT");
+    }
+
     public Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSection(CustomUserDetails user, String assessmentId, String sectionIds) {
         Map<String, List<AssessmentQuestionPreviewDto>> response = new HashMap<>();
         List<String> sectionIdList = Arrays.asList(sectionIds.split(","));
         List<QuestionAssessmentSectionMapping> mappings = questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIdList);
+        // The learner app calls this endpoint too (test report, comparison): a CBE
+        // solution / marking scheme goes to staff only.
+        boolean staff = hasStaffAuthority(user);
 
         for (QuestionAssessmentSectionMapping mapping : mappings) {
             String sectionId = mapping.getSection().getId();
@@ -250,6 +271,11 @@ public class AssessmentLinkQuestionsManager {
 
             AssessmentQuestionPreviewDto fillOptionsExplanationsOfQuestion = new AssessmentQuestionPreviewDto(mapping.getQuestion(), mapping);
             fillOptionsExplanationsOfQuestion.fillOptionsExplanationsOfQuestion(mapping.getQuestion());
+            if (!staff) {
+                fillOptionsExplanationsOfQuestion.setEvaluationJson(CbeConfigRedactor.redact(
+                        fillOptionsExplanationsOfQuestion.getEvaluationJson(),
+                        fillOptionsExplanationsOfQuestion.getQuestionType()));
+            }
             response.get(sectionId).add(fillOptionsExplanationsOfQuestion);
         }
         return response;
@@ -266,9 +292,13 @@ public class AssessmentLinkQuestionsManager {
         if (sectionIds == null || sectionIds.isBlank()) return response;
         List<String> sectionIdList = Arrays.asList(sectionIds.split(","));
         List<QuestionAssessmentSectionMapping> mappings = questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIdList);
+        boolean staff = hasStaffAuthority(user);
         for (QuestionAssessmentSectionMapping mapping : mappings) {
             String sectionId = mapping.getSection().getId();
             QuestionDTO dto = new QuestionDTO(mapping.getQuestion(), true);
+            if (!staff) {
+                dto.setAutoEvaluationJson(CbeConfigRedactor.redact(dto.getAutoEvaluationJson(), dto.getQuestionType()));
+            }
             dto.setSectionId(sectionId);
             dto.setQuestionOrderInSection(mapping.getQuestionOrder());
             response.computeIfAbsent(sectionId, k -> new ArrayList<>()).add(dto);

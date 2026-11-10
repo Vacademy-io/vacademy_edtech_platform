@@ -5,7 +5,10 @@ Resolution order (as RubricResolver.resolve() implements it):
   2. CopyCheckRubric.rubric_json[question_id] — the assessment's rubric
      (teacher/partner-authored, or generated once and persisted by the
      orchestrator so every copy grades against the same criteria)
-  3. LLM-derived — generated from the question, its model answer and the exam
+  3. CBE_RESPONSE (spreadsheet & written response) only: derived from the
+     question's marking scheme (cbe_render.derive_rubric) - no model call, and
+     never persisted, so an edited scheme applies to the next copy.
+  4. LLM-derived — generated from the question, its model answer and the exam
      context. A failed generation falls back to a single "Correctness"
      criterion for the current run only; that fallback is never persisted, so
      the next copy tries generation again instead of inheriting it.
@@ -28,6 +31,7 @@ from ...repositories.copy_check_question_answer_repository import (
     CopyCheckQuestionAnswerRepository,
 )
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
+from . import cbe_render
 from .prompt_builder import CRITERIA_SYSTEM, build_criteria_prompt
 
 logger = logging.getLogger(__name__)
@@ -130,6 +134,14 @@ class RubricResolver:
             return True
         return bool(self.snapshot.fixed_rubric) and self.snapshot.fixed_rubric.get(question_id) is not None
 
+    def needs_generation(self, question: dict[str, Any]) -> bool:
+        """True when the up-front step must ask the criteria generator for
+        this question: no stored rubric, and not a CBE question (whose rubric
+        is its marking scheme, derived at resolve time)."""
+        if cbe_render.is_cbe(question):
+            return False
+        return not self.has_rubric(question["question_id"])
+
     async def generate(
         self,
         question: dict[str, Any],
@@ -171,12 +183,18 @@ class RubricResolver:
         if fixed is not None:
             return _normalize_marks(fixed, max_marks)
 
-        # 3. Generation already failed in this run: the run-only default.
+        # 3. CBE: the marking scheme is the rubric. Never sent to the
+        # criteria generator (whose output would be persisted for every copy).
+        if cbe_render.is_cbe(question):
+            return _normalize_marks(
+                cbe_render.derive_rubric(cbe_render.question_config(question), max_marks), max_marks)
+
+        # 4. Generation already failed in this run: the run-only default.
         fallback = self._run_only_fallbacks.get(question_id)
         if fallback is not None:
             return dict(fallback)
 
-        # 4. LLM-derived (generation was not attempted up front, or persisting
+        # 5. LLM-derived (generation was not attempted up front, or persisting
         # it failed). A failure here grades this copy with the default rubric.
         try:
             return await self._generate(question, preferred_model)

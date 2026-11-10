@@ -41,6 +41,7 @@ import vacademy.io.assessment_service.features.notification.service.AssessmentNo
 import vacademy.io.assessment_service.features.question_core.dto.MCQEvaluationDTO;
 import vacademy.io.assessment_service.features.question_core.entity.Option;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
 import vacademy.io.assessment_service.features.question_core.repository.OptionRepository;
 import vacademy.io.assessment_service.features.rich_text.dto.AssessmentRichTextDataDTO;
 import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTextData;
@@ -1063,6 +1064,24 @@ public class AssessmentParticipantsManager {
                 .toList();
     }
 
+    /**
+     * The question's auto_evaluation_json for a report. A CBE_RESPONSE config carries the
+     * model solution and marking scheme; those stay out of the report until this
+     * attempt's result is RELEASED (this report serves learners as well as staff).
+     * Every other question type is returned untouched.
+     */
+    static String reportEvaluationJson(Question question, QuestionWiseMarks questionWiseMarks) {
+        String json = question.getAutoEvaluationJson();
+        if (!CbeConfigRedactor.isCbe(question.getQuestionType())
+                && (json == null || !json.contains(CbeConfigRedactor.CBE_TYPE))) {
+            return json;
+        }
+        StudentAttempt attempt = questionWiseMarks != null ? questionWiseMarks.getStudentAttempt() : null;
+        boolean released = attempt != null
+                && ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        return released ? json : CbeConfigRedactor.redact(json, question.getQuestionType());
+    }
+
     private StudentReportAnswerReviewDto buildStudentReportReview(QuestionWiseMarks questionWiseMarks,
             Map<String, Integer> orderByKey) {
         try {
@@ -1119,7 +1138,7 @@ public class AssessmentParticipantsManager {
                     .questionName(questionHtml)
                     .questionType(questionType)
                     .questionOrder(questionOrder)
-                    .correctOptions(currentQuestion.getAutoEvaluationJson())
+                    .correctOptions(reportEvaluationJson(currentQuestion, questionWiseMarks))
                     .studentResponseOptions(questionWiseMarks.getResponseJson())
                     .answerStatus(questionWiseMarks.getStatus())
                     .mark(questionWiseMarks.getMarks()) // primitive double on the entity; null-safe by construction

@@ -129,7 +129,7 @@ class TypedAnswerEvaluationTest {
                 online.setAttemptData("{\"sections\":[]}");
                 StudentAttempt uploaded = new StudentAttempt();
                 uploaded.setAttemptData("{\"fileId\":\"f1\"}");
-                when(mappings.existsQuestionOfTypesInAssessment("a1", List.of("LONG_ANSWER"))).thenReturn(true);
+                when(mappings.existsQuestionOfTypesInAssessment("a1", TypedAnswerEvaluation.AI_GRADED_TYPES)).thenReturn(true);
 
                 assertThat(typed.awaitsAiGrading(online, on)).isTrue();
                 assertThat(typed.awaitsAiGrading(uploaded, on)).isFalse();
@@ -143,9 +143,89 @@ class TypedAnswerEvaluationTest {
                 manualUpload.setAiEvaluationEnabled(true);
                 manualUpload.setEvaluationType("MANUAL");
                 assertThat(typed.awaitsAiGrading(online, manualUpload)).isFalse();
-                verify(mappings, never()).existsQuestionOfTypesInAssessment("a2", List.of("LONG_ANSWER"));
+                verify(mappings, never()).existsQuestionOfTypesInAssessment("a2", TypedAnswerEvaluation.AI_GRADED_TYPES);
 
                 when(mappings.existsQuestionOfTypesInAssessment(anyString(), anyList())).thenReturn(false);
                 assertThat(typed.awaitsAiGrading(online, on)).isFalse();
+        }
+
+        // ---- CBE_RESPONSE (Spreadsheet & Written Response) ----
+
+        private static final String CBE_CONFIG = "{\"type\":\"CBE_RESPONSE\",\"data\":{\"parts\":["
+                        + "{\"id\":\"p1\",\"label\":\"(a)\",\"kind\":\"SPREADSHEET\",\"marks\":16,"
+                        + "\"template\":{\"sheet\":{\"sheets\":[{\"name\":\"Sheet1\",\"cells\":{\"A1\":{\"v\":\"Goodwill\"}}}]}}},"
+                        + "{\"id\":\"p2\",\"label\":\"(b)\",\"kind\":\"DOCUMENT\",\"marks\":4}]}}";
+
+        private static QuestionWiseMarks cbeRow(String answerJson) {
+                Question q = new Question();
+                q.setId("cbe");
+                q.setQuestionType("CBE_RESPONSE");
+                q.setAutoEvaluationJson(CBE_CONFIG);
+                return QuestionWiseMarks.builder().id("qwm-cbe").question(q)
+                                .responseJson("{\"questionId\":\"cbe\",\"responseData\":{\"type\":\"CBE_RESPONSE\",\"answer\":"
+                                                + answerJson + "}}")
+                                .build();
+        }
+
+        @Test
+        void aCbeAnswerIsHandedOverAsItsJsonObject() throws Exception {
+                String answer = "{\"parts\":{\"p1\":{\"kind\":\"SPREADSHEET\",\"sheet\":{\"sheets\":[{\"name\":\"Sheet1\","
+                                + "\"cells\":{\"A1\":{\"v\":\"Goodwill\"},\"B1\":{\"v\":3200,\"f\":\"=B5-B6\"}}}]}},"
+                                + "\"p2\":{\"kind\":\"DOCUMENT\",\"html\":\"<p>IAS 38 prohibits</p>\"}}}";
+                String typedAnswer = typed.typedAnswer(cbeRow(answer));
+                assertThat(typedAnswer).isNotNull();
+                ObjectMapper json = new ObjectMapper();
+                assertThat(json.readTree(typedAnswer)).isEqualTo(json.readTree(answer));
+        }
+
+        @Test
+        void aBlankCbeAnswerIsNoAnswer() {
+                // Only the template's own cell, an empty cell and blank document text.
+                assertThat(typed.typedAnswer(cbeRow("{\"parts\":{\"p1\":{\"kind\":\"SPREADSHEET\",\"sheet\":{\"sheets\":"
+                                + "[{\"name\":\"Sheet1\",\"cells\":{\"A1\":{\"v\":\"Goodwill\"},\"C3\":{\"v\":\"\"}}}]}},"
+                                + "\"p2\":{\"kind\":\"DOCUMENT\",\"html\":\"<p>&nbsp;</p><p><br></p>\"}}}"))).isNull();
+                assertThat(typed.typedAnswer(cbeRow("{\"parts\":{}}"))).isNull();
+                assertThat(typed.typedAnswer(cbeRow("null"))).isNull();
+                assertThat(typed.typedAnswer(cbeRow("\"text\""))).isNull();
+        }
+
+        @Test
+        void cbeIsAiGraded() {
+                Question q = new Question();
+                q.setQuestionType("CBE_RESPONSE");
+                assertThat(TypedAnswerEvaluation.isAiGraded(q)).isTrue();
+        }
+
+        @Test
+        void anAnsweredCbeHoldsTheAttemptEvenWithAiEvaluationOff() {
+                Assessment off = new Assessment();
+                off.setId("a1");
+                off.setEvaluationType("AUTO");
+                StudentAttempt attempt = online();
+                when(mappings.existsQuestionOfTypesInAssessment("a1", TypedAnswerEvaluation.TEACHER_GRADED_TYPES)).thenReturn(true);
+                String answered = "{\"parts\":{\"p2\":{\"kind\":\"DOCUMENT\",\"html\":\"<p>IAS 38</p>\"}}}";
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(stored("mcq", 1), cbeRow(answered)));
+
+                assertThat(typed.awaitsAiGrading(attempt, off)).isFalse();
+                assertThat(typed.awaitsTeacherGrading(attempt, off)).isTrue();
+
+                // A blank CBE answer holds nothing: the 0 is the right result.
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(stored("mcq", 1), cbeRow("{\"parts\":{}}")));
+                assertThat(typed.awaitsTeacherGrading(attempt, off)).isFalse();
+
+                // An uploaded copy / MANUAL assessment keeps its own handling.
+                Assessment manual = new Assessment();
+                manual.setId("a1");
+                manual.setEvaluationType("MANUAL");
+                assertThat(typed.awaitsTeacherGrading(attempt, manual)).isFalse();
+        }
+
+        @Test
+        void aPaperWithoutCbeNeverHoldsForTheTeacher() {
+                Assessment off = new Assessment();
+                off.setId("a1");
+                when(mappings.existsQuestionOfTypesInAssessment(anyString(), anyList())).thenReturn(false);
+                assertThat(typed.awaitsTeacherGrading(online(), off)).isFalse();
+                verify(marks, never()).findByStudentAttemptId("att-1");
         }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentQuestionPreviewDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.QuestionInsightsResponse;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportAnswerReviewDto;
@@ -378,7 +379,8 @@ public class HtmlBuilderService {
                         appendCodingAnswerBlock(html, review.getStudentResponseOptions(),
                                 review.getCorrectOptions(), review.getAnswerStatus());
                     } else if (!Objects.isNull(review.getStudentResponseOptions())) {
-                        List<String> content = extractResponseContent(review.getStudentResponseOptions());
+                        List<String> content = extractResponseContent(review.getStudentResponseOptions(),
+                                review.getCorrectOptions());
                         content.forEach(option -> {
                             html.append("<div style=\"margin-top: 5px;\"><b>Student Answer:</b> ").append(option)
                                     .append("</div>");
@@ -1063,7 +1065,8 @@ public class HtmlBuilderService {
                         appendCodingAnswerBlock(html, review.getStudentResponseOptions(),
                                 review.getCorrectOptions(), status);
                     } else if (review.getStudentResponseOptions() != null) {
-                        List<String> responses = extractResponseContent(review.getStudentResponseOptions());
+                        List<String> responses = extractResponseContent(review.getStudentResponseOptions(),
+                                review.getCorrectOptions());
                         String answerColor = "CORRECT".equals(status) ? "#2E7D32" : ("INCORRECT".equals(status) ? "#C62828" : "#333");
                         html.append("<table style=\"font-size: 12px; margin-bottom: 4px;\"><tr>");
                         html.append("<td style=\"font-weight: 600; color: #555; width: 120px; vertical-align: top;\">Your Answer:</td>");
@@ -1484,6 +1487,7 @@ public class HtmlBuilderService {
             case "ONE_WORD": return "One Word";
             case "LONG_ANSWER": return "Long Answer";
             case "CODING": return "Coding";
+            case "CBE_RESPONSE": return "Spreadsheet & Written Response";
             default: return type;
         }
     }
@@ -1605,6 +1609,14 @@ public class HtmlBuilderService {
                     int visible = total - hidden;
                     return List.of(visible + " visible + " + hidden + " hidden test case(s)");
 
+                case "CBE_RESPONSE": {
+                    // Never the solution itself (this JSON may be the learner-safe redaction):
+                    // what the answer is marked against, part by part.
+                    String parts = CbeAnswers.configSummary(jsonString);
+                    return List.of("Marked against the model solution"
+                            + (parts.isEmpty() ? "" : " — " + parts));
+                }
+
                 default:
                     throw new VacademyException("Unsupported Type");
             }
@@ -1615,6 +1627,14 @@ public class HtmlBuilderService {
     }
 
     public List<String> extractResponseContent(String jsonString) {
+        return extractResponseContent(jsonString, null);
+    }
+
+    /**
+     * @param evaluationJson the question's auto_evaluation_json (may be redacted or null);
+     *                       a CBE answer uses it for part labels and templates.
+     */
+    public List<String> extractResponseContent(String jsonString, String evaluationJson) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonString);
@@ -1673,6 +1693,13 @@ public class HtmlBuilderService {
                     if (source.isEmpty()) return List.of(summary);
                     String truncated = source.length() > 500 ? source.substring(0, 500) + "..." : source;
                     return List.of(summary, truncated);
+                }
+
+                case "CBE_RESPONSE": {
+                    // A short readable summary per part, never the raw sheet JSON.
+                    String summary = CbeAnswers.summaryFromResponseJson(jsonString, evaluationJson);
+                    if (summary.isBlank()) return List.of("Not answered");
+                    return List.of(summary.split("\n"));
                 }
 
                 default:

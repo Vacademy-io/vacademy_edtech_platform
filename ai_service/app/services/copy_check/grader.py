@@ -21,7 +21,8 @@ from typing import Any, Optional
 
 from ..chat_llm_client import ChatLLMClient
 from .prompt_builder import build_grading_prompt, examiner_instructions_block, grading_system_for
-from .typed_answers import build_typed_grading_prompt, typed_grading_system
+from . import cbe_render
+from .typed_answers import build_typed_grading_prompt, cbe_grading_system, typed_grading_system
 from .validator import coerce_confidence
 
 logger = logging.getLogger(__name__)
@@ -160,7 +161,14 @@ class CopyCheckGrader:
         sends it per question) or the paper's, at the paper's level."""
         subject = question.get("subject") or self.exam_context.get("subject")
         level = self.exam_context.get("level")
-        system = typed_grading_system(subject, level) if typed else grading_system_for(subject, level)
+        if typed and cbe_render.is_cbe(question):
+            # Spreadsheet & written response: an accountancy examiner with the
+            # own-figure rule, whatever the paper's subject persona.
+            system = cbe_grading_system()
+        elif typed:
+            system = typed_grading_system(subject, level)
+        else:
+            system = grading_system_for(subject, level)
         if not self.grading_instructions:
             return system
         return system + examiner_instructions_block(self.exam_context)

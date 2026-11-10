@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
@@ -61,6 +62,10 @@ public class AutoEvaluationScorer {
      */
     public Verdict evaluate(String autoEvaluationJson, String responseJson,
             Supplier<List<String>> optionIdsInOrder) {
+        if (CbeConfigSecrets.isCbe(null, autoEvaluationJson)) {
+            // Spreadsheet & Written Response: graded by AI, never by a key here.
+            return Verdict.UNKNOWN;
+        }
         Set<String> key = extractCorrectAnswers(autoEvaluationJson, optionIdsInOrder);
         if (key == null || key.isEmpty()) {
             return Verdict.UNKNOWN;
@@ -95,6 +100,10 @@ public class AutoEvaluationScorer {
      */
     public Verdict evaluateForQuestionType(String questionType, String autoEvaluationJson, String responseJson,
             Supplier<List<String>> optionIdsInOrder) {
+        if (CbeConfigSecrets.isCbe(questionType, autoEvaluationJson)) {
+            // Spreadsheet & Written Response: graded by AI, never by a key here.
+            return Verdict.UNKNOWN;
+        }
         Set<String> selected = extractSelectedAnswers(responseJson);
         if (selected != null && selected.isEmpty()) {
             return Verdict.SKIPPED;
