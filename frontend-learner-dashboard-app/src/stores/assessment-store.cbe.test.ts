@@ -21,7 +21,7 @@ vi.mock("@capacitor/storage", () => ({
   },
 }));
 
-const { useAssessmentStore, hasAnswerFor } = await import("./assessment-store");
+const { useAssessmentStore, hasAnswerFor, canClearResponse } = await import("./assessment-store");
 
 const CONFIG: CbeConfig = {
   type: "CBE_RESPONSE",
@@ -81,6 +81,27 @@ describe("hasAnswerFor with CBE answers", () => {
   it("still works for the old call shape (no CBE map)", () => {
     expect(hasAnswerFor("q1", { q1: ["o1"] }, {})).toBe(true);
     expect(hasAnswerFor("q1", { q1: [" "] }, {})).toBe(false);
+  });
+});
+
+describe("canClearResponse (footer Clear button)", () => {
+  it("is enabled for a CBE answer beyond the template and disabled again after clearResponse", () => {
+    const store = useAssessmentStore.getState();
+    expect(canClearResponse("q-cbe", useAssessmentStore.getState())).toBe(false);
+    store.setCbeAnswer("q-cbe", sheetAnswer({ A1: { v: "Revenue" } }));
+    expect(canClearResponse("q-cbe", useAssessmentStore.getState())).toBe(false);
+    store.setCbeAnswer("q-cbe", sheetAnswer({ A1: { v: "Revenue" }, B1: { v: 100 } }));
+    expect(canClearResponse("q-cbe", useAssessmentStore.getState())).toBe(true);
+    store.clearResponse("q-cbe");
+    expect(canClearResponse("q-cbe", useAssessmentStore.getState())).toBe(false);
+  });
+  it("still covers ordinary answers and ignores coding answers (Clear does not reset the code editor)", () => {
+    const state = { assessment: null, answers: { q1: ["o1"], q2: [" "] }, cbeAnswers: {} };
+    expect(canClearResponse("q1", state)).toBe(true);
+    expect(canClearResponse("q2", state)).toBe(false);
+    expect(canClearResponse(undefined, state)).toBe(false);
+    useAssessmentStore.setState({ codingAnswers: { q3: { sourceCode: "print(1)" } as never } });
+    expect(canClearResponse("q3", useAssessmentStore.getState())).toBe(false);
   });
 });
 

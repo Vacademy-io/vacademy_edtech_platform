@@ -28,6 +28,7 @@ import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -206,6 +207,34 @@ class CbeSlideSubmitServiceTest {
         verify(async).updateLearnerOperationsForQuestion(eq(USER), eq(SLIDE), eq("ch-server"), eq("mod-1"),
                 eq("sub-1"), eq("ps-server"), any());
         verify(locks).lockLearnerOnQuiz("cbe-attempt|" + USER + "|" + SLIDE);
+    }
+
+    @Test
+    @DisplayName("submit reply's submitted_at is the stored row's created_at, the same value my-attempts returns")
+    void submittedAtMatchesStoredRow() throws Exception {
+        Timestamp created = Timestamp.valueOf("2026-11-10 09:15:30");
+        when(tracked.countCbeChecksUsed(USER, SLIDE)).thenReturn(0L);
+        when(tracked.countCbeSubmissions(USER, SLIDE)).thenReturn(0L);
+        // As under open-in-view: findById hands back the very entity reserve() saved, whose
+        // created_at (insertable = false, filled by the database) was never loaded. Only the
+        // scalar read sees the stored value.
+        when(tracked.findCreatedAtById(anyString())).thenAnswer(
+                i -> rows.containsKey(i.<String>getArgument(0)) ? Optional.of(created) : Optional.empty());
+        when(grader.grade(any())).thenReturn(evaluation(13.5));
+
+        CbeAttemptResponse submitted = service.submit(request(), learner(), "inst-1").body();
+        assertThat(onlyRow().getCreatedAt()).as("cached entity never had created_at loaded").isNull();
+        assertThat(submitted.getSubmittedAtMillis()).isEqualTo(created.getTime());
+        verify(tracked).findCreatedAtById(onlyRow().getId());
+
+        // a later request loads the row from the database, created_at filled
+        QuestionSlideTracked stored = onlyRow();
+        stored.setCreatedAt(created);
+        when(tracked.countCbeChecksUsed(USER, SLIDE)).thenReturn(1L);
+        when(tracked.countCbeSubmissions(USER, SLIDE)).thenReturn(1L);
+        when(tracked.findLatestCbeSubmission(USER, SLIDE)).thenReturn(Optional.of(stored));
+        CbeAttemptResponse reloaded = service.myAttempts(SLIDE, learner());
+        assertThat(reloaded.getSubmittedAtMillis()).isEqualTo(submitted.getSubmittedAtMillis());
     }
 
     @Test

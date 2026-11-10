@@ -87,6 +87,10 @@ const htToAl = (ht: unknown): CbeCellStyle["al"] | undefined => {
   return undefined;
 };
 
+/** Fortune-sheet's default row height and column width (core defaultrowlen / defaultcollen). */
+const FORTUNE_ROW_PX = 19;
+const FORTUNE_COL_PX = 73;
+
 /** Border colour Fortune-sheet draws with; a value inside sheet data, not UI styling. */
 const BORDER_COLOR = "#000000"; // design-lint-ignore — spreadsheet data, not a UI colour
 
@@ -208,6 +212,35 @@ export function cbeTabToFortune(tab: CbeSheetTab, index: number, options: CbeToF
   }
   if (borderInfo.length) config.borderInfo = borderInfo;
 
+  // Start on A1 (its whole merge when A1 is merged). Without a stored selection
+  // Fortune selects { row: [0], column: [0] }, a range with no end, and its name
+  // box reads "A1:NaN" until the first click. The pixel box is what Fortune's
+  // normalizeSelection would compute (each row/column is its size + 1px grid
+  // line); without it the selection outline is drawn 0×0 until the first click.
+  const a1Merge = merge["0_0"];
+  const lastRow = a1Merge ? a1Merge.rs - 1 : 0;
+  const lastCol = a1Merge ? a1Merge.cs - 1 : 0;
+  let height = -1;
+  for (let r = 0; r <= lastRow; r += 1) height += FORTUNE_ROW_PX + 1;
+  let width = -1;
+  for (let c = 0; c <= lastCol; c += 1) width += (columnlen[String(c)] ?? FORTUNE_COL_PX) + 1;
+  const initialSelection = [
+    {
+      row: [0, lastRow],
+      column: [0, lastCol],
+      row_focus: 0,
+      column_focus: 0,
+      left: 0,
+      top: 0,
+      width,
+      height,
+      left_move: 0,
+      top_move: 0,
+      width_move: width,
+      height_move: height,
+    },
+  ];
+
   const out: FortuneSheet = {
     name: tab.name,
     id: `cbe_sheet_${index}`,
@@ -217,6 +250,7 @@ export function cbeTabToFortune(tab: CbeSheetTab, index: number, options: CbeToF
     column: colCount,
     celldata,
     config,
+    luckysheet_select_save: initialSelection,
   };
   if (options.dense) {
     const data: Array<Array<FortuneCell | null>> = Array.from({ length: rowCount }, () =>

@@ -126,4 +126,12 @@ public interface QuestionSlideTrackedRepository extends JpaRepository<QuestionSl
             """, nativeQuery = true)
     Optional<QuestionSlideTracked> findLatestEvaluatedCbeSubmission(@Param("userId") String userId,
             @Param("slideId") String slideId);
+
+    /**
+     * The row's created_at as the database stored it. A scalar query, so it reads the column
+     * even when the entity is already cached in the persistence context (open-in-view shares
+     * one across transactions) with created_at still null, since that column is insertable = false.
+     */
+    @Query("SELECT t.createdAt FROM QuestionSlideTracked t WHERE t.id = :id")
+    Optional<Timestamp> findCreatedAtById(@Param("id") String id);
 }

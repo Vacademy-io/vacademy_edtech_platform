@@ -89,9 +89,9 @@
         },
         "placeholders": {
             "label": "ex. Écart d'acquisition",
-            "expected": "3 200",
-            "cellRef": "Sheet1!B7",
-            "guidance": "W4 : 3 800 − 600 de dépréciation"
+            "expected": "Facultatif",
+            "cellRef": "ex. Sheet1!B7",
+            "guidance": "Référence de calcul (facultatif)"
         },
         "sumMatches": "Les lignes du barème totalisent {{total}} — conforme aux points de la partie.",
         "sumMismatch": "Les lignes du barème totalisent {{total}}, mais la partie vaut {{marks}}."

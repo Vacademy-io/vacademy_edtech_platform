@@ -105,9 +105,9 @@
         },
         "placeholders": {
             "label": "مثال: الشهرة",
-            "expected": "3,200",
-            "cellRef": "Sheet1!B7",
-            "guidance": "W4: 3,800 − 600 انخفاض قيمة"
+            "expected": "اختياري",
+            "cellRef": "مثال: Sheet1!B7",
+            "guidance": "مرجع الحل (اختياري)"
         },
         "sumMatches": "مجموع بنود التصحيح {{total}} — يطابق درجات الجزء.",
         "sumMismatch": "مجموع بنود التصحيح {{total}}، لكن الجزء يساوي {{marks}}."

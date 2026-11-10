@@ -71,6 +71,32 @@ describe("fortune-adapter", () => {
     expect(sfp?.config?.borderInfo).toHaveLength(3);
   });
 
+  it("starts every tab on a complete A1 selection (name box reads A1, not A1:NaN)", () => {
+    const [sfp, workings] = cbeToFortune(SAMPLE);
+    // A1:D1 is merged on the first tab: the selection covers the merge, focused on A1.
+    // Widths: A 276, B 84, C default 73, D 48, each + a 1px grid line, less the last one.
+    expect(sfp?.luckysheet_select_save).toEqual([
+      expect.objectContaining({
+        row: [0, 0],
+        column: [0, 3],
+        row_focus: 0,
+        column_focus: 0,
+        top_move: 0,
+        left_move: 0,
+        height_move: 19,
+        width_move: 276 + 84 + 73 + 48 + 3,
+      }),
+    ]);
+    expect(workings?.luckysheet_select_save).toEqual([
+      expect.objectContaining({ row: [0, 0], column: [0, 0], row_focus: 0, column_focus: 0, width_move: 73, height_move: 19 }),
+    ]);
+    const [blank] = cbeToFortune(null);
+    const sel = (blank?.luckysheet_select_save as Array<{ row: number[]; column: number[] }>)[0];
+    expect(sel?.row).toHaveLength(2);
+    expect(sel?.column).toHaveLength(2);
+    expect([...(sel?.row ?? []), ...(sel?.column ?? [])].every(Number.isFinite)).toBe(true);
+  });
+
   it("round-trips CbeSheet -> Fortune (celldata) -> CbeSheet", () => {
     const back = fortuneToCbe(cbeToFortune(SAMPLE));
     expect(normalizeCbeSheet(back)).toEqual(normalizeCbeSheet(SAMPLE));

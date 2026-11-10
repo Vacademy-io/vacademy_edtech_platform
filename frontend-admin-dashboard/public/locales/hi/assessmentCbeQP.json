@@ -89,9 +89,9 @@
         },
         "placeholders": {
             "label": "उदा. गुडविल",
-            "expected": "3,200",
-            "cellRef": "Sheet1!B7",
-            "guidance": "W4: 3,800 − 600 इम्पेयरमेंट"
+            "expected": "वैकल्पिक",
+            "cellRef": "उदा. Sheet1!B7",
+            "guidance": "गणना का संदर्भ (वैकल्पिक)"
         },
         "sumMatches": "अंक योजना की पंक्तियों का योग {{total}} है — भाग के अंकों से मेल खाता है।",
         "sumMismatch": "अंक योजना की पंक्तियों का योग {{total}} है, पर भाग {{marks}} अंक का है।"

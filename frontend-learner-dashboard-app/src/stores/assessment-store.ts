@@ -95,6 +95,31 @@ export const hasAnswerFor = (
   );
 };
 
+/**
+ * Whether the current question holds an answer: a chosen option / typed
+ * answer, or a CBE workspace holding more than its starting template. The
+ * footer uses it to enable "Clear response" and to label the primary button
+ * "Save & Next" (answered) or "Next" (not answered).
+ * Coding answers are left out on purpose: clearResponse does not touch them
+ * (the code editor keeps its own buffer), so enabling Clear would do nothing.
+ */
+export const canClearResponse = (
+  questionId: string | undefined,
+  state: {
+    assessment: AssessmentPreviewData | null | undefined;
+    answers: Record<string, string[]>;
+    cbeAnswers: Record<string, CbeAnswer>;
+  }
+): boolean =>
+  !!questionId &&
+  hasAnswerFor(
+    questionId,
+    state.answers,
+    {},
+    state.cbeAnswers,
+    cbeConfigOf(state.assessment, questionId)
+  );
+
 /** The learner-safe CBE config of a question in the loaded paper, or null. */
 export const cbeConfigOf = (
   assessment: AssessmentPreviewData | null | undefined,

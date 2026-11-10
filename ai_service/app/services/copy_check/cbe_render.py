@@ -889,7 +889,13 @@ def _half_steps(values: list[float], target: float) -> list[float]:
 CBE_RUBRIC_INSTRUCTIONS = (
     "One criterion per marking-scheme line. Award each line when the figure or point is correct, "
     "or when it follows correctly from the candidate's own earlier figure (own-figure rule). "
-    "Accept equivalent presentation and rounding of +/-1 in the last unit shown."
+    "Accept equivalent presentation and rounding of +/-1 in the last unit shown. "
+    "Mark every criterion independently: a candidate's overall performance, or the quality of another "
+    "part, never raises or lowers a part's marks. The only cross-part link is the own-figure rule: a part "
+    "that correctly uses the candidate's own earlier figure still earns its marks. "
+    "A whole-part criterion is marked per key point of the model solution; a relevant point not in the "
+    "model solution, correctly applied to the scenario, earns a share in place of a missed key point, up "
+    "to the part's maximum. Its reason names the key points made and missed."
 )
 
 
@@ -927,13 +933,26 @@ def derive_rubric(config: Optional[dict[str, Any]], max_marks: float) -> dict[st
                 })
                 raw_marks.append(marks)
         elif part_marks > 0:
+            if _part_kind(part) == "DOCUMENT":
+                guideline = (
+                    f"No line-by-line scheme: award the marks for {label} per key point of the model "
+                    "solution that the candidate makes correctly and applies to the scenario (marks shared "
+                    "equally between the points unless the solution weights them). A relevant point not in "
+                    "the model solution, correctly applied to the scenario, earns a share in place of a "
+                    "missed key point, up to the part's maximum. In this criterion's reason, state which "
+                    "key points were made and which were missed.")
+            else:
+                guideline = (
+                    f"No line-by-line scheme: mark {label} as a whole against the model solution, "
+                    "giving credit for each correct figure or relevant point.")
             items.append({
                 "criteria_name": f"{label} (whole part)",
                 "max_marks": part_marks,
                 "keywords": [],
                 "evaluation_guidelines": (
-                    f"No line-by-line scheme: mark {label} as a whole against the model solution, "
-                    "giving credit for each correct figure or relevant point."),
+                    f"{guideline} The quality of other parts never raises or lowers the marks for "
+                    f"{label}. The only cross-part link is the own-figure rule: if {label} correctly uses "
+                    "the candidate's own earlier figure, it still earns its marks."),
             })
             raw_marks.append(part_marks)
     if max_marks <= 0:

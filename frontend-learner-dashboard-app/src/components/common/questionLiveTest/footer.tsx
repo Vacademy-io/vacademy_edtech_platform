@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CaretLeft,
@@ -11,7 +11,7 @@ import {
   PencilSimple,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import { canClearResponse, useAssessmentStore } from "@/stores/assessment-store";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { bottomSafeAreaInset } from "@/utils/safe-area";
 import { useLiveTestUi, type ExamTool } from "./live-test-ui-context";
@@ -150,9 +150,20 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
     sectionTimers,
     questionStates,
     answers,
+    cbeAnswers,
     markForReview,
     clearResponse,
   } = useAssessmentStore();
+
+  const questionId = currentQuestion?.question_id;
+  // CBE answers live in cbeAnswers, not answers: without them Clear stays
+  // disabled, and the button reads "Next" instead of "Save & Next", on an
+  // answered spreadsheet / written-response question. Memoised because the
+  // footer re-renders on every timer tick and the CBE check parses the config.
+  const hasAnswer = useMemo(
+    () => canClearResponse(questionId, { assessment, answers, cbeAnswers }),
+    [assessment, questionId, answers, cbeAnswers],
+  );
 
   if (
     !assessment ||
@@ -169,15 +180,8 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
   );
 
   const isTimeUp = sectionTimers[currentSection]?.timeLeft === 0;
-  const questionId = currentQuestion?.question_id;
   const isMarked = questionId
     ? Boolean(questionStates[questionId]?.isMarkedForReview)
-    : false;
-  const hasAnswer = questionId
-    ? (answers[questionId] ?? []).some(
-        (value) =>
-          value !== null && value !== undefined && String(value).trim() !== "",
-      )
     : false;
 
   const isLastOfTest =

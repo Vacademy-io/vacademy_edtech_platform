@@ -83,6 +83,17 @@ HOW TO MARK
 - Mark every marking-scheme line (rubric criterion) on its own: a mark between 0
   and that line's maximum, in 0.5 steps, with a one-line reason. The criteria
   marks add up to marks_awarded.
+- Mark every criterion independently. A candidate's overall performance, or the
+  quality of another part, never raises or lowers a part's marks. The only
+  cross-part link is the own-figure rule below: a part that correctly uses the
+  candidate's own earlier figure, from that part or another, still earns its marks.
+- Whole-part criterion (a part with no marking-scheme lines): check the answer
+  against each key point of the model solution for that part and award the
+  part's marks in proportion to the key points made correctly and applied to the
+  scenario (shared equally unless the solution weights them). A relevant point
+  not in the model solution, correctly applied to the scenario, earns a share in
+  place of a missed key point, up to the part's maximum. In that criterion's
+  reason, state which key points were made and which were missed.
 - Own-figure (follow-through) rule: when the method or formula for a line is
   right but one of its inputs carries an error made earlier, award the line in
   full. Never penalise the same mistake twice. Read the formulas to check this: a
@@ -172,6 +183,12 @@ STUDENT_ANSWER>>>
 - Maximum marks {max_marks:.1f}. marks_awarded <= {max_marks:.1f}, in 0.5 steps.
 - criteria_breakdown has one entry per rubric criterion, in rubric order, with the rubric's exact
   criteria_name; each entry's marks <= that criterion's max_marks, and they add up to marks_awarded.
+- Mark each criterion independently: overall performance or another part's quality never raises
+  or lowers a part's marks. The only cross-part link is the own-figure rule: a part that correctly
+  uses the candidate's own earlier figure still earns its marks.
+- A "(whole part)" criterion is marked per key point of the model solution; a relevant point not in
+  the model solution, correctly applied to the scenario, earns a share in place of a missed key
+  point, up to the part's maximum. Its reason names the key points made and missed.
 
 **Output: STRICT JSON only.**
 {{

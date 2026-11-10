@@ -75,6 +75,7 @@ import {
 } from './-components/PenNotesEditor';
 import { getAssessmentSettingsFromCache } from '@/services/assessment-settings';
 import { parseReviewMeta, type ReviewAttribution } from './-utils/review-meta';
+import { formatCriterionMarks } from './-utils/criteria-marks';
 import { getLayoutMap } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/ai-evaluation-services';
 
 export const Route = createFileRoute('/assessment/evaluation-ai/$attemptId/$processId/')({
@@ -1255,8 +1256,8 @@ function QuestionCard({
                                                     <td className="p-3 text-sm text-neutral-600">
                                                         {criteria.reason}
                                                     </td>
-                                                    <td className="p-3 text-right text-sm font-semibold text-neutral-900">
-                                                        {criteria.marks.toFixed(1)}
+                                                    <td className="whitespace-nowrap p-3 text-right text-sm font-semibold text-neutral-900">
+                                                        {formatCriterionMarks(criteria)}
                                                     </td>
                                                 </tr>
                                             )

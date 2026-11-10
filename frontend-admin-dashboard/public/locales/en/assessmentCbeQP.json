@@ -89,9 +89,9 @@
         },
         "placeholders": {
             "label": "e.g. Goodwill",
-            "expected": "3,200",
-            "cellRef": "Sheet1!B7",
-            "guidance": "W4: 3,800 − 600 impairment"
+            "expected": "Optional",
+            "cellRef": "e.g. Sheet1!B7",
+            "guidance": "Working reference (optional)"
         },
         "sumMatches": "Scheme lines add up to {{total}} — matches the part marks.",
         "sumMismatch": "Scheme lines add up to {{total}}, but the part is worth {{marks}}."

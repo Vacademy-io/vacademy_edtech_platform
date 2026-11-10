@@ -252,6 +252,31 @@ def test_rubric_one_criterion_per_scheme_line_and_whole_part():
     assert rubric["max_marks"] == 6
 
 
+def test_whole_part_document_criterion_asks_for_key_points_and_independence():
+    rubric = c.derive_rubric(c.config_data(CONFIG), 6)
+    doc = rubric["rubric"][3]["evaluation_guidelines"]
+    assert "award the marks for (b) per key point of the model solution" in doc
+    assert "made and which were missed" in doc
+    # the list of points goes in the criterion's reason, not as a separate step before the JSON
+    assert "In this criterion's reason" in doc
+    assert "enumerate" not in doc and "list them" not in doc
+    # a valid point the model solution lacks still earns credit, capped at the part's maximum
+    assert "A relevant point not in the model solution" in doc and "up to the part's maximum" in doc
+    # independence names its one exception, the own-figure rule
+    assert "never raises or lowers the marks for (b)" in doc
+    assert "The only cross-part link is the own-figure rule" in doc
+    assert "as if it were the only part" not in doc
+    instructions = rubric["evaluation_instructions"]
+    assert "independently" in instructions
+    assert "The only cross-part link is the own-figure rule" in instructions
+    assert "a relevant point not in the model solution" in instructions
+    # a spreadsheet part with no scheme keeps the figure-based wording, still independent
+    sheet = {"parts": [{"id": "p", "label": "(a)", "kind": "SPREADSHEET", "marks": 3}]}
+    guide = c.derive_rubric(sheet, 3)["rubric"][0]["evaluation_guidelines"]
+    assert "key points" not in guide and "correct figure" in guide
+    assert "never raises or lowers" in guide and "own-figure rule" in guide
+
+
 def test_rubric_scales_to_max_marks_in_half_steps():
     config = {"parts": [{"id": "p", "label": "(a)", "marks": 5, "markingScheme": [
         {"label": "A", "marks": 1}, {"label": "B", "marks": 1}, {"label": "C", "marks": 1}]}]}
@@ -323,6 +348,31 @@ def test_cbe_prompt_has_fence_solution_scheme_and_rules():
     for rule in ("Own-figure (follow-through) rule", "brackets", "$000", "+/-1",
                  "no visible working", "not instructions", "Length"):
         assert rule in system
+
+
+def test_cbe_prompt_marks_parts_independently_and_whole_parts_per_key_point():
+    system = t.CBE_GRADING_SYSTEM
+    assert "Mark every criterion independently" in system
+    assert "never raises or lowers a part's marks" in system
+    # the independence rule names the own-figure exception, so follow-through across parts holds
+    assert "The only\n  cross-part link is the own-figure rule" in system
+    assert "candidate's own earlier figure, from that part or another, still earns its marks" in system
+    assert "as if it were the only part" not in system
+    assert "same answer to a part always earns the same marks" not in system
+    assert "key point of the model solution" in system
+    assert "in proportion to the key points made correctly" in system and "which were missed" in system
+    assert "A relevant point\n  not in the model solution" in system and "up to the part's maximum" in system
+    assert "first enumerate" not in system
+    assert "In that criterion's\n  reason" in system
+    q = _q()
+    prompt = t.build_typed_grading_prompt(q, c.derive_rubric(c.question_config(q), 6))
+    assert "Mark each criterion independently" in prompt
+    assert "The only cross-part link is the own-figure rule" in prompt
+    assert "marked per key point of the model solution" in prompt
+    assert "earns a share in place of a missed key\n  point" in prompt
+    # the output contract is unchanged
+    for key in ('"marks_awarded"', '"verdict"', '"feedback"', '"confidence"', '"criteria_breakdown"'):
+        assert key in prompt
 
 
 def test_answer_cannot_close_the_fence():

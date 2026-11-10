@@ -31,6 +31,7 @@ import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -194,8 +195,10 @@ public class CbeSlideSubmitService {
         JsonNode finalEvaluation = evaluation;
         Double finalMarks = marks;
         String finalError = errorCode;
-        transactionTemplate.executeWithoutResult(tx -> finish(reserved.trackedId(), answer, finalEvaluation,
-                finalMarks, finalStatus, finalError));
+        // The stored row's created_at, as my-attempts and last_evaluated report it, so the submit
+        // reply and a later reload show the same submission time.
+        Long submittedAtMillis = transactionTemplate.execute(tx -> finish(reserved.trackedId(), answer,
+                finalEvaluation, finalMarks, finalStatus, finalError));
 
         runCompletionCascade(userId, slideId, request, access, reserved, answer, finalStatus, finalMarks);
 
@@ -210,7 +213,7 @@ public class CbeSlideSubmitService {
         response.setSubmissions(reserved.attemptNumber());
         response.setResponseStatus(finalStatus);
         response.setMarks(finalMarks);
-        response.setSubmittedAtMillis(System.currentTimeMillis());
+        response.setSubmittedAtMillis(submittedAtMillis != null ? submittedAtMillis : System.currentTimeMillis());
         response.setEvaluation(finalEvaluation);
         // The model solution is only revealed once the learner has had at least one graded AI
         // check; an answer saved during a credit refusal or grading failure must not unlock it.
@@ -286,7 +289,13 @@ public class CbeSlideSubmitService {
         return new Reserved(activityLog.getId(), tracked.getId(), attemptNumber, checksUsed);
     }
 
-    private void finish(String trackedId, JsonNode answer, JsonNode evaluation, Double marks, String status,
+    /**
+     * Writes the outcome onto the reserved row and returns that row's created_at in millis, or
+     * null when unknown. created_at is the database default and is read with a scalar query:
+     * under open-in-view, findById here returns the entity reserve() saved, whose createdAt was
+     * never loaded.
+     */
+    private Long finish(String trackedId, JsonNode answer, JsonNode evaluation, Double marks, String status,
             String errorCode) {
         QuestionSlideTracked tracked = trackedRepository.findById(trackedId)
                 .orElseThrow(() -> new IllegalStateException("CBE attempt " + trackedId + " vanished"));
@@ -294,6 +303,7 @@ public class CbeSlideSubmitService {
         tracked.setMarks(marks);
         tracked.setResponseStatus(status);
         trackedRepository.save(tracked);
+        return trackedRepository.findCreatedAtById(trackedId).map(Timestamp::getTime).orElse(null);
     }
 
     /**
