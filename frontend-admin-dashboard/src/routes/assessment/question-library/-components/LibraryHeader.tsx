@@ -65,8 +65,15 @@ const StatCard = ({
     </div>
 );
 
-/** One stacked bar for an EASY/MEDIUM/HARD split, with a legend. */
-export const DifficultyBar = ({ counts }: { counts: Record<string, number> }) => {
+/** One stacked bar for an EASY/MEDIUM/HARD split, with a legend unless compact. */
+export const DifficultyBar = ({
+    counts,
+    compact = false,
+}: {
+    counts: Record<string, number>;
+    /** Bar only, for cards. */
+    compact?: boolean;
+}) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const total = DIFFICULTIES.reduce((sum, level) => sum + (counts[level] ?? 0), 0);
     if (total === 0) {
@@ -86,14 +93,16 @@ export const DifficultyBar = ({ counts }: { counts: Record<string, number> }) =>
                     ) : null
                 )}
             </div>
-            <div className="flex flex-wrap gap-3 text-caption text-neutral-600">
-                {DIFFICULTIES.map((level) => (
-                    <span key={level} className="flex items-center gap-1">
-                        <span className={cn('size-2 rounded-full', difficultyBar[level])} />
-                        {t(`difficulty.${level}`)} {counts[level] ?? 0}
-                    </span>
-                ))}
-            </div>
+            {!compact && (
+                <div className="flex flex-wrap gap-3 text-caption text-neutral-600">
+                    {DIFFICULTIES.map((level) => (
+                        <span key={level} className="flex items-center gap-1">
+                            <span className={cn('size-2 rounded-full', difficultyBar[level])} />
+                            {t(`difficulty.${level}`)} {counts[level] ?? 0}
+                        </span>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
