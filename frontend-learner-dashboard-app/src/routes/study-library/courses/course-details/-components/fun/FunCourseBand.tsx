@@ -46,6 +46,7 @@ export function FunCourseBand({
   hidePercent: boolean;
 }) {
   const { t } = useTranslation("funCourse");
+  const { t: tCommon } = useTranslation("funCommon");
   const router = useRouter();
   const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const courseLower = course.toLocaleLowerCase();
@@ -88,7 +89,7 @@ export function FunCourseBand({
         {showPercent ? (
           <div className="fun-band__progress">
             <FunProgress percent={rounded} tone="band" label={t("course.progressLabel", { course })} />
-            <span className="fun-band__percent fun-band__percent--short">{rounded}%</span>
+            <span className="fun-band__percent fun-band__percent--short">{tCommon("percent", { percent: rounded })}</span>
             <span className="fun-band__percent fun-band__percent--long">
               {t("course.percentOfCourse", { percent: rounded, course: courseLower })}
             </span>
@@ -99,15 +100,17 @@ export function FunCourseBand({
   );
 }
 
-/** The band's shape while the course loads, at its final size. */
+/** The band's shape while the course loads, at its final size and gutter. */
 export function FunCourseBandSkeleton() {
   return (
-    <div className="fun-band fun-band--skeleton" aria-hidden="true">
-      <div className="fun-band__body">
-        <span className="fun-skeleton fun-band__sk-back" />
-        <span className="fun-skeleton fun-band__sk-title" />
-        <span className="fun-skeleton fun-band__sk-line" />
-        <span className="fun-skeleton fun-band__sk-bar" />
+    <div className="fun-course-page">
+      <div className="fun-band fun-band--skeleton" aria-hidden="true">
+        <div className="fun-band__body">
+          <span className="fun-skeleton fun-band__sk-back" />
+          <span className="fun-skeleton fun-band__sk-title" />
+          <span className="fun-skeleton fun-band__sk-line" />
+          <span className="fun-skeleton fun-band__sk-bar" />
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,13 @@ html.ui-fun {
   }
 }
 
+/* Phones: the skin's 20px side gutter. The layout around these pages gives
+   1rem, so the pages add the rest (nothing once the reader's text is large). */
+@media (max-width: 639px) {
+  html.ui-fun .fun-learn-page,
+  html.ui-fun .fun-course-page { padding-inline: max(0px, calc(var(--fun-gutter) - 1rem)); }
+}
+
 /* ══ Learn list ═══════════════════════════════════════════════════════ */
 
 html.ui-fun .fun-learn-head {
@@ -46,6 +53,8 @@ html.ui-fun .fun-learn-head__count {
   line-height: calc(1.125rem * var(--fun-leading));
   font-weight: 800;
 }
+/* The page-size control's label under the list. */
+html.ui-fun .fun-learn-page .text-muted-foreground { color: var(--fun-muted); }
 html.ui-fun .fun-learn-head__create { flex-basis: 100%; }
 @media (min-width: 640px) {
   html.ui-fun .fun-learn-head__create { flex-basis: auto; }
@@ -142,6 +151,14 @@ html.ui-fun .fun-tab[data-state="active"] {
   color: var(--fun-ground);
   font-weight: 900;
 }
+/* On the course page the active tab sits under the course-coloured band, so it
+   takes the course colour (white text: 4.99:1 or better for every colour). */
+html.ui-fun .fun-structure .fun-tab[data-state="active"] {
+  border-color: var(--fc-solid, var(--fun-brand));
+  background: var(--fc-solid, var(--fun-brand));
+  box-shadow: 0 3px 0 var(--fc-lip, var(--fun-brand-lip));
+  color: var(--fun-ground);
+}
 html.ui-fun .fun-learn-tab:focus-visible,
 html.ui-fun .fun-tab:focus-visible {
   outline: 3px solid var(--fun-ink);
@@ -191,18 +208,25 @@ html.ui-fun .fun-learn-tools__badge {
   font-size: 0.75rem;
   line-height: 20px;
 }
-html.ui-fun .fun-learn-tools__sort { flex: none; width: 8.75rem; }
+/* Grows with the chosen sort's words (longer in some languages), never past the row. */
+html.ui-fun .fun-learn-tools__sort { flex: none; width: auto; min-width: 8.75rem; max-width: 100%; }
 @media (min-width: 640px) {
-  html.ui-fun .fun-learn-tools__sort { width: 11rem; }
+  html.ui-fun .fun-learn-tools__sort { min-width: 11rem; }
 }
 html.ui-fun .fun-learn-tools__trigger {
   height: 48px;
   min-height: var(--fun-touch);
+  gap: 8px;
   border: 2px solid var(--fun-line-card);
   border-radius: var(--fun-radius-control);
   color: var(--fun-ink-2);
   font-weight: 800;
+  /* Flat, as every Fun control: no classic shadow under the select. */
+  box-shadow: none;
 }
+/* The skin's focus ring, in place of the select's thin one. */
+html.ui-fun .fun-learn-tools__trigger:focus { box-shadow: none; }
+html.ui-fun .fun-learn-tools__trigger:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
 
 /* Rows */
 html.ui-fun .fun-learn-list {
@@ -252,14 +276,18 @@ html.ui-fun .fun-learn-row__name {
   font-weight: 900;
   overflow-wrap: anywhere;
 }
+/* Up to two lines: when two rows share a course name, the part that differs comes first
+   and stays in view on a narrow row. */
 html.ui-fun .fun-learn-row__meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--fun-muted);
   font-size: 0.8125rem;
   line-height: calc(1.125rem * var(--fun-leading));
   font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 html.ui-fun .fun-learn-row__progress,
 html.ui-fun .fun-learn-row__status {
@@ -338,7 +366,8 @@ html.ui-fun .fun-learn-state .fun-btn { margin-block-start: 8px; }
 html.ui-fun .fun-band {
   position: relative;
   overflow: hidden;
-  margin: -1rem -1rem 0;
+  /* Bleeds through the layout's 1rem and the page's own gutter padding. */
+  margin: -1rem calc(-1 * max(1rem, var(--fun-gutter))) 0;
   padding: 14px 20px 22px;
   border-radius: 0 0 var(--fun-radius-band) var(--fun-radius-band);
   background: var(--fc-solid);
@@ -452,8 +481,13 @@ html.ui-fun .fun-band__percent--long { display: none; }
   html.ui-fun .fun-band__percent--short { display: none; }
   html.ui-fun .fun-band__percent--long { display: inline; }
 }
-/* Lime's on-band shade is white, and its deco chips need the darker lip under white text. */
-html.ui-fun .fun-course-7 .fun-band__chips > li { background: var(--fc-lip); }
+/* White chip text needs 4.5:1. Teal, orange and sky deco shades give 3.6-4.1, so
+   their chips take the course's text shade (7:1 or more); lime's on-band shade is
+   white and its chips take the darker lip. Chips have a fill only from 1024px. */
+@media (min-width: 1024px) {
+  html.ui-fun :is(.fun-course-1, .fun-course-2, .fun-course-5) .fun-band__chips > li { background: var(--fc-text); }
+  html.ui-fun .fun-course-7 .fun-band__chips > li { background: var(--fc-lip); }
+}
 
 html.ui-fun .fun-band--skeleton { background: var(--fun-line-nav); min-height: 176px; }
 html.ui-fun .fun-band--skeleton .fun-skeleton { display: block; background: var(--fun-line-card); border-radius: 8px; }
@@ -463,13 +497,37 @@ html.ui-fun .fun-band__sk-line { width: 45%; height: 14px; margin-top: 12px; }
 html.ui-fun .fun-band__sk-bar { width: 100%; height: 12px; margin-top: 22px; }
 
 /* The course's preview media, under the band */
+/* The course's own video or image. Under the band it is capped at 320px tall and
+   centred, so the outline still starts on the first screen; on a laptop with the
+   side column it moves there, above the pick-up card (course-details-page.tsx). */
 html.ui-fun .fun-course-media {
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
   margin-block-start: 16px;
+}
+html.ui-fun .fun-course-media img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
   border-radius: var(--fun-radius-card);
   background: var(--fun-line-nav);
 }
-html.ui-fun .fun-course-media img { display: block; width: 100%; max-height: 300px; object-fit: contain; }
+/* A 16:9 player 320px tall is 569px wide; a portrait clip keeps its controls in a
+   320px-tall box. The inline 60vh cap of the shared player is replaced here. */
+html.ui-fun .fun-course-media--video {
+  display: block;
+  width: min(100%, 569px);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--fun-radius-card);
+}
+html.ui-fun .fun-course-media--video > div { border: 0; border-radius: inherit; box-shadow: none; }
+html.ui-fun .fun-course-media--video [style*="aspect-ratio"] { max-height: 320px !important; }
+html.ui-fun .fun-course-rail-media .fun-course-media { margin-block: 0 var(--fun-space-4); }
+html.ui-fun .fun-course-rail-media .fun-course-media--video { width: 100%; }
 
 /* Page body */
 html.ui-fun .fun-course-page > .relative.z-10 { padding: 18px 0 0; }
@@ -490,6 +548,171 @@ html.ui-fun .fun-course-page .bg-card.border:not([class*="fun-"]) {
   border-radius: var(--fun-radius-card);
   box-shadow: none;
 }
+/* Their own colours that fall short of 4.5:1 here: the completion percent
+   (#16A34A is for icons only), the level chip (raw brand on a brand wash) and
+   the required-field mark. */
+html.ui-fun .fun-course-page .text-green-600 { color: var(--fun-success-strong); }
+html.ui-fun .fun-course-page span.bg-primary\/10.text-primary { background: var(--fun-line-nav); color: var(--fun-ink-2); }
+html.ui-fun .fun-course-page .text-red-500 { color: var(--fun-live-text); }
+/* Their text and dividers in the skin's ink, muted and line colours, and the
+   course progress bar in the course colour (the side column carries its class). */
+html.ui-fun .fun-course-page .text-card-foreground { color: var(--fun-ink); }
+html.ui-fun .fun-course-page .text-muted-foreground { color: var(--fun-muted); }
+html.ui-fun .fun-course-page .bg-border.h-px { height: 2px; background: var(--fun-line-nav); }
+html.ui-fun .fun-course-page .p-1.bg-green-100 { padding: 6px; border-radius: var(--fun-radius-badge); background: var(--fun-success-tint); }
+html.ui-fun .fun-course-page [role="progressbar"] > .bg-primary-500 { background: var(--fc-solid, var(--fun-brand)); }
+/* Inside those cards: the header strip, the icon tile and the value boxes in the
+   skin's quiet greys and brand tint, not the classic muted wash and raw brand. */
+html.ui-fun .fun-course-page .border-b.bg-muted\/40 {
+  border-bottom: 2px solid var(--fun-line-nav);
+  background: transparent;
+}
+html.ui-fun .fun-course-page .p-1.bg-primary\/10.rounded-md {
+  padding: 6px;
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-brand-tint);
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
+}
+html.ui-fun .fun-course-page .p-1.bg-primary\/10.rounded-md > svg { color: var(--fun-brand); }
+html.ui-fun .fun-course-page .bg-muted\/50.rounded-md.border {
+  border: 0;
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-line-nav);
+  color: var(--fun-ink-2);
+  font-weight: 800;
+}
+/* The rating form's star buttons: 44px targets and the skin's focus ring. */
+html.ui-fun .fun-course-page button[class="focus:outline-none"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--fun-touch);
+  min-height: var(--fun-touch);
+}
+html.ui-fun .fun-course-page button[class="focus:outline-none"]:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+/* and its small submit button */
+html.ui-fun .fun-course-page form button.w-fit { min-height: var(--fun-touch); padding-inline: var(--fun-space-4); }
+
+/* Ratings and reviews (".fun-rate", added under Fun only): the skin's card, type
+   and controls. The submit is the brand solid, as every filled button here, since
+   the raw brand can fall below 4.5:1 with white text. Stars: the quiz amber when
+   chosen (4.92:1) and the control line when not (3.15:1). */
+html.ui-fun .fun-rate.border.rounded-md {
+  padding: var(--fun-space-4);
+  /* !important and this specificity: the app's global card rule
+     (.bg-white.border.rounded-md) is !important. */
+  border: 2px solid var(--fun-line-card) !important;
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+  box-shadow: none;
+}
+html.ui-fun .fun-rate:hover { box-shadow: none; }
+html.ui-fun .fun-rate .absolute.inset-0,
+html.ui-fun .fun-rate > .absolute { display: none; }
+html.ui-fun .fun-rate :is(h1, h2) {
+  color: var(--fun-ink);
+  font-size: 1.125rem;
+  line-height: calc(1.375rem * var(--fun-leading));
+  font-weight: 900;
+  letter-spacing: 0;
+}
+html.ui-fun .fun-rate :is(h1, h2) + p {
+  margin-top: 2px;
+  color: var(--fun-muted);
+  font-size: 0.8125rem;
+  line-height: calc(1.0625rem * var(--fun-leading));
+  font-weight: 700;
+}
+html.ui-fun .fun-rate :is(h1, h2) + p svg { display: none; }
+html.ui-fun .fun-rate .animate-fade-in-down > div:first-child {
+  padding: 8px;
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-test-tint);
+  background-image: none;
+  box-shadow: none;
+}
+html.ui-fun .fun-rate .animate-fade-in-down > div:first-child svg { width: 18px; height: 18px; color: var(--fun-test-text); }
+html.ui-fun .fun-rate .animate-fade-in-down { animation: none; }
+html.ui-fun .fun-rate form {
+  gap: var(--fun-space-2);
+  padding: var(--fun-space-3);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-rate form label {
+  color: var(--fun-ink-2);
+  font-size: 0.8125rem;
+  line-height: calc(1.0625rem * var(--fun-leading));
+  font-weight: 800;
+}
+html.ui-fun .fun-rate textarea {
+  border: 2px solid var(--fun-line-control);
+  border-radius: var(--fun-radius-badge);
+  color: var(--fun-ink);
+  font-size: 0.9375rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 700;
+  box-shadow: none;
+}
+html.ui-fun .fun-rate textarea::placeholder { color: var(--fun-muted); }
+html.ui-fun .fun-rate textarea:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; box-shadow: none; --tw-ring-shadow: 0 0 #0000; }
+html.ui-fun .fun-rate form .text-yellow-400 { color: var(--fun-quiz); }
+html.ui-fun .fun-rate form .text-gray-300 { color: var(--fun-line-control); }
+html.ui-fun .fun-rate form .text-caption { color: var(--fun-muted); font-size: 0.8125rem; font-weight: 800; }
+html.ui-fun .fun-rate form button.w-fit {
+  min-height: var(--fun-touch);
+  padding-inline: var(--fun-space-5);
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-brand);
+  box-shadow: 0 var(--fun-lip) 0 var(--fun-brand-lip);
+  color: var(--fun-ground) !important;
+  font-size: 1rem;
+  font-weight: 900;
+}
+html.ui-fun .fun-rate form button.w-fit:hover:not(:disabled) { background: var(--fun-brand); }
+html.ui-fun .fun-rate form button.w-fit:active:not(:disabled) { transform: translateY(var(--fun-lip)); box-shadow: none; }
+html.ui-fun .fun-rate form button.w-fit:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-rate form button.w-fit:disabled {
+  background: var(--fun-line-nav);
+  box-shadow: none;
+  color: var(--fun-muted) !important;
+}
+html.ui-fun .fun-rate .group\/rating {
+  padding: var(--fun-space-3);
+  border: 0;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-test-tint);
+  background-image: none;
+}
+html.ui-fun .fun-rate .text-gray-900 { color: var(--fun-ink); }
+html.ui-fun .fun-rate .text-gray-700 { color: var(--fun-ink-2); }
+html.ui-fun .fun-rate .text-gray-600 { color: var(--fun-muted); }
+html.ui-fun .fun-rate .text-caption { font-size: 0.8125rem; }
+/* "No reviews yet": a quiet tile, no gradient. */
+html.ui-fun .fun-rate .relative.bg-white\/60 {
+  border: 0;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-line-nav);
+}
+html.ui-fun .fun-rate .relative.bg-white\/60 .rounded-md {
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-ground);
+  background-image: none;
+}
+html.ui-fun .fun-rate .relative.bg-white\/60 svg { color: var(--fun-muted); }
+html.ui-fun .fun-rate h3 {
+  color: var(--fun-ink);
+  font-size: 0.9375rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 900;
+}
+html.ui-fun .fun-rate .shadow-sm { box-shadow: none; }
+html.ui-fun .fun-rate .border-gray-200 { border-width: 2px !important; border-color: var(--fun-line-card) !important; border-radius: var(--fun-radius-control); }
+
+/* Load error */
+html.ui-fun .fun-course-error { max-width: 32rem; margin-inline: auto; padding-block: 24px; }
 
 /* Laptop side card */
 html.ui-fun .fun-pickup {
@@ -563,8 +786,12 @@ html.ui-fun .fun-tools__switch {
   font-weight: 800;
   cursor: pointer;
 }
+html.ui-fun .fun-tools__switch [role="switch"] { box-shadow: none; }
+html.ui-fun .fun-tools__switch [role="switch"] > span { box-shadow: none; }
 html.ui-fun .fun-tools__switch [role="switch"][data-state="unchecked"] { background: var(--fun-line-control); }
-html.ui-fun .fun-tools__switch [role="switch"][data-state="checked"] { background: var(--fun-brand); }
+/* On the course page the switch sits under the course-coloured band: on, it takes the
+   course colour (the palette class on .fun-structure), else the brand. */
+html.ui-fun .fun-tools__switch [role="switch"][data-state="checked"] { background: var(--fc-solid, var(--fun-brand)); }
 html.ui-fun .fun-tools__expand { min-height: var(--fun-touch); font-size: 0.9375rem; box-shadow: 0 3px 0 var(--fun-line-button); }
 
 /* ── Subject and module cards ──────────────────────────────────────── */
@@ -611,6 +838,8 @@ html.ui-fun .fun-lv__title {
 html.ui-fun .fun-lv[data-state="open"] > .fun-lv__head .fun-lv__title { font-size: 1.25rem; line-height: calc(1.5625rem * var(--fun-leading)); }
 html.ui-fun .fun-lv__sub { margin-top: 2px; color: var(--fun-muted); font-size: 0.875rem; font-weight: 700; }
 html.ui-fun .fun-lv__done { flex: none; color: var(--fun-success-strong); font-size: 0.875rem; font-weight: 900; }
+/* On an open head's course tint #15803D drops to 4.47:1; the darker green holds 6:1. */
+html.ui-fun .fun-lv[data-state="open"] > .fun-lv__head .fun-lv__done { color: var(--fun-success-text); }
 html.ui-fun .fun-lv__muted { flex: none; color: var(--fun-muted); font-size: 0.875rem; font-weight: 800; }
 html.ui-fun .fun-lv__progress {
   display: flex;
@@ -728,6 +957,8 @@ html.ui-fun .fun-ch__sub {
   font-weight: 700;
 }
 html.ui-fun .fun-ch__sub--done { color: var(--fun-success-strong); font-weight: 800; }
+html.ui-fun .fun-ch[data-state="open"] > .fun-ch__head .fun-ch__sub--done { color: var(--fun-success-text); }
+html.ui-fun .fun-lv .fun-ch[data-state="open"] > .fun-ch__head .fun-ch__sub--done { color: var(--fun-success-strong); }
 html.ui-fun .fun-ch__end { display: flex; flex: none; align-items: center; }
 html.ui-fun .fun-ch__head > .fun-chevron { flex: none; width: 20px; height: 20px; color: var(--fun-muted); }
 html.ui-fun .fun-ch__rows { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px 10px; }
@@ -906,18 +1137,81 @@ html.ui-fun .fun-lesson-top__nav--always { display: flex; }
 html.ui-fun .fun-lesson-top__nav .fun-btn { gap: 6px; }
 html.ui-fun .fun-lesson-top__navtext { display: none; }
 html.ui-fun .fun-lesson-top__tools { display: flex; flex: none; align-items: center; gap: 6px; }
+/* Notes and doubts: the skin's outline button (2px line, lip). !important and
+   this specificity: the app's global card rule (.bg-white.border.rounded-md) is
+   !important. */
 html.ui-fun .fun-lesson-top__tools > button {
   min-height: var(--fun-touch);
   padding: 0 10px;
-  border: 2px solid var(--fun-line-card);
   border-radius: 12px;
   color: var(--fun-ink-2);
   font-size: 0.8125rem;
   font-weight: 800;
 }
+html.ui-fun .fun-lesson-top .fun-lesson-top__tools > button {
+  border: 2px solid var(--fun-line-button) !important;
+  background: var(--fun-ground);
+  box-shadow: 0 3px 0 var(--fun-line-button);
+}
+/* A slide marked complete by hand: the success tint and text (6.62:1). */
+html.ui-fun .fun-lesson-top .fun-lesson-top__tools > button[aria-pressed="true"] {
+  border-color: var(--fun-success) !important;
+  background: var(--fun-success-tint);
+  box-shadow: 0 3px 0 var(--fun-success);
+  color: var(--fun-success-text);
+}
+html.ui-fun .fun-lesson-top .fun-lesson-top__tools > button:active { transform: translateY(3px); box-shadow: none; }
+html.ui-fun .fun-lesson-top__tools > button svg { color: currentColor; }
+html.ui-fun .fun-lesson-top__tools > button:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+/* The way out (to the course page): 44px, 8px out into the gutter, as on A-Lesson. */
+html.ui-fun .fun-lesson-top__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  margin-inline-start: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fun-radius-badge);
+  background: transparent;
+  color: var(--fun-muted);
+  cursor: pointer;
+}
+html.ui-fun .fun-lesson-top__close > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-lesson-top__close:hover { color: var(--fun-ink); }
+html.ui-fun .fun-lesson-top__close:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: -3px; }
+/* The title as the outline's button (when the viewer has an outline): the title's
+   type, a small caret, a 44px row. */
+html.ui-fun .fun-lesson-top__titlebtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: var(--fun-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--fun-radius-badge);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+html.ui-fun .fun-lesson-top__titletext { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+html.ui-fun .fun-lesson-top__titlebtn > svg { flex: none; width: 14px; height: 14px; color: var(--fun-muted); }
+html.ui-fun .fun-lesson-top__titlebtn:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
 @media (max-width: 639px) {
-  /* Phones: notes and doubts as icon buttons, so the title keeps the room. The
-     label stays for screen readers. */
+  /* Phones: the title keeps at least 9rem; when the row is too narrow for that,
+     the tools (and then the position) move to a second row. */
+  html.ui-fun .fun-lesson-top__row { flex-wrap: wrap; }
+  html.ui-fun .fun-lesson-top__title { flex: 1 1 0; min-width: min(9rem, 100%); }
+  /* With the close in the row, 8rem keeps title, position and tools on one row at 390px. */
+  html.ui-fun .fun-lesson-top__close + .fun-lesson-top__title { min-width: min(8rem, 100%); }
+  html.ui-fun .fun-lesson-top__tools { margin-inline-start: auto; }
+  /* Notes and doubts as icon buttons, so the title keeps the room. The label
+     stays for screen readers. */
   html.ui-fun .fun-lesson-top__tools > button { width: var(--fun-touch); min-height: var(--fun-touch); padding: 0; justify-content: center; }
   html.ui-fun .fun-lesson-top__tools > button > span {
     position: absolute;
@@ -942,7 +1236,72 @@ html.ui-fun .fun-lesson-top__bar { flex: none; width: 100%; height: 14px; border
   html.ui-fun .fun-lesson-top__navtext { display: inline; }
   html.ui-fun .fun-lesson-top__progress { flex-direction: row; align-items: center; gap: 10px; }
   html.ui-fun .fun-lesson-top__label { flex: none; }
+  /* In the row the bar takes what the label leaves, so it never runs past the card. */
+  html.ui-fun .fun-lesson-top__bar { flex: 1 1 0; width: auto; min-width: 0; }
 }
+
+/* The content's load error: the skin's live red for text (6.29:1), not #EF4444. */
+html.ui-fun .fun-lesson-content .text-red-500,
+html.ui-fun .fun-lesson-content--own .text-red-500 { color: var(--fun-live-text); }
+html.ui-fun .fun-lesson-content p.text-red-500,
+html.ui-fun .fun-lesson-content--own p.text-red-500 {
+  font-size: 0.9375rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 800;
+}
+html.ui-fun .fun-lesson-content .bg-red-50,
+html.ui-fun .fun-lesson-content--own .bg-red-50 { background: var(--fun-live-tint); }
+
+/* Doubts panel (".fun-doubts", added under Fun only). While closed it is moved off
+   the screen; hidden as well, so keyboard focus cannot land on its controls. */
+html.ui-fun .fun-doubts[aria-hidden="true"] {
+  visibility: hidden;
+  transition: transform 200ms ease-out, visibility 0s linear 200ms;
+}
+html.ui-fun .fun-doubts { border-inline-start: 2px solid var(--fun-line-card); box-shadow: none; }
+html.ui-fun .fun-doubts > div:first-child { border-bottom: 2px solid var(--fun-line-nav); }
+html.ui-fun .fun-doubts > div:first-child > .bg-primary-500 {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-brand);
+}
+html.ui-fun .fun-doubts h2 { color: var(--fun-ink); font-size: 1.125rem; font-weight: 900; }
+html.ui-fun .fun-doubts h2 + p { color: var(--fun-muted); font-size: 0.8125rem; font-weight: 700; }
+html.ui-fun .fun-doubts > div:first-child > button {
+  min-width: var(--fun-touch);
+  min-height: var(--fun-touch);
+  border-radius: var(--fun-radius-badge);
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-doubts button:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-doubts [role="tablist"] {
+  height: auto;
+  min-height: var(--fun-touch);
+  padding: 3px;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-line-nav);
+}
+html.ui-fun .fun-doubts [role="tab"] {
+  min-height: 38px;
+  border-radius: var(--fun-radius-badge);
+  color: var(--fun-muted);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+html.ui-fun .fun-doubts [role="tab"][data-state="active"] { background: var(--fun-ground); color: var(--fun-ink); box-shadow: none; }
+html.ui-fun .fun-doubts [role="tab"] .text-neutral-400 { color: var(--fun-muted); }
+html.ui-fun .fun-doubts .border-neutral-200 { border-color: var(--fun-line-card); }
+html.ui-fun .fun-doubts > div:last-child button.w-full {
+  min-height: 3.125rem;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-brand);
+  box-shadow: 0 var(--fun-lip) 0 var(--fun-brand-lip);
+  color: var(--fun-ground) !important;
+  font-size: 1.0625rem;
+  font-weight: 900;
+}
+html.ui-fun .fun-doubts > div:last-child button.w-full:hover { background: var(--fun-brand); }
 
 /* Room for the phone bar under the content */
 @media (max-width: 639px) {
@@ -969,6 +1328,13 @@ html.ui-fun .fun-lesson-bottom__next {
   font-weight: 800;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+html.ui-fun .fun-lesson-bottom__next svg {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: 4px;
+  vertical-align: -2px;
 }
 html.ui-fun .fun-lesson-bottom__buttons { display: flex; gap: var(--fun-space-3); }
 html.ui-fun .fun-lesson-bottom__prev { flex: none; width: 120px; min-height: 56px; padding: 0 12px; }
@@ -1037,7 +1403,64 @@ html.ui-fun .fun-lesson-side button.w-full {
   border-radius: var(--fun-radius-control);
   font-weight: 800;
 }
+/* Its prev / next / feedback buttons: white, the outline line and lip, ink text. */
+html.ui-fun .fun-lesson-side button.w-full:not(.fun-side-next) {
+  border-style: solid;
+  border-color: var(--fun-line-button);
+  background: var(--fun-ground);
+  box-shadow: 0 3px 0 var(--fun-line-button);
+  color: var(--fun-ink-2);
+}
+html.ui-fun .fun-lesson-side button.w-full:not(.fun-side-next):hover { background: var(--fun-line-nav); }
+html.ui-fun .fun-lesson-side button.w-full.bg-primary-50 { border-color: var(--fun-brand); background: var(--fun-brand-tint); color: var(--fun-brand); }
+html.ui-fun .fun-lesson-side button.w-full:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+/* The panel on the skin's white ground with its 2px nav lines, as the home
+   sidebar; the logo tile is the card line. */
+html.ui-fun [data-sidebar="sidebar"]:has(.fun-lesson-side) { background: var(--fun-ground); }
+html.ui-fun .group\/sidebar-wrapper .fixed:has(> [data-sidebar="sidebar"] .fun-lesson-side) { border-inline-end: 2px solid var(--fun-line-nav); }
+html.ui-fun .fun-lesson-side.border-e { border-inline-end-width: 0; }
+html.ui-fun .fun-lesson-side .border-b.border-gray-100 { border-bottom: 2px solid var(--fun-line-nav); }
+html.ui-fun .fun-lesson-side .border-t.border-gray-100 { border-top: 2px solid var(--fun-line-nav); }
+html.ui-fun .fun-lesson-side .w-7.h-7.border {
+  border: 2px solid var(--fun-line-card) !important;
+  border-radius: 10px;
+  color: var(--fun-brand);
+}
 html.ui-fun .fun-side-rows { gap: 2px; }
+/* Its header and footer: nothing below 12px, the muted ink for small text (6.09:1),
+   and 44px targets for focus mode and the breadcrumb. */
+html.ui-fun .fun-lesson-side .text-2xs { color: var(--fun-muted); font-size: 0.75rem; font-weight: 800; }
+html.ui-fun .fun-lesson-side h3.text-caption { color: var(--fun-ink); font-size: 0.875rem; font-weight: 900; }
+html.ui-fun .fun-lesson-side button[aria-label="Enter focus mode"] {
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  /* !important: the app's global card rule (.bg-white.border.rounded-md) is. */
+  border: 2px solid var(--fun-line-card) !important;
+  border-radius: var(--fun-radius-badge);
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-lesson-side button[aria-label="Enter focus mode"]:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-lesson-side .text-xs.text-gray-500 { color: var(--fun-muted); font-size: 0.8125rem; font-weight: 800; }
+html.ui-fun .fun-lesson-side .text-xs.text-gray-500 > button,
+html.ui-fun .fun-lesson-side .text-xs.text-gray-500 > span > button { min-height: var(--fun-touch); }
+html.ui-fun .fun-lesson-side .text-gray-400 { color: var(--fun-muted); }
+html.ui-fun .fun-lesson-side .text-gray-900 { color: var(--fun-ink); }
+html.ui-fun .fun-lesson-side .text-neutral-500 { color: var(--fun-muted); }
+html.ui-fun .fun-lesson-side .text-neutral-700 { color: var(--fun-ink-2); }
+html.ui-fun .fun-lesson-side .bg-gradient-to-b.from-transparent { display: none; }
+/* The Up next / next chapter pill: a white card with the board's muted label
+   (A-Lesson's "Up next", 6.09:1), the title in ink, never the brand on its own tint. */
+html.ui-fun .fun-lesson-side .fun-side-next {
+  border-color: var(--fun-line-button);
+  background: var(--fun-ground);
+  padding: 8px 12px;
+}
+html.ui-fun .fun-lesson-side .fun-side-next:hover { border-color: var(--fc-solid, var(--fun-line-card)); background: var(--fun-ground); }
+html.ui-fun .fun-lesson-side .fun-side-next:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-lesson-side .fun-side-next > span { color: var(--fun-muted); font-size: 0.8125rem; font-weight: 800; letter-spacing: 0; text-transform: none; }
+html.ui-fun .fun-lesson-side .fun-side-next > span + span { color: var(--fun-ink); font-weight: 900; }
+html.ui-fun .fun-lesson-side .fun-side-next > span + span + span { color: var(--fun-muted); font-weight: 800; }
+html.ui-fun .fun-lesson-side .fun-side-next > svg { color: var(--fun-muted); }
 html.ui-fun .fun-side-rows .fun-row__meta { display: inline-flex; max-width: 45%; }
 
 /* The feedback slide */

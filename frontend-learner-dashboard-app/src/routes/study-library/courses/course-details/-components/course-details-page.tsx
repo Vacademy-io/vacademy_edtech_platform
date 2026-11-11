@@ -57,12 +57,15 @@ import { useCourseDisplaySettings } from "../-hooks/use-course-display-settings"
 import { useEnrollmentActions } from "../-hooks/use-enrollment-actions";
 import { TutorEntryCard } from "@/components/tutor/TutorEntryCard";
 import { useFunTheme } from "@/hooks/use-fun-theme";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
 import { FunCourseBand, FunCourseBandSkeleton } from "./fun/FunCourseBand";
-import { FunPickUpCard } from "./fun/FunPickUpCard";
+import { FunPickUpCard, type FunCurrentSlide } from "./fun/FunPickUpCard";
 import {
   courseHeaderPercent,
   courseSizeCounts,
   levelSessionLine,
+  listSnapshotPercent,
   plainText,
   totalSlides,
 } from "./fun/course-outline";
@@ -84,6 +87,11 @@ export const CourseDetailsPage = () => {
 
   useCourseDetailsNavHeading();
   const isFun = useFunTheme();
+  // Fun on a laptop: the course's own video or image goes in the right column,
+  // above the pick-up card, so the outline starts on the first screen.
+  const funWide = useMediaQuery("(min-width: 1024px)");
+  // Fun: the slide the outline marks as current, for the laptop side card.
+  const [funCurrentSlide, setFunCurrentSlide] = useState<FunCurrentSlide | null>(null);
 
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -519,10 +527,19 @@ export const CourseDetailsPage = () => {
   const funCourseData = isFun ? form.getValues("courseData") : null;
   const funPreviewImage = funCourseData?.coursePreviewImageMediaId ?? "";
   const funCourseId = String(searchParams.courseId ?? "");
-  const funSearchPercent =
-    typeof searchParams.percentageCompleted === "number"
-      ? searchParams.percentageCompleted
-      : null;
+  // The list's percent in the link counts only where it can be trusted: a 0
+  // from the All tab may be a course the learner never joined.
+  const funSearchPercent = listSnapshotPercent(
+    typeof selectedTab === "string" ? selectedTab : null,
+    searchParams.percentageCompleted,
+  );
+  // The session as the institute typed it (the select's label re-cases it),
+  // so the band reads the same as the Learn row.
+  const funSessionName =
+    funCourseData?.sessions?.find(
+      (s) => s.sessionDetails?.id === selectedSession,
+    )?.sessionDetails?.session_name ??
+    sessionOptions?.find((o) => o.value === selectedSession)?.label;
 
   return (
     <>
@@ -575,7 +592,7 @@ export const CourseDetailsPage = () => {
               title={funCourseData.title}
               eyebrow={levelSessionLine(
                 levelOptions?.find((o) => o.value === selectedLevel)?.label,
-                sessionOptions?.find((o) => o.value === selectedSession)?.label,
+                funSessionName,
               )}
               summary={contentOnly ? "" : plainText(funCourseData.description)}
               imageUrl={/^https?:\/\//i.test(funPreviewImage) ? funPreviewImage : null}
@@ -594,10 +611,11 @@ export const CourseDetailsPage = () => {
                 courseDetailsData,
                 packageSessionIdForCurrentLevel,
                 funSearchPercent,
+                isEnrolledInCourse,
               )}
               hidePercent={hideProgressCard}
             />
-            {!contentOnly && (
+            {!contentOnly && !(funWide && hasRightSidebar) && (
               <CourseHeader
                 courseData={funCourseData}
                 minimal={false}
@@ -714,6 +732,7 @@ export const CourseDetailsPage = () => {
                       onLoadingChange={handleModulesLoadingChange}
                       courseInitSubjects={courseInitSubjectsFromCourseInit}
                       {...(paymentType && { paymentType })}
+                      {...(isFun && { onFunCurrentSlide: setFunCurrentSlide, funHideProgress: hideProgressCard })}
                     />
                   </div>
                 );
@@ -772,8 +791,24 @@ export const CourseDetailsPage = () => {
                 the right-side details" refers to. */}
             {hasRightSidebar && (
               <div className="lg:col-span-1">
-                <div className="sticky top-24 self-start">
-                  {isFun && <FunPickUpCard courseId={funCourseId} />}
+                <div
+                  className={
+                    isFun
+                      ? `sticky top-24 self-start ${courseColourClass(funCourseId)}`
+                      : "sticky top-24 self-start"
+                  }
+                >
+                  {isFun && funWide && funCourseData && (
+                    <div className="fun-course-rail-media">
+                      <CourseHeader
+                        courseData={funCourseData}
+                        minimal={false}
+                        hideTags
+                        mediaOnly
+                      />
+                    </div>
+                  )}
+                  {isFun && <FunPickUpCard current={funCurrentSlide} />}
                   <CourseSidebar
                     hasRightSidebar={hasRightSidebar}
                     levelOptions={levelOptions}
@@ -815,6 +850,7 @@ export const CourseDetailsPage = () => {
                     certificatesEnabled={certificatesEnabled}
                     onEnrollmentClick={onEnrollmentClick}
                     onRatingsLoadingChange={handleRatingsLoadingChange}
+                    {...(isFun && { hideEmptyRows: true })}
                   />
                 </div>
               </div>

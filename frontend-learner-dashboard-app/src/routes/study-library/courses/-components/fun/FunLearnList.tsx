@@ -7,30 +7,41 @@ import { ReviewLabel } from "@/components/design-system/fun/FinishedTick";
 import { FunButton } from "@/components/design-system/fun/FunButton";
 import { FunProgress } from "@/components/design-system/fun/FunProgress";
 import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import { courseIdsNeedingBatchNames, useBatchNames, withBatchNames } from "@/components/design-system/fun/batch-names";
 import LocalStorageUtils from "@/utils/localstorage";
-import { levelSessionLine } from "../../course-details/-components/fun/course-outline";
+import { courseListMetas, listRowPercent } from "../../course-details/-components/fun/course-outline";
 import type { CoursePackage } from "@/types/course-catalog/course-catalog-list";
 
 /*
  * The Fun skin's Learn list rows and states (styles/fun/course.css, "Learn list").
  * Kept free of request modules at import time: the catalogue page imports it for
- * every skin, and it only renders under ui-fun.
+ * every skin, and it only renders under ui-fun (batch-names.ts loads its request
+ * code on first use).
  */
+
+/** A Learn row's course, with the session and batch names the list may carry. */
+type FunLearnCourse = CoursePackage & { session_name?: string | null; package_session_name?: string | null };
 
 /**
  * One course row: the course colour block (image on the tint, else the shape),
  * name, level and session, and the bar with "% done" in the course's text shade.
  * A finished course keeps its colour, gets the tick and the green Review label.
+ * A course with no progress says "Not started", as on A-Learn, on the tabs that
+ * list only the learner's courses; on All it may be one the learner has not joined
+ * (the All list is the institute's catalogue), so it says nothing there.
  * Opens the course page, as the card's title did.
  */
 export function FunCourseRow({
   course,
   selectedTab,
   hideProgress,
+  meta,
 }: {
-  course: CoursePackage & { session_name?: string | null };
+  course: FunLearnCourse;
   selectedTab: string;
   hideProgress: boolean;
+  /** The line under the name (level, session, and the batch when two rows share a name). */
+  meta: string;
 }) {
   const { t } = useTranslation("funCommon");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -51,13 +62,15 @@ export function FunCourseRow({
     };
   }, [previewId]);
 
+  // The value the course page reads from the link stays as the list sent it;
+  // the row prints one whole number, and the words and the tick both read it.
   const percent = Math.max(0, Math.min(100, Number(course.percentage_completed) || 0));
-  const finished = percent >= 100;
+  const shown = listRowPercent(percent);
+  const finished = shown >= 100;
   // In progress and Completed list only enrolled courses; on All a course with
   // no progress may be one the learner has not joined, so it says nothing.
-  const enrolledKnown = selectedTab === "PROGRESS" || selectedTab === "COMPLETED" || percent > 0;
+  const enrolledKnown = selectedTab === "PROGRESS" || selectedTab === "COMPLETED" || shown > 0;
   const name = course.package_name || "";
-  const meta = levelSessionLine(course.level_name, course.session_name);
   const search = {
     courseId: course.id,
     packageSessionId: course.package_session_id || undefined,
@@ -82,11 +95,11 @@ export function FunCourseRow({
           <ReviewLabel />
         </span>
       );
-    } else if (percent > 0) {
+    } else if (shown > 0) {
       progress = (
         <span className="fun-learn-row__progress">
-          <FunProgress percent={percent} />
-          <span className="fun-learn-row__percent">{t("percentDone", { percent: Math.round(percent) })}</span>
+          <FunProgress percent={shown} />
+          <span className="fun-learn-row__percent">{t("percentDone", { percent: shown })}</span>
         </span>
       );
     } else if (enrolledKnown) {
@@ -183,10 +196,23 @@ export function FunLearnList({
   selectedTab,
   hideProgress,
 }: {
-  courses: ReadonlyArray<CoursePackage & { session_name?: string | null }>;
+  courses: ReadonlyArray<FunLearnCourse>;
   selectedTab: string;
   hideProgress: boolean;
 }) {
+  const rows = courses.map((course) => ({
+    courseId: course.id,
+    name: course.package_name,
+    level: course.level_name,
+    session: course.session_name,
+    batch: course.package_session_name,
+  }));
+  // The search list sends no session or batch name: rows that share a course name
+  // read them from the course's batches, by the row's batch id.
+  const batchNames = useBatchNames(courseIdsNeedingBatchNames(rows));
+  const metas = courseListMetas(
+    rows.map((row, index) => withBatchNames(row, batchNames.get(courses[index]?.package_session_id ?? ""))),
+  );
   return (
     <ul className="fun-learn-list">
       {courses.map((course, index) => (
@@ -195,6 +221,7 @@ export function FunLearnList({
           course={course}
           selectedTab={selectedTab}
           hideProgress={hideProgress}
+          meta={metas[index] ?? ""}
         />
       ))}
     </ul>

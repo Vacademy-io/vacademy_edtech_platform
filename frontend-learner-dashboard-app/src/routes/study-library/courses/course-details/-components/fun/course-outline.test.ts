@@ -7,9 +7,13 @@ import {
   isPlaceholderName,
   isTestKind,
   levelSessionLine,
+  listSnapshotPercent,
   pickCurrentSlideId,
   plainText,
   serverProgress,
+  shownPercent,
+  listRowPercent,
+  courseListMetas,
   slideKind,
   slideRowState,
   totalSlides,
@@ -77,6 +81,35 @@ describe("courseHeaderPercent", () => {
   it("clamps odd values", () => {
     expect(courseHeaderPercent({ course: { percentage_completed: 180 } }, null)).toBe(100);
   });
+  it("hides a 0 for a course the learner has not joined, but keeps real progress", () => {
+    expect(courseHeaderPercent({ course: { percentage_completed: 0 } }, null, null, false)).toBeNull();
+    expect(courseHeaderPercent({ package_sessions: [{ id: "ps-a", percentage_completed: 0 }] }, "ps-a", null, false)).toBeNull();
+    expect(courseHeaderPercent({ course: { percentage_completed: 0 } }, null, null, true)).toBe(0);
+    expect(courseHeaderPercent({ course: { percentage_completed: 25 } }, null, null, false)).toBe(25);
+  });
+  it("shows no bar when the server has no number and the link came from the All tab", () => {
+    const none = { course: { percentage_completed: null }, package_sessions: [{ id: "ps-a", percentage_completed: null }] };
+    expect(courseHeaderPercent(none, "ps-a", listSnapshotPercent("ALL", 0))).toBeNull();
+    expect(courseHeaderPercent(none, "ps-a", listSnapshotPercent("PROGRESS", 0))).toBe(0);
+  });
+});
+
+describe("listSnapshotPercent", () => {
+  it("trusts the In progress and Completed tabs, which list joined courses only", () => {
+    expect(listSnapshotPercent("PROGRESS", 0)).toBe(0);
+    expect(listSnapshotPercent("COMPLETED", 100)).toBe(100);
+  });
+  it("ignores a 0 from the All tab or a custom tab, and keeps real progress from any tab", () => {
+    expect(listSnapshotPercent("ALL", 0)).toBeNull();
+    expect(listSnapshotPercent("tab-123", 0)).toBeNull();
+    expect(listSnapshotPercent(undefined, 0)).toBeNull();
+    expect(listSnapshotPercent("ALL", 35)).toBe(35);
+  });
+  it("is null for anything that is not a number", () => {
+    expect(listSnapshotPercent("PROGRESS", undefined)).toBeNull();
+    expect(listSnapshotPercent("PROGRESS", "40")).toBeNull();
+    expect(listSnapshotPercent("PROGRESS", Number.NaN)).toBeNull();
+  });
 });
 
 describe("courseSizeCounts", () => {
@@ -131,6 +164,30 @@ describe("pickCurrentSlideId", () => {
     expect(
       pickCurrentSlideId({ chapterOrder: ["c1", "c2"], slidesByChapter: slides, canOpen: () => true, threshold: 80, resumeSlideId: "d" }),
     ).toBe("d");
+  });
+  it("passes over a resume point that is already done, falling back to the first unfinished slide", () => {
+    expect(
+      pickCurrentSlideId({ chapterOrder: ["c1", "c2"], slidesByChapter: slides, canOpen: () => true, threshold: 80, resumeSlideId: "a" }),
+    ).toBe("c");
+  });
+  it("passes over a resume point that cannot be opened", () => {
+    expect(
+      pickCurrentSlideId({
+        chapterOrder: ["c1", "c2"],
+        slidesByChapter: slides,
+        canOpen: (slide) => slide.id !== "d",
+        threshold: 80,
+        resumeSlideId: "d",
+      }),
+    ).toBe("c");
+  });
+  it("keeps a resume point not found yet while a chapter is still loading, and drops it once all have loaded", () => {
+    expect(
+      pickCurrentSlideId({ chapterOrder: ["c1", "c2", "c3"], slidesByChapter: slides, canOpen: () => true, threshold: 80, resumeSlideId: "z" }),
+    ).toBe("z");
+    expect(
+      pickCurrentSlideId({ chapterOrder: ["c1", "c2"], slidesByChapter: slides, canOpen: () => true, threshold: 80, resumeSlideId: "z" }),
+    ).toBe("c");
   });
   it("falls back to the first unfinished slide that can be opened, in outline order", () => {
     expect(pickCurrentSlideId({ chapterOrder: ["c1", "c2"], slidesByChapter: slides, canOpen: () => true, threshold: 80 })).toBe("c");
@@ -207,5 +264,96 @@ describe("plainText", () => {
     expect(plainText("<p>Optics &amp; <b>light</b></p><script>x()</script>")).toBe("Optics & light");
     expect(plainText(null)).toBe("");
     expect(plainText("&lt;b&gt; tag &nbsp; spaced")).toBe("<b> tag spaced");
+  });
+});
+
+describe("shownPercent", () => {
+  it("prints 0 only before anything starts and 100 only when finished", () => {
+    expect(shownPercent(undefined)).toBe(0);
+    expect(shownPercent(null)).toBe(0);
+    expect(shownPercent(0)).toBe(0);
+    expect(shownPercent(-3)).toBe(0);
+    expect(shownPercent(0.3)).toBe(1);
+    expect(shownPercent(44.6)).toBe(45);
+    expect(shownPercent(99.4)).toBe(99);
+    expect(shownPercent(99.6)).toBe(99);
+    expect(shownPercent(100)).toBe(100);
+    expect(shownPercent(140)).toBe(100);
+    expect(shownPercent(Number.NaN)).toBe(0);
+  });
+
+  it("is what the server rollup prints between the two ends", () => {
+    expect(serverProgress(0.3)).toEqual({ kind: "percent", percent: 1 });
+    expect(serverProgress(99.6)).toEqual({ kind: "percent", percent: 99 });
+  });
+});
+
+describe("courseListMetas", () => {
+  it("is the level and session line for rows with their own name", () => {
+    expect(
+      courseListMetas([
+        { name: "Physics", level: "Class 12", session: "2026-27", batch: "Morning" },
+        { name: "Biology", level: "default", session: "2026-27" },
+      ]),
+    ).toEqual(["Class 12 · 2026-27", "2026-27"]);
+  });
+
+  it("names the batch when two rows share a name and would read the same", () => {
+    expect(
+      courseListMetas([
+        { name: "AI/ML", level: "default", session: "default", batch: "Weekend batch" },
+        { name: "ai/ml ", level: "default", session: "default", batch: "Evening batch" },
+      ]),
+    ).toEqual(["Weekend batch", "Evening batch"]);
+  });
+
+  it("keeps the plain line when two rows of one name already differ", () => {
+    expect(
+      courseListMetas([
+        { name: "AI/ML", level: "Beginner", session: "2026", batch: "A" },
+        { name: "AI/ML", level: "Advanced", session: "2026", batch: "B" },
+      ]),
+    ).toEqual(["Beginner · 2026", "Advanced · 2026"]);
+  });
+
+  it("puts the part that differs first when two rows share a name", () => {
+    expect(
+      courseListMetas([
+        { name: "Ai/ML", level: "Class 12 Science", session: "2025-26" },
+        { name: "Ai/ML", level: "Class 12 Science", session: "2026-27" },
+        { name: "Chemistry", level: "Class 12 Science", session: "2026-27" },
+      ]),
+    ).toEqual(["2025-26 · Class 12 Science", "2026-27 · Class 12 Science", "Class 12 Science · 2026-27"]);
+    expect(
+      courseListMetas([
+        { name: "Ai/ML", level: "Class 12", session: "2026-27", batch: "Weekend" },
+        { name: "Ai/ML", level: "Class 12", session: "2026-27", batch: "Evening" },
+      ]),
+    ).toEqual(["Weekend · Class 12 · 2026-27", "Evening · Class 12 · 2026-27"]);
+  });
+
+  it("never repeats a part or shows a placeholder", () => {
+    expect(
+      courseListMetas([
+        { name: "Chem", level: "Class 12", session: "2026-27", batch: "class 12" },
+        { name: "Chem", level: "Class 12", session: "2026-27", batch: "DEFAULT" },
+      ]),
+    ).toEqual(["Class 12 · 2026-27", "Class 12 · 2026-27"]);
+  });
+});
+
+describe("listRowPercent", () => {
+  it("is finished where the home tiles call a course finished (rounds to 100)", () => {
+    expect(listRowPercent(99.5)).toBe(100);
+    expect(listRowPercent(99.6)).toBe(100);
+    expect(listRowPercent(100)).toBe(100);
+    expect(listRowPercent(140)).toBe(100);
+  });
+  it("is shownPercent below that", () => {
+    expect(listRowPercent(99.4)).toBe(99);
+    expect(listRowPercent(0.3)).toBe(1);
+    expect(listRowPercent(0)).toBe(0);
+    expect(listRowPercent(null)).toBe(0);
+    expect(listRowPercent(Number.NaN)).toBe(0);
   });
 });

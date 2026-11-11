@@ -94,6 +94,7 @@ import {
   FunRowsSkeleton,
   FunSlideRow,
 } from "./fun/FunOutline";
+import type { FunCurrentSlide } from "./fun/FunPickUpCard";
 import {
   chapterDoneCount,
   pickCurrentSlideId,
@@ -213,6 +214,8 @@ export const CourseStructureDetails = ({
   paymentType,
   dripConditionJson,
   courseInitSubjects,
+  onFunCurrentSlide,
+  funHideProgress = false,
 }: {
   selectedSession: string;
   selectedLevel: string;
@@ -240,6 +243,12 @@ export const CourseStructureDetails = ({
   dripConditionJson?: string | null;
   /** Subjects from course-init (first session/level); used to call modules-with-chapters when form data isn't ready */
   courseInitSubjects?: CourseInitSubject[] | null;
+  /** Fun skin: told which slide the outline marks as current, so the laptop
+   *  side card points at the same slide. Called with null when there is none. */
+  onFunCurrentSlide?: (current: FunCurrentSlide | null) => void;
+  /** Fun skin: the institute hides progress, so the outline's heads print no
+   *  percent, "Done" or "X of Y done" (courseDetails.hideProgressCard). */
+  funHideProgress?: boolean;
 }) => {
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -1570,16 +1579,25 @@ export const CourseStructureDetails = ({
     );
 
   // Chapters in outline order, without the ones a drip rule hides: the Fun
-  // cards number them through the whole course.
-  const funChapterOrder = isFun
-    ? (studyLibraryData ?? []).flatMap((subject: SubjectType) =>
-        (subjectModulesMap[subject.id] ?? []).flatMap((mod) =>
-          (mod.chapters ?? [])
-            .filter((ch) => !shouldFilterItem(chapterEvaluations[ch.id]))
-            .map((ch) => ch.id),
-        ),
-      )
-    : [];
+  // cards number them through the whole course. Each keeps the subject and
+  // module it sits in, so the current row's chain can be opened.
+  const funChapterOrder: string[] = [];
+  const funChapterChain = new Map<string, { subjectId: string; moduleId: string; chapterName: string }>();
+  if (isFun) {
+    for (const subject of (studyLibraryData ?? []) as SubjectType[]) {
+      for (const mod of subjectModulesMap[subject.id] ?? []) {
+        for (const ch of mod.chapters ?? []) {
+          if (shouldFilterItem(chapterEvaluations[ch.id])) continue;
+          funChapterOrder.push(ch.id);
+          funChapterChain.set(ch.id, {
+            subjectId: subject.id,
+            moduleId: mod.module.id,
+            chapterName: ch.chapter_name,
+          });
+        }
+      }
+    }
+  }
   const funChapterNumber = new Map(funChapterOrder.map((id, i) => [id, i + 1]));
   const funCurrentSlideId = isFun
     ? pickCurrentSlideId({
@@ -1599,6 +1617,103 @@ export const CourseStructureDetails = ({
         resumeSlideId: funResumeSlideId,
       })
     : null;
+  // The current slide with its chain, once its chapter's slides are loaded.
+  const funCurrent = (() => {
+    if (!funCurrentSlideId) return null;
+    for (const chapterId of funChapterOrder) {
+      const slide = (slidesMap[chapterId] ?? []).find((item) => item.id === funCurrentSlideId);
+      const chain = funChapterChain.get(chapterId);
+      if (slide && chain) return { slide, chapterId, ...chain };
+    }
+    return null;
+  })();
+  // Every chapter has answered (loaded or failed): before that, the first
+  // unfinished slide could still move to an earlier chapter.
+  const funSlidesSettled =
+    funChapterOrder.length > 0 &&
+    funChapterOrder.every((id) => {
+      const status = slidesLoadingStatus[id];
+      return status === "loaded" || status === "error";
+    });
+
+  // Fun: the outline opens on the current row. The load opens the resume
+  // chapter, or the first one when this device has no resume point; when the
+  // current row sits somewhere else (no resume point, or the resume slide is
+  // done or locked), open its chain instead, once per batch, and only until
+  // the learner opens or closes a level themselves.
+  const funUserMovedRef = useRef<string | null>(null);
+  const funAutoOpenedRef = useRef<string | null>(null);
+  const funMarkMoved = () => {
+    funUserMovedRef.current = packageSessionId || "";
+  };
+  const funCurrentChapterId = funCurrent?.chapterId ?? null;
+  const funCurrentSubjectId = funCurrent?.subjectId ?? null;
+  const funCurrentModuleId = funCurrent?.moduleId ?? null;
+  useEffect(() => {
+    if (!isFun || !funSlidesSettled || !funCurrentChapterId || !funCurrentSubjectId || !funCurrentModuleId) return;
+    const key = packageSessionId || "";
+    if (funAutoOpenedRef.current === key || funUserMovedRef.current === key) return;
+    funAutoOpenedRef.current = key;
+    if (
+      openChapters.has(funCurrentChapterId) &&
+      openModules.has(funCurrentModuleId) &&
+      openSubjects.has(funCurrentSubjectId)
+    ) {
+      return;
+    }
+    setOpenSubjects(new Set<string>([funCurrentSubjectId]));
+    setOpenModules(new Set<string>([funCurrentModuleId]));
+    setOpenChapters(new Set<string>([funCurrentChapterId]));
+    // Open sets are read, not followed: this runs once per batch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFun, funSlidesSettled, funCurrentChapterId, funCurrentSubjectId, funCurrentModuleId, packageSessionId]);
+
+  // Tell the page which slide is current, so the laptop side card names the
+  // same slide as the outline. Opening goes through the outline's own handler.
+  const funNavigateRef = useRef<(subjectId: string, moduleId: string, chapterId: string, slideId: string) => void>(
+    () => {},
+  );
+  useEffect(() => {
+    funNavigateRef.current = (subjectId, moduleId, chapterId, slideId) => {
+      void handleSlideNavigation(subjectId, moduleId, chapterId, slideId);
+    };
+  });
+  const funCurrentClickable = isSlideClickable();
+  const funReport = funCurrent && funCurrentClickable
+    ? {
+        slideId: funCurrent.slide.id,
+        title: funCurrent.slide.title ?? "",
+        chapterName: funCurrent.chapterName ?? "",
+        typeLabel: getSlideTypeDisplay(funCurrent.slide) || "",
+        fromResume: funCurrent.slide.id === funResumeSlideId,
+        subjectId: funCurrent.subjectId,
+        moduleId: funCurrent.moduleId,
+        chapterId: funCurrent.chapterId,
+      }
+    : null;
+  const funReportKey = funReport ? JSON.stringify(funReport) : "";
+  useEffect(() => {
+    if (!onFunCurrentSlide) return;
+    if (!funReport) {
+      onFunCurrentSlide(null);
+      return;
+    }
+    const { subjectId, moduleId, chapterId, slideId } = funReport;
+    onFunCurrentSlide({
+      slideId: funReport.slideId,
+      title: funReport.title,
+      chapterName: funReport.chapterName,
+      typeLabel: funReport.typeLabel,
+      fromResume: funReport.fromResume,
+      open: () => funNavigateRef.current(subjectId, moduleId, chapterId, slideId),
+    });
+    // funReportKey carries every field the report is built from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onFunCurrentSlide, funReportKey]);
+  useEffect(() => {
+    if (!onFunCurrentSlide) return;
+    return () => onFunCurrentSlide(null);
+  }, [onFunCurrentSlide]);
 
   // One Fun slide row. `slideLocks` mirrors each depth's existing rule: depth 5
   // and the flat depth-2 list read slide locks; depths 3 and 4 never did.
@@ -1666,6 +1781,7 @@ export const CourseStructureDetails = ({
         open={isChapterOpen}
         onOpenChange={() => {
           if (isChapterLocked) return;
+          funMarkMoved();
           toggleChapter(ch.id);
           getSlidesWithChapterId(ch.id);
         }}
@@ -1673,16 +1789,34 @@ export const CourseStructureDetails = ({
         <CollapsibleTrigger disabled={isChapterLocked} className="fun-ch__head">
           <FunChapterHead
             index={funChapterNumber.get(ch.id) ?? chIdx + 1}
-            name={toTitleCase(ch.chapter_name)}
+            name={ch.chapter_name}
             open={isChapterOpen}
             locked={isChapterLocked}
             unlockMessage={chapterEval?.unlockMessage}
             doneCount={
               slidesMap[ch.id] !== undefined
-                ? chapterDoneCount(slidesMap[ch.id], getSlideCompletionThreshold())
+                ? chapterDoneCount(
+                    opts.slideLocks
+                      ? (slidesMap[ch.id] ?? []).filter(
+                          (slide) => !shouldFilterItem(slideEvaluations[slide.id]),
+                        )
+                      : slidesMap[ch.id],
+                    getSlideCompletionThreshold(),
+                  )
                 : null
             }
             percent={calculateChapterProgress(ch.id)}
+            hideProgress={funHideProgress}
+            slideCount={
+              slidesMap[ch.id] !== undefined
+                ? (opts.slideLocks
+                    ? (slidesMap[ch.id] ?? []).filter(
+                        (slide) => !shouldFilterItem(slideEvaluations[slide.id]),
+                      )
+                    : (slidesMap[ch.id] ?? [])
+                  ).length
+                : null
+            }
             trailing={
               opts.hideLockedDownload && isChapterLocked ? null : (
                 <DownloadNodeButton
@@ -1731,6 +1865,7 @@ export const CourseStructureDetails = ({
         open={isModuleOpen && !isModuleLocked}
         onOpenChange={() => {
           if (isModuleLocked) return;
+          funMarkMoved();
           toggleModule(mod.module.id);
         }}
       >
@@ -1738,11 +1873,12 @@ export const CourseStructureDetails = ({
           <FunLevelHead
             level="module"
             index={index}
-            name={opts.nested ? mod.module.module_name : toTitleCase(mod.module.module_name)}
+            name={mod.module.module_name}
             open={isModuleOpen && !isModuleLocked}
             locked={isModuleLocked}
             unlockMessage={moduleEval?.unlockMessage}
             percent={calculateModuleProgress(mod)}
+            hideProgress={funHideProgress}
             childCount={(mod.chapters ?? []).length}
             childTerm="chapters"
             trailing={
@@ -1782,7 +1918,11 @@ export const CourseStructureDetails = ({
         onOnlyUnfinished={setOnlyIncomplete}
         showExpand={!(courseStructure === 2 && chapterLevelIsPlaceholder)}
         allExpanded={!!isAllExpanded}
-        onToggleExpand={isAllExpanded ? collapseAll : expandAll}
+        onToggleExpand={() => {
+          funMarkMoved();
+          if (isAllExpanded) collapseAll();
+          else expandAll();
+        }}
         switchSlot={(props) => <Switch {...props} />}
         download={
           <DownloadNodeButton
@@ -1808,6 +1948,7 @@ export const CourseStructureDetails = ({
               open={isSubjectOpen && !isSubjectLocked}
               onOpenChange={() => {
                 if (isSubjectLocked) return;
+                funMarkMoved();
                 toggleSubject(subject.id);
               }}
             >
@@ -1815,11 +1956,12 @@ export const CourseStructureDetails = ({
                 <FunLevelHead
                   level="subject"
                   index={idx + 1}
-                  name={toTitleCase(subject.subject_name)}
+                  name={subject.subject_name}
                   open={isSubjectOpen && !isSubjectLocked}
                   locked={isSubjectLocked}
                   unlockMessage={subjectEval?.unlockMessage}
                   percent={calculateSubjectProgress(subject.id)}
+                  hideProgress={funHideProgress}
                   childCount={(subjectModulesMap[subject.id] ?? []).length}
                   childTerm="modules"
                   trailing={

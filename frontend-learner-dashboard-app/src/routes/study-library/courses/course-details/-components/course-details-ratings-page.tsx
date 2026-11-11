@@ -5,6 +5,7 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -87,6 +88,10 @@ export function CourseDetailsRatingsComponent({
     onLoadingChange?: (loading: boolean) => void;
 }) {
     const { t } = useTranslation("courseDetailsA");
+    // Fun restyles this block from styles/fun/course.css (".fun-rate"); the class is
+    // added only under that skin, so every other skin's markup is unchanged.
+    const isFun = useFunTheme();
+    const RatingsHeading = isFun ? "h2" : "h1";
     const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
     const router = useRouter();
     const searchParams = router.state.location.search;
@@ -448,7 +453,8 @@ export function CourseDetailsRatingsComponent({
             // Play Styles — quiet white rail card (one rail language)
             "[.ui-play_&]:bg-white [.ui-play_&]:border-2 [.ui-play_&]:border-play-surface",
             "[.ui-play_&]:rounded-play-card-sm [.ui-play_&]:text-play-ink",
-            "[.ui-play_&]:shadow-none [.ui-play_&]:hover:shadow-none"
+            "[.ui-play_&]:shadow-none [.ui-play_&]:hover:shadow-none",
+            isFun && "fun-rate"
         )}>
             {/* Background gradient overlay */}
             <div className={cn(
@@ -485,12 +491,13 @@ export function CourseDetailsRatingsComponent({
                         />
                     </div>
                     <div className="min-w-0">
-                        <h1 className={cn(
+                        {/* Fun: the course band's title is the page's one h1. */}
+                        <RatingsHeading className={cn(
                             "text-sm font-bold text-gray-900 tracking-tight leading-tight",
                             "[.ui-play_&]:text-play-ink"
                         )}>
                             {t("ratings.heading")}
-                        </h1>
+                        </RatingsHeading>
                         <p className={cn(
                             "text-caption text-gray-600 flex items-center gap-1",
                             "[.ui-play_&]:text-play-muted-deep"

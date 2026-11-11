@@ -64,7 +64,7 @@ export const CourseHeader = ({
   if (mediaOnly) {
     if (!courseData.title || !hasRightMedia) return null;
     return (
-      <div className="fun-course-media">
+      <div className={hasVideo ? "fun-course-media fun-course-media--video" : "fun-course-media"}>
         {hasVideo ? (
           <VideoPlayer src={courseData.courseMediaId} />
         ) : (
