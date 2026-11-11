@@ -10,7 +10,9 @@ import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
 import vacademy.io.assessment_service.features.question_library.dto.*;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryAccess;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCopyService;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCurationService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryEditService;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryImportService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -23,8 +25,9 @@ import static vacademy.io.common.core.constants.PageConstants.DEFAULT_PAGE_SIZE;
  * Question Library: the questions and papers the platform provides, organised by topic.
  * <p>
  * Every call is staff-only and pinned to the caller's active institute (the clientId
- * header), with the same guard as assessment folders. Reading and copying are open to any
- * institute. Everything that changes the library is limited to its owner institute.
+ * header), with the same guard as assessment folders. Every other institute reads and copies
+ * only the topics the owner gave it (see QuestionLibraryScope). Everything that changes the
+ * library, including who is given what, is limited to its owner institute.
  */
 @RestController
 @RequestMapping("/assessment-service/question-library/v1")
@@ -38,6 +41,12 @@ public class QuestionLibraryController {
 
     @Autowired
     private QuestionLibraryCopyService copyService;
+
+    @Autowired
+    private QuestionLibraryCurationService curationService;
+
+    @Autowired
+    private QuestionLibraryImportService importService;
 
     @Autowired
     private QuestionLibraryAccess libraryAccess;
@@ -169,7 +178,7 @@ public class QuestionLibraryController {
                                                         @RequestParam("instituteId") String instituteId,
                                                         @RequestParam(value = "nodeId", required = false) String nodeId) {
         accessGuard.requireStaff(user, clientId, instituteId);
-        return ResponseEntity.ok(libraryService.listPapers(nodeId));
+        return ResponseEntity.ok(libraryService.listPapers(instituteId, nodeId));
     }
 
     /** Copies the picked questions, or a whole paper, into the caller's institute for one test. */
@@ -227,5 +236,83 @@ public class QuestionLibraryController {
                                                                    @RequestBody ImportLibraryTagsRequest request) {
         requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(libraryService.importSubjectTags(user, instituteId, request));
+    }
+
+    // ---------------------------------------------------------------- tags, difficulty, access
+
+    /** Concept, past-paper and source tags in use, scoped to what the caller sees. */
+    @GetMapping("/tags")
+    public ResponseEntity<List<LibraryTagDto>> tags(@RequestAttribute("user") CustomUserDetails user,
+                                                    @RequestHeader(value = "clientId", required = false) String clientId,
+                                                    @RequestParam("instituteId") String instituteId,
+                                                    @RequestParam(value = "nodeId", required = false) String nodeId) {
+        accessGuard.requireStaff(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.listTags(instituteId, nodeId));
+    }
+
+    @PostMapping("/tags/add")
+    public ResponseEntity<LibraryActionResponse> addTag(@RequestAttribute("user") CustomUserDetails user,
+                                                        @RequestHeader(value = "clientId", required = false) String clientId,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestBody LibraryTagRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.addTag(instituteId, request));
+    }
+
+    @PostMapping("/tags/remove")
+    public ResponseEntity<LibraryActionResponse> removeTag(@RequestAttribute("user") CustomUserDetails user,
+                                                           @RequestHeader(value = "clientId", required = false) String clientId,
+                                                           @RequestParam("instituteId") String instituteId,
+                                                           @RequestBody LibraryTagRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.removeTag(instituteId, request));
+    }
+
+    /** New questions (Word upload, AI, hand-written, Excel rows) saved straight into topics. */
+    @PostMapping("/questions/import")
+    public ResponseEntity<LibraryImportResponse> importQuestions(@RequestAttribute("user") CustomUserDetails user,
+                                                                 @RequestHeader(value = "clientId", required = false) String clientId,
+                                                                 @RequestParam("instituteId") String instituteId,
+                                                                 @RequestBody LibraryImportRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(importService.importQuestions(user, instituteId, request));
+    }
+
+    @PostMapping("/questions/difficulty")
+    public ResponseEntity<LibraryActionResponse> setDifficulty(@RequestAttribute("user") CustomUserDetails user,
+                                                               @RequestHeader(value = "clientId", required = false) String clientId,
+                                                               @RequestParam("instituteId") String instituteId,
+                                                               @RequestBody LibraryDifficultyRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.setDifficulty(instituteId, request));
+    }
+
+    /** Institutes given one topic. */
+    @GetMapping("/access")
+    public ResponseEntity<List<LibraryAccessDto>> listAccess(@RequestAttribute("user") CustomUserDetails user,
+                                                             @RequestHeader(value = "clientId", required = false) String clientId,
+                                                             @RequestParam("instituteId") String instituteId,
+                                                             @RequestParam("nodeId") String nodeId) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.listAccess(instituteId, nodeId));
+    }
+
+    /** Gives a topic, with everything below it, to another institute (by its id). */
+    @PostMapping("/access")
+    public ResponseEntity<LibraryAccessDto> grantAccess(@RequestAttribute("user") CustomUserDetails user,
+                                                        @RequestHeader(value = "clientId", required = false) String clientId,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestBody LibraryAccessRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.grant(user, instituteId, request));
+    }
+
+    @PostMapping("/access/remove")
+    public ResponseEntity<LibraryActionResponse> revokeAccess(@RequestAttribute("user") CustomUserDetails user,
+                                                              @RequestHeader(value = "clientId", required = false) String clientId,
+                                                              @RequestParam("instituteId") String instituteId,
+                                                              @RequestBody LibraryAccessRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(curationService.revoke(instituteId, request));
     }
 }

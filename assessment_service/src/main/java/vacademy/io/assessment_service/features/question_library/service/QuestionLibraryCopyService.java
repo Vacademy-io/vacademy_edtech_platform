@@ -54,6 +54,9 @@ public class QuestionLibraryCopyService {
     private QuestionLibraryNodeRepository nodeRepository;
 
     @Autowired
+    private QuestionLibraryScope scope;
+
+    @Autowired
     private QuestionRepository questionRepository;
 
     @Autowired
@@ -71,7 +74,10 @@ public class QuestionLibraryCopyService {
         if (owner == null) throw new VacademyException("The Question Library is not available");
         if (request == null) throw new VacademyException("Choose questions or a paper to add");
 
-        List<Question> sources = sourcesOf(owner, request);
+        // A reader may copy only from the topics it was given. Null for the owner: any topic.
+        QuestionLibraryScope.View view = scope.of(instituteId);
+        if (view.empty()) throw new VacademyException("These questions are no longer in the Question Library");
+        List<Question> sources = sourcesOf(owner, view.limitCsv(), request);
         if (sources.isEmpty()) {
             throw new VacademyException("These questions are no longer in the Question Library");
         }
@@ -209,10 +215,10 @@ public class QuestionLibraryCopyService {
      * The library rows the request names, in order. Anything not actually offered by the
      * library is dropped, so a guessed id cannot read the owner's other questions.
      */
-    private List<Question> sourcesOf(String owner, CopyLibraryQuestionsRequest request) {
+    private List<Question> sourcesOf(String owner, String nodeIdsCsv, CopyLibraryQuestionsRequest request) {
         String paperId = request.getQuestionPaperId();
         if (paperId != null && !paperId.isBlank()) {
-            if (nodeRepository.countPaperInLibrary(owner, paperId) == 0) {
+            if (nodeRepository.countPaperInLibrary(owner, paperId, nodeIdsCsv) == 0) {
                 throw new VacademyException("This paper is no longer in the Question Library");
             }
             List<String> ids = questionRepository.findQuestionsByQuestionPaperId(paperId).stream()
@@ -228,7 +234,7 @@ public class QuestionLibraryCopyService {
         if (ids.size() > MAX_QUESTIONS_PER_CALL) {
             throw new VacademyException("Add at most " + MAX_QUESTIONS_PER_CALL + " questions at a time");
         }
-        Set<String> placed = new HashSet<>(nodeRepository.findPlacedLiveQuestionIds(owner, String.join(",", ids)));
+        Set<String> placed = new HashSet<>(nodeRepository.findPlacedLiveQuestionIds(owner, String.join(",", ids), nodeIdsCsv));
         return liveQuestionsInOrder(owner, ids.stream().filter(placed::contains).toList());
     }
 

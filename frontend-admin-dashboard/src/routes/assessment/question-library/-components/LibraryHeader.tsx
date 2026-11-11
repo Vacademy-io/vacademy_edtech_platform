@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
     Books,
     ChartBar,
+    FileXls,
     Files,
     FolderSimple,
     Lightbulb,
@@ -65,8 +66,15 @@ const StatCard = ({
     </div>
 );
 
-/** One stacked bar for an EASY/MEDIUM/HARD split, with a legend. */
-export const DifficultyBar = ({ counts }: { counts: Record<string, number> }) => {
+/** One stacked bar for an EASY/MEDIUM/HARD split, with a legend unless compact. */
+export const DifficultyBar = ({
+    counts,
+    compact = false,
+}: {
+    counts: Record<string, number>;
+    /** Bar only, for cards. */
+    compact?: boolean;
+}) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const total = DIFFICULTIES.reduce((sum, level) => sum + (counts[level] ?? 0), 0);
     if (total === 0) {
@@ -86,14 +94,16 @@ export const DifficultyBar = ({ counts }: { counts: Record<string, number> }) =>
                     ) : null
                 )}
             </div>
-            <div className="flex flex-wrap gap-3 text-caption text-neutral-600">
-                {DIFFICULTIES.map((level) => (
-                    <span key={level} className="flex items-center gap-1">
-                        <span className={cn('size-2 rounded-full', difficultyBar[level])} />
-                        {t(`difficulty.${level}`)} {counts[level] ?? 0}
-                    </span>
-                ))}
-            </div>
+            {!compact && (
+                <div className="flex flex-wrap gap-3 text-caption text-neutral-600">
+                    {DIFFICULTIES.map((level) => (
+                        <span key={level} className="flex items-center gap-1">
+                            <span className={cn('size-2 rounded-full', difficultyBar[level])} />
+                            {t(`difficulty.${level}`)} {counts[level] ?? 0}
+                        </span>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -152,6 +162,7 @@ export const LibraryHeader = ({
     onNewTopic,
     onImportPaper,
     onImportTags,
+    onImportExcel,
     onShowUnsorted,
     onOpenTopic,
     readOnly = false,
@@ -162,6 +173,8 @@ export const LibraryHeader = ({
     onNewTopic: () => void;
     onImportPaper: () => void;
     onImportTags: () => void;
+    /** Owner only: many questions at once from the Excel template. */
+    onImportExcel?: () => void;
     onShowUnsorted: () => void;
     onOpenTopic: (id: string) => void;
     /** Browsing only: no write buttons, and no stats about how the library is filed. */
@@ -202,6 +215,18 @@ export const LibraryHeader = ({
                             <Tag size={16} />
                             {t('header.importTags')}
                         </MyButton>
+                        {onImportExcel && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                onClick={onImportExcel}
+                            >
+                                <FileXls size={16} />
+                                {t('header.importExcel')}
+                            </MyButton>
+                        )}
                         <MyButton
                             type="button"
                             buttonType="secondary"

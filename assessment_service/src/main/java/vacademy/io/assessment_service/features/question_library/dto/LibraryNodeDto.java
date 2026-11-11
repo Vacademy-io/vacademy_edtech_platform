@@ -25,4 +25,6 @@ public class LibraryNodeDto {
     private Long easyCount;
     private Long mediumCount;
     private Long hardCount;
+    /** Owner only: how many institutes were given this topic. Null for everyone else. */
+    private Long accessCount;
 }

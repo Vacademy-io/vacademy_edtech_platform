@@ -9,7 +9,8 @@ import type {
 
 /**
  * Question Library: the questions and papers the platform provides, in a topic tree.
- * One institute manages it (LibraryTree.can_manage); every other one reads and copies.
+ * One institute manages it (LibraryTree.can_manage). Every other one reads and copies only
+ * the topics (courses) it was given; those come back as its top level.
  * Backend: assessment_service QuestionLibraryController.
  */
 const LIBRARY_BASE = `${BASE_URL}/assessment-service/question-library/v1`;
@@ -19,6 +20,8 @@ export const LIBRARY_QUESTIONS_KEY = 'QUESTION_LIBRARY_QUESTIONS';
 export const LIBRARY_PAPERS_KEY = 'QUESTION_LIBRARY_PAPERS';
 export const LIBRARY_AVAILABILITY_KEY = 'QUESTION_LIBRARY_AVAILABILITY';
 export const LIBRARY_TAGS_KEY = 'QUESTION_LIBRARY_SUBJECT_TAGS';
+export const LIBRARY_LABELS_KEY = 'QUESTION_LIBRARY_TAGS';
+export const LIBRARY_ACCESS_KEY = 'QUESTION_LIBRARY_ACCESS';
 
 export interface LibraryNode {
     id: string;
@@ -33,6 +36,8 @@ export interface LibraryNode {
     easy_count: number;
     medium_count: number;
     hard_count: number;
+    /** Owner only: how many institutes were given this topic. */
+    access_count?: number | null;
 }
 
 export interface LibrarySummary {
@@ -74,10 +79,29 @@ export interface LibraryCopyResult {
     failed: number;
 }
 
+export const LIBRARY_TAG_KINDS = ['CONCEPT', 'PYQ', 'SOURCE'] as const;
+export type LibraryTagKind = (typeof LIBRARY_TAG_KINDS)[number];
+
+/** A concept, past-paper or source tag. question_count is set only in tag lists. */
+export interface LibraryTag {
+    tag_id: string;
+    tag_name: string;
+    kind: LibraryTagKind;
+    question_count?: number | null;
+}
+
+/** An institute that was given a topic. */
+export interface LibraryAccess {
+    institute_id: string;
+    institute_name?: string | null;
+    created_at?: string | null;
+}
+
 export interface LibraryQuestion {
     question: QuestionBankQuestion;
     node_ids: string[];
     assessment_count: number;
+    tags?: LibraryTag[];
 }
 
 export interface LibraryQuestionPage {
@@ -363,7 +387,88 @@ export const importLibrarySubjectTags = (
     body: { tag_ids: string[]; parent_id?: string | null }
 ) => post<LibraryActionResult>('/subject-tags/import', instituteId, body);
 
+/** Concept / past-paper / source tags in use under a topic, or across all the caller sees. */
+export const fetchLibraryTags = async (instituteId: string, nodeId?: string) => {
+    const { data } = await authenticatedAxiosInstance.get<LibraryTag[]>(`${LIBRARY_BASE}/tags`, {
+        params: { instituteId, nodeId },
+    });
+    return data;
+};
+
+export const addLibraryTag = (
+    instituteId: string,
+    body: { question_ids: string[]; kind: LibraryTagKind; name: string }
+) => post<LibraryActionResult>('/tags/add', instituteId, body);
+
+export const removeLibraryTag = (
+    instituteId: string,
+    body: { question_ids: string[]; tag_id: string }
+) => post<LibraryActionResult>('/tags/remove', instituteId, body);
+
+export interface LibraryImportResult {
+    created: number;
+    nodes_created: number;
+    /** "Item 3: ..." for each question that could not be saved (1-based, request order). */
+    errors: string[];
+}
+
+/**
+ * New questions saved straight into the library, each under its topic. path names topics
+ * below parent_id; missing ones are created. Owner only. At most 500 items per call.
+ */
+export const importLibraryQuestions = (
+    instituteId: string,
+    body: {
+        parent_id?: string | null;
+        items: {
+            path: string[];
+            question: unknown;
+            difficulty: string;
+            tags: { kind: LibraryTagKind; name: string }[];
+        }[];
+    }
+) => post<LibraryImportResult>('/questions/import', instituteId, body);
+
+export const setLibraryDifficulty = (
+    instituteId: string,
+    body: { question_ids: string[]; difficulty: string }
+) => post<LibraryActionResult>('/questions/difficulty', instituteId, body);
+
+export const fetchLibraryAccess = async (instituteId: string, nodeId: string) => {
+    const { data } = await authenticatedAxiosInstance.get<LibraryAccess[]>(
+        `${LIBRARY_BASE}/access`,
+        { params: { instituteId, nodeId } }
+    );
+    return data;
+};
+
+/** Gives a topic, with everything below it, to another institute (by its id). */
+export const grantLibraryAccess = (
+    instituteId: string,
+    body: { node_id: string; institute_id: string }
+) => post<LibraryAccess>('/access', instituteId, body);
+
+export const revokeLibraryAccess = (
+    instituteId: string,
+    body: { node_id: string; institute_id: string }
+) => post<LibraryActionResult>('/access/remove', instituteId, body);
+
 // ------------------------------------------------------------------ hooks
+
+export const useLibraryTags = (instituteId: string | undefined, nodeId?: string) =>
+    useQuery({
+        queryKey: [LIBRARY_LABELS_KEY, instituteId, nodeId],
+        queryFn: () => fetchLibraryTags(instituteId as string, nodeId),
+        enabled: !!instituteId,
+        staleTime: 30 * 1000,
+    });
+
+export const useLibraryAccess = (instituteId: string | undefined, nodeId: string | undefined) =>
+    useQuery({
+        queryKey: [LIBRARY_ACCESS_KEY, instituteId, nodeId],
+        queryFn: () => fetchLibraryAccess(instituteId as string, nodeId as string),
+        enabled: !!instituteId && !!nodeId,
+    });
 
 export const useLibraryTree = (instituteId: string | undefined) =>
     useQuery({
@@ -430,7 +535,24 @@ export const useLibraryRefresh = () => {
         queryClient.invalidateQueries({ queryKey: [LIBRARY_TREE_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_QUESTIONS_KEY] });
         queryClient.invalidateQueries({ queryKey: [LIBRARY_PAPERS_KEY] });
+        queryClient.invalidateQueries({ queryKey: [LIBRARY_LABELS_KEY] });
+        queryClient.invalidateQueries({ queryKey: [LIBRARY_ACCESS_KEY] });
     };
+};
+
+/** "UPSC › Prelims GS › Polity" as a list of nodes, top first. */
+export const nodeTrail = (nodeId: string | null, nodes: LibraryNode[]): LibraryNode[] => {
+    if (!nodeId) return [];
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const trail: LibraryNode[] = [];
+    const seen = new Set<string>();
+    let current = byId.get(nodeId);
+    while (current && !seen.has(current.id)) {
+        seen.add(current.id);
+        trail.unshift(current);
+        current = current.parent_id ? byId.get(current.parent_id) : undefined;
+    }
+    return trail;
 };
 
 /** Server message for a failed call, so the admin sees "Topic not found" instead of a 500. */

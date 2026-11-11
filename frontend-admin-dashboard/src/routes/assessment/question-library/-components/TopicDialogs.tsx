@@ -24,7 +24,7 @@ import {
     type LibraryTreeNode,
 } from '../-services/question-library-services';
 
-const INDENT = ['pl-2', 'pl-6', 'pl-10', 'pl-14'];
+const INDENT = ['pl-2', 'pl-6', 'pl-10', 'pl-14', 'pl-16'];
 const indentFor = (depth: number) => INDENT[Math.min(Math.max(depth, 1), INDENT.length) - 1];
 
 /** Create a topic (under parentName, or at the top) or rename one. */

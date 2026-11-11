@@ -1,11 +1,12 @@
 {
-    "heading": "Bibliothèque de questions",
+    "heading": "Bibliothèque de contenus",
     "header": {
+        "importExcel": "Importer depuis Excel",
         "title": "Bibliothèque de questions",
         "description": "Toutes les questions de votre établissement, classées par matière, chapitre et thème. Classez-les une fois, réutilisez-les dans n’importe quel test.",
         "importTags": "Importer les tags",
         "importPaper": "Ajouter un sujet",
-        "newTopic": "Nouveau thème"
+        "newTopic": "Nouveau cours"
     },
     "stats": {
         "questions": "Questions",
@@ -73,6 +74,7 @@
         "addPaperHere": "Ajouter un sujet ici"
     },
     "filters": {
+        "allLevels": "Tous",
         "clear": "Effacer",
         "search": "Rechercher dans le texte",
         "searchButton": "Rechercher",
@@ -81,6 +83,8 @@
         "any": "Tous"
     },
     "bulk": {
+        "setDifficulty": "Définir la difficulté",
+        "addTag": "Ajouter un tag",
         "selectPage": "Sélectionner cette page",
         "addToTopic": "Ajouter à un thème",
         "moveToTopic": "Déplacer vers un thème",
@@ -122,6 +126,7 @@
         "questions": "Impossible de charger les questions."
     },
     "common": {
+        "close": "Fermer",
         "cancel": "Annuler",
         "retry": "Réessayer"
     },
@@ -190,8 +195,8 @@
         "savedAsVersion_other": "Enregistrée comme nouvelle version. Les {{count}} tests qui l’utilisaient sont inchangés."
     },
     "comingSoon": {
-        "title": "Des questions prêtes à l'emploi arrivent bientôt",
-        "text": "Les questions et les sujets par thème apparaîtront ici dès leur ajout.",
+        "title": "Aucun cours n’a encore été attribué à votre établissement",
+        "text": "Contactez le support pour ajouter les cours que vous enseignez. Leurs questions et sujets prêts à l’emploi apparaîtront ensuite ici.",
         "pickTitle": "Choisissez un thème",
         "pickText": "Ouvrez-le depuis l'étape d'ajout de questions de n'importe quelle évaluation.",
         "addTitle": "Ajoutez des questions ou un sujet",
@@ -242,6 +247,11 @@
         "someFailed_other": "{{count}} questions n'ont pas pu être ajoutées"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} question passée en {{level}}",
+        "difficultySet_other": "{{count}} questions passées en {{level}}",
+        "tagAdded_one": "Tag « {{name}} » ajouté à {{count}} question",
+        "tagAdded_other": "Tag « {{name}} » ajouté à {{count}} questions",
+        "tagRemoved": "Tag « {{name}} » retiré",
         "paperRemoved": "« {{name}} » retiré de ce thème",
         "failed": "Une erreur est survenue. Réessayez.",
         "topicCreated": "« {{name}} » créé",
@@ -259,5 +269,155 @@
         "paperAdded_other": "{{count}} nouvelles questions classées dans {{name}}",
         "tagsImported_one": "{{topics}} nouveaux thèmes, {{count}} question classée",
         "tagsImported_other": "{{topics}} nouveaux thèmes, {{count}} questions classées"
+    },
+    "tabs": {
+        "questions": "Questions"
+    },
+    "browse": {
+        "addQuestions": "Ajouter des questions",
+        "breadcrumb": "Où vous êtes",
+        "allCourses": "Tous les cours",
+        "courses": "Cours",
+        "insideTopic": "Dans {{name}}",
+        "allQuestions": "Toutes les questions",
+        "questionsIn": "Questions de {{name}}",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "topicCount_one": "{{count}} thème",
+        "topicCount_other": "{{count}} thèmes",
+        "institutes": "Établissements",
+        "institutesWithCount_one": "Établissements ({{count}})",
+        "institutesWithCount_other": "Établissements ({{count}})",
+        "instituteCount_one": "{{count}} établissement",
+        "instituteCount_other": "{{count}} établissements",
+        "noInstitutes": "Attribué à aucun établissement",
+        "unsortedHint_one": "{{count}} question à classer",
+        "unsortedHint_other": "{{count}} questions à classer",
+        "addCourse": "Ajouter un cours",
+        "addTopic": "Ajouter un thème"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "Notion",
+            "PYQ": "Annale",
+            "SOURCE": "Source"
+        },
+        "kindLabel": "Type de tag",
+        "kindHint": {
+            "CONCEPT": "Ce que la question évalue, par ex. Article 21 ou la deuxième loi de Newton.",
+            "PYQ": "L’examen et l’année où elle a été posée, par ex. UPSC 2023.",
+            "SOURCE": "D’où elle vient, par ex. NCERT ou Laxmikanth."
+        },
+        "nameLabel": "Tag",
+        "namePlaceholder": {
+            "CONCEPT": "par ex. Article 21",
+            "PYQ": "par ex. UPSC 2023",
+            "SOURCE": "par ex. NCERT"
+        },
+        "pickExisting": "Ou choisissez un tag déjà utilisé",
+        "addTitle_one": "Taguer {{count}} question",
+        "addTitle_other": "Taguer {{count}} questions",
+        "add": "Ajouter le tag",
+        "removeOne": "Retirer le tag {{name}}"
+    },
+    "access": {
+        "title": "Établissements qui voient {{name}}",
+        "hint": "Chaque établissement ne voit que les cours et thèmes qui lui sont attribués ici, avec tout leur contenu. Collez l’ID de l’établissement pour lui attribuer celui-ci.",
+        "idLabel": "ID de l’établissement",
+        "idPlaceholder": "Collez l’ID de l’établissement",
+        "give": "Donner l’accès",
+        "given": "{{name}} voit maintenant {{topic}}",
+        "removed": "{{name}} ne voit plus {{topic}}",
+        "remove": "Retirer {{name}}",
+        "empty": "Aucun établissement ne voit encore ceci.",
+        "loadError": "Impossible de charger les établissements."
+    },
+    "add": {
+        "title": "Ajouter des questions à {{name}}",
+        "savingInto": "Enregistrées dans {{path}}",
+        "back": "Retour",
+        "startOver": "Recommencer",
+        "save_one": "Enregistrer {{count}} question",
+        "save_other": "Enregistrer {{count}} questions",
+        "saved_one": "{{count}} question enregistrée dans {{name}}",
+        "saved_other": "{{count}} questions enregistrées dans {{name}}",
+        "someFailed_one": "{{count}} question n’a pas pu être enregistrée",
+        "someFailed_other": "{{count}} questions n’ont pas pu être enregistrées",
+        "remove": "Retirer",
+        "reviewHint_one": "Vérifiez cette question avant d’enregistrer. Corrigez la difficulté ou retirez-la si elle ne convient pas.",
+        "reviewHint_other": "Vérifiez ces {{count}} questions avant d’enregistrer. Corrigez la difficulté ou retirez celles qui ne conviennent pas.",
+        "tagsForAll": "Tags {{kind}} pour toutes",
+        "upload": {
+            "title": "Importer un fichier Word",
+            "text": "Un .docx avec questions numérotées, options, réponses et explications.",
+            "hint": "Choisissez un fichier .docx. Vous verrez chaque question avant tout enregistrement.",
+            "format1": "Les questions commencent par (1.), (2.) …",
+            "format2": "Les options commencent par (a.), (b.) …",
+            "format3": "Puis les lignes Ans: et Exp:. Tags: est facultatif.",
+            "choose": "Choisir un fichier Word",
+            "reading": "Lecture du fichier…",
+            "none": "Aucune question trouvée dans ce fichier. Vérifiez le format et réessayez.",
+            "failed": "Le fichier n’a pas pu être lu."
+        },
+        "ai": {
+            "title": "Générer avec l’IA",
+            "text": "Choisissez combien de questions faciles, moyennes et difficiles. Vérifiez-les avant d’enregistrer.",
+            "howMany": "Nombre de questions par niveau",
+            "max": "Jusqu’à {{count}} par niveau.",
+            "type": "Type de question",
+            "language": "Langue",
+            "languages": {
+                "english": "Anglais",
+                "hindi": "Hindi"
+            },
+            "notes": "Notes ou texte à utiliser (facultatif)",
+            "notesPlaceholder": "Collez des notes, un passage ou des points à couvrir. Laissez vide pour utiliser le nom du thème.",
+            "working": "Rédaction des questions. Cela peut prendre une minute…",
+            "generate_one": "Générer {{count}} question",
+            "generate_other": "Générer {{count}} questions",
+            "credits": "Utilise les crédits IA de votre établissement.",
+            "none": "L’IA n’a renvoyé aucune question. Réessayez ou ajoutez des notes.",
+            "failed": "L’IA n’a pas pu rédiger ces questions."
+        },
+        "write": {
+            "title": "En écrire une",
+            "text": "Saisissez vous-même une question dans l’éditeur.",
+            "type": "Type de question"
+        }
+    },
+    "excel": {
+        "title": "Importer des questions depuis Excel",
+        "intro": "Ajoutez beaucoup de questions d’un coup. Chaque ligne est une question et indique son cours et son thème.",
+        "rule1": "Remplissez Course, puis Subject, Chapter, Topic et Sub-topic selon le besoin. Les thèmes manquants sont créés.",
+        "rule2": "Type : MCQ single, MCQ multiple, True/False, Numeric, One word ou Long answer.",
+        "rule3": "Answer : lettres des options pour un QCM (A ou A,C), True ou False, un nombre, ou le texte de la réponse.",
+        "rule4": "Difficulty : Easy, Medium ou Hard. Tags séparés par des virgules.",
+        "template": "Télécharger le modèle",
+        "choose": "Choisir un fichier Excel",
+        "unreadable": "Ce fichier n’a pas pu être lu. Utilisez le modèle au format .xlsx.",
+        "chooseAnother": "Choisir un autre fichier",
+        "import_one": "Importer {{count}} question",
+        "import_other": "Importer {{count}} questions",
+        "summary": "{{ready}} prêtes · {{problems}} lignes avec problèmes · {{topics}} thèmes",
+        "saving": "Enregistrement de {{done}} sur {{total}}…",
+        "problemsTitle_one": "{{count}} ligne sera ignorée",
+        "problemsTitle_other": "{{count}} lignes seront ignorées",
+        "rowProblem": "Ligne {{row}} : {{problem}}",
+        "moreProblems": "et {{count}} de plus",
+        "whereTheyGo": "Où elles vont",
+        "moreTopics": "et {{count}} thèmes de plus",
+        "newTopicsNote": "Les thèmes qui n’existent pas encore sont créés pendant l’import.",
+        "done_one": "{{count}} question importée, {{topics}} nouveaux thèmes",
+        "done_other": "{{count}} questions importées, {{topics}} nouveaux thèmes",
+        "problem": {
+            "noCourse": "Course est vide",
+            "noQuestion": "Question est vide",
+            "badType": "Type n’est pas un type autorisé",
+            "fewOptions": "un QCM a besoin d’au moins deux options",
+            "noAnswer": "Answer est vide",
+            "badAnswer": "Answer ne correspond pas aux options",
+            "badNumber": "Answer doit être un nombre",
+            "badDifficulty": "Difficulty doit être Easy, Medium ou Hard"
+        }
     }
 }

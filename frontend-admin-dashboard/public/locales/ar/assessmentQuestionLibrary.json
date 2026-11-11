@@ -1,11 +1,12 @@
 {
-    "heading": "مكتبة الأسئلة",
+    "heading": "مكتبة المحتوى",
     "header": {
+        "importExcel": "استيراد من Excel",
         "title": "مكتبة الأسئلة",
         "description": "جميع أسئلة مؤسستك مرتبة حسب المادة والفصل والموضوع. رتّبها مرة واحدة وأعد استخدامها في أي اختبار.",
         "importTags": "استيراد الوسوم",
         "importPaper": "إضافة ورقة",
-        "newTopic": "موضوع جديد"
+        "newTopic": "دورة جديدة"
     },
     "stats": {
         "questions": "الأسئلة",
@@ -81,6 +82,7 @@
         "addPaperHere": "إضافة ورقة هنا"
     },
     "filters": {
+        "allLevels": "الكل",
         "clear": "مسح",
         "search": "ابحث في نص السؤال",
         "searchButton": "بحث",
@@ -89,6 +91,8 @@
         "any": "الكل"
     },
     "bulk": {
+        "setDifficulty": "تحديد الصعوبة",
+        "addTag": "إضافة وسم",
         "selectPage": "تحديد هذه الصفحة",
         "addToTopic": "إضافة إلى موضوع",
         "moveToTopic": "نقل إلى موضوع",
@@ -146,6 +150,7 @@
         "questions": "تعذر تحميل الأسئلة."
     },
     "common": {
+        "close": "إغلاق",
         "cancel": "إلغاء",
         "retry": "إعادة المحاولة"
     },
@@ -242,8 +247,8 @@
         "savedAsVersion_other": "حُفظ كنسخة جديدة. لم تتغير الاختبارات التي استخدمته ({{count}})."
     },
     "comingSoon": {
-        "title": "الأسئلة الجاهزة قادمة قريبًا",
-        "text": "ستظهر هنا الأسئلة والأوراق حسب الموضوع فور إضافتها.",
+        "title": "لم يتم تخصيص أي دورة لمؤسستك بعد",
+        "text": "تواصل مع الدعم لإضافة الدورات التي تدرّسها. ستظهر هنا بعد ذلك أسئلتها وأوراقها الجاهزة.",
         "pickTitle": "اختر موضوعًا",
         "pickText": "افتحه من خطوة إضافة الأسئلة في أي اختبار.",
         "addTitle": "أضف أسئلة أو ورقة",
@@ -318,6 +323,11 @@
         "someFailed_other": "تعذرت إضافة {{count}} أسئلة"
     },
     "toasts": {
+        "difficultySet_one": "تم ضبط {{count}} سؤال على {{level}}",
+        "difficultySet_other": "تم ضبط {{count}} أسئلة على {{level}}",
+        "tagAdded_one": "أُضيف الوسم «{{name}}» إلى {{count}} سؤال",
+        "tagAdded_other": "أُضيف الوسم «{{name}}» إلى {{count}} أسئلة",
+        "tagRemoved": "أُزيل الوسم «{{name}}»",
         "paperRemoved": "تمت إزالة «{{name}}» من هذا الموضوع",
         "failed": "حدث خطأ. حاول مرة أخرى.",
         "topicCreated": "تم إنشاء «{{name}}»",
@@ -355,5 +365,155 @@
         "tagsImported_few": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة",
         "tagsImported_many": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة",
         "tagsImported_other": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة"
+    },
+    "tabs": {
+        "questions": "الأسئلة"
+    },
+    "browse": {
+        "addQuestions": "إضافة أسئلة",
+        "breadcrumb": "موقعك",
+        "allCourses": "كل الدورات",
+        "courses": "الدورات",
+        "insideTopic": "داخل {{name}}",
+        "allQuestions": "كل الأسئلة",
+        "questionsIn": "أسئلة {{name}}",
+        "questionCount_one": "{{count}} سؤال",
+        "questionCount_other": "{{count}} أسئلة",
+        "topicCount_one": "{{count}} موضوع",
+        "topicCount_other": "{{count}} مواضيع",
+        "institutes": "المؤسسات",
+        "institutesWithCount_one": "المؤسسات ({{count}})",
+        "institutesWithCount_other": "المؤسسات ({{count}})",
+        "instituteCount_one": "{{count}} مؤسسة",
+        "instituteCount_other": "{{count}} مؤسسات",
+        "noInstitutes": "غير مخصص لأي مؤسسة",
+        "unsortedHint_one": "{{count}} سؤال للتصنيف",
+        "unsortedHint_other": "{{count}} أسئلة للتصنيف",
+        "addCourse": "إضافة دورة",
+        "addTopic": "إضافة موضوع"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "مفهوم",
+            "PYQ": "سؤال سابق",
+            "SOURCE": "المصدر"
+        },
+        "kindLabel": "نوع الوسم",
+        "kindHint": {
+            "CONCEPT": "ما يختبره السؤال، مثل المادة 21 أو قانون نيوتن الثاني.",
+            "PYQ": "الامتحان والسنة التي طُرح فيها، مثل UPSC 2023.",
+            "SOURCE": "مصدره، مثل NCERT أو Laxmikanth."
+        },
+        "nameLabel": "الوسم",
+        "namePlaceholder": {
+            "CONCEPT": "مثل المادة 21",
+            "PYQ": "مثل UPSC 2023",
+            "SOURCE": "مثل NCERT"
+        },
+        "pickExisting": "أو اختر وسمًا مستخدمًا",
+        "addTitle_one": "وسم {{count}} سؤال",
+        "addTitle_other": "وسم {{count}} أسئلة",
+        "add": "إضافة الوسم",
+        "removeOne": "إزالة الوسم {{name}}"
+    },
+    "access": {
+        "title": "المؤسسات التي ترى {{name}}",
+        "hint": "ترى كل مؤسسة فقط الدورات والمواضيع المخصصة لها هنا مع كل ما بداخلها. الصق معرّف المؤسسة لتخصيص هذا لها.",
+        "idLabel": "معرّف المؤسسة",
+        "idPlaceholder": "الصق معرّف المؤسسة",
+        "give": "منح الوصول",
+        "given": "أصبح بإمكان {{name}} رؤية {{topic}}",
+        "removed": "لم يعد {{name}} يرى {{topic}}",
+        "remove": "إزالة {{name}}",
+        "empty": "لا توجد مؤسسة ترى هذا بعد.",
+        "loadError": "تعذّر تحميل المؤسسات."
+    },
+    "add": {
+        "title": "إضافة أسئلة إلى {{name}}",
+        "savingInto": "تُحفظ في {{path}}",
+        "back": "رجوع",
+        "startOver": "البدء من جديد",
+        "save_one": "حفظ {{count}} سؤال",
+        "save_other": "حفظ {{count}} أسئلة",
+        "saved_one": "تم حفظ {{count}} سؤال في {{name}}",
+        "saved_other": "تم حفظ {{count}} أسئلة في {{name}}",
+        "someFailed_one": "تعذّر حفظ {{count}} سؤال",
+        "someFailed_other": "تعذّر حفظ {{count}} أسئلة",
+        "remove": "إزالة",
+        "reviewHint_one": "راجع هذا السؤال قبل الحفظ. صحّح الصعوبة أو أزله إن لم يكن صحيحًا.",
+        "reviewHint_other": "راجع هذه الأسئلة الـ {{count}} قبل الحفظ. صحّح الصعوبة أو أزل ما ليس صحيحًا.",
+        "tagsForAll": "وسوم {{kind}} للجميع",
+        "upload": {
+            "title": "رفع ملف Word",
+            "text": "ملف .docx بأسئلة مرقّمة وخيارات وإجابات وشروح.",
+            "hint": "اختر ملف .docx. سترى كل سؤال قبل حفظ أي شيء.",
+            "format1": "تبدأ الأسئلة بـ (1.) و(2.) …",
+            "format2": "تبدأ الخيارات بـ (a.) و(b.) …",
+            "format3": "ثم سطرا Ans: وExp:. السطر Tags: اختياري.",
+            "choose": "اختيار ملف Word",
+            "reading": "جارٍ قراءة الملف…",
+            "none": "لم يُعثر على أسئلة في هذا الملف. تحقق من التنسيق وحاول مجددًا.",
+            "failed": "تعذّرت قراءة الملف."
+        },
+        "ai": {
+            "title": "إنشاء بالذكاء الاصطناعي",
+            "text": "اختر عدد الأسئلة السهلة والمتوسطة والصعبة. راجعها قبل الحفظ.",
+            "howMany": "عدد الأسئلة لكل مستوى",
+            "max": "حتى {{count}} لكل مستوى.",
+            "type": "نوع السؤال",
+            "language": "اللغة",
+            "languages": {
+                "english": "الإنجليزية",
+                "hindi": "الهندية"
+            },
+            "notes": "ملاحظات أو نص للاستخدام (اختياري)",
+            "notesPlaceholder": "الصق ملاحظات أو فقرة أو نقاطًا لتغطيتها. اتركه فارغًا لاستخدام اسم الموضوع.",
+            "working": "تُكتب الأسئلة. قد يستغرق ذلك دقيقة…",
+            "generate_one": "إنشاء {{count}} سؤال",
+            "generate_other": "إنشاء {{count}} أسئلة",
+            "credits": "يستخدم أرصدة الذكاء الاصطناعي لمؤسستك.",
+            "none": "لم يُرجع الذكاء الاصطناعي أي أسئلة. حاول مجددًا أو أضف ملاحظات.",
+            "failed": "تعذّر على الذكاء الاصطناعي كتابة هذه الأسئلة."
+        },
+        "write": {
+            "title": "اكتب سؤالًا",
+            "text": "اكتب سؤالًا بنفسك في المحرر.",
+            "type": "نوع السؤال"
+        }
+    },
+    "excel": {
+        "title": "استيراد أسئلة من Excel",
+        "intro": "أضف أسئلة كثيرة دفعة واحدة. كل صف سؤال واحد ويذكر دورته وموضوعه.",
+        "rule1": "املأ Course ثم Subject وChapter وTopic وSub-topic حسب الحاجة. تُنشأ المواضيع غير الموجودة.",
+        "rule2": "Type: MCQ single أو MCQ multiple أو True/False أو Numeric أو One word أو Long answer.",
+        "rule3": "Answer: حروف الخيارات للاختيار من متعدد (A أو A,C) أو True أو False أو رقم أو نص الإجابة.",
+        "rule4": "Difficulty: Easy أو Medium أو Hard. الوسوم مفصولة بفواصل.",
+        "template": "تنزيل القالب",
+        "choose": "اختيار ملف Excel",
+        "unreadable": "تعذّرت قراءة هذا الملف. استخدم القالب كملف ‎.xlsx.",
+        "chooseAnother": "اختيار ملف آخر",
+        "import_one": "استيراد {{count}} سؤال",
+        "import_other": "استيراد {{count}} أسئلة",
+        "summary": "{{ready}} جاهزة · {{problems}} صفوف بها مشكلات · {{topics}} مواضيع",
+        "saving": "جارٍ حفظ {{done}} من {{total}}…",
+        "problemsTitle_one": "سيتم تخطي {{count}} صف",
+        "problemsTitle_other": "سيتم تخطي {{count}} صفوف",
+        "rowProblem": "الصف {{row}}: {{problem}}",
+        "moreProblems": "و{{count}} أخرى",
+        "whereTheyGo": "أين ستذهب",
+        "moreTopics": "و{{count}} مواضيع أخرى",
+        "newTopicsNote": "تُنشأ المواضيع غير الموجودة أثناء الاستيراد.",
+        "done_one": "تم استيراد {{count}} سؤال، {{topics}} مواضيع جديدة",
+        "done_other": "تم استيراد {{count}} أسئلة، {{topics}} مواضيع جديدة",
+        "problem": {
+            "noCourse": "Course فارغ",
+            "noQuestion": "Question فارغ",
+            "badType": "Type ليس من الأنواع المسموح بها",
+            "fewOptions": "يحتاج سؤال الاختيار من متعدد إلى خيارين على الأقل",
+            "noAnswer": "Answer فارغ",
+            "badAnswer": "Answer لا يطابق الخيارات",
+            "badNumber": "يجب أن يكون Answer رقمًا",
+            "badDifficulty": "يجب أن تكون Difficulty إما Easy أو Medium أو Hard"
+        }
     }
 }

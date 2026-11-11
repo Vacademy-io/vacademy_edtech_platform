@@ -22,4 +22,7 @@ public class LibraryQuestionDto {
     @Builder.Default
     private List<String> nodeIds = new ArrayList<>();
     private Long assessmentCount;
+    /** Concept, past-paper and source tags. */
+    @Builder.Default
+    private List<LibraryTagDto> tags = new ArrayList<>();
 }

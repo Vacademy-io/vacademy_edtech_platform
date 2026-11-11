@@ -1,11 +1,12 @@
 {
-    "heading": "Question Library",
+    "heading": "Content Library",
     "header": {
+        "importExcel": "Import from Excel",
         "title": "Question Library",
         "description": "Every question your institute has, organised by subject, chapter and topic. File questions once and reuse them in any test.",
         "importTags": "Import tags",
         "importPaper": "Add a paper",
-        "newTopic": "New topic"
+        "newTopic": "New course"
     },
     "stats": {
         "questions": "Questions",
@@ -73,6 +74,7 @@
         "addPaperHere": "Add a paper here"
     },
     "filters": {
+        "allLevels": "All",
         "clear": "Clear",
         "search": "Search question text",
         "searchButton": "Search",
@@ -81,6 +83,8 @@
         "any": "Any"
     },
     "bulk": {
+        "setDifficulty": "Set difficulty",
+        "addTag": "Add tag",
         "selectPage": "Select this page",
         "addToTopic": "Add to topic",
         "moveToTopic": "Move to topic",
@@ -122,6 +126,7 @@
         "questions": "Could not load questions."
     },
     "common": {
+        "close": "Close",
         "cancel": "Cancel",
         "retry": "Try again"
     },
@@ -190,8 +195,8 @@
         "savedAsVersion_other": "Saved as a new version. The {{count}} tests that used it are unchanged."
     },
     "comingSoon": {
-        "title": "Ready-made questions are on their way",
-        "text": "Topic-wise questions and papers will appear here as soon as they are added.",
+        "title": "No course has been assigned to your institute yet",
+        "text": "Contact support to get the courses you teach added. Their ready-made questions and papers will then appear here.",
         "pickTitle": "Pick a topic",
         "pickText": "Open it from the Add Questions step of any test.",
         "addTitle": "Add questions or a paper",
@@ -242,6 +247,11 @@
         "someFailed_other": "{{count}} questions could not be added"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} question set to {{level}}",
+        "difficultySet_other": "{{count}} questions set to {{level}}",
+        "tagAdded_one": "Tag “{{name}}” added to {{count}} question",
+        "tagAdded_other": "Tag “{{name}}” added to {{count}} questions",
+        "tagRemoved": "Tag “{{name}}” removed",
         "paperRemoved": "“{{name}}” taken off this topic",
         "failed": "Something went wrong. Please try again.",
         "topicCreated": "“{{name}}” created",
@@ -259,5 +269,155 @@
         "paperAdded_other": "{{count}} new questions filed under {{name}}",
         "tagsImported_one": "{{topics}} new topics, {{count}} question filed",
         "tagsImported_other": "{{topics}} new topics, {{count}} questions filed"
+    },
+    "tabs": {
+        "questions": "Questions"
+    },
+    "browse": {
+        "addQuestions": "Add questions",
+        "breadcrumb": "Where you are",
+        "allCourses": "All courses",
+        "courses": "Courses",
+        "insideTopic": "Inside {{name}}",
+        "allQuestions": "All questions",
+        "questionsIn": "Questions in {{name}}",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "topicCount_one": "{{count}} topic",
+        "topicCount_other": "{{count}} topics",
+        "institutes": "Institutes",
+        "institutesWithCount_one": "Institutes ({{count}})",
+        "institutesWithCount_other": "Institutes ({{count}})",
+        "instituteCount_one": "{{count}} institute",
+        "instituteCount_other": "{{count}} institutes",
+        "noInstitutes": "Not given to any institute",
+        "unsortedHint_one": "{{count}} question to file",
+        "unsortedHint_other": "{{count}} questions to file",
+        "addCourse": "Add course",
+        "addTopic": "Add topic"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "Concept",
+            "PYQ": "Past paper",
+            "SOURCE": "Source"
+        },
+        "kindLabel": "Type of tag",
+        "kindHint": {
+            "CONCEPT": "What the question tests, e.g. Article 21 or Newton’s second law.",
+            "PYQ": "The exam and year it was asked in, e.g. UPSC 2023.",
+            "SOURCE": "Where it comes from, e.g. NCERT or Laxmikanth."
+        },
+        "nameLabel": "Tag",
+        "namePlaceholder": {
+            "CONCEPT": "e.g. Article 21",
+            "PYQ": "e.g. UPSC 2023",
+            "SOURCE": "e.g. NCERT"
+        },
+        "pickExisting": "Or pick one already in use",
+        "addTitle_one": "Tag {{count}} question",
+        "addTitle_other": "Tag {{count}} questions",
+        "add": "Add tag",
+        "removeOne": "Remove tag {{name}}"
+    },
+    "access": {
+        "title": "Institutes that see {{name}}",
+        "hint": "Each institute sees only the courses and topics given to it here, with everything inside them. Paste the institute ID to give it this one.",
+        "idLabel": "Institute ID",
+        "idPlaceholder": "Paste the institute ID",
+        "give": "Give access",
+        "given": "{{name}} can now see {{topic}}",
+        "removed": "{{name}} no longer sees {{topic}}",
+        "remove": "Take {{name}} off",
+        "empty": "No institute sees this yet.",
+        "loadError": "Could not load the institutes."
+    },
+    "add": {
+        "title": "Add questions to {{name}}",
+        "savingInto": "Saved into {{path}}",
+        "back": "Back",
+        "startOver": "Start over",
+        "save_one": "Save {{count}} question",
+        "save_other": "Save {{count}} questions",
+        "saved_one": "{{count}} question saved to {{name}}",
+        "saved_other": "{{count}} questions saved to {{name}}",
+        "someFailed_one": "{{count}} question could not be saved",
+        "someFailed_other": "{{count}} questions could not be saved",
+        "remove": "Remove",
+        "reviewHint_one": "Check this question before saving. Fix the difficulty or remove it if it is not right.",
+        "reviewHint_other": "Check these {{count}} questions before saving. Fix the difficulty or remove any that are not right.",
+        "tagsForAll": "{{kind}} tags for all",
+        "upload": {
+            "title": "Upload a Word file",
+            "text": "A .docx with numbered questions, options, answers and explanations.",
+            "hint": "Choose a .docx file. You will see every question before anything is saved.",
+            "format1": "Questions start with (1.), (2.) …",
+            "format2": "Options start with (a.), (b.) …",
+            "format3": "Then Ans: and Exp: lines. Tags: is optional.",
+            "choose": "Choose Word file",
+            "reading": "Reading the file…",
+            "none": "No questions were found in this file. Check the format and try again.",
+            "failed": "The file could not be read."
+        },
+        "ai": {
+            "title": "Generate with AI",
+            "text": "Choose how many Easy, Medium and Hard questions. Review them before saving.",
+            "howMany": "How many questions of each level",
+            "max": "Up to {{count}} per level.",
+            "type": "Question type",
+            "language": "Language",
+            "languages": {
+                "english": "English",
+                "hindi": "Hindi"
+            },
+            "notes": "Notes or text to use (optional)",
+            "notesPlaceholder": "Paste notes, a passage or points to cover. Leave empty to use the topic name.",
+            "working": "Writing questions. This can take a minute…",
+            "generate_one": "Generate {{count}} question",
+            "generate_other": "Generate {{count}} questions",
+            "credits": "Uses AI credits of your institute.",
+            "none": "The AI did not return any questions. Try again or add notes.",
+            "failed": "The AI could not write these questions."
+        },
+        "write": {
+            "title": "Write one",
+            "text": "Type a question yourself in the editor.",
+            "type": "Question type"
+        }
+    },
+    "excel": {
+        "title": "Import questions from Excel",
+        "intro": "Add many questions at once. Each row is one question and says which course and topic it belongs to.",
+        "rule1": "Fill Course, then Subject, Chapter, Topic and Sub-topic as deep as you need. Missing topics are created.",
+        "rule2": "Type: MCQ single, MCQ multiple, True/False, Numeric, One word or Long answer.",
+        "rule3": "Answer: option letters for MCQ (A or A,C), True or False, a number, or the answer text.",
+        "rule4": "Difficulty is Easy, Medium or Hard. Tags are comma-separated.",
+        "template": "Download template",
+        "choose": "Choose Excel file",
+        "unreadable": "This file could not be read. Use the template as an .xlsx file.",
+        "chooseAnother": "Choose another file",
+        "import_one": "Import {{count}} question",
+        "import_other": "Import {{count}} questions",
+        "summary": "{{ready}} ready · {{problems}} rows with problems · {{topics}} topics",
+        "saving": "Saving {{done}} of {{total}}…",
+        "problemsTitle_one": "{{count}} row will be skipped",
+        "problemsTitle_other": "{{count}} rows will be skipped",
+        "rowProblem": "Row {{row}}: {{problem}}",
+        "moreProblems": "and {{count}} more",
+        "whereTheyGo": "Where they go",
+        "moreTopics": "and {{count}} more topics",
+        "newTopicsNote": "Topics that do not exist yet are created during the import.",
+        "done_one": "{{count}} question imported, {{topics}} new topics",
+        "done_other": "{{count}} questions imported, {{topics}} new topics",
+        "problem": {
+            "noCourse": "Course is empty",
+            "noQuestion": "Question is empty",
+            "badType": "Type is not one of the allowed types",
+            "fewOptions": "an MCQ needs at least two options",
+            "noAnswer": "Answer is empty",
+            "badAnswer": "Answer does not match the options",
+            "badNumber": "Answer must be a number",
+            "badDifficulty": "Difficulty must be Easy, Medium or Hard"
+        }
     }
 }

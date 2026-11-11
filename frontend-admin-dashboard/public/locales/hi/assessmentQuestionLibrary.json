@@ -1,11 +1,12 @@
 {
-    "heading": "प्रश्न लाइब्रेरी",
+    "heading": "कंटेंट लाइब्रेरी",
     "header": {
+        "importExcel": "Excel से इम्पोर्ट",
         "title": "प्रश्न लाइब्रेरी",
         "description": "आपके संस्थान के सभी प्रश्न, विषय, अध्याय और टॉपिक के अनुसार। एक बार व्यवस्थित करें और किसी भी टेस्ट में दोबारा उपयोग करें।",
         "importTags": "टैग इम्पोर्ट करें",
         "importPaper": "प्रश्नपत्र जोड़ें",
-        "newTopic": "नया टॉपिक"
+        "newTopic": "नया कोर्स"
     },
     "stats": {
         "questions": "प्रश्न",
@@ -73,6 +74,7 @@
         "addPaperHere": "यहाँ प्रश्नपत्र जोड़ें"
     },
     "filters": {
+        "allLevels": "सभी",
         "clear": "हटाएं",
         "search": "प्रश्न का टेक्स्ट खोजें",
         "searchButton": "खोजें",
@@ -81,6 +83,8 @@
         "any": "कोई भी"
     },
     "bulk": {
+        "setDifficulty": "कठिनाई तय करें",
+        "addTag": "टैग जोड़ें",
         "selectPage": "यह पेज चुनें",
         "addToTopic": "टॉपिक में जोड़ें",
         "moveToTopic": "टॉपिक में ले जाएँ",
@@ -122,6 +126,7 @@
         "questions": "प्रश्न लोड नहीं हो सके।"
     },
     "common": {
+        "close": "बंद करें",
         "cancel": "रद्द करें",
         "retry": "फिर कोशिश करें"
     },
@@ -190,8 +195,8 @@
         "savedAsVersion_other": "नए वर्ज़न के रूप में सेव हुआ। इसे उपयोग करने वाले {{count}} टेस्ट नहीं बदले।"
     },
     "comingSoon": {
-        "title": "तैयार प्रश्न जल्द आ रहे हैं",
-        "text": "टॉपिक के अनुसार प्रश्न और प्रश्नपत्र जोड़े जाते ही यहां दिखेंगे।",
+        "title": "आपके संस्थान को अभी कोई कोर्स नहीं दिया गया है",
+        "text": "जो कोर्स आप पढ़ाते हैं उन्हें जुड़वाने के लिए सपोर्ट से संपर्क करें। फिर उनके तैयार प्रश्न और पेपर यहाँ दिखेंगे।",
         "pickTitle": "टॉपिक चुनें",
         "pickText": "किसी भी टेस्ट के प्रश्न जोड़ें चरण से खोलें।",
         "addTitle": "प्रश्न या प्रश्नपत्र जोड़ें",
@@ -242,6 +247,11 @@
         "someFailed_other": "{{count}} प्रश्न नहीं जोड़े जा सके"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} प्रश्न {{level}} किया गया",
+        "difficultySet_other": "{{count}} प्रश्न {{level}} किए गए",
+        "tagAdded_one": "टैग “{{name}}” {{count}} प्रश्न पर लगाया गया",
+        "tagAdded_other": "टैग “{{name}}” {{count}} प्रश्नों पर लगाया गया",
+        "tagRemoved": "टैग “{{name}}” हटाया गया",
         "paperRemoved": "“{{name}}” इस टॉपिक से हटाया गया",
         "failed": "कुछ गलत हुआ। फिर से कोशिश करें।",
         "topicCreated": "“{{name}}” बनाया गया",
@@ -259,5 +269,155 @@
         "paperAdded_other": "{{count}} नए प्रश्न {{name}} में जोड़े गए",
         "tagsImported_one": "{{topics}} नए टॉपिक, {{count}} प्रश्न व्यवस्थित",
         "tagsImported_other": "{{topics}} नए टॉपिक, {{count}} प्रश्न व्यवस्थित"
+    },
+    "tabs": {
+        "questions": "प्रश्न"
+    },
+    "browse": {
+        "addQuestions": "प्रश्न जोड़ें",
+        "breadcrumb": "आप कहाँ हैं",
+        "allCourses": "सभी कोर्स",
+        "courses": "कोर्स",
+        "insideTopic": "{{name}} के अंदर",
+        "allQuestions": "सभी प्रश्न",
+        "questionsIn": "{{name}} के प्रश्न",
+        "questionCount_one": "{{count}} प्रश्न",
+        "questionCount_other": "{{count}} प्रश्न",
+        "topicCount_one": "{{count}} टॉपिक",
+        "topicCount_other": "{{count}} टॉपिक",
+        "institutes": "संस्थान",
+        "institutesWithCount_one": "संस्थान ({{count}})",
+        "institutesWithCount_other": "संस्थान ({{count}})",
+        "instituteCount_one": "{{count}} संस्थान",
+        "instituteCount_other": "{{count}} संस्थान",
+        "noInstitutes": "किसी संस्थान को नहीं दिया गया",
+        "unsortedHint_one": "{{count}} प्रश्न को टॉपिक में रखना है",
+        "unsortedHint_other": "{{count}} प्रश्नों को टॉपिक में रखना है",
+        "addCourse": "कोर्स जोड़ें",
+        "addTopic": "टॉपिक जोड़ें"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "कॉन्सेप्ट",
+            "PYQ": "पिछले वर्ष का प्रश्न",
+            "SOURCE": "स्रोत"
+        },
+        "kindLabel": "टैग का प्रकार",
+        "kindHint": {
+            "CONCEPT": "प्रश्न किस बात को जाँचता है, जैसे अनुच्छेद 21 या न्यूटन का दूसरा नियम।",
+            "PYQ": "किस परीक्षा और वर्ष में पूछा गया, जैसे UPSC 2023।",
+            "SOURCE": "कहाँ से लिया गया, जैसे NCERT या लक्ष्मीकांत।"
+        },
+        "nameLabel": "टैग",
+        "namePlaceholder": {
+            "CONCEPT": "जैसे अनुच्छेद 21",
+            "PYQ": "जैसे UPSC 2023",
+            "SOURCE": "जैसे NCERT"
+        },
+        "pickExisting": "या पहले से इस्तेमाल हो रहा टैग चुनें",
+        "addTitle_one": "{{count}} प्रश्न पर टैग लगाएँ",
+        "addTitle_other": "{{count}} प्रश्नों पर टैग लगाएँ",
+        "add": "टैग जोड़ें",
+        "removeOne": "टैग {{name}} हटाएँ"
+    },
+    "access": {
+        "title": "{{name}} देखने वाले संस्थान",
+        "hint": "हर संस्थान को सिर्फ़ वही कोर्स और टॉपिक दिखते हैं जो उसे यहाँ दिए गए हैं, उनके अंदर की हर चीज़ के साथ। इसे देने के लिए संस्थान की ID डालें।",
+        "idLabel": "संस्थान ID",
+        "idPlaceholder": "संस्थान की ID डालें",
+        "give": "एक्सेस दें",
+        "given": "{{name}} अब {{topic}} देख सकता है",
+        "removed": "{{name}} अब {{topic}} नहीं देखेगा",
+        "remove": "{{name}} को हटाएँ",
+        "empty": "अभी कोई संस्थान इसे नहीं देखता।",
+        "loadError": "संस्थान लोड नहीं हो सके।"
+    },
+    "add": {
+        "title": "{{name}} में प्रश्न जोड़ें",
+        "savingInto": "{{path}} में सेव होंगे",
+        "back": "वापस",
+        "startOver": "फिर से शुरू करें",
+        "save_one": "{{count}} प्रश्न सेव करें",
+        "save_other": "{{count}} प्रश्न सेव करें",
+        "saved_one": "{{count}} प्रश्न {{name}} में सेव हुआ",
+        "saved_other": "{{count}} प्रश्न {{name}} में सेव हुए",
+        "someFailed_one": "{{count}} प्रश्न सेव नहीं हो सका",
+        "someFailed_other": "{{count}} प्रश्न सेव नहीं हो सके",
+        "remove": "हटाएँ",
+        "reviewHint_one": "सेव करने से पहले इस प्रश्न को जाँचें। कठिनाई ठीक करें या सही न हो तो हटा दें।",
+        "reviewHint_other": "सेव करने से पहले इन {{count}} प्रश्नों को जाँचें। कठिनाई ठीक करें या जो सही न हों उन्हें हटा दें।",
+        "tagsForAll": "सभी के लिए {{kind}} टैग",
+        "upload": {
+            "title": "Word फ़ाइल अपलोड करें",
+            "text": "नंबर वाले प्रश्न, विकल्प, उत्तर और व्याख्या वाली .docx फ़ाइल।",
+            "hint": ".docx फ़ाइल चुनें। सेव होने से पहले हर प्रश्न दिखेगा।",
+            "format1": "प्रश्न (1.), (2.) … से शुरू हों",
+            "format2": "विकल्प (a.), (b.) … से शुरू हों",
+            "format3": "फिर Ans: और Exp: लाइनें। Tags: वैकल्पिक है।",
+            "choose": "Word फ़ाइल चुनें",
+            "reading": "फ़ाइल पढ़ी जा रही है…",
+            "none": "इस फ़ाइल में कोई प्रश्न नहीं मिला। फ़ॉर्मेट जाँचकर फिर कोशिश करें।",
+            "failed": "फ़ाइल पढ़ी नहीं जा सकी।"
+        },
+        "ai": {
+            "title": "AI से बनाएँ",
+            "text": "कितने आसान, मध्यम और कठिन प्रश्न चाहिए चुनें। सेव से पहले जाँचें।",
+            "howMany": "हर स्तर के कितने प्रश्न",
+            "max": "हर स्तर में अधिकतम {{count}}।",
+            "type": "प्रश्न का प्रकार",
+            "language": "भाषा",
+            "languages": {
+                "english": "अंग्रेज़ी",
+                "hindi": "हिंदी"
+            },
+            "notes": "नोट्स या टेक्स्ट (वैकल्पिक)",
+            "notesPlaceholder": "नोट्स, अनुच्छेद या कवर करने वाले बिंदु पेस्ट करें। खाली छोड़ें तो टॉपिक के नाम से बनेंगे।",
+            "working": "प्रश्न लिखे जा रहे हैं। इसमें एक मिनट लग सकता है…",
+            "generate_one": "{{count}} प्रश्न बनाएँ",
+            "generate_other": "{{count}} प्रश्न बनाएँ",
+            "credits": "आपके संस्थान के AI क्रेडिट इस्तेमाल होंगे।",
+            "none": "AI ने कोई प्रश्न नहीं दिया। फिर कोशिश करें या नोट्स जोड़ें।",
+            "failed": "AI ये प्रश्न नहीं बना सका।"
+        },
+        "write": {
+            "title": "खुद लिखें",
+            "text": "एडिटर में एक प्रश्न खुद लिखें।",
+            "type": "प्रश्न का प्रकार"
+        }
+    },
+    "excel": {
+        "title": "Excel से प्रश्न इम्पोर्ट करें",
+        "intro": "एक साथ कई प्रश्न जोड़ें। हर पंक्ति एक प्रश्न है और बताती है कि वह किस कोर्स और टॉपिक का है।",
+        "rule1": "Course भरें, फिर ज़रूरत के हिसाब से Subject, Chapter, Topic और Sub-topic। जो टॉपिक नहीं हैं वे बन जाएँगे।",
+        "rule2": "Type: MCQ single, MCQ multiple, True/False, Numeric, One word या Long answer।",
+        "rule3": "Answer: MCQ के लिए विकल्प अक्षर (A या A,C), True या False, एक संख्या, या उत्तर का टेक्स्ट।",
+        "rule4": "Difficulty: Easy, Medium या Hard। टैग कॉमा से अलग करें।",
+        "template": "टेम्पलेट डाउनलोड करें",
+        "choose": "Excel फ़ाइल चुनें",
+        "unreadable": "यह फ़ाइल पढ़ी नहीं जा सकी। टेम्पलेट को .xlsx फ़ाइल के रूप में इस्तेमाल करें।",
+        "chooseAnother": "दूसरी फ़ाइल चुनें",
+        "import_one": "{{count}} प्रश्न इम्पोर्ट करें",
+        "import_other": "{{count}} प्रश्न इम्पोर्ट करें",
+        "summary": "{{ready}} तैयार · {{problems}} पंक्तियों में गड़बड़ · {{topics}} टॉपिक",
+        "saving": "{{total}} में से {{done}} सेव हो रहे हैं…",
+        "problemsTitle_one": "{{count}} पंक्ति छोड़ी जाएगी",
+        "problemsTitle_other": "{{count}} पंक्तियाँ छोड़ी जाएँगी",
+        "rowProblem": "पंक्ति {{row}}: {{problem}}",
+        "moreProblems": "और {{count}}",
+        "whereTheyGo": "कहाँ जाएँगे",
+        "moreTopics": "और {{count}} टॉपिक",
+        "newTopicsNote": "जो टॉपिक अभी नहीं हैं वे इम्पोर्ट के दौरान बन जाएँगे।",
+        "done_one": "{{count}} प्रश्न इम्पोर्ट हुआ, {{topics}} नए टॉपिक",
+        "done_other": "{{count}} प्रश्न इम्पोर्ट हुए, {{topics}} नए टॉपिक",
+        "problem": {
+            "noCourse": "Course खाली है",
+            "noQuestion": "Question खाली है",
+            "badType": "Type मान्य प्रकारों में से नहीं है",
+            "fewOptions": "MCQ में कम से कम दो विकल्प चाहिए",
+            "noAnswer": "Answer खाली है",
+            "badAnswer": "Answer विकल्पों से मेल नहीं खाता",
+            "badNumber": "Answer एक संख्या होना चाहिए",
+            "badDifficulty": "Difficulty Easy, Medium या Hard होनी चाहिए"
+        }
     }
 }

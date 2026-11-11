@@ -9,6 +9,7 @@ import {
     FolderMinus,
     FolderPlus,
     PencilSimpleLine,
+    X,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,8 +20,10 @@ import {
     nodePath,
     type LibraryNode,
     type LibraryQuestion,
+    type LibraryTag,
 } from '../-services/question-library-services';
 import { difficultyTone } from './library-constants';
+import { LibraryTagChip } from './LibraryQuestionFilters';
 
 const richHtml = (html: string | null | undefined) =>
     sanitizeRichHtml(renderLatexDelimiters(html ?? ''));
@@ -51,6 +54,8 @@ export const LibraryQuestionCard = ({
     onEdit,
     onAddToTopic,
     onRemoveFromTopic,
+    onRemoveTag,
+    hideTopics = false,
 }: {
     item: LibraryQuestion;
     /** 1-based position across pages. */
@@ -64,6 +69,10 @@ export const LibraryQuestionCard = ({
     onAddToTopic?: () => void;
     /** Present only while a topic is selected. */
     onRemoveFromTopic?: () => void;
+    /** Owner only: takes one tag off this question. */
+    onRemoveTag?: (tag: LibraryTag) => void;
+    /** A draft not saved yet has no topics to show. */
+    hideTopics?: boolean;
 }) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const [open, setOpen] = useState(false);
@@ -188,9 +197,24 @@ export const LibraryQuestionCard = ({
                             {t('list.moreTopics', { count: topics.length - MAX_TOPIC_CHIPS })}
                         </span>
                     )}
-                    {topics.length === 0 && (
+                    {topics.length === 0 && !hideTopics && (
                         <span className="text-neutral-400">{t('list.noTopic')}</span>
                     )}
+                    {(item.tags ?? []).map((tag) => (
+                        <span key={tag.tag_id} className="inline-flex items-center gap-0.5">
+                            <LibraryTagChip tag={tag} />
+                            {onRemoveTag && (
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveTag(tag)}
+                                    aria-label={t('tags.removeOne', { name: tag.tag_name })}
+                                    className="flex size-5 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-danger-600"
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </span>
+                    ))}
                 </div>
 
                 {open && (
