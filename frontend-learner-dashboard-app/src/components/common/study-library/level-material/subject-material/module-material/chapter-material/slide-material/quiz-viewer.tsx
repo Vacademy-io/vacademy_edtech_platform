@@ -39,7 +39,7 @@ import {
 import { QuizAttemptScreenGuard, QuizStartCard, QuizTimeUpCard } from "./quiz-start-card";
 import { QUESTION_SETTLE_MS } from "./press-settle";
 import { useFunTheme } from "@/hooks/use-fun-theme";
-import { FunQuizQuestion } from "./fun-quiz/FunQuizQuestion";
+import { FunQuizQuestion, FunQuizTimer } from "./fun-quiz/FunQuizQuestion";
 import { FunQuizEmpty, FunQuizTimeWarning } from "./fun-quiz/FunQuizCards";
 
 interface Option {
@@ -96,8 +96,6 @@ interface QuizViewerProps {
   partialMarking?: boolean;
   passPercentage?: number | null;
   reAttemptCount?: number | null;
-  /** Fun skin only: the lesson viewer's Next, offered under the result. */
-  onNext?: () => void;
 }
 
 const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> => ({
@@ -220,7 +218,6 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   partialMarking = false,
   passPercentage,
   reAttemptCount,
-  onNext,
 }) => {
   const { t } = useTranslation("libraryCommonB");
   // The Fun skin draws its own question screen and result; every other skin is unchanged.
@@ -867,7 +864,6 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         : null);
     return <QuizReview
       title={title}
-      onNext={onNext}
       questions={questions}
       userAnswers={reconstructedAnswers}
       scoreCard={effectiveScoreCard}
@@ -1189,6 +1185,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               gravity: 0.9,
               scalar: 1.0,
               origin: { x: Math.random() * 0.8 + 0.1, y: Math.random() * 0.2 + 0.05 },
+              // Fun: no confetti for a learner who asked for reduced motion.
+              ...(isFun && { disableForReducedMotion: true }),
               ...opts,
             });
 
@@ -1199,6 +1197,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               spread: 55,
               origin: { x, y: 0.6 },
               colors: ["#22C55E", "#3B82F6", "#A78BFA", "#F59E0B"], // design-lint-ignore: confetti animation colors
+              ...(isFun && { disableForReducedMotion: true }),
             });
 
             // Main waves
@@ -1584,6 +1583,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                 totalSeconds={timeLimitSeconds}
                 onWarn={() => setShowWarning(true)}
                 onExpire={handleTimerExpire}
+                render={(secondsLeft, warning) => <FunQuizTimer secondsLeft={secondsLeft} warning={warning} />}
               />
             ) : undefined
           }

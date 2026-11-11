@@ -8,6 +8,8 @@ interface QuizTimerProps {
   totalSeconds: number;
   onExpire: () => void;
   onWarn: () => void;
+  /** Draws the clock instead of the standard pill (the Fun skin); the timing is the same. */
+  render?: (secondsLeft: number, warning: boolean) => React.ReactNode;
 }
 
 const WARN_AT_SECONDS = 30;
@@ -18,7 +20,7 @@ const formatTime = (seconds: number): string => {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
-const QuizTimer: React.FC<QuizTimerProps> = ({ startedAt, totalSeconds, onExpire, onWarn }) => {
+const QuizTimer: React.FC<QuizTimerProps> = ({ startedAt, totalSeconds, onExpire, onWarn, render }) => {
   const [remaining, setRemaining] = useState(() =>
     quizSecondsLeft(startedAt, totalSeconds, Date.now())
   );
@@ -53,6 +55,7 @@ const QuizTimer: React.FC<QuizTimerProps> = ({ startedAt, totalSeconds, onExpire
     return () => clearInterval(interval);
   }, [startedAt, totalSeconds]);
   const isWarning = remaining <= 120; // orange when ≤ 2 min
+  if (render) return <>{render(remaining, isWarning)}</>;
 
   return (
     <div

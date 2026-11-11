@@ -24,7 +24,9 @@ export function useQuizPlace() {
   const chapterName = chapterId ? getChapterName(chapterId, modules) : null;
   const navigate = useNavigate();
 
-  const backToChapter = useCallback(() => {
+  // The course page: it lists the chapters. There is no page for one chapter
+  // on its own (the lesson viewer is the chapter), so the way out names the course.
+  const toCourse = useCallback(() => {
     if (!courseId) {
       window.history.back();
       return;
@@ -40,7 +42,7 @@ export function useQuizPlace() {
     colourClass: courseId ? courseColourClass(courseId) : "",
     courseName: isPlaceholderName(courseName) ? null : courseName!.trim(),
     chapterName: isPlaceholderName(chapterName) ? null : chapterName!.trim(),
-    chapterTerm: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
-    backToChapter,
+    courseTerm: getTerminology(ContentTerms.Course, SystemTerms.Course),
+    toCourse,
   };
 }

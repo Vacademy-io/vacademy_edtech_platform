@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, type ReactNode } from "react";
+import { act, useEffect, useState, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,8 +19,8 @@ vi.mock("./use-quiz-place", () => ({
     colourClass: "fun-course-3",
     courseName: "Physics",
     chapterName: "Lenses and mirrors",
-    chapterTerm: "Chapter",
-    backToChapter: back,
+    courseTerm: "Course",
+    toCourse: back,
   }),
 }));
 vi.mock("@/components/chatbot/moments/WhyWrongButton", () => ({
@@ -34,7 +34,9 @@ vi.mock("@/services/upload_file", () => ({ getPublicUrl: async () => "https://fi
 vi.mock("@/components/common/layout-container/sidebar/utils", () => ({ getTerminology: (_k: string, d: string) => d }));
 
 const { FunQuizResult } = await import("./FunQuizResult");
-const { FunQuizQuestion } = await import("./FunQuizQuestion");
+const { FunQuizQuestion, FunQuizTimer } = await import("./FunQuizQuestion");
+const { LessonNextContext } = await import("../lesson-next-context");
+const { LessonScreenContext } = await import("../lesson-screen-context");
 type ResultProps = Parameters<typeof FunQuizResult>[0];
 type QuestionProps = Parameters<typeof FunQuizQuestion>[0];
 
@@ -133,7 +135,7 @@ describe("FunQuizResult", () => {
     await act(async () => (primary as HTMLButtonElement).click());
     expect(onRestart).toHaveBeenCalledTimes(1);
     const secondary = el.querySelector(".fun-quiz-result__secondary")!;
-    expect(text(secondary)).toContain('result.backToChapter{"chapter":"chapter"}');
+    expect(text(secondary)).toContain('result.backToCourse{"course":"course"}');
     await act(async () => (secondary as HTMLButtonElement).click());
     expect(back).toHaveBeenCalledTimes(1);
   });
@@ -145,14 +147,34 @@ describe("FunQuizResult", () => {
     expect(text(el.querySelector(".fun-quiz-result__attempt-chip"))).toContain("result.noTriesLeft");
   });
 
-  it("offers the viewer's Next when the page passes one", async () => {
+  it("offers the viewer's Next while the viewer has one open", async () => {
     const onNext = vi.fn();
-    const el = await render(<FunQuizResult {...base} onNext={onNext} />);
+    const el = await render(
+      <LessonNextContext.Provider value={onNext}>
+        <FunQuizResult {...base} />
+      </LessonNextContext.Provider>,
+    );
     const primary = el.querySelector(".fun-quiz-result__primary") as HTMLButtonElement;
     expect(text(primary)).toBe("funQuiz:result.next");
     await act(async () => primary.click());
     expect(onNext).toHaveBeenCalledTimes(1);
     expect(text(el.querySelector(".fun-quiz-result__secondary"))).toBe("funQuiz:result.tryAgain");
+  });
+
+  it("goes back to the course without a viewer Next, and closes to the course", async () => {
+    const el = await render(
+      <LessonNextContext.Provider value={null}>
+        <FunQuizResult {...base} />
+      </LessonNextContext.Provider>,
+    );
+    const primary = el.querySelector(".fun-quiz-result__primary") as HTMLButtonElement;
+    expect(text(primary)).toBe('funQuiz:result.backToCourse{"course":"course"}');
+    await act(async () => primary.click());
+    expect(back).toHaveBeenCalledTimes(1);
+    const close = el.querySelector(".fun-quiz-result__head .fun-quiz__close") as HTMLButtonElement;
+    expect(close.getAttribute("aria-label")).toBe("funQuiz:closeQuiz");
+    await act(async () => close.click());
+    expect(back).toHaveBeenCalledTimes(2);
   });
 
   it("adds partial and skipped tiles only when there are any", async () => {
@@ -173,6 +195,13 @@ describe("FunQuizResult", () => {
       "partial",
       "skipped",
       "attempt",
+    ]);
+    // Each label is asked for with its count, so a language can agree with it.
+    expect(Array.from(el.querySelectorAll(".fun-quiz-result__tile-label")).slice(0, 4).map(text)).toEqual([
+      'funQuiz:result.tileCorrect{"count":2}',
+      'funQuiz:result.tileWrong{"count":0}',
+      'funQuiz:result.tilePartial{"count":2}',
+      'funQuiz:result.tileSkipped{"count":1}',
     ]);
   });
 
@@ -264,6 +293,21 @@ const qbase: QuestionProps = {
   onNext: () => {},
 };
 
+describe("one top-level heading per screen", () => {
+  it("is the headline on the result and the question on the question screen", async () => {
+    let el = await render(<FunQuizResult {...base} />);
+    expect(el.querySelectorAll("h1")).toHaveLength(1);
+    expect(el.querySelector("h1")!.className).toBe("fun-quiz-result__headline");
+    expect(el.querySelectorAll("h2.fun-quiz-result__headline")).toHaveLength(0);
+    await act(async () => root?.unmount());
+    host?.remove();
+    el = await render(<FunQuizQuestion {...qbase} />);
+    const tops = el.querySelectorAll('h1, [role="heading"][aria-level="1"]');
+    expect(tops).toHaveLength(1);
+    expect(tops[0]!.classList.contains("fun-quiz__question")).toBe(true);
+  });
+});
+
 describe("FunQuizQuestion", () => {
   it("draws pick-one options as a radio group and holds Next until answered", async () => {
     const onSelect = vi.fn();
@@ -344,7 +388,79 @@ describe("FunQuizQuestion", () => {
     expect(el.querySelector('[role="timer"]')).toBeNull();
     await act(async () => root?.unmount());
     host?.remove();
-    el = await render(<FunQuizQuestion {...qbase} timer={<span>08:42</span>} />);
-    expect(text(el.querySelector('[role="timer"]'))).toBe("08:42");
+    el = await render(<FunQuizQuestion {...qbase} timer={<FunQuizTimer secondsLeft={522} warning={false} />} />);
+    const timer = el.querySelector('.fun-quiz__timer [role="timer"]')!;
+    expect(text(timer)).toBe("8:42");
+    const label = timer.getAttribute("aria-label")!;
+    expect(label.startsWith("funQuiz:timer.label")).toBe(true);
+    expect(label).toContain("timer.join");
+    expect(label).toMatch(/timer\.minutes\{[^}]*8\}/);
+    expect(label).toMatch(/timer\.seconds\{[^}]*42\}/);
+  });
+
+  it("names the time left in words, minutes or seconds alone when the other is zero", async () => {
+    let el = await render(<FunQuizTimer secondsLeft={120} warning />);
+    let timer = el.querySelector('[role="timer"]')!;
+    expect(text(timer)).toBe("2:00");
+    expect(timer.getAttribute("aria-label")).toContain("timer.minutes");
+    expect(timer.getAttribute("aria-label")).not.toContain("timer.seconds");
+    expect(timer.getAttribute("data-warning")).toBe("true");
+    await act(async () => root?.unmount());
+    host?.remove();
+    el = await render(<FunQuizTimer secondsLeft={9} warning />);
+    timer = el.querySelector('[role="timer"]')!;
+    expect(text(timer)).toBe("0:09");
+    expect(timer.getAttribute("aria-label")).toMatch(/timer\.seconds\{[^}]*9\}/);
+    expect(timer.getAttribute("aria-label")).not.toContain("timer.minutes");
+  });
+
+  it("puts a close control before the heading that goes to the course", async () => {
+    const el = await render(<FunQuizQuestion {...qbase} />);
+    const head = el.querySelector(".fun-quiz__head")!;
+    const close = head.firstElementChild as HTMLButtonElement;
+    expect(close.className).toBe("fun-quiz__close");
+    expect(close.getAttribute("aria-label")).toBe("funQuiz:closeQuiz");
+    await act(async () => close.click());
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the lesson viewer's bars", () => {
+  // The viewer keeps a count of mounted screens that bring their own header and
+  // buttons, and leaves its own bars out while the count is above zero.
+  function Viewer({ children, onCount }: { children: ReactNode; onCount: (n: number) => void }) {
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+      onCount(count);
+    }, [count, onCount]);
+    return <LessonScreenContext.Provider value={setCount}>{children}</LessonScreenContext.Provider>;
+  }
+
+  it("step aside while the question or the result is on screen, and come back after", async () => {
+    const counts: number[] = [];
+    const onCount = (n: number) => counts.push(n);
+    await render(
+      <Viewer onCount={onCount}>
+        <FunQuizQuestion {...qbase} />
+      </Viewer>,
+    );
+    expect(counts.at(-1)).toBe(1);
+    // Question to result in one commit: the count never drops to zero in between.
+    await act(async () =>
+      root!.render(
+        <Viewer onCount={onCount}>
+          <FunQuizResult {...base} />
+        </Viewer>,
+      ),
+    );
+    expect(counts.at(-1)).toBe(1);
+    expect(counts.slice(1)).not.toContain(0);
+    await act(async () => root!.render(<Viewer onCount={onCount}>{null}</Viewer>));
+    expect(counts.at(-1)).toBe(0);
+  });
+
+  it("are left alone outside the viewer", async () => {
+    const el = await render(<FunQuizQuestion {...qbase} />);
+    expect(el.querySelector(".fun-quiz__nav")).not.toBeNull();
   });
 });

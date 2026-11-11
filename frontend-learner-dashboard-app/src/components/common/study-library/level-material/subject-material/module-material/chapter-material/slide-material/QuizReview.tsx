@@ -66,8 +66,6 @@ interface QuizReviewProps {
   attemptLogs?: QuizAttemptLog[];
   /** Fun skin only: the quiz's title, shown above its result. */
   title?: string;
-  /** Fun skin only: the lesson viewer's Next; without it the result offers a way back to the chapter. */
-  onNext?: () => void;
 }
 
 const getQuestionText = (q: Question) => {
@@ -209,7 +207,7 @@ const isAnswerMatch = (
 // Up to two decimals, no trailing zeros: 1, 0.5, 0.33.
 const formatMarks = (value: number): string => String(Math.round(value * 100) / 100);
 
-export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title, onNext }) => {
+export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title }) => {
   const { t } = useTranslation("libraryCommonA");
   const isFun = useFunTheme();
   const [showFullPassageIdx, setShowFullPassageIdx] = useState<number | null>(null);
@@ -589,7 +587,6 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
         maxAttempts={maxAttempts}
         canReattempt={canReattempt}
         onRestart={onRestart}
-        onNext={onNext}
         rows={rows}
         showCorrectAnswers={showCorrectAnswers}
         pastAttempts={(attemptLogs ?? []).map((log, i) => ({

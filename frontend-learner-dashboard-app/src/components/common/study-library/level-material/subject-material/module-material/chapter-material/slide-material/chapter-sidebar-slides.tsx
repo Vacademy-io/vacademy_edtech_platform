@@ -727,8 +727,8 @@ export const ChapterSidebarSlides = () => {
   return (
     <div
       className="relative w-full max-w-full overflow-hidden animate-fade-in-up"
-      role="list"
-      aria-label={t("slideSidebar.slidesListLabel")}
+      role={isFun ? undefined : "list"}
+      aria-label={isFun ? undefined : t("slideSidebar.slidesListLabel")}
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50/30 pointer-events-none rounded-xl"></div>
@@ -738,6 +738,9 @@ export const ChapterSidebarSlides = () => {
             ? `relative flex w-full flex-col gap-1 text-gray-600 fun-side-rows ${courseColourClass(courseId || "")}`
             : "relative flex w-full flex-col gap-1 text-gray-600"
         }
+        // Fun rows are list items of this element itself, with no wrapper between.
+        role={isFun ? "list" : undefined}
+        aria-label={isFun ? t("slideSidebar.slidesListLabel") : undefined}
       >
         {slides?.map((slide: Slide, index: number) => {
           const evaluation = slideEvaluations[slide.id];

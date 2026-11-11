@@ -1,11 +1,14 @@
 import React, { useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CaretLeft, CaretRight, Check, ListChecks, WarningCircle, XCircle } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Check, ListChecks, Timer, WarningCircle, XCircle } from "@phosphor-icons/react";
 import { FunButton } from "@/components/design-system/fun/FunButton";
 import { formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { useQuizPlace } from "./use-quiz-place";
 import { joinPlace } from "./result-facts";
+import { useFootPin } from "./foot-pin";
+import { FunQuizClose } from "./FunQuizClose";
+import { useOwnLessonScreen } from "../lesson-screen-context";
 
 export type FunAnswer = string | number | string[] | undefined;
 
@@ -38,7 +41,7 @@ export interface FunQuizQuestionProps {
   onNumeric: (value: string) => void;
   onPrev: () => void;
   onNext: () => void;
-  /** The running clock, drawn by the quiz's own timer; absent on an untimed quiz. */
+  /** The running clock (the quiz's own timer drawing FunQuizTimer); absent on an untimed quiz. */
   timer?: React.ReactNode;
 }
 
@@ -93,6 +96,11 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
   const textId = useId();
   const errorId = useId();
   const [fullPassage, setFullPassage] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  // Its own header and Previous / Next: the lesson viewer's bars step aside.
+  useOwnLessonScreen();
+  useFootPin(rootRef, navRef);
   const isLast = current === total - 1;
   const percent = total > 0 ? Math.round(((current + 1) / total) * 100) : 0;
 
@@ -106,17 +114,14 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
   const passageLong = passagePlain.length > PASSAGE_LIMIT;
 
   return (
-    <div className={cn("fun-quiz", place.colourClass)}>
+    <div ref={rootRef} className={cn("fun-quiz", place.colourClass)}>
       <header className="fun-quiz__head">
+        <FunQuizClose onClose={place.toCourse} />
         <div className="fun-quiz__head-text">
           {eyebrow && <p className="fun-quiz__eyebrow">{eyebrow}</p>}
           {title && <p className="fun-quiz__title">{title}</p>}
         </div>
-        {timer && (
-          <div role="timer" className="fun-quiz__timer">
-            {timer}
-          </div>
-        )}
+        {timer && <div className="fun-quiz__timer">{timer}</div>}
       </header>
 
       <div
@@ -165,8 +170,10 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
 
         <div
           id={textId}
+          // The screen's one top-level heading, as on A-Quiz (the question is its h1).
+          // A role rather than an h1 element: the author's rich text holds paragraphs.
           role="heading"
-          aria-level={2}
+          aria-level={1}
           className="fun-quiz__question rich-text-content"
           dangerouslySetInnerHTML={{ __html: questionHtml || tq("quizViewer.questionTextUnavailable") }}
         />
@@ -250,7 +257,7 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
         )}
       </div>
 
-      <div className="fun-quiz__nav">
+      <div ref={navRef} className="fun-quiz__nav">
         <FunButton variant="outline" className="fun-quiz__prev" disabled={current === 0} onClick={onPrev}>
           <CaretLeft aria-hidden="true" weight="bold" />
           {tq("quizViewer.buttons.previous")}
@@ -264,6 +271,29 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
           {!isLast && !submitting && <CaretRight aria-hidden="true" weight="bold" />}
         </FunButton>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The timer pill: m:ss on screen (8:42, as on the board) and the time in words
+ * for a screen reader. The clock itself is the quiz's own timer, unchanged.
+ */
+export function FunQuizTimer({ secondsLeft, warning }: { secondsLeft: number; warning: boolean }) {
+  const { t } = useTranslation("funQuiz");
+  const left = Math.max(0, Math.floor(secondsLeft));
+  const minutes = Math.floor(left / 60);
+  const seconds = left % 60;
+  const words =
+    minutes > 0 && seconds > 0
+      ? t("timer.join", { minutes: t("timer.minutes", { count: minutes }), seconds: t("timer.seconds", { count: seconds }) })
+      : minutes > 0
+        ? t("timer.minutes", { count: minutes })
+        : t("timer.seconds", { count: seconds });
+  return (
+    <div role="timer" aria-label={t("timer.label", { time: words })} className="fun-quiz__clock" data-warning={warning ? "true" : undefined}>
+      <Timer aria-hidden="true" weight="bold" />
+      <span aria-hidden="true">{`${minutes}:${String(seconds).padStart(2, "0")}`}</span>
     </div>
   );
 }

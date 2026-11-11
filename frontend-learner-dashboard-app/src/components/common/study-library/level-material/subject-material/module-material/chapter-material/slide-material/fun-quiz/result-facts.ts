@@ -52,8 +52,8 @@ export type ResultAction = "retry" | "next" | "back";
 /**
  * The two buttons under the result. A not-passed result that can be tried again
  * makes Try again the filled button; otherwise the filled button moves the
- * learner on (the viewer's Next when the page passes one, else back to the
- * chapter) and Try again, when there is one, is the outline button.
+ * learner on (the viewer's Next while it is open, else back to the course
+ * page) and Try again, when there is one, is the outline button.
  */
 export function resultActions({
   verdict,

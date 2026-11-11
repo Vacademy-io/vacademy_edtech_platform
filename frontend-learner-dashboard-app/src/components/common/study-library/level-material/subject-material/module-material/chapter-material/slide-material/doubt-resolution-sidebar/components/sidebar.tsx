@@ -18,6 +18,7 @@ import { getPackageSessionId } from "@/utils/study-library/get-list-from-stores/
 import { formatVideoTime } from "@/utils/study-library/tracking/formatVideoTime";
 import { collectAuthorIds, useDoubtAuthors } from "../hooks/useDoubtAuthors";
 import { cn } from "@/lib/utils";
+import { useFunTheme } from "@/hooks/use-fun-theme";
 
 type DoubtTab = "ALL" | "ACTIVE" | "RESOLVED";
 
@@ -28,6 +29,9 @@ const HISTORY_WINDOW_DAYS = 3650;
 
 export const DoubtResolutionSidebar = () => {
   const { t } = useTranslation("studyContent");
+  // Fun restyles the panel from styles/fun/course.css (".fun-doubts"), added under
+  // that skin only; every other skin's markup is unchanged.
+  const isFun = useFunTheme();
   const { isOpen: open, closeSidebar, draft, clearDraft } = useDoubtSidebarStore();
   const [showInput, setShowInput] = useState<boolean>(false);
   const [doubt, setDoubt] = useState<string>("");
@@ -330,7 +334,8 @@ export const DoubtResolutionSidebar = () => {
           "transition-transform duration-200 ease-out sm:w-vw-60 sm:min-w-reg-350 sm:max-w-reg-420 lg:w-vw-35",
           open
             ? "translate-x-0"
-            : "pointer-events-none translate-x-full rtl:-translate-x-full"
+            : "pointer-events-none translate-x-full rtl:-translate-x-full",
+          isFun && "fun-doubts"
         )}
       >
         {/* Header */}

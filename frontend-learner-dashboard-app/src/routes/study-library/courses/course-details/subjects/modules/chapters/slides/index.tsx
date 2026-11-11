@@ -298,7 +298,7 @@ function Slides() {
   } = Route.useSearch();
   const isFunSkin = useFunTheme();
 
-  const { setOpen: setAppSidebarOpen } = useSidebar();
+  const { setOpen: setAppSidebarOpen, toggleSidebar } = useSidebar();
   const navigate = useNavigate();
 
   // Citation deep link (?page / ?t) for the slide named in the URL. The viewer
@@ -507,6 +507,8 @@ function Slides() {
   // Loads the studyContent catalog for the chapter hand-off strings and
   // re-renders this route once it arrives.
   const { t } = useTranslation("studyContent");
+  // The Fun catalog is read only under Fun; other skins ask for no extra catalog.
+  const { t: tFunCourse } = useTranslation(isFunSkin ? "funCourse" : "studyContent");
   // "breadcrumb" = legacy per-chapter slide list; cross-module navigation
   // happens via the popovers in the breadcrumb. This is the default to keep
   // existing learners on familiar terrain — admins can opt into the richer
@@ -1815,7 +1817,7 @@ function Slides() {
                 weight="bold"
               />
               <span className="text-caption font-bold text-neutral-500 uppercase tracking-wider shrink-0">
-                Prev
+                {isFunSkin ? tFunCourse("lesson.prevShort") : "Prev"}
               </span>
               <span className="text-caption font-semibold text-neutral-700 truncate leading-tight min-w-0">
                 {toTitleCase(previousChapter.chapter.chapter_name)}
@@ -1837,10 +1839,10 @@ function Slides() {
                 <button
                   onClick={handleNextSlide}
                   title={`Up next: ${toTitleCase(getSlideTitle(nextSlide))}`}
-                  className="w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2"
+                  className={`w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2${isFunSkin ? " fun-side-next" : ""}`}
                 >
                   <span className="text-caption font-bold text-primary-500 uppercase tracking-wider shrink-0">
-                    Up next
+                    {isFunSkin ? tFunCourse("lesson.upNextShort") : "Up next"}
                   </span>
                   <span className="text-caption font-bold text-primary-700 truncate leading-tight min-w-0 flex-1">
                     {nextSlideTitle}
@@ -1862,13 +1864,15 @@ function Slides() {
             <button
               onClick={handleNextChapter}
               title={`Next ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}: ${toTitleCase(nextChapter.chapter.chapter_name)}`}
-              className="w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2"
+              className={`w-full flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 px-2 py-1.5 hover:bg-primary-100 hover:border-primary-300 transition-colors group/next text-start [.ui-play_&]:rounded-lg [.ui-play_&]:border-2${isFunSkin ? " fun-side-next" : ""}`}
             >
               {/* "Next Chapter", not "Up next" — this pill jumps out of the
                   current chapter, and labeling that jump "Up next" mid-chapter
                   misread as the next thing to play. */}
               <span className="text-caption font-bold text-primary-500 uppercase tracking-wider shrink-0">
-                Next {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
+                {isFunSkin
+                  ? tFunCourse("lesson.nextChapterShort", { chapter: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters) })
+                  : <>Next {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}</>}
               </span>
               <span className="text-caption font-bold text-primary-700 truncate leading-tight min-w-0 flex-1">
                 {toTitleCase(nextChapter.chapter.chapter_name)}
@@ -1885,8 +1889,9 @@ function Slides() {
               "Chapter progress · 40%" (terminology-aware chapter term).
               Breadcrumb mode only: the tree shows progress inline on the
               current chapter's row, so repeating it here duplicated the
-              chip and detached the number from the chapter it describes. */}
-          {sidebarNavigation === "breadcrumb" && (
+              chip and detached the number from the chapter it describes.
+              The Fun skin shows it once, labelled, in the viewer's top bar. */}
+          {sidebarNavigation === "breadcrumb" && !isFunSkin && (
             <div className="space-y-1">
               <p className="text-caption font-semibold text-gray-500 uppercase tracking-wider [.ui-play_&]:font-black [.ui-play_&]:uppercase [.ui-play_&]:tracking-wide">
                 {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}{" "}
@@ -1939,7 +1944,7 @@ function Slides() {
               `}
             >
               <PencilSimple className="w-3 h-3" />
-              <span>Feedback</span>
+              <span>{isFunSkin ? tFunCourse("lesson.feedback") : "Feedback"}</span>
             </button>
           )}
         </div>
@@ -1963,6 +1968,24 @@ function Slides() {
       </span>
     );
   }, [setNavHeading, chapterName]);
+
+  // Fun: the lesson bar closes to the course page and opens the viewer's outline,
+  // since the app's top bar (with its back and sidebar buttons) is not drawn here.
+  const funExit = isFunSkin
+    ? {
+        onClose: () => {
+          if (!courseId) {
+            window.history.back();
+            return;
+          }
+          navigate({
+            to: "/study-library/courses/course-details",
+            search: { courseId, packageSessionId: resolvedSessionId || undefined },
+          });
+        },
+        onToggleOutline: hideSlidesSidebar ? undefined : toggleSidebar,
+      }
+    : undefined;
 
   return (
     <LayoutContainer
@@ -2004,6 +2027,7 @@ function Slides() {
                 slidesLoading={slidesLoading}
                 startAt={slideStartAt}
                 onStartAtApplied={handleSlideStartApplied}
+                funExit={funExit}
                 standaloneNav={hideSlidesSidebar}
                 manualCompletion={manualCompletion}
                 completionContext={{

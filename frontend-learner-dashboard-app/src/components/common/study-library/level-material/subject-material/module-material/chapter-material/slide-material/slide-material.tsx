@@ -41,6 +41,8 @@ import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import QuizViewer from "./quiz-viewer";
+import { LessonNextContext } from "./lesson-next-context";
+import { LessonScreenContext } from "./lesson-screen-context";
 import { Slide, AIVideoData } from "@/hooks/study-library/use-slides";
 import { SlideProtectionGuard } from "./SlideProtectionGuard";
 import { AIVideoPlayer } from "@/components/ai-video-player";
@@ -69,7 +71,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useFunTheme } from "@/hooks/use-fun-theme";
 import {
   FunLessonBottomBar,
-  FunLessonTopBar,
+  FunViewerTopBar,
 } from "@/routes/study-library/courses/course-details/-components/fun/FunLesson";
 import { chapterMeanPercent } from "@/routes/study-library/courses/course-details/-components/fun/course-outline";
 
@@ -120,6 +122,7 @@ export const SlideMaterial = ({
   startAt,
   onStartAtApplied,
   slidesLoading = false,
+  funExit,
 }: {
   // Optional: lets the host route mirror the active slide into the URL so the
   // course-tree sidebar (which highlights by URL slideId) and a browser
@@ -146,6 +149,10 @@ export const SlideMaterial = ({
   // which onStartAtApplied lets the host drop the params from the URL.
   startAt?: SlideStartAt | undefined;
   onStartAtApplied?: (() => void) | undefined;
+  // Fun skin only: the lesson bar's close (to the course page) and, when the viewer
+  // has its own outline, the button that opens it. The app's top bar is not drawn
+  // over the Fun viewer, so these are its way out and its way to the outline.
+  funExit?: { onClose: () => void; onToggleOutline?: (() => void) | undefined } | undefined;
   // The host is still fetching the chapter's slides, so "no active slide" does
   // not yet mean the chapter is empty.
   slidesLoading?: boolean;
@@ -154,6 +161,10 @@ export const SlideMaterial = ({
   const { activeItem, items, setActiveItem, slideEvaluations } =
     useContentStore();
   const isFun = useFunTheme();
+  // Fun skin: content with its own header and buttons (the quiz question and
+  // result) takes the screen, so the viewer's bars step aside while it is shown.
+  const [funScreenClaims, setFunScreenClaims] = useState(0);
+  const funBars = isFun && funScreenClaims <= 0;
   const funCourseId = useRouterState({
     select: (s) => (s.location.search as { courseId?: string }).courseId ?? "",
   });
@@ -259,8 +270,13 @@ export const SlideMaterial = ({
   // the next real slide's name for the phone bar.
   const funChapterPercent =
     isFun && realSlides.length > 0 ? chapterMeanPercent(realSlides) : null;
-  const funUpNext =
-    isFun && realIndex > -1 ? (realSlides[realIndex + 1]?.title ?? null) : null;
+  const funNextReal = isFun && realIndex > -1 ? realSlides[realIndex + 1] : undefined;
+  const funUpNext = funNextReal?.title ?? null;
+  const funUpNextLocked = !!(
+    funNextReal &&
+    slideEvaluations[funNextReal.id] &&
+    isItemLocked(slideEvaluations[funNextReal.id])
+  );
 
   // Check if prev/next slides are locked
   const prevSlide = currentIndex > 0 ? slidesList[currentIndex - 1] : null;
@@ -1593,7 +1609,7 @@ export const SlideMaterial = ({
       <SlideProtectionGuard />
       {/* Compact Header */}
       {isFun ? (
-        <FunLessonTopBar
+        funBars && <FunViewerTopBar
           courseId={funCourseId}
           heading={heading}
           index={realSlides.length > 0 && realIndex > -1 ? realIndex + 1 : null}
@@ -1604,6 +1620,8 @@ export const SlideMaterial = ({
           onPrev={goToPrev}
           onNext={goToNext}
           showNav="wide"
+          onClose={funExit?.onClose}
+          onToggleOutline={funExit?.onToggleOutline}
           tools={
             <>
               {manualCompletion &&
@@ -1738,11 +1756,16 @@ export const SlideMaterial = ({
           "w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0 [.ui-cleaner-play_&]:pb-0",
           // Nothing else gives this area a height until the content arrives.
           showSkeleton && "min-h-reg-500",
-          isFun && "fun-lesson-content",
+          isFun && (funBars ? "fun-lesson-content" : "fun-lesson-content--own"),
         )}
       >
         <div ref={contentAreaRef} className="h-full w-full">
-          {!activeItem && slidesLoading ? null : content}
+          {/* The viewer's Next, for content that offers it (the Fun quiz result). */}
+          <LessonScreenContext.Provider value={setFunScreenClaims}>
+            <LessonNextContext.Provider value={canGoNext ? goToNext : null}>
+              {!activeItem && slidesLoading ? null : content}
+            </LessonNextContext.Provider>
+          </LessonScreenContext.Provider>
         </div>
         <SelectionAsk
           containerRef={contentAreaRef}
@@ -1808,8 +1831,9 @@ export const SlideMaterial = ({
       {/* Mobile bottom navigation — default theme only. In the play themes the app
           bottom tab bar hides this, so we render the inline top version above. */}
       {isFun ? (
-        <FunLessonBottomBar
+        funBars && <FunLessonBottomBar
           upNext={funUpNext}
+          upNextLocked={funUpNextLocked}
           canGoPrev={canGoPrev}
           canGoNext={canGoNext}
           onPrev={goToPrev}
