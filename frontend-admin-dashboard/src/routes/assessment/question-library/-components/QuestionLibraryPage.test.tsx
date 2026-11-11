@@ -38,6 +38,14 @@ vi.mock('./ImportDialogs', () => ({
 
 vi.mock('./LibraryQuestionEditDialog', () => ({ LibraryQuestionEditDialog: () => null }));
 
+vi.mock('./AddQuestionsDialog', () => ({
+    AddQuestionsDialog: () => <div>add-questions-dialog</div>,
+}));
+
+vi.mock('./ImportExcelDialog', () => ({
+    ImportExcelDialog: () => <div>import-excel-dialog</div>,
+}));
+
 vi.mock('../-services/question-library-services', async (original) => {
     const actual = await original<Record<string, unknown>>();
     return {
@@ -133,6 +141,8 @@ describe('QuestionLibraryPage', () => {
             'header.importPaper',
             'browse.addCourse',
             'browse.noInstitutes',
+            'header.importExcel',
+            'browse.addQuestions',
             'bulk.selectPage',
         ]) {
             expect(screen.queryByText(write)).toBeNull();
@@ -208,5 +218,20 @@ describe('QuestionLibraryPage', () => {
 
         fireEvent.mouseDown(screen.getByRole('tab', { name: /difficulty.HARD/ }));
         expect(state.lastFilters?.difficulties).toEqual(['HARD']);
+    });
+
+    it('lets the owner import from Excel and add questions inside an open topic', () => {
+        state.tree = { nodes: [topic], summary: summary(1), max_depth: 5, can_manage: true };
+
+        render(<QuestionLibraryPage />);
+
+        fireEvent.click(screen.getByText('header.importExcel'));
+        expect(screen.getByText('import-excel-dialog')).toBeTruthy();
+        // Adding questions needs a topic to put them in.
+        expect(screen.queryByText('browse.addQuestions')).toBeNull();
+
+        fireEvent.click(screen.getByText('Chemical Reactions'));
+        fireEvent.click(screen.getAllByText('browse.addQuestions')[0]!);
+        expect(screen.getByText('add-questions-dialog')).toBeTruthy();
     });
 });

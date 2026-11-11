@@ -1,6 +1,7 @@
 {
     "heading": "Content Library",
     "header": {
+        "importExcel": "Import from Excel",
         "title": "Question Library",
         "description": "Every question your institute has, organised by subject, chapter and topic. File questions once and reuse them in any test.",
         "importTags": "Import tags",
@@ -273,6 +274,7 @@
         "questions": "Questions"
     },
     "browse": {
+        "addQuestions": "Add questions",
         "breadcrumb": "Where you are",
         "allCourses": "All courses",
         "courses": "Courses",
@@ -329,5 +331,93 @@
         "remove": "Take {{name}} off",
         "empty": "No institute sees this yet.",
         "loadError": "Could not load the institutes."
+    },
+    "add": {
+        "title": "Add questions to {{name}}",
+        "savingInto": "Saved into {{path}}",
+        "back": "Back",
+        "startOver": "Start over",
+        "save_one": "Save {{count}} question",
+        "save_other": "Save {{count}} questions",
+        "saved_one": "{{count}} question saved to {{name}}",
+        "saved_other": "{{count}} questions saved to {{name}}",
+        "someFailed_one": "{{count}} question could not be saved",
+        "someFailed_other": "{{count}} questions could not be saved",
+        "remove": "Remove",
+        "reviewHint_one": "Check this question before saving. Fix the difficulty or remove it if it is not right.",
+        "reviewHint_other": "Check these {{count}} questions before saving. Fix the difficulty or remove any that are not right.",
+        "tagsForAll": "{{kind}} tags for all",
+        "upload": {
+            "title": "Upload a Word file",
+            "text": "A .docx with numbered questions, options, answers and explanations.",
+            "hint": "Choose a .docx file. You will see every question before anything is saved.",
+            "format1": "Questions start with (1.), (2.) …",
+            "format2": "Options start with (a.), (b.) …",
+            "format3": "Then Ans: and Exp: lines. Tags: is optional.",
+            "choose": "Choose Word file",
+            "reading": "Reading the file…",
+            "none": "No questions were found in this file. Check the format and try again.",
+            "failed": "The file could not be read."
+        },
+        "ai": {
+            "title": "Generate with AI",
+            "text": "Choose how many Easy, Medium and Hard questions. Review them before saving.",
+            "howMany": "How many questions of each level",
+            "max": "Up to {{count}} per level.",
+            "type": "Question type",
+            "language": "Language",
+            "languages": {
+                "english": "English",
+                "hindi": "Hindi"
+            },
+            "notes": "Notes or text to use (optional)",
+            "notesPlaceholder": "Paste notes, a passage or points to cover. Leave empty to use the topic name.",
+            "working": "Writing questions. This can take a minute…",
+            "generate_one": "Generate {{count}} question",
+            "generate_other": "Generate {{count}} questions",
+            "credits": "Uses AI credits of your institute.",
+            "none": "The AI did not return any questions. Try again or add notes.",
+            "failed": "The AI could not write these questions."
+        },
+        "write": {
+            "title": "Write one",
+            "text": "Type a question yourself in the editor.",
+            "type": "Question type"
+        }
+    },
+    "excel": {
+        "title": "Import questions from Excel",
+        "intro": "Add many questions at once. Each row is one question and says which course and topic it belongs to.",
+        "rule1": "Fill Course, then Subject, Chapter, Topic and Sub-topic as deep as you need. Missing topics are created.",
+        "rule2": "Type: MCQ single, MCQ multiple, True/False, Numeric, One word or Long answer.",
+        "rule3": "Answer: option letters for MCQ (A or A,C), True or False, a number, or the answer text.",
+        "rule4": "Difficulty is Easy, Medium or Hard. Tags are comma-separated.",
+        "template": "Download template",
+        "choose": "Choose Excel file",
+        "unreadable": "This file could not be read. Use the template as an .xlsx file.",
+        "chooseAnother": "Choose another file",
+        "import_one": "Import {{count}} question",
+        "import_other": "Import {{count}} questions",
+        "summary": "{{ready}} ready · {{problems}} rows with problems · {{topics}} topics",
+        "saving": "Saving {{done}} of {{total}}…",
+        "problemsTitle_one": "{{count}} row will be skipped",
+        "problemsTitle_other": "{{count}} rows will be skipped",
+        "rowProblem": "Row {{row}}: {{problem}}",
+        "moreProblems": "and {{count}} more",
+        "whereTheyGo": "Where they go",
+        "moreTopics": "and {{count}} more topics",
+        "newTopicsNote": "Topics that do not exist yet are created during the import.",
+        "done_one": "{{count}} question imported, {{topics}} new topics",
+        "done_other": "{{count}} questions imported, {{topics}} new topics",
+        "problem": {
+            "noCourse": "Course is empty",
+            "noQuestion": "Question is empty",
+            "badType": "Type is not one of the allowed types",
+            "fewOptions": "an MCQ needs at least two options",
+            "noAnswer": "Answer is empty",
+            "badAnswer": "Answer does not match the options",
+            "badNumber": "Answer must be a number",
+            "badDifficulty": "Difficulty must be Easy, Medium or Hard"
+        }
     }
 }

@@ -405,6 +405,30 @@ export const removeLibraryTag = (
     body: { question_ids: string[]; tag_id: string }
 ) => post<LibraryActionResult>('/tags/remove', instituteId, body);
 
+export interface LibraryImportResult {
+    created: number;
+    nodes_created: number;
+    /** "Item 3: ..." for each question that could not be saved (1-based, request order). */
+    errors: string[];
+}
+
+/**
+ * New questions saved straight into the library, each under its topic. path names topics
+ * below parent_id; missing ones are created. Owner only. At most 500 items per call.
+ */
+export const importLibraryQuestions = (
+    instituteId: string,
+    body: {
+        parent_id?: string | null;
+        items: {
+            path: string[];
+            question: unknown;
+            difficulty: string;
+            tags: { kind: LibraryTagKind; name: string }[];
+        }[];
+    }
+) => post<LibraryImportResult>('/questions/import', instituteId, body);
+
 export const setLibraryDifficulty = (
     instituteId: string,
     body: { question_ids: string[]; difficulty: string }

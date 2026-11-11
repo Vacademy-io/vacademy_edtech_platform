@@ -55,6 +55,7 @@ export const LibraryQuestionCard = ({
     onAddToTopic,
     onRemoveFromTopic,
     onRemoveTag,
+    hideTopics = false,
 }: {
     item: LibraryQuestion;
     /** 1-based position across pages. */
@@ -70,6 +71,8 @@ export const LibraryQuestionCard = ({
     onRemoveFromTopic?: () => void;
     /** Owner only: takes one tag off this question. */
     onRemoveTag?: (tag: LibraryTag) => void;
+    /** A draft not saved yet has no topics to show. */
+    hideTopics?: boolean;
 }) => {
     const { t } = useTranslation('assessmentQuestionLibrary');
     const [open, setOpen] = useState(false);
@@ -194,7 +197,7 @@ export const LibraryQuestionCard = ({
                             {t('list.moreTopics', { count: topics.length - MAX_TOPIC_CHIPS })}
                         </span>
                     )}
-                    {topics.length === 0 && (
+                    {topics.length === 0 && !hideTopics && (
                         <span className="text-neutral-400">{t('list.noTopic')}</span>
                     )}
                     {(item.tags ?? []).map((tag) => (

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
     Books,
     ChartBar,
+    FileXls,
     Files,
     FolderSimple,
     Lightbulb,
@@ -161,6 +162,7 @@ export const LibraryHeader = ({
     onNewTopic,
     onImportPaper,
     onImportTags,
+    onImportExcel,
     onShowUnsorted,
     onOpenTopic,
     readOnly = false,
@@ -171,6 +173,8 @@ export const LibraryHeader = ({
     onNewTopic: () => void;
     onImportPaper: () => void;
     onImportTags: () => void;
+    /** Owner only: many questions at once from the Excel template. */
+    onImportExcel?: () => void;
     onShowUnsorted: () => void;
     onOpenTopic: (id: string) => void;
     /** Browsing only: no write buttons, and no stats about how the library is filed. */
@@ -211,6 +215,18 @@ export const LibraryHeader = ({
                             <Tag size={16} />
                             {t('header.importTags')}
                         </MyButton>
+                        {onImportExcel && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                onClick={onImportExcel}
+                            >
+                                <FileXls size={16} />
+                                {t('header.importExcel')}
+                            </MyButton>
+                        )}
                         <MyButton
                             type="button"
                             buttonType="secondary"

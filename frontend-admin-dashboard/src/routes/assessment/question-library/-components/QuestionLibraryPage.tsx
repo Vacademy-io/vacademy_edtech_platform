@@ -10,6 +10,7 @@ import {
     FolderMinus,
     FolderPlus,
     Files,
+    Plus,
     Question,
     Tag,
     WarningCircle,
@@ -57,6 +58,8 @@ import { LibraryComingSoon, LibraryHeader } from './LibraryHeader';
 import { CourseBreadcrumb, CourseCards, type CardAction } from './CourseBrowser';
 import { DifficultyTabs, TagFilter } from './LibraryQuestionFilters';
 import { AddTagDialog, InstituteAccessDialog } from './CurationDialogs';
+import { AddQuestionsDialog } from './AddQuestionsDialog';
+import { ImportExcelDialog } from './ImportExcelDialog';
 import {
     DeleteTopicDialog,
     MoveTopicDialog,
@@ -132,6 +135,8 @@ export const QuestionLibraryPage = () => {
     const [paperOpen, setPaperOpen] = useState(false);
     const [tagsOpen, setTagsOpen] = useState(false);
     const [addTagOpen, setAddTagOpen] = useState(false);
+    const [addOpen, setAddOpen] = useState(false);
+    const [excelOpen, setExcelOpen] = useState(false);
 
     const currentNode = current ? nodes.find((node) => node.id === current) ?? null : null;
 
@@ -354,6 +359,7 @@ export const QuestionLibraryPage = () => {
                 onNewTopic={() => setTopicForm({ mode: 'create', parent: null })}
                 onImportPaper={() => setPaperOpen(true)}
                 onImportTags={() => setTagsOpen(true)}
+                onImportExcel={() => setExcelOpen(true)}
                 onShowUnsorted={openUnsorted}
                 onOpenTopic={open}
                 readOnly={readOnly}
@@ -381,6 +387,15 @@ export const QuestionLibraryPage = () => {
                 </div>
                 {currentNode && !readOnly && (
                     <div className="flex flex-wrap gap-2">
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            className="gap-1"
+                            onClick={() => setAddOpen(true)}
+                        >
+                            <Plus size={14} />
+                            {t('browse.addQuestions')}
+                        </MyButton>
                         <MyButton
                             buttonType="secondary"
                             scale="small"
@@ -628,11 +643,18 @@ export const QuestionLibraryPage = () => {
                                 {t('empty.fromUnsorted')}
                             </MyButton>
                             <MyButton
-                                buttonType="primary"
+                                buttonType="secondary"
                                 scale="medium"
                                 onClick={() => setPaperOpen(true)}
                             >
                                 {t('scope.addPaperHere')}
+                            </MyButton>
+                            <MyButton
+                                buttonType="primary"
+                                scale="medium"
+                                onClick={() => setAddOpen(true)}
+                            >
+                                {t('browse.addQuestions')}
                             </MyButton>
                         </div>
                     )}
@@ -748,6 +770,25 @@ export const QuestionLibraryPage = () => {
                     onOpenChange={(value) => !value && setAccessNode(null)}
                     instituteId={instituteId}
                     node={accessNode}
+                />
+            )}
+            {addOpen && currentNode && (
+                <AddQuestionsDialog
+                    key={currentNode.id}
+                    open
+                    onOpenChange={setAddOpen}
+                    instituteId={instituteId}
+                    node={currentNode}
+                    nodes={nodes}
+                    onSaved={refresh}
+                />
+            )}
+            {excelOpen && (
+                <ImportExcelDialog
+                    open
+                    onOpenChange={setExcelOpen}
+                    instituteId={instituteId}
+                    onSaved={refresh}
                 />
             )}
             {addTagOpen && (
