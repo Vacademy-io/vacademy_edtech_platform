@@ -60,6 +60,7 @@ import {
     type CounsellorOption,
 } from '@/hooks/use-lead-counsellor-options';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
+import { SimilarNameWarning } from '@/components/shared/leads/similar-name-warning';
 
 const NAMESPACE = 'audienceManagerCampaignUsersAdd';
 
@@ -692,6 +693,11 @@ export function AddResponsePage() {
                                     />
                                 )}
                             </div>
+
+                            <SimilarNameWarning
+                                instituteId={instituteId}
+                                name={extractUserInfo().fullName}
+                            />
 
                             <div className="mx-4 flex flex-col-reverse items-stretch justify-end gap-3 border-t border-neutral-200 py-5 sm:mx-6 sm:flex-row sm:items-center">
                                 <MyButton

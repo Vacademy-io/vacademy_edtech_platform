@@ -997,6 +997,8 @@ public class UserLeadProfileService {
                 .createdAt(p.getCreatedAt())
                 .assignedCounselorId(p.getAssignedCounselorId())
                 .assignedCounselorName(p.getAssignedCounselorName())
+                .mergedIntoUserId(p.getMergedIntoUserId())
+                .mergedAt(p.getMergedAt())
                 .build();
     }
 }

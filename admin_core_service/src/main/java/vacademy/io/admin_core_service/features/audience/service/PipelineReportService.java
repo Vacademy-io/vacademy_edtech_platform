@@ -328,6 +328,7 @@ public class PipelineReportService {
                    COUNT(DISTINCT ulp.user_id) AS pending_count
             FROM user_lead_profile ulp
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
               AND ulp.assigned_counselor_id IS NOT NULL
               AND (:scopeCsv IS NULL OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
               AND EXISTS (

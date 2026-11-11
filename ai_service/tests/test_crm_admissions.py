@@ -954,7 +954,7 @@ create table student_session_institute_group_mapping(id varchar primary key, use
     package_session_id varchar);
 create table user_lead_profile(id text primary key, user_id text, institute_id text, conversion_status varchar,
     converted_at timestamp, assigned_counselor_id varchar, best_score_response_id text, best_source_type text,
-    unique (user_id, institute_id));
+    unique (user_id, institute_id), merged_into_user_id text);
 create table audience(id varchar primary key, institute_id varchar, campaign_type text, campaign_name varchar);
 create table audience_response(id varchar primary key, audience_id varchar, user_id varchar, student_user_id varchar,
     audience_status varchar, overall_status varchar, parent_name varchar, parent_mobile varchar, parent_email varchar,

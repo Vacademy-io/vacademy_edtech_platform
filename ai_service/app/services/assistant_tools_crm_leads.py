@@ -263,6 +263,7 @@ SELECT ar.id AS lead_id, ar.user_id AS lead_user_id, ar.audience_id AS list_id, 
        {status_key} AS status_key, ({tier}) AS tier, ulp.conversion_status,
        CASE WHEN ulp.conversion_status = 'CONVERTED' THEN ulp.converted_at END AS converted_at, ulp.last_activity_at,
        lu.user_id AS enquiry_owner_id, ulp.assigned_counselor_id AS profile_owner_id, {owner} AS owner_id,
+       ulp.merged_into_user_id AS profile_merged_into,
        (SELECT ls.raw_score FROM lead_score ls WHERE ls.audience_response_id = ar.id
          ORDER BY ls.updated_at DESC NULLS LAST LIMIT 1) AS score,
        (SELECT MIN(lf.schedule_time) FROM lead_followup lf
@@ -827,6 +828,9 @@ async def _action_get(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                           "has_meet_link": bool(meeting[0].get("has_meet_link"))} if meeting else None),
         "tags": [{"tag_id": t["tag_id"], "name": cd.clean(t.get("tag_name"))} for t in tags],
     }
+    merge = cd.merge_state(ctx, uid) if uid else None
+    if merge:
+        out["merge"] = merge
     answers = _answers(detail)
     if answers:
         out["answers"] = cd.lead_content(answers)

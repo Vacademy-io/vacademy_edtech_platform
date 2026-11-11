@@ -58,7 +58,7 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     # caller's dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in.
     "crm_leads",            # READ:  find / list / one lead, timeline, my day, the CRM catalog, export
     "crm_lead_activity",    # WRITE: live additive — log interactions and notes, schedule / move / complete follow-ups
-    "crm_lead_edit",        # WRITE: live — status, tier, details, tags; preview + confirm token
+    "crm_lead_edit",        # WRITE: live — status, tier, details, tags, merge people; preview + confirm token
     "crm_team_edit",        # WRITE: live — assign / reassign leads, pause / resume a counsellor's routing; preview + confirm
     "crm_lead_intake",      # WRITE: live — add a lead (walk-ins too) or import a short list; preview + confirm token
     "crm_calls",            # READ:  calls, transcripts, callbacks due, missed inbound, AI agents / queue / runs
@@ -179,7 +179,8 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
     "crm_lead_edit": (
         "confirm-gated live edit, the admin's explicit choice: changes the status, tier, details or tags of leads "
         "in the caller's lead scope (at most 500 per call), and institute admins can label lead lists with "
-        "report tags (at most 50 lists per call); never deletes a lead; every write needs the "
+        "report tags (at most 50 lists per call) and merge a duplicate person into another one (or undo it), "
+        "never for a duplicate with an enrolment, plan or payment; never deletes a lead; every write needs the "
         "confirm_token of a preview that showed each before → after, signed over the resolved leads and their "
         "current state (single-use for more than one lead), so a changed lead or target list is refused"
     ),

@@ -4,7 +4,8 @@ The CRM lead write tools over MCP:
 * ``crm_lead_activity`` — log what happened with one lead (a call, a WhatsApp
   chat, a visit, a note), and schedule, move or complete its follow-ups;
 * ``crm_lead_edit`` — change leads' status (up to 500, by ids or a filter),
-  tier, contact details / form answers and tags;
+  tier, contact details / form answers and tags, and (institute admins) merge
+  a duplicate person into another one, or undo that;
 * ``crm_lead_intake`` — add one lead (walk-ins too) or import up to 100.
 
 Every lead, list, call, follow-up, status, tier, tag and counsellor id is
@@ -54,7 +55,8 @@ LEADS_FEATURE = "crm.leads"
 CALLING_FEATURE = "crm.calling"
 
 ACTIVITY_ACTIONS = ("log_interaction", "add_note", "schedule_followup", "reschedule_followup", "complete_followup")
-EDIT_ACTIONS = ("set_status", "set_tier", "update_details", "tag", "untag", "tag_lists")
+EDIT_ACTIONS = ("set_status", "set_tier", "update_details", "tag", "untag", "tag_lists", "merge_people",
+                "unmerge_people")
 INTAKE_ACTIONS = ("add_lead", "import_leads")
 
 #: Same prefix as crm_data.AC — repeated here because this module may be imported while crm_data is still
@@ -72,11 +74,17 @@ TAG_ADD_PATH = f"{AC}/tag-management/institutes/{{inst}}/tags/{{tag}}/users/add"
 TAG_REMOVE_PATH = f"{AC}/tag-management/institutes/{{inst}}/users/tags/deactivate"
 DISPOSITION_PATH = f"{AC}/v1/telephony/calls/{{cid}}/disposition"
 LIST_TAGS_PATH = f"{AC}/v1/audience/campaign/{{aid}}/tags"
+MERGE_PREVIEW_PATH = f"{AC}/v1/audience/lead-merge/preview"
+MERGE_PATH = f"{AC}/v1/audience/lead-merge"
+UNMERGE_PATH = f"{AC}/v1/audience/lead-merge/undo"
 
 #: kind → crm_data.write_activity kind. REACHOUT is written by the messaging tools only.
 INTERACTION_KINDS = ("CALL", "WHATSAPP", "MEETING", "NOTE", "VISIT", "EMAIL")
 #: Sources a lead added from here can carry (audience_response.source_type).
 INTAKE_SOURCES = ("MANUAL", "WALK_IN", "INBOUND_CALL", "REFERRAL")
+#: How far back add_lead looks for a lead with a similar name.
+SIMILAR_NAME_DAYS = 180
+MAX_SIMILAR_NAMES = 10
 #: Form questions that are the lead's own contact fields, edited through `changes`, not answers.
 CONTACT_FIELD_KEYS = ("full_name", "email", "phone_number")
 
@@ -121,6 +129,11 @@ ACTION_SPEC: Dict[str, Dict[str, Any]] = {
     "untag": _spec("Remove tags from leads (per person).", True, "single_use", confirm_one_lead="edit_token"),
     "tag_lists": _spec("Set key → value tags (state, course, channel …) on up to 50 lead lists, so reports can "
                        "group by them.", True, "single_use", admin_only=True, confirm_one_lead="edit_token"),
+    "merge_people": _spec("Merge a duplicate person into the person to keep: the duplicate's enquiries here move "
+                          "over and the duplicate stops counting as a lead or an admission. Refused for a "
+                          "duplicate with an enrolment, plan or payment here.", True, "edit_token", admin_only=True),
+    "unmerge_people": _spec("Undo a merge: the enquiries it moved go back and the person counts as a lead again.",
+                            True, "edit_token", admin_only=True),
     # crm_lead_intake
     "add_lead": _spec("Add one lead (a walk-in, a phone enquiry) to a lead list.", True, "single_use"),
     "import_leads": _spec("Add up to 100 leads to one lead list.", True, "single_use"),
@@ -228,6 +241,17 @@ EDIT_SCHEMA: Dict[str, Any] = {
             "the person's own details are refused (shared_account) when another institute uses their account.\n"
             "- tag / untag (targets, tag_ids): EXISTING tag ids from crm_leads catalog (never invent or create tags); "
             "tags belong to the person.\n"
+            "- merge_people (institute admins; lead = a lead of the person to KEEP, duplicate_lead_id = a lead of "
+            "the duplicate person): for the same person entered twice (different phone / email, two accounts). The "
+            "preview shows both people side by side and what moves: every enquiry of the duplicate here, with its "
+            "follow-ups, notes and history, moves to the person kept, and the duplicate stops counting as a lead or "
+            "an admission (their account is not changed). Refused, with the reason, when the duplicate has an "
+            "enrolment, a plan or a payment here, is the linked student on someone else's enquiry, either person "
+            "opted out, or one was already merged — those need a person to fix by hand. Never pick the pair "
+            "yourself: show the user both people and let them say which to keep.\n"
+            "- unmerge_people (institute admins; lead = a lead of the person kept, merged_user_id? = the merged "
+            "person's lead_user_id from crm_leads get → merge.merged_people, needed when several were merged in): "
+            "undo a merge; the enquiries it moved go back.\n"
             "- tag_lists (institute admins; lists: [{list_id, tags: {key: value | null}}] ≤50, replace?): label LEAD "
             "LISTS (not leads) with key → value tags such as state, course, channel, so crm_reports custom can "
             "group by list_tag:<key>. Keys: letters, digits, _ (≤40); values ≤60 characters; null removes a key; "
@@ -259,6 +283,10 @@ EDIT_SCHEMA: Dict[str, Any] = {
                                                                      "tags": {"type": "object"}}}},
                 "replace": {"type": "boolean", "description": "tag_lists: the given tags become the list's only "
                                                              "tags (default: merged into the existing ones)."},
+                "duplicate_lead_id": {"type": "string", "description": "merge_people: a lead of the duplicate "
+                                                                       "person (lead_id from crm_leads)."},
+                "merged_user_id": {"type": "string", "description": "unmerge_people: the merged person's "
+                                                                    "lead_user_id (crm_leads get → merge)."},
                 "confirm_token": _CONFIRM_PROP,
             },
             "required": ["action"],
@@ -274,7 +302,10 @@ INTAKE_SCHEMA: Dict[str, Any] = {
             "Add new leads to one of the institute's lead lists (list ids from crm_leads catalog). Before adding, the "
             "person is looked up: an existing lead is refused with already_lead (with the matching leads) and an "
             "opted-out person with opted_out — show that to the user; pass re_enquiry: true ONLY when the user says "
-            "this is a new enquiry from an existing lead. For an opted-out person: " + cd.OPT_OUT_READD_NOTE + " Both actions are two-step, "
+            "this is a new enquiry from an existing lead. add_lead's preview also lists similar_name_leads: live "
+            "leads with a very similar name (same once normalised, or same first and last name) submitted in the "
+            "last " + str(SIMILAR_NAME_DAYS) + " days, contact masked. It is only a warning: ask the user whether "
+            "it is the same person (then use that lead instead) before confirming. For an opted-out person: " + cd.OPT_OUT_READD_NOTE + " Both actions are two-step, "
             "and new leads run the list's automations (the preview lists them). Actions:\n"
             "- add_lead (list_id, name, phone and/or email, source?: MANUAL (default) | WALK_IN (someone at the "
             "front desk) | INBOUND_CALL | REFERRAL, counsellor_id? ('me' or a counsellor id from catalog; for a "
@@ -1674,6 +1705,99 @@ def _match_report(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
     return out
 
 
+#: A name lower-cased with everything but letters turned into single spaces (the same rule as admin-core's
+#: similar-name check when a lead is added in the dashboard).
+_NORM_NAME = "btrim(regexp_replace(lower({c}), '[\\W\\d_]+', ' ', 'g'))"
+
+_SIMILAR_NAME_SQL = """
+WITH q AS (
+    SELECT """ + _NORM_NAME.format(c="CAST(:name AS text)") + """ AS n
+), qp AS (
+    SELECT n, split_part(n, ' ', 1) AS f, regexp_replace(n, '^.* ', '') AS l, position(' ' in n) > 0 AS multi
+    FROM q
+), nf AS MATERIALIZED (
+    SELECT cf.id FROM custom_fields cf
+    WHERE left(cf.field_key, 9) = 'full_name'
+      AND cf.id IN (SELECT icf.custom_field_id FROM institute_custom_fields icf WHERE icf.institute_id = :inst)
+), cand AS MATERIALIZED (
+    SELECT ar.id AS lead_id, ar.user_id AS lead_user_id, ar.audience_id AS list_id, a.campaign_name AS list_name,
+           ar.overall_status, ar.audience_status, ar.parent_mobile, ar.parent_email, ar.submitted_at,
+           {status_key} AS status_key, ulp.conversion_status, ulp.merged_into_user_id AS profile_merged_into,
+           lu.user_id AS enquiry_owner_id, ulp.assigned_counselor_id AS profile_owner_id,
+           CASE WHEN {pred} THEN TRUE ELSE FALSE END AS in_scope,
+           COALESCE(NULLIF(btrim(ar.parent_name), ''), (
+               SELECT v.value FROM custom_field_values v
+               WHERE v.source_type = 'AUDIENCE_RESPONSE' AND v.source_id = ar.id
+                 AND v.custom_field_id IN (SELECT nf.id FROM nf)
+                 AND NULLIF(btrim(v.value), '') IS NOT NULL
+               ORDER BY v.updated_at DESC NULLS LAST LIMIT 1)) AS nm
+    FROM audience_response ar
+    {joins}
+    WHERE {live} AND NOT {on_list} AND ar.user_id IS NOT NULL
+      AND ar.submitted_at >= now() - make_interval(days => :days)
+), norm AS (
+    SELECT c.*, """ + _NORM_NAME.format(c="c.nm") + """ AS n FROM cand c WHERE c.nm IS NOT NULL
+)
+SELECT DISTINCT ON (x.lead_user_id) x.lead_id, x.lead_user_id, x.list_id, x.list_name, x.overall_status,
+       x.audience_status, x.parent_mobile, x.parent_email, x.submitted_at, x.status_key, x.conversion_status,
+       x.profile_merged_into, x.enquiry_owner_id, x.profile_owner_id, x.in_scope, x.nm AS parent_name,
+       (x.n = qp.n) AS exact_name
+FROM norm x CROSS JOIN qp
+WHERE qp.n <> ''
+  AND (x.n = qp.n
+       OR (qp.multi AND position(' ' in x.n) > 0
+           AND ((split_part(x.n, ' ', 1) = qp.f AND regexp_replace(x.n, '^.* ', '') = qp.l)
+             OR (split_part(x.n, ' ', 1) = qp.l AND regexp_replace(x.n, '^.* ', '') = qp.f))))
+ORDER BY x.lead_user_id, (x.n = qp.n) DESC, x.submitted_at DESC
+LIMIT 200
+"""
+
+
+async def _similar_names(ctx: ToolContext, name: Any, skip_people: Any = ()) -> Dict[str, Any]:
+    """
+    Live leads here (any list, opted-out and opt-out list rows left out) with a name like ``name``,
+    submitted in the last SIMILAR_NAME_DAYS days, one per person, skipping ``skip_people`` (people
+    already matched by phone or email) and people merged into someone else. ``{}`` when there are
+    none or the check could not run: it only ever warns.
+    """
+    text_ = cd.clean(name, 200) or ""
+    if len(text_.strip()) < 3:
+        return {}
+    s = await cd.sql_scope(ctx)
+    if cd.is_error(s):
+        return {}
+    pred, sparams = cd.scope_sql(s)
+    sql = _SIMILAR_NAME_SQL.format(status_key=cd.STATUS_KEY_SQL, pred=pred, joins=cd.LEAD_OWNER_JOINS,
+                                   live=cd.live_lead_sql(), on_list=cd.OPT_OUT_LIST_SQL.format(r="ar", a="a"))
+    found, ok = cd.rows(ctx, sql, {**sparams, "inst": ctx.principal.institute_id, "name": text_,
+                                   "days": SIMILAR_NAME_DAYS}, timeout_ms=5000)
+    if not ok:
+        return {}
+    skip = {str(u) for u in skip_people if u}
+    hits = [r for r in found if r.get("lead_user_id") not in skip and not r.get("profile_merged_into")]
+    if not hits:
+        return {}
+    hits.sort(key=lambda r: (not r.get("exact_name"), -(_ts(r.get("submitted_at")))))
+    visible = [r for r in hits if r.get("in_scope")]
+    out: Dict[str, Any] = {"similar_name_leads": [{**_lead_view(r), "exact_name": bool(r.get("exact_name"))}
+                                                  for r in visible[:MAX_SIMILAR_NAMES]],
+                           "similar_name_note": (
+                               "Leads with a very similar name, submitted in the last " + str(SIMILAR_NAME_DAYS)
+                               + " days. Only a warning: ask the user whether this is the same person (then use "
+                               "that lead, or merge them later with crm_lead_edit merge_people) or someone else.")}
+    hidden = len(hits) - len(visible[:MAX_SIMILAR_NAMES])
+    if hidden:
+        out["similar_names_not_shown"] = hidden
+    return out
+
+
+def _ts(value: Any) -> float:
+    try:
+        return value.timestamp() if value is not None else 0.0
+    except (AttributeError, OverflowError, OSError, ValueError):
+        return 0.0
+
+
 async def _intake_checks(ctx: ToolContext, args: Dict[str, Any]) -> Dict[str, Any]:
     """The verified list + shared checks for add / import: {list, fields, scope} or an error."""
     list_id = str(args.get("list_id") or "").strip()
@@ -1768,6 +1892,8 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
             "is a new enquiry, pass re_enquiry: true."))
     body = {"audience_id": base["list"]["list_id"], "source_type": base["source"], **row}
     request = {k: v for k, v in args.items() if k not in ("user_id", "institute_id", "confirm_token")}
+    similar = await _similar_names(ctx, row["user_dto"]["full_name"],
+                                   [m.get("lead_user_id") for m in found]) if not args.get("confirm_token") else {}
 
     async def preview() -> Dict[str, Any]:
         view: Dict[str, Any] = {
@@ -1781,6 +1907,7 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
             "answers": cd.lead_content(row.get("custom_field_values")) if row.get("custom_field_values") else None,
             "automations": await _automations_by_list(ctx, cd.EVENT_LEAD_SUBMISSION, [base["list"]["list_id"]]),
             "_summary": {"list_id": base["list"]["list_id"], "re_enquiry": bool(blocking)}}
+        view.update(similar)
         if blocking:
             view["re_enquiry_of"] = _match_report(blocking)
             if opted_out:
@@ -2086,11 +2213,143 @@ async def _tag_lists(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                            state=state, preview=preview, apply=apply)
 
 
+# ── merge people ─────────────────────────────────────────────────────────
+
+def _enquiry_view(e: Dict[str, Any]) -> Dict[str, Any]:
+    return {"lead_id": e.get("response_id"), "list": cd.clean(e.get("list_name")), "status": e.get("status_key"),
+            "deleted": (e.get("audience_status") or "ACTIVE") != "ACTIVE", "source": e.get("source_type"),
+            "submitted_at": e.get("submitted_at"), "phone": cd.mask_phone(e.get("phone")),
+            "email": cd.mask_email(e.get("email"))}
+
+
+def _person_view(p: Dict[str, Any]) -> Dict[str, Any]:
+    enquiries = [e for e in (p.get("enquiries") or []) if isinstance(e, dict)]
+    view = {"lead_user_id": p.get("user_id"), "name": cd.mask_name(cd.clean(p.get("name"))) or None,
+            "status": p.get("conversion_status"), "tier": p.get("lead_tier"),
+            "owner": cd.clean(p.get("counsellor_name")) or None, "enquiries": len(enquiries),
+            "leads": [_enquiry_view(e) for e in enquiries[:MAX_PREVIEW_ROWS]]}
+    if len(enquiries) > MAX_PREVIEW_ROWS:
+        view["more_leads_not_shown"] = len(enquiries) - MAX_PREVIEW_ROWS
+    return view
+
+
+def _merge_state(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """What a merge confirm is bound to: both people, the duplicate's enquiries and both merge marks."""
+    keep, dup = plan.get("keep") or {}, plan.get("duplicate") or {}
+    return {"keep": keep.get("user_id"), "duplicate": dup.get("user_id"),
+            "keep_status": keep.get("conversion_status"), "keep_merged_into": keep.get("merged_into_user_id"),
+            "duplicate_merged_into": dup.get("merged_into_user_id"),
+            "moving": sorted(str(e.get("response_id")) for e in (dup.get("enquiries") or []) if isinstance(e, dict))}
+
+
+async def _merge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    refusal = await cd.require_admin(ctx)
+    if refusal:
+        return refusal
+    if not str(args.get("duplicate_lead_id") or "").strip():
+        return _missing("duplicate_lead_id", message="Pass lead_id (a lead of the person to keep) and "
+                                                     "duplicate_lead_id (a lead of the duplicate person).")
+    keep = await _lead(ctx, args)
+    if cd.is_error(keep):
+        return keep
+    dup = await cd.resolve_lead(ctx, lead_id=args.get("duplicate_lead_id"))
+    if cd.is_error(dup):
+        return dup
+    keep_uid, dup_uid = keep.get("lead_user_id"), dup.get("lead_user_id")
+    if not keep_uid or not dup_uid:
+        return cd.err("no_person", message="One of these leads has no person behind it, so it cannot be merged.")
+    if keep_uid == dup_uid:
+        return cd.err("same_person", message="Both leads already belong to the same person. Nothing to merge.")
+    params = {"instituteId": ctx.principal.institute_id}
+    plan = await cd.ac(ctx, "GET", MERGE_PREVIEW_PATH,
+                       params={**params, "keepUserId": keep_uid, "duplicateUserId": dup_uid})
+    if cd.is_error(plan):
+        return _rejected(plan, "The merge preview")
+    if not isinstance(plan, dict):
+        return cd.err("admin_core_rejected", message="The merge preview could not be read.")
+    reasons = [{"code": r.get("code"), "reason": cd.clean(r.get("message"), 300)}
+               for r in (plan.get("refusals") or []) if isinstance(r, dict)]
+    if not plan.get("can_merge"):
+        return cd.err("merge_refused", reasons=reasons, message=(
+            "These two people cannot be merged here: " + "; ".join(r["reason"] or r["code"] or "" for r in reasons)
+            + ". Tell the user why; these cases need a person to fix them by hand."))
+    state = _merge_state(plan)
+    request = _request(args, "duplicate_lead_id")
+    body = {"keep_user_id": keep_uid, "duplicate_user_id": dup_uid}
+
+    async def preview() -> Dict[str, Any]:
+        return {"keep": _person_view(plan.get("keep") or {}), "duplicate": _person_view(plan.get("duplicate") or {}),
+                "effects": [cd.clean(e, 300) for e in (plan.get("effects") or [])],
+                "undo": "An admin can undo this with crm_lead_edit unmerge_people (lead = a lead of the person kept)."}
+
+    async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        resp = await cd.ac(ctx, "POST", MERGE_PATH, params=params, body=body)
+        if cd.is_error(resp):
+            return _rejected(resp, "The merge")
+        moved = (resp or {}).get("enquiries_moved") if isinstance(resp, dict) else None
+        return {"merged": True, "done": True, "kept_lead_user_id": keep_uid, "merged_lead_user_id": dup_uid,
+                "enquiries_moved": moved,
+                "next": "The duplicate's leads now sit on the person kept; crm_leads get on any of them shows it."}
+
+    return await _two_step(ctx, args, tool=EDIT_TOOL, action="merge_people", many=False, request=request,
+                           state=state, preview=preview, apply=apply)
+
+
+async def _unmerge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    refusal = await cd.require_admin(ctx)
+    if refusal:
+        return refusal
+    keep = await _lead(ctx, args)
+    if cd.is_error(keep):
+        return keep
+    keep_uid = keep.get("lead_user_id")
+    merge = cd.merge_state(ctx, keep_uid) or {}
+    people = merge.get("merged_people") or []
+    wanted = str(args.get("merged_user_id") or "").strip()
+    if wanted:
+        people = [p for p in people if p.get("lead_user_id") == wanted]
+        if not people:
+            return cd.err("not_merged", message="That person was not merged into this lead's person.")
+    elif not people:
+        return cd.err("not_merged", message="Nobody was merged into this lead's person, so there is nothing to undo.")
+    elif len(people) > 1:
+        return cd.err("ambiguous_merge", merged_people=people[:20], message=(
+            "Several people were merged into this person. Ask the user which one to split out and pass its "
+            "lead_user_id as merged_user_id."))
+    target = people[0]
+    dup_uid = target["lead_user_id"]
+    state = {"keep": keep_uid, "duplicate": dup_uid, "merged_at": target.get("merged_at"),
+             "enquiries": target.get("enquiries_moved")}
+    request = _request(args, "merged_user_id")
+    params = {"instituteId": ctx.principal.institute_id}
+
+    async def preview() -> Dict[str, Any]:
+        display = await cd.names(ctx, [dup_uid])
+        return {"kept_person": {"lead_user_id": keep_uid}, "merged_person": {
+                    "lead_user_id": dup_uid, "name": cd.mask_name(display.get(dup_uid)) or None,
+                    "merged_at": target.get("merged_at")},
+                "effects": [f"{target.get('enquiries_moved') or 0} enquiries the merge moved go back to the merged "
+                            "person, with their follow-ups, notes and history.",
+                            "The merged person counts as a lead again; the person kept keeps their own leads."]}
+
+    async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        resp = await cd.ac(ctx, "POST", UNMERGE_PATH, params=params, body={"duplicate_user_id": dup_uid})
+        if cd.is_error(resp):
+            return _rejected(resp, "Undoing the merge")
+        back = (resp or {}).get("enquiries_moved_back") if isinstance(resp, dict) else None
+        return {"unmerged": True, "done": True, "kept_lead_user_id": keep_uid, "merged_lead_user_id": dup_uid,
+                "enquiries_moved_back": back}
+
+    return await _two_step(ctx, args, tool=EDIT_TOOL, action="unmerge_people", many=False, request=request,
+                           state=state, preview=preview, apply=apply)
+
+
 _HANDLERS: Dict[str, Callable[[Dict[str, Any], ToolContext], Awaitable[Dict[str, Any]]]] = {
     "log_interaction": _log_interaction, "add_note": _add_note, "schedule_followup": _schedule_followup,
     "reschedule_followup": _reschedule_followup, "complete_followup": _complete_followup,
     "set_status": _set_status, "set_tier": _set_tier, "update_details": _update_details,
     "tag": _tag_add, "untag": _tag_remove, "tag_lists": _tag_lists,
+    "merge_people": _merge_people, "unmerge_people": _unmerge_people,
     "add_lead": _add_lead, "import_leads": _import_leads,
 }
 

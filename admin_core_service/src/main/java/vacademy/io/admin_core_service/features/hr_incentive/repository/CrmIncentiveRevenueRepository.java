@@ -46,6 +46,7 @@ public interface CrmIncentiveRevenueRepository extends Repository<PayrollAdjustm
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
                   AND ulp.conversion_status = 'CONVERTED'
                   AND (CAST(:scopeCsv AS text) IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(CAST(:scopeCsv AS text), ',')))
             )

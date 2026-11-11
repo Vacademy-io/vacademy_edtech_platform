@@ -64,4 +64,11 @@ public class UserLeadProfileDTO {
 
     @JsonProperty("assigned_counselor_name")
     private String assignedCounselorName;
+
+    /** Set when this person was merged into another person; the profile no longer counts as a lead. */
+    @JsonProperty("merged_into_user_id")
+    private String mergedIntoUserId;
+
+    @JsonProperty("merged_at")
+    private Timestamp mergedAt;
 }

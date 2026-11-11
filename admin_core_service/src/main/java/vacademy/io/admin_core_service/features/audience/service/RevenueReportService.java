@@ -95,6 +95,7 @@ public class RevenueReportService {
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
                 """ + (convertedOnly ? """
                   AND ulp.conversion_status = 'CONVERTED'
                   AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
@@ -407,6 +408,7 @@ public class RevenueReportService {
                        ulp.converted_at
             """ + LEAD_SCOPE_JOIN + """
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
                   AND COALESCE(ulp.created_at, ulp.last_calculated_at) >= :fromTs
                   AND COALESCE(ulp.created_at, ulp.last_calculated_at) <  :toTs
             """ + LEAD_SCOPE_PRED + """
@@ -483,6 +485,7 @@ public class RevenueReportService {
                        WHERE ulp.converted_at >= :fromTs AND ulp.converted_at < :toTs) AS conversions
             """ + LEAD_SCOPE_JOIN + """
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
             """ + LEAD_SCOPE_PRED;
 
     /** Open pipeline right now: leads not yet won or lost, scoped. */
@@ -490,6 +493,7 @@ public class RevenueReportService {
             SELECT COUNT(*) AS open_leads
             """ + LEAD_SCOPE_JOIN + """
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
               AND ulp.conversion_status = 'LEAD'
             """ + LEAD_SCOPE_PRED;
 

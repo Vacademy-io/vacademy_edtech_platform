@@ -184,7 +184,7 @@ LEFT JOIN LATERAL (
     ORDER BY in_scope DESC, student_opted, ar.submitted_at DESC NULLS LAST, ar.id
     LIMIT 1
 ) r ON true
-WHERE ulp.institute_id = :inst AND ulp.assigned_counselor_id = :from_id
+WHERE ulp.institute_id = :inst AND ulp.assigned_counselor_id = :from_id AND ulp.merged_into_user_id IS NULL
   AND (ulp.conversion_status IS NULL OR ulp.conversion_status <> 'CONVERTED'){only}
 ORDER BY ulp.updated_at DESC NULLS LAST, ulp.id
 LIMIT :lim
@@ -197,6 +197,7 @@ SELECT m.id AS member_id, m.pool_id, p.name AS pool_name, m.status, m.audience_i
        (SELECT COUNT(DISTINCT o.counselor_user_id) FROM counselor_pool_member o
          WHERE o.pool_id = m.pool_id AND o.status = 'ACTIVE' AND o.counselor_user_id <> :cid) AS others_active,
        (SELECT COUNT(*) FROM user_lead_profile u WHERE u.institute_id = :inst AND u.assigned_counselor_id = :cid
+         AND u.merged_into_user_id IS NULL
          AND (u.conversion_status IS NULL OR u.conversion_status <> 'CONVERTED')) AS open_leads
 FROM counselor_pool_member m JOIN counselor_pool p ON p.id = m.pool_id
 WHERE p.institute_id = :inst AND m.counselor_user_id = :cid

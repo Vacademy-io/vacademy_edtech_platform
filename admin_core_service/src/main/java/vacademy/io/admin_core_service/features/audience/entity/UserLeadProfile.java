@@ -113,6 +113,19 @@ public class UserLeadProfile {
     private Timestamp updatedAt;
 
     /**
+     * Set when this person was merged into another person in the same institute (their
+     * enquiries moved there). A merged profile is not counted as a lead or an admission.
+     */
+    @Column(name = "merged_into_user_id")
+    private String mergedIntoUserId;
+
+    @Column(name = "merged_at")
+    private Timestamp mergedAt;
+
+    @Column(name = "merged_by_user_id")
+    private String mergedByUserId;
+
+    /**
      * LEGACY tier from bestScore using the fixed 80/50 thresholds. Prefer
      * {@code LeadTierService.deriveTier(instituteId, bestScore)}, which honours the
      * institute's own tier catalog; this stays only for callers with no institute context.

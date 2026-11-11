@@ -636,7 +636,7 @@ ar.overall_status, ar.audience_status, ar.submitted_at, ar.updated_at, ar.source
 ar.enquiry_id, ar.parent_name, ar.parent_email, ar.parent_mobile,
 {STATUS_KEY_SQL} AS status_key, ulp.id AS profile_id, ulp.conversion_status, ulp.lead_tier, ulp.best_score,
 ulp.updated_at AS profile_updated_at, lu.user_id AS enquiry_owner_id, ulp.assigned_counselor_id AS profile_owner_id,
-{owner_display_sql()} AS owner_id"""
+{owner_display_sql()} AS owner_id, ulp.merged_into_user_id AS profile_merged_into"""
 
 
 def _lead_sql(s: Scope, where: str) -> Tuple[str, Dict[str, Any]]:
@@ -672,6 +672,8 @@ def lead_flags(row: Dict[str, Any]) -> List[str]:
     if row.get("enquiry_owner_id") and row.get("profile_owner_id") \
             and row["enquiry_owner_id"] != row["profile_owner_id"]:
         flags.append("ownership_conflict")
+    if row.get("profile_merged_into"):
+        flags.append("merged_into_other_person")
     return flags
 
 
@@ -687,6 +689,52 @@ def person_flags(rows_: Iterable[Dict[str, Any]]) -> List[str]:
 def person_opted_out(flags: Iterable[str]) -> bool:
     """A person's ``opted_out`` from their ``person_flags``: list leaves out every row those flags cover."""
     return bool({"opted_out", "linked_student_opted_out"} & set(flags))
+
+
+# ── merged people ────────────────────────────────────────────────────────
+
+#: A person merged into another person here (admin-core's lead merge): their profile stays, marked with the
+#: person kept, and no longer counts as a lead or an admission. Their enquiries moved to the person kept.
+MERGED_NOTE = ("This person was merged into another person: their enquiries moved there and this profile no longer "
+               "counts as a lead or an admission. An admin can undo it with crm_lead_edit unmerge_people.")
+
+_MERGE_STATE_SQL = """
+SELECT 'into' AS kind, p.merged_into_user_id AS other_id, p.merged_at, 0 AS enquiries
+FROM user_lead_profile p
+WHERE p.institute_id = :inst AND p.user_id = :uid AND p.merged_into_user_id IS NOT NULL
+UNION ALL
+SELECT 'from', p.user_id, p.merged_at,
+       (SELECT COUNT(*) FROM audience_response ar
+          JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :inst
+         WHERE ar.user_id = :uid AND ar.merged_from_user_id = p.user_id)
+FROM user_lead_profile p
+WHERE p.institute_id = :inst AND p.merged_into_user_id = :uid
+ORDER BY 3 DESC NULLS LAST
+LIMIT 51
+"""
+
+
+def merge_state(ctx: ToolContext, user_id: Any) -> Optional[Dict[str, Any]]:
+    """
+    ``{merged_into, merged_at, merged_people: [{lead_user_id, merged_at, enquiries_moved}]}`` for one person
+    here, or None when they are neither merged nor merged into (or the read failed).
+    """
+    uid = str(user_id or "").strip()
+    if not uid:
+        return None
+    found, ok = rows(ctx, _MERGE_STATE_SQL, {"inst": ctx.principal.institute_id, "uid": uid})
+    if not ok or not found:
+        return None
+    into = next((r for r in found if r.get("kind") == "into"), None)
+    people = [{"lead_user_id": r.get("other_id"), "merged_at": iso(r.get("merged_at")),
+               "enquiries_moved": int(r.get("enquiries") or 0)} for r in found if r.get("kind") == "from"]
+    out: Dict[str, Any] = {}
+    if into:
+        out.update({"merged_into": into.get("other_id"), "merged_at": iso(into.get("merged_at")),
+                    "note": MERGED_NOTE})
+    if people:
+        out["merged_people"] = people[:50]
+    return out or None
 
 
 def _phone_where(phone: str) -> Tuple[str, Dict[str, Any]]:

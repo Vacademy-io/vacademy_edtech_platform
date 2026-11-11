@@ -1283,6 +1283,7 @@ def _branches(kinds: Sequence[str], no_lead: bool, basis: str = "paid_on", attri
         frm = "user_lead_profile pc\n" + _first_live_lead("fc", "pc.user_id", no_lead)
         out.append(_ev("conversion", "fc.id", "pc.converted_at", frm,
                        "pc.institute_id = :inst AND pc.conversion_status = 'CONVERTED' "
+                       "AND pc.merged_into_user_id IS NULL "
                        "AND pc.converted_at >= :w_from AND pc.converted_at < :w_to",
                        owner="pc.assigned_counselor_id"))
     paid_at = cd.payment_at_sql(basis)

@@ -50,13 +50,14 @@ public interface UserLeadProfileRepository extends JpaRepository<UserLeadProfile
     @Query("SELECT p FROM UserLeadProfile p " +
            "WHERE p.instituteId = :instituteId " +
            "  AND p.assignedCounselorId = :counsellorUserId " +
+           "  AND p.mergedIntoUserId IS NULL " +
            "  AND (p.conversionStatus IS NULL OR p.conversionStatus <> 'CONVERTED')")
     List<UserLeadProfile> findOpenByInstituteAndCounsellor(
             @Param("instituteId") String instituteId,
             @Param("counsellorUserId") String counsellorUserId);
 
     /** Count profiles per tier for a given institute. */
-    @Query("SELECT p.leadTier, COUNT(p) FROM UserLeadProfile p WHERE p.instituteId = :instituteId GROUP BY p.leadTier")
+    @Query("SELECT p.leadTier, COUNT(p) FROM UserLeadProfile p WHERE p.instituteId = :instituteId AND p.mergedIntoUserId IS NULL GROUP BY p.leadTier")
     List<Object[]> countByTierForInstitute(@Param("instituteId") String instituteId);
 
     /**

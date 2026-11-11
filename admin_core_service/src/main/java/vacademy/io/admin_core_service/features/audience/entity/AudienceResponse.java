@@ -198,6 +198,10 @@ public class AudienceResponse {
     @Column(name = "ad_form_id", length = 100)
     private String adFormId;
 
+    /** The user this enquiry belonged to before a person merge moved it; cleared when the merge is undone. */
+    @Column(name = "merged_from_user_id")
+    private String mergedFromUserId;
+
     /**
      * Constructor from DTO
      */

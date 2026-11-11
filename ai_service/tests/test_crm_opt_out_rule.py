@@ -51,12 +51,14 @@ create table mcp_file_export(id varchar primary key, institute_id varchar, creat
 create table audience_response(id varchar primary key, audience_id varchar, user_id varchar, student_user_id varchar,
     audience_status varchar, overall_status varchar, parent_name varchar, parent_mobile varchar, parent_email varchar,
     submitted_at timestamp, created_at timestamp, updated_at timestamp, source_type varchar, enquiry_id varchar,
-    lead_status_id varchar, tat_due_override_at timestamp, tat_due_at timestamp);
+    lead_status_id varchar, tat_due_override_at timestamp, tat_due_at timestamp,
+    merged_from_user_id varchar);
 create table linked_users(id varchar primary key, user_id varchar, source varchar, source_id varchar,
     created_at timestamp);
 create table user_lead_profile(id text primary key, user_id text, institute_id text, conversion_status varchar,
     converted_at timestamp, assigned_counselor_id varchar, lead_tier varchar, best_score int4, updated_at timestamp,
-    last_activity_at timestamp, unique (user_id, institute_id));
+    last_activity_at timestamp, merged_into_user_id text,
+    unique (user_id, institute_id));
 create table lead_status(id text primary key, status_key varchar, institute_id varchar, label varchar,
     deleted_at timestamp, is_active boolean);
 create table lead_tier(id text primary key, tier_key varchar, institute_id varchar, is_active boolean, min_score int4,

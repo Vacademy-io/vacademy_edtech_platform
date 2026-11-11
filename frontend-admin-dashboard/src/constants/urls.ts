@@ -432,6 +432,8 @@ export const UPDATE_LEAD_STATUS = `${BASE_URL}/admin-core-service/v1/audience/us
 export const UPDATE_LEAD_TIER = `${BASE_URL}/admin-core-service/v1/audience/user-lead-profile/update-tier`;
 export const ASSIGN_COUNSELOR_TO_LEAD = `${BASE_URL}/admin-core-service/v1/audience/user-lead-profile/assign-counselor`;
 export const GET_USER_AUDIENCES = `${BASE_URL}/admin-core-service/v1/audience/user-audiences`;
+/** Merging duplicate people: preview (GET), merge (POST), undo, merge state, similar names. */
+export const LEAD_MERGE_BASE = `${BASE_URL}/admin-core-service/v1/audience/lead-merge`;
 export const GET_CROSS_STAGE_TIMELINE = `${BASE_URL}/admin-core-service/timeline/v1/student`;
 export const GET_LATEST_NOTES_BATCH = `${BASE_URL}/admin-core-service/timeline/v1/student/latest-notes-batch`;
 // Full lead journey (status/disposition changes + notes + calls + call

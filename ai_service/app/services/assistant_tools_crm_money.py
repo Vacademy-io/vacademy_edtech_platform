@@ -570,7 +570,7 @@ _CONVERTED_NOT_PAID_SQL = """-- crm_money.converted_not_paid
 WITH {ctes}conv AS (
     SELECT ulp.user_id AS pid, ulp.converted_at, ulp.assigned_counselor_id
     FROM user_lead_profile ulp
-    WHERE ulp.institute_id = :inst AND ulp.conversion_status = 'CONVERTED'
+    WHERE ulp.institute_id = :inst AND ulp.conversion_status = 'CONVERTED' AND ulp.merged_into_user_id IS NULL
       AND ulp.converted_at >= :w_from AND ulp.converted_at < :w_to{people_ulp}
 ), ppl AS (
     SELECT c.*, ARRAY(SELECT c.pid UNION

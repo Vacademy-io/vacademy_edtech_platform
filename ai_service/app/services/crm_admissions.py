@@ -4,8 +4,8 @@ plus totals) and ``admissions_export`` (the same rows with full contact, as a CS
 behind a private link). Institute admins only; read-only apart from the export's
 own ``mcp_file_export`` row.
 
-An admission is a person who was converted (``user_lead_profile``) or enrolled
-(``student_session_institute_group_mapping``) in the window. A row is one person
+An admission is a person who was converted (``user_lead_profile``, not merged into
+another person) or enrolled (``student_session_institute_group_mapping``) in the window. A row is one person
 and plan, so a person with a plan in the window and a separate enrolment gets one
 row for each. Totals are per person and ignore the basis, plan and lead_state
 filters; ``matched`` and ``matched_people`` respect them.
@@ -126,7 +126,7 @@ _BASE = """WITH enr AS MATERIALIZED (
 ), pop AS MATERIALIZED (
     SELECT x.pid, BOOL_OR(x.c) AS is_conv, BOOL_OR(NOT x.c) AS is_enr
     FROM (SELECT ulp.user_id AS pid, TRUE AS c FROM user_lead_profile ulp
-          WHERE ulp.institute_id = :inst AND ulp.conversion_status = 'CONVERTED'
+          WHERE ulp.institute_id = :inst AND ulp.conversion_status = 'CONVERTED' AND ulp.merged_into_user_id IS NULL
             AND ulp.converted_at >= CAST(:w_from AS timestamp) AND ulp.converted_at < CAST(:w_to AS timestamp)
           UNION ALL SELECT DISTINCT pid, FALSE FROM enr) x
     GROUP BY x.pid

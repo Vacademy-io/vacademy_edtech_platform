@@ -46,15 +46,15 @@ public class SalesDashboardService {
         Object[] argsBase = new Object[]{instituteId};
 
         Long totalLeads = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? " +
+                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? AND merged_into_user_id IS NULL " +
                         andDateRange("created_at", from, to) + userClause,
                 Long.class, argsWithRange(argsBase, from, to, users));
         Long openLeads = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? AND conversion_status = 'LEAD'" +
+                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? AND merged_into_user_id IS NULL AND conversion_status = 'LEAD'" +
                         userClause,
                 Long.class, argsConcat(argsBase, users));
         Long conversions = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? AND conversion_status = 'CONVERTED'" +
+                "SELECT COUNT(*) FROM user_lead_profile WHERE institute_id = ? AND merged_into_user_id IS NULL AND conversion_status = 'CONVERTED'" +
                         andDateRange("converted_at", from, to) + userClause,
                 Long.class, argsWithRange(argsBase, from, to, users));
 
@@ -178,7 +178,7 @@ public class SalesDashboardService {
                 "         ulp.conversion_status " +
                 "  FROM user_lead_profile ulp " +
                 "  LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id " +
-                "  WHERE ulp.institute_id = ? " +
+                "  WHERE ulp.institute_id = ? AND ulp.merged_into_user_id IS NULL " +
                 dateClause +
                 userClause +
                 ") t " +
@@ -369,7 +369,7 @@ public class SalesDashboardService {
         // the IN placeholders.
         jdbc.query("SELECT DATE(ulp.created_at) AS day, COUNT(*) AS n " +
                         "FROM user_lead_profile ulp " +
-                        "WHERE ulp.institute_id = ? " +
+                        "WHERE ulp.institute_id = ? AND ulp.merged_into_user_id IS NULL " +
                         "  AND ulp.created_at >= ? AND ulp.created_at < ? " +
                         userClause +
                         "GROUP BY DATE(ulp.created_at) ORDER BY day",
@@ -488,12 +488,12 @@ public class SalesDashboardService {
         try {
             Double thisWeek = jdbc.queryForObject(
                     "SELECT 100.0 * AVG(CASE WHEN conversion_status='CONVERTED' THEN 1 ELSE 0 END) " +
-                            "FROM user_lead_profile WHERE institute_id = ? " +
+                            "FROM user_lead_profile WHERE institute_id = ? AND merged_into_user_id IS NULL " +
                             "  AND created_at >= NOW() - INTERVAL '7 days'",
                     Double.class, instituteId);
             Double lastWeek = jdbc.queryForObject(
                     "SELECT 100.0 * AVG(CASE WHEN conversion_status='CONVERTED' THEN 1 ELSE 0 END) " +
-                            "FROM user_lead_profile WHERE institute_id = ? " +
+                            "FROM user_lead_profile WHERE institute_id = ? AND merged_into_user_id IS NULL " +
                             "  AND created_at >= NOW() - INTERVAL '14 days' " +
                             "  AND created_at <  NOW() - INTERVAL '7 days'",
                     Double.class, instituteId);

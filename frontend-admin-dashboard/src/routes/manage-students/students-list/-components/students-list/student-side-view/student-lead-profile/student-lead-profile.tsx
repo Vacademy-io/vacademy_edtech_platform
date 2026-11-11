@@ -29,6 +29,7 @@ import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselo
 import { LeadCallHistory, LeadCallIntelligenceSummary } from '@/components/shared/leads';
 import { useAdmissionCourseGuard } from '@/components/shared/leads/admission-course-guard';
 import { serverRefusal } from '@/components/shared/leads/services/admission-check';
+import { LeadMergeSection } from '@/components/shared/leads/lead-merge';
 import { FollowUpsWidget } from './follow-ups-widget';
 import { LeadFreebiesWidget } from './lead-freebies-widget';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
@@ -1366,6 +1367,7 @@ export function StudentLeadProfile({ userId }: StudentLeadProfileProps) {
     return (
         <div className="flex flex-col gap-5">
             {admissionDialog}
+            <LeadMergeSection userId={userId} />
             {/* ── Score + Tier control ── */}
             <div className="rounded-xl border border-neutral-100 bg-gradient-to-r from-neutral-50 to-white p-4">
                 <div className="flex items-center justify-between">

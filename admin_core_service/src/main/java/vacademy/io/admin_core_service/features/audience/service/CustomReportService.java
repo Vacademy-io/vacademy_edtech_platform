@@ -154,6 +154,7 @@ public class CustomReportService {
             """ + SOURCE_JOINS + """
             %FOLLOWUP_JOIN%
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) >= :fromTs
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) <  :toTs
               AND (:scopeCsv IS NULL OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))

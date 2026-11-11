@@ -130,6 +130,7 @@ public class AdmissionReportService {
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
                   AND ulp.user_id IN (SELECT user_id FROM main)
             )
             SELECT m.user_id, m.month, to_char(c.first_day, 'YYYY-MM-DD') AS first_day,

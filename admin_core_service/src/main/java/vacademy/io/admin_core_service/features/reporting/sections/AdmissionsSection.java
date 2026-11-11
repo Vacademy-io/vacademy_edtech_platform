@@ -93,6 +93,7 @@ public class AdmissionsSection implements ReportSection {
         Integer n = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM user_lead_profile "
                         + "WHERE institute_id = ? "
+                        + "AND merged_into_user_id IS NULL "
                         + "AND created_at > now() - INTERVAL '90 days'",
                 Integer.class, instituteId);
         return n != null && n > 0;
@@ -204,6 +205,7 @@ public class AdmissionsSection implements ReportSection {
                                           IN ('DNP', 'NOT_REACHABLE')) AS unreachable
             FROM user_lead_profile
             WHERE institute_id = ?
+              AND merged_into_user_id IS NULL
             """;
 
     /**
@@ -220,6 +222,7 @@ public class AdmissionsSection implements ReportSection {
                    count(*) AS total
             FROM user_lead_profile
             WHERE institute_id = ?
+              AND merged_into_user_id IS NULL
             GROUP BY conversion_status
             ORDER BY count(*) FILTER (WHERE created_at >= ? AND created_at < ?) DESC,
                      count(*) DESC
@@ -247,6 +250,7 @@ public class AdmissionsSection implements ReportSection {
                    count(*) FILTER (WHERE converted_at >= ? AND converted_at < ?) AS converted
             FROM user_lead_profile
             WHERE institute_id = ?
+              AND merged_into_user_id IS NULL
               AND assigned_counselor_id IS NOT NULL
             GROUP BY 1
             HAVING count(*) FILTER (WHERE conversion_status IN """ + IN_PLAY + """
