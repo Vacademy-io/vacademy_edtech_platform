@@ -249,7 +249,7 @@ def test_language_correction_is_listed_in_the_outside_panel():
                                         question_labels={"q1": "4"})
     page = fitz.open(stream=out, filetype="pdf")[0]
     panel = page.get_text("text", clip=fitz.Rect(595, 0, page.rect.width, page.rect.height))
-    assert "Q4: Correct" in panel
+    assert "Q4: 3/3 (Correct)" in panel
     assert "Clear answer." in panel
     assert "Language: he go -> he goes" in panel
     # The grader's feedback is shown without its own copy of the language list.
