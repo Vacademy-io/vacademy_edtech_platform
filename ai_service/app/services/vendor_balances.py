@@ -74,15 +74,15 @@ def _http_error_message(vendor: str, exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         code = exc.response.status_code
         if code in (401, 403):
-            return f"{vendor} refused this key for balance reads (HTTP {code})"
+            return f"{vendor} refused our key, so the balance could not be read. The key may be expired or revoked."
         if code == 429:
-            return f"{vendor} rate limited the balance check (HTTP 429)"
-        return f"{vendor} answered HTTP {code}"
+            return f"{vendor} asked us to slow down. Try again in a minute."
+        return f"{vendor} returned an error ({code}). Try again later."
     if isinstance(exc, httpx.TimeoutException):
-        return f"{vendor} did not answer within {TIMEOUT_SECONDS}s"
+        return f"{vendor} took too long to answer. Try again later."
     if isinstance(exc, httpx.HTTPError):
         return f"Could not reach {vendor}"
-    return f"{vendor} sent a response we could not read"
+    return f"{vendor} answered, but not in the format we expected."
 
 
 def _number(value: Any) -> Optional[float]:
@@ -123,8 +123,8 @@ def parse_openrouter_key(payload: Mapping[str, Any]) -> Dict[str, Any]:
     if data.get("limit") is None or remaining is None:
         return {
             "status": "not_set_up",
-            "message": "This key has no spending limit, so OpenRouter does not report what is left on it. "
-                       "Add OPENROUTER_MANAGEMENT_KEY to ai-service to show the account balance.",
+            "message": "This key has no spending cap, so OpenRouter won't say what is left on it. "
+                       "Ask an engineer to add OpenRouter's management key to show the account balance.",
         }
     return {"balance": remaining, "currency": "USD", "kind": KEY_LIMIT,
             "message": "Left under this key's spending limit. The account itself may hold more."}
@@ -176,7 +176,7 @@ def openrouter_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[s
             parse_openrouter_credits)]
     keys = _split_keys(env.get("OPENROUTER_API_KEY"))
     if not keys:
-        return [_not_set_up("OpenRouter", "OPENROUTER_API_KEY is not set on ai-service.")]
+        return [_not_set_up("OpenRouter", "No OpenRouter key is set up.")]
     return [_check("OpenRouter", _masked(k), lambda k=k: _get_json(
         client, "GET", OPENROUTER_KEY_URL, headers={"Authorization": f"Bearer {k}"}),
         parse_openrouter_key) for k in keys]
@@ -185,7 +185,7 @@ def openrouter_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[s
 def fal_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[str, Any]]:
     keys = _split_keys(env.get("FAL_API_KEY"))
     if not keys:
-        return [_not_set_up("fal.ai", "FAL_API_KEY is not set on ai-service.")]
+        return [_not_set_up("fal.ai", "No fal.ai key is set up.")]
     return [_check("fal.ai", _masked(k), lambda k=k: _get_json(
         client, "GET", FAL_BILLING_URL, params={"expand": "credits"}, headers={"Authorization": f"Key {k}"}),
         parse_fal_billing) for k in keys]
@@ -197,7 +197,7 @@ RUNPOD_QUERY = "query { myself { clientBalance currentSpendPerHr } }"
 def runpod_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[str, Any]]:
     keys = _split_keys(env.get("RUNPOD_API_KEY"))
     if not keys:
-        return [_not_set_up("RunPod", "RUNPOD_API_KEY is not set on ai-service.")]
+        return [_not_set_up("RunPod", "No RunPod key is set up.")]
     return [_check("RunPod", _masked(k), lambda k=k: _get_json(
         client, "POST", RUNPOD_GRAPHQL_URL, json={"query": RUNPOD_QUERY}, headers={"Authorization": f"Bearer {k}"}),
         parse_runpod_myself) for k in keys]

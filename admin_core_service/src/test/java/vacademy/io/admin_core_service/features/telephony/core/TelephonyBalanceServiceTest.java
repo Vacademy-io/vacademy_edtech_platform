@@ -118,7 +118,7 @@ class TelephonyBalanceServiceTest {
                 "Unauthorized", null, "owner@example.com".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
         Map<String, Object> row = service.check(c, null);
         assertEquals("error", row.get("status"));
-        assertEquals("Exotel refused these credentials (HTTP 401)", row.get("message"));
+        assertEquals("Exotel refused this institute's saved credentials. They may have been changed in Exotel.", row.get("message"));
         assertFalse(row.toString().contains("owner@example.com"));
         assertFalse(row.toString().contains("secret-token"));
 
@@ -139,8 +139,27 @@ class TelephonyBalanceServiceTest {
         when(cache.getForAi("i4")).thenReturn(Optional.of(TelephonyConfigCache.Resolved.builder()
                 .config(primary).credentials(ProviderCredentials.builder().build()).build()));
         Map<String, Object> row = service.check(aiLine, null);
-        assertEquals("Credentials could not be read", row.get("message"));
+        assertEquals("This institute's saved credentials could not be read", row.get("message"));
         verify(plivo, times(0)).getAccountRaw(any());
+    }
+
+    @Test
+    void plivoSubaccountsShowTheSharedMasterBalanceOnce() {
+        Map<String, Object> exotelRow = Map.of("vendor", "Exotel", "status", "ok", "balance", 50.0);
+        Map<String, Object> failed = new java.util.HashMap<>(Map.of("vendor", "Plivo", "status", "error", "institute_id", "i9"));
+        List<Map<String, Object>> rows = TelephonyBalanceService.collapsePlivo(List.of(
+                exotelRow,
+                new java.util.HashMap<>(Map.of("vendor", "Plivo", "status", "ok", "balance", 19.1, "institute_id", "i1")),
+                new java.util.HashMap<>(Map.of("vendor", "Plivo", "status", "ok", "balance", 19.1, "institute_id", "i2")),
+                failed));
+        assertEquals(3, rows.size());
+        Map<String, Object> master = rows.get(0);
+        assertEquals(19.1, master.get("balance"));
+        assertEquals(2, master.get("shared_by"));
+        assertNull(master.get("institute_id"));
+        assertEquals("Vacademy master account", master.get("account"));
+        assertEquals(exotelRow, rows.get(1));
+        assertEquals(failed, rows.get(2));
     }
 
     @Test

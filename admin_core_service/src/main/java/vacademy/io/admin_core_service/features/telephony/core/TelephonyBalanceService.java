@@ -39,6 +39,10 @@ import java.util.function.LongSupplier;
  * secret: an Exotel Account SID is shown as is (it is an account name, not a credential) and a
  * Plivo Auth ID by its last four characters. Errors say what failed without the provider's body.
  *
+ * <p>Plivo subaccounts have no wallet of their own: every one draws on our master account, so each
+ * reports the same master balance. Those rows are folded into one, so the master balance is shown
+ * (and totalled) once. A subaccount whose check failed keeps its own row.
+ *
  * <p>Results are cached for {@link #CACHE}; a forced refresh is honoured at most once per
  * {@link #MIN_REFRESH}, so the portal cannot make us hammer the providers.
  */
@@ -102,13 +106,39 @@ public class TelephonyBalanceService {
                     rows.add(futures.get(i).get());
                 } catch (Exception e) {
                     InstituteTelephonyConfig cfg = configs.get(i);
-                    rows.add(error(cfg, names.get(cfg.getInstituteId()), "The balance check did not finish"));
+                    rows.add(error(cfg, names.get(cfg.getInstituteId()), "The balance check did not finish. Try again later."));
                 }
             }
-            return rows;
+            return collapsePlivo(rows);
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    /** Readable Plivo rows all show the shared master balance, so they become one row. */
+    static List<Map<String, Object>> collapsePlivo(List<Map<String, Object>> rows) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        Map<String, Object> master = null;
+        int subaccounts = 0;
+        for (Map<String, Object> r : rows) {
+            if (!"Plivo".equals(r.get("vendor")) || !"ok".equals(r.get("status"))) {
+                out.add(r);
+                continue;
+            }
+            subaccounts++;
+            if (master == null) master = r;
+        }
+        if (master != null) {
+            Map<String, Object> m = new LinkedHashMap<>(master);
+            m.put("account", "Vacademy master account");
+            m.put("institute_id", null);
+            m.put("institute_name", null);
+            m.put("shared_by", subaccounts);
+            m.put("message", "Every institute's Plivo subaccount draws on this one balance ("
+                    + subaccounts + (subaccounts == 1 ? " subaccount" : " subaccounts") + ").");
+            out.add(0, m);
+        }
+        return out;
     }
 
     private Map<String, String> instituteNames(List<InstituteTelephonyConfig> configs) {
@@ -133,7 +163,7 @@ public class TelephonyBalanceService {
         if (resolved.isEmpty() || resolved.get().getConfig() == null
                 || !cfg.getId().equals(resolved.get().getConfig().getId())
                 || resolved.get().getCredentials() == null) {
-            return error(cfg, instituteName, "Credentials could not be read");
+            return error(cfg, instituteName, "This institute's saved credentials could not be read");
         }
         String vendor = vendorName(cfg);
         try {
@@ -150,8 +180,8 @@ public class TelephonyBalanceService {
         } catch (HttpStatusCodeException e) {
             int code = e.getStatusCode().value();
             return error(cfg, instituteName, code == 401 || code == 403
-                    ? vendor + " refused these credentials (HTTP " + code + ")"
-                    : vendor + " answered HTTP " + code);
+                    ? vendor + " refused this institute's saved credentials. They may have been changed in " + vendor + "."
+                    : vendor + " returned an error (" + code + "). Try again later.");
         } catch (ResourceAccessException e) {
             return error(cfg, instituteName, "Could not reach " + vendor);
         } catch (Exception e) {
