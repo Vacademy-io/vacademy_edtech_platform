@@ -189,12 +189,20 @@ step_archive() {
   grep -rlq "$BUNDLE" "$IOS/App/public/assets" || die "ios/App/App/public does not contain $BUNDLE — run the web step (--web)"
   local kid="${ASC_KEY_ID:-KGSU6BPA68}" iss="${ASC_ISSUER_ID:-b488efb0-528d-4e05-8241-8ff52160ddef}"
   rm -rf "$ARCHIVE"; mkdir -p "$(dirname "$ARCHIVE")"
-  # project signing (automatic) + API key so xcodebuild can mint the dev profile a brand-new bundle id lacks;
-  # CODE_SIGN_STYLE/PROFILE overrides on this line would leak into the Pods targets and fail.
+  local signing=()
+  if [ "${CI_MANUAL_SIGNING:-0}" = 1 ]; then
+    # CI runner: no Apple Development certificate exists there, so the target's Release config is
+    # switched to the Apple Distribution identity + App Store profile on the runner's checkout.
+    ruby "$HERE/lib/ci_target.rb" sign "$IOS" "$BUNDLE" "$TARGET App Store" "${APPLE_TEAM_ID:-35NLZB49QN}" | sed 's/^/  /'
+  else
+    # laptop: project signing (automatic) + API key so xcodebuild can mint the dev profile a brand-new
+    # bundle id lacks; CODE_SIGN_STYLE/PROFILE overrides on this line would leak into the Pods targets and fail.
+    signing=(-allowProvisioningUpdates -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_$kid.p8"
+      -authenticationKeyID "$kid" -authenticationKeyIssuerID "$iss")
+  fi
   (cd "$IOS" && xcodebuild -workspace App.xcworkspace -scheme "$TARGET" -sdk iphoneos -configuration Release archive \
       -archivePath "$ARCHIVE" MARKETING_VERSION="$MV" CURRENT_PROJECT_VERSION="$BN" \
-      -allowProvisioningUpdates -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_$kid.p8" \
-      -authenticationKeyID "$kid" -authenticationKeyIssuerID "$iss" -quiet 2>&1 | grep -E "error:|ARCHIVE FAILED" | head -5 || true)
+      ${signing[@]+"${signing[@]}"} -quiet 2>&1 | grep -E "error:|ARCHIVE FAILED" | head -5 || true)
   [ -d "$ARCHIVE/Products/Applications" ] || die "archive failed"
   mkdir -p "$EXPORT"
   cat > "$EXPORT/ExportOptions.plist" <<EOF
