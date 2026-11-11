@@ -49,13 +49,26 @@ const MAX_PDF_MB = 25;
 
 const pdfSchema = z.object({ url: z.string().min(1), name: z.string() }).nullable();
 
+/** Upload time when the teacher leaves it blank. */
+const DEFAULT_UPLOAD_MINUTES = 30;
+/** No "Live till" = the test never closes (same open end the slide-level create form uses). */
+const OPEN_END_ISO = '9999-12-31T23:59:59.999Z';
+
 const buildSchema = (t: TFunction) =>
     z
         .object({
             name: z.string().trim().min(1, t('errors.nameRequired')),
-            startDate: z.string().min(1, t('errors.startRequired')),
-            endDate: z.string().min(1, t('errors.endRequired')),
-            duration: z.coerce.number().int().min(1, t('errors.durationMin')),
+            // Both optional: no start = live from now, no end = never closes.
+            startDate: z.string(),
+            endDate: z.string(),
+            // Optional: blank = DEFAULT_UPLOAD_MINUTES.
+            duration: z
+                .string()
+                .refine(
+                    (v): boolean =>
+                        v.trim() === '' || (Number.isInteger(Number(v)) && Number(v) >= 1),
+                    t('errors.durationMin')
+                ),
             totalMarks: z.coerce.number().min(1, t('errors.marksMin')),
             batchIds: z.array(z.string()).min(1, t('errors.batchRequired')),
             description: z.string(),
@@ -70,6 +83,12 @@ const buildSchema = (t: TFunction) =>
         .refine((v) => !v.startDate || !v.endDate || new Date(v.endDate) > new Date(v.startDate), {
             path: ['endDate'],
             message: t('errors.endAfterStart'),
+        })
+        // No start = live from now, so an end already in the past would make a test that is
+        // over before anyone sees it.
+        .refine((v) => !!v.startDate || !v.endDate || new Date(v.endDate) > new Date(), {
+            path: ['endDate'],
+            message: t('errors.endInFuture'),
         });
 
 type FormValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -233,7 +252,7 @@ export const QuickOfflineTestDialog = ({
             name: '',
             startDate: '',
             endDate: '',
-            duration: 30,
+            duration: String(DEFAULT_UPLOAD_MINUTES),
             totalMarks: 100,
             batchIds: [],
             description: '',
@@ -317,6 +336,9 @@ export const QuickOfflineTestDialog = ({
         if (!values.paper || creating) return;
         if (values.checkMode === 'AI' && aiBlocked) return;
         setCreating(true);
+        const durationMinutes = values.duration.trim()
+            ? Number(values.duration)
+            : DEFAULT_UPLOAD_MINUTES;
         let assessmentId: string;
         try {
             assessmentId = await createOfflineTest(
@@ -324,10 +346,12 @@ export const QuickOfflineTestDialog = ({
                     name: values.name,
                     descriptionHtml: values.description,
                     paper: values.paper,
-                    noteHtml: tSlide('createLogic.noteHtml', { count: values.duration }),
-                    startIso: new Date(values.startDate).toISOString(),
-                    endIso: new Date(values.endDate).toISOString(),
-                    durationMinutes: values.duration,
+                    noteHtml: tSlide('createLogic.noteHtml', { count: durationMinutes }),
+                    startIso: values.startDate
+                        ? new Date(values.startDate).toISOString()
+                        : new Date().toISOString(),
+                    endIso: values.endDate ? new Date(values.endDate).toISOString() : OPEN_END_ISO,
+                    durationMinutes,
                     totalMarks: values.totalMarks,
                     batchIds: values.batchIds,
                 },
@@ -461,7 +485,6 @@ export const QuickOfflineTestDialog = ({
                                     <MyInput
                                         inputType="datetime-local"
                                         label={t('fields.start')}
-                                        required
                                         input={field.value}
                                         onChangeFunction={(e) => field.onChange(e.target.value)}
                                         error={fieldState.error?.message}
@@ -479,7 +502,6 @@ export const QuickOfflineTestDialog = ({
                                     <MyInput
                                         inputType="datetime-local"
                                         label={t('fields.end')}
-                                        required
                                         input={field.value}
                                         onChangeFunction={(e) => field.onChange(e.target.value)}
                                         error={fieldState.error?.message}
@@ -501,8 +523,7 @@ export const QuickOfflineTestDialog = ({
                                     <MyInput
                                         inputType="number"
                                         label={t('fields.duration')}
-                                        required
-                                        input={String(field.value ?? '')}
+                                        input={field.value}
                                         onChangeFunction={(e) => field.onChange(e.target.value)}
                                         error={fieldState.error?.message}
                                         size="large"
@@ -511,7 +532,9 @@ export const QuickOfflineTestDialog = ({
                                         onWheel={(e) => e.currentTarget.blur()}
                                     />
                                     <p className="text-caption text-neutral-500">
-                                        {t('fields.durationHint')}
+                                        {t('fields.durationHint', {
+                                            minutes: DEFAULT_UPLOAD_MINUTES,
+                                        })}
                                     </p>
                                 </FormItem>
                             )}
