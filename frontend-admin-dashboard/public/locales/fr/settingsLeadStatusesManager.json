@@ -29,5 +29,20 @@
     "toasts": {
         "saveSuccess": "Statuts des prospects enregistrés",
         "saveError": "Échec de l'enregistrement des statuts des prospects"
+    },
+    "admissionRule": {
+        "title": "Quand un prospect passe à {{status}} sans formation",
+        "description": "Choisissez ce qui se passe quand un membre de l’équipe passe un prospect à ce statut alors que la personne n’a encore ni formation ni plan de paiement ici. Les admissions sans formation ni frais faussent vos rapports de revenus. Les automatisations, les appels IA et les inscriptions ne sont jamais bloqués.",
+        "off": "Ne rien faire",
+        "offHint": "Aucune vérification. C’est le réglage par défaut.",
+        "warn": "Avertir d’abord",
+        "warnHint": "L’équipe voit une confirmation et peut quand même continuer.",
+        "block": "Exiger une formation ou un plan de paiement",
+        "blockHint": "L’équipe ne peut pas passer un prospect à {{status}} tant que la personne n’a ni formation ni plan de paiement.",
+        "save": "Enregistrer la règle",
+        "saved": "Règle d’admission enregistrée",
+        "saveFailed": "Impossible d’enregistrer la règle d’admission",
+        "loadFailed": "Impossible de charger ce réglage. Actualisez la page pour réessayer.",
+        "convertedFallback": "Converti"
     }
 }

@@ -750,3 +750,104 @@ async def test_tag_lists_one_list_replace_and_refusals(backend):
 def test_a_lead_view_masks_a_name_that_holds_contact(stored, shown):
     assert m._lead_view(lead_row("r-1", "u-1", name=stored))["name"] == shown
     assert m._lead_view(lead_row("r-1", "u-1", name=None), stored)["name"] == shown
+
+
+# ── crm_lead_edit: the admission rule on a move to CONVERTED ─────────────
+
+def _admission_rule(backend, monkeypatch, mode, missing):
+    """LEAD_SETTING.admissionCourseRule = mode; ``missing`` = lead ids whose person has no course here."""
+    monkeypatch.setattr(isr, "load_institute_setting_data",
+                        lambda db, inst, key: {"admissionCourseRule": {"mode": mode}} if key == "LEAD_SETTING" else None)
+    backend.sql.on("AS no_course_lead_id", lambda p, sql: [{"no_course_lead_id": i} for i in p["lids"] if i in missing])
+
+
+async def test_set_status_converted_warns_in_the_preview_and_still_confirms(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    _admission_rule(backend, monkeypatch, "warn", {"r-1"})
+    shown = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="Admitted")
+    assert shown["applied"] is False and shown["to"]["status"] == "CONVERTED"
+    assert shown["no_course_yet"]["count"] == 1 and shown["no_course_yet"]["lead_ids"] == ["r-1"]
+    assert "no course or fee plan" in shown["no_course_yet"]["message"] and "Admitted" in shown["no_course_yet"]["message"]
+    assert shown["leads"][0]["no_course_yet"] is True
+    sql, params = backend.sql.matching("AS no_course_lead_id")[0]
+    assert params == {"inst": "inst-1", "lids": ["r-1"]}
+    assert "ei.institute_id = :inst" in sql and "s.institute_id = :inst" in sql
+    assert writes(backend) == []
+    done = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="Admitted",
+                     confirm_token=shown["confirm_token"])
+    assert done["updated"] == 1 and done["done"]
+    assert backend.admin_core.called(STATUS_ONE + "r-1", "POST")[0]["params"]["statusId"] == "st-won"
+
+
+async def test_set_status_converted_is_refused_under_block_until_a_course_is_added(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    _people_leads(backend)
+    _admission_rule(backend, monkeypatch, "BLOCK", {"r-3"})
+    out = await run(m.EDIT_TOOL, admin(db=confirm_db()), action="set_status", lead_ids=["r-1", "r-3"],
+                    status="CONVERTED")
+    assert out["error"] == "course_required" and out["lead_ids"] == ["r-3"] and out["count"] == 1
+    assert out["to"]["status"] == "CONVERTED" and "Add the course or fee plan" in out["message"]
+    assert "confirm_token" not in out and writes(backend) == []
+    # once every person has a course, the same request previews as usual
+    _admission_rule(backend, monkeypatch, "BLOCK", set())
+    shown = await run(m.EDIT_TOOL, admin(db=confirm_db()), action="set_status", lead_ids=["r-1", "r-3"],
+                      status="CONVERTED")
+    assert shown["confirm_token"].startswith("vcc_") and "no_course_yet" not in shown
+
+
+async def test_set_status_block_is_checked_again_at_confirm(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    _admission_rule(backend, monkeypatch, "OFF", {"r-1"})
+    shown = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="CONVERTED")
+    assert "confirm_token" in shown
+    _admission_rule(backend, monkeypatch, "BLOCK", {"r-1"})        # the admin switched the rule on meanwhile
+    out = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="CONVERTED",
+                    confirm_token=shown["confirm_token"])
+    assert out["error"] == "course_required" and writes(backend) == []
+
+
+async def test_set_status_rule_off_or_another_status_looks_nothing_up(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    shown = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="CONVERTED")
+    assert "confirm_token" in shown and "no_course_yet" not in shown
+    _admission_rule(backend, monkeypatch, "BLOCK", {"r-1"})
+    shown = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="INTERESTED")
+    assert "confirm_token" in shown
+    assert backend.sql.matching("AS no_course_lead_id") == []
+    _admission_rule(backend, monkeypatch, "sometimes", {"r-1"})     # an unknown value is OFF
+    shown = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="CONVERTED")
+    assert "confirm_token" in shown and backend.sql.matching("AS no_course_lead_id") == []
+
+
+async def test_set_status_course_lookup_failure_changes_nothing(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    _admission_rule(backend, monkeypatch, "WARN", set())
+    original = backend.sql
+
+    def failing(ctx_, sql, params=None, **kw):
+        if "AS no_course_lead_id" in sql:
+            return [], False
+        return original(ctx_, sql, params, **kw)
+    monkeypatch.setattr(cd, "rows", failing)
+    out = await run(m.EDIT_TOOL, admin(), action="set_status", lead_id="r-1", status="CONVERTED")
+    assert out["error"] == "query_failed" and writes(backend) == []
+
+
+async def test_log_interaction_status_converted_follows_the_rule(backend, monkeypatch):
+    backend.lead_scope("ADMIN")
+    _admission_rule(backend, monkeypatch, "BLOCK", {"r-1"})
+    args = dict(action="log_interaction", lead_id="r-1", note="Paid at the desk", status="CONVERTED")
+    out = await run(m.ACTIVITY_TOOL, admin(), **args)
+    assert out["error"] == "course_required" and writes(backend) == []        # nothing saved, not even the note
+    _admission_rule(backend, monkeypatch, "WARN", {"r-1"})
+    out = await run(m.ACTIVITY_TOOL, admin(), **args)
+    assert out["done"] is True and out["saved"]["status"]["status"] == "CONVERTED"
+    assert out["no_course_yet"]["lead_ids"] == ["r-1"]
+
+
+def test_no_course_sql_uses_the_admissions_report_rules():
+    from app.services import crm_admissions as adm
+    sql = m._no_course_sql()
+    assert "up.status NOT IN " + adm._ENDED_PLAN in sql
+    assert adm._COUNTED.format(m="s") in sql
+    assert ":inst" in sql and "ANY(:lids)" in sql and "::" not in sql

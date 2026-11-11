@@ -27,6 +27,8 @@ import {
 import { cn } from '@/lib/utils';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
 import { LeadCallHistory, LeadCallIntelligenceSummary } from '@/components/shared/leads';
+import { useAdmissionCourseGuard } from '@/components/shared/leads/admission-course-guard';
+import { serverRefusal } from '@/components/shared/leads/services/admission-check';
 import { FollowUpsWidget } from './follow-ups-widget';
 import { LeadFreebiesWidget } from './lead-freebies-widget';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
@@ -1306,8 +1308,21 @@ export function StudentLeadProfile({ userId }: StudentLeadProfileProps) {
             toast.success(t('profile.leadMarkedAs', { status }));
             invalidateLeadCaches(queryClient, userId);
         },
-        onError: () => toast.error(t('profile.statusUpdateFailed')),
+        onError: (error) => toast.error(serverRefusal(error) ?? t('profile.statusUpdateFailed')),
     });
+
+    // Moving someone with no course or fee plan to the admission status asks first (or
+    // explains why it can't), when the institute has that rule switched on.
+    const { confirmAdmission, admissionDialog } = useAdmissionCourseGuard();
+    const pickStatus = async (statusKey: string) => {
+        if (statusKey === profile?.conversion_status) return;
+        const target = leadStatuses.find((s) => s.status_key === statusKey) ?? {
+            status_key: statusKey,
+            label: statusKey,
+        };
+        if (!(await confirmAdmission([effectiveResponseId], target))) return;
+        changeStatus(statusKey);
+    };
 
     const { mutate: changeTier, isPending: changingTier } = useMutation({
         mutationFn: (tier: string) => updateLeadTier(userId, instituteId, tier),
@@ -1350,6 +1365,7 @@ export function StudentLeadProfile({ userId }: StudentLeadProfileProps) {
 
     return (
         <div className="flex flex-col gap-5">
+            {admissionDialog}
             {/* ── Score + Tier control ── */}
             <div className="rounded-xl border border-neutral-100 bg-gradient-to-r from-neutral-50 to-white p-4">
                 <div className="flex items-center justify-between">
@@ -1510,7 +1526,7 @@ export function StudentLeadProfile({ userId }: StudentLeadProfileProps) {
                             >
                                 <DropdownMenuRadioGroup
                                     value={profile.conversion_status ?? ''}
-                                    onValueChange={(v) => changeStatus(v)}
+                                    onValueChange={(v) => void pickStatus(v)}
                                 >
                                     {leadStatuses.map((s) => (
                                         <DropdownMenuRadioItem

@@ -7,6 +7,11 @@ export interface BulkLeadStatusResult {
     /** Leads already on the target status; counted, not rewritten. */
     unchanged: number;
     failed: number;
+    /**
+     * Of `failed`, the leads left alone because the institute asks for a course or fee plan
+     * before a lead is moved to its admission status, and the person has neither yet.
+     */
+    blocked?: number;
     /** Up to the first few failure reasons, for the toast. */
     errors: string[];
 }

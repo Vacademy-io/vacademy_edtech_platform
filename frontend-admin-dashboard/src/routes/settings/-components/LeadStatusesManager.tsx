@@ -13,6 +13,7 @@ import {
     type LeadStatusDraft,
 } from '@/hooks/use-lead-statuses';
 import { DEFAULT_STATUS_COLOR } from '@/hooks/use-lead-settings';
+import AdmissionCourseRuleSetting from './AdmissionCourseRuleSetting';
 
 /**
  * Table-backed Lead Statuses editor. Loads the institute's statuses, lets the admin add /
@@ -246,6 +247,13 @@ export default function LeadStatusesManager() {
                                 {saving ? t('footer.saving') : t('footer.save')}
                             </MyButton>
                         </div>
+
+                        <AdmissionCourseRuleSetting
+                            statusLabel={
+                                statuses.find((s) => s.status_key === 'CONVERTED')?.label ??
+                                t('admissionRule.convertedFallback')
+                            }
+                        />
                     </>
                 )}
             </CardContent>

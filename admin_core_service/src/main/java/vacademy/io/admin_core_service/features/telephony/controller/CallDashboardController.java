@@ -24,6 +24,7 @@ import vacademy.io.admin_core_service.features.telephony.core.dto.BulkCallAction
 import vacademy.io.admin_core_service.features.telephony.core.dto.DispositionCountDTO;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.TelephonyCallLogRepository;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionCourseRuleService;
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
 import vacademy.io.admin_core_service.features.call_intelligence.core.CallIntelligenceEnqueueService;
@@ -68,6 +69,7 @@ public class CallDashboardController {
             .EngagementActionRepository actionRepository;
     private final TelephonyCallLogRepository callLogRepository;
     private final LeadStatusService leadStatusService;
+    private final AdmissionCourseRuleService admissionCourseRuleService;
     private final UserLeadProfileService userLeadProfileService;
     private final CallIntelligenceEnqueueService callIntelligenceEnqueueService;
 
@@ -286,6 +288,8 @@ public class CallDashboardController {
                 throw new VacademyException("call has no lead");
             }
             if (done.add(c.getResponseId())) {
+                // A move to CONVERTED follows the institute's admission rule, as in the leads list.
+                admissionCourseRuleService.requireAllowedForStaff(c.getResponseId(), req.getStatusId().trim());
                 leadStatusService.changeLeadStatus(c.getResponseId(), req.getStatusId().trim(),
                         user.getUserId(), "MANUAL");
             }

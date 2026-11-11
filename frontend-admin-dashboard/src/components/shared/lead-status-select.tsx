@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LeadStatusChip } from '@/components/shared/lead-status-chip';
 import { setLeadStatusForLead, type LeadStatus } from '@/hooks/use-lead-statuses';
+import { useAdmissionCourseGuard } from '@/components/shared/leads/admission-course-guard';
+import { serverRefusal } from '@/components/shared/leads/services/admission-check';
 
 const normalize = (v: string) => v.trim().toUpperCase().replace(/\s+/g, '_');
 
@@ -36,6 +38,7 @@ export function LeadStatusSelect({
 }: LeadStatusSelectProps) {
     const [open, setOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const { confirmAdmission, admissionDialog } = useAdmissionCourseGuard();
 
     const chipStatuses = statuses.map((s) => ({
         key: s.status_key,
@@ -60,74 +63,85 @@ export function LeadStatusSelect({
             return;
         }
         setOpen(false);
+        // Moving someone with no course or fee plan to the admission status asks first
+        // (or explains why it can't), when the institute has that rule switched on.
+        if (!(await confirmAdmission([responseId], status))) return;
         setIsUpdating(true);
         try {
             await setLeadStatusForLead(responseId, status.id, 'MANUAL');
             toast.success(`Status updated to ${status.label}`);
             onUpdated?.();
-        } catch {
-            toast.error('Failed to update status');
+        } catch (error) {
+            toast.error(serverRefusal(error) ?? 'Failed to update status');
         } finally {
             setIsUpdating(false);
         }
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    disabled={isUpdating || statuses.length === 0}
-                    // Keep the click on the chip — don't bubble to row/cell handlers
-                    // (e.g. opening the lead side view).
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 rounded-full transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-                    title="Change status"
-                >
-                    {currentStatus ? (
-                        <LeadStatusChip
-                            status={currentStatus}
-                            statuses={chipStatuses}
-                            size={size}
-                            hideDot
-                        />
-                    ) : (
-                        <span className="inline-flex items-center rounded-full border border-dashed border-neutral-300 px-2 py-0.5 text-xs text-neutral-400">
-                            Set status
-                        </span>
-                    )}
-                    {caret && !isUpdating && <CaretDown className="size-3 text-neutral-400" />}
-                    {isUpdating && <CircleNotch className="size-3 animate-spin text-neutral-400" />}
-                </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-52 p-1">
-                <div className="flex max-h-64 flex-col overflow-y-auto">
-                    {statuses.map((s) => {
-                        const active = s.id === activeId;
-                        return (
-                            <button
-                                key={s.id}
-                                type="button"
-                                onClick={() => handleSelect(s)}
-                                className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-neutral-100 ${
-                                    active ? 'font-medium text-neutral-900' : 'text-neutral-700'
-                                }`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span
-                                        className="size-2 shrink-0 rounded-full"
-                                        // Status colour is arbitrary user-picked hex — no token equivalent.
-                                        style={{ backgroundColor: s.color }}
-                                    />
-                                    {s.label}
-                                </span>
-                                {active && <Check className="size-3.5 text-primary-600" />}
-                            </button>
-                        );
-                    })}
-                </div>
-            </PopoverContent>
-        </Popover>
+        <>
+            {/* Clicks in the dialog stay out of row / cell handlers (e.g. opening the side view). */}
+            <div className="contents" onClick={(e) => e.stopPropagation()}>
+                {admissionDialog}
+            </div>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <button
+                        type="button"
+                        disabled={isUpdating || statuses.length === 0}
+                        // Keep the click on the chip — don't bubble to row/cell handlers
+                        // (e.g. opening the lead side view).
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 rounded-full transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                        title="Change status"
+                    >
+                        {currentStatus ? (
+                            <LeadStatusChip
+                                status={currentStatus}
+                                statuses={chipStatuses}
+                                size={size}
+                                hideDot
+                            />
+                        ) : (
+                            <span className="inline-flex items-center rounded-full border border-dashed border-neutral-300 px-2 py-0.5 text-xs text-neutral-400">
+                                Set status
+                            </span>
+                        )}
+                        {caret && !isUpdating && <CaretDown className="size-3 text-neutral-400" />}
+                        {isUpdating && (
+                            <CircleNotch className="size-3 animate-spin text-neutral-400" />
+                        )}
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 p-1">
+                    <div className="flex max-h-64 flex-col overflow-y-auto">
+                        {statuses.map((s) => {
+                            const active = s.id === activeId;
+                            return (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => handleSelect(s)}
+                                    className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-start text-xs hover:bg-neutral-100 ${
+                                        active ? 'font-medium text-neutral-900' : 'text-neutral-700'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span
+                                            className="size-2 shrink-0 rounded-full"
+                                            // Status colour is arbitrary user-picked hex — no token equivalent.
+                                            style={{ backgroundColor: s.color }}
+                                        />
+                                        {s.label}
+                                    </span>
+                                    {active && <Check className="size-3.5 text-primary-600" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </>
     );
 }
 

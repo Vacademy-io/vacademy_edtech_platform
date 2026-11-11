@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.entity.LeadStatus;
 import vacademy.io.admin_core_service.features.audience.repository.LeadStatusRepository;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionCourseRuleService;
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.CallDispositionCatalog;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
@@ -37,6 +38,7 @@ public class CallDispositionService {
     private final TelephonyCallLogRepository callLogRepo;
     private final LeadStatusRepository leadStatusRepository;
     private final LeadStatusService leadStatusService;
+    private final AdmissionCourseRuleService admissionCourseRuleService;
 
     private static final String SOURCE = "MANUAL_DISPOSITION";
 
@@ -160,6 +162,10 @@ public class CallDispositionService {
         boolean synced = false;
         if (outcome.getMapsToLeadStatusId() != null && isLeadCall(call)) {
             try {
+                // An outcome mapped to CONVERTED follows the institute's admission rule; when it
+                // holds the move back, the outcome is still saved and synced stays false.
+                admissionCourseRuleService.requireAllowedForStaff(
+                        call.getResponseId(), outcome.getMapsToLeadStatusId());
                 leadStatusService.changeLeadStatus(
                         call.getResponseId(), outcome.getMapsToLeadStatusId(), actorUserId, SOURCE);
                 synced = true;

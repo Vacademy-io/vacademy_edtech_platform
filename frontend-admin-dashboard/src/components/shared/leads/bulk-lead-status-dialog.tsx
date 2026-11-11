@@ -24,6 +24,7 @@ import {
     bulkChangeLeadStatus,
     type BulkLeadStatusResult,
 } from './services/bulk-lead-status';
+import { useAdmissionCourseGuard } from './admission-course-guard';
 
 interface BulkLeadStatusDialogProps {
     open: boolean;
@@ -46,6 +47,8 @@ export const BulkLeadStatusDialog = ({
     onSuccess,
 }: BulkLeadStatusDialogProps) => {
     const [statusId, setStatusId] = useState<string>('');
+    const [checking, setChecking] = useState(false);
+    const { confirmAdmission, admissionDialog } = useAdmissionCourseGuard();
 
     const options = statuses
         .filter((s) => s.is_active !== false)
@@ -71,12 +74,19 @@ export const BulkLeadStatusDialog = ({
                         : `All ${result.unchanged} leads were already on this status`
                 );
             }
-            if (result.failed > 0) {
-                toast.error(
-                    `${result.failed} could not be updated${
-                        result.errors?.length ? `: ${result.errors[0]}` : ''
-                    }`
+            // People with no course or fee plan, left alone by the institute's admission rule.
+            const blocked = result.blocked ?? 0;
+            if (blocked > 0) {
+                toast.warning(
+                    blocked === 1
+                        ? `1 lead was not moved to ${label}: that person has no course or fee plan yet. Add one first.`
+                        : `${blocked} leads were not moved to ${label}: those people have no course or fee plan yet. Add one first.`
                 );
+            }
+            const otherFailures = result.failed - blocked;
+            if (otherFailures > 0) {
+                const reason = result.errors?.find((e) => !e.includes('no course or fee plan'));
+                toast.error(`${otherFailures} could not be updated${reason ? `: ${reason}` : ''}`);
             }
 
             onSuccess?.(result);
@@ -90,6 +100,18 @@ export const BulkLeadStatusDialog = ({
         },
     });
 
+    // Moving people with no course or fee plan to the admission status asks first (or says
+    // who will be left alone), when the institute has that rule switched on.
+    const submit = async () => {
+        setChecking(true);
+        const target = options.find((s) => s.id === statusId);
+        const proceed = await confirmAdmission(responseIds, target).finally(() =>
+            setChecking(false)
+        );
+        if (proceed) mutation.mutate();
+    };
+    const busy = mutation.isPending || checking;
+
     return (
         <MyDialog
             heading="Change lead status"
@@ -102,15 +124,15 @@ export const BulkLeadStatusDialog = ({
                         buttonType="secondary"
                         scale="medium"
                         onClick={() => onOpenChange(false)}
-                        disable={mutation.isPending}
+                        disable={busy}
                     >
                         Cancel
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         scale="medium"
-                        onClick={() => mutation.mutate()}
-                        disable={!statusId || mutation.isPending}
+                        onClick={() => void submit()}
+                        disable={!statusId || busy}
                     >
                         {mutation.isPending ? 'Updating…' : 'Change status'}
                     </MyButton>
@@ -118,6 +140,7 @@ export const BulkLeadStatusDialog = ({
             }
         >
             <div className="flex flex-col gap-4 p-4">
+                {admissionDialog}
                 <div className="flex items-start gap-3 rounded-md border border-primary-200 bg-primary-50 p-3">
                     <ArrowsLeftRight
                         weight="fill"

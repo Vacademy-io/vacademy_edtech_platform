@@ -29,5 +29,20 @@
     "toasts": {
         "saveSuccess": "Lead statuses saved",
         "saveError": "Failed to save lead statuses"
+    },
+    "admissionRule": {
+        "title": "When a lead is moved to {{status}} without a course",
+        "description": "Choose what happens when staff move a lead to this status and the person has no course or fee plan here yet. Admissions without a course or fees leave your revenue reports short. Automations, AI calls and enrolments are never held back.",
+        "off": "Do nothing",
+        "offHint": "No check is made. This is the default.",
+        "warn": "Warn first",
+        "warnHint": "Staff see a confirmation and can still go ahead.",
+        "block": "Require a course or fee plan",
+        "blockHint": "Staff can’t move a lead to {{status}} until the person has a course or fee plan.",
+        "save": "Save rule",
+        "saved": "Admission rule saved",
+        "saveFailed": "Failed to save the admission rule",
+        "loadFailed": "Couldn’t load this setting. Refresh the page to try again.",
+        "convertedFallback": "Converted"
     }
 }

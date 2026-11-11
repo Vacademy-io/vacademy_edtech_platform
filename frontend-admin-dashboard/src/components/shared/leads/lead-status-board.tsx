@@ -17,6 +17,8 @@ import type { LeadCardVM } from './lead-view-model';
 import type { LeadActionHandlers } from './lead-actions';
 import { LeadCard } from './lead-card';
 import { LeadStatusBoardColumn, type BoardColumnSort } from './lead-status-board-column';
+import { useAdmissionCourseGuard } from './admission-course-guard';
+import { serverRefusal } from './services/admission-check';
 
 /**
  * LeadStatusBoard — the drag-and-drop Kanban over the institute's lead-status
@@ -79,13 +81,14 @@ export function LeadStatusBoard({
     const [pendingMoves, setPendingMoves] = useState<Map<string, PendingMove>>(new Map());
     // Per-column sort, keyed by status_key. Defaults to newest-first.
     const [columnSorts, setColumnSorts] = useState<Record<string, BoardColumnSort>>({});
+    const { confirmAdmission, admissionDialog } = useAdmissionCourseGuard();
 
     const handleDragStart = (event: DragStartEvent) => {
         const data = event.active.data.current as { vm?: LeadCardVM } | undefined;
         setActiveDrag(data?.vm ?? null);
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         setActiveDrag(null);
         const { active, over } = event;
         const data = active.data.current as { vm: LeadCardVM; fromKey: string } | undefined;
@@ -102,6 +105,10 @@ export function LeadStatusBoard({
             return;
         }
 
+        // A drop on the admission status for someone with no course or fee plan asks first
+        // (or explains why it can't), when the institute has that rule switched on.
+        if (!(await confirmAdmission([data.vm.responseId], target))) return;
+
         const cardKey = data.vm.key;
         setPendingMoves((prev) =>
             new Map(prev).set(cardKey, { vm: data.vm, fromKey: data.fromKey, toKey })
@@ -115,8 +122,8 @@ export function LeadStatusBoard({
                 await queryClient.invalidateQueries({ queryKey: ['lead-board', surfaceId] });
                 onStatusChanged?.();
             })
-            .catch(() => {
-                toast.error('Failed to move lead — change reverted');
+            .catch((error) => {
+                toast.error(serverRefusal(error) ?? 'Failed to move lead — change reverted');
             })
             .finally(() => {
                 // Success: the refetched columns already contain the card in its
@@ -184,6 +191,7 @@ export function LeadStatusBoard({
                     </div>
                 ) : null}
             </DragOverlay>
+            {admissionDialog}
         </DndContext>
     );
 }

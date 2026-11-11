@@ -13,7 +13,7 @@
  * "Keep current" and nothing is posted unless the counsellor picks something.
  */
 import { useRef, useState } from 'react';
-import type { QueryClient } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
 import { useLeadSettings } from '@/hooks/use-lead-settings';
@@ -24,6 +24,7 @@ import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { cn } from '@/lib/utils';
 import { updateLeadTier } from './services/update-lead-tier';
+import { CONVERTED_STATUS_KEY, checkAdmission } from './services/admission-check';
 
 export type LeadAttributeKey = 'status' | 'tier';
 
@@ -53,6 +54,36 @@ export function useLeadAttributeFields({ userId, audienceResponseId }: UseLeadAt
     const showTier = enabled && !!userId && tiers.length > 0;
     const tierRequired = showTier && followUpFields.leadTierRequired;
 
+    // Picking the admission status (CONVERTED) for someone with no course or fee plan yet:
+    // the institute may ask for a warning or refuse it (Settings → Lead Statuses). Shown
+    // inline here; the server refuses a BLOCK case on save, which stops the whole save.
+    const pickedStatus = activeStatuses.find((s) => s.id === statusId);
+    const instituteId = getCurrentInstituteId() ?? '';
+    const checkConversion =
+        showStatus && pickedStatus?.status_key === CONVERTED_STATUS_KEY && !!instituteId;
+    const { data: admission } = useQuery({
+        queryKey: ['admission-check', instituteId, audienceResponseId],
+        queryFn: () => checkAdmission(instituteId, [audienceResponseId as string]),
+        enabled: checkConversion,
+        staleTime: 30 * 1000,
+    });
+    const statusLabel = pickedStatus?.label ?? 'Converted';
+    const admissionNotice: { tone: 'warn' | 'block'; text: string } | null =
+        checkConversion &&
+        admission &&
+        admission.mode !== 'OFF' &&
+        admission.without_course_count > 0
+            ? admission.mode === 'BLOCK'
+                ? {
+                      tone: 'block',
+                      text: `This person has no course or fee plan yet, so they can’t be moved to ${statusLabel}. Add the course or fee plan first.`,
+                  }
+                : {
+                      tone: 'warn',
+                      text: `This person has no course or fee plan yet. If you save, the admission won’t show a course or fees in your reports until one is added.`,
+                  }
+            : null;
+
     const reset = () => {
         setStatusId('');
         setTierKey('');
@@ -81,7 +112,9 @@ export function useLeadAttributeFields({ userId, audienceResponseId }: UseLeadAt
         tierKey,
         setTierKey,
         /** status_key of the picked status ('' = keep current) — e.g. to spot LOST. */
-        statusKey: activeStatuses.find((s) => s.id === statusId)?.status_key ?? '',
+        statusKey: pickedStatus?.status_key ?? '',
+        /** A warning or refusal for moving someone with no course or fee plan to CONVERTED. */
+        admissionNotice,
         statusOptions: activeStatuses.map((s) => ({ label: s.label, value: s.id })),
         tierOptions: tiers.map((t) => ({ label: t.label, value: t.tier_key })),
         showStatus,
@@ -156,6 +189,7 @@ export function LeadAttributeFields({
         });
     }
     if (rows.length === 0) return null;
+    const notice = rows.some((r) => r.key === 'status') ? fields.admissionNotice : null;
 
     return (
         <div className={cn('grid gap-3 sm:grid-cols-2', className)}>
@@ -178,6 +212,19 @@ export function LeadAttributeFields({
                     />
                 </div>
             ))}
+            {notice && (
+                <p
+                    role={notice.tone === 'block' ? 'alert' : 'status'}
+                    className={cn(
+                        'rounded-md border p-2 text-caption sm:col-span-2',
+                        notice.tone === 'block'
+                            ? 'border-danger-200 bg-danger-50 text-danger-700'
+                            : 'border-warning-200 bg-warning-50 text-warning-700'
+                    )}
+                >
+                    {notice.text}
+                </p>
+            )}
         </div>
     );
 }

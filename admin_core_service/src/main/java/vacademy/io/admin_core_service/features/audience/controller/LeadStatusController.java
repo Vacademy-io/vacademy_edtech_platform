@@ -3,10 +3,14 @@ package vacademy.io.admin_core_service.features.audience.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
+import vacademy.io.admin_core_service.features.audience.dto.AdmissionCheckRequestDTO;
+import vacademy.io.admin_core_service.features.audience.dto.AdmissionCheckResponseDTO;
 import vacademy.io.admin_core_service.features.audience.dto.BulkLeadStatusRequestDTO;
 import vacademy.io.admin_core_service.features.audience.dto.BulkLeadStatusResponseDTO;
 import vacademy.io.admin_core_service.features.audience.dto.LeadStatusDTO;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionCourseRuleService;
 import vacademy.io.admin_core_service.features.audience.service.BulkLeadStatusService;
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -25,6 +29,8 @@ public class LeadStatusController {
 
     private final LeadStatusService leadStatusService;
     private final BulkLeadStatusService bulkLeadStatusService;
+    private final AdmissionCourseRuleService admissionCourseRuleService;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     /** List the institute's statuses (seeds the starter set on first access). */
     @GetMapping
@@ -74,7 +80,10 @@ public class LeadStatusController {
         return ResponseEntity.ok().build();
     }
 
-    /** Set a lead's current status (manual change from the leads UI). */
+    /**
+     * Set a lead's current status (manual change from the leads UI and the MCP tools). A move to
+     * CONVERTED follows the institute's admission rule (see {@link AdmissionCourseRuleService}).
+     */
     @PostMapping("/lead/{audienceResponseId}")
     @Auditable(
             entityType = "LEAD",
@@ -86,6 +95,7 @@ public class LeadStatusController {
                                                 @RequestParam String statusId,
                                                 @RequestParam(required = false, defaultValue = "MANUAL") String source,
                                                 @RequestAttribute("user") CustomUserDetails user) {
+        admissionCourseRuleService.requireAllowedForStaff(audienceResponseId, statusId);
         leadStatusService.changeLeadStatus(audienceResponseId, statusId,
                 user != null ? user.getUserId() : null, source);
         return ResponseEntity.ok("Lead status updated");
@@ -119,5 +129,29 @@ public class LeadStatusController {
             @RequestBody BulkLeadStatusRequestDTO request,
             @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(bulkLeadStatusService.changeStatusBulk(request, user));
+    }
+
+    /**
+     * Read-only: before moving leads to CONVERTED, which of them belong to people with no course
+     * or fee plan at the institute yet, and the institute's rule (OFF, WARN or BLOCK), so the
+     * dashboard can ask for a confirmation or explain a refusal before saving. Institute staff only.
+     */
+    @GetMapping("/admission-check")
+    public ResponseEntity<AdmissionCheckResponseDTO> admissionCheck(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) List<String> responseIds,
+            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        return ResponseEntity.ok(admissionCourseRuleService.check(instituteId, responseIds));
+    }
+
+    /** The same check with the lead ids in the body, for a bulk selection. */
+    @PostMapping("/admission-check")
+    public ResponseEntity<AdmissionCheckResponseDTO> admissionCheckForMany(
+            @RequestBody AdmissionCheckRequestDTO request,
+            @RequestAttribute("user") CustomUserDetails user) {
+        String instituteId = request == null ? null : request.getInstituteId();
+        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        return ResponseEntity.ok(admissionCourseRuleService.check(instituteId, request.getResponseIds()));
     }
 }

@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,7 @@ public class BulkLeadStatusService {
     private final LeadStatusService leadStatusService;
     private final AudienceResponseRepository audienceResponseRepository;
     private final LeadStatusRepository leadStatusRepository;
+    private final AdmissionCourseRuleService admissionCourseRuleService;
 
     public BulkLeadStatusResponseDTO changeStatusBulk(BulkLeadStatusRequestDTO request,
                                                       CustomUserDetails actor) {
@@ -80,9 +82,18 @@ public class BulkLeadStatusService {
                 .stream()
                 .collect(Collectors.toMap(AudienceResponse::getId, Function.identity(), (a, b) -> a));
 
+        // A move to CONVERTED under the institute's BLOCK rule leaves alone the leads whose
+        // person has no course or fee plan here yet; the rest go through.
+        Set<String> refused = admissionCourseRuleService.refusedForStaff(request.getStatusId(),
+                byId.values().stream()
+                        .filter(l -> !Objects.equals(l.getLeadStatusId(), request.getStatusId()))
+                        .map(AudienceResponse::getId)
+                        .collect(Collectors.toList()));
+
         int updated = 0;
         int unchanged = 0;
         int failed = 0;
+        int blocked = 0;
         List<String> errors = new ArrayList<>();
 
         for (String responseId : responseIds) {
@@ -96,6 +107,14 @@ public class BulkLeadStatusService {
                 unchanged++;
                 continue;
             }
+            if (refused.contains(responseId)) {
+                failed++;
+                blocked++;
+                if (blocked == 1) {
+                    addError(errors, admissionCourseRuleService.refusalMessageFor(request.getStatusId()));
+                }
+                continue;
+            }
             try {
                 leadStatusService.changeLeadStatus(responseId, request.getStatusId(), actorUserId, source);
                 updated++;
@@ -106,13 +125,16 @@ public class BulkLeadStatusService {
             }
         }
 
-        log.info("[BulkLeadStatus] institute={} actor={} target={} updated={} unchanged={} failed={}",
-                request.getInstituteId(), actorUserId, request.getStatusId(), updated, unchanged, failed);
+        log.info("[BulkLeadStatus] institute={} actor={} target={} updated={} unchanged={} failed={} "
+                        + "needCourse={}",
+                request.getInstituteId(), actorUserId, request.getStatusId(), updated, unchanged, failed,
+                blocked);
 
         return BulkLeadStatusResponseDTO.builder()
                 .updated(updated)
                 .unchanged(unchanged)
                 .failed(failed)
+                .blocked(blocked)
                 .errors(errors)
                 .build();
     }

@@ -80,6 +80,11 @@ INTAKE_SOURCES = ("MANUAL", "WALK_IN", "INBOUND_CALL", "REFERRAL")
 #: Form questions that are the lead's own contact fields, edited through `changes`, not answers.
 CONTACT_FIELD_KEYS = ("full_name", "email", "phone_number")
 
+#: LEAD_SETTING.admissionCourseRule.mode — what a move to CONVERTED does when the person has no course or fee
+#: plan at the institute yet (admin-core AdmissionCourseRuleService): OFF (default), WARN or BLOCK.
+ADMISSION_MODES = ("OFF", "WARN", "BLOCK")
+CONVERTED_KEY = "CONVERTED"
+
 MAX_IMPORT = 100
 MAX_PREVIEW_ROWS = 50
 _CHUNK = 100
@@ -211,7 +216,10 @@ EDIT_SCHEMA: Dict[str, Any] = {
             "- set_status (targets, status, this_list_only?): status is a key or label from crm_leads catalog. By "
             "default every live lead of the same person in lists you can see moves (the dashboard shows one person "
             "per status); this_list_only: true changes just the given leads. The preview lists each lead's current → "
-            "new status and the automations a status change runs. Up to 500 leads.\n"
+            "new status and the automations a status change runs. Up to 500 leads. A move to the institute's "
+            "converted status follows its admission rule: when it warns, the preview lists the people with no course "
+            "or fee plan here yet (no_course_yet) and the confirm still works; when it requires a course, those "
+            "leads are refused with course_required until a course or plan is added.\n"
             "- set_tier (targets, tier): a tier key from crm_leads catalog (e.g. HOT / WARM / COLD); per person. "
             "Tier changes run the status-change automations too.\n"
             "- update_details (lead, changes?: {name?, phone?, email?}, guardian?: {name?, phone?, email?}, answers?): "
@@ -589,6 +597,88 @@ def _status_view(st: Dict[str, Any]) -> Dict[str, Any]:
     return {"status": st.get("status_key"), "label": cd.clean(st.get("label"))}
 
 
+def _admission_mode(ctx: ToolContext) -> str:
+    """LEAD_SETTING.admissionCourseRule.mode, upper-cased; OFF when unset, unknown or unreadable."""
+    try:
+        data = isr.load_institute_setting_data(ctx.db, ctx.principal.institute_id, "LEAD_SETTING") or {}
+    except Exception:  # noqa: BLE001
+        data = {}
+    rule = data.get("admissionCourseRule") if isinstance(data, dict) else None
+    mode = str((rule or {}).get("mode") or "").strip().upper() if isinstance(rule, dict) else ""
+    return mode if mode in ADMISSION_MODES else "OFF"
+
+
+def _no_course_sql() -> str:
+    """
+    The leads among :lids whose person has no course at the institute: no open plan through one of its enrol
+    invites and no enrolment that counts in one of its batches. The person is the lead's user plus the student
+    linked to them on any of their leads here. Same plan and enrolment rules as the admissions report
+    (crm_admissions._ENDED_PLAN / _COUNTED) and admin-core's AdmissionCourseDao.
+    """
+    from .crm_admissions import _COUNTED, _ENDED_PLAN  # imported here: crm_admissions imports crm_data
+    has_course = (
+        "(EXISTS (SELECT 1 FROM user_plan up JOIN enroll_invite ei ON ei.id = up.enroll_invite_id "
+        "AND ei.institute_id = :inst WHERE up.user_id = pe.pid AND up.status NOT IN " + _ENDED_PLAN + ") "
+        "OR EXISTS (SELECT 1 FROM student_session_institute_group_mapping s "
+        "JOIN package_session ps ON ps.id = s.package_session_id JOIN package p ON p.id = ps.package_id "
+        "WHERE s.user_id = pe.pid AND s.institute_id = :inst AND " + _COUNTED.format(m="s") + "))")
+    return """WITH target AS (
+    SELECT ar.id AS rid, ar.user_id, ar.student_user_id
+    FROM audience_response ar
+    JOIN audience a ON a.id = ar.audience_id
+    WHERE ar.id = ANY(:lids) AND a.institute_id = :inst
+), people AS (
+    SELECT t.rid, t.user_id AS pid FROM target t WHERE t.user_id IS NOT NULL
+    UNION SELECT t.rid, t.student_user_id FROM target t WHERE t.student_user_id IS NOT NULL
+    UNION SELECT t.rid, o.student_user_id FROM target t
+          JOIN audience_response o ON o.user_id = t.user_id
+          JOIN audience oa ON oa.id = o.audience_id AND oa.institute_id = :inst
+          WHERE o.student_user_id IS NOT NULL
+    UNION SELECT t.rid, o.user_id FROM target t
+          JOIN audience_response o ON o.student_user_id = t.user_id
+          JOIN audience oa ON oa.id = o.audience_id AND oa.institute_id = :inst
+          WHERE o.user_id IS NOT NULL
+)
+SELECT t.rid AS no_course_lead_id
+FROM target t
+WHERE NOT EXISTS (SELECT 1 FROM people pe WHERE pe.rid = t.rid AND """ + has_course + """)
+ORDER BY t.rid
+"""
+
+
+def _admission_check(ctx: ToolContext, status: Dict[str, Any], lead_ids: List[str]) -> Dict[str, Any]:
+    """
+    For a move to CONVERTED: ``{mode, missing: [lead ids with no course here]}``; ``mode`` OFF (nothing looked
+    up) for any other status or when the institute has no rule. An error when the lookup failed.
+    """
+    if status.get("status_key") != CONVERTED_KEY or not lead_ids:
+        return {"mode": "OFF", "missing": []}
+    mode = _admission_mode(ctx)
+    if mode == "OFF":
+        return {"mode": mode, "missing": []}
+    found, ok = cd.rows(ctx, _no_course_sql(), {"inst": ctx.principal.institute_id, "lids": list(lead_ids)})
+    if not ok:
+        return cd.err("query_failed")
+    return {"mode": mode, "missing": [r["no_course_lead_id"] for r in found]}
+
+
+def _course_required(status: Dict[str, Any], missing: List[str]) -> Dict[str, Any]:
+    label = cd.clean(status.get("label")) or "Converted"
+    who = "This person has" if len(missing) == 1 else f"{len(missing)} of these people have"
+    return cd.err("course_required", lead_ids=missing[:50], count=len(missing), to=_status_view(status),
+                  message=(f"Nothing was changed. {who} no course or fee plan here yet, and this institute asks for "
+                           f"one before a lead is moved to {label}. Add the course or fee plan in the admin "
+                           "portal first, or leave these leads out."))
+
+
+def _no_course_note(status: Dict[str, Any], missing: List[str]) -> Dict[str, Any]:
+    label = cd.clean(status.get("label")) or "Converted"
+    who = "This person has" if len(missing) == 1 else f"{len(missing)} of these people have"
+    return {"count": len(missing), "lead_ids": missing[:50],
+            "message": (f"{who} no course or fee plan here yet. Tell the user before they confirm: moving them "
+                        f"to {label} without one leaves the admission without a course or fees in reports.")}
+
+
 # ═══════════════════════════════ crm_lead_activity ═══════════════════════
 
 async def _apply_status_one(ctx: ToolContext, lead_id: str, status_id: str) -> Dict[str, Any]:
@@ -694,6 +784,15 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
     held_view = {**_status_view(status), "applied": False, "reason": held} if held else None
     gated_status = status if status and not held and status.get("id") != lead.get("lead_status_id") else None
     gated_disp = disp if disp and disp.get("maps_to_lead_status_id") else None
+    no_course = None
+    if gated_status:
+        admission = _admission_check(ctx, gated_status, [lead["lead_id"]])
+        if cd.is_error(admission):
+            return admission
+        if admission["missing"] and admission["mode"] == "BLOCK":
+            return _course_required(gated_status, admission["missing"])
+        if admission["missing"]:
+            no_course = _no_course_note(gated_status, admission["missing"])
     request = {"lead_id": lead["lead_id"], "status_id": (gated_status or {}).get("id"), "call_id": call_id or None,
                "disposition_key": (gated_disp or {}).get("disposition_key")}
     state = {"status": lead.get("lead_status_id"), "conversion": lead.get("conversion_status")}
@@ -791,6 +890,8 @@ async def _log_interaction(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, 
                 "next": ("The activity above is saved. The status change runs the automations listed and waits for "
                          "the user's yes: then call log_interaction again with the same arguments and this "
                          "confirm_token (only the status is applied).")}
+    if no_course:
+        out["no_course_yet"] = no_course
     if failed:
         out["failed"] = failed
     out["done"] = not failed
@@ -1107,6 +1208,12 @@ async def _set_status(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
         return {"to": _status_view(status), "applied": False, "unchanged": len(unchanged), "skipped": skipped,
                 "message": "Every lead named is already on that status, or is deleted or opted out. Nothing to "
                            "change."}
+    admission = _admission_check(ctx, status, [r["lead_id"] for r in change])
+    if cd.is_error(admission):
+        return admission
+    missing = set(admission["missing"])
+    if missing and admission["mode"] == "BLOCK":
+        return _course_required(status, [r["lead_id"] for r in change if r["lead_id"] in missing])
     state = {r["lead_id"]: [r.get("lead_status_id"), cd.iso(r.get("updated_at"))] for r in change}
     many = len(change) > 1
     request = {**_request(args, "status", "this_list_only"), "status_id": status["id"]}
@@ -1116,6 +1223,10 @@ async def _set_status(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
                                 **await _views(ctx, change)}
         for item, r in zip(view["leads"], change):
             item["from"] = r.get("status_key")
+            if r["lead_id"] in missing:
+                item["no_course_yet"] = True
+        if missing:
+            view["no_course_yet"] = _no_course_note(status, [r["lead_id"] for r in change if r["lead_id"] in missing])
         view["automations"] = await _automations_by_list(ctx, cd.EVENT_STATUS_CHANGED,
                                                          [r.get("list_id") for r in change])
         view["effects"] = ["Each change is saved to the lead's status history and timeline, counts as a response "

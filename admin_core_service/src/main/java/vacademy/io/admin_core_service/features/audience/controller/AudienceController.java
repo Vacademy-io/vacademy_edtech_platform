@@ -11,6 +11,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.audience.dto.*;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionCourseRuleService;
 import vacademy.io.admin_core_service.features.audience.service.AudienceRoleAccessService;
 import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.audience.service.LeadAssignmentNotifier;
@@ -67,6 +68,9 @@ public class AudienceController {
 
     @Autowired
     private LeadDeduplicationService leadDeduplicationService;
+
+    @Autowired
+    private AdmissionCourseRuleService admissionCourseRuleService;
 
     /**
      * Returns the candidate counsellors a caller is allowed to assign a lead
@@ -649,6 +653,7 @@ public class AudienceController {
     public ResponseEntity<UserLeadProfileDTO> markLeadConverted(
             @RequestParam String userId,
             @RequestParam String instituteId) {
+        admissionCourseRuleService.requireAllowedForProfile(userId, instituteId, "CONVERTED");
         userLeadProfileService.markConverted(userId, instituteId);
         return ResponseEntity.ok(userLeadProfileService.getProfileDTO(userId, instituteId).orElse(null));
     }
@@ -668,6 +673,7 @@ public class AudienceController {
             @RequestParam String instituteId,
             @RequestParam String status,
             @RequestAttribute("user") CustomUserDetails user) {
+        admissionCourseRuleService.requireAllowedForProfile(userId, instituteId, status);
         String oldStatus = userLeadProfileService.getProfileDTO(userId, instituteId)
                 .map(p -> p.getConversionStatus())
                 .orElse(null);

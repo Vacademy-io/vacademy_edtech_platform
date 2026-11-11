@@ -53,6 +53,8 @@ import {
     useFollowUpNotesRequired,
 } from './follow-up-fields';
 import { LeadAttributeFields, useLeadAttributeFields } from './lead-attribute-fields';
+import { useAdmissionCourseGuard } from './admission-course-guard';
+import { serverRefusal } from './services/admission-check';
 import {
     fetchLeadStatuses,
     setLeadStatusForLead,
@@ -384,8 +386,19 @@ function PostCallDispositionSheet({
             });
             requestClose();
         },
-        onError: () => toast.error('Could not save disposition — try again'),
+        onError: (error) =>
+            toast.error(serverRefusal(error) ?? 'Could not save disposition — try again'),
     });
+
+    // Moving someone with no course or fee plan to the admission status asks first (or
+    // explains why it can't), when the institute has that rule switched on.
+    const { confirmAdmission, admissionDialog } = useAdmissionCourseGuard();
+    const save = async () => {
+        if (statusChanged && !doneRef.current.status) {
+            if (!(await confirmAdmission([payload.responseId], effectiveStatus))) return;
+        }
+        saveMutation.mutate();
+    };
 
     const handleStatusPick = (status: LeadStatus) => {
         setStatusPickerOpen(false);
@@ -527,7 +540,7 @@ function PostCallDispositionSheet({
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && canSave) {
                                     e.preventDefault();
-                                    saveMutation.mutate();
+                                    void save();
                                 }
                             }}
                         />
@@ -624,7 +637,7 @@ function PostCallDispositionSheet({
                         <MyButton
                             buttonType="primary"
                             scale="medium"
-                            onClick={() => saveMutation.mutate()}
+                            onClick={() => void save()}
                             disable={!canSave || saveMutation.isPending}
                         >
                             {saveMutation.isPending ? 'Saving…' : 'Save disposition'}
@@ -632,6 +645,7 @@ function PostCallDispositionSheet({
                     </div>
                 </div>
             </SheetContent>
+            {admissionDialog}
         </Sheet>
     );
 }

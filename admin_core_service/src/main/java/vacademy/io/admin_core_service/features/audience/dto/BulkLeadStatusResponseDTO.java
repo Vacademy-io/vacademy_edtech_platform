@@ -31,6 +31,12 @@ public class BulkLeadStatusResponseDTO {
     /** Leads that could not be updated (missing row, mirror failure, …). */
     private int failed;
 
+    /**
+     * Of {@link #failed}, the leads left alone because the institute asks for a course or fee
+     * plan before a lead is moved to CONVERTED, and the person has neither yet.
+     */
+    private int blocked;
+
     /** Up to the first few failure reasons, for a toast that says what went wrong. */
     private List<String> errors;
 }
