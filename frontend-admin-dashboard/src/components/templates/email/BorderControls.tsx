@@ -167,7 +167,8 @@ function BorderRow({
                     max={MAX_WIDTH}
                     precision={0}
                     placeholder="0"
-                    value={value.style === 'none' ? 0 : value.width}
+                    // Unset shows as 0 so the first + gives 1px (an empty field steps to min first).
+                    value={value.style === 'none' ? 0 : (value.width ?? 0)}
                     onChange={(width) =>
                         onChange({
                             ...value,
@@ -327,7 +328,9 @@ export function BorderControls() {
                         precision={0}
                         placeholder="0"
                         suffix={radius.unit}
-                        value={radius.value}
+                        // Unset shows as 0: arco steps an empty field to `min` (0), which is
+                        // "no radius" and gets removed, so + never got past an empty field.
+                        value={radius.value ?? 0}
                         onChange={(value) =>
                             writeAttributes({
                                 'border-radius': value ? `${value}${radius.unit}` : undefined,
