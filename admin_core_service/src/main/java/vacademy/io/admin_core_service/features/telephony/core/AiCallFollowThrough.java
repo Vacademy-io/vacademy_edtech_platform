@@ -12,6 +12,8 @@ import vacademy.io.admin_core_service.features.audience.dto.CloseLeadFollowupReq
 import vacademy.io.admin_core_service.features.audience.dto.CreateLeadFollowupRequest;
 import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
+import vacademy.io.admin_core_service.features.booking.entity.BookingInstance;
+import vacademy.io.admin_core_service.features.booking.repository.BookingInstanceRepository;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates;
@@ -44,7 +46,10 @@ import java.util.Map;
  *       and an AI call through the normal queue (calling hours and line capacity apply). When a later
  *       AI call connects, the follow-up is closed; when it does not, the follow-up is still due;</li>
  *   <li>a callback that could not be scheduled, or later was not placed or not answered, tells the
- *       admins and the counsellor ({@link AiCallbackWatchJob}).</li>
+ *       admins and the counsellor ({@link AiCallbackWatchJob});</li>
+ *   <li>a lead who agreed to a demo or meeting on the call gets a Lead Journey event and a CRM follow-up
+ *       for that time, and the admins and the counsellor are told right away, whether or not the agent has
+ *       a booking page (without one nothing else records the meeting, and it was only on the call page).</li>
  * </ul>
  * Every step is best effort and independent: none can fail the call's own processing.
  */
@@ -65,9 +70,12 @@ public class AiCallFollowThrough {
     @Autowired @Lazy private LeadFollowupService leadFollowupService;
     @Autowired @Lazy private LeadFollowupRepository leadFollowupRepository;
     @Autowired @Lazy private EngagementCoordinationDao coordinationDao;
+    @Autowired @Lazy private BookingInstanceRepository bookingInstanceRepository;
 
     /** What every follow-up this class creates starts with, so the engine can find and close its own. */
     static final String FOLLOWUP_PREFIX = "AI callback:";
+    /** A demo follow-up is a person's job to attend: a later AI call must not close it, so it has its own prefix. */
+    static final String DEMO_FOLLOWUP_PREFIX = "AI demo:";
 
     /** "Today" with no time: soon enough for today, and calling hours still decide when it dials. */
     private static final java.time.Duration SAME_DAY_DELAY = java.time.Duration.ofHours(2);
@@ -97,6 +105,82 @@ public class AiCallFollowThrough {
         } catch (Exception e) {
             log.warn("ai-call: callback scheduling failed for result {}: {}", r.getId(), e.getMessage());
         }
+        try {
+            demoAgreed(r, responseId, userId, instituteId);
+        } catch (Exception e) {
+            log.warn("ai-call: demo follow-through failed for result {}: {}", r.getId(), e.getMessage());
+        }
+    }
+
+    // ------------------------------------------------------------------ a demo agreed on the call
+
+    /**
+     * The voice bot reports a meeting the lead agreed to as {@code meetingRequested} +
+     * {@code meetingDatetimeIso}. The outcome processor books it when the agent has a booking page; this
+     * runs after that and makes sure a person knows either way.
+     */
+    private void demoAgreed(AiCallResult r, String responseId, String userId, String instituteId) throws Exception {
+        if (instituteId == null || r.getRawPayload() == null || r.getRawPayload().isBlank()) return;
+        JsonNode root = objectMapper.readTree(r.getRawPayload());
+        if (!root.path("meetingRequested").asBoolean(false)) return;
+        Instant at = null;
+        String iso = root.path("meetingDatetimeIso").asText("").trim();
+        if (!iso.isEmpty()) {
+            try {
+                at = java.time.OffsetDateTime.parse(iso).toInstant();
+            } catch (Exception e) {
+                log.info("ai-call: demo time '{}' on result {} could not be read", iso, r.getId());
+            }
+        }
+        ZoneId zone = zoneOf(instituteId);
+        String who = r.getCustomerName() == null || r.getCustomerName().isBlank() ? "The lead" : r.getCustomerName();
+        String phone = r.getPhoneNumber() == null ? "" : r.getPhoneNumber();
+        String when = at == null ? "a time that could not be read" : WHEN.format(at.atZone(zone)) + " (" + zone.getId() + ")";
+        boolean booked = at != null && isBooked(responseId, at);
+        String next = booked
+                ? "It is booked on the booking page."
+                : "It is NOT booked anywhere: please confirm the time with them and send the invite.";
+
+        Instant now = Instant.now();
+        // The reminder is due an hour before the demo, and never in the past.
+        Instant dueAt = at == null ? now.plus(java.time.Duration.ofHours(1)) : at.minus(java.time.Duration.ofHours(1));
+        if (dueAt.isBefore(now)) dueAt = now.plus(java.time.Duration.ofMinutes(10));
+        String followupId = createFollowup(r, responseId, userId, instituteId, dueAt,
+                DEMO_FOLLOWUP_PREFIX + " " + who + " agreed to a demo on the AI call, for " + when + ". " + next);
+
+        if (responseId != null) {
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("call_log_id", r.getCallLogId());
+            meta.put("meeting_at", at == null ? null : at.toString());
+            meta.put("booked", booked);
+            meta.put("followup_id", followupId);
+            timelineEventService.logJourneyEvent("AUDIENCE_RESPONSE", responseId, LeadJourneyActionType.REACHOUT,
+                    "SYSTEM", null, "AI call", "Demo agreed on the AI call",
+                    who + " agreed to a demo for " + when + ". " + next, meta, userId);
+        }
+        String summary = r.getAiSummary() == null || r.getAiSummary().isBlank() ? ""
+                : "<p>From the call: " + EngagementPointsOfContact.esc(r.getAiSummary().trim()) + "</p>";
+        pointsOfContact.alert(instituteId, userId, "Demo agreed on an AI call: " + who,
+                "<p>" + EngagementPointsOfContact.esc(who) + " (" + EngagementPointsOfContact.esc(phone)
+                        + ") agreed to a demo for " + EngagementPointsOfContact.esc(when) + ". "
+                        + EngagementPointsOfContact.esc(next) + "</p>" + summary,
+                "AI_DEMO", r.getId());
+    }
+
+    /** Whether the outcome processor's auto-booking (or a person) already holds this lead's slot. */
+    private boolean isBooked(String responseId, Instant at) {
+        if (responseId == null) return false;
+        try {
+            for (BookingInstance b : bookingInstanceRepository.findByAudienceResponseId(responseId)) {
+                if (b.getScheduledStartUtc() == null || b.getStatus() == null) continue;
+                if (b.getStatus().toUpperCase(Locale.ROOT).startsWith("CANCEL")) continue;
+                long apart = Math.abs(b.getScheduledStartUtc().toInstant().getEpochSecond() - at.getEpochSecond());
+                if (apart <= 300) return true;
+            }
+        } catch (Exception e) {
+            log.warn("ai-call: booking lookup failed for lead {}: {}", responseId, e.getMessage());
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ the summary on the timeline

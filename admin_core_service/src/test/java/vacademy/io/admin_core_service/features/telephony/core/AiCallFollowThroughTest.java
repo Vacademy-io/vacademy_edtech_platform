@@ -45,6 +45,7 @@ class AiCallFollowThroughTest {
     private EngagementCoordinationDao coordination;
     private AiCallActionService actionService;
     private EngagementSystemTemplates templates;
+    private vacademy.io.admin_core_service.features.booking.repository.BookingInstanceRepository bookings;
     private final Instant callAt = Instant.parse("2026-10-29T12:30:00Z");
 
     @BeforeEach
@@ -67,6 +68,9 @@ class AiCallFollowThroughTest {
         ReflectionTestUtils.setField(ft, "leadFollowupService", followups);
         ReflectionTestUtils.setField(ft, "leadFollowupRepository", followupRepo);
         ReflectionTestUtils.setField(ft, "coordinationDao", coordination);
+        bookings = mock(vacademy.io.admin_core_service.features.booking.repository.BookingInstanceRepository.class);
+        when(bookings.findByAudienceResponseId(any())).thenReturn(java.util.List.of());
+        ReflectionTestUtils.setField(ft, "bookingInstanceRepository", bookings);
         actionService = mock(AiCallActionService.class);
         templates = mock(EngagementSystemTemplates.class);
         InstituteRepository institutes = mock(InstituteRepository.class);
@@ -312,5 +316,71 @@ class AiCallFollowThroughTest {
         verify(queue, never()).cancelForLead(any(), any(), any(), any());
         verify(actionService, never()).createBuiltIn(any(), any(), any(), any(), any(), any(), any(), any());
         verifyNoInteractions(templates);
+    }
+
+    private static String inTwoDays() {
+        return java.time.OffsetDateTime.now(IST).plusDays(2).withNano(0).toString();
+    }
+
+    @Test
+    @DisplayName("a demo agreed on the call with no booking tells the team it is not booked, and sets a follow-up")
+    void demoAgreedNotBooked() {
+        AiCallResult r = result();
+        String iso = inTwoDays();
+        r.setRawPayload("{\"meetingRequested\": true, \"meetingDatetimeIso\": \"" + iso + "\"}");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var body = ArgumentCaptor.forClass(String.class);
+        verify(poc).alert(eq("inst1"), eq("user1"), eq("Demo agreed on an AI call: Priyanshu"), body.capture(),
+                eq("AI_DEMO"), eq("res1"));
+        assertTrue(body.getValue().contains("NOT booked"), body.getValue());
+        verify(timeline).logJourneyEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"), eq(LeadJourneyActionType.REACHOUT),
+                any(), any(), any(), eq("Demo agreed on the AI call"), contains("NOT booked"), any(), eq("user1"));
+        var fu = ArgumentCaptor.forClass(CreateLeadFollowupRequest.class);
+        verify(followups).create(fu.capture(), any());
+        assertTrue(fu.getValue().getContent().startsWith("AI demo:"), fu.getValue().getContent());
+        // due an hour before the demo
+        assertEquals(java.time.OffsetDateTime.parse(iso).toInstant().minus(Duration.ofHours(1)),
+                fu.getValue().getScheduleTime().toInstant());
+        // a demo is not a callback: no AI call is queued
+        verify(queue, never()).enqueueAt(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a demo the booking page already holds is reported as booked")
+    void demoAgreedBooked() {
+        AiCallResult r = result();
+        String iso = inTwoDays();
+        r.setRawPayload("{\"meetingRequested\": true, \"meetingDatetimeIso\": \"" + iso + "\"}");
+        var b = new vacademy.io.admin_core_service.features.booking.entity.BookingInstance();
+        b.setStatus("CONFIRMED");
+        b.setScheduledStartUtc(java.sql.Timestamp.from(java.time.OffsetDateTime.parse(iso).toInstant()));
+        when(bookings.findByAudienceResponseId("resp1")).thenReturn(java.util.List.of(b));
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var body = ArgumentCaptor.forClass(String.class);
+        verify(poc).alert(any(), any(), startsWith("Demo agreed"), body.capture(), eq("AI_DEMO"), any());
+        assertTrue(body.getValue().contains("It is booked on the booking page"), body.getValue());
+        assertFalse(body.getValue().contains("NOT booked"), body.getValue());
+    }
+
+    @Test
+    @DisplayName("a call with no meeting in its report raises no demo alert")
+    void noDemoNoAlert() {
+        AiCallResult r = result();
+        r.setRawPayload("{\"meetingRequested\": false, \"meetingDatetimeIso\": null}");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        r.setRawPayload(null);
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        verify(poc, never()).alert(any(), any(), startsWith("Demo agreed"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a demo whose time cannot be read still reaches the team")
+    void demoAgreedNoTime() {
+        AiCallResult r = result();
+        r.setRawPayload("{\"meetingRequested\": true, \"meetingDatetimeIso\": \"tomorrow-ish\"}");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var body = ArgumentCaptor.forClass(String.class);
+        verify(poc).alert(any(), any(), startsWith("Demo agreed"), body.capture(), eq("AI_DEMO"), any());
+        assertTrue(body.getValue().contains("a time that could not be read"), body.getValue());
     }
 }
