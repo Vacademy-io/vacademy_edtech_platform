@@ -162,6 +162,11 @@ public final class CopyIntakeDtos {
         private String errorMessage;
         private List<CandidateDto> candidates;
         private Date updatedAt;
+        /** While the AI check runs: the step ai_service last reported (e.g. HANDWRITING_READ, GRADING). */
+        private String progressStep;
+        /** While the AI check runs: questions graded so far, out of questionsTotal. */
+        private Integer questionsCompleted;
+        private Integer questionsTotal;
     }
 
     @Data

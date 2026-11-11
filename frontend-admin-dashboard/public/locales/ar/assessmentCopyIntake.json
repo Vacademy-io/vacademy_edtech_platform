@@ -95,6 +95,16 @@
         "FAILED": "فشلت",
         "SKIPPED": "متخطاة"
     },
+    "itemProgress": {
+        "starting": "بدء التصحيح",
+        "orientation": "التحقق من اتجاه الصفحات",
+        "reading": "قراءة الصفحات",
+        "handwriting": "قراءة خط اليد",
+        "locating": "تحديد موضع كل إجابة",
+        "grading": "تصحيح {{done}}/{{total}} من الأسئلة",
+        "gradingNoCount": "تصحيح الإجابات",
+        "marking": "وضع العلامات على الورقة"
+    },
     "table": {
         "languageNote": "الورقة مكتوبة بـ{{language}} بينما ورقة الأسئلة بـ{{paper}}. صحّحها بـ{{language}} أو تخطَّها.",
         "file": "الملف",

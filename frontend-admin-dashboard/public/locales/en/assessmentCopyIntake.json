@@ -98,6 +98,16 @@
         "FAILED": "Failed",
         "SKIPPED": "Skipped"
     },
+    "itemProgress": {
+        "starting": "Starting the check",
+        "orientation": "Checking page orientation",
+        "reading": "Reading the pages",
+        "handwriting": "Reading the handwriting",
+        "locating": "Finding each answer",
+        "grading": "Grading {{done}}/{{total}} questions",
+        "gradingNoCount": "Grading the answers",
+        "marking": "Marking the copy"
+    },
     "table": {
         "languageNote": "Written in {{language}}, but the question paper is in {{paper}}. Check it in {{language}}, or skip it.",
         "file": "File",

@@ -56,7 +56,75 @@ export interface CopyIntakeItem {
     error_message: string | null;
     candidates: CopyIntakeCandidate[];
     updated_at: string | null;
+    /** While the AI check runs: the step the AI service last reported. Absent on older servers. */
+    progress_step?: string | null;
+    /** While the AI check runs: questions graded so far, out of questions_total. */
+    questions_completed?: number | null;
+    questions_total?: number | null;
 }
+
+/** Share of the check each reported step stands for; grading fills the rest. */
+const STEP_SHARE: Record<string, number> = {
+    ORIENTATION_CHECK: 8,
+    LAYOUT_OCR_STARTED: 12,
+    HANDWRITING_READ: 25,
+    LAYOUT_OCR_DONE: 40,
+};
+const GRADING_FROM = 45;
+/** Grading done, checked copy still being drawn: never 100 until the copy says COMPLETED. */
+const GRADING_TO = 95;
+
+export interface CopyCheckProgress {
+    /** 0-100. */
+    pct: number;
+    /** Key under itemProgress.* in the assessmentCopyIntake namespace. */
+    stepKey:
+        | 'starting'
+        | 'orientation'
+        | 'reading'
+        | 'handwriting'
+        | 'locating'
+        | 'grading'
+        | 'gradingNoCount'
+        | 'marking';
+    done: number;
+    total: number;
+}
+
+/** How far a copy's AI check has got, from the step and question count the server reports. */
+export const copyCheckProgressOf = (item: CopyIntakeItem): CopyCheckProgress | null => {
+    if (item.status !== 'EVALUATING') return null;
+    const step = item.progress_step ?? null;
+    const done = item.questions_completed ?? 0;
+    const total = item.questions_total ?? 0;
+    // Only GRADING counts questions: a re-dispatched copy starts with the teacher's
+    // already-edited questions counted, before any reading has happened.
+    if (step === 'GRADING') {
+        if (total > 0 && done >= total) {
+            return { pct: GRADING_TO, stepKey: 'marking', done, total };
+        }
+        const share = total > 0 ? done / total : 0;
+        return {
+            pct: Math.round(GRADING_FROM + (GRADING_TO - GRADING_FROM) * share),
+            stepKey: total > 0 ? 'grading' : 'gradingNoCount',
+            done,
+            total,
+        };
+    }
+    switch (step) {
+        case 'ORIENTATION_CHECK':
+            return { pct: STEP_SHARE[step]!, stepKey: 'orientation', done, total };
+        case 'LAYOUT_OCR_STARTED':
+            return { pct: STEP_SHARE[step]!, stepKey: 'reading', done, total };
+        case 'HANDWRITING_READ':
+            return { pct: STEP_SHARE[step]!, stepKey: 'handwriting', done, total };
+        case 'LAYOUT_OCR_DONE':
+            return { pct: STEP_SHARE[step]!, stepKey: 'locating', done, total };
+        default:
+            // Sent, not yet started by the AI service (or a server without the field).
+            return { pct: 3, stepKey: 'starting', done, total };
+    }
+};
 
 export interface CopyIntakeBatch {
     id: string;

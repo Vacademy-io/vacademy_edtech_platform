@@ -1028,6 +1028,9 @@ public class CopyIntakeService {
             status = "PENDING".equals(process.getStatus()) || "DISPATCHED".equals(process.getStatus())
                     ? AiCopyIntakeItem.QUEUED : AiCopyIntakeItem.EVALUATING;
         }
+        // Where the check is, so the panel can show more than a spinner. Only while
+        // it runs: the process row is read for QUEUED copies alone.
+        boolean evaluating = AiCopyIntakeItem.EVALUATING.equals(status) && process != null;
         return CopyIntakeDtos.ItemDto.builder()
                 .id(i.getId()).fileId(i.getFileId()).fileName(i.getFileName()).pageCount(i.getPageCount())
                 .status(status).extractedName(i.getExtractedName()).extractedRoll(i.getExtractedRoll())
@@ -1035,7 +1038,11 @@ public class CopyIntakeService {
                 .matchScore(i.getMatchScore()).matchedUserId(i.getMatchedUserId()).matchedName(i.getMatchedName())
                 .registrationId(i.getRegistrationId()).attemptId(i.getAttemptId()).processId(i.getProcessId())
                 .errorMessage(i.getErrorMessage()).candidates(candidatesFromJson(i.getCandidatesJson()))
-                .updatedAt(i.getUpdatedAt()).build();
+                .updatedAt(i.getUpdatedAt())
+                .progressStep(evaluating ? process.getCurrentStep() : null)
+                .questionsCompleted(evaluating ? process.getQuestionsCompleted() : null)
+                .questionsTotal(evaluating ? process.getQuestionsTotal() : null)
+                .build();
     }
 
     /** The batch's checked copies (AI check finished, checked copy rendered), in upload order. */

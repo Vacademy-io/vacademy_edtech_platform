@@ -39,6 +39,7 @@ import {
     type CopyIntakeCandidate,
     type CopyIntakeItem,
     type CopyIntakeItemStatus,
+    copyCheckProgressOf,
 } from '../../-services/copy-intake-services';
 import {
     fetchBatchLearners,
@@ -299,7 +300,15 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
     const { t } = useTranslation('assessmentCopyIntake');
     // Settled one way or another; skipped copies are done too, not "in progress".
     const done = batch.evaluated + batch.failed + batch.skipped;
-    const pct = batch.total_items ? Math.round((done / batch.total_items) * 100) : 0;
+    // Copies with the AI service count for how far their check has got, so a
+    // one-copy batch does not sit at 0% for the whole check.
+    const partial = (batch.items ?? []).reduce(
+        (sum, i) => sum + (copyCheckProgressOf(i)?.pct ?? 0) / 100,
+        0
+    );
+    const pct = batch.total_items
+        ? Math.min(100, Math.round(((done + partial) / batch.total_items) * 100))
+        : 0;
     const tone: StatusType =
         batch.status === 'COMPLETED'
             ? 'SUCCESS'
@@ -544,6 +553,7 @@ const StudentCell = ({ item }: { item: CopyIntakeItem }) => {
 const StatusCell = ({ item }: { item: CopyIntakeItem }) => {
     const { t } = useTranslation('assessmentCopyIntake');
     const language = languageConfirmationOf(item);
+    const progress = copyCheckProgressOf(item);
     if (language) {
         return (
             <>
@@ -574,7 +584,28 @@ const StatusCell = ({ item }: { item: CopyIntakeItem }) => {
                     status={ITEM_TONE[item.status]}
                     showIcon={ITEM_TONE[item.status] !== 'INFO'}
                 />
+                {progress && (
+                    <span className="text-caption font-medium tabular-nums text-primary-500">
+                        {progress.pct}%
+                    </span>
+                )}
             </div>
+            {progress && (
+                <div className="mt-1.5 flex max-w-56 flex-col gap-1">
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-neutral-100">
+                        <div
+                            className="h-full rounded-full bg-primary-500 transition-all duration-700"
+                            style={{ width: `${progress.pct}%` }}
+                        />
+                    </div>
+                    <span className="text-caption text-neutral-500">
+                        {t(`itemProgress.${progress.stepKey}`, {
+                            done: progress.done,
+                            total: progress.total,
+                        })}
+                    </span>
+                </div>
+            )}
             {item.status === 'FAILED' && item.error_message && (
                 <div className="mt-1 max-w-72 text-caption text-danger-600">
                     {item.error_message}
