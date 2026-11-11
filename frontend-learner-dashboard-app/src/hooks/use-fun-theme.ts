@@ -2,7 +2,8 @@ import { useEffect, useSyncExternalStore } from "react";
 
 /**
  * Returns true when the "Fun" UI skin is active (<html> carries ui-fun). While it
- * is, the skin's type faces are loaded; no other skin ever requests them.
+ * is, the skin's type faces are loaded; no other skin ever requests them, and the
+ * stylesheet goes again when the skin is switched off.
  *
  * The class can change after mount (a late settings read, an institute switch),
  * so every reader shares one observer. A plain module with no app imports: the
@@ -51,10 +52,19 @@ export function ensureFunFonts(doc: Document = document): void {
   doc.head.appendChild(link);
 }
 
+/**
+ * Takes the skin's font stylesheet out again once the skin is off, for example after
+ * a switch to an institute on another skin. Does nothing when it is not there.
+ */
+export function removeFunFonts(doc: Document = document): void {
+  doc.getElementById(FUN_FONTS_LINK_ID)?.remove();
+}
+
 export function useFunTheme(): boolean {
   const on = useSyncExternalStore(subscribe, read, () => false);
   useEffect(() => {
     if (on) ensureFunFonts();
+    else removeFunFonts();
   }, [on]);
   return on;
 }
