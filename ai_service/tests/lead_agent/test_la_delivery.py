@@ -218,6 +218,88 @@ def test_wallet_must_cover_the_rest_of_the_quota(la_db, monkeypatch):
     assert billing.affordable(agent, 3)[0] is True        # an AI plan covers it
 
 
+def _wallet(la_db, balance):
+    with la_db() as db:
+        db.execute(text("INSERT INTO institute_credits (institute_id, current_balance) VALUES (:i, :b) "
+                        "ON CONFLICT (institute_id) DO UPDATE SET current_balance = EXCLUDED.current_balance"),
+                   {"i": INSTITUTE, "b": balance})
+        db.commit()
+
+
+def test_delivery_stops_where_the_wallet_stops(la_db, monkeypatch, ledger):
+    # 2026-11-10: discovery had stopped for an empty wallet, but leads researched earlier kept going out
+    # and each charge took the wallet further below zero.
+    agent = make_world(la_db, mode="REMOTE", quota=5)
+    cands = [_approved(la_db, agent, f"w{i}.in", 90 - i, phone=f"+91 90000 002{i:02d}") for i in range(3)]
+    fake = FakeAdminCore(monkeypatch)
+    _wallet(la_db, 9)                                      # pays for 2 leads at 4 each
+    out = asyncio.run(delivery.deliver(agent))
+    assert out == {"delivered": 2, "skipped": 0, "failed": 0}
+    assert [_status(la_db, c["id"])[0] for c in cands] == ["DELIVERED", "DELIVERED", "APPROVED"]
+    assert len(ledger) == 2
+
+    _unhold(la_db)
+    _wallet(la_db, -699.15)                                # nothing left: held, no admin_core call, no charge
+    calls_before = len(fake.calls)
+    out = asyncio.run(delivery.deliver(agent))
+    assert out["delivered"] == 0 and "Not enough credits to deliver a lead" in out["held"]
+    assert len(fake.calls) == calls_before and len(ledger) == 2
+    assert _status(la_db, cands[2]["id"])[0] == "APPROVED"
+
+    _wallet(la_db, 100)                                    # topped up: the held lead goes out
+    assert asyncio.run(delivery.deliver(agent)) == {"delivered": 1, "skipped": 0, "failed": 0}
+    assert _status(la_db, cands[2]["id"])[0] == "DELIVERED"
+
+
+def test_sync_now_respects_the_wallet_too(la_db, monkeypatch, ledger):
+    agent = make_world(la_db, mode="REMOTE")
+    cand = _approved(la_db, agent, "s.in", 90)
+    FakeAdminCore(monkeypatch)
+    _wallet(la_db, 3)
+    out = asyncio.run(delivery.deliver(agent, ignore_window=True, only_ids=[cand["id"]]))
+    assert out["delivered"] == 0 and out["held"]
+    assert _status(la_db, cand["id"])[0] == "APPROVED"
+
+
+def test_wallet_room_free_plan_and_unknown_balance_do_not_limit(la_db, monkeypatch, ledger):
+    import app.services.ai_billing as ai_billing
+
+    agent = make_world(la_db, mode="REMOTE", quota=3)
+    cands = [_approved(la_db, agent, f"p{i}.in", 90 - i, phone=f"+91 90000 003{i:02d}") for i in range(2)]
+    FakeAdminCore(monkeypatch)
+    assert billing.wallet_room(agent) == (None, "")        # no wallet row: unknown balance = allow
+    _wallet(la_db, 0)
+    assert billing.wallet_room(agent)[0] == 0
+    real = ai_billing.preflight_tool_credits
+    monkeypatch.setattr(ai_billing, "preflight_tool_credits",
+                        lambda db, **kw: {"current_balance": 0, "sufficient": False, "plan_covered": "INCLUDED"})
+    assert billing.wallet_room(agent) == (None, "")        # an AI plan covers it
+    assert asyncio.run(delivery.deliver(agent))["delivered"] == 2
+    monkeypatch.setattr(ai_billing, "preflight_tool_credits", real)
+    assert all(_status(la_db, c["id"])[0] == "DELIVERED" for c in cands)
+    with la_db() as db:
+        db.execute(text("UPDATE ai_tool_pricing SET flat_base_credits = 0"))
+        db.commit()
+    try:
+        assert billing.wallet_room(agent) == (None, "")    # free price: never limited
+    finally:  # the pricing rows are shared by the whole test session
+        with la_db() as db:
+            db.execute(text("UPDATE ai_tool_pricing SET flat_base_credits = CASE tool_key "
+                            "WHEN 'lead_agent_lead_local' THEN 2 ELSE 4 END"))
+            db.commit()
+
+
+def test_wallet_room_holds_when_the_balance_cannot_be_read(la_db, monkeypatch):
+    import app.services.ai_billing as ai_billing
+
+    agent = make_world(la_db, mode="REMOTE")
+
+    def boom(db, **kw):
+        raise RuntimeError("db down")
+    monkeypatch.setattr(ai_billing, "preflight_tool_credits", boom)
+    assert billing.wallet_room(agent) == (0, "Credit check failed")
+
+
 def _unhold(la_db):
     with la_db() as db:
         db.execute(text("UPDATE lead_candidate SET not_before = now() WHERE status = 'APPROVED'"))

@@ -17,7 +17,9 @@ back from the ledger into lead_candidate.credits_charged.
 
 Before a discovery round the agent is skipped when the wallet cannot cover the
 leads that round is looking for (at most a day's quota) at the agent's price, or
-when its monthly credit cap is reached (delivery stops at the cap too).
+when its monthly credit cap is reached. Delivery stops at the cap too, and when
+the wallet cannot pay for the next lead (wallet_room): researched leads wait as
+APPROVED instead of being charged into a negative balance.
 """
 from __future__ import annotations
 
@@ -148,6 +150,37 @@ def affordable(agent: Dict[str, Any], leads: int) -> Tuple[bool, str]:
     return True, ""
 
 
+def wallet_room(agent: Dict[str, Any]) -> Tuple[Optional[int], str]:
+    """How many more leads the wallet pays for at the agent's price, for delivery
+    (each delivered lead is charged). (None, "") = no wallet limit: free price, an AI
+    plan covers it, or no wallet row ("unknown balance = allow", as affordable).
+    (0, reason) when the balance cannot pay for one lead or cannot be read: the
+    leads stay APPROVED and go out on a later tick, once the wallet is topped up."""
+    from ..ai_billing import metering_system, preflight_tool_credits
+
+    tool_key = tool_key_for_mode(agent.get("mode") or "AUTO")
+    try:
+        with ladb.session() as db:
+            each = price(db, agent["institute_id"], tool_key)
+            if each <= 0:
+                return None, ""
+            pre = preflight_tool_credits(db, tool_key=tool_key, tool_params={}, institute_id=agent["institute_id"],
+                                         metering=metering_system(surface="SCHEDULED"), use_case=USE_CASE,
+                                         enforce_limits=False)
+    except Exception as exc:  # noqa: BLE001 - cannot tell: do not spend
+        logger.warning("lead agent: credit check before delivery failed for agent %s: %s", agent.get("id"), exc)
+        return 0, "Credit check failed"
+    if pre.get("plan_covered"):
+        return None, ""
+    balance = pre.get("current_balance")
+    if balance is None:
+        return None, ""
+    room = int(Decimal(str(balance)) // each) if Decimal(str(balance)) > 0 else 0
+    if room <= 0:
+        return 0, f"Not enough credits to deliver a lead ({balance} < {each})"
+    return room, ""
+
+
 def cap_room(agent: Dict[str, Any]) -> Optional[int]:
     """How many more leads the monthly credit cap allows at the agent's price
     (None = no cap). floor((cap - spent this month) / price)."""
@@ -175,5 +208,5 @@ def cap_reached(agent: Dict[str, Any]) -> bool:
 
 
 __all__ = ["TOOL_LOCAL", "TOOL_REMOTE", "idempotency_key", "tool_key_for", "charge", "affordable", "cap_reached",
-           "cap_room",
+           "cap_room", "wallet_room",
            "price"]

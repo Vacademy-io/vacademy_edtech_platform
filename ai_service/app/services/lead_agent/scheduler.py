@@ -225,10 +225,17 @@ async def tick_agent(agent: dict) -> dict:
     summary: dict = {"agent_id": agent["id"]}
     day = pacing.agent_day(agent.get("window_json"))
     ctx = llm.CallContext(institute_id=agent["institute_id"], agent_id=agent["id"], day=day)
+    problem: Optional[str] = None
+
+    async def report(why: str) -> None:
+        nonlocal problem
+        problem = why
+        await asyncio.to_thread(_set_error, agent["id"], why)
+
     try:
         plan = await planner.ensure_plan(agent, ctx=ctx)
     except (llm.LLMUnavailable, llm.InvalidOutput) as exc:
-        await asyncio.to_thread(_set_error, agent["id"], f"Planning failed: {exc}")
+        await report(f"Planning failed: {exc}")
         plan = None
     await asyncio.to_thread(discovery.schedule_discovered, agent)
     await _keep_lease(agent["id"])
@@ -254,12 +261,19 @@ async def tick_agent(agent: dict) -> dict:
                 try:  # run_round keeps the daily round limit (discovery.round_limit)
                     summary["discovery"] = await discovery.run_round(agent, plan, want)
                 except (llm.LLMUnavailable,) as exc:
-                    await asyncio.to_thread(_set_error, agent["id"], f"Discovery paused: {exc}")
+                    await report(f"Discovery paused: {exc}")
             else:
                 summary["discovery"] = {"skipped": why}
-                await asyncio.to_thread(_set_error, agent["id"], why)
+                await report(why)
     await _keep_lease(agent["id"])
     summary["delivery"] = await delivery.deliver(agent)
+    held = (summary["delivery"] or {}).get("held")
+    if held:
+        await report(held)
+    # A tick with a plan and no problem clears the last one (planner clears it on a new plan too):
+    # "Not enough credits" stayed on the card after a top-up, though the agent was running again.
+    if plan and problem is None and agent.get("last_error"):
+        await asyncio.to_thread(_set_error, agent["id"], None)
     return summary
 
 

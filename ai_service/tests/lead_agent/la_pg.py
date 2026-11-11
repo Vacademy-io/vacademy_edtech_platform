@@ -89,10 +89,21 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_credit_transactions_external_reference_id
     ON credit_transactions (external_reference_id) WHERE external_reference_id IS NOT NULL;
+CREATE TABLE IF NOT EXISTS institute_credits (
+    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    institute_id          VARCHAR(255) NOT NULL UNIQUE,
+    total_credits         DECIMAL(12,2) DEFAULT 0,
+    used_credits          DECIMAL(12,2) DEFAULT 0,
+    current_balance       DECIMAL(12,2) DEFAULT 0,
+    low_balance_threshold DECIMAL(12,2) DEFAULT 50,
+    created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 TRUNCATE = ("TRUNCATE lead_fetch_task, lead_org_page, lead_candidate, lead_agent_day, lead_agent, lead_org, "
-            "lead_agent_worker, lead_suppression, lead_search_cache, credit_transactions, audience, institutes")
+            "lead_agent_worker, lead_suppression, lead_search_cache, credit_transactions, institute_credits, audience, "
+            "institutes")
 
 _open: List = []
 _server = {"obj": None}

@@ -1,13 +1,13 @@
 """Delivering APPROVED leads into the agent's lead list (spec §1 "delivery", §5).
 
 Inside the agent's window and while today's delivered count is below the daily
-quota (and the monthly credit cap is not reached): the best-scored APPROVED
-candidates are held (not_before pushed 10 minutes, SKIP LOCKED) so no other
-replica takes them, re-checked against the institute's suppression list and
-admin_core's existing-contacts (phone last 10 / email, institute-wide), then sent
-through bulk-intake. CREATED -> DELIVERED + one charge (billing.charge);
-DUPLICATE (or already a contact) -> SKIPPED with a note, free; FAILED / an error
--> stays APPROVED and is retried after the hold.
+quota (and the monthly credit cap is not reached, and the wallet pays for the
+next lead): the best-scored APPROVED candidates are held (not_before pushed 10
+minutes, SKIP LOCKED) so no other replica takes them, re-checked against the
+institute's suppression list and admin_core's existing-contacts (phone last 10 /
+email, institute-wide), then sent through bulk-intake. CREATED -> DELIVERED + one
+charge (billing.charge); DUPLICATE (or already a contact) -> SKIPPED with a note,
+free; FAILED / an error -> stays APPROVED and is retried after the hold.
 """
 from __future__ import annotations
 
@@ -313,11 +313,12 @@ def _uncharged(agent_id: str) -> List[Dict[str, Any]]:
 
 
 async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = False,
-                  only_ids: Optional[List[str]] = None) -> Dict[str, int]:
-    """One delivery pass for an agent. Returns counts. ignore_window / only_ids: an admin's Sync
-    now, which delivers outside the window too, all approved leads or the ones picked (the daily
-    quota and the monthly credit cap still apply)."""
-    out = {"delivered": 0, "skipped": 0, "failed": 0}
+                  only_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+    """One delivery pass for an agent. Returns counts, plus `held` (the reason) when the wallet
+    cannot pay for the next lead. ignore_window / only_ids: an admin's Sync now, which delivers
+    outside the window too, all approved leads or the ones picked (the daily quota, the monthly
+    credit cap and the wallet still apply)."""
+    out: Dict[str, Any] = {"delivered": 0, "skipped": 0, "failed": 0}
     # charges that were not settled earlier (same idempotency key; charged_at marks settled)
     for cand in await asyncio.to_thread(_uncharged, agent["id"]):
         await asyncio.to_thread(billing.charge, cand, agent)
@@ -332,6 +333,15 @@ async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = Fals
         want = min(want, len(only_ids))
     if want <= 0:
         return out
+    # Each delivered lead is charged: never deliver more than the wallet pays for (2026-11-10: leads
+    # researched earlier kept going out and took a wallet that discovery had already stopped for
+    # into the negative). Held leads stay APPROVED and go out once the wallet is topped up.
+    room, why = await asyncio.to_thread(billing.wallet_room, agent)
+    if room is not None:
+        if room <= 0:
+            out["held"] = why
+            return out
+        want = min(want, room)
     day = pacing.agent_day(agent.get("window_json"), now)
     prep = await asyncio.to_thread(_prepare, agent, want, day, quota, only_ids)
     unused = 0          # reserved slots not turned into a delivered lead
