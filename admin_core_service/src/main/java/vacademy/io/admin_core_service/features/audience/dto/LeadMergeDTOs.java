@@ -66,10 +66,15 @@ public final class LeadMergeDTOs {
                              List<MergedPerson> mergedPeople) {
     }
 
-    /** A live lead with a name like the one being added; contact is masked. */
+    /**
+     * A lead like the one being added: a live, open lead with the same phone or email, or a live
+     * lead with a similar name. reason says which ("same phone", "same email", "same phone and
+     * email", "same name" or "similar name"); contact is masked.
+     */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record NameMatch(String responseId, String userId, String name, String phone, String email,
-                            String listName, String statusKey, Timestamp submittedAt, boolean exactName) {
+                            String listName, String statusKey, Timestamp submittedAt, boolean exactName,
+                            String reason) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

@@ -86,6 +86,14 @@ _ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
 _CLOSED_BILL = ("DELETED", "CANCELLED", "DROPPED", "WAIVED")
 
 READ_ACTION_SPEC: Dict[str, Dict[str, Any]] = {
+    "admissions": {"summary": ("The admissions report: people converted or enrolled in the window, one row per "
+                               "person and plan, or per enrolment with no plan shown: plan and enquiry state, course, "
+                               "fees, counsellor and source, with totals that also count late conversions (joined "
+                               "before the window, marked converted in it); contacts masked."),
+                   "writes": False, "confirm": "none", "feature": None, "admin_only": True},
+    "admissions_export": {"summary": ("The admissions file: the same admissions as a CSV with full contact details "
+                                      "behind a private link that expires in 15 minutes."),
+                          "writes": False, "confirm": "none", "feature": None, "admin_only": True},
     "lead_dues": {"summary": ("One lead's money here: enrolments with fees billed / paid / due, the installment "
                               "schedule with overdue flags, pending invoices and the last payments (references "
                               "masked)."),
@@ -103,13 +111,6 @@ READ_ACTION_SPEC: Dict[str, Dict[str, Any]] = {
     "abandoned_checkouts": {"summary": ("People whose payment attempt failed or never completed in the window, with "
                                         "no later successful payment here."),
                             "writes": False, "confirm": "none", "feature": None, "admin_only": False},
-    "admissions": {"summary": ("People converted or enrolled in the window, one row per person and plan, or per "
-                               "enrolment with no plan shown: plan and "
-                               "enquiry state, course, fees, counsellor and source, with totals; contacts masked."),
-                   "writes": False, "confirm": "none", "feature": None, "admin_only": True},
-    "admissions_export": {"summary": ("The same admissions as a CSV with full contact details behind a private link "
-                                      "that expires in 15 minutes."),
-                          "writes": False, "confirm": "none", "feature": None, "admin_only": True},
 }
 
 WRITE_ACTION_SPEC: Dict[str, Dict[str, Any]] = {
@@ -157,7 +158,16 @@ DEFINITIONS: Dict[str, str] = {
               "learner of the institute."),
     "admission": ("A person converted in the window, or enrolled in the window under the Admissions tab's rule, "
                   "including INVITED enrolments and free courses. Three figures exist, so quote which: "
-                  "by_basis.converted, by_basis.enrolled and people."),
+                  "by_basis.converted, by_basis.enrolled and people. people_excluding_late_conversions leaves out "
+                  "the late conversions (see late_conversion)."),
+    "late_conversion": ("A person converted in the window who already held a plan here created before the window, or "
+                        "had an enrolment here that counts (ACTIVE, COMPLETED or INVITED) dated before the window, and "
+                        "who has no plan created or enrolled on in the window and no enrolment in the window. They "
+                        "joined earlier and were only marked converted now, e.g. enrolled on 25 August and marked "
+                        "converted on 31 October. Rows carry late_conversion: true; totals.late_conversions counts "
+                        "them and totals.people_excluding_late_conversions is people without them. people, by_basis "
+                        "and money still include them. basis='late_conversion' lists only them, "
+                        "basis='excluding_late_conversions' leaves them out."),
     "admission_date": ("The plan's earliest enrolment day in the window, else the conversion day, else the plan's "
                        "created day. converted_at is re-stamped when a person re-enrols and enrolled_date can be "
                        "edited, so a past month can change when re-run. Only plan_created_on is fixed. An enrolment's "
@@ -226,7 +236,7 @@ DEFINITIONS: Dict[str, str] = {
                    "the converted date is re-stamped when a person re-enrols, the counsellor is the lead's owner now, "
                    "and marked_converted_by is whoever last moved an enquiry to Converted by hand."),
 }
-_ADMISSION_DEFINITIONS = ("admission", "admission_date", "months", "lead_state", "contact", "plan_state", "totals",
+_ADMISSION_DEFINITIONS = ("admission", "late_conversion", "admission_date", "months", "lead_state", "contact", "plan_state", "totals",
                           "breakdowns", "enrolment", "money", "attribution", "window")
 #: The attribution text for attribution='last'; 'first' keeps DEFINITIONS["attribution"].
 _LAST_TOUCH = ("Counsellor is the current owner, not a snapshot. Last-touch: list and source come from the person's "
@@ -2094,9 +2104,13 @@ READ_SCHEMA: Dict[str, Any] = {
     "function": {
         "name": READ_TOOL,
         "description": (
-            "Fees and payments of the people behind your CRM leads: what someone owes, who is overdue, what falls "
-            "due soon, money collected, converted leads who have not paid, and failed / abandoned checkouts. A "
-            "counsellor sees only people behind the leads they can see; institute admins see every learner. "
+            "Admissions and fees. The admissions report (action='admissions', institute admins) lists who was "
+            "converted or enrolled in a period, with plan, fees, counsellor and source, and totals that also show "
+            "late conversions (people who joined before the period and were only marked converted in it); the "
+            "admissions file (action='admissions_export') gives the same rows with full contact as a private CSV "
+            "link. Also the fees and payments of the people behind your CRM leads: what someone owes, who is "
+            "overdue, what falls due soon, money collected, converted leads who have not paid, and failed / "
+            "abandoned checkouts. A counsellor sees only people behind the leads they can see; institute admins see every learner. "
             "Contacts and payment references are masked; every figure comes with its definition, window and "
             "currency (amounts in several currencies are listed per currency or flagged).\n"
             "- lead_dues (lead_id | phone | email): enrolments with billed / paid / overdue / due soon, the "
@@ -2125,7 +2139,10 @@ READ_SCHEMA: Dict[str, Any] = {
             "masked; totals (whole window, whatever the filters) and definitions when offset is 0. A page can hold fewer rows than "
             "limit: while next_offset is set, call again with offset=next_offset. Today's admissions missing a plan: period='today', "
             "plan='plan_missing'; the backlog: days=30. Converted with no active enquiry: basis='converted', "
-            "lead_state='no_active_enquiry'. attribution: first (default) takes list and source from the person's "
+            "lead_state='no_active_enquiry'. People converted in the window who already had a plan or enrolment "
+            "here before it carry late_conversion: true; totals.people_excluding_late_conversions leaves them out "
+            "(people, by_basis and money keep them), basis='late_conversion' lists them. When a month's admissions "
+            "are asked for, say how many were late conversions. attribution: first (default) takes list and source from the person's "
             "first enquiry, last from their latest one on or before the admission; say which was used.\n"
             "- admissions_export (institute admins; same window and filters): those rows with full contact as a CSV "
             "behind a private link that expires in 15 minutes, at most 5000 rows and 6 files an hour. Prefer this "
@@ -2156,9 +2173,11 @@ READ_SCHEMA: Dict[str, Any] = {
                 "group_by": {"type": "array", "items": {"type": "string"},
                              "description": "collections: 1-2 of day, week, month, method, course, counsellor, "
                                             "currency, source, list, state, city, list_tag:<key>."},
-                "basis": {"type": "string", "enum": ["either", "converted", "enrolled"],
+                "basis": {"type": "string", "enum": list(adm.BASIS),
                           "description": "admissions: converted in the window, enrolled in the window, or either "
-                                         "(default)."},
+                                         "(default); late_conversion: only people converted in the window who "
+                                         "joined before it (plan or enrolment before the window, none in it); "
+                                         "excluding_late_conversions: everyone else."},
                 "plan": {"type": "string",
                          "enum": ["any", "plan_missing", "plan_in_window", "plan_after_window", "no_plan",
                                   "older_plan_only", "ended_plans_only", "plan_on_linked_person", "plan_elsewhere"],
@@ -2241,7 +2260,7 @@ CRM_MONEY_TOOLS: Dict[str, ToolSpec] = {
 def _register() -> None:
     from .assistant_tool_registry import ASSISTANT_TOOLS, GROUP_LABELS
     ASSISTANT_TOOLS.update(CRM_MONEY_TOOLS)
-    for key, label in ((READ_GROUP, "CRM payments: view dues and collections"),
+    for key, label in ((READ_GROUP, "CRM payments: view admissions, dues and collections"),
                        (WRITE_GROUP, "CRM payments: send fee reminders")):
         GROUP_LABELS.setdefault(key, label)
 

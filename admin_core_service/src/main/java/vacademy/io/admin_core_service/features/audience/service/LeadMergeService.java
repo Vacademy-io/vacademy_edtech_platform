@@ -37,7 +37,8 @@ import java.util.Set;
  * Users themselves and other institutes' data are never touched.
  *
  * <p>Only plain duplicates are merged here: a duplicate with an enrolment, a plan or a payment,
- * or one linked to someone else's enquiry, is refused with the reason, for a person to fix.
+ * or one linked to someone else's enquiry, is refused with the reason, for a person to fix. A
+ * converted duplicate is merged only into a person who is converted too.
  */
 @Slf4j
 @Service
@@ -164,35 +165,67 @@ public class LeadMergeService {
     // ── similar names ────────────────────────────────────────────────────
 
     /**
-     * Live leads here with a name like {@code name} (same once normalised, or same first and last
-     * word), submitted in the last 180 days. A warning for the person adding a lead, never a block.
-     * Contact is masked; a caller whose lead view is narrowed to their team sees only those leads,
-     * and how many others matched.
+     * Before a lead is added: live, open leads here with the same phone (last 10 digits) or email,
+     * first, then live leads with a name like {@code name} (same once normalised, or same first and
+     * last word), submitted in the last 180 days. Each match says why it matched. A warning for the
+     * person adding a lead, never a block. Contact is masked; a caller whose lead view is narrowed
+     * to their team sees only those leads, and how many others matched.
      */
     @Transactional(readOnly = true)
     public LeadMergeDTOs.SimilarNames similarNames(String instituteId, String name, CustomUserDetails caller) {
+        return similarLeads(instituteId, name, null, null, caller);
+    }
+
+    @Transactional(readOnly = true)
+    public LeadMergeDTOs.SimilarNames similarLeads(String instituteId, String name, String phone, String email,
+                                                   CustomUserDetails caller) {
         accessValidator.requireInstituteStaff(caller, instituteId);
         String n = clean(name);
-        if (n == null || n.length() < 3 || n.length() > 200) {
-            return new LeadMergeDTOs.SimilarNames(List.of(), 0, LeadMergeDao.SIMILAR_NAME_DAYS);
+        boolean byName = n != null && n.length() >= 3 && n.length() <= 200;
+        String tail = phoneLast10(phone);
+        String mail = emailKey(email);
+        List<LeadMergeDTOs.NameMatch> candidates = new ArrayList<>();
+        List<String> owners = new ArrayList<>();
+        Set<String> people = new HashSet<>();
+        if (tail != null || mail != null) {
+            try {
+                for (LeadMergeDao.ContactMatch c : dao.contactMatches(instituteId, tail, mail, 50)) {
+                    if (!people.add(c.userId())) continue;
+                    String reason = c.samePhone() && c.sameEmail() ? REASON_SAME_PHONE_AND_EMAIL
+                            : c.samePhone() ? REASON_SAME_PHONE : REASON_SAME_EMAIL;
+                    candidates.add(new LeadMergeDTOs.NameMatch(c.responseId(), c.userId(), c.name(),
+                            maskPhone(c.phone()), maskEmail(c.email()), c.listName(), c.statusKey(), c.submittedAt(),
+                            false, reason));
+                    owners.add(c.counsellorId());
+                }
+            } catch (DataAccessException e) {
+                log.warn("Same-contact check skipped in institute {}: {}", instituteId, e.getMessage());
+            }
         }
-        List<LeadMergeDao.NameMatch> found;
-        try {
-            found = dao.similarNames(instituteId, n, 50);
-        } catch (DataAccessException e) {
-            log.warn("Similar-name check skipped in institute {}: {}", instituteId, e.getMessage());
-            return new LeadMergeDTOs.SimilarNames(List.of(), 0, LeadMergeDao.SIMILAR_NAME_DAYS);
+        if (byName) {
+            try {
+                for (LeadMergeDao.NameMatch m : dao.similarNames(instituteId, n, 50)) {
+                    if (!people.add(m.userId())) continue;
+                    candidates.add(new LeadMergeDTOs.NameMatch(m.responseId(), m.userId(), m.name(),
+                            maskPhone(m.phone()), maskEmail(m.email()), m.listName(), m.statusKey(), m.submittedAt(),
+                            m.exact(), m.exact() ? REASON_SAME_NAME : REASON_SIMILAR_NAME));
+                    owners.add(m.counsellorId());
+                }
+            } catch (DataAccessException e) {
+                log.warn("Similar-name check skipped in institute {}: {}", instituteId, e.getMessage());
+            }
         }
         Set<String> visible = null;
-        if (!counsellorScopeService.hasAdminRole(caller, instituteId)
+        if (!candidates.isEmpty() && !counsellorScopeService.hasAdminRole(caller, instituteId)
                 && counsellorScopeService.isScopedCaller(instituteId, caller)) {
             visible = new HashSet<>(counsellorScopeService.scopedCounsellorUserIds(instituteId, caller.getUserId()));
             visible.add(caller.getUserId());
         }
         List<LeadMergeDTOs.NameMatch> shown = new ArrayList<>();
         int hidden = 0;
-        for (LeadMergeDao.NameMatch m : found) {
-            if (visible != null && (m.counsellorId() == null || !visible.contains(m.counsellorId()))) {
+        for (int i = 0; i < candidates.size(); i++) {
+            String owner = owners.get(i);
+            if (visible != null && (owner == null || !visible.contains(owner))) {
                 hidden++;
                 continue;
             }
@@ -200,10 +233,30 @@ public class LeadMergeService {
                 hidden++;
                 continue;
             }
-            shown.add(new LeadMergeDTOs.NameMatch(m.responseId(), m.userId(), m.name(), maskPhone(m.phone()),
-                    maskEmail(m.email()), m.listName(), m.statusKey(), m.submittedAt(), m.exact()));
+            shown.add(candidates.get(i));
         }
         return new LeadMergeDTOs.SimilarNames(shown, hidden, LeadMergeDao.SIMILAR_NAME_DAYS);
+    }
+
+    public static final String REASON_SAME_PHONE = "same phone";
+    public static final String REASON_SAME_EMAIL = "same email";
+    public static final String REASON_SAME_PHONE_AND_EMAIL = "same phone and email";
+    public static final String REASON_SAME_NAME = "same name";
+    public static final String REASON_SIMILAR_NAME = "similar name";
+
+    /** The last 10 digits of a phone number, or null when it has fewer than 10. */
+    static String phoneLast10(String phone) {
+        if (phone == null) return null;
+        String digits = phone.replaceAll("[^0-9]", "");
+        return digits.length() < 10 ? null : digits.substring(digits.length() - 10);
+    }
+
+    /** An email trimmed and lower-cased, or null when it is not one. */
+    static String emailKey(String email) {
+        String e = clean(email);
+        if (e == null || e.length() > 320) return null;
+        int at = e.indexOf('@');
+        return at <= 0 || at == e.length() - 1 ? null : e.toLowerCase(java.util.Locale.ROOT);
     }
 
     // ── the checks ───────────────────────────────────────────────────────
@@ -266,6 +319,11 @@ public class LeadMergeService {
             refusals.add(refusal("DUPLICATE_LINKED_ELSEWHERE", "The duplicate is the linked student on someone "
                     + "else's enquiry here. Merging would change that enquiry too, so this needs a person to fix "
                     + "it by hand."));
+        }
+        if (isConverted(dupProfile.get().conversionStatus()) && !isConverted(keepProfile.get().conversionStatus())) {
+            refusals.add(refusal("DUPLICATE_CONVERTED_KEEP_NOT", "The duplicate is marked converted and the person "
+                    + "to keep is not, so merging would drop that admission from your reports. Keep the converted "
+                    + "person instead, or mark the person to keep as converted first."));
         }
         if (dao.areLinked(instituteId, pair.keep, pair.duplicate)) {
             refusals.add(refusal("PEOPLE_LINKED", "One of these people is recorded as the other's student on an "
@@ -330,6 +388,10 @@ public class LeadMergeService {
                 .category(TimelineCategory.JOURNEY)
                 .instituteId(instituteId)
                 .build());
+    }
+
+    private static boolean isConverted(String conversionStatus) {
+        return conversionStatus != null && "CONVERTED".equalsIgnoreCase(conversionStatus.trim());
     }
 
     private static String displayName(LeadMergeDTOs.Person p) {

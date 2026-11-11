@@ -129,6 +129,31 @@ class PersonConversionHooksTest {
         }
 
         @Test
+        @DisplayName("an enquiry a parent made for a child converts the child, not the parent")
+        void enquiryForAChildConvertsTheChild() {
+            AudienceResponse forChild = AudienceResponse.builder().id("ar-2").audienceId("list-1")
+                    .userId("parent-1").studentUserId("child-a").leadStatusId("st-cb").build();
+            when(audienceResponseRepository.findById("ar-2")).thenReturn(Optional.of(forChild));
+
+            service.changeLeadStatus("ar-2", "st-conv", "admin-1", "MANUAL");
+
+            verify(closer).onPersonConverted("child-a", INST);
+            verify(closer, never()).onPersonConverted("parent-1", INST);
+        }
+
+        @Test
+        @DisplayName("an enquiry whose linked student is the submitter converts the submitter")
+        void enquiryForThemselvesConvertsTheSubmitter() {
+            AudienceResponse own = AudienceResponse.builder().id("ar-3").audienceId("list-1")
+                    .userId(PERSON).studentUserId(PERSON).leadStatusId("st-cb").build();
+            when(audienceResponseRepository.findById("ar-3")).thenReturn(Optional.of(own));
+
+            service.changeLeadStatus("ar-3", "st-conv", "admin-1", "MANUAL");
+
+            verify(closer).onPersonConverted(PERSON, INST);
+        }
+
+        @Test
         @DisplayName("moving an enquiry to any other status does not")
         void movedElsewhere() {
             service.changeLeadStatus("ar-1", "st-fu", "admin-1", "MANUAL");

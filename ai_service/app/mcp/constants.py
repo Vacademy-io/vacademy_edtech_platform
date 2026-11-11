@@ -58,7 +58,8 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     # caller's dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in.
     "crm_leads",            # READ:  find / list / one lead, timeline, my day, the CRM catalog, export
     "crm_lead_activity",    # WRITE: live additive — log interactions and notes, schedule / move / complete follow-ups
-    "crm_lead_edit",        # WRITE: live — status, tier, details, tags, merge people; preview + confirm token
+    "crm_lead_edit",        # WRITE: live — status, tier, details, tags; preview + confirm token
+    "crm_lead_merge",       # WRITE: live, admin only — merge a duplicate person into another / undo; preview + confirm
     "crm_team_edit",        # WRITE: live — assign / reassign leads, pause / resume a counsellor's routing; preview + confirm
     "crm_lead_intake",      # WRITE: live — add a lead (walk-ins too) or import a short list; preview + confirm token
     "crm_calls",            # READ:  calls, transcripts, callbacks due, missed inbound, AI agents / queue / runs
@@ -179,10 +180,17 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
     "crm_lead_edit": (
         "confirm-gated live edit, the admin's explicit choice: changes the status, tier, details or tags of leads "
         "in the caller's lead scope (at most 500 per call), and institute admins can label lead lists with "
-        "report tags (at most 50 lists per call) and merge a duplicate person into another one (or undo it), "
-        "never for a duplicate with an enrolment, plan or payment; never deletes a lead; every write needs the "
+        "report tags (at most 50 lists per call); never deletes a lead; every write needs the "
         "confirm_token of a preview that showed each before → after, signed over the resolved leads and their "
         "current state (single-use for more than one lead), so a changed lead or target list is refused"
+    ),
+    "crm_lead_merge": (
+        "confirm-gated live edit, institute admins only, in an opt-in group of its own: merges a duplicate person "
+        "into another one in this institute (their enquiries move; users and other institutes are never changed) "
+        "or undoes such a merge; refused for a duplicate with an enrolment, plan or payment here, and for a "
+        "converted duplicate kept under an unconverted person; every write needs the confirm_token of a preview "
+        "that showed both people, signed over both people and the enquiries that move, so a changed person is "
+        "refused"
     ),
     "crm_team_edit": (
         "confirm-gated live edit, admins and managers only: assigns or reassigns leads of this institute (at most "
@@ -263,6 +271,7 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "crm_leads": "CRM leads: view",
     "crm_lead_activity": "CRM leads: log activity and follow-ups",
     "crm_lead_edits": "CRM leads: edit status, tier, details and tags",
+    "crm_lead_merges": "CRM leads: merge duplicate people",
     "crm_team_edits": "CRM leads: assign and route",
     "crm_lead_intake": "CRM leads: add leads",
     "crm_calls": "CRM calls: view",
@@ -273,7 +282,7 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "crm_messages": "CRM messages: view",
     "crm_messaging_outbound": "CRM messages: send WhatsApp and email",
     "crm_reports": "CRM reports: view",
-    "crm_collections": "CRM payments: view dues and collections",
+    "crm_collections": "CRM payments: view admissions, dues and collections",
     "crm_payment_reminders": "CRM payments: send fee reminders",
 }
 
@@ -426,6 +435,11 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
         "(admins) tag lead lists with state, course or channel for reports. It always shows you each change first "
         "and applies it only after you confirm. Status changes can trigger your automations. Turned on separately."
     ),
+    "crm_lead_merges": (
+        "Let the connected AI app merge a person entered twice into the person you keep, or undo a merge. Admins "
+        "only. It shows both people and what moves first and merges only after you confirm. People with an "
+        "enrolment, plan or payment are never merged from here. Turned on separately."
+    ),
     "crm_team_edits": (
         "Let the connected AI app assign or reassign leads between counsellors (for example while someone is on "
         "leave) and pause or resume a counsellor's lead routing. For admins and managers; shows the moves first and "
@@ -478,10 +492,11 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
         "can see."
     ),
     "crm_collections": (
-        "See what a lead owes, who is overdue, what falls due soon, converted leads who have not paid and failed "
-        "checkouts — for the people behind the leads each user can see. Admins also see money collected, by day, "
-        "method, course and counsellor, and the admissions report: who was converted or enrolled in a period, with "
-        "plan, fees, counsellor and source, as a masked list or a private file with full contact details."
+        "Admissions report and admissions file (admins): who was converted or enrolled in a period, with plan, fees, "
+        "counsellor and source, as a masked list or a private file with full contact details. Also what a lead "
+        "owes, who is overdue, what falls due soon, converted leads who have not paid and failed checkouts — for "
+        "the people behind the leads each user can see — and, for admins, money collected by day, method, course "
+        "and counsellor."
     ),
     "crm_payment_reminders": (
         "Let the connected AI app send fee reminders for unpaid installments or pending invoices — through your "
@@ -514,7 +529,8 @@ MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
     "crm_messages": {"label": "CRM: Messages", "summary": "Lead WhatsApp and email history, inbox and templates."},
     "crm_reports": {"label": "CRM: Reports",
                     "summary": "Sources, funnel, bottlenecks, counsellors, calling, follow-ups, SLAs, custom reports, live activity."},
-    "crm_payments": {"label": "CRM: Payments", "summary": "Dues, overdue fees, collections, admissions and fee reminders."},
+    "crm_payments": {"label": "CRM: Payments",
+                     "summary": "Admissions report and file, dues, overdue fees, collections and fee reminders."},
 }
 
 #: group key → where it sits on the settings page.
@@ -564,6 +580,7 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
                           "sub_label": "Log activity and follow-ups"},
     "crm_lead_edits": {"area": "crm_leads", "level": "edit", "risk": "live",
                        "sub_label": "Edit status, tier, details and tags"},
+    "crm_lead_merges": {"area": "crm_leads", "level": "edit", "risk": "live", "sub_label": "Merge duplicate people"},
     "crm_team_edits": {"area": "crm_leads", "level": "edit", "risk": "live", "sub_label": "Assign leads and routing"},
     "crm_lead_intake": {"area": "crm_leads", "level": "edit", "risk": "live", "sub_label": "Add leads"},
     "crm_calls": {"area": "crm_calls", "level": "view"},
@@ -589,7 +606,8 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
 MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
                                "learner_enrollments", "learner_profile_edits", "course_structure_edits",
                                "sub_org_edits", "sub_org_enrollments",
-                               "crm_lead_activity", "crm_lead_edits", "crm_team_edits", "crm_lead_intake",
+                               "crm_lead_activity", "crm_lead_edits", "crm_lead_merges", "crm_team_edits",
+                               "crm_lead_intake",
                                "crm_calling_outbound", "crm_ai_campaigns", "crm_meeting_edits",
                                "crm_messaging_outbound", "crm_payment_reminders"})
 

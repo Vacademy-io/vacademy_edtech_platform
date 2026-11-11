@@ -67,7 +67,8 @@ PLAN_STATES = ("plan_in_window", "plan_after_window", "older_plan_only", "ended_
 LEAD_STATES = ("active_enquiry", "enquiry_deleted", "no_enquiry_on_record")
 
 #: Literal predicates over ``per p``; an argument only ever selects one of these, it is never bound or pasted.
-BASIS = {"either": "TRUE", "converted": "p.is_conv", "enrolled": "p.is_enr"}
+BASIS = {"either": "TRUE", "converted": "p.is_conv", "enrolled": "p.is_enr",
+         "late_conversion": "p.late_conversion", "excluding_late_conversions": "NOT p.late_conversion"}
 PLAN = {"any": "TRUE",
         "plan_missing": "p.plan_state NOT IN ('plan_in_window', 'plan_after_window', 'plan_on_linked_person')",
         **{s: f"p.plan_state = '{s}'" for s in PLAN_STATES}}
@@ -199,6 +200,11 @@ _BASE = """WITH enr AS MATERIALIZED (
            COALESCE(pf.n_plans, 0) > 0 AS has_plan, COALESCE(pf.any_in_window, FALSE) AS plan_in_window,
            COALESCE(pf.plan_before, FALSE) AS plan_before, COALESCE(ld.opted_out, FALSE) OR op.pid IS NOT NULL AS opted_out,
            lp.other_pid AS linked_person_id,
+           (pop.is_conv AND NOT pop.is_enr AND NOT COALESCE(pf.any_in_window, FALSE)
+            AND (COALESCE(pf.plan_before, FALSE) OR EXISTS (
+                SELECT 1 FROM student_session_institute_group_mapping sb
+                WHERE sb.user_id = pop.pid AND sb.institute_id = :inst AND {counted_b}
+                  AND {enr_day_b} < CAST(:d_from AS date)))) AS late_conversion,
            CASE WHEN ld.live_leads > 0 THEN 'active_enquiry' WHEN ld.any_leads > 0 THEN 'enquiry_deleted' ELSE 'no_enquiry_on_record' END AS lead_state,
            CASE WHEN COALESCE(pf.n_plans, 0) > 0 AND NOT COALESCE(pf.any_open, FALSE) THEN 'ended_plans_only'
                 WHEN COALESCE(pf.any_in_window, FALSE) THEN 'plan_in_window'
@@ -218,7 +224,8 @@ _BASE = """WITH enr AS MATERIALIZED (
     LEFT JOIN linked_plan lp ON lp.pid = pop.pid
     LEFT JOIN user_lead_profile ulp ON ulp.user_id = pop.pid AND ulp.institute_id = :inst
 )""".replace("{enr_day}", _ENR_DAY.format(m="s")).replace("{on_list}", _ON_LIST.format(r="ar", a="a")).replace(
-    "{counted}", _COUNTED.format(m="s")).replace("{on_list_o}", _ON_LIST.format(r="o", a="oa")).replace(
+    "{counted}", _COUNTED.format(m="s")).replace("{counted_b}", _COUNTED.format(m="sb")).replace(
+    "{enr_day_b}", _ENR_DAY.format(m="sb")).replace("{on_list_o}", _ON_LIST.format(r="o", a="oa")).replace(
     "{o_keys}", _CONTACT_KEYS.format(p="o.parent_mobile", e="o.parent_email")).replace(
     "{x_keys}", _CONTACT_KEYS.format(p="x.phone", e="x.email")).replace("{ended_plan}", _ENDED_PLAN)
 
@@ -245,7 +252,7 @@ _ROWS_TAIL = """
     FROM per p
     WHERE NOT p.has_plan AND NOT p.is_enr
 ), picked AS MATERIALIZED (
-    SELECT r.*, p.is_conv, p.is_enr, p.lead_state, p.plan_state, p.linked_person_id, p.opted_out, p.converted_at, p.assigned_counselor_id, p.best_score_response_id, p.best_source_type
+    SELECT r.*, p.is_conv, p.is_enr, p.late_conversion, p.lead_state, p.plan_state, p.linked_person_id, p.opted_out, p.converted_at, p.assigned_counselor_id, p.best_score_response_id, p.best_source_type
     FROM out_rows r JOIN per p ON p.pid = r.pid
     WHERE {filters}
 ), page AS MATERIALIZED (
@@ -402,6 +409,7 @@ SELECT COUNT(*) AS people, COUNT(*) FILTER (WHERE per.is_conv) AS converted, COU
        COUNT(*) FILTER (WHERE per.is_conv AND per.lead_state = 'enquiry_deleted' AND pd.pid IS NOT NULL) AS conv_enquiry_deleted_paid_ever,
        COUNT(*) FILTER (WHERE per.is_conv AND per.lead_state = 'enquiry_deleted' AND pd.paid_on_window_plan) AS conv_enquiry_deleted_paid_window_plan,
        COUNT(*) FILTER (WHERE per.is_conv AND per.plan_before) AS conv_plan_before_window,
+       COUNT(*) FILTER (WHERE per.late_conversion) AS late_conversions,
        COUNT(*) FILTER (WHERE per.plan_state = 'plan_in_window') AS ps_plan_in_window,
        COUNT(*) FILTER (WHERE per.plan_state = 'plan_after_window') AS ps_plan_after_window,
        COUNT(*) FILTER (WHERE per.plan_state = 'older_plan_only') AS ps_older_plan_only,
@@ -597,8 +605,11 @@ def _json_list(value: Any) -> List[Dict[str, Any]]:
 
 def totals_view(row: Dict[str, Any]) -> Dict[str, Any]:
     converted, enrolled, both = _count(row, "converted"), _count(row, "enrolled"), _count(row, "both_bases")
+    people, late = _count(row, "people"), _count(row, "late_conversions")
     return {
-        "people": _count(row, "people"),
+        "people": people,
+        "late_conversions": late,
+        "people_excluding_late_conversions": people - late,
         "by_basis": {"converted": converted, "enrolled": enrolled, "both": both, "converted_only": converted - both,
                      "enrolled_only": enrolled - both},
         "converted_breakdown": {
@@ -711,7 +722,8 @@ def row_view(r: Dict[str, Any], owners: Dict[str, str], display: Dict[str, str],
         "batch": cd.clean(r.get("batches"), PAGE_TEXT_LIMIT), "plan": cd.clean(r.get("plan_name"), PAGE_TEXT_LIMIT),
         "plan_id": r.get("plan_id"), "plan_status": r.get("plan_status"), "plan_type": r.get("plan_type"),
         "plan_timing": r.get("plan_timing"), "enrolment_status": r.get("enrolment_status"),
-        "counts_in_totals": _counts_in_totals(r), "fee_billed": _amount(r.get("billed")),
+        "counts_in_totals": _counts_in_totals(r), "late_conversion": bool(r.get("late_conversion")),
+        "fee_billed": _amount(r.get("billed")),
         "amount_paid": _amount(r.get("paid")), "currency": r.get("currency"),
         "paid_other_currency": _other_currency(r),
         "admission_package": ({"id": r["admission_package_id"], "total": _amount(r.get("package_total")),
@@ -746,7 +758,7 @@ def page_rows(rows: Sequence[Dict[str, Any]], owners: Dict[str, str], display: D
 
 CSV_COLUMNS = ("admission_date", "basis", "name", "phone", "email", "contact_source", "course", "batch", "plan",
                "plan_status", "plan_type", "plan_timing", "plan_state", "enrolment_status", "counts_in_totals",
-               "fee_billed", "amount_paid", "currency", "paid_other_currency", "admission_package_id", "package_total", "enrolled_on",
+               "late_conversion", "fee_billed", "amount_paid", "currency", "paid_other_currency", "admission_package_id", "package_total", "enrolled_on",
                "converted_on", "plan_created_on", "counsellor", "list", "source", "source_origin", "lead_state",
                "opted_out", "linked_person_id", "person_id", "lead_id", "plan_id")
 
@@ -772,7 +784,7 @@ def csv_row(r: Dict[str, Any], owners: Dict[str, str], display: Dict[str, str], 
         cd.clean(email, CSV_TEXT_LIMIT), source, cd.clean(r.get("courses") or r.get("plan_name"), CSV_TEXT_LIMIT),
         cd.clean(r.get("batches"), CSV_TEXT_LIMIT), cd.clean(r.get("plan_name"), CSV_TEXT_LIMIT),
         r.get("plan_status"), r.get("plan_type"), r.get("plan_timing"), r.get("plan_state"),
-        r.get("enrolment_status"), _counts_in_totals(r), r.get("billed"), r.get("paid"), r.get("currency"),
+        r.get("enrolment_status"), _counts_in_totals(r), bool(r.get("late_conversion")), r.get("billed"), r.get("paid"), r.get("currency"),
         other, r.get("admission_package_id"), r.get("package_total"), local_day(r.get("enrolled_on"), tz),
         local_day(r.get("converted_at"), tz), local_day(r.get("plan_created_at"), tz),
         cd.clean(owners.get(owner) or owner), cd.clean(r.get("list_name"), CSV_TEXT_LIMIT), source_cell,

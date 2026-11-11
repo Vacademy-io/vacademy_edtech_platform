@@ -43,6 +43,12 @@ public class LeadMergeDao {
                             boolean exact) {
     }
 
+    /** A live, open lead with the same phone (last 10 digits) or email as the one being added. */
+    public record ContactMatch(String responseId, String userId, String name, String phone, String email,
+                               String listName, String statusKey, String counsellorId, Timestamp submittedAt,
+                               boolean samePhone, boolean sameEmail) {
+    }
+
     /** The person's name on an enquiry: the name column, else the form's full-name answer. */
     static final String NAME_SQL = """
             COALESCE(NULLIF(btrim(ar.parent_name), ''), (
@@ -355,5 +361,84 @@ public class LeadMergeDao {
                 rs.getString("nm"), rs.getString("parent_mobile"), rs.getString("parent_email"),
                 rs.getString("campaign_name"), rs.getString("status_key"), rs.getString("assigned_counselor_id"),
                 rs.getTimestamp("submitted_at"), rs.getBoolean("exact")));
+    }
+
+    /** The phone branch of the contact match: the indexed last-10-digits expression. */
+    static final String PHONE_IDS_SQL = """
+            SELECT p.id FROM audience_response p
+            WHERE p.parent_mobile IS NOT NULL
+              AND RIGHT(regexp_replace(p.parent_mobile, '[^0-9]', '', 'g'), 10) = ?
+            """;
+
+    /** The email branch of the contact match: the indexed trimmed, lower-cased email. */
+    static final String EMAIL_IDS_SQL = """
+            SELECT e.id FROM audience_response e
+            WHERE e.parent_email IS NOT NULL AND LOWER(btrim(e.parent_email)) = ?
+            """;
+
+    static String contactMatchesSql(boolean phone, boolean email) {
+        String ids = phone && email ? PHONE_IDS_SQL + " UNION " + EMAIL_IDS_SQL : phone ? PHONE_IDS_SQL : EMAIL_IDS_SQL;
+        String samePhone = phone
+                ? "(ar.parent_mobile IS NOT NULL AND RIGHT(regexp_replace(ar.parent_mobile, '[^0-9]', '', 'g'), 10) = ?)"
+                : "FALSE";
+        String sameEmail = email ? "(ar.parent_email IS NOT NULL AND LOWER(btrim(ar.parent_email)) = ?)" : "FALSE";
+        return """
+                WITH ids AS MATERIALIZED (
+                """ + ids + """
+                ), hit AS (
+                    SELECT DISTINCT ON (ar.user_id) ar.id, ar.user_id, ar.parent_mobile, ar.parent_email,
+                           ar.submitted_at, a.campaign_name, ls.status_key, ulp.assigned_counselor_id,
+                """ + NAME_SQL + """
+                 AS nm,
+                """ + samePhone + " AS same_phone, " + sameEmail + """
+                 AS same_email
+                    FROM ids
+                    JOIN audience_response ar ON ar.id = ids.id
+                    JOIN audience a ON a.id = ar.audience_id AND a.institute_id = ?
+                    LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
+                    LEFT JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = ?
+                    WHERE ar.audience_status = 'ACTIVE'
+                      AND (ar.overall_status IS NULL OR ar.overall_status <> 'OPTED_OUT')
+                      AND COALESCE(ar.source_type, '') <> 'OPT_OUT'
+                      AND COALESCE(a.campaign_type, '') NOT LIKE '%OPT_OUT%'
+                      AND ar.user_id IS NOT NULL
+                      AND ulp.merged_into_user_id IS NULL
+                      AND COALESCE(ls.status_key, ulp.conversion_status, '') NOT IN ('CONVERTED', 'LOST')
+                    ORDER BY ar.user_id, ar.submitted_at DESC NULLS LAST, ar.id
+                )
+                SELECT * FROM hit ORDER BY (same_phone AND same_email) DESC, submitted_at DESC NULLS LAST, id
+                LIMIT ?
+                """;
+    }
+
+    /**
+     * Live, open leads here (not deleted, not opted out, not converted or lost, person not merged
+     * away) with this phone's last 10 digits or this email (trimmed, lower-cased). One row per
+     * person. Either key may be null; both null finds nothing.
+     */
+    public List<ContactMatch> contactMatches(String instituteId, String phoneLast10, String emailLower, int limit) {
+        boolean phone = phoneLast10 != null && !phoneLast10.isBlank();
+        boolean email = emailLower != null && !emailLower.isBlank();
+        if (!phone && !email) return List.of();
+        List<Object> args = new java.util.ArrayList<>();
+        if (phone) args.add(phoneLast10);
+        if (email) args.add(emailLower);
+        if (phone) args.add(phoneLast10);
+        if (email) args.add(emailLower);
+        args.add(instituteId);
+        args.add(instituteId);
+        args.add(limit);
+        String sql = contactMatchesSql(phone, email);
+        return jdbc.query(con -> {
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setQueryTimeout(SIMILAR_NAME_TIMEOUT_SECONDS);
+            for (int i = 0; i < args.size(); i++) {
+                ps.setObject(i + 1, args.get(i));
+            }
+            return ps;
+        }, (rs, i) -> new ContactMatch(rs.getString("id"), rs.getString("user_id"), rs.getString("nm"),
+                rs.getString("parent_mobile"), rs.getString("parent_email"), rs.getString("campaign_name"),
+                rs.getString("status_key"), rs.getString("assigned_counselor_id"), rs.getTimestamp("submitted_at"),
+                rs.getBoolean("same_phone"), rs.getBoolean("same_email")));
     }
 }

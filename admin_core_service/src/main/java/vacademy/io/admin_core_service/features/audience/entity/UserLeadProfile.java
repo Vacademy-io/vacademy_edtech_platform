@@ -10,8 +10,12 @@ import java.sql.Timestamp;
  * Aggregated lead profile per user, across all campaigns in an institute.
  * Updated asynchronously after score recalculation or lead events.
  * Keyed by (user_id, institute_id) — user_id can be a parent or a student.
+ *
+ * <p>An update writes only the columns that changed, so two saves of different columns of
+ * one row (or a save and a direct SQL update) never undo each other.
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "user_lead_profile",
         uniqueConstraints = @UniqueConstraint(name = "user_lead_profile_user_id_institute_id_key",
                 columnNames = {"user_id", "institute_id"}))

@@ -3335,6 +3335,43 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("primaryResponseId") String primaryResponseId);
 
         /**
+         * Move one enquiry to {@code toStatusId} only while its status is still
+         * {@code fromStatusId}. Returns 1 when it moved, 0 when the status had changed in the
+         * meantime (the newer status is kept). Writes lead_status_id alone.
+         */
+        @Modifying(flushAutomatically = true)
+        @Transactional
+        @Query(value = """
+                            UPDATE audience_response
+                               SET lead_status_id = :toStatusId
+                             WHERE id = :id
+                               AND lead_status_id = :fromStatusId
+                        """, nativeQuery = true)
+        int moveLeadStatusIfStill(@Param("id") String id,
+                        @Param("fromStatusId") String fromStatusId,
+                        @Param("toStatusId") String toStatusId);
+
+        /**
+         * An enquiry's status as the database holds it now (empty when it has none, or the
+         * enquiry does not exist). A scalar read, so it is never answered from an entity loaded
+         * earlier in the same session.
+         */
+        @Query("SELECT ar.leadStatusId FROM AudienceResponse ar WHERE ar.id = :id")
+        Optional<String> findCurrentLeadStatusId(@Param("id") String id);
+
+        /** {@link #moveLeadStatusIfStill} for an enquiry that has no status of its own yet. */
+        @Modifying(flushAutomatically = true)
+        @Transactional
+        @Query(value = """
+                            UPDATE audience_response
+                               SET lead_status_id = :toStatusId
+                             WHERE id = :id
+                               AND lead_status_id IS NULL
+                        """, nativeQuery = true)
+        int moveLeadStatusIfUnset(@Param("id") String id,
+                        @Param("toStatusId") String toStatusId);
+
+        /**
          * Lead lookup — "is this phone / email already ours?".
          *
          * Institute-wide on purpose: the whole point is to answer for a lead the

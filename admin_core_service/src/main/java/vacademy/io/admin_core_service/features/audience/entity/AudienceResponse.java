@@ -11,8 +11,12 @@ import java.sql.Timestamp;
  * Entity representing a Lead/Response submission to an Audience Campaign
  * Captures leads from multiple sources (website forms, Google Ads, Facebook
  * Ads, etc.)
+ *
+ * <p>An update writes only the columns that changed, so two saves of different columns of
+ * one row (or a save and a direct SQL update) never undo each other.
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "audience_response")
 @Data
 @NoArgsConstructor

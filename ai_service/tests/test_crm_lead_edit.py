@@ -136,7 +136,7 @@ def automation(backend, *node_types):
 
 def test_specs_action_spec_and_schemas():
     for tool, actions in ((m.ACTIVITY_TOOL, m.ACTIVITY_ACTIONS), (m.EDIT_TOOL, m.EDIT_ACTIONS),
-                          (m.INTAKE_TOOL, m.INTAKE_ACTIONS)):
+                          (m.MERGE_TOOL, m.MERGE_ACTIONS), (m.INTAKE_TOOL, m.INTAKE_ACTIONS)):
         spec = registry.ASSISTANT_TOOLS[tool]
         assert spec.mcp_only and spec.mode == "WRITE" and spec.module_feature == "crm.leads"
         assert not spec.default_enabled and spec.default_roles is None and spec.required_permission is None
@@ -145,7 +145,7 @@ def test_specs_action_spec_and_schemas():
         assert "user_id" not in params["properties"] and "institute_id" not in params["properties"]
         desc = spec.schema["function"]["description"]
         assert "confirm_token" in desc
-    assert set(m.ACTION_SPEC) == set(m.ACTIVITY_ACTIONS + m.EDIT_ACTIONS + m.INTAKE_ACTIONS)
+    assert set(m.ACTION_SPEC) == set(m.ACTIVITY_ACTIONS + m.EDIT_ACTIONS + m.MERGE_ACTIONS + m.INTAKE_ACTIONS)
     assert {a for a, s in m.ACTION_SPEC.items() if s["confirm"] == "none"} == {
         "add_note", "schedule_followup", "reschedule_followup"}
     assert registry.ASSISTANT_TOOLS[m.EDIT_TOOL].key() == "crm_lead_edits"
@@ -602,6 +602,12 @@ async def test_add_lead_refuses_existing_and_opted_out_people_unless_re_enquiry(
     out = await run(m.INTAKE_TOOL, ctx, **args)
     assert out["error"] == "already_lead" and out["matching_leads"][0]["lead_id"] == "r-1"
     assert out["matching_leads"][0]["phone"] == "******3210"
+    assert out["matching_leads"][0]["match_reason"] == "same phone"
+    both = await run(m.INTAKE_TOOL, ctx, action="add_lead", list_id="list-2", name="Priya", phone="+91 98765 43210",
+                     email=" Priya@Example.com ")
+    assert both["error"] == "already_lead" and both["matching_leads"][0]["match_reason"] == "same phone and email"
+    by_mail = await run(m.INTAKE_TOOL, ctx, action="add_lead", list_id="list-2", name="Priya", email="priya@example.com")
+    assert by_mail["matching_leads"][0]["match_reason"] == "same email"
     backend.leads.rows["r-1"]["overall_status"] = "OPTED_OUT"
     assert (await run(m.INTAKE_TOOL, ctx, **args))["error"] == "opted_out"
     shown = await run(m.INTAKE_TOOL, ctx, **args, re_enquiry=True)

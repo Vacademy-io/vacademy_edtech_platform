@@ -204,7 +204,9 @@ def test_filter_maps_hold_the_agreed_predicates():
     assert adm.PLAN["plan_missing"] == ("p.plan_state NOT IN ('plan_in_window', 'plan_after_window', "
                                         "'plan_on_linked_person')")
     assert adm.LEAD["no_active_enquiry"] == "p.lead_state <> 'active_enquiry'"
-    assert adm.BASIS == {"either": "TRUE", "converted": "p.is_conv", "enrolled": "p.is_enr"}
+    assert adm.BASIS == {"either": "TRUE", "converted": "p.is_conv", "enrolled": "p.is_enr",
+                         "late_conversion": "p.late_conversion",
+                         "excluding_late_conversions": "NOT p.late_conversion"}
     assert set(adm.PLAN) == {"any", "plan_missing", *adm.PLAN_STATES}
 
 
@@ -322,7 +324,7 @@ async def test_rows_are_masked_and_complete(backend):
     assert row["phone"] == "******3210" and row["email"].startswith("a***@")
     assert set(row) == {"person_id", "lead_id", "name", "phone", "email", "contact_source", "lead_state", "opted_out",
                         "plan_state", "linked_person_id", "course", "batch", "plan", "plan_id", "plan_status",
-                        "plan_type", "plan_timing", "enrolment_status", "counts_in_totals", "fee_billed",
+                        "plan_type", "plan_timing", "enrolment_status", "counts_in_totals", "late_conversion", "fee_billed",
                         "amount_paid", "currency", "paid_other_currency", "admission_package", "admission_date",
                         "enrolled_on",
                         "converted_on", "plan_created_on", "basis", "counsellor", "list_id", "list", "source",
@@ -1155,6 +1157,61 @@ async def test_real_driver_statements_and_invariants(real_ctx):
     assert totals["enrolled_by_status"] == [{"status": "ACTIVE", "people": 7}, {"status": "INVITED", "people": 1}]
     assert totals["by_month"] == [{"month": "2026-10", "enrolled": 8, "converted": 8}]
     assert totals["converted_breakdown"]["held_a_plan_before_window"] == 1
+
+
+_LATE_SEED = """
+-- enrolled on 25 August, marked converted on 31 October: a late conversion
+insert into user_lead_profile values('u20','enrbefore','I','CONVERTED','2026-10-30 18:00',null,null,null);
+insert into student_session_institute_group_mapping values('m20','enrbefore',null,'2026-08-25','2026-08-25','I','ACTIVE',null,'ps');
+-- enrolled before the window and again in it: an admission of the window
+insert into user_lead_profile values('u21','enrboth','I','CONVERTED','2026-10-12 05:00',null,null,null);
+insert into student_session_institute_group_mapping values('m21a','enrboth',null,'2026-08-01','2026-08-01','I','ACTIVE',null,'ps');
+insert into student_session_institute_group_mapping values('m21b','enrboth',null,'2026-10-12','2026-10-12','I','ACTIVE',null,'ps');
+-- a plan before the window and a new plan in it: an admission of the window
+insert into user_lead_profile values('u22','planboth','I','CONVERTED','2026-10-13 05:00',null,null,null);
+insert into user_plan values('p22a','planboth','ACTIVE','2026-07-01','ei','po','pp',1);
+insert into user_plan values('p22b','planboth','ACTIVE','2026-10-13','ei','po','pp',1);
+-- an enrolment before the window that does not count (invite later terminated): not a late conversion
+insert into user_lead_profile values('u23','oldinvite','I','CONVERTED','2026-10-14 05:00',null,null,null);
+insert into student_session_institute_group_mapping values('m23','oldinvite',null,'2026-08-01','2026-08-01','I','INVITED','TERMINATED','ps');
+-- an enrolment elsewhere before the window: not a late conversion here
+insert into user_lead_profile values('u24','elsewhere','I','CONVERTED','2026-10-15 05:00',null,null,null);
+insert into student_session_institute_group_mapping values('m24','elsewhere',null,'2026-08-01','2026-08-01','OTHER','ACTIVE',null,'ps');
+"""
+
+
+async def test_real_driver_late_conversions(real_ctx):
+    from sqlalchemy import text as sql_text
+    real_ctx.db.execute(sql_text(_LATE_SEED))
+    real_ctx.db.commit()
+    w = cd.window(OCTOBER, tz=cd.DEFAULT_TZ)
+    binds = adm.window_binds("I", w)
+
+    def rows(basis):
+        found = adm.query(real_ctx, [(adm.rows_sql(adm.filters_sql({"basis": basis})),
+                                      {**binds, "lim": 5000, "off": 0})])
+        assert found is not None
+        return found[0]
+
+    results = adm.query(real_ctx, [(adm.totals_sql(), binds)])
+    totals = adm.totals_view(results[0][0])
+    every = rows("either")
+    late_people = {r["pid"] for r in every if r["late_conversion"]}
+    assert late_people == {"old", "enrbefore"}
+    assert all(r["late_conversion"] is False for r in every if r["pid"] not in late_people)
+    assert totals["late_conversions"] == 2
+    assert totals["people_excluding_late_conversions"] == totals["people"] - 2
+    # people, by_basis and held_a_plan_before_window still count them.
+    assert totals["people"] == len({r["pid"] for r in every})
+    assert totals["by_basis"]["converted"] >= 2 and totals["converted_breakdown"]["held_a_plan_before_window"] == 2
+    assert {r["pid"] for r in rows("late_conversion")} == late_people
+    rest = {r["pid"] for r in rows("excluding_late_conversions")}
+    assert rest == {r["pid"] for r in every} - late_people and len(rest) == totals["people_excluding_late_conversions"]
+    view = adm.row_view(next(r for r in every if r["pid"] == "enrbefore"), {}, {}, cd.DEFAULT_TZ)
+    assert view["late_conversion"] is True and view["basis"] == "converted"
+    csv = dict(zip(adm.CSV_COLUMNS, adm.csv_row(next(r for r in every if r["pid"] == "enrbefore"), {}, {},
+                                               cd.DEFAULT_TZ)))
+    assert csv["late_conversion"] == "true"
 
 
 async def test_a_report_past_the_tool_deadline_answers_and_keeps_its_slots_until_the_thread_ends(backend, monkeypatch):

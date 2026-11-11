@@ -62,6 +62,8 @@ class PersonConversionCloseServiceTest {
     private static final String OTHER_INST = "inst-2";
     private static final String PERSON = "user-1";
     private static final String PARENT = "parent-1";
+    private static final String CHILD_A = "child-a";
+    private static final String CHILD_B = "child-b";
 
     private final AudienceResponseRepository responses = mock(AudienceResponseRepository.class);
     private final AudienceRepository audiences = mock(AudienceRepository.class);
@@ -100,6 +102,21 @@ class PersonConversionCloseServiceTest {
             Collection<String> ids = inv.getArgument(0);
             return open.stream().filter(f -> ids.contains(f.getAudienceResponseId())).toList();
         });
+        // The conditional status writes, against the rows as the database holds them.
+        when(responses.moveLeadStatusIfStill(anyString(), anyString(), anyString())).thenAnswer(inv ->
+                moveIf(inv.getArgument(0), inv.getArgument(1), inv.getArgument(2)));
+        when(responses.moveLeadStatusIfUnset(anyString(), anyString())).thenAnswer(inv ->
+                moveIf(inv.getArgument(0), null, inv.getArgument(1)));
+    }
+
+    private int moveIf(String id, String from, String to) {
+        for (AudienceResponse r : rows) {
+            if (r.getId().equals(id) && java.util.Objects.equals(r.getLeadStatusId(), from)) {
+                r.setLeadStatusId(to);
+                return 1;
+            }
+        }
+        return 0;
     }
 
     @AfterEach
@@ -225,7 +242,105 @@ class PersonConversionCloseServiceTest {
         assertThat(f.getIsClosed()).isFalse();
         assertThat(b.getLeadStatusId()).isEqualTo("st-cb");
         verify(followups, never()).saveAll(any());
+        verify(responses, never()).moveLeadStatusIfStill(anyString(), anyString(), anyString());
+        verify(responses, never()).moveLeadStatusIfUnset(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("converting one child leaves the parent's enquiry for another child alone")
+    void convertingOneChildLeavesTheSiblingsEnquiryAlone() {
+        AudienceResponse forA = row("ar-pa", PARENT, CHILD_A, "list-1", "st-conv");
+        AudienceResponse forB = row("ar-pb", PARENT, CHILD_B, "list-1", "st-cb");
+        AudienceResponse aOwn = row("ar-a", CHILD_A, null, "list-1", "st-cb");
+        when(responses.findAllByInstituteAndUserOrStudent(INST, CHILD_A)).thenReturn(List.of(forA, aOwn));
+        when(responses.findAllByInstituteAndUserOrStudent(INST, PARENT)).thenReturn(List.of(forA, forB));
+        rows.addAll(List.of(forA, forB, aOwn));
+        LeadFollowup onA = followup("f-pa", "ar-pa", INST), onB = followup("f-pb", "ar-pb", INST),
+                onAOwn = followup("f-a", "ar-a", INST);
+        open.addAll(List.of(onA, onB, onAOwn));
+
+        PersonConversionCloseService.Outcome out = service.close(CHILD_A, INST);
+
+        assertThat(onA.getIsClosed()).isTrue();
+        assertThat(onAOwn.getIsClosed()).isTrue();
+        assertThat(aOwn.getLeadStatusId()).isEqualTo("st-conv");
+        assertThat(onB.getIsClosed()).isFalse();
+        assertThat(forB.getLeadStatusId()).isEqualTo("st-cb");
+        assertThat(out.notes()).extracting(PersonConversionCloseService.Note::responseId)
+                .containsExactly("ar-pa", "ar-a");
+
+        // Converting the parent themself touches neither child's enquiry.
+        PersonConversionCloseService.Outcome parent = service.close(PARENT, INST);
+        assertThat(parent.isEmpty()).isTrue();
+        assertThat(onB.getIsClosed()).isFalse();
+        assertThat(forB.getLeadStatusId()).isEqualTo("st-cb");
+    }
+
+    @Test
+    @DisplayName("converting the parent closes their own enquiry, not the ones made for their children")
+    void convertingTheParentLeavesTheChildrensEnquiriesAlone() {
+        AudienceResponse own = row("ar-p", PARENT, null, "list-1", "st-cb");
+        AudienceResponse self = row("ar-pp", PARENT, PARENT, "list-1", "st-cb");
+        AudienceResponse forA = row("ar-pa", PARENT, CHILD_A, "list-1", "st-cb");
+        when(responses.findAllByInstituteAndUserOrStudent(INST, PARENT)).thenReturn(List.of(own, self, forA));
+        rows.addAll(List.of(own, self, forA));
+        LeadFollowup onOwn = followup("f-p", "ar-p", INST), onA = followup("f-pa", "ar-pa", INST);
+        open.addAll(List.of(onOwn, onA));
+
+        PersonConversionCloseService.Outcome out = service.close(PARENT, INST);
+
+        assertThat(out.enquiriesMoved()).isEqualTo(2);
+        assertThat(own.getLeadStatusId()).isEqualTo("st-conv");
+        assertThat(self.getLeadStatusId()).isEqualTo("st-conv");
+        assertThat(onOwn.getIsClosed()).isTrue();
+        assertThat(forA.getLeadStatusId()).isEqualTo("st-cb");
+        assertThat(onA.getIsClosed()).isFalse();
+    }
+
+    @Test
+    @DisplayName("the person an enquiry converts is its linked student, else its submitter")
+    void convertedPerson() {
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", PARENT, CHILD_A, "l", null)))
+                .isEqualTo(CHILD_A);
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", PARENT, PARENT, "l", null)))
+                .isEqualTo(PARENT);
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", PARENT, null, "l", null)))
+                .isEqualTo(PARENT);
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", PARENT, " ", "l", null)))
+                .isEqualTo(PARENT);
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", null, CHILD_A, "l", null)))
+                .isEqualTo(CHILD_A);
+        assertThat(PersonConversionCloseService.convertedPerson(row("r", null, null, "l", null))).isNull();
+    }
+
+    @Test
+    @DisplayName("a status set after the read is kept, with no history row")
+    void aStatusSetMeanwhileIsKept() {
+        AudienceResponse b = row("ar-b", PERSON, null, "list-1", "st-cb");
+        AudienceResponse c = row("ar-c", PERSON, null, "list-1", "st-cb");
+        rows.addAll(List.of(b, c));
+        // ar-b was moved by someone else after it was read: the database row now says Lost.
+        when(responses.moveLeadStatusIfStill(eq("ar-b"), anyString(), anyString())).thenReturn(0);
+
+        PersonConversionCloseService.Outcome out = service.close(PERSON, INST);
+
+        assertThat(out.enquiriesMoved()).isEqualTo(1);
+        assertThat(savedHistory()).extracting(LeadStatusHistory::getAudienceResponseId).containsExactly("ar-c");
+        assertThat(out.notes()).extracting(PersonConversionCloseService.Note::responseId).containsExactly("ar-c");
         verify(responses, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("an enquiry already moved to Converted is not moved or recorded again")
+    void alreadyMovedIsNotRecordedAgain() {
+        AudienceResponse b = row("ar-b", PERSON, null, "list-1", "st-cb");
+        rows.add(b);
+        when(responses.moveLeadStatusIfStill(eq("ar-b"), eq("st-cb"), eq("st-conv"))).thenReturn(0);
+
+        PersonConversionCloseService.Outcome out = service.close(PERSON, INST);
+
+        assertThat(out.isEmpty()).isTrue();
+        verify(history, never()).saveAll(any());
     }
 
     @Test

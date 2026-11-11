@@ -4,8 +4,9 @@ The CRM lead write tools over MCP:
 * ``crm_lead_activity`` — log what happened with one lead (a call, a WhatsApp
   chat, a visit, a note), and schedule, move or complete its follow-ups;
 * ``crm_lead_edit`` — change leads' status (up to 500, by ids or a filter),
-  tier, contact details / form answers and tags, and (institute admins) merge
-  a duplicate person into another one, or undo that;
+  tier, contact details / form answers and tags;
+* ``crm_lead_merge`` — (institute admins) merge a duplicate person into
+  another one, or undo that; a settings group of its own, turned on separately;
 * ``crm_lead_intake`` — add one lead (walk-ins too) or import up to 100.
 
 Every lead, list, call, follow-up, status, tier, tag and counsellor id is
@@ -48,6 +49,8 @@ ACTIVITY_TOOL = "crm_lead_activity"
 ACTIVITY_GROUP = "crm_lead_activity"
 EDIT_TOOL = "crm_lead_edit"
 EDIT_GROUP = "crm_lead_edits"
+MERGE_TOOL = "crm_lead_merge"
+MERGE_GROUP = "crm_lead_merges"
 INTAKE_TOOL = "crm_lead_intake"
 INTAKE_GROUP = "crm_lead_intake"
 
@@ -55,8 +58,8 @@ LEADS_FEATURE = "crm.leads"
 CALLING_FEATURE = "crm.calling"
 
 ACTIVITY_ACTIONS = ("log_interaction", "add_note", "schedule_followup", "reschedule_followup", "complete_followup")
-EDIT_ACTIONS = ("set_status", "set_tier", "update_details", "tag", "untag", "tag_lists", "merge_people",
-                "unmerge_people")
+EDIT_ACTIONS = ("set_status", "set_tier", "update_details", "tag", "untag", "tag_lists")
+MERGE_ACTIONS = ("merge_people", "unmerge_people")
 INTAKE_ACTIONS = ("add_lead", "import_leads")
 
 #: Same prefix as crm_data.AC — repeated here because this module may be imported while crm_data is still
@@ -129,6 +132,7 @@ ACTION_SPEC: Dict[str, Dict[str, Any]] = {
     "untag": _spec("Remove tags from leads (per person).", True, "single_use", confirm_one_lead="edit_token"),
     "tag_lists": _spec("Set key → value tags (state, course, channel …) on up to 50 lead lists, so reports can "
                        "group by them.", True, "single_use", admin_only=True, confirm_one_lead="edit_token"),
+    # crm_lead_merge
     "merge_people": _spec("Merge a duplicate person into the person to keep: the duplicate's enquiries here move "
                           "over and the duplicate stops counting as a lead or an admission. Refused for a "
                           "duplicate with an enrolment, plan or payment here.", True, "edit_token", admin_only=True),
@@ -139,7 +143,8 @@ ACTION_SPEC: Dict[str, Dict[str, Any]] = {
     "import_leads": _spec("Add up to 100 leads to one lead list.", True, "single_use"),
 }
 
-_TOOL_ACTIONS = {ACTIVITY_TOOL: ACTIVITY_ACTIONS, EDIT_TOOL: EDIT_ACTIONS, INTAKE_TOOL: INTAKE_ACTIONS}
+_TOOL_ACTIONS = {ACTIVITY_TOOL: ACTIVITY_ACTIONS, EDIT_TOOL: EDIT_ACTIONS, MERGE_TOOL: MERGE_ACTIONS,
+                 INTAKE_TOOL: INTAKE_ACTIONS}
 
 _LEAD_REF_PROPS: Dict[str, Any] = {
     "lead_id": {"type": "string", "description": "The lead (lead_id from crm_leads find / list / get)."},
@@ -241,17 +246,6 @@ EDIT_SCHEMA: Dict[str, Any] = {
             "the person's own details are refused (shared_account) when another institute uses their account.\n"
             "- tag / untag (targets, tag_ids): EXISTING tag ids from crm_leads catalog (never invent or create tags); "
             "tags belong to the person.\n"
-            "- merge_people (institute admins; lead = a lead of the person to KEEP, duplicate_lead_id = a lead of "
-            "the duplicate person): for the same person entered twice (different phone / email, two accounts). The "
-            "preview shows both people side by side and what moves: every enquiry of the duplicate here, with its "
-            "follow-ups, notes and history, moves to the person kept, and the duplicate stops counting as a lead or "
-            "an admission (their account is not changed). Refused, with the reason, when the duplicate has an "
-            "enrolment, a plan or a payment here, is the linked student on someone else's enquiry, either person "
-            "opted out, or one was already merged — those need a person to fix by hand. Never pick the pair "
-            "yourself: show the user both people and let them say which to keep.\n"
-            "- unmerge_people (institute admins; lead = a lead of the person kept, merged_user_id? = the merged "
-            "person's lead_user_id from crm_leads get → merge.merged_people, needed when several were merged in): "
-            "undo a merge; the enquiries it moved go back.\n"
             "- tag_lists (institute admins; lists: [{list_id, tags: {key: value | null}}] ≤50, replace?): label LEAD "
             "LISTS (not leads) with key → value tags such as state, course, channel, so crm_reports custom can "
             "group by list_tag:<key>. Keys: letters, digits, _ (≤40); values ≤60 characters; null removes a key; "
@@ -283,6 +277,41 @@ EDIT_SCHEMA: Dict[str, Any] = {
                                                                      "tags": {"type": "object"}}}},
                 "replace": {"type": "boolean", "description": "tag_lists: the given tags become the list's only "
                                                              "tags (default: merged into the existing ones)."},
+                "confirm_token": _CONFIRM_PROP,
+            },
+            "required": ["action"],
+        },
+    },
+}
+
+MERGE_SCHEMA: Dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": MERGE_TOOL,
+        "description": (
+            "Merge a duplicate person into another one, or undo that. Institute admins only; both actions are "
+            "two-step. " + _FIND_FIRST + " Actions:\n"
+            "- merge_people (lead = a lead of the person to KEEP, duplicate_lead_id = a lead of "
+            "the duplicate person): for the same person entered twice (different phone / email, two accounts). The "
+            "preview shows both people side by side and what moves: every enquiry of the duplicate here, with its "
+            "follow-ups, notes and history, moves to the person kept, and the duplicate stops counting as a lead or "
+            "an admission (their account is not changed). Refused, with the reason, when the duplicate has an "
+            "enrolment, a plan or a payment here, is the linked student on someone else's enquiry, either person "
+            "opted out, or one was already merged — those need a person to fix by hand. Also refused when the "
+            "duplicate is marked converted and the person to keep is not: keep the converted person instead, or "
+            "mark the person to keep as converted first. Never pick the pair yourself: show the user both people "
+            "and let them say which to keep.\n"
+            "- unmerge_people (lead = a lead of the person kept, merged_user_id? = the merged "
+            "person's lead_user_id from crm_leads get → merge.merged_people, needed when several were merged in): "
+            "undo a merge; the enquiries it moved go back.\n"
+            "You get an edit confirm_token; the confirm is refused when either person changed after the preview — "
+            "preview again. " + _TWO_STEP + " " + _LEAD_TEXT
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": list(MERGE_ACTIONS)},
+                **_LEAD_REF_PROPS,
                 "duplicate_lead_id": {"type": "string", "description": "merge_people: a lead of the duplicate "
                                                                        "person (lead_id from crm_leads)."},
                 "merged_user_id": {"type": "string", "description": "unmerge_people: the merged person's "
@@ -300,9 +329,11 @@ INTAKE_SCHEMA: Dict[str, Any] = {
         "name": INTAKE_TOOL,
         "description": (
             "Add new leads to one of the institute's lead lists (list ids from crm_leads catalog). Before adding, the "
-            "person is looked up: an existing lead is refused with already_lead (with the matching leads) and an "
+            "person is looked up by phone (last 10 digits) and email: an existing lead is refused with already_lead "
+            "(with the matching leads, each with match_reason: same phone, same email or same phone and email) and an "
             "opted-out person with opted_out — show that to the user; pass re_enquiry: true ONLY when the user says "
-            "this is a new enquiry from an existing lead. add_lead's preview also lists similar_name_leads: live "
+            "this is a new enquiry from an existing lead (its preview then lists them under re_enquiry_of). "
+            "add_lead's preview also lists similar_name_leads: other live "
             "leads with a very similar name (same once normalised, or same first and last name) submitted in the "
             "last " + str(SIMILAR_NAME_DAYS) + " days, contact masked. It is only a warning: ask the user whether "
             "it is the same person (then use that lead instead) before confirming. For an opted-out person: " + cd.OPT_OUT_READD_NOTE + " Both actions are two-step, "
@@ -1696,9 +1727,28 @@ def _blocking(matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [m for m in matches if m.get("audience_status") == "ACTIVE" or cd.own_opted_out(m)]
 
 
-def _match_report(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _match_reason(person: Optional[Dict[str, Any]], r: Dict[str, Any]) -> Optional[str]:
+    """Why an existing lead matched the person being added: same phone, same email, or both."""
+    if not person:
+        return None
+    d = ld.digits(person.get("phone"))
+    e = str(person.get("email") or "").strip().lower()
+    rd = str(r.get("phone_digits") or "")
+    phone = (len(d) >= 10 and rd[-10:] == d[-10:]) or (7 <= len(d) < 10 and rd == d)
+    email = bool(e) and r.get("email_lc") == e
+    return "same phone and email" if phone and email else "same phone" if phone else "same email" if email else None
+
+
+def _match_report(matches: List[Dict[str, Any]], person: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     visible = [m for m in matches if m.get("in_scope")]
-    out: Dict[str, Any] = {"matching_leads": [_lead_view(m) for m in visible[:10]]}
+    views = []
+    for m in visible[:10]:
+        view = _lead_view(m)
+        reason = _match_reason(person, m)
+        if reason:
+            view["match_reason"] = reason
+        views.append(view)
+    out: Dict[str, Any] = {"matching_leads": views}
     hidden = len(matches) - len(visible)
     if hidden:
         out["in_leads_you_cannot_see"] = hidden
@@ -1784,7 +1834,7 @@ async def _similar_names(ctx: ToolContext, name: Any, skip_people: Any = ()) -> 
                            "similar_name_note": (
                                "Leads with a very similar name, submitted in the last " + str(SIMILAR_NAME_DAYS)
                                + " days. Only a warning: ask the user whether this is the same person (then use "
-                               "that lead, or merge them later with crm_lead_edit merge_people) or someone else.")}
+                               "that lead, or merge them later with crm_lead_merge merge_people) or someone else.")}
     hidden = len(hits) - len(visible[:MAX_SIMILAR_NAMES])
     if hidden:
         out["similar_names_not_shown"] = hidden
@@ -1877,17 +1927,18 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     row, problems = await _check_row(ctx, args, base["fields"], {}, roster)
     if problems:
         return _invalid(problems)
-    found = await _existing(ctx, [{"phone": row["user_dto"]["mobile_number"], "email": row["user_dto"]["email"]}])
+    person = {"phone": row["user_dto"]["mobile_number"], "email": row["user_dto"]["email"]}
+    found = await _existing(ctx, [person])
     if cd.is_error(found):
         return found
     blocking = _blocking(found)
     opted_out = any(cd.own_opted_out(m) for m in blocking)
     if blocking and not args.get("re_enquiry"):
         if opted_out:
-            return cd.err("opted_out", **_match_report(blocking), message=(
+            return cd.err("opted_out", **_match_report(blocking, person), message=(
                 "This person opted out of contact earlier. Do not add them unless the user confirms they asked to "
                 "be contacted again (then pass re_enquiry: true). " + cd.OPT_OUT_READD_NOTE))
-        return cd.err("already_lead", **_match_report(blocking), message=(
+        return cd.err("already_lead", **_match_report(blocking, person), message=(
             "This person already is a lead. Use the existing lead (log_interaction) — or, only if the user says this "
             "is a new enquiry, pass re_enquiry: true."))
     body = {"audience_id": base["list"]["list_id"], "source_type": base["source"], **row}
@@ -1909,7 +1960,7 @@ async def _add_lead(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
             "_summary": {"list_id": base["list"]["list_id"], "re_enquiry": bool(blocking)}}
         view.update(similar)
         if blocking:
-            view["re_enquiry_of"] = _match_report(blocking)
+            view["re_enquiry_of"] = _match_report(blocking, person)
             if opted_out:
                 view["warning"] = ("This person opted out of contact earlier. " + cd.OPT_OUT_READD_NOTE
                                    + " The list's automations may contact them.")
@@ -2242,6 +2293,23 @@ def _merge_state(plan: Dict[str, Any]) -> Dict[str, Any]:
             "moving": sorted(str(e.get("response_id")) for e in (dup.get("enquiries") or []) if isinstance(e, dict))}
 
 
+#: A converted duplicate merged into a person who is not converted would no longer count as an admission.
+CONVERTED_INTO_UNCONVERTED = {
+    "code": "DUPLICATE_CONVERTED_KEEP_NOT",
+    "reason": ("The duplicate is marked converted and the person to keep is not, so merging would drop that "
+               "admission from your reports. Keep the converted person instead, or mark the person to keep as "
+               "converted first."),
+}
+
+
+def _converted_into_unconverted(plan: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def converted(p: Any) -> bool:
+        return str((p or {}).get("conversion_status") or "").strip().upper() == CONVERTED_KEY
+    if converted(plan.get("duplicate")) and not converted(plan.get("keep")):
+        return dict(CONVERTED_INTO_UNCONVERTED)
+    return None
+
+
 async def _merge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     refusal = await cd.require_admin(ctx)
     if refusal:
@@ -2269,7 +2337,10 @@ async def _merge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
         return cd.err("admin_core_rejected", message="The merge preview could not be read.")
     reasons = [{"code": r.get("code"), "reason": cd.clean(r.get("message"), 300)}
                for r in (plan.get("refusals") or []) if isinstance(r, dict)]
-    if not plan.get("can_merge"):
+    converted = _converted_into_unconverted(plan)
+    if converted and not any(r["code"] == converted["code"] for r in reasons):
+        reasons.append(converted)
+    if not plan.get("can_merge") or converted:
         return cd.err("merge_refused", reasons=reasons, message=(
             "These two people cannot be merged here: " + "; ".join(r["reason"] or r["code"] or "" for r in reasons)
             + ". Tell the user why; these cases need a person to fix them by hand."))
@@ -2280,7 +2351,7 @@ async def _merge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
     async def preview() -> Dict[str, Any]:
         return {"keep": _person_view(plan.get("keep") or {}), "duplicate": _person_view(plan.get("duplicate") or {}),
                 "effects": [cd.clean(e, 300) for e in (plan.get("effects") or [])],
-                "undo": "An admin can undo this with crm_lead_edit unmerge_people (lead = a lead of the person kept)."}
+                "undo": "An admin can undo this with crm_lead_merge unmerge_people (lead = a lead of the person kept)."}
 
     async def apply(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         resp = await cd.ac(ctx, "POST", MERGE_PATH, params=params, body=body)
@@ -2291,7 +2362,7 @@ async def _merge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any
                 "enquiries_moved": moved,
                 "next": "The duplicate's leads now sit on the person kept; crm_leads get on any of them shows it."}
 
-    return await _two_step(ctx, args, tool=EDIT_TOOL, action="merge_people", many=False, request=request,
+    return await _two_step(ctx, args, tool=MERGE_TOOL, action="merge_people", many=False, request=request,
                            state=state, preview=preview, apply=apply)
 
 
@@ -2340,7 +2411,7 @@ async def _unmerge_people(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, A
         return {"unmerged": True, "done": True, "kept_lead_user_id": keep_uid, "merged_lead_user_id": dup_uid,
                 "enquiries_moved_back": back}
 
-    return await _two_step(ctx, args, tool=EDIT_TOOL, action="unmerge_people", many=False, request=request,
+    return await _two_step(ctx, args, tool=MERGE_TOOL, action="unmerge_people", many=False, request=request,
                            state=state, preview=preview, apply=apply)
 
 
@@ -2374,6 +2445,10 @@ async def execute_crm_lead_edit(args: Dict[str, Any], ctx: ToolContext) -> str:
     return await _run(EDIT_TOOL, args, ctx)
 
 
+async def execute_crm_lead_merge(args: Dict[str, Any], ctx: ToolContext) -> str:
+    return await _run(MERGE_TOOL, args, ctx)
+
+
 async def execute_crm_lead_intake(args: Dict[str, Any], ctx: ToolContext) -> str:
     return await _run(INTAKE_TOOL, args, ctx)
 
@@ -2387,6 +2462,7 @@ def _tool(name: str, schema: Dict[str, Any], executor: Any, group: str) -> ToolS
 LEAD_EDIT_TOOLS: Dict[str, ToolSpec] = {
     ACTIVITY_TOOL: _tool(ACTIVITY_TOOL, ACTIVITY_SCHEMA, execute_crm_lead_activity, ACTIVITY_GROUP),
     EDIT_TOOL: _tool(EDIT_TOOL, EDIT_SCHEMA, execute_crm_lead_edit, EDIT_GROUP),
+    MERGE_TOOL: _tool(MERGE_TOOL, MERGE_SCHEMA, execute_crm_lead_merge, MERGE_GROUP),
     INTAKE_TOOL: _tool(INTAKE_TOOL, INTAKE_SCHEMA, execute_crm_lead_intake, INTAKE_GROUP),
 }
 
@@ -2396,11 +2472,13 @@ def _register() -> None:
     ASSISTANT_TOOLS.update(LEAD_EDIT_TOOLS)
     GROUP_LABELS.update({ACTIVITY_GROUP: "CRM leads: log activity and follow-ups",
                          EDIT_GROUP: "CRM leads: edit status, tier, details and tags",
+                         MERGE_GROUP: "CRM leads: merge duplicate people",
                          INTAKE_GROUP: "CRM leads: add leads"})
 
 
 _register()
 
-__all__ = ["ACTION_SPEC", "LEAD_EDIT_TOOLS", "ACTIVITY_TOOL", "EDIT_TOOL", "INTAKE_TOOL", "ACTIVITY_ACTIONS",
-           "EDIT_ACTIONS", "INTAKE_ACTIONS", "INTERACTION_KINDS", "INTAKE_SOURCES",
-           "execute_crm_lead_activity", "execute_crm_lead_edit", "execute_crm_lead_intake"]
+__all__ = ["ACTION_SPEC", "LEAD_EDIT_TOOLS", "ACTIVITY_TOOL", "EDIT_TOOL", "MERGE_TOOL", "INTAKE_TOOL",
+           "ACTIVITY_ACTIONS", "EDIT_ACTIONS", "MERGE_ACTIONS", "INTAKE_ACTIONS", "INTERACTION_KINDS", "INTAKE_SOURCES",
+           "execute_crm_lead_activity", "execute_crm_lead_edit", "execute_crm_lead_merge",
+           "execute_crm_lead_intake"]

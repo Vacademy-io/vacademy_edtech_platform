@@ -188,6 +188,29 @@ class LeadMergeServiceTest {
     }
 
     @Test
+    void refusesAConvertedDuplicateIntoAnUnconvertedPersonToKeep() {
+        when(dao.findProfile(INST, KEEP)).thenReturn(Optional.of(profile("p-keep", KEEP, "LEAD", null)));
+        assertRefused("DUPLICATE_CONVERTED_KEEP_NOT");
+        LeadMergeDTOs.Refusal r = service.preview(INST, req(), admin).refusals().get(0);
+        assertTrue(r.message().contains("Keep the converted person instead"), r.message());
+        assertTrue(r.message().contains("mark the person to keep as converted first"), r.message());
+
+        when(dao.findProfile(INST, KEEP)).thenReturn(Optional.of(profile("p-keep", KEEP, null, null)));
+        assertFalse(service.preview(INST, req(), admin).canMerge());
+    }
+
+    @Test
+    void anUnconvertedDuplicateMayJoinAnyPersonAndAConvertedOneMayJoinAConvertedOne() {
+        when(dao.findProfile(INST, KEEP)).thenReturn(Optional.of(profile("p-keep", KEEP, "LEAD", null)));
+        when(dao.findProfile(INST, DUP)).thenReturn(Optional.of(profile("p-dup", DUP, "LEAD", null)));
+        assertTrue(service.preview(INST, req(), admin).canMerge());
+
+        when(dao.findProfile(INST, KEEP)).thenReturn(Optional.of(profile("p-keep", KEEP, "converted", null)));
+        when(dao.findProfile(INST, DUP)).thenReturn(Optional.of(profile("p-dup", DUP, "CONVERTED", null)));
+        assertTrue(service.preview(INST, req(), admin).canMerge());
+    }
+
+    @Test
     void onlyAdminsMayPreviewMergeOrUndo() {
         doThrow(new ForbiddenException("admin only")).when(validator).requireInstituteAdmin(admin, INST);
         assertThrows(ForbiddenException.class, () -> service.preview(INST, req(), admin));
@@ -348,6 +371,50 @@ class LeadMergeServiceTest {
         LeadMergeDTOs.SimilarNames out = service.similarNames(INST, "Asha Rao", counsellor);
         assertEquals(List.of("u1", "u2"), out.matches().stream().map(LeadMergeDTOs.NameMatch::userId).toList());
         assertEquals(2, out.notShown());
+    }
+
+    private static LeadMergeDao.ContactMatch contact(String user, boolean phone, boolean email) {
+        return new LeadMergeDao.ContactMatch("r-" + user, user, "Asha R", "+91 98765 43210", "asha@example.com",
+                "Website", "CALL_BACK", null, new Timestamp(0), phone, email);
+    }
+
+    @Test
+    void openLeadsWithTheSamePhoneOrEmailComeFirstWithTheReason() {
+        when(scope.hasAdminRole(admin, INST)).thenReturn(true);
+        when(dao.contactMatches(INST, "9876543210", "asha@example.com", 50)).thenReturn(List.of(
+                contact("u-both", true, true), contact("u-phone", true, false), contact("u-mail", false, true)));
+        when(dao.similarNames(INST, "Asha Rao", 50)).thenReturn(List.of(match("u-phone", null), match("u-name", null)));
+
+        LeadMergeDTOs.SimilarNames out = service.similarLeads(INST, "Asha Rao", "+91 98765-43210",
+                "  Asha@Example.com ", admin);
+
+        assertEquals(List.of("u-both", "u-phone", "u-mail", "u-name"),
+                out.matches().stream().map(LeadMergeDTOs.NameMatch::userId).toList());
+        assertEquals(List.of("same phone and email", "same phone", "same email", "same name"),
+                out.matches().stream().map(LeadMergeDTOs.NameMatch::reason).toList());
+        assertEquals("******3210", out.matches().get(0).phone());
+        assertEquals("a***@example.com", out.matches().get(0).email());
+    }
+
+    @Test
+    void theContactCheckRunsWithoutANameAndSkipsKeysThatAreNotOne() {
+        when(scope.hasAdminRole(admin, INST)).thenReturn(true);
+        when(dao.contactMatches(INST, "9876543210", null, 50)).thenReturn(List.of(contact("u1", true, false)));
+        LeadMergeDTOs.SimilarNames out = service.similarLeads(INST, null, "98765 43210", "not-an-email", admin);
+        assertEquals("same phone", out.matches().get(0).reason());
+        verify(dao, never()).similarNames(anyString(), anyString(), anyInt());
+
+        assertTrue(service.similarLeads(INST, "", "12345", "", admin).matches().isEmpty());
+        verify(dao, times(1)).contactMatches(anyString(), any(), any(), anyInt());
+    }
+
+    @Test
+    void aFailingContactCheckStillShowsSimilarNames() {
+        when(scope.hasAdminRole(admin, INST)).thenReturn(true);
+        when(dao.contactMatches(anyString(), any(), any(), anyInt())).thenThrow(new QueryTimeoutException("slow"));
+        when(dao.similarNames(INST, "Asha Rao", 50)).thenReturn(List.of(match("u1", null)));
+        LeadMergeDTOs.SimilarNames out = service.similarLeads(INST, "Asha Rao", "9876543210", null, admin);
+        assertEquals("same name", out.matches().get(0).reason());
     }
 
     @Test

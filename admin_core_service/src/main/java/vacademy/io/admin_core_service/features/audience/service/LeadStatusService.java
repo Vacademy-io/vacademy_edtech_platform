@@ -268,11 +268,12 @@ public class LeadStatusService {
                     saved.getId(), ex.getMessage());
         }
 
-        // A move to Converted converts the person: their other enquiries in the institute are
-        // closed after commit, without any trigger (see PersonConversionCloseService).
+        // A move to Converted converts the person this enquiry is for (its linked student when it
+        // has one, else the submitter): that person's other enquiries in the institute are closed
+        // after commit, without any trigger (see PersonConversionCloseService).
         if ("CONVERTED".equals(target.getStatusKey())) {
             try {
-                String personUserId = saved.getUserId() != null ? saved.getUserId() : saved.getStudentUserId();
+                String personUserId = PersonConversionCloseService.convertedPerson(saved);
                 if (personConversionCloseService != null && personUserId != null) {
                     personConversionCloseService.onPersonConverted(personUserId, instituteId);
                 }

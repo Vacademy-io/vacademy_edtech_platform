@@ -1,9 +1,11 @@
 """
-crm_lead_edit merge_people / unmerge_people, and the similar-name warning of crm_lead_intake add_lead.
+crm_lead_merge merge_people / unmerge_people, and the similar-name warning of crm_lead_intake add_lead.
 
 Pinned here: both merge actions are for institute admins only and are two-step (the preview reads
 admin-core's merge preview with a GET and writes nothing; the confirm sends exactly the two resolved
-people); a merge admin-core refuses comes back as merge_refused with the reasons and no token; a
+people); they sit in a settings group of their own that is turned on separately, so a group that allows
+the other lead edits does not reach them; a merge admin-core refuses, or a converted duplicate kept under
+a person who is not converted, comes back as merge_refused with the reasons and no token; a
 confirm is refused when the people changed after the preview; undo picks the merged person and asks
 when several were merged in; get shows the merge, and a lead whose person was merged is flagged.
 add_lead lists live leads with a similar name (contact masked) and still adds the lead: it only warns.
@@ -84,7 +86,7 @@ def _writes(backend):
 
 
 async def _edit(ctx, **args):
-    return json.loads(await m.execute_crm_lead_edit(args, ctx))
+    return json.loads(await m.execute_crm_lead_merge(args, ctx))
 
 
 async def _intake(ctx, **args):
@@ -95,12 +97,43 @@ async def _intake(ctx, **args):
 
 def test_both_merge_actions_are_admin_only_confirmed_writes():
     for action in ("merge_people", "unmerge_people"):
-        assert action in m.EDIT_ACTIONS
+        assert action in m.MERGE_ACTIONS and action not in m.EDIT_ACTIONS
         spec = m.ACTION_SPEC[action]
         assert spec["admin_only"] and spec["writes"] and spec["confirm"] == "edit_token"
-    props = m.EDIT_SCHEMA["function"]["parameters"]["properties"]
+    props = m.MERGE_SCHEMA["function"]["parameters"]["properties"]
     assert "duplicate_lead_id" in props and "merged_user_id" in props
+    assert "duplicate_lead_id" not in m.EDIT_SCHEMA["function"]["parameters"]["properties"]
     assert "similar_name_leads" in m.INTAKE_SCHEMA["function"]["description"]
+
+
+def test_merging_is_its_own_opt_in_group():
+    from app.mcp import adapter
+    from app.mcp.access import normalize_setting
+    from app.mcp.constants import MCP_ALLOWED_WRITE_TOOLS, MCP_EXPOSED_TOOLS, MCP_OPT_IN_GROUPS
+    from app.schemas.auth import PinnedPrincipal
+    assert registry.ASSISTANT_TOOLS[m.MERGE_TOOL].key() == "crm_lead_merges" == m.MERGE_GROUP
+    assert m.MERGE_TOOL in MCP_EXPOSED_TOOLS and "confirm" in MCP_ALLOWED_WRITE_TOOLS[m.MERGE_TOOL]
+    assert m.MERGE_GROUP in MCP_OPT_IN_GROUPS
+    entry = next(c for c in adapter.tool_catalog() if c["name"] == m.MERGE_TOOL)
+    assert entry["opt_in"] is True and entry["level"] == "edit" and entry["risk"] == "live"
+    assert m.MERGE_GROUP not in {c["key"] for c in adapter.tool_catalog(include_opt_in=False)}
+    who = PinnedPrincipal(user_id="u-1", institute_id="inst-1", roles=["ADMIN"], permissions=[],
+                          is_root_user=False)
+
+    def listed(groups):
+        setting = normalize_setting({"enabled": True, "allowed_roles": ["ADMIN"], "enabled_tools": groups,
+                                     "role_overrides": {}})
+        return [t.name for t in adapter.list_tools_for(who, setting)]
+    assert m.EDIT_TOOL in listed(["crm_leads", "crm_lead_edits"])
+    assert m.MERGE_TOOL not in listed(["crm_leads", "crm_lead_edits"])
+    assert m.MERGE_TOOL in listed(["crm_leads", "crm_lead_merges"])
+
+
+async def test_the_edit_tool_no_longer_takes_merge_actions(backend):
+    out = json.loads(await m.execute_crm_lead_edit({"action": "merge_people", "lead_id": "r-keep",
+                                                    "duplicate_lead_id": "r-dup"}, make_ctx()))
+    assert out["error"] == "unknown_action" and "merge_people" not in out["available"]
+    assert _writes(backend) == []
 
 
 # ── merge_people ─────────────────────────────────────────────────────────
@@ -143,6 +176,22 @@ async def test_the_confirm_is_refused_when_the_people_changed_after_the_preview(
     out = await _edit(ctx, action="merge_people", lead_id="r-keep", duplicate_lead_id="r-dup",
                       confirm_token=shown["confirm_token"])
     assert out.get("error") and _writes(backend) == []
+
+
+@pytest.mark.parametrize("keep_status", ["LEAD", None, "LOST"])
+async def test_a_converted_duplicate_is_not_merged_into_an_unconverted_person(backend, keep_status):
+    _routes(backend, lambda: _plan(keep_status=keep_status))
+    out = await _edit(make_ctx(db=confirm_db()), action="merge_people", lead_id="r-keep", duplicate_lead_id="r-dup")
+    assert out["error"] == "merge_refused" and "confirm_token" not in out
+    assert [r["code"] for r in out["reasons"]] == ["DUPLICATE_CONVERTED_KEEP_NOT"]
+    assert "Keep the converted person instead" in out["message"] and _writes(backend) == []
+
+
+async def test_the_converted_refusal_is_listed_once_when_admin_core_gives_it_too(backend):
+    _routes(backend, lambda: _plan(False, [("DUPLICATE_CONVERTED_KEEP_NOT", "The duplicate is marked converted.")],
+                                   keep_status="LEAD"))
+    out = await _edit(make_ctx(), action="merge_people", lead_id="r-keep", duplicate_lead_id="r-dup")
+    assert [r["code"] for r in out["reasons"]] == ["DUPLICATE_CONVERTED_KEEP_NOT"]
 
 
 async def test_merge_refusals_before_admin_core(backend):

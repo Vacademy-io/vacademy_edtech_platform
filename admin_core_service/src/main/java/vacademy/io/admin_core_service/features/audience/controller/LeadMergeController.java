@@ -16,8 +16,9 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 
 /**
  * Merging duplicate people in the CRM: preview, merge, undo, a person's merge state, and the
- * similar-name check used when a lead is added by hand. Merge, preview and undo are for
- * institute admins; the state and the name check for any staff member of the institute.
+ * similar-lead check (same phone or email, or a similar name) used when a lead is added by hand.
+ * Merge, preview and undo are for institute admins; the state and the similar-lead check for any
+ * staff member of the institute.
  */
 @RestController
 @RequestMapping("/admin-core-service/v1/audience/lead-merge")
@@ -61,8 +62,10 @@ public class LeadMergeController {
 
     @GetMapping("/similar-names")
     public ResponseEntity<LeadMergeDTOs.SimilarNames> similarNames(@RequestParam("instituteId") String instituteId,
-                                                                   @RequestParam("name") String name,
+                                                                   @RequestParam(value = "name", required = false) String name,
+                                                                   @RequestParam(value = "phone", required = false) String phone,
+                                                                   @RequestParam(value = "email", required = false) String email,
                                                                    @RequestAttribute("user") CustomUserDetails user) {
-        return ResponseEntity.ok(leadMergeService.similarNames(instituteId, name, user));
+        return ResponseEntity.ok(leadMergeService.similarLeads(instituteId, name, phone, email, user));
     }
 }

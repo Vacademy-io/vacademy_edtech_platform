@@ -32,6 +32,7 @@ import vacademy.io.admin_core_service.features.audience.strategy.GoogleLeadFormS
 import vacademy.io.admin_core_service.features.audience.strategy.MetaLeadAdsStrategy;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.exceptions.VacademyException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -91,8 +92,16 @@ class AdLeadAttributionTest {
             + "\"campaign_name\":\"NEET 2027 leads\","
             + "\"form_id\":\"" + FORM_ID + "\"";
 
-    private static final String GRAPH_REFUSAL = "{\"error\":{\"message\":\"(#100) Tried accessing a field that "
-            + "needs another permission\",\"type\":\"OAuthException\",\"code\":100}}";
+    private static final String GRAPH_REFUSAL = "{\"error\":{\"message\":\"(#100) Tried accessing nonexisting "
+            + "field (campaign_name) on node type (Lead)\",\"type\":\"OAuthException\",\"code\":100}}";
+
+    private static final String GRAPH_PERMISSION_REFUSAL = "{\"error\":{\"message\":\"(#200) Requires "
+            + "ads_read permission\",\"type\":\"OAuthException\",\"code\":200}}";
+
+    private static String graphRateLimit(int code) {
+        return "{\"error\":{\"message\":\"(#" + code + ") Request limit reached\",\"type\":\"OAuthException\","
+                + "\"code\":" + code + "}}";
+    }
 
     /** Answers Graph reads from a function of the request URL; records every URL asked for. */
     private static final class FakeGraph {
@@ -207,6 +216,97 @@ class AdLeadAttributionTest {
 
             assertEquals(4, graph.urls.size());
             assertTrue(asksForAdFields(graph.urls.get(2)), "a token error is not taken as a field refusal");
+        }
+
+        @Test
+        void aPermissionRefusalIsRemembered() {
+            FakeGraph graph = new FakeGraph(url -> asksForAdFields(url)
+                    ? json(HttpStatus.FORBIDDEN, GRAPH_PERMISSION_REFUSAL)
+                    : json(HttpStatus.OK, graphLead("")));
+            MetaLeadAdsStrategy strategy = metaStrategy(graph);
+            FormWebhookConnector connector = metaConnector("conn-8");
+
+            strategy.extractAndFetchLeads(metaWebhook("123123123123", "1", "2"), connector);
+            strategy.extractAndFetchLeads(metaWebhook("123123123124", "1", "2"), connector);
+
+            assertEquals(3, graph.urls.size());
+            assertFalse(asksForAdFields(graph.urls.get(2)));
+        }
+
+        @Test
+        void anUnknownFieldErrorAboutAnotherFieldIsNotRemembered() {
+            FakeGraph graph = new FakeGraph(url -> asksForAdFields(url)
+                    ? json(HttpStatus.BAD_REQUEST, "{\"error\":{\"message\":\"(#100) Tried accessing nonexisting "
+                            + "field (leadgen_export) on node type (Lead)\",\"code\":100}}")
+                    : json(HttpStatus.OK, graphLead("")));
+            MetaLeadAdsStrategy strategy = metaStrategy(graph);
+            FormWebhookConnector connector = metaConnector("conn-9");
+
+            assertEquals(1, strategy.extractAndFetchLeads(metaWebhook("123123123123", "1", "2"), connector).size());
+            strategy.extractAndFetchLeads(metaWebhook("123123123124", "1", "2"), connector);
+
+            assertEquals(4, graph.urls.size());
+            assertTrue(asksForAdFields(graph.urls.get(2)));
+        }
+
+        @Test
+        void rateLimitsAreNotRetriedAndNeverRemembered() {
+            for (int code : new int[] {4, 17, 32, 613, 80000, 80014}) {
+                boolean[] limited = {true};
+                FakeGraph graph = new FakeGraph(url -> limited[0]
+                        ? json(HttpStatus.BAD_REQUEST, graphRateLimit(code))
+                        : json(HttpStatus.OK, graphLead(GRAPH_AD_FIELDS)));
+                MetaLeadAdsStrategy strategy = metaStrategy(graph);
+                FormWebhookConnector connector = metaConnector("conn-rl-" + code);
+
+                assertTrue(strategy.extractAndFetchLeads(metaWebhook("123123123123", "1", "2"), connector).isEmpty());
+                assertEquals(1, graph.urls.size(), "code " + code + ": a rate-limited read is not repeated");
+
+                limited[0] = false;
+                NormalizedLeadData lead = strategy.extractAndFetchLeads(
+                        metaWebhook("123123123124", "1", "2"), connector).get(0);
+                assertTrue(asksForAdFields(graph.urls.get(1)), "code " + code + ": ad fields still asked for");
+                assertEquals("120200000000000003", lead.getAdCampaignId());
+            }
+        }
+
+        @Test
+        void pollerRateLimitIsReportedAndNeverRemembered() {
+            boolean[] limited = {true};
+            String page = "{\"data\":[" + graphLead(GRAPH_AD_FIELDS) + "],\"paging\":{}}";
+            FakeGraph graph = new FakeGraph(url -> limited[0]
+                    ? json(HttpStatus.BAD_REQUEST, graphRateLimit(17))
+                    : json(HttpStatus.OK, page));
+            MetaLeadAdsStrategy strategy = metaStrategy(graph);
+            FormWebhookConnector connector = metaConnector("conn-10");
+
+            assertThrows(VacademyException.class, () -> strategy.fetchLeadsSince(connector, 1_700_000_000L, 5));
+            assertEquals(1, graph.urls.size());
+
+            limited[0] = false;
+            MetaLeadAdsStrategy.LeadPullResult pulled = strategy.fetchLeadsSince(connector, 1_700_000_000L, 5);
+            assertTrue(asksForAdFields(graph.urls.get(1)));
+            assertEquals("120200000000000003", pulled.leads().get(0).getAdCampaignId());
+        }
+
+        @Test
+        void refusalCodes() {
+            assertTrue(MetaLeadAdsStrategy.refusesAdFields(error(10, "permission")));
+            assertTrue(MetaLeadAdsStrategy.refusesAdFields(error(200, "permission")));
+            assertTrue(MetaLeadAdsStrategy.refusesAdFields(error(299, "permission")));
+            assertTrue(MetaLeadAdsStrategy.refusesAdFields(error(100, "nonexisting field (adset_name)")));
+            assertFalse(MetaLeadAdsStrategy.refusesAdFields(error(100, "Invalid parameter")));
+            for (int code : new int[] {1, 2, 4, 17, 32, 190, 613, 80000, 80014}) {
+                assertFalse(MetaLeadAdsStrategy.refusesAdFields(error(code, "campaign_name")), "code " + code);
+            }
+            for (int code : new int[] {4, 17, 32, 613, 80000, 80007, 80014}) {
+                assertTrue(MetaLeadAdsStrategy.isTransientGraphError(error(code, "")), "code " + code);
+            }
+            assertFalse(MetaLeadAdsStrategy.isTransientGraphError(error(200, "")));
+        }
+
+        private com.fasterxml.jackson.databind.JsonNode error(int code, String message) {
+            return mapper.createObjectNode().put("code", code).put("message", message);
         }
 
         @Test

@@ -107,6 +107,13 @@ public class BulkLeadStatusService {
                 unchanged++;
                 continue;
             }
+            // Read again just before the change: an earlier lead of this batch can have moved this
+            // one already (a conversion closes the person's other enquiries). It is then unchanged,
+            // and no second history row is written for it.
+            if (alreadyOn(responseId, request.getStatusId())) {
+                unchanged++;
+                continue;
+            }
             if (refused.contains(responseId)) {
                 failed++;
                 blocked++;
@@ -137,6 +144,15 @@ public class BulkLeadStatusService {
                 .blocked(blocked)
                 .errors(errors)
                 .build();
+    }
+
+    private boolean alreadyOn(String responseId, String statusId) {
+        try {
+            return audienceResponseRepository.findCurrentLeadStatusId(responseId)
+                    .map(statusId::equals).orElse(false);
+        } catch (Exception e) {
+            return false; // changeLeadStatus reads the lead itself and reports what is wrong
+        }
     }
 
     private void addError(List<String> errors, String message) {

@@ -25,6 +25,7 @@ CRM_TOOLS = (
     ("crm_leads", "crm_leads", "assistant_tools_crm_leads"),
     ("crm_lead_activity", "crm_lead_activity", "assistant_tools_crm_lead_edit"),
     ("crm_lead_edit", "crm_lead_edits", "assistant_tools_crm_lead_edit"),
+    ("crm_lead_merge", "crm_lead_merges", "assistant_tools_crm_lead_edit"),
     ("crm_team_edit", "crm_team_edits", "assistant_tools_crm_team"),
     ("crm_lead_intake", "crm_lead_intake", "assistant_tools_crm_lead_edit"),
     ("crm_calls", "crm_calls", "assistant_tools_crm_calls"),
@@ -84,7 +85,7 @@ def test_exposed_set_is_the_documented_one():
         "courses", "course_edit", "course_drip_edit", "course_invites_edit", "course_structure_edit",
         "learners", "learner_report", "learner_enroll", "learner_edit",
         "sub_orgs", "sub_org_edit", "sub_org_enroll",
-        "crm_leads", "crm_lead_activity", "crm_lead_edit", "crm_team_edit", "crm_lead_intake",
+        "crm_leads", "crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_team_edit", "crm_lead_intake",
         "crm_calls", "crm_dial", "crm_ai_campaign",
         "crm_meetings", "crm_meetings_edit",
         "crm_messages", "crm_send",
@@ -297,7 +298,7 @@ def test_website_publish_is_an_opt_in_live_capability_no_existing_connection_has
     opt_in_keys = [
         "website_data_edits", "website_publish", "course_structure_edits", "learner_enrollments",
         "learner_profile_edits", "sub_org_edits", "sub_org_enrollments",
-        "crm_lead_activity", "crm_lead_edits", "crm_team_edits", "crm_lead_intake",
+        "crm_lead_activity", "crm_lead_edits", "crm_lead_merges", "crm_team_edits", "crm_lead_intake",
         "crm_calling_outbound", "crm_ai_campaigns", "crm_meeting_edits", "crm_messaging_outbound",
         "crm_payment_reminders"]
     keys_loaded = {ASSISTANT_TOOLS[n].key() for n in loaded(MCP_EXPOSED_TOOLS) if n in ASSISTANT_TOOLS}
@@ -372,6 +373,7 @@ def test_crm_groups_sit_in_the_crm_areas_with_opt_in_edits():
     expected = {
         "crm_leads": ("crm_leads", "view", None), "crm_lead_activity": ("crm_leads", "edit", "live_additive"),
         "crm_lead_edits": ("crm_leads", "edit", "live"), "crm_team_edits": ("crm_leads", "edit", "live"),
+        "crm_lead_merges": ("crm_leads", "edit", "live"),
         "crm_lead_intake": ("crm_leads", "edit", "live"),
         "crm_calls": ("crm_calls", "view", None), "crm_calling_outbound": ("crm_calls", "edit", "outbound"),
         "crm_ai_campaigns": ("crm_calls", "edit", "outbound"),
@@ -397,7 +399,7 @@ def test_crm_groups_sit_in_the_crm_areas_with_opt_in_edits():
 
 def test_crm_write_tools_carry_a_safety_property_and_reads_none():
     writes = [t for t in CRM_TOOL_NAMES if MCP_TOOL_PLACEMENT_LEVEL(CRM_GROUP[t]) == "edit"]
-    assert writes == ["crm_lead_activity", "crm_lead_edit", "crm_team_edit", "crm_lead_intake", "crm_dial",
+    assert writes == ["crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_team_edit", "crm_lead_intake", "crm_dial",
                       "crm_ai_campaign", "crm_meetings_edit", "crm_send", "crm_payment_reminders"]
     for tool in CRM_TOOL_NAMES:
         assert (tool in MCP_ALLOWED_WRITE_TOOLS) == (tool in writes), tool

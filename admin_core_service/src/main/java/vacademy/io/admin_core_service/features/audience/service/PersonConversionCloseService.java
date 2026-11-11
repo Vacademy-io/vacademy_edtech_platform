@@ -46,12 +46,16 @@ import java.util.stream.Collectors;
  * <ol>
  *   <li>closes the open follow-ups, with a plain closing note;</li>
  *   <li>moves the enquiry to Converted when it is not already Converted or Lost, writing a
- *       lead_status_history row with source {@value #SOURCE};</li>
+ *       lead_status_history row with source {@value #SOURCE}. The move is made only while the
+ *       enquiry still has the status read a moment before, so a status someone set in between
+ *       is kept and no second history row is written;</li>
  *   <li>adds one timeline entry saying what was closed and why.</li>
  * </ol>
  *
- * <p>People are matched by user id only, as the enquiry's user_id or student_user_id. Opt-out
- * list rows and deleted rows are left as they are. An institute can switch this off
+ * <p>People are matched by user id only, as the enquiry's user_id or student_user_id. An
+ * enquiry made for a different student (student_user_id set to someone else) belongs to that
+ * student and is left as it is: a parent's enquiry for one child is not closed when another
+ * child, or the parent, converts. Opt-out list rows and deleted rows are left as they are. An institute can switch this off
  * ({@link LeadFollowupSettingService#closeOtherEnquiriesOnConversion}); it is on by default.
  *
  * <p><b>This is bookkeeping, never an automation event.</b> The status is written directly
@@ -112,6 +116,17 @@ public class PersonConversionCloseService {
         this.newTransaction = new TransactionTemplate(transactionManager);
         this.newTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.executor = executor;
+    }
+
+    /**
+     * The person an enquiry converts: its student when one is linked and differs from the
+     * submitter, otherwise the submitter. Null when the enquiry has neither.
+     */
+    public static String convertedPerson(AudienceResponse r) {
+        if (r == null) return null;
+        String student = r.getStudentUserId();
+        if (!isBlank(student) && !student.equals(r.getUserId())) return student;
+        return isBlank(r.getUserId()) ? (isBlank(student) ? null : student) : r.getUserId();
     }
 
     /**
@@ -220,7 +235,6 @@ public class PersonConversionCloseService {
         if (converted != null && !Boolean.FALSE.equals(converted.getIsActive())) {
             Map<String, String> keyByStatusId = statusKeys(live);
             Map<String, String> profileStatusByUser = new HashMap<>();
-            List<AudienceResponse> toSave = new ArrayList<>();
             List<LeadStatusHistory> history = new ArrayList<>();
             for (AudienceResponse r : live) {
                 if (converted.getId().equals(r.getLeadStatusId())) continue;
@@ -228,20 +242,23 @@ public class PersonConversionCloseService {
                 // The list shows the per-enquiry status first, then the submitter's profile status.
                 if (key == null) key = profileStatus(r.getUserId(), instituteId, profileStatusByUser);
                 if (CONVERTED.equals(key) || LOST.equals(key)) continue;
+                // Only while the status is still the one read above: a change made since then wins.
+                String from = r.getLeadStatusId();
+                int moved = from == null
+                        ? audienceResponseRepository.moveLeadStatusIfUnset(r.getId(), converted.getId())
+                        : audienceResponseRepository.moveLeadStatusIfStill(r.getId(), from, converted.getId());
+                if (moved != 1) continue;
                 history.add(LeadStatusHistory.builder()
                         .audienceResponseId(r.getId())
                         .instituteId(instituteId)
-                        .fromStatusId(r.getLeadStatusId())
+                        .fromStatusId(from)
                         .toStatusId(converted.getId())
                         .changedByUserId(null)
                         .source(SOURCE)
                         .build());
-                movedFrom.put(r.getId(), r.getLeadStatusId());
-                r.setLeadStatusId(converted.getId());
-                toSave.add(r);
+                movedFrom.put(r.getId(), from);
             }
-            if (!toSave.isEmpty()) {
-                audienceResponseRepository.saveAll(toSave);
+            if (!history.isEmpty()) {
                 leadStatusHistoryRepository.saveAll(history);
             }
         }
@@ -298,12 +315,15 @@ public class PersonConversionCloseService {
     }
 
     /**
-     * An enquiry this closes: in the institute, held by the person, not deleted, and not a row
-     * of an opt-out list.
+     * An enquiry this closes: in the institute, held by the person (as the submitter with no
+     * other student linked, or as the linked student), not deleted, and not a row of an opt-out
+     * list.
      */
     static boolean isLive(AudienceResponse r, Audience audience, String instituteId, String userId) {
         if (r == null || audience == null || !instituteId.equals(audience.getInstituteId())) return false;
         if (!userId.equals(r.getUserId()) && !userId.equals(r.getStudentUserId())) return false;
+        // Made for someone else: that student's enquiry, whoever submitted it.
+        if (!isBlank(r.getStudentUserId()) && !userId.equals(r.getStudentUserId())) return false;
         if (r.getAudienceStatus() != null && !"ACTIVE".equalsIgnoreCase(r.getAudienceStatus())) return false;
         if ("OPT_OUT".equalsIgnoreCase(r.getSourceType())) return false;
         return audience.getCampaignType() == null || !audience.getCampaignType().contains("OPT_OUT");

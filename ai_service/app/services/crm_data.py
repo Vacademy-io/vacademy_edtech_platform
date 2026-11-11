@@ -696,7 +696,7 @@ def person_opted_out(flags: Iterable[str]) -> bool:
 #: A person merged into another person here (admin-core's lead merge): their profile stays, marked with the
 #: person kept, and no longer counts as a lead or an admission. Their enquiries moved to the person kept.
 MERGED_NOTE = ("This person was merged into another person: their enquiries moved there and this profile no longer "
-               "counts as a lead or an admission. An admin can undo it with crm_lead_edit unmerge_people.")
+               "counts as a lead or an admission. An admin can undo it with crm_lead_merge unmerge_people.")
 
 _MERGE_STATE_SQL = """
 SELECT 'into' AS kind, p.merged_into_user_id AS other_id, p.merged_at, 0 AS enquiries

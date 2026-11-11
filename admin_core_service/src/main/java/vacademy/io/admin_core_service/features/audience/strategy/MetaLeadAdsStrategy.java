@@ -164,8 +164,8 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
     private WebClient webClient;
 
     /**
-     * Connectors whose lead reads were refused with the ad fields and then succeeded
-     * without them. Their reads ask for the base fields only until the service restarts,
+     * Connectors whose lead reads Meta refused because of the ad fields (see
+     * {@link #refusesAdFields}) and which then succeeded without them. Their reads ask for the base fields only until the service restarts,
      * so a token that cannot read the ad account costs one extra call, not one per lead.
      */
     private final Set<String> adFieldsRefused = ConcurrentHashMap.newKeySet();
@@ -273,10 +273,15 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 leadNode = getJson(base + BASE_LEAD_FIELDS + "," + AD_LEAD_FIELDS);
             } catch (WebClientResponseException e) {
                 if (!e.getStatusCode().is4xxClientError()) throw e;
-                // The ad fields were refused: read the lead exactly as before, and only
-                // stop asking for them once that plain read has worked.
+                JsonNode error = graphError(e.getResponseBodyAsString());
+                // A rate limit or a temporary error would refuse the plain read too.
+                if (isTransientGraphError(error)) throw e;
+                // Read the lead exactly as before. Stop asking for the ad fields only when Meta
+                // said it was those fields it refused, and the plain read then worked.
                 leadNode = getJson(base + BASE_LEAD_FIELDS);
-                markAdFieldsRefused(connector, e.getStatusCode().value());
+                if (refusesAdFields(error)) {
+                    markAdFieldsRefused(connector, error.path("code").asInt(0));
+                }
             }
         } else {
             leadNode = getJson(base + BASE_LEAD_FIELDS);
@@ -296,6 +301,46 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
 
     private boolean asksForAdFields(FormWebhookConnector connector) {
         return connector.getId() == null || !adFieldsRefused.contains(connector.getId());
+    }
+
+    /** The {@code error} object of a Graph error body, or a missing node when there is none. */
+    private JsonNode graphError(String body) {
+        if (body == null || body.isBlank()) return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+        try {
+            return objectMapper.readTree(body).path("error");
+        } catch (Exception e) {
+            return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+        }
+    }
+
+    /**
+     * Whether a Graph error says the ad fields themselves were refused: a permission error
+     * (code 10 or 200–299), or code 100 whose message names one of the ad fields. Only then
+     * does a connector stop asking for them.
+     */
+    public static boolean refusesAdFields(JsonNode error) {
+        if (error == null || !error.isObject()) return false;
+        int code = error.path("code").asInt(-1);
+        if (code == 10 || (code >= 200 && code <= 299)) return true;
+        if (code != 100) return false;
+        String message = error.path("message").asText("");
+        for (String field : AD_LEAD_FIELDS.split(",")) {
+            if (message.contains(field)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether a Graph error is a rate limit (codes 4, 17, 32, 341, 613, 80000–80014), a
+     * temporary error (codes 1, 2) or marked transient by Meta. Such an error never changes
+     * which fields a connector asks for, and the read is not repeated without the ad fields.
+     */
+    public static boolean isTransientGraphError(JsonNode error) {
+        if (error == null || !error.isObject()) return false;
+        if (error.path("is_transient").asBoolean(false)) return true;
+        int code = error.path("code").asInt(-1);
+        return code == 1 || code == 2 || code == 4 || code == 17 || code == 32 || code == 341 || code == 613
+                || (code >= 80000 && code <= 80014);
     }
 
     private void markAdFieldsRefused(FormWebhookConnector connector, int code) {
@@ -452,16 +497,19 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     .block();
             pages++;
             if (response == null) break;
-            if (response.has("error") && withAdFields && pages == 1) {
+            if (response.has("error") && withAdFields && pages == 1
+                    && !isTransientGraphError(response.path("error"))) {
                 // The first page was refused with the ad fields: read it again exactly as
                 // before. A refusal of that plain read is reported below as it always was.
+                // A rate limit or a temporary error is reported straight away instead.
                 withAdFields = false;
+                JsonNode refused = response.path("error");
                 JsonNode plain = webClient
                         .get().uri(URI.create(firstPageBase))
                         .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
                         .block();
-                if (plain != null && !plain.has("error")) {
-                    markAdFieldsRefused(connector, response.path("error").path("code").asInt(0));
+                if (plain != null && !plain.has("error") && refusesAdFields(refused)) {
+                    markAdFieldsRefused(connector, refused.path("code").asInt(0));
                 }
                 response = plain;
                 if (response == null) break;
