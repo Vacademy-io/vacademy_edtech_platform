@@ -2488,6 +2488,71 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("sourceId") String sourceId);
 
     /**
+     * How many of a learner's assessment analyses came from the learner's own submission
+     * (online submit or offline entry) rather than from a report pipeline. Rows written by
+     * a report pipeline carry an {@code analysis_trigger} key in their raw_json; the
+     * submit-time rows never do. A learner with such a row is analysed automatically, as
+     * every online submission is.
+     */
+    @Query(value = "SELECT COUNT(*) FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND (raw_json IS NULL OR raw_json NOT LIKE '%\"analysis_trigger\"%')", nativeQuery = true)
+    long countSubmissionAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * How many of a learner's assessment analyses were already made (and charged), or are
+     * being made right now. A copy check that lands after that is analysed again only when
+     * a report asks for it, never automatically: the attempt is not charged twice on its own.
+     */
+    @Query(value = "SELECT COUNT(*) FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND status IN ('processed', 'processing')", nativeQuery = true)
+    long countProcessedAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * Each learner's newest live assessment-analysis row status for an assessment
+     * ({@code [user_id, status]}): 'on_demand' means a copy check's marks wait to be
+     * analysed; a learner missing from the list has no row at all.
+     */
+    @Query(value = "SELECT DISTINCT ON (user_id) user_id, status FROM activity_log " +
+            "WHERE source_id = :sourceId AND source_type = 'llm_assessment' AND status <> 'superseded' " +
+            "ORDER BY user_id, created_at DESC", nativeQuery = true)
+    List<Object[]> findNewestAssessmentLogStatusPerUser(@Param("sourceId") String sourceId);
+
+    /** One learner's newest live assessment-analysis row, as {@code [id, status]} (empty: none). */
+    @Query(value = "SELECT id, status FROM activity_log " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND status <> 'superseded' ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    List<Object[]> findNewestLiveAssessmentLog(@Param("userId") String userId, @Param("sourceId") String sourceId);
+
+    /**
+     * Takes one learner's analysis row for this caller, if it is still in one of the given
+     * states. Exactly one caller wins - this request, another pod, or the hourly scheduler -
+     * so an analysis is never made (and charged) twice.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE activity_log SET status = 'processing', processing_attempts = processing_attempts + 1, " +
+            "updated_at = CURRENT_TIMESTAMP WHERE id = :id AND status IN (:claimable)", nativeQuery = true)
+    int claimAssessmentLog(@Param("id") String id, @Param("claimable") List<String> claimable);
+
+    /**
+     * Retires a learner's older assessment analysis rows that were never made, once a copy
+     * check has produced newer marks: nobody should be charged for analysing marks that no
+     * longer hold. A made ('processed') analysis is kept - it stays readable until the newer
+     * one is made, and was already paid for - and rows in flight ('processing') finish.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE activity_log SET status = 'superseded', updated_at = CURRENT_TIMESTAMP " +
+            "WHERE user_id = :userId AND source_id = :sourceId AND source_type = 'llm_assessment' " +
+            "AND id <> :keepId " +
+            "AND status IN ('raw', 'failed', 'on_demand', 'skipped_no_credits', 'skipped_usage_limit')",
+            nativeQuery = true)
+    int supersedeOlderAssessmentLogs(@Param("userId") String userId, @Param("sourceId") String sourceId,
+                                     @Param("keepId") String keepId);
+
+    /**
      * A learner's own AI insight reports, newest first, for the "Activity Insights" list
      * in My Reports.
      *

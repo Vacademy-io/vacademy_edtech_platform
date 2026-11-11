@@ -807,6 +807,16 @@ public class LLMActivityAnalyticsService {
                 return count;
         }
 
+        /** raw_json key naming the pipeline that wrote an assessment analysis row. */
+        static final String ANALYSIS_TRIGGER_KEY = "analysis_trigger";
+        /** assessment_service sends this after an AI copy check (or a teacher's edit of it). */
+        static final String COPY_CHECK_TRIGGER = "copy_check";
+        /**
+         * Waits for a report to be asked for: the hourly scheduler only takes 'raw' and
+         * 'failed', and process-on-demand analyses any row that is not yet processed.
+         */
+        static final String STATUS_ON_DEMAND = "on_demand";
+
         /**
          * Save raw activity log specifically for assessment (no original activity log
          * reference)
@@ -834,10 +844,34 @@ public class LLMActivityAnalyticsService {
                         // Set timestamps from assessment data
                         setTimestampsFromEnrichedData(llmActivityLog, assessmentData);
 
-                        llmActivityLog.setStatus("raw");
+                        // A copy check's marks: analysed on demand (when a report is asked for),
+                        // except for a learner who submitted the test themselves and whose
+                        // submit-time analysis was not made yet - that one is still made
+                        // automatically, now from the checked marks. A learner already analysed
+                        // (and charged) is never analysed again on its own. Every other row is
+                        // saved exactly as before.
+                        boolean copyCheck = COPY_CHECK_TRIGGER.equals(assessmentData.get(ANALYSIS_TRIGGER_KEY))
+                                        && userId != null && assessmentId != null;
+                        String status = "raw";
+                        if (copyCheck) {
+                                boolean submitted = activityLogRepository
+                                                .countSubmissionAssessmentLogs(userId, assessmentId) > 0;
+                                boolean analysed = activityLogRepository
+                                                .countProcessedAssessmentLogs(userId, assessmentId) > 0;
+                                status = submitted && !analysed ? "raw" : STATUS_ON_DEMAND;
+                        }
+                        llmActivityLog.setStatus(status);
                         llmActivityLog.setRawJson(jsonString);
 
                         activityLogRepository.save(llmActivityLog);
+
+                        if (copyCheck) {
+                                // The older analyses were made from marks the copy check replaced.
+                                int retired = activityLogRepository.supersedeOlderAssessmentLogs(
+                                                userId, assessmentId, llmActivityLog.getId());
+                                log.info("[LLM] Copy-check analysis row {} saved as {}; {} older row(s) superseded",
+                                                llmActivityLog.getId(), status, retired);
+                        }
 
                         log.info("[LLM] Saved assessment activity log: id={}, assessmentId={}, attemptId={}, jsonLength={}",
                                         llmActivityLog.getId(), assessmentId, attemptId, jsonString.length());
