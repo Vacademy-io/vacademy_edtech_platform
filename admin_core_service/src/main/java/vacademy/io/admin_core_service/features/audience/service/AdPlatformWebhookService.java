@@ -367,6 +367,14 @@ public class AdPlatformWebhookService {
         // utm_* keys as a utm_attribution row.
         if (StringUtils.hasText(lead.getCampaignId())) metadata.put("source_id", lead.getCampaignId());
         if (lead.getUtmParams() != null) metadata.putAll(lead.getUtmParams());
+        // The ad the lead came from, stored on the lead row's ad_* columns.
+        putIfText(metadata, AudienceService.AD_CAMPAIGN_ID, lead.getAdCampaignId());
+        putIfText(metadata, AudienceService.AD_CAMPAIGN_NAME, lead.getAdCampaignName());
+        putIfText(metadata, AudienceService.AD_SET_ID, lead.getAdSetId());
+        putIfText(metadata, AudienceService.AD_SET_NAME, lead.getAdSetName());
+        putIfText(metadata, AudienceService.AD_ID, lead.getAdId());
+        putIfText(metadata, AudienceService.AD_NAME, lead.getAdName());
+        putIfText(metadata, AudienceService.AD_FORM_ID, lead.getAdFormId());
 
         ProcessedFormDataDTO processedData = ProcessedFormDataDTO.builder()
                 .email(lead.getEmail())
@@ -379,6 +387,10 @@ public class AdPlatformWebhookService {
         audienceService.submitLeadFromFormWebhook(audienceId, processedData, connector.getVendor());
         log.info("Lead {} submitted to audience {} via {}", lead.getPlatformLeadId(),
                 audienceId, connector.getVendor());
+    }
+
+    private static void putIfText(Map<String, String> metadata, String key, String value) {
+        if (StringUtils.hasText(value)) metadata.put(key, value.trim());
     }
 
     /**

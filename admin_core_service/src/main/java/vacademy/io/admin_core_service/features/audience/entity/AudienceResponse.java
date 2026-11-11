@@ -172,6 +172,32 @@ public class AudienceResponse {
     @Column(name = "initial_score")
     private Integer initialScore;
 
+    // ── Ad the lead came from (Meta Lead Ads, Google lead forms) ──
+    // Written once when an ad-platform lead is created; null for every other source and
+    // for leads created before these columns existed. Names are only set when the
+    // platform returned them (Google never sends names).
+
+    @Column(name = "ad_campaign_id", length = 100)
+    private String adCampaignId;
+
+    @Column(name = "ad_campaign_name", length = 255)
+    private String adCampaignName;
+
+    @Column(name = "ad_set_id", length = 100)
+    private String adSetId;
+
+    @Column(name = "ad_set_name", length = 255)
+    private String adSetName;
+
+    @Column(name = "ad_id", length = 100)
+    private String adId;
+
+    @Column(name = "ad_name", length = 255)
+    private String adName;
+
+    @Column(name = "ad_form_id", length = 100)
+    private String adFormId;
+
     /**
      * Constructor from DTO
      */

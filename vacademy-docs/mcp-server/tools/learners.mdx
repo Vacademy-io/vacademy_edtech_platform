@@ -75,6 +75,9 @@ Let the connected AI app change a learner's details — name, phone, password, a
 <ParamField path="changes" type="object">
   &#123;field: new value&#125; — only the fields to change.
 </ParamField>
+<ParamField path="username" type="string">
+  A new login username.
+</ParamField>
 <ParamField path="password" type="string">
   A new login password.
 </ParamField>
@@ -93,10 +96,10 @@ Let the connected AI app change a learner's details — name, phone, password, a
 <Accordion title="What your AI app is told about this tool">
 
 ```text
-Change a learner's details: name, mobile number, password, gender, date of birth, address, city, state, PIN code, parents' names / phones / emails, school, and the institute's custom fields. Email and username can never be changed here. First find the learner with learners(action='find') — when several match, show them (name, email, phone, courses) and ask which one; never guess. Then:
-- preview (learner_id, changes?: {field: new value}, password?, custom_fields?: {label or field_id: value}): checks the change and shows each field's current → new value. Nothing is saved. Returns a confirm_token (valid 15 min).
-- apply (same arguments + confirm_token, send_credentials_via?: [EMAIL, WHATSAPP] — after a password change, sends the learner their login details; ask the admin): saves it.
-changes keys: full_name, mobile_number, gender, date_of_birth, address_line, city, region, pin_code, fathers_name, mothers_name, parents_mobile_number, parents_email, parents_to_mother_mobile_number, parents_to_mother_email, linked_institute_name. gender: MALE | FEMALE | OTHER. date_of_birth: YYYY-MM-DD. Phone numbers with country code. A field cannot be blanked from here. The password is set to exactly what the admin gives (min 6 characters, no spaces) — never make one up unless asked, and do not repeat it back in the chat.
+Change a learner's details: name, mobile number, username, password, gender, date of birth, address, city, state, PIN code, parents' names / phones / emails, school, and the institute's custom fields. Also sets the login of a sub-org admin (their learner_id is in sub_orgs(action='get')). Email can never be changed here. First find the learner with learners(action='find') — when several match, show them (name, email, phone, courses) and ask which one; never guess. Then:
+- preview (learner_id, changes?: {field: new value}, username?, password?, custom_fields?: {label or field_id: value}): checks the change and shows each field's current → new value. Nothing is saved. Returns a confirm_token (valid 15 min).
+- apply (same arguments + confirm_token, send_credentials_via?: [EMAIL, WHATSAPP] — after a username or password change, sends the learner their login details; ask the admin. Without it nothing is sent): saves it.
+changes keys: full_name, mobile_number, gender, date_of_birth, address_line, city, region, pin_code, fathers_name, mothers_name, parents_mobile_number, parents_email, parents_to_mother_mobile_number, parents_to_mother_email, linked_institute_name. gender: MALE | FEMALE | OTHER. date_of_birth: YYYY-MM-DD. Phone numbers with country code. A field cannot be blanked from here. The username (3-100 characters, no spaces, no '@', must be free) and password are set to exactly what the admin gives (password: min 6 characters, no spaces) — never make one up unless asked, and do not repeat the password back in the chat.
 ```
 
 </Accordion>

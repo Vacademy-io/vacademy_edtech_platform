@@ -44,4 +44,27 @@ public class NormalizedLeadData {
 
     /** List chosen for this lead by its campaign's route; when set it wins over routing rules. */
     private String routedAudienceId;
+
+    // ── Ad the lead came from (stored on audience_response.ad_*; null = not known) ──
+
+    /** Ad platform campaign id (Meta campaign_id, Google campaign_id). */
+    private String adCampaignId;
+
+    /** Campaign name, when the platform returned it (Meta only). */
+    private String adCampaignName;
+
+    /** Ad set id (Meta adset_id / webhook adgroup_id; Google ad group, else asset group). */
+    private String adSetId;
+
+    /** Ad set name, when the platform returned it (Meta only). */
+    private String adSetName;
+
+    /** Ad id (Meta ad_id; Google creative_id). */
+    private String adId;
+
+    /** Ad name, when the platform returned it (Meta only). */
+    private String adName;
+
+    /** Lead form id on the platform. */
+    private String adFormId;
 }

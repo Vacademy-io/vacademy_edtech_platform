@@ -13,6 +13,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
 import vacademy.io.admin_core_service.features.audience.dto.NormalizedLeadData;
 import vacademy.io.admin_core_service.features.audience.dto.OAuthTokenResult;
@@ -30,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /**
@@ -93,6 +95,18 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
     private static final String OAUTH_SCOPE =
             "pages_show_list,pages_read_engagement,leads_retrieval,pages_manage_metadata,pages_manage_ads,business_management";
 
+    /** Lead fields every Graph lead read asks for. */
+    static final String BASE_LEAD_FIELDS = "field_data,created_time,ad_id,form_id";
+
+    /**
+     * Ad fields asked for on top of {@link #BASE_LEAD_FIELDS}: the campaign and ad set ids
+     * and the campaign / ad set / ad names. Meta returns them only to a token that may
+     * read the ad account, so a read that asks for them can be refused; the read is then
+     * repeated with the base fields alone and the connector is remembered (see
+     * {@link #adFieldsRefused}) so later reads go straight to the base fields.
+     */
+    static final String AD_LEAD_FIELDS = "adset_id,adset_name,campaign_id,campaign_name,ad_name";
+
     /** Page task Meta requires to subscribe a Page to lead webhooks (Full control). */
     private static final String MANAGE_TASK = "MANAGE";
 
@@ -148,6 +162,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
      * the cursor for retry).
      */
     private WebClient webClient;
+
+    /**
+     * Connectors whose lead reads were refused with the ad fields and then succeeded
+     * without them. Their reads ask for the base fields only until the service restarts,
+     * so a token that cannot read the ad account costs one extra call, not one per lead.
+     */
+    private final Set<String> adFieldsRefused = ConcurrentHashMap.newKeySet();
 
     @jakarta.annotation.PostConstruct
     void initWebClient() {
@@ -222,7 +243,10 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     if (leadgenId == null) continue;
                     try {
                         NormalizedLeadData lead = fetchLeadFromGraph(leadgenId, connector);
-                        if (lead != null) results.add(lead);
+                        if (lead != null) {
+                            applyWebhookAdIds(lead, val);
+                            results.add(lead);
+                        }
                     } catch (Exception ex) {
                         log.error("Failed to fetch Meta lead {} from form {}", leadgenId, formId, ex);
                     }
@@ -241,17 +265,71 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
             return null;
         }
         String pageToken = tokenEncryptionService.decrypt(connector.getOauthAccessTokenEnc());
-        String url = GRAPH_API_BASE + "/" + leadgenId + "?access_token=" + pageToken
-                + "&fields=field_data,created_time,ad_id,form_id";
+        String base = GRAPH_API_BASE + "/" + leadgenId + "?access_token=" + pageToken + "&fields=";
 
-        JsonNode leadNode = webClient
+        JsonNode leadNode;
+        if (asksForAdFields(connector)) {
+            try {
+                leadNode = getJson(base + BASE_LEAD_FIELDS + "," + AD_LEAD_FIELDS);
+            } catch (WebClientResponseException e) {
+                if (!e.getStatusCode().is4xxClientError()) throw e;
+                // The ad fields were refused: read the lead exactly as before, and only
+                // stop asking for them once that plain read has worked.
+                leadNode = getJson(base + BASE_LEAD_FIELDS);
+                markAdFieldsRefused(connector, e.getStatusCode().value());
+            }
+        } else {
+            leadNode = getJson(base + BASE_LEAD_FIELDS);
+        }
+
+        if (leadNode == null) return null;
+        return buildNormalizedLead(leadgenId, leadNode, connector);
+    }
+
+    private JsonNode getJson(String url) {
+        return webClient
                 .get().uri(url)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block();
+    }
 
-        if (leadNode == null) return null;
-        return buildNormalizedLead(leadgenId, leadNode, connector);
+    private boolean asksForAdFields(FormWebhookConnector connector) {
+        return connector.getId() == null || !adFieldsRefused.contains(connector.getId());
+    }
+
+    private void markAdFieldsRefused(FormWebhookConnector connector, int code) {
+        if (connector.getId() != null && adFieldsRefused.add(connector.getId())) {
+            log.info("Meta refused the ad fields on a lead read for connector {} (code {}); reading its leads "
+                    + "without campaign / ad set ids and names from now on", connector.getId(), code);
+        }
+    }
+
+    /**
+     * Fill the ad ids the leadgen webhook carries (ad_id, adgroup_id = the ad set, form_id)
+     * where the Graph read left them empty. The Graph value wins when both exist.
+     */
+    static void applyWebhookAdIds(NormalizedLeadData lead, JsonNode webhookValue) {
+        if (lead == null || webhookValue == null) return;
+        if (lead.getAdId() == null) lead.setAdId(idText(webhookValue, "ad_id"));
+        if (lead.getAdSetId() == null) lead.setAdSetId(idText(webhookValue, "adgroup_id"));
+        if (lead.getAdFormId() == null) lead.setAdFormId(idText(webhookValue, "form_id"));
+    }
+
+    /** An id field as text; Meta sends ids as strings or JSON numbers, and 0 / blank as "none". */
+    static String idText(JsonNode node, String key) {
+        JsonNode v = node == null ? null : node.get(key);
+        if (v == null || v.isNull() || v.isContainerNode()) return null;
+        String text = v.asText("").trim();
+        return text.isEmpty() || "0".equals(text) ? null : text;
+    }
+
+    /** A name field as text, blank as null. */
+    private static String nameText(JsonNode node, String key) {
+        JsonNode v = node == null ? null : node.get(key);
+        if (v == null || v.isNull() || v.isContainerNode()) return null;
+        String text = v.asText("").trim();
+        return text.isEmpty() ? null : text;
     }
 
     /**
@@ -312,6 +390,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                         ? connector.getProducesSourceType() : "FACEBOOK_ADS")
                 .targetAudienceId(connector.getAudienceId())
                 .testLead(false)
+                .adCampaignId(idText(leadNode, "campaign_id"))
+                .adCampaignName(nameText(leadNode, "campaign_name"))
+                .adSetId(idText(leadNode, "adset_id"))
+                .adSetName(nameText(leadNode, "adset_name"))
+                .adId(idText(leadNode, "ad_id"))
+                .adName(nameText(leadNode, "ad_name"))
+                .adFormId(idText(leadNode, "form_id"))
                 .build();
     }
 
@@ -350,11 +435,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         // RE-encodes our already-percent-encoded 'filtering' value (%5B → %255B). Meta
         // then can't parse the filter, silently ignores it, and returns EVERY lead. A
         // pre-built URI is sent verbatim — single-encoded — so the time filter sticks.
-        String url = GRAPH_API_BASE + "/" + formId + "/leads"
+        String firstPageBase = GRAPH_API_BASE + "/" + formId + "/leads"
                 + "?access_token=" + pageToken
-                + "&fields=id,created_time,field_data,ad_id,form_id"
                 + "&limit=100"
-                + "&filtering=" + URLEncoder.encode(filter, StandardCharsets.UTF_8);
+                + "&filtering=" + URLEncoder.encode(filter, StandardCharsets.UTF_8)
+                + "&fields=id," + BASE_LEAD_FIELDS;
+        boolean withAdFields = asksForAdFields(connector);
+        String url = withAdFields ? firstPageBase + "," + AD_LEAD_FIELDS : firstPageBase;
 
         int pages = 0;
         while (url != null && !url.isBlank() && pages < maxPages) {
@@ -365,6 +452,20 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     .block();
             pages++;
             if (response == null) break;
+            if (response.has("error") && withAdFields && pages == 1) {
+                // The first page was refused with the ad fields: read it again exactly as
+                // before. A refusal of that plain read is reported below as it always was.
+                withAdFields = false;
+                JsonNode plain = webClient
+                        .get().uri(URI.create(firstPageBase))
+                        .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                        .block();
+                if (plain != null && !plain.has("error")) {
+                    markAdFieldsRefused(connector, response.path("error").path("code").asInt(0));
+                }
+                response = plain;
+                if (response == null) break;
+            }
             if (response.has("error")) {
                 String msg = response.path("error").path("message").asText("unknown error");
                 throw new VacademyException("Meta lead poll failed for form " + formId + ": " + msg);

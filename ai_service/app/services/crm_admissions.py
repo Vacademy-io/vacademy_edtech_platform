@@ -302,7 +302,7 @@ LEFT JOIN LATERAL (
     FROM audience_response fr
     JOIN audience fa ON fa.id = fr.audience_id AND fa.institute_id = :inst
     WHERE (fr.user_id = pg.pid OR fr.student_user_id = pg.pid) AND NOT {on_list_f}
-    ORDER BY fr.created_at, fr.id LIMIT 1
+    ORDER BY {fe_order} LIMIT 1
 ) fe ON TRUE
 LEFT JOIN audience_response br ON br.id = pg.best_score_response_id
 LEFT JOIN LATERAL (
@@ -427,12 +427,25 @@ FROM per LEFT JOIN paid_people pd ON pd.pid = per.pid""".replace("{plan_currency
     "{log_currency}", _LOG_CURRENCY)
 
 
+#: The moment an admission row's last enquiry must not be after: the conversion for a person converted in the
+#: window, else the end of the admission day in the institute's timezone.
+_LAST_BEFORE = ("((pg.is_conv AND pg.converted_at IS NOT NULL AND fr.created_at <= pg.converted_at) "
+                "OR (NOT (pg.is_conv AND pg.converted_at IS NOT NULL) AND fr.created_at < "
+                "CAST(((CAST(pg.admission_date AS timestamp) + INTERVAL '1 day') AT TIME ZONE :tz) "
+                "AT TIME ZONE 'UTC' AS timestamp)))")
+#: Which enquiry gives a row its list and source. An argument only ever selects one of these.
+#: first: the earliest; last: the latest on or before the admission, else (all came after it) the earliest.
+FE_ORDER = {"first": "fr.created_at, fr.id",
+            "last": f"CASE WHEN {_LAST_BEFORE} THEN fr.created_at END DESC NULLS LAST, fr.created_at, fr.id"}
+
+
 def totals_sql() -> str:
     return "-- crm_money.admissions_totals\n" + _BASE + _TOTALS_TAIL
 
 
-def rows_sql(filters: str) -> str:
-    return "-- crm_money.admissions_rows\n" + _BASE + _ROWS_TAIL.replace("{filters}", filters)
+def rows_sql(filters: str, attribution: str = "first") -> str:
+    return ("-- crm_money.admissions_rows\n" + _BASE
+            + _ROWS_TAIL.replace("{filters}", filters).replace("{fe_order}", FE_ORDER[attribution]))
 
 
 def window_binds(inst: str, w: "cd.Window") -> Dict[str, Any]:
@@ -787,7 +800,7 @@ def store_export(ctx: ToolContext, file_name: str, rows: Sequence[Dict[str, Any]
                              metadata=metadata)
 
 
-__all__ = ["BASIS", "PLAN", "LEAD", "PLAN_STATES", "LEAD_STATES", "CSV_COLUMNS", "MAX_ROWS_PAGED", "PAGE_END_NOTE", "MAX_PAGE_BYTES",
+__all__ = ["BASIS", "PLAN", "LEAD", "FE_ORDER", "PLAN_STATES", "LEAD_STATES", "CSV_COLUMNS", "MAX_ROWS_PAGED", "PAGE_END_NOTE", "MAX_PAGE_BYTES",
            "EXPORT_KIND", "EXPORT_MAX_ROWS", "EXPORTS_PER_HOUR", "MAX_REPORTS_PER_POD", "filters_sql", "totals_sql",
            "rows_sql", "window_binds", "try_acquire", "release", "own_session", "in_thread", "query", "query_export",
            "totals_view", "local_day", "blank_name_ids", "row_view", "page_rows", "csv_row", "store_export"]

@@ -228,6 +228,20 @@ DEFINITIONS: Dict[str, str] = {
 }
 _ADMISSION_DEFINITIONS = ("admission", "admission_date", "months", "lead_state", "contact", "plan_state", "totals",
                           "breakdowns", "enrolment", "money", "attribution", "window")
+#: The attribution text for attribution='last'; 'first' keeps DEFINITIONS["attribution"].
+_LAST_TOUCH = ("Counsellor is the current owner, not a snapshot. Last-touch: list and source come from the person's "
+               "latest enquiry by user or linked student created on or before the admission — the conversion moment "
+               "for a person converted in the window, else the end of the admission day (institute timezone). When "
+               "every enquiry came after that, the first one is used. A deleted enquiry still supplies them, the same "
+               "as first-touch. When no enquiry gives a source, source is the one on the person's lead profile, and "
+               "with no enquiry list is blank. source_origin says where source came from: enquiry, profile or none.")
+
+
+def _admission_definitions(attribution: str) -> Dict[str, str]:
+    out = {k: DEFINITIONS[k] for k in _ADMISSION_DEFINITIONS}
+    out["attribution"] = (("First-touch (attribution='first', the default). " + DEFINITIONS["attribution"])
+                          if attribution == "first" else _LAST_TOUCH + " (attribution='last')")
+    return out
 
 # ── SQL ──────────────────────────────────────────────────────────────────
 
@@ -1426,6 +1440,9 @@ async def _admissions(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     filters = adm.filters_sql(args)
     if cd.is_error(filters):
         return filters
+    attribution = cd.attribution(args)
+    if cd.is_error(attribution):
+        return attribution
     # A page can hold fewer rows than limit, so a page number could not say where the next one starts.
     if args.get("page") not in (None, "", 0, "0"):
         return cd.err("invalid_argument", message="admissions pages by offset: pass next_offset from the last reply.")
@@ -1445,7 +1462,7 @@ async def _admissions(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
     try:
         ctx.db.rollback()    # a read with nothing pending: gives the connection back for the statements
         binds = adm.window_binds(inst, w)
-        rows_sql = adm.rows_sql(filters)
+        rows_sql = adm.rows_sql(filters, attribution)
         statements = [(rows_sql, {**binds, "lim": min(limit, adm.MAX_ROWS_PAGED - offset), "off": offset})]
         if offset == 0:
             statements.insert(0, (adm.totals_sql(), binds))
@@ -1462,13 +1479,13 @@ async def _admissions(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
         matched = int(counted[0]["matched"]) if counted else 0
         people = int(counted[0]["matched_people"]) if counted else 0
         owners, display = await _report_names(ctx, found)
-        out: Dict[str, Any] = {"window": w.as_dict()}
+        out: Dict[str, Any] = {"window": w.as_dict(), "attribution": attribution}
         if offset == 0:
             out["totals"] = adm.totals_view(results[0][0] if results[0] else {})
         out.update(offset=offset, limit=limit, matched=matched, matched_people=people, more=True,
                    next_offset=adm.MAX_ROWS_PAGED, scope="whole institute")
         if offset == 0:
-            out["definitions"] = {k: DEFINITIONS[k] for k in _ADMISSION_DEFINITIONS}
+            out["definitions"] = _admission_definitions(attribution)
         spare = (adm.MAX_PAGE_BYTES - len(json.dumps(out, ensure_ascii=False, default=str).encode("utf-8"))
                  - len(adm.PAGE_END_NOTE) - 100)
         out["rows"] = adm.page_rows(found, owners, display, w.tz, spare)
@@ -1486,6 +1503,9 @@ async def _admissions_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
     filters = adm.filters_sql(args)
     if cd.is_error(filters):
         return filters
+    attribution = cd.attribution(args)
+    if cd.is_error(attribution):
+        return attribution
     w = _window(ctx, args)
     if cd.is_error(w):
         return w
@@ -1498,12 +1518,12 @@ async def _admissions_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
         binds = adm.window_binds(inst, w)
         results = await adm.in_thread(adm.query_export, ctx, [
             (adm.totals_sql(), binds),
-            (adm.rows_sql(filters), {**binds, "lim": adm.EXPORT_MAX_ROWS, "off": 0})])
+            (adm.rows_sql(filters, attribution), {**binds, "lim": adm.EXPORT_MAX_ROWS, "off": 0})])
         if isinstance(results, dict):
             return results
         totals_rows, found = results
         if not found:
-            return {"status": "empty", "matched": 0, "window": w.as_dict(),
+            return {"status": "empty", "matched": 0, "window": w.as_dict(), "attribution": attribution,
                     "note": "No admission matches these filters in this window; nothing to export."}
         matched, people = int(found[0]["matched"]), int(found[0]["matched_people"])
         owners, display = await _report_names(ctx, found)
@@ -1521,9 +1541,9 @@ async def _admissions_export(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
         if matched > len(found):
             extra["not_included"] = (f"{matched - len(found)} more rows match and are not in the file (max "
                                      f"{adm.EXPORT_MAX_ROWS} rows). Split the window and export each part.")
-        return link_result(handle, window=span, rows=len(found), matched=matched, people=people,
-                           totals=adm.totals_view(totals_rows[0] if totals_rows else {}),
-                           definitions={k: DEFINITIONS[k] for k in _ADMISSION_DEFINITIONS}, **extra)
+        return link_result(handle, window=span, attribution=attribution, rows=len(found), matched=matched,
+                           people=people, totals=adm.totals_view(totals_rows[0] if totals_rows else {}),
+                           definitions=_admission_definitions(attribution), **extra)
     finally:
         adm.release(inst)
 
@@ -2098,13 +2118,15 @@ READ_SCHEMA: Dict[str, Any] = {
             "- abandoned_checkouts (window, max 180 days; limit, page): failed or never-completed payment attempts "
             "with no later successful payment.\n"
             "- admissions (institute admins; from/to | days | period, default 30 days, max 366; basis, plan, "
-            "lead_state; limit, offset): people converted or enrolled in the window, one row per person and plan, or "
+            "lead_state, attribution; limit, offset): people converted or enrolled in the window, one row per person "
+            "and plan, or "
             "per enrolment with no plan shown, with "
             "plan state, enquiry state, course, batch, fees billed and paid, counsellor, list and source; contacts "
             "masked; totals (whole window, whatever the filters) and definitions when offset is 0. A page can hold fewer rows than "
             "limit: while next_offset is set, call again with offset=next_offset. Today's admissions missing a plan: period='today', "
             "plan='plan_missing'; the backlog: days=30. Converted with no active enquiry: basis='converted', "
-            "lead_state='no_active_enquiry'.\n"
+            "lead_state='no_active_enquiry'. attribution: first (default) takes list and source from the person's "
+            "first enquiry, last from their latest one on or before the admission; say which was used.\n"
             "- admissions_export (institute admins; same window and filters): those rows with full contact as a CSV "
             "behind a private link that expires in 15 minutes, at most 5000 rows and 6 files an hour. Prefer this "
             "over paging for more than 50 rows; give the user the link as is and never open or summarise it. The file "
@@ -2147,6 +2169,10 @@ READ_SCHEMA: Dict[str, Any] = {
                                         "no_active_enquiry"],
                                "description": "admissions: the person's enquiries here (default any). "
                                               "no_active_enquiry is every state except active_enquiry."},
+                "attribution": {"type": "string", "enum": list(cd.ATTRIBUTIONS),
+                                "description": "admissions: which enquiry gives list and source — first (default): "
+                                               "the person's first enquiry; last: their latest one on or before "
+                                               "the admission."},
                 **_PAGE_PROPS,
             },
             "required": ["action"],

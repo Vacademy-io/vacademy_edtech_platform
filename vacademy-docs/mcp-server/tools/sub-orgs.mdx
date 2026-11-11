@@ -108,7 +108,7 @@ Let the connected AI app create sub-organisations (name, courses, payment option
   create: payment gateway name (when several).
 </ParamField>
 <ParamField path="admin" type="object">
-  add_admin: &#123;full_name, email, mobile_number?&#125;
+  add_admin: &#123;full_name, email, mobile_number?, username?, password?&#125;
 </ParamField>
 <ParamField path="confirm_token" type="string">
   apply: the token preview returned.
@@ -122,7 +122,7 @@ Let the connected AI app create sub-organisations (name, courses, payment option
 Create a sub-organisation, change its set-up, or give it its admin. Never deletes or deactivates a sub-org and never removes a course from it (dashboard only). Every change is two calls: action='preview' (checks everything, saves nothing, returns what will happen + a confirm_token valid 15 min) → show the admin and get a clear yes → action='apply' with the SAME arguments plus confirm_token. Pick `change`:
 - create: name, courses [{course_id, batch_id? (when the course has several batches)}] (at least one), payment_option_id (from sub_orgs(action='create_options') — ASK which; never pick a price), member_count (learner seats per course — ASK), validity_in_days (ASK), admin_roles [role names the sub-org's admin gets — ASK], team_roles? [roles that admin may give their own team], admin_permissions? (FULL default | CREATE_COURSE), vendor? (payment gateway, when the institute has several and the option is paid). Returns the sub-org and the admin's invite link.
 - update: sub_org_id + any of add_courses [{course_id, batch_id?}], member_count, validity_in_days, admin_roles, team_roles, admin_permissions. The preview shows before → after.
-- add_admin: sub_org_id + admin {full_name, email, mobile_number?}: makes that person the sub-org's admin on all its courses (an account is created when the email has none). Only when the sub-org has no admin yet. Alternative: send the admin the invite link from sub_orgs(action='get').
+- add_admin: sub_org_id + admin {full_name, email, mobile_number?, username?, password?}: makes that person the sub-org's admin on all its courses (an account is created when the email has none). username defaults to the email and password is generated when not given; set them only to what the admin asks for and never repeat the password in the chat. An email that already has an account keeps its own login (change it with learner_edit, also for an admin who already exists). Only when the sub-org has no admin yet. Alternative: send the admin the invite link from sub_orgs(action='get').
 ```
 
 </Accordion>
@@ -174,7 +174,7 @@ Let the connected AI app add learners — one, a list or a CSV — to a sub-orga
 Add learners to a sub-organisation — one, a list or a whole CSV — into its courses (all of them unless batch_ids narrows it). Adds LEARNERS only (the sub-org's admin is sub_org_edit(change='add_admin')) and never removes anyone. Steps: sub_orgs(action='list') → sub_orgs(action='get') for its courses and seats → preview → show the admin the outcome (who is added to which course, who is skipped and why, seats left, which emails go out) and get a clear yes → enroll with the SAME arguments plus confirm_token. Pick an `action`:
 - preview (sub_org_id, csv and/or learners, batch_ids?, options): checks everything; nothing is saved. Returns the per-learner plan and a confirm_token (valid 15 min).
 - enroll (same arguments + confirm_token): does it, learner by learner, and reports each one.
-csv: the filled-in sub_orgs(action='enroll_template') as CSV text (header row first). learners: [{learner_id} (an existing learner, from learners(action='find')) | a row with the template columns {email, full_name, mobile_number?, …, custom_fields?: {label: value}}] (max 200 in total). batch_ids: some of the sub-org's course batch_ids (default: all).
+csv: the filled-in sub_orgs(action='enroll_template') as CSV text (header row first). learners: [{learner_id} (an existing learner, from learners(action='find')) | a row with the template columns {email, full_name, mobile_number?, username?, password?, …, custom_fields?: {label: value}}] (username defaults to the email and password is generated; an email that already has an account keeps its own login, change it with learner_edit; never repeat a password in the chat) (max 200 in total). batch_ids: some of the sub-org's course batch_ids (default: all).
 options: {credentials_file: bool — a CSV of every added learner's username + password, delivered as a private download link valid 30 minutes — ASK the admin}. Login-details emails follow Course Settings ('Send credentials') and cannot be switched per upload; the preview says whether they go out and which automations run.
 ```
 

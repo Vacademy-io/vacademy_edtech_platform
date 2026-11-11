@@ -1890,3 +1890,74 @@ async def test_real_driver_newest_first_holds_whatever_the_status(real_ctx):
     assert first == ["o1"]
     plain, _ = await cd.resolve_filter(real_ctx, {"submitted_from": "2026-10-01"})
     assert [i for i in plain if i.startswith("o")] == ["o1", "o4", "o2", "o3"]
+
+
+# ── attribution: first or last enquiry ───────────────────────────────────
+
+def _rows_sql(backend):
+    return [s for s in admission_sql(backend) if "crm_money.admissions_rows" in s]
+
+
+async def test_attribution_defaults_to_first_and_every_reply_says_which(backend, monkeypatch):
+    first = await read(action="admissions", **OCTOBER)
+    assert first["attribution"] == "first" and first["definitions"]["attribution"].startswith("First-touch")
+    assert "ORDER BY fr.created_at, fr.id LIMIT 1" in _rows_sql(backend)[-1]
+    last = await read(action="admissions", attribution="LAST", **OCTOBER)
+    assert last["attribution"] == "last" and "Last-touch" in last["definitions"]["attribution"]
+    assert "fr.created_at <= pg.converted_at" in _rows_sql(backend)[-1]
+    later = await read(action="admissions", attribution="last", offset=1, **OCTOBER)
+    assert later["attribution"] == "last" and "definitions" not in later
+    bad = await read(action="admissions", attribution="middle", **OCTOBER)
+    assert bad["error"] == "invalid_argument" and bad["allowed"] == ["first", "last"]
+    made = capture_export(monkeypatch)
+    out = await read(action="admissions_export", attribution="last", **OCTOBER)
+    assert out["attribution"] == "last" and "Last-touch" in out["definitions"]["attribution"]
+    assert made["metadata"] == {"rows": 1, "matched": 1, "people": 1}
+    assert "fr.created_at <= pg.converted_at" in _rows_sql(backend)[-1]
+
+
+_TOUCHES = """
+insert into audience values('ab','I',null,'Ads list');
+-- converted on the 20th: enquired by Google ads, then (deleted) by Meta ads, then walked in after converting
+insert into user_lead_profile values('ut','touch','I','CONVERTED','2026-10-20 05:00',null,null,null);
+insert into audience_response(id,audience_id,user_id,audience_status,created_at,submitted_at,source_type)
+  values('t1','a','touch','ACTIVE','2026-09-01','2026-09-01','GOOGLE_ADS'),
+        ('t2','ab','touch','INACTIVE','2026-10-15','2026-10-15','META_LEAD_ADS'),
+        ('t3','a','touch','ACTIVE','2026-10-25','2026-10-25','WALK_IN');
+-- enrolled on the 12th (institute day), no conversion: the second enquiry is late that same day
+insert into student_session_institute_group_mapping values('mt','enrtouch',null,'2026-10-12','2026-10-12','I','ACTIVE',null,'ps');
+insert into audience_response(id,audience_id,user_id,student_user_id,audience_status,created_at,submitted_at,source_type)
+  values('e1','a','guardian','enrtouch','ACTIVE','2026-10-01','2026-10-01','WEBSITE'),
+        ('e2','ab','guardian','enrtouch','ACTIVE','2026-10-12 15:00','2026-10-12 15:00','REFERRAL'),
+        ('e3','a','guardian','enrtouch','ACTIVE','2026-10-12 19:00','2026-10-12 19:00','WALK_IN');
+-- converted before the only enquiry: last falls back to it
+insert into user_lead_profile values('ul','late','I','CONVERTED','2026-10-05 05:00',null,null,null);
+insert into audience_response(id,audience_id,user_id,audience_status,created_at,submitted_at,source_type)
+  values('l1','ab','late','ACTIVE','2026-10-20','2026-10-20','FACEBOOK');
+"""
+
+
+async def test_real_driver_first_and_last_touch_pick_the_right_enquiry(real_ctx):
+    with real_ctx.db.get_bind().begin() as c:
+        c.exec_driver_sql(_TOUCHES)
+    w = cd.window(OCTOBER, tz=cd.DEFAULT_TZ)
+    binds = adm.window_binds("I", w)
+    picked = {}
+    for attribution in ("first", "last"):
+        results = adm.query(real_ctx, [(adm.rows_sql("TRUE", attribution), {**binds, "lim": 5000, "off": 0})])
+        assert results is not None
+        picked[attribution] = {r["pid"]: (r["list_id"], r["source_key"]) for r in results[0]}
+    # List 'a' has a campaign type, which is its source; list 'ab' has none, so the enquiry's own source shows.
+    assert picked["first"]["touch"] == ("a", "WEB")
+    # The deleted Meta enquiry is the latest on or before the conversion; the walk-in came after it.
+    assert picked["last"]["touch"] == ("ab", "META_LEAD_ADS")
+    assert picked["first"]["enrtouch"] == ("a", "WEB")
+    # 15:00 UTC is still the 12th in the institute's timezone; 19:00 UTC is the 13th.
+    assert picked["last"]["enrtouch"] == ("ab", "REFERRAL")
+    assert picked["first"]["late"] == picked["last"]["late"] == ("ab", "FACEBOOK")
+    # Everyone else keeps the same row either way, apart from the people above.
+    same = {p for p in picked["first"] if p not in ("touch", "enrtouch")}
+    assert {p: picked["first"][p] for p in same} == {p: picked["last"][p] for p in same}
+    out = await read(real_ctx, action="admissions", attribution="last", limit=50, **OCTOBER)
+    assert out["attribution"] == "last"
+    assert {r["person_id"]: r["source"] for r in out["rows"]}["touch"] == "META_LEAD_ADS"

@@ -3,7 +3,8 @@ Custom CRM reports: the ``custom_options`` and ``custom`` actions of the
 ``crm_reports`` tool.
 
 ``custom`` groups leads by up to two dimensions (source, source alias, list,
-owner, status, tier, submission day / week / month, or a lead-form field) and
+owner, status, tier, ad campaign / ad set / ad, submission day / week / month,
+or a lead-form field) and
 returns the metrics asked for, with totals (and, for two dimensions, subtotals)
 over every group. Two bases, each stated in the result:
 
@@ -110,6 +111,20 @@ DIMENSIONS: Dict[str, str] = {
                       "event. Alias: month."),
     "state": geo.DEFINITION_STATE + " The person is the lead's.",
     "city": geo.DEFINITION_CITY,
+    "campaign": ("The ad campaign the lead came from: Meta Lead Ads and Google lead form leads only, recorded when "
+                 "the lead arrived. Shown by name when the platform gave one (Meta, when the connection may read the "
+                 "ad account), else by campaign id; Google sends ids only. (no ad) for every other lead and for "
+                 "leads that arrived before campaigns were recorded."),
+    "ad_set": ("The ad set the lead came from (Meta ad set; Google ad group, or asset group for Performance Max), "
+               "by name when known, else by id; (no ad) as for campaign."),
+    "ad": ("The ad the lead came from (Meta ad; Google creative), by name when known, else by id; (no ad) as for "
+           "campaign."),
+}
+#: Ad dimensions → (id column, name column) on audience_response.
+AD_DIMS: Dict[str, Tuple[str, str]] = {
+    "campaign": ("ad_campaign_id", "ad_campaign_name"),
+    "ad_set": ("ad_set_id", "ad_set_name"),
+    "ad": ("ad_id", "ad_name"),
 }
 FIELD_PREFIX = "field:"
 #: list_tag:<key> — the value of a tag an admin set on the lead's list (state, course, channel …).
@@ -176,7 +191,8 @@ METRICS: Dict[str, Metric] = {
                                     "out.", ("conversions",)),
     "revenue": Metric(ACTIVITY, "PAID payments made to this institute (a plan bought through its invite links, or its "
                                 "own invoices) in the window by people whose lead profile here is CONVERTED. Each "
-                                "payment is attributed to the person's first live lead here (its source, list, "
+                                "payment is attributed to one live lead of the person here — the first, or with "
+                                "attribution='last' the latest before the payment (its source, list, "
                                 "status, tier and form answers; owner = that lead's counsellor); a payment by a "
                                 "person with no live lead here goes to a '(no lead)' row (owner = their lead "
                                 "profile's counsellor). Time dimensions use the payment day. Amounts in several "
@@ -184,9 +200,9 @@ METRICS: Dict[str, Metric] = {
                       ("revenue", "payments", "currencies"), admin_only=True),
     "collected": Metric(ACTIVITY, "Every PAID payment made to this institute (a plan bought through its invite links, "
                                   "or its own invoices) in the window, whoever paid — the collections figure, which "
-                                  "revenue narrows to converted payers. Attributed like revenue: to the payer's first "
-                                  "live lead here, else a '(no lead)' row. Day = date_basis. Also returns "
-                                  "collected_payments.", ("collected", "collected_payments", "currencies"),
+                                  "revenue narrows to converted payers. Attributed like revenue: to one live lead of "
+                                  "the payer here (see attribution), else a '(no lead)' row. Day = date_basis. Also "
+                                  "returns collected_payments.", ("collected", "collected_payments", "currencies"),
                         admin_only=True),
     "converted_within_7d": Metric(LEAD, "Leads submitted at least 7 days ago (and in the window) whose person "
                                         "became CONVERTED within 7 days of submitting and is CONVERTED now.",
@@ -200,8 +216,16 @@ METRICS: Dict[str, Metric] = {
                                              "(eligible_leads_30d is the base).", ("cw30", "mat30")),
 }
 CUSTOM_METRICS = tuple(METRICS)
-#: Metrics counting payments (they take date_basis).
+#: Metrics counting payments (they take date_basis and attribution).
 PAYMENT_METRICS = frozenset({"revenue", "collected"})
+#: Which live lead a payment is credited to (its dimensions), per attribution.
+ATTRIBUTION: Dict[str, str] = {
+    "first": ("first (default): each payment is credited to the payer's first live lead here, by submission "
+              "time, under their own user id."),
+    "last": ("last: each payment is credited to the payer's latest live lead here submitted on or before that "
+             "payment, under their own user id, as first-touch looks them up; when every live lead was submitted "
+             "after the payment, the first one. One person's payments can fall under different groups."),
+}
 #: Metrics that describe now, not the window.
 POINT_IN_TIME_METRICS = frozenset({"followups_overdue"})
 #: rate metric → the raw column its base is counted in (for min_base).
@@ -551,6 +575,8 @@ class Plan:
     bands: List[Dict[str, Any]] = dc_field(default_factory=list)
     notes: List[str] = dc_field(default_factory=list)
     date_basis: str = "paid_on"
+    #: Which live lead a payment is credited to: first (default) or last (see ATTRIBUTION).
+    attribution: str = "first"
     #: Location maps (crm_geo.bind_texts) and the lead-form fields holding a location, when grouping by state / city.
     geo_params: Dict[str, Any] = dc_field(default_factory=dict)
     geo_fields: geo.FieldIds = dc_field(default_factory=geo.FieldIds)
@@ -858,6 +884,12 @@ async def _plan(rq: "rep._Req", cache: Dict[str, Any]) -> Any:
         return basis
     if args.get("date_basis") and not PAYMENT_METRICS & set(metrics):
         return _bad("date_basis applies to the payment metrics (revenue, collected); none was asked for.")
+    attribution = cd.attribution(args)
+    if cd.is_error(attribution):
+        return attribution
+    if attribution != "first" and not PAYMENT_METRICS & set(metrics):
+        return _bad("attribution applies to the payment metrics (revenue, collected); none was asked for. Lead "
+                    "metrics always group each lead by its own campaign, list and source.")
     if "followups_overdue" in metrics and any(d in TIME_DIMS for d in dims):
         return _bad("followups_overdue counts open follow-ups overdue right now, so it cannot be grouped by date; "
                     "group it by another dimension, or ask for it in a separate report.")
@@ -893,7 +925,7 @@ async def _plan(rq: "rep._Req", cache: Dict[str, Any]) -> Any:
     if not 0 <= min_base <= 1000:
         return _bad("min_base is a whole number (0 to 1000).")
     plan = Plan(dims, metrics, filters, _rows_limit(args, dims), sort_key, sort_desc, fields, min_base,
-                date_basis=basis)
+                date_basis=basis, attribution=attribution)
     if any(d in GEO_DIMS for d in dims):
         placed = await _geo(rq, plan)
         if cd.is_error(placed):
@@ -959,6 +991,9 @@ def _dim_sql(dim: str, n: int, ts: Optional[str], plan: Plan, params: Dict[str, 
         return "CASE " + " ".join(whens) + " ELSE 'other_sources' END", none, ""
     if dim == "list":
         return "ar.audience_id", "a.campaign_name", ""
+    if dim in AD_DIMS:
+        id_col, name_col = AD_DIMS[dim]
+        return f"NULLIF(btrim(ar.{id_col}), '')", f"NULLIF(btrim(ar.{name_col}), '')", ""
     if dim == "owner":
         return cd.owner_display_sql(), none, ""
     if dim == "status":
@@ -1190,13 +1225,20 @@ def _ev(k: str, lead: str, at: str, frm: str, where: str, *, conn: str = "NULL",
             f"    FROM {frm}\n    WHERE {where}")
 
 
-def _first_live_lead(alias: str, user: str, left: bool) -> str:
-    """The person's first live lead here (by submission), as ``<alias>.id``."""
+def _first_live_lead(alias: str, user: str, left: bool, last_before: Optional[str] = None) -> str:
+    """
+    The person's first live lead here (by submission), as ``<alias>.id``. With
+    ``last_before`` (an instant): their latest live lead submitted on or before it,
+    else, when all came after it, the first.
+    """
+    order = ("r0.submitted_at ASC NULLS LAST, r0.id" if last_before is None else
+             f"CASE WHEN r0.submitted_at <= {last_before} THEN r0.submitted_at END DESC NULLS LAST, "
+             f"r0.submitted_at ASC NULLS LAST, r0.id")
     return (f"    {'LEFT ' if left else ''}JOIN LATERAL (\n"
             f"        SELECT r0.id FROM audience_response r0\n"
             f"        JOIN audience a0 ON a0.id = r0.audience_id AND a0.institute_id = :inst\n"
             f"        WHERE r0.user_id = {user} AND r0.audience_status = 'ACTIVE'\n"
-            f"        ORDER BY r0.submitted_at ASC NULLS LAST, r0.id LIMIT 1\n"
+            f"        ORDER BY {order} LIMIT 1\n"
             f"    ) {alias} ON true")
 
 
@@ -1210,7 +1252,7 @@ _PAID_HERE = ("pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL\n"
               "                      WHERE m.payment_log_id = pl.id AND i.institute_id = :inst))")
 
 
-def _branches(kinds: Sequence[str], no_lead: bool, basis: str = "paid_on") -> List[str]:
+def _branches(kinds: Sequence[str], no_lead: bool, basis: str = "paid_on", attribution: str = "first") -> List[str]:
     out = []
     call_lead = "COALESCE(tcl.response_id, CASE WHEN tcl.subject_type = 'LEAD' THEN tcl.subject_id END)"
     call_at = "COALESCE(tcl.start_time, tcl.created_at)"
@@ -1244,17 +1286,19 @@ def _branches(kinds: Sequence[str], no_lead: bool, basis: str = "paid_on") -> Li
                        "AND pc.converted_at >= :w_from AND pc.converted_at < :w_to",
                        owner="pc.assigned_counselor_id"))
     paid_at = cd.payment_at_sql(basis)
+    credit_before = paid_at if attribution == "last" else None
     if "payment" in kinds:
         frm = ("payment_log pl\n"
                "    JOIN user_lead_profile pu ON pu.user_id = pl.user_id AND pu.institute_id = :inst "
-               "AND pu.conversion_status = 'CONVERTED'\n" + _first_live_lead("fl", "pl.user_id", no_lead))
+               "AND pu.conversion_status = 'CONVERTED'\n"
+               + _first_live_lead("fl", "pl.user_id", no_lead, credit_before))
         out.append(_ev("payment", "fl.id", paid_at, frm,
                        f"{paid_at} >= :w_from AND {paid_at} < :w_to AND {_PAID_HERE}",
                        amount="pl.payment_amount", currency="pl.currency", owner="pu.assigned_counselor_id"))
     if "payment_all" in kinds:
         frm = ("payment_log pl\n"
                "    LEFT JOIN user_lead_profile pu ON pu.user_id = pl.user_id AND pu.institute_id = :inst\n"
-               + _first_live_lead("fa", "pl.user_id", no_lead))
+               + _first_live_lead("fa", "pl.user_id", no_lead, credit_before))
         out.append(_ev("payment_all", "fa.id", paid_at, frm,
                        f"{paid_at} >= :w_from AND {paid_at} < :w_to AND {_PAID_HERE}",
                        amount="pl.payment_amount", currency="pl.currency", owner="pu.assigned_counselor_id"))
@@ -1304,7 +1348,8 @@ def activity_sql(rq: "rep._Req", plan: Plan, keep: Optional[Keep] = None) -> Tup
         frm = f"FROM ea\n    JOIN audience_response ar ON ar.id = ea.lead_id\n{cd.LEAD_OWNER_JOINS}{joins}{fjoins}"
         where = "\n      AND ".join(lead_where)
     # Events are summed per lead (and date bucket) first, so each lead's dimensions are read once.
-    sql = ("WITH ev AS (\n" + "\n    UNION ALL\n".join(_branches(kinds, no_lead, plan.date_basis)) + "\n),\n"
+    sql = ("WITH ev AS (\n" + "\n    UNION ALL\n".join(_branches(kinds, no_lead, plan.date_basis, plan.attribution))
+           + "\n),\n"
            f"ea AS (\n    SELECT {ea_cols.format(bucket=bucket)},\n           {per_lead}\n"
            f"    FROM ev\n    GROUP BY {ea_group}\n),\n"
            f"base AS (\n    SELECT {dims}, ea.lead_id AS lid, {', '.join('ea.' + c for c in used)}\n"
@@ -1454,6 +1499,11 @@ def _dim_value(dim: str, n: int, key: Optional[str], grid: Grid, names: Dict[str
         if other or no_lead:
             return {"list_id": None, "list": "(other lists)" if other else "(no lead)"}
         return {"list_id": key, "list": cd.clean(grid.label(n, key)) if key else None}
+    if dim in AD_DIMS:
+        if other or no_lead or key is None:
+            text = "(other values)" if other else "(no lead)" if no_lead else "(no ad)"
+            return {f"{dim}_id": None, dim: text}
+        return {f"{dim}_id": key, dim: cd.clean(grid.label(n, key), 120) or key}
     if dim in ("status", "tier"):
         if other or no_lead:
             return {dim: None, "label": "(other values)" if other else "(no lead)"}
@@ -1534,7 +1584,7 @@ def _sort_rows(plan: Plan, items: List[Item], grid: Grid, names: Dict[str, str])
                 return None
             if plan.dims[n] == "owner":
                 return (names.get(k) or k).lower()
-            if plan.dims[n] == "list":
+            if plan.dims[n] == "list" or plan.dims[n] in AD_DIMS:
                 return (grid.label(n + 1, k) or k).lower()
             return k
         v = kv[1].get(key)
@@ -1601,6 +1651,7 @@ def _definitions(plan: Plan, rq: "rep._Req") -> Dict[str, str]:
             out[f"dimension:{d}"] = DIMENSIONS[d]
     if PAYMENT_METRICS & set(plan.metrics):
         out["date_basis"] = f"{plan.date_basis}. " + cd.definition("date_basis")
+        out["attribution"] = ATTRIBUTION[plan.attribution]
     if plan.lead_metrics:
         out["lead_basis"] = ("Lead metrics count the leads SUBMITTED in the window (not deleted, not opted out), with "
                              "their outcome as of now.")
@@ -1769,6 +1820,11 @@ async def run_custom(rq: "rep._Req", compare: bool) -> Result:
         "report": "custom", "window": rq.window.as_dict(), "group_by": plan.dims, "metrics": plan.metrics,
         "rows": rows, "totals": totals, "definitions": _definitions(plan, rq), "scope": rq.scope.summary(),
     }
+    if PAYMENT_METRICS & set(plan.metrics):
+        out["attribution"] = plan.attribution
+    if any(d in AD_DIMS for d in plan.dims):
+        notes.append("Campaign, ad set and ad are recorded for Meta Lead Ads and Google lead form leads only, from "
+                     "when they arrived; every other lead, and older ones, are under (no ad).")
     if more:
         out["more_rows"] = more
     subtotals = _subtotals(plan, grid, names, labels)
@@ -2014,6 +2070,6 @@ async def run_options(rq: "rep._Req") -> Result:
     return out
 
 
-__all__ = ["CUSTOM_METRICS", "DIMENSIONS", "TIME_DIMS", "METRICS", "OTHER", "CONTACT", "NO_LEAD", "PAIR_CAP",
+__all__ = ["AD_DIMS", "ATTRIBUTION", "CUSTOM_METRICS", "DIMENSIONS", "TIME_DIMS", "METRICS", "OTHER", "CONTACT", "NO_LEAD", "PAIR_CAP",
            "is_contact_field", "is_free_text_field", "field_key", "safe_value", "mask_contacts", "form_fields",
            "lead_sql", "activity_sql", "run_custom", "run_options"]

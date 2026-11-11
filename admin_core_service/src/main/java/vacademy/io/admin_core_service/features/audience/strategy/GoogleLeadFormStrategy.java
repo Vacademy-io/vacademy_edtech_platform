@@ -151,6 +151,12 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
                     .testLead(isTest)
                     .campaignId(campaignId)
                     .utmParams(buildUtmParams(campaignId, adContext))
+                    // The same ids on the lead row's ad_* columns (Google sends no names).
+                    // The ad group is the ad set; Performance Max sends an asset group instead.
+                    .adCampaignId(campaignId)
+                    .adSetId(adContext.getOrDefault("adgroup_id", adContext.get("asset_group_id")))
+                    .adId(adContext.get("creative_id"))
+                    .adFormId(adContext.get("form_id"))
                     .build();
 
             return List.of(lead);

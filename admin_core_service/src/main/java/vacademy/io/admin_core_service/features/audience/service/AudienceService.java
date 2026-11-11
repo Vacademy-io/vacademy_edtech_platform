@@ -6038,6 +6038,23 @@ public class AudienceService {
                 .build();
     }
 
+    /** Webhook metadata keys for the ad an ad-platform lead came from (stored on the ad_* columns). */
+    public static final String AD_CAMPAIGN_ID = "ad_campaign_id";
+    public static final String AD_CAMPAIGN_NAME = "ad_campaign_name";
+    public static final String AD_SET_ID = "ad_set_id";
+    public static final String AD_SET_NAME = "ad_set_name";
+    public static final String AD_ID = "ad_id";
+    public static final String AD_NAME = "ad_name";
+    public static final String AD_FORM_ID = "ad_form_id";
+
+    /** A metadata value trimmed to its column's length; blank as null. */
+    static String adValue(Map<String, String> metadata, String key, int maxLength) {
+        String value = metadata == null ? null : metadata.get(key);
+        if (!StringUtils.hasText(value)) return null;
+        value = value.trim();
+        return value.length() > maxLength ? value.substring(0, maxLength) : value;
+    }
+
     /**
      * Submit a lead from form webhook (Zoho Forms, Google Forms, Microsoft Forms)
      * Maps field_name to custom_field_id before saving
@@ -6175,6 +6192,14 @@ public class AudienceService {
                 .parentMobile(truncateForParentMobileColumn(processedData.getPhone()))
                 .workflowActivateDayAt(workflowActivateDayAt)
                 .initialScore(audience.getDefaultInitialScore())
+                // The ad the lead came from (Meta Lead Ads, Google lead forms); null otherwise.
+                .adCampaignId(adValue(webhookMetadata, AD_CAMPAIGN_ID, 100))
+                .adCampaignName(adValue(webhookMetadata, AD_CAMPAIGN_NAME, 255))
+                .adSetId(adValue(webhookMetadata, AD_SET_ID, 100))
+                .adSetName(adValue(webhookMetadata, AD_SET_NAME, 255))
+                .adId(adValue(webhookMetadata, AD_ID, 100))
+                .adName(adValue(webhookMetadata, AD_NAME, 255))
+                .adFormId(adValue(webhookMetadata, AD_FORM_ID, 100))
                 .build();
 
         AudienceResponse savedResponse = audienceResponseRepository.save(response);

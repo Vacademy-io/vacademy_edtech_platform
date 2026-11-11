@@ -1510,6 +1510,21 @@ def date_basis(args: Optional[Dict[str, Any]]) -> Union[str, Dict[str, Any]]:
     return raw
 
 
+# ── attribution (which enquiry gives a person's list, source and ad) ──────
+
+#: first = the person's first enquiry here; last = their latest one on or before the conversion or payment.
+ATTRIBUTIONS = ("first", "last")
+
+
+def attribution(args: Optional[Dict[str, Any]]) -> Union[str, Dict[str, Any]]:
+    """The ``attribution`` argument (default first), or ``invalid_argument``."""
+    raw = str((args or {}).get("attribution") or "").strip().lower() or ATTRIBUTIONS[0]
+    if raw not in ATTRIBUTIONS:
+        return err("invalid_argument", argument="attribution", allowed=list(ATTRIBUTIONS),
+                   message="attribution is first or last.")
+    return raw
+
+
 def payment_at_sql(basis: str, pl: str = "pl") -> str:
     """
     A payment's instant (naive UTC, like the columns) on ``basis``. paid_on: the
@@ -2119,7 +2134,7 @@ __all__ = [
     "has_converted_dates", "resolve_filter",
     "SOURCE_ALIASES", "institute_sources", "source_keys", "ID_KINDS", "verify_ids", "counsellor_roster",
     "zone", "institute_tz", "iso", "PERIODS", "Window", "window", "DEFINITIONS", "definition", "DATE_BASES",
-    "date_basis", "payment_at_sql",
+    "date_basis", "payment_at_sql", "ATTRIBUTIONS", "attribution",
     "canonical", "edit_token", "check_edit_token", "token_error",
     "ONCE_TTL", "CAPS", "DEFAULT_CAP", "purpose_of", "cap_for", "request_sha", "issue_once", "spend_once",
     "mark_outcome", "hourly_count", "quota", "CONFIRM_KINDS", "preview_or_apply",

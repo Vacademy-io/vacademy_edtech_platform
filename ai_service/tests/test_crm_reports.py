@@ -1521,3 +1521,61 @@ def test_a_live_event_masks_a_name_that_holds_contact(field, stored, shown):
     r = {"category": "PAYMENT", "action": "PAYMENT_SUCCEEDED", "actor_type": "SYSTEM",
          "occurred_at": datetime(2026, 10, 22, 8, 0), field: stored}
     assert rep._live_row(r, {}, cd.zone("Asia/Kolkata"))["name"] == shown
+
+
+# ── attribution and ad dimensions ────────────────────────────────────────
+
+async def test_revenue_attribution_defaults_to_first_and_says_which(backend):
+    backend.sql.on("WITH paid AS", [
+        {"g_owner": 1, "g_source": 1, "g_day": 1, "revenue": 100.0, "payments": 1, "paying_leads": 1,
+         "currencies": "INR"},
+        {"part": "split", "source_type": "converted", "revenue": 100.0, "payments": 1, "paying_leads": 1}])
+    ctx = admin(backend)
+    first = await run(ctx, action="revenue")
+    assert first["attribution"] == "first" and first["definition"]["attribution"].startswith("first (default)")
+    assert "ORDER BY ar.submitted_at ASC NULLS LAST LIMIT 1" in backend.sql.matching("WITH paid AS")[-1][0]
+    last = await run(ctx, action="revenue", attribution="last")
+    assert last["attribution"] == "last" and last["definition"]["attribution"].startswith("last:")
+    sql = backend.sql.matching("WITH paid AS")[-1][0]
+    assert "ar.submitted_at <= p.paid_at" in sql and " AS paid_at," in sql
+    assert last["data"]["reconciliation"] == first["data"]["reconciliation"]
+    assert (await run(ctx, action="revenue", attribution="newest"))["error"] == "invalid_argument"
+
+
+async def test_custom_groups_by_campaign_ad_set_and_ad_with_names_else_ids(backend):
+    custom_backend(backend, lead_rows=[
+        total(leads=6),
+        group("120200000000000003", l1="NEET 2027 leads", leads=3),
+        group("21345678901", leads=2),
+        group(None, leads=1)])
+    out = await run(admin(backend), action="custom", group_by=["campaign"], metrics=["leads"])
+    sql, _ = lead_sqls(backend)[-1]
+    assert "NULLIF(btrim(ar.ad_campaign_id), '')" in sql and "NULLIF(btrim(ar.ad_campaign_name), '')" in sql
+    rows = {r["campaign"]["campaign"]: r for r in out["rows"]}
+    assert rows["NEET 2027 leads"]["campaign"]["campaign_id"] == "120200000000000003"
+    assert rows["21345678901"]["campaign"]["campaign_id"] == "21345678901"     # Google: id only
+    assert rows["(no ad)"]["campaign"]["campaign_id"] is None and rows["(no ad)"]["leads"] == 1
+    assert "dimension:campaign" in out["definitions"] and any("(no ad)" in n for n in out["notes"])
+    assert "attribution" not in out
+    for dim, col in (("ad_set", "ad_set_id"), ("ad", "ad_id")):
+        await run(admin(backend), action="custom", group_by=[dim], metrics=["leads"])
+        assert f"ar.{col}" in lead_sqls(backend)[-1][0]
+
+
+async def test_custom_payment_attribution_credits_the_latest_lead_before_the_payment(backend):
+    custom_backend(backend, activity_rows=[total(revenue=100.0, payments=1, currencies="INR"),
+                                           group("120200000000000003", l1="NEET 2027 leads", revenue=100.0,
+                                                 payments=1, currencies="INR")])
+    ctx = admin(backend)
+    first = await run(ctx, action="custom", group_by=["campaign"], metrics=["revenue"])
+    assert first["attribution"] == "first" and first["definitions"]["attribution"].startswith("first (default)")
+    assert "ORDER BY r0.submitted_at ASC NULLS LAST, r0.id LIMIT 1" in activity_sqls(backend)[-1][0]
+    last = await run(ctx, action="custom", group_by=["campaign"], metrics=["revenue", "collected"],
+                     attribution="last")
+    assert last["attribution"] == "last" and last["definitions"]["attribution"].startswith("last:")
+    sql = activity_sqls(backend)[-1][0]
+    assert sql.count("CASE WHEN r0.submitted_at <= (CASE WHEN pl.date IS NULL") == 2
+    out = await run(ctx, action="custom", group_by=["campaign"], metrics=["leads"], attribution="last")
+    assert out["error"] == "invalid_argument" and "payment metrics" in out["message"]
+    assert (await run(ctx, action="custom", group_by=["source"], metrics=["revenue"],
+                      attribution="x"))["error"] == "invalid_argument"

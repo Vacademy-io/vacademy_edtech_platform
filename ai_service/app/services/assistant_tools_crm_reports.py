@@ -179,10 +179,13 @@ CRM_REPORTS_SCHEMA: Dict[str, Any] = {
             "- meetings: booked meetings per host and status.\n"
             "- activity: per staff member: notes, calls, status changes, follow-ups created / closed.\n"
             "- revenue (institute admins): payments by converted leads, with a reconciliation against every "
-            "payment collected (crm_collections). `date_basis`: paid_on (default) | recorded_on.\n"
+            "payment collected (crm_collections). `date_basis`: paid_on (default) | recorded_on. `attribution`: "
+            "first (default; source = the payer's first enquiry) | last (their latest enquiry on or before each "
+            "payment); say which was used.\n"
             "- utm (institute admins): UTM campaign attribution.\n"
             "- custom: a report the fixed ones above do not cover — group leads by up to two dimensions (source, "
-            "source_alias, list, owner, status, tier, state, city, created_day / created_week / created_month (or "
+            "source_alias, list, owner, status, tier, state, city, campaign / ad_set / ad (the Meta or Google ad "
+            "the lead came from, by name when known, else id), created_day / created_week / created_month (or "
             "day / week / month), a lead-form field as `field:<field_key>`, e.g. course interest, or a tag on the "
             "lead's list as `list_tag:<key>`; `group_by: []` gives totals only) and pick 1-8 `metrics`: lead metrics "
             "(leads, people, contacted, contacted_pct, converted, conversion_pct, lost, open, avg_score, "
@@ -191,8 +194,9 @@ CRM_REPORTS_SCHEMA: Dict[str, Any] = {
             "enough to have had N days, so recent cohorts compare fairly) and activity metrics (calls, "
             "connected_calls, connect_rate, talk_minutes, ai_calls, human_calls, meetings, followups_created, "
             "followups_completed, followups_overdue, conversions = conversions made in the window; for admins "
-            "revenue = payments by converted payers and collected = every payment, both on `date_basis` — events in "
-            "the window on those leads). state / city are worked out from the lead's profile and form PIN / state / "
+            "revenue = payments by converted payers and collected = every payment, both on `date_basis` and credited "
+            "to the payer's first live lead, or with `attribution: last` the latest one before each payment — events "
+            "in the window on those leads). state / city are worked out from the lead's profile and form PIN / state / "
             "city. `owner` is "
             "the LEAD's counsellor, also for calls; for calls or work per person who did them use calling or "
             "activity. `filters` narrows by status, tier, list, source, owner or form-field answers, e.g. "
@@ -251,7 +255,8 @@ CRM_REPORTS_SCHEMA: Dict[str, Any] = {
                                          "(default 50, max 200); live_feed: events listed (default 50, max 200)."},
                 "group_by": {"type": "array", "items": {"type": "string"},
                              "description": "custom: 0 (totals only), 1 or 2 dimensions — source, source_alias, "
-                                            "list, owner, status, tier, state, city, created_day (day), created_week "
+                                            "list, owner, status, tier, state, city, campaign, ad_set, ad, "
+                                            "created_day (day), created_week "
                                             "(week), created_month (month), field:<field_key> or list_tag:<key> "
                                             "from custom_options."},
                 "metrics": {"type": "array", "items": {"type": "string"},
@@ -281,6 +286,10 @@ CRM_REPORTS_SCHEMA: Dict[str, Any] = {
                          "description": "custom: {metric: <a metric or dimension asked for>, desc: true|false}; "
                                         "default the first metric, descending (date dimensions: by date).",
                          "properties": {"metric": {"type": "string"}, "desc": {"type": "boolean"}}},
+                "attribution": {"type": "string", "enum": list(cd.ATTRIBUTIONS),
+                                "description": "revenue, and custom revenue / collected: which enquiry a payment is "
+                                               "credited to — first (default): the payer's first enquiry; last: "
+                                               "their latest one submitted on or before the payment."},
                 "date_basis": {"type": "string", "enum": ["paid_on", "recorded_on"],
                                "description": "revenue, and custom payment metrics: the day a payment counts on — "
                                               "paid_on (default; offline and backfilled payments keep the date "
@@ -351,8 +360,9 @@ _DEFS: Dict[str, str] = {
     "revenue": ("PAID payments made to this institute (a plan bought through its invite links, or its own "
                 "invoices) by people whose lead profile here is CONVERTED, by payment day in the window (see date_basis). "
                 "Source = "
-                "the person's first lead source here; counsellor = their current owner. Amounts in several "
-                "currencies are summed (see currency). Covers payers marked Converted only; the other payers are "
+                "the person's first lead source here (attribution='first', the default) or, with attribution='last', "
+                "their latest one submitted on or before each payment; counsellor = their current owner. Amounts in "
+                "several currencies are summed (see currency). Covers payers marked Converted only; the other payers are "
                 "under reconciliation.by_payer. (no lead) means no enquiry exists under this payer's own user id; an "
                 "enquiry where they are only the linked student is not checked, and a deleted enquiry still supplies "
                 "its source. UNKNOWN means an enquiry with a blank source. These rules differ from the admissions "
@@ -1951,11 +1961,12 @@ async def _activity(rq: _Req) -> Result:
 
 
 #: PAID payments made to THIS institute (a plan bought through one of its invites, or one of its invoices) on the
-#: date basis {at}: by people whose lead profile here is CONVERTED, grouped by owner / first source / local day
-#: (part NULL), and every payment split by who made it (part 'split') to reconcile with the collections figure.
+#: date basis {at}: by people whose lead profile here is CONVERTED, grouped by owner / source ({source}: the
+#: payer's first enquiry, or the latest one on or before the payment) / local day (part NULL), and every payment
+#: split by who made it (part 'split') to reconcile with the collections figure.
 REVENUE_SQL = """
 WITH paid AS (
-    SELECT pl.id, pl.user_id, pl.payment_amount AS amount, pl.currency,
+    SELECT pl.id, pl.user_id, pl.payment_amount AS amount, pl.currency, {at} AS paid_at,
            CAST(({at} AT TIME ZONE 'UTC') AT TIME ZONE :tz AS date) AS day
     FROM payment_log pl
     WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
@@ -1969,7 +1980,7 @@ WITH paid AS (
            ulp.assigned_counselor_id AS owner_id,
            (SELECT COALESCE(ar.source_type, 'UNKNOWN') FROM audience_response ar
               JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :inst
-             WHERE ar.user_id = p.user_id ORDER BY ar.submitted_at ASC NULLS LAST LIMIT 1) AS source_type
+             WHERE ar.user_id = p.user_id ORDER BY {source_order} LIMIT 1) AS source_type
     FROM paid p
     LEFT JOIN user_lead_profile ulp ON ulp.user_id = p.user_id AND ulp.institute_id = :inst
 )
@@ -1986,6 +1997,22 @@ FROM tagged
 GROUP BY 6
 """
 
+#: Which of the payer's enquiries gives a payment its source; an argument only ever selects one of these.
+#: first: the earliest submitted; last: the latest submitted on or before the payment, else the earliest.
+REVENUE_SOURCE_ORDER = {
+    "first": "ar.submitted_at ASC NULLS LAST",
+    "last": ("CASE WHEN ar.submitted_at <= p.paid_at THEN ar.submitted_at END DESC NULLS LAST, "
+             "ar.submitted_at ASC NULLS LAST, ar.id"),
+}
+#: Each attribution's definition, quoted with every revenue reply.
+REVENUE_ATTRIBUTION = {
+    "first": ("first (default): a payment's source is the payer's first enquiry here, by submission time, "
+              "under their own user id; a deleted enquiry counts."),
+    "last": ("last: a payment's source is the payer's latest enquiry here submitted on or before that payment, "
+             "under their own user id; a deleted enquiry counts, as for first. When every enquiry was submitted "
+             "after the payment, the first one is used. One person's payments can fall under different sources."),
+}
+
 _RECONCILE_PARTS = {
     "converted": "Payers whose lead profile here is CONVERTED: this report's revenue.",
     "lead_not_converted": ("Payers who have a lead profile here in another status (the lead was never marked "
@@ -1999,8 +2026,11 @@ async def _revenue(rq: _Req) -> Result:
     basis = cd.date_basis(rq.args)
     if cd.is_error(basis):
         return basis
+    attribution = cd.attribution(rq.args)
+    if cd.is_error(attribution):
+        return attribution
     b = _utc_bounds(rq)
-    found = _sql(rq, REVENUE_SQL.format(at=cd.payment_at_sql(basis)),
+    found = _sql(rq, REVENUE_SQL.format(at=cd.payment_at_sql(basis), source_order=REVENUE_SOURCE_ORDER[attribution]),
                  {k: b[k] for k in ("inst", "tz", "w_from", "w_to")})
     if found is None:
         return cd.err("query_failed")
@@ -2038,15 +2068,17 @@ async def _revenue(rq: _Req) -> Result:
                       "people": _num((parts.get(k) or {}).get("paying_leads"))} for k in _RECONCILE_PARTS],
         "note": ("collected_all_payments is every PAID payment to this institute in the window on the same date "
                  "basis — what crm_collections(action='collections') reports as collected. revenue counts only "
-                 "payers marked Converted; by_payer splits the difference."),
+                 "payers marked Converted; by_payer splits the difference. attribution changes only by_source, "
+                 "never these totals."),
     }
-    return {"basis": "scoped query", "date_basis": basis, "data": {
+    return {"basis": "scoped query", "date_basis": basis, "attribution": attribution, "data": {
         "currency": currencies[0] if len(currencies) == 1 else currencies or None,
         "totals": money(total) if total else money({}),
         "by_source": shown_sources, "by_counsellor": by_counsellor[:_MAX_ROWS],
         "trend": _by_month(trend, ("revenue", "payments")),
         "reconciliation": reconciliation},
-        "definition": {**_defs("revenue"), "date_basis": cd.definition("date_basis"), **_RECONCILE_PARTS}}
+        "definition": {**_defs("revenue"), "date_basis": cd.definition("date_basis"),
+                       "attribution": REVENUE_ATTRIBUTION[attribution], **_RECONCILE_PARTS}}
 
 
 async def _utm(rq: _Req) -> Result:
