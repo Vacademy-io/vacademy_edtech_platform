@@ -1,11 +1,11 @@
 {
-    "heading": "Bibliothèque de questions",
+    "heading": "Bibliothèque de contenus",
     "header": {
         "title": "Bibliothèque de questions",
         "description": "Toutes les questions de votre établissement, classées par matière, chapitre et thème. Classez-les une fois, réutilisez-les dans n’importe quel test.",
         "importTags": "Importer les tags",
         "importPaper": "Ajouter un sujet",
-        "newTopic": "Nouveau thème"
+        "newTopic": "Nouveau cours"
     },
     "stats": {
         "questions": "Questions",
@@ -73,6 +73,7 @@
         "addPaperHere": "Ajouter un sujet ici"
     },
     "filters": {
+        "allLevels": "Tous",
         "clear": "Effacer",
         "search": "Rechercher dans le texte",
         "searchButton": "Rechercher",
@@ -81,6 +82,8 @@
         "any": "Tous"
     },
     "bulk": {
+        "setDifficulty": "Définir la difficulté",
+        "addTag": "Ajouter un tag",
         "selectPage": "Sélectionner cette page",
         "addToTopic": "Ajouter à un thème",
         "moveToTopic": "Déplacer vers un thème",
@@ -122,6 +125,7 @@
         "questions": "Impossible de charger les questions."
     },
     "common": {
+        "close": "Fermer",
         "cancel": "Annuler",
         "retry": "Réessayer"
     },
@@ -190,8 +194,8 @@
         "savedAsVersion_other": "Enregistrée comme nouvelle version. Les {{count}} tests qui l’utilisaient sont inchangés."
     },
     "comingSoon": {
-        "title": "Des questions prêtes à l'emploi arrivent bientôt",
-        "text": "Les questions et les sujets par thème apparaîtront ici dès leur ajout.",
+        "title": "Aucun cours n’a encore été attribué à votre établissement",
+        "text": "Contactez le support pour ajouter les cours que vous enseignez. Leurs questions et sujets prêts à l’emploi apparaîtront ensuite ici.",
         "pickTitle": "Choisissez un thème",
         "pickText": "Ouvrez-le depuis l'étape d'ajout de questions de n'importe quelle évaluation.",
         "addTitle": "Ajoutez des questions ou un sujet",
@@ -242,6 +246,11 @@
         "someFailed_other": "{{count}} questions n'ont pas pu être ajoutées"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} question passée en {{level}}",
+        "difficultySet_other": "{{count}} questions passées en {{level}}",
+        "tagAdded_one": "Tag « {{name}} » ajouté à {{count}} question",
+        "tagAdded_other": "Tag « {{name}} » ajouté à {{count}} questions",
+        "tagRemoved": "Tag « {{name}} » retiré",
         "paperRemoved": "« {{name}} » retiré de ce thème",
         "failed": "Une erreur est survenue. Réessayez.",
         "topicCreated": "« {{name}} » créé",
@@ -259,5 +268,66 @@
         "paperAdded_other": "{{count}} nouvelles questions classées dans {{name}}",
         "tagsImported_one": "{{topics}} nouveaux thèmes, {{count}} question classée",
         "tagsImported_other": "{{topics}} nouveaux thèmes, {{count}} questions classées"
+    },
+    "tabs": {
+        "questions": "Questions"
+    },
+    "browse": {
+        "breadcrumb": "Où vous êtes",
+        "allCourses": "Tous les cours",
+        "courses": "Cours",
+        "insideTopic": "Dans {{name}}",
+        "allQuestions": "Toutes les questions",
+        "questionsIn": "Questions de {{name}}",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "topicCount_one": "{{count}} thème",
+        "topicCount_other": "{{count}} thèmes",
+        "institutes": "Établissements",
+        "institutesWithCount_one": "Établissements ({{count}})",
+        "institutesWithCount_other": "Établissements ({{count}})",
+        "instituteCount_one": "{{count}} établissement",
+        "instituteCount_other": "{{count}} établissements",
+        "noInstitutes": "Attribué à aucun établissement",
+        "unsortedHint_one": "{{count}} question à classer",
+        "unsortedHint_other": "{{count}} questions à classer",
+        "addCourse": "Ajouter un cours",
+        "addTopic": "Ajouter un thème"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "Notion",
+            "PYQ": "Annale",
+            "SOURCE": "Source"
+        },
+        "kindLabel": "Type de tag",
+        "kindHint": {
+            "CONCEPT": "Ce que la question évalue, par ex. Article 21 ou la deuxième loi de Newton.",
+            "PYQ": "L’examen et l’année où elle a été posée, par ex. UPSC 2023.",
+            "SOURCE": "D’où elle vient, par ex. NCERT ou Laxmikanth."
+        },
+        "nameLabel": "Tag",
+        "namePlaceholder": {
+            "CONCEPT": "par ex. Article 21",
+            "PYQ": "par ex. UPSC 2023",
+            "SOURCE": "par ex. NCERT"
+        },
+        "pickExisting": "Ou choisissez un tag déjà utilisé",
+        "addTitle_one": "Taguer {{count}} question",
+        "addTitle_other": "Taguer {{count}} questions",
+        "add": "Ajouter le tag",
+        "removeOne": "Retirer le tag {{name}}"
+    },
+    "access": {
+        "title": "Établissements qui voient {{name}}",
+        "hint": "Chaque établissement ne voit que les cours et thèmes qui lui sont attribués ici, avec tout leur contenu. Collez l’ID de l’établissement pour lui attribuer celui-ci.",
+        "idLabel": "ID de l’établissement",
+        "idPlaceholder": "Collez l’ID de l’établissement",
+        "give": "Donner l’accès",
+        "given": "{{name}} voit maintenant {{topic}}",
+        "removed": "{{name}} ne voit plus {{topic}}",
+        "remove": "Retirer {{name}}",
+        "empty": "Aucun établissement ne voit encore ceci.",
+        "loadError": "Impossible de charger les établissements."
     }
 }

@@ -1,11 +1,11 @@
 {
-    "heading": "प्रश्न लाइब्रेरी",
+    "heading": "कंटेंट लाइब्रेरी",
     "header": {
         "title": "प्रश्न लाइब्रेरी",
         "description": "आपके संस्थान के सभी प्रश्न, विषय, अध्याय और टॉपिक के अनुसार। एक बार व्यवस्थित करें और किसी भी टेस्ट में दोबारा उपयोग करें।",
         "importTags": "टैग इम्पोर्ट करें",
         "importPaper": "प्रश्नपत्र जोड़ें",
-        "newTopic": "नया टॉपिक"
+        "newTopic": "नया कोर्स"
     },
     "stats": {
         "questions": "प्रश्न",
@@ -73,6 +73,7 @@
         "addPaperHere": "यहाँ प्रश्नपत्र जोड़ें"
     },
     "filters": {
+        "allLevels": "सभी",
         "clear": "हटाएं",
         "search": "प्रश्न का टेक्स्ट खोजें",
         "searchButton": "खोजें",
@@ -81,6 +82,8 @@
         "any": "कोई भी"
     },
     "bulk": {
+        "setDifficulty": "कठिनाई तय करें",
+        "addTag": "टैग जोड़ें",
         "selectPage": "यह पेज चुनें",
         "addToTopic": "टॉपिक में जोड़ें",
         "moveToTopic": "टॉपिक में ले जाएँ",
@@ -122,6 +125,7 @@
         "questions": "प्रश्न लोड नहीं हो सके।"
     },
     "common": {
+        "close": "बंद करें",
         "cancel": "रद्द करें",
         "retry": "फिर कोशिश करें"
     },
@@ -190,8 +194,8 @@
         "savedAsVersion_other": "नए वर्ज़न के रूप में सेव हुआ। इसे उपयोग करने वाले {{count}} टेस्ट नहीं बदले।"
     },
     "comingSoon": {
-        "title": "तैयार प्रश्न जल्द आ रहे हैं",
-        "text": "टॉपिक के अनुसार प्रश्न और प्रश्नपत्र जोड़े जाते ही यहां दिखेंगे।",
+        "title": "आपके संस्थान को अभी कोई कोर्स नहीं दिया गया है",
+        "text": "जो कोर्स आप पढ़ाते हैं उन्हें जुड़वाने के लिए सपोर्ट से संपर्क करें। फिर उनके तैयार प्रश्न और पेपर यहाँ दिखेंगे।",
         "pickTitle": "टॉपिक चुनें",
         "pickText": "किसी भी टेस्ट के प्रश्न जोड़ें चरण से खोलें।",
         "addTitle": "प्रश्न या प्रश्नपत्र जोड़ें",
@@ -242,6 +246,11 @@
         "someFailed_other": "{{count}} प्रश्न नहीं जोड़े जा सके"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} प्रश्न {{level}} किया गया",
+        "difficultySet_other": "{{count}} प्रश्न {{level}} किए गए",
+        "tagAdded_one": "टैग “{{name}}” {{count}} प्रश्न पर लगाया गया",
+        "tagAdded_other": "टैग “{{name}}” {{count}} प्रश्नों पर लगाया गया",
+        "tagRemoved": "टैग “{{name}}” हटाया गया",
         "paperRemoved": "“{{name}}” इस टॉपिक से हटाया गया",
         "failed": "कुछ गलत हुआ। फिर से कोशिश करें।",
         "topicCreated": "“{{name}}” बनाया गया",
@@ -259,5 +268,66 @@
         "paperAdded_other": "{{count}} नए प्रश्न {{name}} में जोड़े गए",
         "tagsImported_one": "{{topics}} नए टॉपिक, {{count}} प्रश्न व्यवस्थित",
         "tagsImported_other": "{{topics}} नए टॉपिक, {{count}} प्रश्न व्यवस्थित"
+    },
+    "tabs": {
+        "questions": "प्रश्न"
+    },
+    "browse": {
+        "breadcrumb": "आप कहाँ हैं",
+        "allCourses": "सभी कोर्स",
+        "courses": "कोर्स",
+        "insideTopic": "{{name}} के अंदर",
+        "allQuestions": "सभी प्रश्न",
+        "questionsIn": "{{name}} के प्रश्न",
+        "questionCount_one": "{{count}} प्रश्न",
+        "questionCount_other": "{{count}} प्रश्न",
+        "topicCount_one": "{{count}} टॉपिक",
+        "topicCount_other": "{{count}} टॉपिक",
+        "institutes": "संस्थान",
+        "institutesWithCount_one": "संस्थान ({{count}})",
+        "institutesWithCount_other": "संस्थान ({{count}})",
+        "instituteCount_one": "{{count}} संस्थान",
+        "instituteCount_other": "{{count}} संस्थान",
+        "noInstitutes": "किसी संस्थान को नहीं दिया गया",
+        "unsortedHint_one": "{{count}} प्रश्न को टॉपिक में रखना है",
+        "unsortedHint_other": "{{count}} प्रश्नों को टॉपिक में रखना है",
+        "addCourse": "कोर्स जोड़ें",
+        "addTopic": "टॉपिक जोड़ें"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "कॉन्सेप्ट",
+            "PYQ": "पिछले वर्ष का प्रश्न",
+            "SOURCE": "स्रोत"
+        },
+        "kindLabel": "टैग का प्रकार",
+        "kindHint": {
+            "CONCEPT": "प्रश्न किस बात को जाँचता है, जैसे अनुच्छेद 21 या न्यूटन का दूसरा नियम।",
+            "PYQ": "किस परीक्षा और वर्ष में पूछा गया, जैसे UPSC 2023।",
+            "SOURCE": "कहाँ से लिया गया, जैसे NCERT या लक्ष्मीकांत।"
+        },
+        "nameLabel": "टैग",
+        "namePlaceholder": {
+            "CONCEPT": "जैसे अनुच्छेद 21",
+            "PYQ": "जैसे UPSC 2023",
+            "SOURCE": "जैसे NCERT"
+        },
+        "pickExisting": "या पहले से इस्तेमाल हो रहा टैग चुनें",
+        "addTitle_one": "{{count}} प्रश्न पर टैग लगाएँ",
+        "addTitle_other": "{{count}} प्रश्नों पर टैग लगाएँ",
+        "add": "टैग जोड़ें",
+        "removeOne": "टैग {{name}} हटाएँ"
+    },
+    "access": {
+        "title": "{{name}} देखने वाले संस्थान",
+        "hint": "हर संस्थान को सिर्फ़ वही कोर्स और टॉपिक दिखते हैं जो उसे यहाँ दिए गए हैं, उनके अंदर की हर चीज़ के साथ। इसे देने के लिए संस्थान की ID डालें।",
+        "idLabel": "संस्थान ID",
+        "idPlaceholder": "संस्थान की ID डालें",
+        "give": "एक्सेस दें",
+        "given": "{{name}} अब {{topic}} देख सकता है",
+        "removed": "{{name}} अब {{topic}} नहीं देखेगा",
+        "remove": "{{name}} को हटाएँ",
+        "empty": "अभी कोई संस्थान इसे नहीं देखता।",
+        "loadError": "संस्थान लोड नहीं हो सके।"
     }
 }

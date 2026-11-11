@@ -1,11 +1,11 @@
 {
-    "heading": "مكتبة الأسئلة",
+    "heading": "مكتبة المحتوى",
     "header": {
         "title": "مكتبة الأسئلة",
         "description": "جميع أسئلة مؤسستك مرتبة حسب المادة والفصل والموضوع. رتّبها مرة واحدة وأعد استخدامها في أي اختبار.",
         "importTags": "استيراد الوسوم",
         "importPaper": "إضافة ورقة",
-        "newTopic": "موضوع جديد"
+        "newTopic": "دورة جديدة"
     },
     "stats": {
         "questions": "الأسئلة",
@@ -81,6 +81,7 @@
         "addPaperHere": "إضافة ورقة هنا"
     },
     "filters": {
+        "allLevels": "الكل",
         "clear": "مسح",
         "search": "ابحث في نص السؤال",
         "searchButton": "بحث",
@@ -89,6 +90,8 @@
         "any": "الكل"
     },
     "bulk": {
+        "setDifficulty": "تحديد الصعوبة",
+        "addTag": "إضافة وسم",
         "selectPage": "تحديد هذه الصفحة",
         "addToTopic": "إضافة إلى موضوع",
         "moveToTopic": "نقل إلى موضوع",
@@ -146,6 +149,7 @@
         "questions": "تعذر تحميل الأسئلة."
     },
     "common": {
+        "close": "إغلاق",
         "cancel": "إلغاء",
         "retry": "إعادة المحاولة"
     },
@@ -242,8 +246,8 @@
         "savedAsVersion_other": "حُفظ كنسخة جديدة. لم تتغير الاختبارات التي استخدمته ({{count}})."
     },
     "comingSoon": {
-        "title": "الأسئلة الجاهزة قادمة قريبًا",
-        "text": "ستظهر هنا الأسئلة والأوراق حسب الموضوع فور إضافتها.",
+        "title": "لم يتم تخصيص أي دورة لمؤسستك بعد",
+        "text": "تواصل مع الدعم لإضافة الدورات التي تدرّسها. ستظهر هنا بعد ذلك أسئلتها وأوراقها الجاهزة.",
         "pickTitle": "اختر موضوعًا",
         "pickText": "افتحه من خطوة إضافة الأسئلة في أي اختبار.",
         "addTitle": "أضف أسئلة أو ورقة",
@@ -318,6 +322,11 @@
         "someFailed_other": "تعذرت إضافة {{count}} أسئلة"
     },
     "toasts": {
+        "difficultySet_one": "تم ضبط {{count}} سؤال على {{level}}",
+        "difficultySet_other": "تم ضبط {{count}} أسئلة على {{level}}",
+        "tagAdded_one": "أُضيف الوسم «{{name}}» إلى {{count}} سؤال",
+        "tagAdded_other": "أُضيف الوسم «{{name}}» إلى {{count}} أسئلة",
+        "tagRemoved": "أُزيل الوسم «{{name}}»",
         "paperRemoved": "تمت إزالة «{{name}}» من هذا الموضوع",
         "failed": "حدث خطأ. حاول مرة أخرى.",
         "topicCreated": "تم إنشاء «{{name}}»",
@@ -355,5 +364,66 @@
         "tagsImported_few": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة",
         "tagsImported_many": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة",
         "tagsImported_other": "{{topics}} مواضيع جديدة، تم تصنيف {{count}} أسئلة"
+    },
+    "tabs": {
+        "questions": "الأسئلة"
+    },
+    "browse": {
+        "breadcrumb": "موقعك",
+        "allCourses": "كل الدورات",
+        "courses": "الدورات",
+        "insideTopic": "داخل {{name}}",
+        "allQuestions": "كل الأسئلة",
+        "questionsIn": "أسئلة {{name}}",
+        "questionCount_one": "{{count}} سؤال",
+        "questionCount_other": "{{count}} أسئلة",
+        "topicCount_one": "{{count}} موضوع",
+        "topicCount_other": "{{count}} مواضيع",
+        "institutes": "المؤسسات",
+        "institutesWithCount_one": "المؤسسات ({{count}})",
+        "institutesWithCount_other": "المؤسسات ({{count}})",
+        "instituteCount_one": "{{count}} مؤسسة",
+        "instituteCount_other": "{{count}} مؤسسات",
+        "noInstitutes": "غير مخصص لأي مؤسسة",
+        "unsortedHint_one": "{{count}} سؤال للتصنيف",
+        "unsortedHint_other": "{{count}} أسئلة للتصنيف",
+        "addCourse": "إضافة دورة",
+        "addTopic": "إضافة موضوع"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "مفهوم",
+            "PYQ": "سؤال سابق",
+            "SOURCE": "المصدر"
+        },
+        "kindLabel": "نوع الوسم",
+        "kindHint": {
+            "CONCEPT": "ما يختبره السؤال، مثل المادة 21 أو قانون نيوتن الثاني.",
+            "PYQ": "الامتحان والسنة التي طُرح فيها، مثل UPSC 2023.",
+            "SOURCE": "مصدره، مثل NCERT أو Laxmikanth."
+        },
+        "nameLabel": "الوسم",
+        "namePlaceholder": {
+            "CONCEPT": "مثل المادة 21",
+            "PYQ": "مثل UPSC 2023",
+            "SOURCE": "مثل NCERT"
+        },
+        "pickExisting": "أو اختر وسمًا مستخدمًا",
+        "addTitle_one": "وسم {{count}} سؤال",
+        "addTitle_other": "وسم {{count}} أسئلة",
+        "add": "إضافة الوسم",
+        "removeOne": "إزالة الوسم {{name}}"
+    },
+    "access": {
+        "title": "المؤسسات التي ترى {{name}}",
+        "hint": "ترى كل مؤسسة فقط الدورات والمواضيع المخصصة لها هنا مع كل ما بداخلها. الصق معرّف المؤسسة لتخصيص هذا لها.",
+        "idLabel": "معرّف المؤسسة",
+        "idPlaceholder": "الصق معرّف المؤسسة",
+        "give": "منح الوصول",
+        "given": "أصبح بإمكان {{name}} رؤية {{topic}}",
+        "removed": "لم يعد {{name}} يرى {{topic}}",
+        "remove": "إزالة {{name}}",
+        "empty": "لا توجد مؤسسة ترى هذا بعد.",
+        "loadError": "تعذّر تحميل المؤسسات."
     }
 }

@@ -1,11 +1,11 @@
 {
-    "heading": "Question Library",
+    "heading": "Content Library",
     "header": {
         "title": "Question Library",
         "description": "Every question your institute has, organised by subject, chapter and topic. File questions once and reuse them in any test.",
         "importTags": "Import tags",
         "importPaper": "Add a paper",
-        "newTopic": "New topic"
+        "newTopic": "New course"
     },
     "stats": {
         "questions": "Questions",
@@ -73,6 +73,7 @@
         "addPaperHere": "Add a paper here"
     },
     "filters": {
+        "allLevels": "All",
         "clear": "Clear",
         "search": "Search question text",
         "searchButton": "Search",
@@ -81,6 +82,8 @@
         "any": "Any"
     },
     "bulk": {
+        "setDifficulty": "Set difficulty",
+        "addTag": "Add tag",
         "selectPage": "Select this page",
         "addToTopic": "Add to topic",
         "moveToTopic": "Move to topic",
@@ -122,6 +125,7 @@
         "questions": "Could not load questions."
     },
     "common": {
+        "close": "Close",
         "cancel": "Cancel",
         "retry": "Try again"
     },
@@ -190,8 +194,8 @@
         "savedAsVersion_other": "Saved as a new version. The {{count}} tests that used it are unchanged."
     },
     "comingSoon": {
-        "title": "Ready-made questions are on their way",
-        "text": "Topic-wise questions and papers will appear here as soon as they are added.",
+        "title": "No course has been assigned to your institute yet",
+        "text": "Contact support to get the courses you teach added. Their ready-made questions and papers will then appear here.",
         "pickTitle": "Pick a topic",
         "pickText": "Open it from the Add Questions step of any test.",
         "addTitle": "Add questions or a paper",
@@ -242,6 +246,11 @@
         "someFailed_other": "{{count}} questions could not be added"
     },
     "toasts": {
+        "difficultySet_one": "{{count}} question set to {{level}}",
+        "difficultySet_other": "{{count}} questions set to {{level}}",
+        "tagAdded_one": "Tag “{{name}}” added to {{count}} question",
+        "tagAdded_other": "Tag “{{name}}” added to {{count}} questions",
+        "tagRemoved": "Tag “{{name}}” removed",
         "paperRemoved": "“{{name}}” taken off this topic",
         "failed": "Something went wrong. Please try again.",
         "topicCreated": "“{{name}}” created",
@@ -259,5 +268,66 @@
         "paperAdded_other": "{{count}} new questions filed under {{name}}",
         "tagsImported_one": "{{topics}} new topics, {{count}} question filed",
         "tagsImported_other": "{{topics}} new topics, {{count}} questions filed"
+    },
+    "tabs": {
+        "questions": "Questions"
+    },
+    "browse": {
+        "breadcrumb": "Where you are",
+        "allCourses": "All courses",
+        "courses": "Courses",
+        "insideTopic": "Inside {{name}}",
+        "allQuestions": "All questions",
+        "questionsIn": "Questions in {{name}}",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "topicCount_one": "{{count}} topic",
+        "topicCount_other": "{{count}} topics",
+        "institutes": "Institutes",
+        "institutesWithCount_one": "Institutes ({{count}})",
+        "institutesWithCount_other": "Institutes ({{count}})",
+        "instituteCount_one": "{{count}} institute",
+        "instituteCount_other": "{{count}} institutes",
+        "noInstitutes": "Not given to any institute",
+        "unsortedHint_one": "{{count}} question to file",
+        "unsortedHint_other": "{{count}} questions to file",
+        "addCourse": "Add course",
+        "addTopic": "Add topic"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "Concept",
+            "PYQ": "Past paper",
+            "SOURCE": "Source"
+        },
+        "kindLabel": "Type of tag",
+        "kindHint": {
+            "CONCEPT": "What the question tests, e.g. Article 21 or Newton’s second law.",
+            "PYQ": "The exam and year it was asked in, e.g. UPSC 2023.",
+            "SOURCE": "Where it comes from, e.g. NCERT or Laxmikanth."
+        },
+        "nameLabel": "Tag",
+        "namePlaceholder": {
+            "CONCEPT": "e.g. Article 21",
+            "PYQ": "e.g. UPSC 2023",
+            "SOURCE": "e.g. NCERT"
+        },
+        "pickExisting": "Or pick one already in use",
+        "addTitle_one": "Tag {{count}} question",
+        "addTitle_other": "Tag {{count}} questions",
+        "add": "Add tag",
+        "removeOne": "Remove tag {{name}}"
+    },
+    "access": {
+        "title": "Institutes that see {{name}}",
+        "hint": "Each institute sees only the courses and topics given to it here, with everything inside them. Paste the institute ID to give it this one.",
+        "idLabel": "Institute ID",
+        "idPlaceholder": "Paste the institute ID",
+        "give": "Give access",
+        "given": "{{name}} can now see {{topic}}",
+        "removed": "{{name}} no longer sees {{topic}}",
+        "remove": "Take {{name}} off",
+        "empty": "No institute sees this yet.",
+        "loadError": "Could not load the institutes."
     }
 }
