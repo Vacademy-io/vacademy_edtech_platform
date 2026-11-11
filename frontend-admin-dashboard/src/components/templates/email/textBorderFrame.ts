@@ -19,7 +19,18 @@ import type { IBlock, IBlockData } from 'easy-email-core';
  */
 
 /** Text-block attributes handled here; none of them may reach the <mj-text> tag. */
-export const TEXT_FRAME_ATTRIBUTES = ['border', 'border-radius', 'inner-padding'] as const;
+export const TEXT_FRAME_ATTRIBUTES = [
+    'border',
+    'border-top',
+    'border-right',
+    'border-bottom',
+    'border-left',
+    'border-radius',
+    'inner-padding',
+] as const;
+
+// Per-side borders written by BorderControls; emitted after `border` so they win over it.
+const SIDE_BORDER_ATTRIBUTES = ['border-top', 'border-right', 'border-bottom', 'border-left'] as const;
 
 const TEXT_BLOCK_TYPES: string[] = [BasicType.TEXT, AdvancedType.TEXT];
 const CLASS_PREFIX = 'vac-text-frame-';
@@ -27,13 +38,20 @@ const CLASS_PREFIX = 'vac-text-frame-';
 type Attributes = Record<string, string | undefined>;
 
 function hasFrame(attributes: Attributes): boolean {
-    return Boolean(attributes.border || attributes['border-radius']);
+    return Boolean(
+        attributes.border ||
+            attributes['border-radius'] ||
+            SIDE_BORDER_ATTRIBUTES.some((key) => attributes[key])
+    );
 }
 
 /** The CSS declarations for one text block's frame, or '' when it has none. */
 function textFrameCss(attributes: Attributes): string {
     const declarations: string[] = [];
     if (attributes.border) declarations.push(`border:${attributes.border}`);
+    SIDE_BORDER_ATTRIBUTES.forEach((key) => {
+        if (attributes[key]) declarations.push(`${key}:${attributes[key]}`);
+    });
     if (attributes['border-radius'])
         declarations.push(`border-radius:${attributes['border-radius']}`);
     if (attributes['inner-padding']) declarations.push(`padding:${attributes['inner-padding']}`);
