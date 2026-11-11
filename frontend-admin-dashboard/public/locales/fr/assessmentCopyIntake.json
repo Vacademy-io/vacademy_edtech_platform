@@ -96,6 +96,16 @@
         "FAILED": "Échouée",
         "SKIPPED": "Ignorée"
     },
+    "itemProgress": {
+        "starting": "Démarrage de la correction",
+        "orientation": "Vérification de l'orientation des pages",
+        "reading": "Lecture des pages",
+        "handwriting": "Lecture de l'écriture",
+        "locating": "Repérage de chaque réponse",
+        "grading": "Correction : {{done}}/{{total}} questions",
+        "gradingNoCount": "Correction des réponses",
+        "marking": "Annotation de la copie"
+    },
     "table": {
         "languageNote": "Rédigée en {{language}}, alors que le sujet est en {{paper}}. Corrigez-la en {{language}} ou ignorez-la.",
         "file": "Fichier",

@@ -95,6 +95,16 @@
         "FAILED": "विफल",
         "SKIPPED": "छोड़ी गई"
     },
+    "itemProgress": {
+        "starting": "जाँच शुरू हो रही है",
+        "orientation": "पेज की दिशा जाँची जा रही है",
+        "reading": "पेज पढ़े जा रहे हैं",
+        "handwriting": "लिखावट पढ़ी जा रही है",
+        "locating": "हर उत्तर ढूँढा जा रहा है",
+        "grading": "{{done}}/{{total}} प्रश्न जाँचे गए",
+        "gradingNoCount": "उत्तर जाँचे जा रहे हैं",
+        "marking": "कॉपी पर निशान लगाए जा रहे हैं"
+    },
     "table": {
         "languageNote": "यह कॉपी {{language}} में लिखी है, जबकि प्रश्न पत्र {{paper}} में है। इसे {{language}} में जाँचें, या छोड़ दें।",
         "file": "फ़ाइल",
