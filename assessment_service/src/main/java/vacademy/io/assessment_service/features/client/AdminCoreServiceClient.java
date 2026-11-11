@@ -91,6 +91,16 @@ public class AdminCoreServiceClient {
      * report, not the report.
      */
     public List<String> getProcessedAIReportsForAssessment(String assessmentId) {
+        return getProcessedAIReportsForAssessment(assessmentId, null);
+    }
+
+    /**
+     * {@link #getProcessedAIReportsForAssessment(String)} keeping only the learners the
+     * filter accepts (null = everyone), so a class report reads the same people its
+     * figures are computed over.
+     */
+    public List<String> getProcessedAIReportsForAssessment(String assessmentId,
+                                                           java.util.function.Predicate<String> userFilter) {
         try {
             String route = "/admin-core-service/llm-analytics/internal/processed-logs/by-source?sourceId="
                     + assessmentId;
@@ -105,6 +115,10 @@ public class AdminCoreServiceClient {
                     for (Object row : rows) {
                         if (row instanceof Map<?, ?> map) {
                             Object json = map.get("processed_json");
+                            Object user = map.get("user_id");
+                            if (userFilter != null && !userFilter.test(user == null ? null : user.toString())) {
+                                continue;
+                            }
                             if (json != null) out.add(json.toString());
                         }
                     }
@@ -117,6 +131,97 @@ public class AdminCoreServiceClient {
         }
         return List.of();
     }
+
+    // ---- AI analyses a copy check left waiting ("on_demand") -------------------------
+
+    private static final String COPY_CHECK_ANALYSIS = "/admin-core-service/internal/llm-analytics/copy-check";
+
+    /**
+     * Each learner's newest live AI-analysis row status for an assessment (a learner absent
+     * from the map has no row). Null when admin_core could not be asked.
+     */
+    public Map<String, String> getCopyCheckAnalysisState(String assessmentId) {
+        try {
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, "GET", adminCoreServiceBaseUrl, COPY_CHECK_ANALYSIS + "/state?sourceId=" + assessmentId, null);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = objectMapper.readValue(response.getBody(), Map.class);
+                Map<String, String> out = new java.util.HashMap<>();
+                if (body.get("newest_status_by_user") instanceof Map<?, ?> map) {
+                    map.forEach((k, v) -> {
+                        if (k != null) out.put(k.toString(), v != null ? v.toString() : null);
+                    });
+                }
+                return out;
+            }
+            log.warn("Copy-check analysis state returned {} for assessment {}", response.getStatusCode(), assessmentId);
+        } catch (Exception e) {
+            log.warn("Failed to read copy-check analysis state for assessment {}: {}", assessmentId, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * The status of one learner's newest live analysis row: "on_demand" = a copy check's
+     * marks wait to be analysed, "" = the learner has no analysis row, null = unknown.
+     */
+    public String getNewestAnalysisStatus(String userId, String assessmentId) {
+        try {
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "GET",
+                    adminCoreServiceBaseUrl, COPY_CHECK_ANALYSIS + "/state/user?userId=" + userId
+                            + "&sourceId=" + assessmentId, null);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = objectMapper.readValue(response.getBody(), Map.class);
+                Object status = body.get("newest_status");
+                return status != null ? status.toString() : "";
+            }
+        } catch (Exception e) {
+            log.warn("Failed to read the analysis state of user {} assessment {}: {}",
+                    userId, assessmentId, e.getMessage());
+        }
+        return null;
+    }
+
+    /** Starts making the named learners' copy-check analyses. Null on failure. */
+    public Integer processCopyCheckAnalyses(String assessmentId, java.util.Collection<String> userIds) {
+        try {
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, "POST", adminCoreServiceBaseUrl, COPY_CHECK_ANALYSIS + "/process?sourceId=" + assessmentId,
+                    Map.of("user_ids", new ArrayList<>(userIds)));
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = objectMapper.readValue(response.getBody(), Map.class);
+                return body.get("queued") instanceof Number n ? n.intValue() : 0;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to start copy-check analyses for assessment {}: {}", assessmentId, e.getMessage());
+        }
+        return null;
+    }
+
+    /** Makes one learner's waiting copy-check analysis now; same outcome shape as on-demand. */
+    public AiReportGenerationResult processCopyCheckAnalysisNow(String userId, String assessmentId) {
+        try {
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
+                    adminCoreServiceBaseUrl, COPY_CHECK_ANALYSIS + "/process/user?userId=" + userId
+                            + "&sourceId=" + assessmentId, null);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = objectMapper.readValue(response.getBody(), Map.class);
+                Object status = body.get("status");
+                Object processedJson = body.get("processed_json");
+                String st = status != null ? status.toString() : "error";
+                // Another request holds it: report "generating", never start a second run.
+                if ("processing".equalsIgnoreCase(st)) st = AiReportGenerationResult.STATUS_GENERATING;
+                return new AiReportGenerationResult(st, processedJson != null ? processedJson.toString() : null);
+            }
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            return new AiReportGenerationResult(AiReportGenerationResult.STATUS_GENERATING, null);
+        } catch (Exception e) {
+            log.warn("Failed to make the copy-check analysis of user {} assessment {}: {}",
+                    userId, assessmentId, e.getMessage());
+        }
+        return new AiReportGenerationResult("error", null);
+    }
+
 
     /**
      * Outcome of an on-demand AI report generation request.

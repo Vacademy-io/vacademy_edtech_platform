@@ -123,7 +123,9 @@
         "pickStudent": "छात्र चुनें",
         "skip": "छोड़ें",
         "retry": "फिर कोशिश",
-        "openResult": "खोलें"
+        "openResult": "खोलें",
+        "aiReport": "AI रिपोर्ट",
+        "classReport": "AI क्लास रिपोर्ट"
     },
     "picker": {
         "title": "यह कॉपी किसकी है?",

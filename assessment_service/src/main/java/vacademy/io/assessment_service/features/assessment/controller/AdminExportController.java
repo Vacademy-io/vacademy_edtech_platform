@@ -189,6 +189,19 @@ public class AdminExportController {
                 generate, regenerate, versionId);
     }
 
+    /**
+     * "Analyse N copies" in the class AI report dialog: makes the AI analyses that the
+     * paper's bulk AI check left waiting, so the class report covers those copies. Spends
+     * AI credits, each copy at most once however often it is asked.
+     */
+    @PostMapping("/ai-assessment-report/analyse-copies")
+    public ResponseEntity<Map<String, Object>> analyseCheckedCopies(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("assessmentId") String assessmentId,
+            @RequestParam("instituteId") String instituteId) {
+        return ResponseEntity.ok(adminExportManager.analyseCheckedCopies(user, assessmentId, instituteId));
+    }
+
     // ==================================================================
     // Bulk Assessment Report Export (ZIP)
     // ==================================================================

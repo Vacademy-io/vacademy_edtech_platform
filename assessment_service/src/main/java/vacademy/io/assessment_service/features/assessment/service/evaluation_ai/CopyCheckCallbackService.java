@@ -52,6 +52,11 @@ public class CopyCheckCallbackService {
     private final TypedAnswerEvaluation typedAnswerEvaluation;
     private final ObjectMapper objectMapper;
 
+    /** Hands the checked copy's marks to the AI reports. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private CopyCheckReportDataSender reportDataSender;
+
     @Transactional
     public void onProgress(CopyCheckCallbackDto.Progress payload) {
         AiEvaluationProcess process = processRepository.findById(payload.getProcessId()).orElse(null);
@@ -294,6 +299,10 @@ public class CopyCheckCallbackService {
                     attempt.setEvaluatedFileId(payload.getEvaluatedFileId());
                 }
                 studentAttemptRepository.save(attempt);
+                if (reportDataSender != null) {
+                    // The AI reports read these marks; sent after this commits.
+                    reportDataSender.sendAfterCommit(attempt.getId());
+                }
             }
         }
         cancellationService.clearFlag(payload.getProcessId());

@@ -84,6 +84,42 @@ public class AiReportDataService {
             )
             """;
 
+    // A copy checked without a student (Evalezy / "only check"): no learner took the paper, so
+    // its class is the paper's other checked copies. Same columns as LATEST_ATTEMPTS_CTE.
+    private static final String CHECKED_COPIES_CTE = """
+            WITH latest AS (
+                SELECT sa.id AS attempt_id, aur.user_id, sa.total_marks::float8 AS total_marks,
+                       sa.total_time_in_seconds::bigint AS total_time_in_seconds
+                FROM student_attempt sa
+                JOIN assessment_user_registration aur ON aur.id = sa.registration_id
+                WHERE aur.assessment_id = ? AND aur.institute_id = ?
+                  AND sa.status = 'COPY_CHECK' AND aur.source = 'COPY_CHECK_ONLY' AND aur.status = 'ACTIVE'
+                  AND sa.total_marks IS NOT NULL
+            )
+            """;
+
+    /**
+     * The class an attempt is compared with: the learners - or, for a check-only copy of a
+     * paper no learner took, the other copies (the same rule as the class AI report).
+     */
+    private String cohortFor(String attemptId, String assessmentId, String instituteId) {
+        try {
+            String status = jdbcTemplate.queryForObject("SELECT status FROM student_attempt WHERE id = ?",
+                    String.class, attemptId);
+            if (!"COPY_CHECK".equals(status)) {
+                return LATEST_ATTEMPTS_CTE;
+            }
+            Boolean learners = jdbcTemplate.queryForObject("""
+                    SELECT EXISTS (SELECT 1 FROM student_attempt sa
+                                   JOIN assessment_user_registration aur ON aur.id = sa.registration_id
+                                   WHERE aur.assessment_id = ? AND aur.institute_id = ? AND sa.status IN ('ENDED', 'LIVE'))
+                    """, Boolean.class, assessmentId, instituteId);
+            return Boolean.TRUE.equals(learners) ? LATEST_ATTEMPTS_CTE : CHECKED_COPIES_CTE;
+        } catch (Exception e) {
+            return LATEST_ATTEMPTS_CTE;
+        }
+    }
+
     /**
      * @param detail the same per-question review the normal report renders (question text,
      *               responses, feedback); passed in by the caller to keep this service free of a
@@ -98,7 +134,8 @@ public class AiReportDataService {
 
         Structure structure = loadStructure(assessmentId);
         Map<String, StudentAnswer> answers = loadAnswers(attemptId);
-        ClassData klass = loadClass(assessmentId, instituteId, attemptId, userId, attempt.totalMarks(), attempt.timeSeconds());
+        ClassData klass = loadClass(assessmentId, instituteId, attemptId, userId, attempt.totalMarks(), attempt.timeSeconds(),
+                cohortFor(attemptId, assessmentId, instituteId));
 
         List<QuestionRow> questions = buildQuestionRows(structure, answers, klass);
         List<SectionRow> sections = buildSectionRows(structure, questions, klass);
@@ -346,14 +383,14 @@ public class AiReportDataService {
     }
 
     private ClassData loadClass(String assessmentId, String instituteId, String attemptId, String userId, Double ownMarks,
-                                Long ownTime) {
+                                Long ownTime, String cohort) {
         List<Double> others = new ArrayList<>();
         List<double[]> otherPairs = new ArrayList<>(); // {marks, seconds (MAX_VALUE when unknown)}
         List<Long> times = new ArrayList<>();
         Map<String, QuestionStat> qStats = new HashMap<>();
         Map<String, SectionStat> sStats = new HashMap<>();
         try {
-            jdbcTemplate.query(LATEST_ATTEMPTS_CTE + "SELECT user_id, total_marks, total_time_in_seconds FROM latest",
+            jdbcTemplate.query(cohort + "SELECT user_id, total_marks, total_time_in_seconds FROM latest",
                     rs -> {
                         Long t = (Long) rs.getObject("total_time_in_seconds", Long.class);
                         if (t != null && t > 0) times.add(t);
@@ -363,7 +400,7 @@ public class AiReportDataService {
                         otherPairs.add(new double[]{m == null ? 0.0 : m, t == null ? Double.MAX_VALUE : t});
                     }, assessmentId, instituteId);
 
-            jdbcTemplate.query(LATEST_ATTEMPTS_CTE + """
+            jdbcTemplate.query(cohort + """
                     SELECT w.question_id, w.section_id, COUNT(*) AS n,
                            COUNT(*) FILTER (WHERE w.status = 'CORRECT') AS correct,
                            AVG(w.time_taken_in_seconds)::float8 AS avg_t
@@ -377,7 +414,7 @@ public class AiReportDataService {
                 }
             }, assessmentId, instituteId);
 
-            jdbcTemplate.query(LATEST_ATTEMPTS_CTE + """
+            jdbcTemplate.query(cohort + """
                     SELECT s.section_id, AVG(s.m)::float8 AS avg_m, AVG(s.t)::float8 AS avg_t, MAX(s.m)::float8 AS top_m FROM (
                         SELECT w.attempt_id, w.section_id, SUM(w.marks) AS m, SUM(COALESCE(w.time_taken_in_seconds, 0)) AS t
                         FROM question_wise_marks w JOIN latest l ON l.attempt_id = w.attempt_id

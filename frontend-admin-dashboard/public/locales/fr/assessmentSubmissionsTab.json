@@ -117,7 +117,17 @@
         "refreshNoPrice": "Actualiser le rapport",
         "costsUnavailable": "Générer ce rapport consomme des crédits IA. Le coût exact n’a pas pu être chargé — il est facturé une fois, et les téléchargements suivants sont gratuits.",
         "historyTitle": "Générés précédemment",
-        "historyDownload": "Télécharger"
+        "historyDownload": "Télécharger",
+        "missingAnalyses_one": "{{count}} copie corrigée n’a pas encore d’analyse IA : ce rapport la laisserait hors des thèmes faibles et des erreurs fréquentes. L’analyse d’une copie consomme des crédits IA.",
+        "missingAnalyses_other": "{{count}} copies corrigées n’ont pas encore d’analyse IA : ce rapport les laisserait hors des thèmes faibles et des erreurs fréquentes. L’analyse d’une copie consomme des crédits IA.",
+        "analyseCopies_one": "Analyser {{count}} copie",
+        "analyseCopies_other": "Analyser {{count}} copies",
+        "analysing_one": "Analyse en cours… {{count}} copie restante",
+        "analysing_other": "Analyse en cours… {{count}} copies restantes",
+        "analysisStarted": "Analyse lancée. Générez le rapport une fois les copies analysées.",
+        "analysesDone": "Toutes les copies corrigées sont analysées. Le rapport les inclura toutes.",
+        "analyseFailed": "Impossible de lancer l’analyse. Veuillez réessayer.",
+        "analyseMore": "Les premières copies sont lancées. Certaines copies sont encore en préparation — cliquez de nouveau sur Analyser dans une minute pour les autres."
     },
     "selectAll": {
         "failed": "Impossible de sélectionner tous les apprenants en attente. Veuillez réessayer."

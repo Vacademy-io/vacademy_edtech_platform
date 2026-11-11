@@ -158,6 +158,10 @@ public class AiReportBulkService {
             // Rebuild the raw log exactly as submit does, then generate it now.
             Map<String, Object> data = enrichment.buildEnrichedAssessmentData(attempt, assessment.getId(), assessment.getName(),
                     assessment.getAssessmentType(), assessment.getDuration(), 0, instituteId);
+            // Marked as made for a report, not by the learner's own submit: admin_core
+            // counts only submit-time rows when it decides whether a later copy check of
+            // this learner is analysed automatically or on demand.
+            data.put("analysis_trigger", "report_download");
             adminCore.saveAssessmentRawDataAsync(data);
             AdminCoreServiceClient.AiReportGenerationResult result = adminCore.generateAiReportOnDemand(userId, assessment.getId());
             // "generating" = admin_core is still running the model after our read timeout; it

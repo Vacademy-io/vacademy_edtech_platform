@@ -42,6 +42,11 @@ public class AiEvaluationReviewService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed submissionFeed;
 
+    /** A reviewed mark changes what the AI reports say. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private CopyCheckReportDataSender reportDataSender;
+
     /** Key in ai_question_evaluation.evaluation_result_json holding the teacher's pen-note edits. */
     public static final String ANNOTATION_EDITS_KEY = "reviewer_annotation_edits";
     private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
@@ -118,6 +123,9 @@ public class AiEvaluationReviewService {
         recomputeAttemptTotals(process);
         if (submissionFeed != null && attemptId != null) {
             submissionFeed.touch(attemptId);
+        }
+        if (reportDataSender != null && attemptId != null) {
+            reportDataSender.sendAfterCommit(attemptId);
         }
         log.info("[copy-check] question {} of process {} overridden to {} by {}",
                 questionId, processId, clamped, editorUserId);

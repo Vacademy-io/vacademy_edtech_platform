@@ -126,7 +126,9 @@
         "pickStudent": "Pick student",
         "skip": "Skip",
         "retry": "Retry",
-        "openResult": "Open"
+        "openResult": "Open",
+        "aiReport": "AI report",
+        "classReport": "AI class report"
     },
     "picker": {
         "title": "Whose copy is this?",
