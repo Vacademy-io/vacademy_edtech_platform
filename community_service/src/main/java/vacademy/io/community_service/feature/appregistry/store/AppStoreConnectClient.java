@@ -301,6 +301,49 @@ public class AppStoreConnectClient {
         return version.path("attributes").path("createdDate").asText("");
     }
 
+    /** One uploaded binary, as the iOS build panel shows it. */
+    public record BuildInfo(String version, String processingState, boolean expired, String uploadedDate) {
+    }
+
+    /**
+     * @return the App Store Connect app id for this bundle id under this credential's team, or
+     *         null when this team has no app record for it (it may still exist under another team).
+     * @throws Exception when the call itself fails — callers must not read that as "no app".
+     */
+    public String findAppId(String bundleId) throws Exception {
+        if (!StringUtils.hasText(bundleId)) {
+            return null;
+        }
+        JsonNode apps = get("/v1/apps?filter[bundleId]=" + bundleId + "&fields[apps]=bundleId").path("data");
+        for (JsonNode app : apps) {
+            // filter[bundleId] is not an exact match on every account; never take a neighbour's app.
+            if (bundleId.equals(app.path("attributes").path("bundleId").asText(""))) {
+                return app.path("id").asText(null);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Newest iOS builds first. {@code expired} matters: a version waiting for review on an expired
+     * build sits in the review queue for weeks without being picked up.
+     */
+    public java.util.List<BuildInfo> fetchRecentBuilds(String ascAppId, int limit) throws Exception {
+        java.util.List<BuildInfo> out = new java.util.ArrayList<>();
+        if (!StringUtils.hasText(ascAppId)) {
+            return out;
+        }
+        JsonNode builds = get("/v1/builds?filter[app]=" + ascAppId + "&filter[preReleaseVersion.platform]=IOS"
+                + "&sort=-uploadedDate&limit=" + Math.max(1, Math.min(limit, 50))
+                + "&fields[builds]=version,processingState,expired,uploadedDate").path("data");
+        for (JsonNode build : builds) {
+            JsonNode a = build.path("attributes");
+            out.add(new BuildInfo(a.path("version").asText(""), a.path("processingState").asText(""),
+                    a.path("expired").asBoolean(false), a.path("uploadedDate").asText("")));
+        }
+        return out;
+    }
+
     /* ------------------------------------------------------------------ internals */
 
     private JsonNode get(String path) throws Exception {
