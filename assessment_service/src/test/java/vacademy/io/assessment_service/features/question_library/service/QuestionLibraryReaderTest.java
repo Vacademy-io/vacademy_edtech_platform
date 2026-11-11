@@ -10,6 +10,7 @@ import vacademy.io.assessment_service.features.question_bank.dto.QuestionBankFil
 import vacademy.io.assessment_service.features.question_bank.manager.GetQuestionBankManager;
 import vacademy.io.assessment_service.features.question_bank.manager.GetQuestionPaperManager;
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
+import vacademy.io.assessment_service.features.question_library.dto.LibraryNodeDto;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryQuestionDto;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryTreeResponse;
 import vacademy.io.assessment_service.features.question_library.entity.QuestionLibraryNode;
@@ -49,8 +50,10 @@ class QuestionLibraryReaderTest {
         QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
         ReflectionTestUtils.setField(resolver, "nodeRepository", repository);
         bank = mock(GetQuestionBankManager.class);
+        // The client was given both topics unless a test says otherwise.
+        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("physics", "chemistry"));
         service = new QuestionLibraryService();
-        ReflectionTestUtils.setField(service, "access", access);
+        ReflectionTestUtils.setField(service, "scope", QuestionLibraryTestScopes.scope(access, repository));
         ReflectionTestUtils.setField(service, "nodeRepository", repository);
         ReflectionTestUtils.setField(service, "treeResolver", resolver);
         ReflectionTestUtils.setField(service, "questionBankManager", bank);
@@ -161,7 +164,7 @@ class QuestionLibraryReaderTest {
 
         assertThat(tree.getNodes()).isEmpty();
         assertThat(tree.getCanManage()).isFalse();
-        assertThat(service.listPapers(null)).isEmpty();
+        assertThat(service.listPapers(CLIENT, null)).isEmpty();
         assertThat(service.listQuestions(null, CLIENT, null, 0, 20).getContent()).isEmpty();
         assertThatThrownBy(() -> access.requireOwner(CLIENT)).isInstanceOf(ForbiddenException.class);
     }
@@ -179,6 +182,71 @@ class QuestionLibraryReaderTest {
         rows.add(new Object[]{"chemistry", "paper-1", "SSC Mock 1", 40L});
         when(repository.findPapersOnNodes(OWNER, null)).thenReturn(rows);
 
-        assertThat(service.listPapers(null)).hasSize(1);
+        assertThat(service.listPapers(OWNER, null)).hasSize(1);
+    }
+
+    @Test
+    void anInstituteGivenNothingSeesNothing() {
+        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of());
+
+        assertThat(service.getTree(CLIENT).getNodes()).isEmpty();
+        assertThat(service.getTree(CLIENT).getSummary().getTotalQuestions()).isZero();
+        assertThat(service.listQuestions(null, CLIENT, null, 0, 20).getContent()).isEmpty();
+        assertThat(service.listPapers(CLIENT, null)).isEmpty();
+        verifyNoInteractions(bank);
+        verify(repository, never()).findPapersOnNodes(any(), any());
+    }
+
+    @Test
+    void aReaderSeesOnlyTheGivenTopicAndBelowItAsItsTopLevel() {
+        when(repository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE")).thenReturn(List.of(
+                QuestionLibraryTestScopes.node("ncert", null),
+                QuestionLibraryTestScopes.node("class-10", "ncert"),
+                QuestionLibraryTestScopes.node("science", "class-10"),
+                QuestionLibraryTestScopes.node("upsc", null)));
+        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("class-10"));
+
+        LibraryTreeResponse tree = service.getTree(CLIENT);
+
+        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getId).containsExactly("class-10", "science");
+        assertThat(tree.getNodes().get(0).getParentId()).isNull();
+        assertThat(tree.getNodes().get(0).getDepth()).isEqualTo(1);
+        assertThat(tree.getNodes().get(1).getDepth()).isEqualTo(2);
+        assertThat(tree.getNodes()).allMatch(n -> n.getAccessCount() == null);
+        verify(repository).countQuestionsOnNodesByDifficultyAndType(OWNER, "class-10,science");
+        verify(repository, never()).countAccessPerNode(any());
+    }
+
+    @Test
+    void aReaderAskingForATopicItWasNotGivenGetsNothing() {
+        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("physics"));
+        QuestionBankFilter asked = new QuestionBankFilter();
+        asked.setLibraryNodeIds(List.of("chemistry"));
+
+        assertThat(service.listQuestions(null, CLIENT, asked, 0, 20).getContent()).isEmpty();
+        assertThat(service.listPapers(CLIENT, "chemistry")).isEmpty();
+        verifyNoInteractions(bank);
+    }
+
+    @Test
+    void aReadersTagFilterReachesTheBank() {
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt())).thenReturn(Page.empty());
+        QuestionBankFilter asked = new QuestionBankFilter();
+        asked.setTagIds(List.of("tag-pyq-2023"));
+
+        service.listQuestions(null, CLIENT, asked, 0, 20);
+
+        assertThat(filterSentToTheBank().getTagIds()).containsExactly("tag-pyq-2023");
+    }
+
+    @Test
+    void theOwnerSeesHowManyInstitutesHaveEachTopic() {
+        List<Object[]> access = new ArrayList<>();
+        access.add(new Object[]{"physics", 3L});
+        when(repository.countAccessPerNode(OWNER)).thenReturn(access);
+
+        LibraryTreeResponse tree = service.getTree(OWNER);
+
+        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getAccessCount).containsExactly(3L, 0L);
     }
 }

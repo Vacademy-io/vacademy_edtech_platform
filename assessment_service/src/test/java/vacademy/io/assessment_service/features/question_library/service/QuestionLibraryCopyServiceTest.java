@@ -62,7 +62,12 @@ class QuestionLibraryCopyServiceTest {
         });
         service = new QuestionLibraryCopyService();
         ReflectionTestUtils.setField(service, "access", access);
+        ReflectionTestUtils.setField(service, "scope", QuestionLibraryTestScopes.scope(access, nodeRepository));
         ReflectionTestUtils.setField(service, "nodeRepository", nodeRepository);
+        // The client was given one topic, "ssc".
+        when(nodeRepository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE"))
+                .thenReturn(List.of(QuestionLibraryTestScopes.node("ssc", null), QuestionLibraryTestScopes.node("upsc", null)));
+        when(nodeRepository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("ssc"));
         ReflectionTestUtils.setField(service, "questionRepository", questionRepository);
         ReflectionTestUtils.setField(service, "optionRepository", optionRepository);
         ReflectionTestUtils.setField(service, "importManager", importManager);
@@ -107,7 +112,7 @@ class QuestionLibraryCopyServiceTest {
 
     private void offered(Question... questions) {
         List<String> ids = java.util.Arrays.stream(questions).map(Question::getId).toList();
-        when(nodeRepository.findPlacedLiveQuestionIds(eq(OWNER), anyString())).thenReturn(ids);
+        when(nodeRepository.findPlacedLiveQuestionIds(eq(OWNER), anyString(), eq("ssc"))).thenReturn(ids);
         when(questionRepository.findAllById(anyList())).thenReturn(List.of(questions));
     }
 
@@ -159,7 +164,7 @@ class QuestionLibraryCopyServiceTest {
 
     @Test
     void aQuestionTheLibraryDoesNotOfferCannotBeCopiedByGuessingItsId() {
-        when(nodeRepository.findPlacedLiveQuestionIds(eq(OWNER), anyString())).thenReturn(List.of());
+        when(nodeRepository.findPlacedLiveQuestionIds(eq(OWNER), anyString(), any())).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.copy(CLIENT, pick("owner-private-q")))
                 .isInstanceOf(VacademyException.class);
@@ -168,7 +173,7 @@ class QuestionLibraryCopyServiceTest {
 
     @Test
     void aPaperOutsideTheLibraryIsRefused() {
-        when(nodeRepository.countPaperInLibrary(OWNER, "other-paper")).thenReturn(0L);
+        when(nodeRepository.countPaperInLibrary(OWNER, "other-paper", "ssc")).thenReturn(0L);
 
         assertThatThrownBy(() -> service.copy(CLIENT,
                 CopyLibraryQuestionsRequest.builder().questionPaperId("other-paper").build()))
@@ -181,7 +186,7 @@ class QuestionLibraryCopyServiceTest {
         Question first = libraryMcq("q1");
         Question replaced = libraryMcq("q2-old");
         Question latest = libraryMcq("q2-new");
-        when(nodeRepository.countPaperInLibrary(OWNER, "paper-1")).thenReturn(1L);
+        when(nodeRepository.countPaperInLibrary(OWNER, "paper-1", "ssc")).thenReturn(1L);
         when(questionRepository.findQuestionsByQuestionPaperId("paper-1")).thenReturn(List.of(replaced, first));
         List<Object[]> hop = new ArrayList<>();
         hop.add(new Object[]{"q2-old", "q2-new"});
@@ -223,6 +228,23 @@ class QuestionLibraryCopyServiceTest {
         assertThat(response.getFailed()).isEqualTo(1);
         assertThat(response.getCopied()).extracting(LibraryCopyResponse.CopiedQuestion::getSourceQuestionId)
                 .containsExactly("good");
+    }
+
+    @Test
+    void anInstituteGivenNothingCannotCopyAnything() {
+        assertThatThrownBy(() -> service.copy("stranger-inst", pick("lib-q")))
+                .isInstanceOf(VacademyException.class);
+        verify(nodeRepository, never()).findPlacedLiveQuestionIds(any(), any(), any());
+        verify(questionRepository, never()).save(any());
+    }
+
+    @Test
+    void theOwnerCopiesFromAnyTopic() {
+        Question source = libraryMcq("lib-q");
+        when(nodeRepository.findPlacedLiveQuestionIds(eq(OWNER), anyString(), isNull())).thenReturn(List.of("lib-q"));
+        when(questionRepository.findAllById(anyList())).thenReturn(List.of(source));
+
+        assertThat(service.copy(OWNER, pick("lib-q")).getCopied()).hasSize(1);
     }
 
     @Test

@@ -106,7 +106,8 @@ class QuestionLibraryCopyPersistenceTest {
     @BeforeEach
     void setUp() throws Exception {
         // Inside the test transaction, so these roll back with everything else.
-        for (String migration : List.of("V61__question_library.sql", "V62__question_library_paper.sql")) {
+        for (String migration : List.of("V61__question_library.sql", "V62__question_library_paper.sql",
+                "V64__question_library_access.sql")) {
             jdbc.execute(Files.readString(Path.of("src/main/resources/db/migration", migration)));
         }
         rich("zz-t", "<p>Library question</p>");
@@ -121,6 +122,9 @@ class QuestionLibraryCopyPersistenceTest {
         jdbc.update("INSERT INTO option (id, question_id, text_id) VALUES ('zz-opt-a', ?, 'zz-a'), ('zz-opt-b', ?, 'zz-b')", LIB, LIB);
         jdbc.update("INSERT INTO question_library_node (id, institute_id, name) VALUES ('zz-node', ?, 'SSC')", OWNER);
         jdbc.update("INSERT INTO question_library_mapping (node_id, question_id, institute_id) VALUES ('zz-node', ?, ?)", LIB, OWNER);
+        // Both client institutes were given the topic. Without these rows they could copy nothing.
+        jdbc.update("INSERT INTO question_library_access (node_id, institute_id, institute_name) VALUES ('zz-node', ?, 'Client'), ('zz-node', ?, 'Other')",
+                CLIENT, OTHER_CLIENT);
 
         QuestionEvaluationService evaluation = new QuestionEvaluationService();
         ReflectionTestUtils.setField(evaluation, "objectMapper",
@@ -136,6 +140,7 @@ class QuestionLibraryCopyPersistenceTest {
         ReflectionTestUtils.setField(access, "ownerInstituteId", OWNER);
         service = new QuestionLibraryCopyService();
         ReflectionTestUtils.setField(service, "access", access);
+        ReflectionTestUtils.setField(service, "scope", QuestionLibraryTestScopes.scope(access, nodeRepository));
         ReflectionTestUtils.setField(service, "nodeRepository", nodeRepository);
         ReflectionTestUtils.setField(service, "questionRepository", questionRepository);
         ReflectionTestUtils.setField(service, "optionRepository", optionRepository);
@@ -368,7 +373,7 @@ class QuestionLibraryCopyPersistenceTest {
         QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
         ReflectionTestUtils.setField(resolver, "nodeRepository", nodeRepository);
         QuestionLibraryService library = new QuestionLibraryService();
-        ReflectionTestUtils.setField(library, "access", access);
+        ReflectionTestUtils.setField(library, "scope", QuestionLibraryTestScopes.scope(access, nodeRepository));
         ReflectionTestUtils.setField(library, "nodeRepository", nodeRepository);
         ReflectionTestUtils.setField(library, "treeResolver", resolver);
         ReflectionTestUtils.setField(library, "questionRepository", questionRepository);
@@ -452,5 +457,47 @@ class QuestionLibraryCopyPersistenceTest {
                 .map(Question::getId).getContent();
 
         assertThat(bank).contains("zz-own").doesNotContain(copy, LIB);
+    }
+
+    /** Every query the curation tools added, on real rows: access, tags, scoped counts and difficulty. */
+    @Test
+    void curationQueriesWorkOnRealRows() {
+        // Access: the setup gave zz-node to both clients.
+        assertThat(nodeRepository.findGrantedNodeIds(OWNER, CLIENT)).containsExactly("zz-node");
+        assertThat(nodeRepository.findGrantedNodeIds(OWNER, "zz-stranger")).isEmpty();
+        assertThat(nodeRepository.grantAccess("zz-node", CLIENT, "Client renamed", null)).isEqualTo(1);
+        assertThat(nodeRepository.findAccessOfNode("zz-node")).hasSize(2)
+                .anyMatch(row -> CLIENT.equals(row[0]) && "Client renamed".equals(row[1]));
+        assertThat(QuestionLibraryCurationService.toDate(nodeRepository.findAccessOfNode("zz-node").get(0)[2])).isNotNull();
+        assertThat(nodeRepository.countAccessPerNode(OWNER)).singleElement()
+                .satisfies(row -> assertThat(((Number) row[1]).longValue()).isEqualTo(2L));
+        assertThat(nodeRepository.revokeAccess("zz-node", OTHER_CLIENT)).isEqualTo(1);
+
+        // Tags: created once, linked, listed, scoped, removed. A SUBJECT tag is never touched.
+        jdbc.update("INSERT INTO tags (tag_id, tag_name, institute_id) VALUES ('zz-tag', 'Article 21', ?)", OWNER);
+        assertThat(nodeRepository.findTagIdByName(OWNER, "article 21")).isEqualTo("zz-tag");
+        assertThat(nodeRepository.findTagIdByName(CLIENT, "article 21")).isNull();
+        assertThat(nodeRepository.addLibraryTag(OWNER, LIB + ",zz-not-a-question", "zz-tag", "CONCEPT")).isEqualTo(1);
+        assertThat(nodeRepository.addLibraryTag(CLIENT, LIB, "zz-tag", "CONCEPT")).isZero();
+        assertThat(nodeRepository.findLibraryTagsWithCounts(OWNER, "1", "zz-node")).singleElement()
+                .satisfies(row -> {
+                    assertThat(row[1]).isEqualTo("Article 21");
+                    assertThat(row[2]).isEqualTo("CONCEPT");
+                    assertThat(((Number) row[3]).longValue()).isEqualTo(1L);
+                });
+        assertThat(nodeRepository.findLibraryTagsWithCounts(OWNER, "1", "zz-elsewhere")).isEmpty();
+        assertThat(nodeRepository.findLibraryTagsWithCounts(OWNER, null, null)).hasSize(1);
+        assertThat(nodeRepository.findLibraryTagsOfQuestions(LIB)).singleElement()
+                .satisfies(row -> assertThat(row[3]).isEqualTo("CONCEPT"));
+        assertThat(nodeRepository.removeLibraryTag(CLIENT, LIB, "zz-tag")).isZero();
+        assertThat(nodeRepository.removeLibraryTag(OWNER, LIB, "zz-tag")).isEqualTo(1);
+
+        // Scoped counts and bulk difficulty.
+        assertThat(nodeRepository.countQuestionsOnNodesByDifficultyAndType(OWNER, "zz-node")).isNotEmpty();
+        assertThat(nodeRepository.countQuestionsOnNodesAddedLastWeek(OWNER, "zz-elsewhere")).isZero();
+        assertThat(nodeRepository.setDifficulty(CLIENT, LIB, "EASY")).isZero();
+        assertThat(nodeRepository.setDifficulty(OWNER, LIB, "EASY")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT difficulty FROM question WHERE id = ?", String.class, LIB)).isEqualTo("EASY");
+        assertThat(nodeRepository.countPaperInLibrary(OWNER, "zz-no-paper", "zz-node")).isZero();
     }
 }

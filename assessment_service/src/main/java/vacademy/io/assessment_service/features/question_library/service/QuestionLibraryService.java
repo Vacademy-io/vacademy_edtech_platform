@@ -36,8 +36,8 @@ import static vacademy.io.assessment_service.features.question_library.service.Q
 @Service
 public class QuestionLibraryService {
 
-    /** Subject, chapter, topic, sub-topic. */
-    public static final int MAX_DEPTH = 4;
+    /** Course, subject, chapter, topic, sub-topic (UPSC > Prelims GS > Polity > Chapter > Topic). */
+    public static final int MAX_DEPTH = 5;
     /** Upper bound for one bulk write, so a runaway "select all" cannot lock half the table. */
     private static final int MAX_QUESTIONS_PER_CALL = 500;
     private static final int MAX_NAME_LENGTH = 255;
@@ -47,13 +47,13 @@ public class QuestionLibraryService {
     private static final int MAX_PICK_PER_LEVEL = 150;
 
     @Autowired
-    private QuestionLibraryAccess access;
-
-    @Autowired
     private QuestionLibraryNodeRepository nodeRepository;
 
     @Autowired
     private QuestionLibraryTreeResolver treeResolver;
+
+    @Autowired
+    private QuestionLibraryScope scope;
 
     @Autowired
     private GetQuestionBankManager questionBankManager;
@@ -69,69 +69,101 @@ public class QuestionLibraryService {
 
     // ---------------------------------------------------------------- tree
 
+    /**
+     * The topics the caller sees with their counts. The owner gets the whole tree. Anyone
+     * else gets only the topics it was given and what is below them, those topics as its
+     * top level, and header numbers counted over that part alone.
+     */
     public LibraryTreeResponse getTree(String callerInstituteId) {
-        String instituteId = access.ownerInstituteId();
-        boolean manager = access.isOwner(callerInstituteId);
-        if (instituteId == null) {
+        QuestionLibraryScope.View view = scope.of(callerInstituteId);
+        if (view.owner() == null || (!view.manager() && view.empty())) {
             return LibraryTreeResponse.builder()
                     .nodes(List.of())
-                    .summary(LibrarySummaryDto.builder()
-                            .totalQuestions(0L)
-                            .unsortedQuestions(0L)
-                            .addedLastWeek(0L)
-                            .topicCount(0)
-                            .byDifficulty(Map.of())
-                            .byType(Map.of())
-                            .build())
+                    .summary(emptySummary())
                     .maxDepth(MAX_DEPTH)
-                    .canManage(false)
+                    .canManage(view.manager())
                     .build();
         }
-        List<QuestionLibraryNode> nodes = treeResolver.activeNodes(instituteId);
-        Map<String, QuestionLibraryNode> byId = nodes.stream()
-                .collect(Collectors.toMap(QuestionLibraryNode::getId, n -> n));
+        String instituteId = view.owner();
+        List<QuestionLibraryNode> nodes = view.nodes();
+        Map<String, String> parentOf = new HashMap<>();
+        for (QuestionLibraryNode node : nodes) parentOf.put(node.getId(), view.parentOf(node));
 
         Map<String, long[]> counts = new HashMap<>();
         for (Object[] row : nodeRepository.countQuestionsPerNode(instituteId)) {
             counts.put((String) row[0], new long[]{toLong(row[1]), toLong(row[2]), toLong(row[3]), toLong(row[4])});
         }
+        Map<String, Long> accessCounts = new HashMap<>();
+        if (view.manager()) {
+            for (Object[] row : nodeRepository.countAccessPerNode(instituteId)) {
+                accessCounts.put((String) row[0], toLong(row[1]));
+            }
+        }
 
         List<LibraryNodeDto> dtos = new ArrayList<>();
         for (QuestionLibraryNode node : nodes) {
+            String parentId = parentOf.get(node.getId());
             // A node whose parent is gone (deleted from under it) would be unreachable in
             // the tree. Deletes take whole subtrees, so this is only a guard.
-            if (node.getParentId() != null && !byId.containsKey(node.getParentId())) continue;
+            if (parentId != null && !parentOf.containsKey(parentId)) continue;
             long[] c = counts.getOrDefault(node.getId(), new long[4]);
             dtos.add(LibraryNodeDto.builder()
                     .id(node.getId())
-                    .parentId(node.getParentId())
+                    .parentId(parentId)
                     .name(node.getName())
                     .description(node.getDescription())
                     .displayOrder(node.getDisplayOrder())
-                    .depth(QuestionLibraryTreeResolver.depthOf(node.getId(), byId))
+                    .depth(depthIn(node.getId(), parentOf))
                     .questionCount(c[0])
                     .easyCount(c[1])
                     .mediumCount(c[2])
                     .hardCount(c[3])
+                    .accessCount(view.manager() ? accessCounts.getOrDefault(node.getId(), 0L) : null)
                     .build());
         }
 
         return LibraryTreeResponse.builder()
                 .nodes(dtos)
-                .summary(summary(instituteId, dtos.size(), manager))
+                .summary(summary(view, dtos.size()))
                 .maxDepth(MAX_DEPTH)
-                .canManage(manager)
+                .canManage(view.manager())
                 .build();
     }
 
-    /** The owner sees its whole working set. Everyone else counts only what is on offer. */
-    private LibrarySummaryDto summary(String instituteId, int topicCount, boolean manager) {
+    /** 1 for a top-level topic, following the given parent links. */
+    private static int depthIn(String nodeId, Map<String, String> parentOf) {
+        int depth = 0;
+        String current = nodeId;
+        Set<String> seen = new HashSet<>();
+        while (current != null && parentOf.containsKey(current) && seen.add(current)) {
+            depth++;
+            current = parentOf.get(current);
+        }
+        return depth;
+    }
+
+    private static LibrarySummaryDto emptySummary() {
+        return LibrarySummaryDto.builder()
+                .totalQuestions(0L)
+                .unsortedQuestions(0L)
+                .addedLastWeek(0L)
+                .topicCount(0)
+                .byDifficulty(Map.of())
+                .byType(Map.of())
+                .build();
+    }
+
+    /** The owner sees its whole working set. Everyone else counts only the part it was given. */
+    private LibrarySummaryDto summary(QuestionLibraryScope.View view, int topicCount) {
+        String instituteId = view.owner();
+        boolean manager = view.manager();
+        String visibleCsv = manager ? null : view.limitCsv();
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
         Map<String, Long> byType = new LinkedHashMap<>();
         long total = 0;
         List<Object[]> rows = manager
                 ? nodeRepository.countLiveQuestionsByDifficultyAndType(instituteId)
-                : nodeRepository.countPlacedQuestionsByDifficultyAndType(instituteId);
+                : nodeRepository.countQuestionsOnNodesByDifficultyAndType(instituteId, visibleCsv);
         for (Object[] row : rows) {
             String difficulty = row[0] == null ? "UNKNOWN" : ((String) row[0]).toUpperCase(Locale.ROOT);
             String type = row[1] == null ? "UNKNOWN" : (String) row[1];
@@ -145,7 +177,7 @@ public class QuestionLibraryService {
                 .unsortedQuestions(manager ? nodeRepository.countUnsortedQuestions(instituteId) : 0L)
                 .addedLastWeek(manager
                         ? nodeRepository.countQuestionsAddedLastWeek(instituteId)
-                        : nodeRepository.countPlacedQuestionsAddedLastWeek(instituteId))
+                        : nodeRepository.countQuestionsOnNodesAddedLastWeek(instituteId, visibleCsv))
                 .topicCount(topicCount)
                 .byDifficulty(byDifficulty)
                 .byType(byType)
@@ -336,13 +368,18 @@ public class QuestionLibraryService {
         return LibraryActionResponse.builder().nodesCreated(0).affected(removed).build();
     }
 
-    /** Papers on a topic and every topic below it, or on the whole library when no topic is given. */
-    public List<LibraryPaperDto> listPapers(String nodeId) {
-        String owner = access.ownerInstituteId();
-        if (owner == null) return List.of();
-        String nodeIdsCsv = null;
+    /**
+     * Papers on a topic and every topic below it, or on all the caller sees when no topic is
+     * given (the whole library for the owner).
+     */
+    public List<LibraryPaperDto> listPapers(String callerInstituteId, String nodeId) {
+        QuestionLibraryScope.View view = scope.of(callerInstituteId);
+        if (view.empty()) return List.of();
+        String owner = view.owner();
+        String nodeIdsCsv = view.limitCsv();
         if (blankToNull(nodeId) != null) {
-            List<String> expanded = treeResolver.withDescendants(owner, List.of(nodeId));
+            if (!view.sees(nodeId.trim())) return List.of();
+            List<String> expanded = treeResolver.withDescendants(owner, List.of(nodeId.trim()));
             if (expanded.isEmpty()) return List.of();
             nodeIdsCsv = String.join(",", expanded);
         }
@@ -431,10 +468,11 @@ public class QuestionLibraryService {
 
     public Page<LibraryQuestionDto> listQuestions(CustomUserDetails user, String instituteId, QuestionBankFilter filter,
                                                   int pageNo, int pageSize) {
-        String owner = access.ownerInstituteId();
+        QuestionLibraryScope.View view = scope.of(instituteId);
+        String owner = view.owner();
         if (owner == null) return Page.empty(PageRequest.of(pageNo, pageSize));
-        boolean manager = access.isOwner(instituteId);
-        QuestionBankFilter scoped = manager ? filter : readerFilter(owner, filter);
+        boolean manager = view.manager();
+        QuestionBankFilter scoped = manager ? filter : readerFilter(view, filter);
         if (scoped == null) return Page.empty(PageRequest.of(pageNo, pageSize));
 
         Page<QuestionDTO> page = questionBankManager.getQuestions(user, scoped, owner, pageNo, pageSize);
@@ -455,8 +493,9 @@ public class QuestionLibraryService {
         LibraryRandomPickRequest safe = request == null ? new LibraryRandomPickRequest() : request;
         Map<String, Long> available = new LinkedHashMap<>();
         PICK_LEVELS.forEach(level -> available.put(level, 0L));
-        String owner = access.ownerInstituteId();
-        String nodeIdsCsv = owner == null ? null : pickNodesCsv(owner, safe.getLibraryNodeIds());
+        QuestionLibraryScope.View view = scope.of(instituteId);
+        String owner = view.owner();
+        String nodeIdsCsv = view.empty() ? null : pickNodesCsv(view, safe.getLibraryNodeIds());
         if (nodeIdsCsv == null) {
             return LibraryRandomPickResponse.builder().available(available).questions(List.of()).build();
         }
@@ -473,14 +512,16 @@ public class QuestionLibraryService {
         }
         return LibraryRandomPickResponse.builder()
                 .available(available)
-                .questions(ids.isEmpty() ? List.of() : toRows(owner, access.isOwner(instituteId), loadInOrder(ids)))
+                .questions(ids.isEmpty() ? List.of() : toRows(owner, view.manager(), loadInOrder(ids)))
                 .build();
     }
 
-    private String pickNodesCsv(String owner, List<String> requested) {
-        List<String> nodeIds = requested == null || requested.isEmpty()
-                ? treeResolver.activeNodes(owner).stream().map(QuestionLibraryNode::getId).toList()
-                : treeResolver.withDescendants(owner, requested);
+    /** The chosen topics with everything below them, or all the caller sees when none is chosen. */
+    private String pickNodesCsv(QuestionLibraryScope.View view, List<String> requested) {
+        boolean all = cleanIds(requested).isEmpty();
+        List<String> allowed = view.restrict(requested);
+        if (allowed.isEmpty()) return null;
+        List<String> nodeIds = all ? allowed : treeResolver.withDescendants(view.owner(), allowed);
         return nodeIds.isEmpty() ? null : String.join(",", nodeIds);
     }
 
@@ -519,6 +560,14 @@ public class QuestionLibraryService {
         for (Object[] row : nodeRepository.findNodesOfQuestions(owner, csv)) {
             nodesByQuestion.computeIfAbsent((String) row[0], k -> new ArrayList<>()).add((String) row[1]);
         }
+        Map<String, List<LibraryTagDto>> tagsByQuestion = new HashMap<>();
+        for (Object[] row : nodeRepository.findLibraryTagsOfQuestions(csv)) {
+            tagsByQuestion.computeIfAbsent((String) row[0], k -> new ArrayList<>()).add(LibraryTagDto.builder()
+                    .tagId((String) row[1])
+                    .tagName((String) row[2])
+                    .kind((String) row[3])
+                    .build());
+        }
         // Usage and provenance describe the owner's own work, not what a reader is choosing.
         Map<String, Long> usage = new HashMap<>();
         if (manager) {
@@ -536,25 +585,25 @@ public class QuestionLibraryService {
                 .question(q)
                 .nodeIds(nodesByQuestion.getOrDefault(q.getId(), new ArrayList<>()))
                 .assessmentCount(usage.getOrDefault(q.getId(), 0L))
+                .tags(tagsByQuestion.getOrDefault(q.getId(), new ArrayList<>()))
                 .build()).toList();
     }
 
     /**
      * What a non-owner institute may filter on. The owner institute's other questions live
-     * in the same table, so the list is always limited to questions placed on a topic:
-     * only those are offered. Null means nothing can match.
+     * in the same table, so the list is always limited to questions placed on a topic the
+     * caller was given: only those are offered to it. Null means nothing can match.
      */
-    private QuestionBankFilter readerFilter(String owner, QuestionBankFilter filter) {
+    private QuestionBankFilter readerFilter(QuestionLibraryScope.View view, QuestionBankFilter filter) {
+        if (view.empty()) return null;
         QuestionBankFilter requested = filter == null ? new QuestionBankFilter() : filter;
-        List<String> nodeIds = requested.getLibraryNodeIds();
-        if (nodeIds == null || nodeIds.isEmpty()) {
-            nodeIds = treeResolver.activeNodes(owner).stream().map(QuestionLibraryNode::getId).toList();
-            if (nodeIds.isEmpty()) return null;
-        }
+        List<String> nodeIds = view.restrict(requested.getLibraryNodeIds());
+        if (nodeIds.isEmpty()) return null;
         QuestionBankFilter scoped = new QuestionBankFilter();
         scoped.setName(requested.getName());
         scoped.setQuestionTypes(requested.getQuestionTypes());
         scoped.setDifficulties(requested.getDifficulties());
+        scoped.setTagIds(requested.getTagIds());
         scoped.setLibraryNodeIds(nodeIds);
         // The section holds copies, so hide the library questions those copies came from.
         List<String> inSection = requested.getExcludeQuestionIds();
