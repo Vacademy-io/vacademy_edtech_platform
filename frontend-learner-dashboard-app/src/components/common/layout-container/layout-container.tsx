@@ -11,6 +11,7 @@ import { usePlayTheme } from "@/hooks/use-play-theme";
 import { PlayBottomNav, PlayNavRail } from "./PlayBottomNav";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import { useFunTheme } from "@/hooks/use-fun-theme";
+import { funAddsBottomBar, funLessonOwnsFoot } from "./fun-bottom-bar";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { useStudentLayout } from "@/hooks/use-student-layout";
 import { useRouterState } from "@tanstack/react-router";
@@ -84,11 +85,11 @@ export const LayoutContainer = ({
     const layout = useStudentLayout();
     // Fun gets the play skins' default: the bottom bar on phones when the institute
     // left navigation on "auto". Any placement it chose is kept as it is.
+    // The lesson viewer keeps the foot of the screen for its own Fun bar.
     const isFunTheme = useFunTheme();
-    const funBottomBar =
-        isFunTheme && !layout.showBottomBar && layout.placement === "auto" && layout.device === "mobile";
-    const showBottomBar = layout.showBottomBar || funBottomBar;
     const pathname = useRouterState({ select: (s) => s.location.pathname });
+    const funBottomBar = funAddsBottomBar(isFunTheme, layout) && !funLessonOwnsFoot(pathname);
+    const showBottomBar = layout.showBottomBar || funBottomBar;
     // A route-owned sidebar (course slides) is content navigation, never hidden.
     const hideAppSidebar = layout.hideSidebar && !sidebarComponent;
     const wallpaper =
@@ -258,6 +259,8 @@ export const LayoutContainer = ({
                     items={layout.bottomBar.items}
                     maxVisible={layout.bottomBar.maxVisible}
                     showLabels={layout.bottomBar.showLabels}
+                    // Fun: the bar's More opens the app sidebar (none of the route's own).
+                    opensAppMenu={isFunTheme && !sidebarComponent && !hideAppSidebar}
                     // Beside a sidebar (tablet / desktop "both") an edge-to-edge
                     // bar would cover the sidebar's footer; float it instead.
                     barStyle={

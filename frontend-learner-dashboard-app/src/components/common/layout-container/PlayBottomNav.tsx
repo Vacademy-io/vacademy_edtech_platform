@@ -10,6 +10,8 @@ import type { SidebarItemsType } from "@/types/layout-container-types";
 import type { StudentSidebarTabConfig } from "@/types/student-display-settings";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useFunTheme } from "@/hooks/use-fun-theme";
+import { useSidebar } from "@/components/ui/sidebar";
+import { funBarLabel } from "./fun-bottom-bar";
 import { STUDENT_NAV_ICONS } from "@/constants/student-nav-icons";
 import {
   arrangeBottomBar,
@@ -99,7 +101,7 @@ function createLetterIcon(letter: string) {
 function transformTabs(
   tabs: StudentSidebarTabConfig[],
   t: TFunction
-): SidebarItemsType[] {
+): NavItem[] {
   return tabs
     .filter((tab) => tab.visible !== false)
     .map((tab) => {
@@ -114,28 +116,42 @@ function transformTabs(
         icon: ICON_MAP[tab.id] || createLetterIcon((tab.label || tab.id || "?").charAt(0).toUpperCase()),
         title: tab.label || (labelKey ? t(labelKey) : tab.id) || "",
         to: firstRoute,
+        ...(!tab.label && labelKey ? { labelKey } : {}),
       };
     });
 }
 
 const MAX_VISIBLE = 4;
 
-/** Shared item source for the mobile bottom bar and the desktop rail. */
-function usePlayNavItems(): SidebarItemsType[] {
-  const { t } = useTranslation("layoutCommonA");
-  const [items, setItems] = useState<SidebarItemsType[]>([]);
+/** A nav entry; `labelKey` is the catalog key of a built-in tab's name (no typed label). */
+type NavItem = SidebarItemsType & { labelKey?: string };
+
+/**
+ * Shared item source for the mobile bottom bar and the desktop rail. The tabs are
+ * kept as read and labelled at render time with the current `t`, so a read that was
+ * started before the label catalog loaded (when `t` still returns its keys) can no
+ * longer land last and leave the keys on screen; a superseded read is dropped.
+ */
+export function usePlayNavItems(): NavItem[] {
+  const { t, ready } = useTranslation("layoutCommonA");
+  const [tabs, setTabs] = useState<StudentSidebarTabConfig[] | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     getStudentDisplaySettings(false).then((settings) => {
-      const tabs = settings?.sidebar?.tabs || [];
-      setItems(transformTabs(tabs, t));
+      if (!cancelled) setTabs(settings?.sidebar?.tabs || []);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [t]);
 
-  return items;
+  // `ready` too: the labels are worked out again once the catalog has loaded.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => (tabs ? transformTabs(tabs, t) : []), [tabs, t, ready]);
 }
 
-type BottomNavItem = SidebarItemsType & {
+type BottomNavItem = NavItem & {
   /** Full https:// URL — opens in a new tab instead of routing in-app. */
   external?: boolean;
   /** Admin-typed label: shown as typed (truncated by CSS), not shortened. */
@@ -186,6 +202,7 @@ function configuredNavItems(
       id: item.id,
       icon,
       title: label,
+      ...(!typed && labelKey ? { labelKey } : {}),
       to,
       external: isExternalNavRoute(to),
       fullLabel: !!typed,
@@ -217,6 +234,16 @@ function NavEntry({
   );
 }
 
+/**
+ * Fun: the catalog key a bar label is read from in the bar's own render, with the
+ * same `t` as More: the tab's own key for a built-in tab, else the short key for a
+ * known English title. The label then never keeps a name worked out before the
+ * catalog had loaded.
+ */
+function funShortKey(item: BottomNavItem): string | undefined {
+  return item.labelKey ?? SHORT_LABEL_KEYS[item.title];
+}
+
 function shortLabelFor(title: string, t: TFunction): string {
   const key = SHORT_LABEL_KEYS[title];
   return key ? t(key) : title.length > 6 ? title.slice(0, 5) + "…" : title;
@@ -231,6 +258,13 @@ interface PlayBottomNavProps {
   showLabels?: boolean;
   /** "floating": a rounded bar above the bottom edge. Default "classic". */
   barStyle?: StudentBottomBarStyle;
+  /**
+   * Fun skin only: the app's sidebar can open from this bar (the route has no
+   * sidebar of its own and the institute did not hide it). The bar then ends with
+   * a More entry that reaches every sidebar page, since the Fun home's top bar
+   * leaves out its sidebar button. Ignored by every other skin.
+   */
+  opensAppMenu?: boolean;
 }
 
 export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
@@ -239,8 +273,14 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
   maxVisible = MAX_VISIBLE,
   showLabels = true,
   barStyle = "classic",
+  opensAppMenu = false,
 }) => {
   const { t } = useTranslation("layoutCommonA");
+  // Fun restyles the bar from its own stylesheet (styles/fun/home.css): these
+  // classes are added only under that skin, so every other skin's bar is unchanged.
+  const isFun = useFunTheme();
+  // The Fun catalog is read only under Fun; other skins ask for no extra catalog.
+  const { t: tFun } = useTranslation(isFun ? "funHome" : "layoutCommonA");
   const sidebarItems = usePlayNavItems();
   const configuredItems = useMemo(
     () => (configured?.length ? configuredNavItems(configured, t) : null),
@@ -254,14 +294,33 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
   // there) uses the brand primary, since the play-* tokens exist only under
   // .ui-play.
   const primaryTone = !isPlay;
-  // Fun restyles the bar from its own stylesheet (styles/fun/home.css): these
-  // classes are added only under that skin, so every other skin's bar is unchanged.
-  const isFun = useFunTheme();
+  const { isMobile, setOpenMobile } = useSidebar();
+  // Fun: whether the institute shows the sidebar at all (the top bar reads the same setting).
+  const [sidebarShown, setSidebarShown] = useState(true);
+  useEffect(() => {
+    if (!isFun || !opensAppMenu) return;
+    let cancelled = false;
+    getStudentDisplaySettings(false)
+      .then((settings) => {
+        if (!cancelled) setSidebarShown(settings?.sidebar?.visible !== false);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [isFun, opensAppMenu]);
+  // Fun on a phone: the bar's More reaches the whole sidebar.
+  const menuEntry = isFun && opensAppMenu && isMobile && sidebarShown;
+  const [moreOpen, setMoreOpen] = useState(false);
+  const openAppMenu = () => {
+    setMoreOpen(false);
+    setOpenMobile(true);
+  };
   const currentRoute = router.state.location.pathname;
   // Every entry is a direct link here (no sub-item rows), so all compete.
   const navRoutes = items.filter((item) => !item.external).map((item) => item.to);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !menuEntry) return null;
 
   const { visible: visibleItems, overflow: overflowItems } = arrangeBottomBar(
     items,
@@ -294,7 +353,11 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
           const isActive =
             !item.external && isNavRouteActive(currentRoute, item.to, navRoutes);
           const Icon = item.icon;
-          const shortLabel = item.fullLabel ? item.title : shortLabelFor(item.title, t);
+          const shortLabel = item.fullLabel
+            ? item.title
+            : isFun
+              ? funBarLabel(item.title, funShortKey(item) ? t(funShortKey(item)!) : null)
+              : shortLabelFor(item.title, t);
 
           if (item.highlight) {
             // The big center action (e.g. Live Class): a raised brand-colour
@@ -362,7 +425,7 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
                 <span
                   className={cn(
                     "text-2xs font-bold leading-none",
-                    item.fullLabel && "max-w-full truncate px-0.5",
+                    (item.fullLabel || isFun) && "max-w-full truncate px-0.5",
                     isActive
                       ? primaryTone
                         ? "text-primary"
@@ -377,11 +440,30 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
           );
         })}
 
+        {/* Fun, no overflow: More opens the app's sidebar, which lists every page. */}
+        {menuEntry && !hasOverflow && (
+          <button
+            type="button"
+            className="fun-nav__item flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1.5"
+            aria-haspopup="dialog"
+            onClick={openAppMenu}
+          >
+            <div className="flex h-10 w-12 items-center justify-center rounded-xl text-muted-foreground">
+              <DotsThree size={24} weight="bold" />
+            </div>
+            {showLabels && (
+              <span className="max-w-full truncate px-0.5 text-2xs font-bold leading-none text-muted-foreground">
+                {t("playBottomNav.more")}
+              </span>
+            )}
+          </button>
+        )}
+
         {/* More button for overflow items */}
         {hasOverflow && (
-          <Sheet>
+          <Sheet {...(menuEntry ? { open: moreOpen, onOpenChange: setMoreOpen } : {})}>
             <SheetTrigger asChild>
-              <button className="flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5">
+              <button className={cn("flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5", isFun && "fun-nav__item")}>
                 <div className="flex h-10 w-12 items-center justify-center rounded-xl text-muted-foreground">
                   <DotsThree size={24} weight="bold" />
                 </div>
@@ -440,11 +522,26 @@ export const PlayBottomNav: React.FC<PlayBottomNavProps> = ({
                             : "text-muted-foreground"
                         )}
                       >
-                        {item.title}
+                        {isFun && item.labelKey ? t(item.labelKey) : item.title}
                       </span>
                     </NavEntry>
                   );
                 })}
+                {/* Fun: the sidebar's other pages are one more tap away. */}
+                {menuEntry && (
+                  <button
+                    type="button"
+                    className="group flex min-h-12 flex-col items-center gap-2 rounded-xl p-4 transition-all hover:bg-muted"
+                    onClick={openAppMenu}
+                  >
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                      <DotsThree size={24} weight="bold" />
+                    </div>
+                    <span className="text-center text-xs font-bold text-muted-foreground">
+                      {tFun("nav.allPages")}
+                    </span>
+                  </button>
+                )}
               </div>
             </SheetContent>
           </Sheet>
