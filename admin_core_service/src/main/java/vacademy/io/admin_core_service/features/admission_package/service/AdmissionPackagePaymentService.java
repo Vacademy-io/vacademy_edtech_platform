@@ -141,6 +141,15 @@ public class AdmissionPackagePaymentService {
         if (paymentLogService != null && paymentLogIds.size() > 1) {
             paymentLogService.assignPaymentGroup(java.util.UUID.randomUUID().toString(), paymentLogIds);
         }
+        // One live feed entry for the payment, for the whole amount, on its first log.
+        if (paymentLogService != null && !paymentLogIds.isEmpty()) {
+            BigDecimal recorded = BigDecimal.ZERO;
+            for (BigDecimal s : shares) {
+                if (s.signum() > 0) recorded = recorded.add(s);
+            }
+            paymentLogService.recordOfflinePaymentLiveActivity(paymentLogIds.get(0),
+                    loaded.pkg().getInstituteId(), recorded.doubleValue());
+        }
         if (req.isGenerateInvoice()) {
             invoiceService.generateCombinedInvoiceAfterCommit(paymentLogIds, loaded.pkg().getInstituteId());
         }

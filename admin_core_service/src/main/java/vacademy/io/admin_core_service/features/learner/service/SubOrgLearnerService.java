@@ -556,6 +556,7 @@ public class SubOrgLearnerService {
                     PaymentStatusEnum.PAID.name(),
                     specificJson);
             offlinePaymentDetailsService.apply(paymentLogId, paidVia, recordedByUserId);
+            paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, request.getInstituteId());
             log.info("Recorded manual offline payment={} currency={} for learner={} userPlan={} logId={}",
                     amount, currency, learnerUserId, learnerUserPlanId, paymentLogId);
         } catch (Exception e) {

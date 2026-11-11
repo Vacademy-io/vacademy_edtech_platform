@@ -1514,6 +1514,20 @@ def test_a_lead_sample_masks_a_name_that_holds_contact(stored, shown):
     assert rep._lead_sample({"lead_id": "r-1", "parent_name": stored}, {})["name"] == shown
 
 
+def test_a_payment_staff_recorded_by_hand_says_so():
+    offline = {"amount": 5000, "currency": "INR", "vendor": "OFFLINE", "mode": "OFFLINE"}
+    assert rep._describe("PAYMENT_SUCCEEDED", "LEARNER", offline) == "Payment received (recorded offline): INR 5000"
+    gateway = {"amount": 5000, "currency": "INR", "vendor": "RAZORPAY"}
+    assert rep._describe("PAYMENT_SUCCEEDED", "LEARNER", gateway) == "Payment received: INR 5000"
+    r = {"category": "PAYMENT", "action": "PAYMENT_SUCCEEDED", "actor_type": "LEARNER",
+         "occurred_at": datetime(2026, 11, 11, 8, 0), "payload": offline}
+    row = rep._live_row(r, {}, cd.zone("Asia/Kolkata"))
+    assert row["mode"] == "OFFLINE" and row["amount"] == 5000 and row["vendor"] == "OFFLINE"
+    assert "mode" not in rep._live_row(dict(r, payload=gateway), {}, cd.zone("Asia/Kolkata"))
+    # Anything else in the field is not a mode.
+    assert "mode" not in rep._live_row(dict(r, payload=dict(gateway, mode="cash; drop")), {}, cd.zone("Asia/Kolkata"))
+
+
 @pytest.mark.parametrize("stored, shown", [
     ("asha.verma@gmail.com", "a***@gmail.com"), ("9222200007", "******0007"), ("Asha Verma", "Asha Verma")])
 @pytest.mark.parametrize("field", ["subject_name", "lead_name"])

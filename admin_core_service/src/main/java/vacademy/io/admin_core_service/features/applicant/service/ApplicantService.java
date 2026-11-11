@@ -1622,6 +1622,7 @@ public class ApplicantService {
                         paymentLogRepository.save(paymentLog);
                         logger.info("Created PaymentLog for manual payment: {}, user_plan: {}", paymentLog.getId(),
                                         userPlan.getId());
+                        paymentLogService.recordOfflinePaymentLiveActivity(paymentLog.getId(), instituteId);
 
                         // ---- INJECT APPLICATION FEE INVOICE GENERATION FOR MANUAL PAYMENTS ----
                         java.util.Map<String, Object> receiptDetails = null;

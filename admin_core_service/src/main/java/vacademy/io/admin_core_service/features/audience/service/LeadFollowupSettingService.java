@@ -52,6 +52,34 @@ public class LeadFollowupSettingService {
         return flag(instituteId, "overdueByDate");
     }
 
+    /**
+     * When a person converts, are their other enquiries in the institute closed with them (open
+     * follow-ups closed, live enquiries moved to Converted)? Unlike the switches above this one
+     * is ON unless the institute turned it off:
+     *
+     * <pre>
+     * institute.setting → setting → LEAD_SETTING → data → closeOtherEnquiriesOnConversion: false
+     * </pre>
+     */
+    public boolean closeOtherEnquiriesOnConversion(String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) return false;
+        try {
+            String settingJson = instituteRepository.findById(instituteId)
+                    .map(i -> i.getSetting())
+                    .orElse(null);
+            if (settingJson == null || settingJson.isBlank()) return true;
+            JsonNode value = objectMapper.readTree(settingJson)
+                    .path("setting").path("LEAD_SETTING").path("data").path(CLOSE_ON_CONVERSION);
+            return !value.isBoolean() || value.asBoolean();
+        } catch (Exception e) {
+            log.warn("Failed to read {} for institute {}, it stays on: {}",
+                    CLOSE_ON_CONVERSION, instituteId, e.getMessage());
+            return true;
+        }
+    }
+
+    static final String CLOSE_ON_CONVERSION = "closeOtherEnquiriesOnConversion";
+
     private boolean flag(String instituteId, String name) {
         if (instituteId == null || instituteId.isBlank()) return false;
         try {

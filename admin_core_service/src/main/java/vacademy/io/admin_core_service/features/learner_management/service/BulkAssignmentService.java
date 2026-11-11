@@ -1049,6 +1049,7 @@ public class BulkAssignmentService {
                         vacademy.io.common.payment.enums.PaymentStatusEnum.PAID.name(),
                         vacademy.io.admin_core_service.features.common.util.JsonUtil.toJson(paymentSpecificData));
                 offlinePaymentDetailsService.apply(paymentLogId, paidVia, adminUserId);
+                paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, instituteId);
 
                 // Book the payment on the learner's account ledger as a charge raised and
                 // settled at once. Without it the plan (created ACTIVE, so never accrued) left
@@ -2346,6 +2347,7 @@ public class BulkAssignmentService {
                     vacademy.io.common.payment.enums.PaymentStatusEnum.PAID.name(),
                     vacademy.io.admin_core_service.features.common.util.JsonUtil.toJson(paymentSpecificData));
             offlinePaymentDetailsService.apply(paymentLogId, paidVia, adminUserId);
+            paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, instituteId);
 
             // Ledger credit for the money just taken. Without this the Account Summary
             // tiles (which read user_account_ledger via sumCredits) report Total Paid 0

@@ -89,6 +89,11 @@ public class UserLeadProfileService {
     @Lazy
     private LeadScoringService leadScoringService;
 
+    /** Closes the person's other enquiries once a conversion commits. @Lazy: no new wiring edge at startup. */
+    @Autowired
+    @Lazy
+    private PersonConversionCloseService personConversionCloseService;
+
     // ─────────────────────────────────────────────────────────────────────────
     // Public API
     // ─────────────────────────────────────────────────────────────────────────
@@ -183,6 +188,7 @@ public class UserLeadProfileService {
                     // counsellor-activity time (MIN timeline_event by counsellor), not status flips.
                     profile.setUpdatedAt(now);
                     userLeadProfileRepository.save(profile);
+                    afterConversion(userId, instituteId);
                     return true;
                 })
                 .orElse(false);
@@ -207,7 +213,25 @@ public class UserLeadProfileService {
         // Note: first_response_at is NOT stamped here. TAT is measured strictly as
         // counsellor-activity time (MIN timeline_event by counsellor), not status flips.
         profile.setUpdatedAt(now);
-        return userLeadProfileRepository.save(profile);
+        UserLeadProfile saved = userLeadProfileRepository.save(profile);
+        afterConversion(userId, instituteId);
+        return saved;
+    }
+
+    /**
+     * The person is now CONVERTED in this institute: their other enquiries there get their open
+     * follow-ups closed and move to Converted once this transaction commits. That step emits no
+     * trigger of any kind (see PersonConversionCloseService). Never throws.
+     */
+    private void afterConversion(String userId, String instituteId) {
+        try {
+            if (personConversionCloseService != null) {
+                personConversionCloseService.onPersonConverted(userId, instituteId);
+            }
+        } catch (Exception e) {
+            log.warn("Could not schedule closing other enquiries for user={} institute={}: {}",
+                    userId, instituteId, e.getMessage());
+        }
     }
 
     /**
@@ -259,6 +283,9 @@ public class UserLeadProfileService {
         }
 
         emitStatusChanged(saved, "CONVERSION_STATUS", oldStatus, status);
+        if ("CONVERTED".equals(status)) {
+            afterConversion(userId, instituteId);
+        }
         return saved;
     }
 

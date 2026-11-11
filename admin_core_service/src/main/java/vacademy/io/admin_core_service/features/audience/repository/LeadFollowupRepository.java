@@ -31,6 +31,9 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
     /** True when the lead already has an open priority follow-up (one per reattempt burst). */
     boolean existsByAudienceResponseIdAndIsClosedFalseAndIsPriorityTrue(String audienceResponseId);
 
+    /** The open follow-ups on these enquiries (closed when the person converts). */
+    List<LeadFollowup> findByAudienceResponseIdInAndIsClosedFalse(java.util.Collection<String> audienceResponseIds);
+
     /** Check Lead's follow-up history: every follow-up across one person's enquiries. */
     List<LeadFollowup> findByAudienceResponseIdInOrderByScheduleTimeDesc(List<String> audienceResponseIds);
 

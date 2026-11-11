@@ -330,7 +330,11 @@ public class CpoSideViewService {
     @Transactional
     public CpoSideViewInstallmentsResponseDTO recordOfflinePayment(
             String userPlanId, RecordOfflinePaymentRequestDTO req, String appliedBy) {
-        recordOfflinePaymentLog(userPlanId, req, appliedBy);
+        String paymentLogId = recordOfflinePaymentLog(userPlanId, req, appliedBy);
+        // Live feed entry for this payment. Not in recordOfflinePaymentLog: an admission package
+        // records one payment as a log per course and announces it once, for the whole amount.
+        userPlanRepository.findById(userPlanId).ifPresent(plan ->
+                paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, instituteIdOf(userPlanId, plan)));
         return list(userPlanId);
     }
 
@@ -339,6 +343,16 @@ public class CpoSideViewService {
      * its payment log id. An admission package records one per course and then issues a single
      * receipt for all of them.
      */
+    /** The plan's institute, from its fee bills — UserPlan has no instituteId column. */
+    private String instituteIdOf(String userPlanId, UserPlan plan) {
+        return studentFeePaymentRepository.findByUserPlanId(userPlanId).stream()
+                .map(StudentFeePayment::getInstituteId)
+                .filter(s -> s != null && !s.isBlank())
+                .findFirst()
+                // A plan with no fee bills (e.g. a sub-org admin plan): its invite knows the institute.
+                .orElse(plan.getEnrollInvite() != null ? plan.getEnrollInvite().getInstituteId() : null);
+    }
+
     @Transactional
     public String recordOfflinePaymentLog(String userPlanId, RecordOfflinePaymentRequestDTO req, String appliedBy) {
 
@@ -360,13 +374,7 @@ public class CpoSideViewService {
         UserPlan plan = userPlanRepository.findById(userPlanId)
                 .orElseThrow(() -> new VacademyException("UserPlan not found: " + userPlanId));
 
-        // Resolve institute_id from SFP rows — UserPlan has no instituteId column.
-        String instituteId = studentFeePaymentRepository.findByUserPlanId(userPlanId).stream()
-                .map(StudentFeePayment::getInstituteId)
-                .filter(s -> s != null && !s.isBlank())
-                .findFirst()
-                // A plan with no fee bills (e.g. a sub-org admin plan): its invite knows the institute.
-                .orElse(plan.getEnrollInvite() != null ? plan.getEnrollInvite().getInstituteId() : null);
+        String instituteId = instituteIdOf(userPlanId, plan);
 
         // Validate how it was paid before anything is written.
         OfflinePaymentDetailsService.Resolved paymentDetails =

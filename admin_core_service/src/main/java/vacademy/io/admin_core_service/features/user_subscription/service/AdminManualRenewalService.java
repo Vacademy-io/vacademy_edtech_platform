@@ -195,6 +195,7 @@ public class AdminManualRenewalService {
             paymentLogService.updatePaymentLogOnly(paymentLogId, PaymentLogStatusEnum.SUCCESS.name(),
                     PaymentStatusEnum.PAID.name(), JsonUtil.toJson(data));
             offlinePaymentDetailsService.apply(paymentLogId, paymentDetails, adminId);
+            paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, instituteId);
             // Accrual + credit pair, as a gateway renewal books it, so Total Billed and Total
             // Paid both move and the balance is unchanged.
             // The remark rides on the ledger rows so Payment History shows why it was recorded.

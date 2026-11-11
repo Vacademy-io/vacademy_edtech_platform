@@ -54,6 +54,11 @@ public class LeadStatusService {
     @Lazy
     private UserLeadProfileService userLeadProfileService;
 
+    /** Closes the person's other enquiries once a move to Converted commits. */
+    @Autowired
+    @Lazy
+    private PersonConversionCloseService personConversionCloseService;
+
     /**
      * Starter statuses seeded the first time an institute opens Lead Statuses.
      * Keys align with the legacy conversion_status values (LEAD/CONVERTED/LOST) so the profile
@@ -261,6 +266,20 @@ public class LeadStatusService {
         } catch (Exception ex) {
             log.warn("[LeadStatus] Failed to mirror conversion_status for lead {}: {}",
                     saved.getId(), ex.getMessage());
+        }
+
+        // A move to Converted converts the person: their other enquiries in the institute are
+        // closed after commit, without any trigger (see PersonConversionCloseService).
+        if ("CONVERTED".equals(target.getStatusKey())) {
+            try {
+                String personUserId = saved.getUserId() != null ? saved.getUserId() : saved.getStudentUserId();
+                if (personConversionCloseService != null && personUserId != null) {
+                    personConversionCloseService.onPersonConverted(personUserId, instituteId);
+                }
+            } catch (Exception ex) {
+                log.warn("[LeadStatus] Could not schedule closing other enquiries for lead {}: {}",
+                        saved.getId(), ex.getMessage());
+            }
         }
         return saved;
     }

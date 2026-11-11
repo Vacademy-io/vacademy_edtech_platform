@@ -9,6 +9,9 @@ import vacademy.io.admin_core_service.features.fee_management.entity.StudentFeeA
 import vacademy.io.admin_core_service.features.fee_management.entity.StudentFeePayment;
 import vacademy.io.admin_core_service.features.fee_management.repository.StudentFeeAllocationLedgerRepository;
 import vacademy.io.admin_core_service.features.fee_management.repository.StudentFeePaymentRepository;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityRecorder;
+import vacademy.io.admin_core_service.features.live_activity.core.OfflinePaymentLiveActivity;
+import vacademy.io.admin_core_service.features.live_activity.dto.LiveActivityEvent;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 
@@ -47,6 +50,22 @@ public class FeeLedgerAllocationService {
 
     @Autowired
     private AdjustmentResolver adjustmentResolver;
+
+    @Autowired
+    private LiveActivityRecorder liveActivityRecorder;
+
+    /** Live feed entry for an offline payment staff just recorded. Best-effort, never throws. */
+    private void recordOfflinePaymentLiveActivity(PaymentLog paymentLog, String instituteId) {
+        try {
+            LiveActivityEvent event = OfflinePaymentLiveActivity.build(paymentLog, instituteId, null);
+            if (event != null && liveActivityRecorder != null) {
+                liveActivityRecorder.recordAfterCommit(event);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to record live activity for offline payment log {}: {}",
+                    paymentLog != null ? paymentLog.getId() : null, e.getMessage());
+        }
+    }
 
     private BigDecimal computeAmountDue(StudentFeePayment bill) {
         BigDecimal expected = bill.getAmountExpected() != null ? bill.getAmountExpected() : BigDecimal.ZERO;
@@ -323,6 +342,7 @@ public class FeeLedgerAllocationService {
         paymentLog.setPaymentAmount(amount.doubleValue());
         paymentLog = paymentLogRepository.save(paymentLog);
         offlinePaymentDetailsService.apply(paymentLog.getId(), details, recordedByUserId);
+        recordOfflinePaymentLiveActivity(paymentLog, instituteId);
 
         // Use FeeAllocationEngine to distribute across ONLY selected bills using
         // priority
@@ -447,6 +467,7 @@ public class FeeLedgerAllocationService {
         paymentLog.setPaymentAmount(amount.doubleValue());
         paymentLog.setPaymentSpecificData(null);
         paymentLog = paymentLogRepository.save(paymentLog);
+        recordOfflinePaymentLiveActivity(paymentLog, instituteId);
 
         BigDecimal remaining = amount;
 

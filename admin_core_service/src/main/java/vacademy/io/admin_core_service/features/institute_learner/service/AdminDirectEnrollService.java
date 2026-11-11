@@ -326,6 +326,7 @@ public class AdminDirectEnrollService {
                 PaymentLogStatusEnum.SUCCESS.name(),
                 PaymentStatusEnum.PAID.name(),
                 JsonUtil.toJson(paymentSpecificData));
+        paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, enrollInvite.getInstituteId());
     }
 
     private UserDTO createUserOrGetExistingUser(UserDTO user,String instituteId) {

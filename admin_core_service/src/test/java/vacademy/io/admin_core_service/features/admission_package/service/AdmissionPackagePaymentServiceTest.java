@@ -124,6 +124,23 @@ class AdmissionPackagePaymentServiceTest {
     }
 
     @Test
+    @DisplayName("a package payment recorded per course is one live feed entry, for the whole amount")
+    void onePackagePaymentIsOneFeedEntry() {
+        givenPackage();
+        vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService paymentLogs =
+                mock(vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "paymentLogService", paymentLogs);
+        RecordOfflinePaymentRequestDTO req = RecordOfflinePaymentRequestDTO.builder()
+                .amount(10000d).reference("UTR1").build();
+
+        service.recordPayment("pkg", req, "admin");
+
+        verify(paymentLogs, org.mockito.Mockito.times(1))
+                .recordOfflinePaymentLiveActivity("log-diploma", "inst", 10000d);
+        verify(paymentLogs, never()).recordOfflinePaymentLiveActivity(anyString(), anyString());
+    }
+
+    @Test
     @DisplayName("summary: package installments add the courses' bills on each date")
     void summary() {
         givenPackage();

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import vacademy.io.admin_core_service.features.audience.service.PersonConversionCloseService;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService.WakeRequest;
 import vacademy.io.admin_core_service.features.timeline.entity.TimelineEvent;
 import vacademy.io.admin_core_service.features.timeline.service.TimelineEventHook;
@@ -18,6 +19,8 @@ import java.util.Map;
  *
  * <p>The engine's own writes never wake it: its reach-outs and outcomes carry the
  * ENGAGEMENT_ENGINE actor, and the status changes it makes carry that source in their metadata.
+ * Entries written when a converted person's other enquiries are closed (source PERSON_CONVERTED)
+ * wake nobody either.
  */
 @Component
 @RequiredArgsConstructor
@@ -71,6 +74,8 @@ public class EngagementTimelineWakeHook implements TimelineEventHook {
         if (ENGINE_ACTOR.equals(e.getActorType())) return null;
         JsonNode meta = metadata(e.getMetadataJson());
         if (ENGINE_ACTOR.equals(meta.path("source").asText(null))) return null;
+        // Closing a converted person's other enquiries is bookkeeping, never a reason to act.
+        if (PersonConversionCloseService.SOURCE.equals(meta.path("source").asText(null))) return null;
 
         String type = e.getType() != null ? e.getType() : "";
         String leadRowId = null, profileId = null, enquiryId = null;

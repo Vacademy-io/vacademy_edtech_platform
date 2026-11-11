@@ -5594,6 +5594,7 @@ public class InvoiceService {
         }
         offlinePaymentDetailsService.apply(paymentLogId, paidVia,
                 userDetails != null ? userDetails.getUserId() : null);
+        paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, invoice.getInstituteId());
 
         // 3. A proforma becomes a real invoice at the moment it is paid — this is where the
         // institute's actual invoice number gets drawn. Runs before the PAID flip so the

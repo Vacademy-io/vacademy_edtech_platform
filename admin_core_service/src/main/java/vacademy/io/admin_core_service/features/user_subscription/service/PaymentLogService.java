@@ -86,6 +86,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityDedupeKeys;
 import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityRecorder;
+import vacademy.io.admin_core_service.features.live_activity.core.OfflinePaymentLiveActivity;
 import vacademy.io.admin_core_service.features.live_activity.dto.LiveActivityEvent;
 import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityAction;
 import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityActorType;
@@ -2718,6 +2719,36 @@ public class PaymentLogService {
         }
         return TrialStartResolver.label(
                 TrialStartResolver.nextStart(day, TrialStartResolver.zoneFromInvite(settingJson)));
+    }
+
+    /**
+     * Live feed entry for a payment staff recorded by hand (offline / manual), called by each
+     * path that records one, right after the log is marked PAID. The gateway path has its own
+     * ({@link #recordPaymentLiveActivity}); both use the same dedupe key, so a payment log is in
+     * the feed at most once. Pending, failed and zero-amount logs give nothing. Written after the
+     * caller's transaction commits. Best-effort and never throws.
+     */
+    public void recordOfflinePaymentLiveActivity(String paymentLogId, String instituteId) {
+        recordOfflinePaymentLiveActivity(paymentLogId, instituteId, null);
+    }
+
+    /**
+     * As {@link #recordOfflinePaymentLiveActivity(String, String)}, showing {@code amount} instead
+     * of the log's own: one payment recorded as several logs (one per course) is one feed entry
+     * for the whole amount, keyed on the first log.
+     */
+    public void recordOfflinePaymentLiveActivity(String paymentLogId, String instituteId, Double amount) {
+        if (!StringUtils.hasText(paymentLogId)) return;
+        try {
+            PaymentLog paymentLog = paymentLogRepository.findById(paymentLogId).orElse(null);
+            LiveActivityEvent event = OfflinePaymentLiveActivity.build(paymentLog, instituteId, amount);
+            if (event != null) {
+                liveActivityRecorder.recordAfterCommit(event);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to record live activity for offline payment log {}: {}",
+                    paymentLogId, e.getMessage());
+        }
     }
 
     /**

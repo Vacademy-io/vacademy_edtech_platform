@@ -2160,8 +2160,10 @@ _LIVE_DEFS: Dict[str, str] = {
                   "deleted, so a window reaching further back undercounts those categories."),
     "categories": ("INVITE_FORM: enrolment invite funnel (form filled, reached payment, enrolled). LEAD_FORM: a "
                    "lead form was submitted. CALL: call started / ringing / connected / ended (one call gives "
-                   "several events). PAYMENT: payment received or failed. COUNSELLOR: follow-up scheduled or "
-                   "closed, call outcome logged, counsellor availability changed, leads reassigned."),
+                   "several events). PAYMENT: payment received or failed; a payment staff recorded by hand "
+                   "(cash, cheque, transfer, an installment paid at the desk) has mode OFFLINE. COUNSELLOR: "
+                   "follow-up scheduled or closed, call outcome logged, counsellor availability changed, leads "
+                   "reassigned."),
     "lead_id": ("The lead an event is about: the submitted lead, the call's or follow-up's lead, or for payments and "
                 "enrolments the person's latest lead in this institute. Events with no lead have none."),
     "counsellor": ("counsellor = the staff member on the event (who called, scheduled, logged; AI calls have "
@@ -2427,6 +2429,11 @@ def _duration(seconds: Optional[int]) -> Optional[str]:
     return f"{seconds}s" if seconds < 60 else f"{seconds // 60}m {seconds % 60}s"
 
 
+def _payment_mode(p: Dict[str, Any]) -> Optional[str]:
+    """OFFLINE for a payment staff recorded by hand (cash, cheque, transfer, at the desk); None otherwise."""
+    return "OFFLINE" if _enum(p.get("mode")) == "OFFLINE" else None
+
+
 def _describe(action: str, actor: str, p: Dict[str, Any]) -> str:
     """A short plain sentence built from the event's codes and numbers only — never from free text."""
     base = _LIVE_TEXT.get(action) or (action.lower().replace("_", " ").capitalize() if action != "OTHER"
@@ -2445,6 +2452,8 @@ def _describe(action: str, actor: str, p: Dict[str, Any]) -> str:
         return f"{text_}, {took}" if took else text_
     if action in ("PAYMENT_SUCCEEDED", "PAYMENT_FAILED", "RENEWAL_SUCCEEDED", "RENEWAL_FAILED"):
         amount, currency = _money(p)
+        if _payment_mode(p) == "OFFLINE":
+            base = f"{base} (recorded offline)"
         if amount is not None:
             return f"{base}: {currency + ' ' if currency else ''}{_num(amount)}"
         return base
@@ -2483,6 +2492,8 @@ def _live_row(r: Dict[str, Any], display: Dict[str, str], tzinfo: Any) -> Dict[s
     if category == "PAYMENT":
         amount, currency = _money(p)
         out.update({"amount": amount, "currency": currency, "vendor": cd.clean(p.get("vendor"), 30)})
+        if _payment_mode(p):
+            out["mode"] = _payment_mode(p)
     if category == "CALL":
         out["call_id"] = entity
         out["call"] = {"direction": _enum(p.get("direction")) if p.get("direction") else None,
