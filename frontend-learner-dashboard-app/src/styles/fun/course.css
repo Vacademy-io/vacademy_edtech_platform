@@ -396,7 +396,7 @@ html.ui-fun .fun-band__art .fun-course-art__deco { inset-inline-end: 0; width: 1
 html.ui-fun .fun-band__art .fun-course-art__mark { inset-inline-end: 54px; inset-block-start: 40%; width: 56px; max-width: none; font-size: 1.75rem; }
 @media (min-width: 1024px) {
   html.ui-fun .fun-band__art { inset-block-start: 50%; inset-inline-end: 28px; width: 200px; height: 160px; transform: translateY(-50%); }
-  html.ui-fun .fun-band__art.fun-course-art--image { width: 200px; height: 160px; }
+  html.ui-fun .fun-band__art.fun-course-art--image { inset-block-start: 50%; inset-inline-end: 28px; width: 200px; height: 160px; max-height: calc(100% - 32px); }
   html.ui-fun .fun-band__art .fun-course-art__deco { width: 160px; inset-block-start: 50%; }
   html.ui-fun .fun-band__art .fun-course-art__mark { inset-inline-end: 64px; inset-block-start: 50%; width: 64px; font-size: 2rem; }
 }
