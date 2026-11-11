@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SessionDetails } from "@/routes/study-library/live-class/-types/types";
-import { bannerClassOf, dayOffset, laterClassOf } from "./live-timing";
+import { bannerClassOf, dayOffset, formatClassTime, laterClassOf, lastEntryMs } from "./live-timing";
 
 // Sessions in UTC with an explicit zone, so the result does not depend on the machine.
 const NOW = Date.UTC(2026, 10, 6, 4, 30); // 10:00 in Kolkata
@@ -59,5 +59,27 @@ describe("dayOffset", () => {
     const now = new Date(2026, 10, 6, 22, 0).getTime();
     expect(dayOffset(new Date(2026, 10, 6, 23, 0).getTime(), now)).toBe(0);
     expect(dayOffset(new Date(2026, 10, 7, 9, 0).getTime(), now)).toBe(1);
+  });
+});
+
+describe("formatClassTime", () => {
+  // 17:00 on the device's own clock, whatever zone the test runs in.
+  const five = new Date(2026, 10, 6, 17, 0).getTime();
+  it("writes the time in the reader's language", () => {
+    expect((formatClassTime(five, "en") ?? "").replace(/\s/g, " ")).toBe("5:00 PM");
+    expect(formatClassTime(five, "fr")).toBe("17:00");
+    expect(formatClassTime(five, "ar")).toMatch(/^(5:00|٥:٠٠)\s*م$/);
+  });
+  it("puts the part of the day first in Hindi, as on board A-Hindi", () => {
+    expect(formatClassTime(five, "hi")).toBe("शाम 5:00");
+  });
+  it("is null for a time that cannot be read", () => {
+    expect(formatClassTime(Number.NaN, "en")).toBeNull();
+  });
+});
+
+describe("lastEntryMs", () => {
+  it("is NaN without a last entry time", () => {
+    expect(Number.isNaN(lastEntryMs(session("a", 10, 60, { last_entry_time: "" })))).toBe(true);
   });
 });

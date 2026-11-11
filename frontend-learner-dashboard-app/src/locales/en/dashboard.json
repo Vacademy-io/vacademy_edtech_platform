@@ -302,8 +302,8 @@
             "noClass": "No class",
             "notMarked": "Not marked yet"
         },
-        "emptyTitleWithStreak": "Attend today's {{liveClass}} to start your streak",
-        "emptyTitleNoStreak": "Attend today's {{liveClass}} to start tracking attendance",
+        "emptyTitleWithStreak": "Attend today's {{liveClasses}} to start your streak",
+        "emptyTitleNoStreak": "Attend today's {{liveClasses}} to start tracking attendance",
         "emptyBodyWithStreak": "Your attendance stats and weekly streak will appear here.",
         "emptyBodyNoStreak": "Your attendance stats for the week will appear here.",
         "viewDetailsAria": "View attendance details",

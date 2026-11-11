@@ -100,6 +100,32 @@ export function laterClassOf(
   return best;
 }
 
+/** The last entry time as an instant; NaN when the class has none or it cannot be read. */
+export function lastEntryMs(session: SessionDetails): number {
+  if (!session.last_entry_time) return Number.NaN;
+  try {
+    return sessionDate(session.meeting_date, session.last_entry_time, session.timezone).getTime();
+  } catch {
+    return Number.NaN;
+  }
+}
+
+/**
+ * A class time on the device's clock, in the reader's language: "5:00 PM", "17:00",
+ * "5:00 م", and in Hindi and Marathi with the part of the day first ("शाम 5:00", as
+ * on board A-Hindi). Null when the time cannot be read.
+ */
+export function formatClassTime(ms: number, locale: string): string | null {
+  if (!Number.isFinite(ms)) return null;
+  const options: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
+  if (/^(hi|mr)(-|$)/i.test(locale)) options.dayPeriod = "short";
+  try {
+    return new Intl.DateTimeFormat(locale || "en", options).format(ms);
+  } catch {
+    return new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(ms);
+  }
+}
+
 /** 0 when the class starts today on the device's calendar, 1 tomorrow, and so on. */
 export function dayOffset(startMs: number, nowMs: number): number {
   const start = new Date(startMs);

@@ -7,9 +7,12 @@ import { FlameIcon, UserIcon } from "./fun-icons";
 /**
  * The Fun home's greeting row (boards Main, A-New, A-Laptop, A-BigText): time-of-day
  * greeting from the device clock, the first name when it reads as a name, the
- * streak pill while gamification is on, and the profile button.
+ * streak pill while gamification is on, and the profile button. Inside the app's top
+ * bar (`inBar`) the bar's own account button is the profile button, so this one is
+ * left out.
  */
 export function FunHomeHeader({
+  inBar = false,
   plainGreeting,
   greetingWithName,
   firstName,
@@ -19,6 +22,8 @@ export function FunHomeHeader({
   showStreak,
   loading,
 }: {
+  /** Drawn inside the app's top bar, beside its account button. */
+  inBar?: boolean;
   /** "Good morning" with no name. */
   plainGreeting: string;
   /** "Good morning, Tara": the laptop's one-line heading. */
@@ -45,7 +50,7 @@ export function FunHomeHeader({
   const countdown = pill ? streakCountdown(streak, tEngagement) : null;
 
   return (
-    <header className="fun-home-header">
+    <header className={cn("fun-home-header", inBar && "fun-home-header--in-bar")}>
       <div className="fun-home-header__row">
         <div className="fun-home-header__words">
           {loading ? (
@@ -73,14 +78,16 @@ export function FunHomeHeader({
             <span className="fun-streak__unit">{t("header.streakUnit", { count: streak.current })}</span>
           </p>
         )}
-        <button
-          type="button"
-          className="fun-avatar"
-          aria-label={t("header.profile")}
-          onClick={() => navigate({ to: "/user-profile" as never })}
-        >
-          {initials ? <span aria-hidden="true">{initials}</span> : <UserIcon className="fun-avatar__icon" />}
-        </button>
+        {!inBar && (
+          <button
+            type="button"
+            className="fun-avatar"
+            aria-label={t("header.profile")}
+            onClick={() => navigate({ to: "/user-profile" as never })}
+          >
+            {initials ? <span aria-hidden="true">{initials}</span> : <UserIcon className="fun-avatar__icon" />}
+          </button>
+        )}
       </div>
       {(prompt || countdown) && (
         <p className="fun-home-header__prompt">

@@ -34,7 +34,8 @@ import LocalStorageUtils from "@/utils/localstorage";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import emptyLearning from "@/assets/cleaner-play/empty-learning.webp";
 import { useFunTheme } from "@/hooks/use-fun-theme";
-import { FunCourseTiles } from "./fun/FunCourseTiles";
+import { FunCourseTiles, type FunTilesHero } from "./fun/FunCourseTiles";
+import type { DashboardSlide } from "../-types/dashboard-data-types";
 
 /**
  * How many courses get their own widget before the rest go behind "View all".
@@ -237,10 +238,16 @@ function useCourseThumbnails(courses: EnrolledCourse[]) {
  * other first-class widgets around them. The only wrapper is an unstyled
  * spacing div, which paints nothing.
  */
-export const EnrolledCoursesWidget: React.FC<{ className?: string }> = (props) =>
+export const EnrolledCoursesWidget: React.FC<{
+  className?: string;
+  /** Fun skin only: the lessons the dashboard lists in progress (FunCourseTiles). */
+  funServerSlides?: readonly DashboardSlide[];
+  /** Fun skin only: what the hero card is decided from (FunCourseTiles). */
+  funHero?: FunTilesHero;
+}> = ({ funServerSlides, funHero, ...props }) =>
   // The Fun skin draws the courses as coloured tiles (FunCourseTiles); every other
   // skin keeps this widget exactly as it was.
-  useFunTheme() ? <FunCourseTiles /> : <ClassicEnrolledCoursesWidget {...props} />;
+  useFunTheme() ? <FunCourseTiles serverSlides={funServerSlides} hero={funHero} /> : <ClassicEnrolledCoursesWidget {...props} />;
 
 const ClassicEnrolledCoursesWidget: React.FC<{ className?: string }> = ({
   className,

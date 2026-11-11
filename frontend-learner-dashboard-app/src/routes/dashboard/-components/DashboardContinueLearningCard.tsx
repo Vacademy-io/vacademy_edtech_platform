@@ -57,6 +57,7 @@ export const ContinueLearningCard = ({
     isLoading = false,
     hasAnyProgress = false,
     heroOffersResume = false,
+    heroSlideId = null,
 }: {
     data: DashbaordResponse | null;
     onResumeClick: (slide: DashboardSlide) => void;
@@ -68,6 +69,8 @@ export const ContinueLearningCard = ({
      *  action. Only this card's colours answer to that: the answer can land while
      *  a finger is on its way to a course below, so nothing here changes size. */
     heroOffersResume?: boolean;
+    /** Fun only: the lesson the hero offers, so the fold counts the others. */
+    heroSlideId?: string | null;
 }) => {
     const { t } = useTranslation("dashboard");
     const navigate = useNavigate();
@@ -82,7 +85,7 @@ export const ContinueLearningCard = ({
 
     // Fun: the hero offers the first lesson; this folds the rest into one row.
     if (isFun) {
-        return <FunContinueFold data={data} isLoading={isLoading} heroOffersResume={heroOffersResume} />;
+        return <FunContinueFold data={data} isLoading={isLoading} heroSlideId={heroSlideId} />;
     }
 
     if (isLoading) {
