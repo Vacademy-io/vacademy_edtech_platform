@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.telephony.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.telephony.core.TelephonyBalanceParser;
 import vacademy.io.admin_core_service.features.telephony.core.TelephonyConfigCache;
 import vacademy.io.admin_core_service.features.telephony.providers.exotel.ExotelHttpClient;
 import vacademy.io.common.exceptions.VacademyException;
@@ -148,7 +149,7 @@ public class TelephonyExotelSyncController {
         // no Currency / PricingPlan / DateUpdated. Extract Amount directly
         // first; fall through to the docs-shape (Account.BalanceData.*) for
         // accounts on different tiers that match the legacy envelope.
-        Object balance = extractAmount(raw);
+        Object balance = TelephonyBalanceParser.exotelAmount(raw);
         if (balance != null) {
             out.put("balance", balance);
         }
@@ -162,40 +163,6 @@ public class TelephonyExotelSyncController {
                 new String[] { "Account", "BalanceData", "DateUpdated" });
         if (dateUpdated != null) out.put("dateUpdated", dateUpdated);
         return ResponseEntity.ok(out);
-    }
-
-    /**
-     * Extract the credit amount from Exotel's response. Handles the actual
-     * shape ({@code Balance.Amount}) plus the docs-claimed nestings as
-     * fallbacks. Returns the primitive directly so the frontend doesn't get
-     * a Map.
-     */
-    private static Object extractAmount(Map<String, Object> raw) {
-        // Actual shape: {"Balance": {"Amount": 618.3}}
-        Object balanceObj = raw.get("Balance");
-        if (balanceObj instanceof Map<?, ?> bMap) {
-            Object amount = bMap.get("Amount");
-            if (amount == null) amount = bMap.get("amount");
-            if (amount == null) amount = bMap.get("value");
-            if (amount instanceof Number || amount instanceof String) return amount;
-        }
-        if (balanceObj instanceof Number || balanceObj instanceof String) return balanceObj;
-
-        // Docs shape: {"Account": {"BalanceData": {"Balance": "1543.75"}}}
-        Object account = raw.get("Account");
-        if (account instanceof Map<?, ?> aMap) {
-            Object bd = aMap.get("BalanceData");
-            if (bd instanceof Map<?, ?> bdMap) {
-                Object b = bdMap.get("Balance");
-                if (b instanceof Number || b instanceof String) return b;
-                if (b instanceof Map<?, ?> bMap2) {
-                    Object inner = bMap2.get("Amount");
-                    if (inner == null) inner = bMap2.get("amount");
-                    if (inner instanceof Number || inner instanceof String) return inner;
-                }
-            }
-        }
-        return null;
     }
 
     /**
