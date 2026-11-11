@@ -8,6 +8,7 @@ import {
     CheckCircle,
     CircleNotch,
     DownloadSimple,
+    Eye,
     MagnifyingGlass,
     Sparkle,
     UserCircle,
@@ -71,6 +72,17 @@ const ACTIVE_ITEM: ReadonlySet<CopyIntakeItemStatus> = new Set([
     'MATCHED',
     'QUEUED',
     'EVALUATING',
+]);
+
+/**
+ * Copies whose AI check exists, so its question-wise page can be opened: live progress while
+ * it runs, the marks once done, and which question broke when it failed.
+ */
+const RESULT_ITEM: ReadonlySet<CopyIntakeItemStatus> = new Set([
+    'QUEUED',
+    'EVALUATING',
+    'COMPLETED',
+    'FAILED',
 ]);
 
 const POLL_MS = 6000;
@@ -801,10 +813,10 @@ const ItemActions = ({
                         )}
                     </>
                 )}
-                {item.status === 'COMPLETED' && item.attempt_id && item.process_id && (
+                {RESULT_ITEM.has(item.status) && item.attempt_id && item.process_id && (
                     <MyButton type="button" buttonType="secondary" scale="small" onClick={onOpen}>
-                        <CheckCircle size={14} />
-                        {t('actions.openResult')}
+                        {ACTIVE_ITEM.has(item.status) ? <Eye size={14} /> : <CheckCircle size={14} />}
+                        {ACTIVE_ITEM.has(item.status) ? t('actions.viewProgress') : t('actions.openResult')}
                     </MyButton>
                 )}
                 {item.status === 'COMPLETED' && item.attempt_id && (

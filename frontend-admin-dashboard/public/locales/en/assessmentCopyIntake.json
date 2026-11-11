@@ -127,6 +127,7 @@
         "skip": "Skip",
         "retry": "Retry",
         "openResult": "Open",
+        "viewProgress": "View progress",
         "aiReport": "AI report",
         "classReport": "AI class report"
     },
