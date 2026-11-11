@@ -33,6 +33,8 @@ import vacademy.io.assessment_service.features.question_core.repository.OptionRe
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
 import vacademy.io.assessment_service.features.question_library.dto.CopyLibraryQuestionsRequest;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryCopyResponse;
+import vacademy.io.assessment_service.features.question_library.dto.LibraryImportRequest;
+import vacademy.io.assessment_service.features.question_library.dto.LibraryImportResponse;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryRandomPickRequest;
 import vacademy.io.assessment_service.features.question_library.dto.LibraryRandomPickResponse;
 import vacademy.io.assessment_service.features.question_library.repository.QuestionLibraryNodeRepository;
@@ -499,5 +501,57 @@ class QuestionLibraryCopyPersistenceTest {
         assertThat(nodeRepository.setDifficulty(OWNER, LIB, "EASY")).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT difficulty FROM question WHERE id = ?", String.class, LIB)).isEqualTo("EASY");
         assertThat(nodeRepository.countPaperInLibrary(OWNER, "zz-no-paper", "zz-node")).isZero();
+    }
+
+    /** The import path on real rows: a new chapter, the question saved as the owner's, filed, tagged, own options. */
+    @Test
+    void importSavesANewQuestionIntoANewChapterWithItsDifficultyAndTag() {
+        jdbc.update("INSERT INTO tags (tag_id, tag_name, institute_id) VALUES ('zz-imp-tag', 'Article 21', ?)", OWNER);
+        QuestionLibraryCurationService curation = mock(QuestionLibraryCurationService.class);
+        when(curation.resolveTagId(OWNER, "Article 21")).thenReturn("zz-imp-tag");
+        QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
+        ReflectionTestUtils.setField(resolver, "nodeRepository", nodeRepository);
+        QuestionLibraryImportService importer = new QuestionLibraryImportService();
+        ReflectionTestUtils.setField(importer, "nodeRepository", nodeRepository);
+        ReflectionTestUtils.setField(importer, "treeResolver", resolver);
+        ReflectionTestUtils.setField(importer, "curationService", curation);
+        ReflectionTestUtils.setField(importer, "questionRepository", questionRepository);
+        ReflectionTestUtils.setField(importer, "optionRepository", optionRepository);
+        ReflectionTestUtils.setField(importer, "importManager", importManager);
+
+        // The seeded question as an upload would send it: same content, to be saved as new.
+        QuestionDTO upload = new QuestionDTO(questionRepository.findById(LIB).orElseThrow(), true);
+        entityManager.clear();
+        LibraryImportResponse response = importer.importQuestions(null, OWNER, LibraryImportRequest.builder()
+                .parentId("zz-node")
+                .items(List.of(LibraryImportRequest.Item.builder()
+                        .path(List.of("New chapter"))
+                        .question(upload)
+                        .difficulty("HARD")
+                        .tags(List.of(LibraryImportRequest.TagInput.builder().kind("CONCEPT").name("Article 21").build()))
+                        .build()))
+                .build());
+        sync();
+
+        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getCreated()).isEqualTo(1);
+        assertThat(response.getNodesCreated()).isEqualTo(1);
+        String chapter = jdbc.queryForObject(
+                "SELECT id FROM question_library_node WHERE parent_id = 'zz-node' AND name = 'New chapter'", String.class);
+        String imported = jdbc.queryForObject(
+                "SELECT question_id FROM question_library_mapping WHERE node_id = ?", String.class, chapter);
+        assertThat(imported).isNotEqualTo(LIB);
+        Map<String, Object> row = jdbc.queryForMap("SELECT institute_id, difficulty, auto_evaluation_json FROM question WHERE id = ?", imported);
+        assertThat(row.get("institute_id")).isEqualTo(OWNER);
+        assertThat(row.get("difficulty")).isEqualTo("HARD");
+        // The answer key points at the new question's own options, never the seeded ones.
+        List<String> newOptions = jdbc.queryForList("SELECT id FROM option WHERE question_id = ?", String.class, imported);
+        assertThat(newOptions).hasSize(2).doesNotContain("zz-opt-a", "zz-opt-b");
+        assertThat(String.valueOf(row.get("auto_evaluation_json"))).doesNotContain("zz-opt-b")
+                .containsAnyOf(newOptions.toArray(new String[0]));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM option WHERE question_id = ?", Integer.class, LIB)).isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT tag_source FROM entity_tags WHERE entity_id = ? AND tag_id = 'zz-imp-tag'", String.class, imported))
+                .isEqualTo("CONCEPT");
     }
 }

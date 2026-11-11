@@ -128,8 +128,7 @@ public class QuestionLibraryCurationService {
         if (name.length() > MAX_TAG_LENGTH) throw new VacademyException("Tag name is too long");
         String questionCsv = questionIdsCsv(request.getQuestionIds());
 
-        String tagId = nodeRepository.findTagIdByName(ownerId, name);
-        if (tagId == null) tagId = tagRepository.insertTagIfNotExists(UUID.randomUUID().toString(), name, ownerId);
+        String tagId = resolveTagId(ownerId, name);
         int added = nodeRepository.addLibraryTag(ownerId, questionCsv, tagId, kind);
         return LibraryActionResponse.builder().nodesCreated(0).affected(added).build();
     }
@@ -154,6 +153,12 @@ public class QuestionLibraryCurationService {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** The owner's tag with this name (any case), created when it has none. */
+    String resolveTagId(String ownerId, String name) {
+        String tagId = nodeRepository.findTagIdByName(ownerId, name);
+        return tagId != null ? tagId : tagRepository.insertTagIfNotExists(UUID.randomUUID().toString(), name, ownerId);
+    }
 
     static String kindOf(String raw) {
         String kind = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);

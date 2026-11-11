@@ -12,6 +12,7 @@ import vacademy.io.assessment_service.features.question_library.service.Question
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCopyService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryCurationService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryEditService;
+import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryImportService;
 import vacademy.io.assessment_service.features.question_library.service.QuestionLibraryService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -43,6 +44,9 @@ public class QuestionLibraryController {
 
     @Autowired
     private QuestionLibraryCurationService curationService;
+
+    @Autowired
+    private QuestionLibraryImportService importService;
 
     @Autowired
     private QuestionLibraryAccess libraryAccess;
@@ -262,6 +266,16 @@ public class QuestionLibraryController {
                                                            @RequestBody LibraryTagRequest request) {
         requireManager(user, clientId, instituteId);
         return ResponseEntity.ok(curationService.removeTag(instituteId, request));
+    }
+
+    /** New questions (Word upload, AI, hand-written, Excel rows) saved straight into topics. */
+    @PostMapping("/questions/import")
+    public ResponseEntity<LibraryImportResponse> importQuestions(@RequestAttribute("user") CustomUserDetails user,
+                                                                 @RequestHeader(value = "clientId", required = false) String clientId,
+                                                                 @RequestParam("instituteId") String instituteId,
+                                                                 @RequestBody LibraryImportRequest request) {
+        requireManager(user, clientId, instituteId);
+        return ResponseEntity.ok(importService.importQuestions(user, instituteId, request));
     }
 
     @PostMapping("/questions/difficulty")
