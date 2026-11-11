@@ -3644,6 +3644,46 @@ def _panel_status(verdict: dict[str, Any]) -> str:
     return "Partial"
 
 
+def _panel_heading(verdict: dict[str, Any], label: str) -> str:
+    """"Q4(iv): 3/5 (Partial)" - on this template the marks are given here and
+    nowhere on the student's copy."""
+    status = _panel_status(verdict)
+    out_of = float(verdict.get("max_marks") or 0)
+    if status == "Needs review" or out_of <= 0:
+        return f"{label}: {status}"
+    got = float(verdict.get("marks_awarded") or 0)
+    return f"{label}: {_fmt_marks(got)}/{_fmt_marks(out_of)} ({status})"
+
+
+def _panel_deductions(verdict: dict[str, Any]) -> list[str]:
+    """One line per criterion that lost marks: "-1  Diagram not labelled"."""
+    if (verdict.get("status") or "").upper() == "FAILED":
+        return []
+    lines: list[str] = []
+    for item in verdict.get("criteria_breakdown") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            lost = round(float(item.get("max_marks") or 0) - float(item.get("marks") or 0), 2)
+        except (TypeError, ValueError):
+            continue
+        if lost <= 0:
+            continue
+        why = (" ".join(str(item.get("reason") or "").split())
+               or str(item.get("criteria_name") or "").strip())
+        lines.append(f"-{_fmt_marks(lost)}  {_short_feedback(why)}".rstrip())
+    return lines
+
+
+def _same_remark(a: str, b: str) -> bool:
+    """A deduction's remark on the copy usually repeats its criterion's reason.
+    A short remark ("Good") that merely occurs inside a reason is not a repeat."""
+    na = re.sub(r"[^0-9a-z]+", " ", a.lower()).strip()
+    nb = re.sub(r"[^0-9a-z]+", " ", b.lower()).strip()
+    short, long_ = sorted((na, nb), key=len)
+    return len(short) >= 20 and short in long_
+
+
 def _panel_label(verdict: dict[str, Any], labels: dict[str, str]) -> str:
     label = (labels.get(str(verdict.get("question_id"))) or "").strip()
     if not label:
@@ -3694,9 +3734,12 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                          verdicts: list[dict[str, Any]],
                          labels: dict[str, str],
                          language: Optional[dict[tuple[int, int], list[str]]] = None,
-                         listed: Optional[set[tuple[int, int]]] = None) -> None:
+                         listed: Optional[set[tuple[int, int]]] = None,
+                         total: Optional[tuple[float, float]] = None) -> None:
     """Type each page's remarks into the panel beside it, level with the answer
-    they are about: "Q4(iv): Partial" and the remark below it.
+    they are about: "Q4(iv): 3/5 (Partial)", one "-1  reason" line for every
+    criterion that lost marks, then the remark. On this template the panel is
+    the only place the marks are given: `total` heads the first page's panel.
 
     A question's status is given once, on the first page it is marked on; a
     later page lists it again only when it carries a remark of its own there.
@@ -3723,12 +3766,17 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
             if first and not said and verdict.get("feedback"):
                 # The grader's own words; the language list is typed below.
                 said = [_short_feedback(str(verdict["feedback"]).split(_LANGUAGE_PARAGRAPH)[0])]
+            cuts = _panel_deductions(verdict) if first else []
+            if cuts:
+                # The remark written at a deduction usually repeats its reason:
+                # typed once, on the "-1" line that says what it cost.
+                said = cuts + [s for s in said if not any(_same_remark(s, c) for c in cuts)]
             if fixes and (p, v_idx) in (listed or ()):
                 said = list(said) + ["Language:"] + [f"{i}. {f}" for i, f in enumerate(fixes, 1)]
             elif fixes:
                 said = list(said) + ["Language: " + "; ".join(fixes)]
             label = _panel_label(verdict, labels)
-            heading = f"{label}: {_panel_status(verdict)}" if first else f"{label} (contd.)"
+            heading = _panel_heading(verdict, label) if first else f"{label} (contd.)"
             entries.append((y, v_idx, _latin1(heading), [_script_safe(s) for s in said if s]))
         page = doc[pno]
         k = max(1.0, min(4.0, panel.width / (595.0 * _PANEL_RATIO)))
@@ -3742,6 +3790,12 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
         page.insert_text(fitz.Point(x0, top + head_size), "TEACHER COMMENTS",
                          fontname="hebo", fontsize=head_size, color=_PANEL_HEADING)
         first_y = top + head_size * 2.2
+        if total is not None and pno == min(panels):
+            total_size = 15.0 * k
+            page.insert_text(fitz.Point(x0, first_y + total_size * 0.4),
+                             _latin1(f"Total: {_fmt_marks(total[0])}/{_fmt_marks(total[1])}"),
+                             fontname="hebo", fontsize=total_size, color=_PANEL_HEADING)
+            first_y += total_size * 2.0
         if not entries:
             continue
         entries.sort(key=lambda e: (e[0], e[1]))
@@ -3957,6 +4011,24 @@ def _draw_grand_total(page: Any, centre: Any, awarded: float, out_of: float,
     return fitz.Rect(oval.x0 - 2.0, oval.y0 - 2.0, oval.x1 + 2.0, oval.y1 + 2.0)
 
 
+def _copy_total(verdicts: list[dict[str, Any]]) -> tuple[float, float]:
+    """The copy's total and out-of: enforce.py's 'total' annotation when it sent
+    one (it counts against the PAPER's maximum, not the sum of the questions
+    that happened to be graded), else the sum of the verdicts."""
+    total = sum(float(v.get("marks_awarded") or 0) for v in verdicts)
+    out_of = sum(float(v.get("max_marks") or 0) for v in verdicts)
+    for v in verdicts:
+        for a in v.get("annotations") or []:
+            text = str(a.get("text") or "")
+            if (a.get("style") or "").strip().lower() == "total" and "/" in text:
+                try:
+                    got, mx = text.split("/", 1)
+                    return float(got), float(mx)
+                except ValueError:
+                    return total, out_of
+    return total, out_of
+
+
 def page_id_for(order: Optional[dict], page_no: int) -> Optional[str]:
     for pid, idx in (order or {}).items():
         if idx == page_no:
@@ -4148,7 +4220,10 @@ def _draw_list_pages(doc: Any, verdicts: list[dict[str, Any]], layout_map: dict[
             text = _latin1(str(score.get("text") or "").strip())
             if not text:
                 continue
-            width = _pen_text_width(text, score_size)
+            if outside:
+                # Comments outside: the marks are given in the panel only.
+                text = ""
+            width = _pen_text_width(text, score_size) if text else 0.0
             score_x = edge - width
             base_y = mid + score_size * 0.35
             top, foot = base_y - score_size * 0.85, base_y + score_size * 0.35
@@ -4184,13 +4259,18 @@ def _draw_list_pages(doc: Any, verdicts: list[dict[str, Any]], layout_map: dict[
             # line: sent to the normal placement it floated into the left margin
             # beside other answers. Only one pushed left of the circled total,
             # into the writing, goes there.
-            if not hits and (score_x > words_end + 2.0 or score_box.x0 >= edge - width - 2.0):
-                _pen_text(page, fitz.Point(score_x, base_y), text, score_size, _ps.colour(_NOTE_TEXT), rng,
-                          slant=rng.uniform(-2.0, 2.0), max_x=sheet.x1 - 1.0)
-                placed.append(score_box)
+            if outside:
                 done.add(id(score))
                 scores.add(q_no)
-            room = min(room, score_x - 3.0) if score_x > words_end + 2.0 else sheet.x1 - 2.0
+                room = sheet.x1 - 2.0
+            else:
+                if not hits and (score_x > words_end + 2.0 or score_box.x0 >= edge - width - 2.0):
+                    _pen_text(page, fitz.Point(score_x, base_y), text, score_size, _ps.colour(_NOTE_TEXT), rng,
+                              slant=rng.uniform(-2.0, 2.0), max_x=sheet.x1 - 1.0)
+                    placed.append(score_box)
+                    done.add(id(score))
+                    scores.add(q_no)
+                room = min(room, score_x - 3.0) if score_x > words_end + 2.0 else sheet.x1 - 2.0
 
             x = words_end + rng.uniform(5.0, 9.0)
             all_marks = [a for a in v.get("annotations") or []
@@ -4671,8 +4751,9 @@ def build_annotated_pdf(
     """Draw every verdict's annotations onto the student's copy.
 
     `comment_placement` OUTSIDE is the "Teacher comments" template: the marks
-    (ticks, crosses, rules, scores) stay on the scan, but every written remark
-    moves to a typed panel to the right of it, beside the answer it is about.
+    (ticks, crosses, rules) stay on the scan, but every written remark, every
+    score and the total move to a typed panel to the right of it, beside the
+    answer they are about - no figure is written on the student's copy.
     Anything else (the default, INSIDE) writes the remarks on the copy in pen.
     `question_labels` maps question_id to the number printed on the paper, for
     the panel's headings.
@@ -4978,8 +5059,9 @@ def build_annotated_pdf(
         # looks for on a returned script. Drawn FIRST, so every score and
         # comment placed after it keeps clear: drawn last, it went through
         # Q1's "1/1" in the margin, the one spot the placer had already used.
-        if not doc.page_count or not total_ring:
+        if not doc.page_count or not total_ring or outside:
             # total_ring=False: the paper's own evaluation table carries it.
+            # Comments outside: the total heads the panel, never the copy.
             return
         for _v, _a in ordered:
             if (_a.get("style") or "").strip().lower() == "total" and _a.get("text"):
@@ -5232,11 +5314,15 @@ def build_annotated_pdf(
                 note = f"{note}  {_fmt_marks(float(ann_marks))}".strip()
             if outside:
                 # The remark goes to the panel beside this answer; only the
-                # mark itself, and a written score, stay on the copy.
+                # mark itself (tick, cross, rule) stays on the copy. The score
+                # is in the panel's heading, never written on the copy.
                 v_idx = verdict_index[id(verdict)]
                 key = (page_no, v_idx)
                 panel_anchor[key] = min(panel_anchor.get(key, rect.y0), rect.y0)
-                if note and style != "score":
+                if style == "score":
+                    drawn += 1
+                    continue
+                if note:
                     said = panel_notes.setdefault(key, [])
                     if note not in said:
                         said.append(note)
@@ -5345,8 +5431,10 @@ def build_annotated_pdf(
                     # the answer finishes, not in a column at the page edge.
                     placements[q_no] = (page_no, rect.y1, rect.x1)
 
-    _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
-                           written=scores_written, rings=score_rings)
+    if not outside:
+        # Comments outside: every mark is given in the panel, none on the copy.
+        _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
+                               written=scores_written, rings=score_rings)
 
     def use_page(pid: str, pno: int) -> None:
         _CLIP[0] = paper.get(pid)
@@ -5365,7 +5453,7 @@ def build_annotated_pdf(
                                           occupied, use_page)
 
     # After the remarks and scores, so these only ever take paper left over.
-    if tick_log:
+    if tick_log and not outside:
         _write_point_marks(doc, tick_log, use_page)
 
     if language_queue:
@@ -5404,7 +5492,8 @@ def build_annotated_pdf(
     _CLIP[0] = None
     if outside:
         _draw_comment_panels(doc, panels, panel_anchor, panel_notes, verdicts,
-                             question_labels or {}, panel_language, panel_listed)
+                             question_labels or {}, panel_language, panel_listed,
+                             total=_copy_total(verdicts))
     _SCAN_W[0] = None
     if append_summary:
         _append_summary(doc, verdicts, overall)
@@ -5639,24 +5728,27 @@ def _render_with_pen(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: lis
                      comment_placement: Optional[str] = None,
                      question_labels: Optional[dict[str, str]] = None,
                      evaluation_table: Optional[dict[str, Any]] = None) -> bytes:
+    if (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE:
+        # Comments outside: every mark and the total are in the panel, and no
+        # figure goes on the student's copy - the paper's printed evaluation
+        # table is left as it is too. The panel template must never cost a
+        # student the checked copy: if it fails, the usual copy is built below,
+        # exactly as for any other copy. It works on a copy of the verdicts so
+        # that fallback starts from exactly what the grader sent.
+        panel = None
+        try:
+            panel = build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts),
+                                        comment_placement=COMMENTS_OUTSIDE,
+                                        question_labels=question_labels)
+        except Exception:
+            logger.warning("copy-check annotator: comment-panel template failed; rendering the usual copy",
+                           exc_info=True)
+        if panel is not None:
+            return shrink_scans(panel)
+
     def render(total_ring: bool) -> bytes:
-        annotated = None
-        if (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE:
-            # The panel template must never cost a student the checked copy: if it
-            # fails, the usual copy is rendered instead. It works on a copy of the
-            # verdicts so that fallback starts from exactly what the grader sent.
-            ring = {} if total_ring else {"total_ring": False}
-            try:
-                annotated = build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts),
-                                                comment_placement=COMMENTS_OUTSIDE,
-                                                question_labels=question_labels, **ring)
-            except Exception:
-                logger.warning("copy-check annotator: comment-panel template failed; rendering the usual copy",
-                               exc_info=True)
-        if annotated is None:
-            annotated = (build_annotated_pdf(pdf_bytes, layout_map, verdicts) if total_ring else
-                         build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts), total_ring=False))
-        return annotated
+        return (build_annotated_pdf(pdf_bytes, layout_map, verdicts) if total_ring else
+                build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts), total_ring=False))
 
     from . import evaluation_table as table_mod
     # When the sheet's printed evaluation table is filled and it covers the
