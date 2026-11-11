@@ -258,6 +258,77 @@ def test_tick_skips_discovery_when_the_wallet_is_short(la_db, monkeypatch):
         assert store.get_agent(db, agent["id"])["last_error"] == "Not enough credits"
 
 
+def _tick_with(monkeypatch, *, affordable, delivered):
+    from app.services.lead_agent import delivery, discovery, planner
+
+    async def fake_plan(a, ctx=None):
+        return PLAN
+
+    async def fake_round(a, plan, need):
+        return {"created": 0}
+
+    async def fake_deliver(a, now=None):
+        return delivered
+    monkeypatch.setattr(planner, "ensure_plan", fake_plan)
+    monkeypatch.setattr(discovery, "run_round", fake_round)
+    monkeypatch.setattr(delivery, "deliver", fake_deliver)
+    monkeypatch.setattr(billing, "affordable", lambda a, n: affordable)
+    return asyncio.run(scheduler.tick_once())
+
+
+def _last_error(la_db, agent_id):
+    with la_db() as db:
+        return store.get_agent(db, agent_id)["last_error"]
+
+
+def _set_last_error(la_db, agent_id, error):
+    with la_db() as db:
+        store.set_agent_error(db, agent_id, error)
+        db.execute(text("UPDATE lead_agent SET last_tick_at = NULL"))
+        db.commit()
+
+
+def test_a_clean_tick_clears_the_last_problem(la_db, monkeypatch):
+    # 2026-11-11: after a top-up the card kept "Not enough credits ... (-699.15 < 120.0)" though the agent ran.
+    agent = make_world(la_db, quota=4, plan=PLAN)
+    _set_last_error(la_db, agent["id"], "Not enough credits for the next 4 lead(s) (-699.15 < 16)")
+    _tick_with(monkeypatch, affordable=(True, ""), delivered={"delivered": 0, "skipped": 0, "failed": 0})
+    assert _last_error(la_db, agent["id"]) is None
+
+
+def test_a_tick_with_a_problem_keeps_showing_it(la_db, monkeypatch):
+    agent = make_world(la_db, quota=4, plan=PLAN)
+    _set_last_error(la_db, agent["id"], "old problem")
+    _tick_with(monkeypatch, affordable=(False, "Not enough credits"), delivered={})
+    assert _last_error(la_db, agent["id"]) == "Not enough credits"
+
+
+def test_delivery_held_for_the_wallet_shows_why(la_db, monkeypatch):
+    # The pool can be full (no wallet check before discovery) while the wallet cannot pay for delivery.
+    agent = make_world(la_db, quota=4, plan=PLAN)
+    _tick_with(monkeypatch, affordable=(True, ""),
+               delivered={"delivered": 0, "skipped": 0, "failed": 0,
+                          "held": "Not enough credits to deliver a lead (0 < 4)"})
+    assert _last_error(la_db, agent["id"]) == "Not enough credits to deliver a lead (0 < 4)"
+
+
+def test_no_plan_keeps_the_planning_problem(la_db, monkeypatch):
+    from app.services.lead_agent import delivery, planner
+
+    agent = make_world(la_db, quota=4)
+    _set_last_error(la_db, agent["id"], "Cannot plan this brief: no industry")
+
+    async def no_plan(a, ctx=None):
+        return None
+
+    async def fake_deliver(a, now=None):
+        return {"delivered": 0, "skipped": 0, "failed": 0}
+    monkeypatch.setattr(planner, "ensure_plan", no_plan)
+    monkeypatch.setattr(delivery, "deliver", fake_deliver)
+    asyncio.run(scheduler.tick_once())
+    assert _last_error(la_db, agent["id"]) == "Cannot plan this brief: no industry"
+
+
 def test_a_review_queue_no_longer_stops_discovery(la_db, monkeypatch):
     # The old guard stopped discovery once today's REVIEW count reached the rest of the quota; with rank
     # and fill (2026-10-30) only the pool of sendable leads does (test_la_rank_fill.py).
