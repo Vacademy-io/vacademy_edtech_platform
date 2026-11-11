@@ -238,7 +238,14 @@ public class SubscriptionService {
         // ...and only on a membership: a one-time purchase never has a mandate, so every condition
         // above holds for a bought book, and pressing the button would charge for it again.
         boolean membership = isMembership(plan);
-        boolean canRenewManually = membership && !unfinishedSignup && renewalDue && renewalGateway != null
+        // ...and never on a membership that was ended outright. Termination is an explicit act,
+        // not a lapse. TERMINATED is absent from VISIBLE_STATUSES so the list cannot reach this
+        // today, but the flag is read by callers that fetch a plan directly, and the evidence
+        // tests above cannot catch it: a plan terminated AFTER a renewal landed on it carries a
+        // paid log and reads as a membership for ever.
+        boolean terminated = UserPlanStatusEnum.TERMINATED.name().equals(plan.getStatus());
+        boolean canRenewManually = membership && !unfinishedSignup && !terminated
+                && renewalDue && renewalGateway != null
                 && hasPayablePrice(plan);
         String currency = RegionalPriceLock
                 .currency(plan, mandate != null && mandate.getCurrency() != null
@@ -447,21 +454,31 @@ public class SubscriptionService {
     }
 
     /**
-     * An unfinished checkout: a plan that never became a membership AND still sits in one of the
-     * two states an incomplete checkout lands in.
+     * An unfinished checkout: a plan that never became a membership, and whose paperwork says so
+     * rather than merely failing to say otherwise.
      *
      * <p>The status test is the safety belt. "No mapping and no paid log" on its own also
      * describes legacy members created by direct-SQL migration (the MYCPD import brought in 939,
      * with no payment_log rows), and refusing THOSE learners a renewal would break paying members
      * at other institutes to fix a SuchBliss bug. A genuine abandoned or refused checkout is
-     * PENDING_FOR_PAYMENT or PAYMENT_FAILED — the Nitika row was PAYMENT_FAILED — while a
-     * migrated or lapsed member is CANCELED or EXPIRED and keeps its button whatever its
-     * paperwork looks like.
+     * PENDING_FOR_PAYMENT or PAYMENT_FAILED — the Nitika row was PAYMENT_FAILED.
+     *
+     * <p>CANCELED and EXPIRED are reached by real memberships too, so for those the belt stays on
+     * but asks for POSITIVE evidence instead of absence of it: the plan must carry mapping rows
+     * AND none of them an enrolment. That is the exact shape a checkout leaves when it parks the
+     * learner in the invite holding session and stops. A migrated member carries no mapping
+     * linked to the plan at all, so they keep their button, which is what the belt is for.
      */
     private boolean isUnfinishedSignup(UserPlan plan) {
+        if (everWasAMembership(plan)) {
+            return false;
+        }
         boolean neverStartedState = UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(plan.getStatus())
                 || UserPlanStatusEnum.PAYMENT_FAILED.name().equals(plan.getStatus());
-        return neverStartedState && !everWasAMembership(plan);
+        if (neverStartedState) {
+            return true;
+        }
+        return mappingRepository.existsByUserPlanId(plan.getId());
     }
 
     /**
@@ -503,6 +520,15 @@ public class SubscriptionService {
         if (isUnfinishedSignup(plan)) {
             throw new VacademyException("This membership was never activated — please complete "
                     + "your enrollment instead of renewing");
+        }
+        // Termination is an explicit act, not a lapse, so it is never a renewal candidate. The
+        // list already hides these (TERMINATED is absent from VISIBLE_STATUSES) but that is the
+        // UI, and the UI is not the gate: this method loads any plan by id. The evidence tests
+        // above cannot catch it either, because a plan terminated AFTER a renewal was taken on
+        // it now carries a paid log and reads as a membership for ever.
+        if (UserPlanStatusEnum.TERMINATED.name().equals(plan.getStatus())) {
+            throw new VacademyException("This membership has been ended — please start a new "
+                    + "enrollment instead of renewing");
         }
         if (!isMembership(plan)) {
             throw new InvalidRequestException("This purchase is not a membership, so it cannot be renewed");

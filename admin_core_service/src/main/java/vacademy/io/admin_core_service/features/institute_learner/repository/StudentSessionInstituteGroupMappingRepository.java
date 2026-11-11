@@ -747,16 +747,38 @@ public interface StudentSessionInstituteGroupMappingRepository
    * would hide the "complete your enrollment" card from the only rows that need it.
    * INACTIVE and DELETED rows DO count: that is a revoked trial, which was a real membership.
    *
-   * <p>Same exclusion list as {@link #existsActiveMembership}, deliberately, so the two cannot
-   * disagree about what being a member means.
+   * <p>The package session must be a real one. Excluding only INVITED mapping rows is not
+   * enough, because the row that a dead checkout leaves behind does not keep that status: when
+   * a later checkout succeeds, terminateActiveSessionsAfterPayment marks the abandoned attempt
+   * DELETED. A DELETED row is read above as a revoked membership, so the clean-up disguises the
+   * attempt as the very thing this predicate exists to exclude. What separates them is WHERE the
+   * row sits -- a real enrolment is shifted into the live package session, while an attempt
+   * never leaves the invite holding session, whose own status stays INVITED. Ruchi Dhir
+   * (user_plan 0e2908e6) was charged Rs 1200 on 2026-10-21 against such a row.
+   *
+   * <p>Same mapping-level exclusions as {@link #existsActiveMembership}, deliberately, so the
+   * two cannot disagree about what being a member means. The session-level condition is only
+   * here: existsActiveMembership is asked about named sessions the caller already chose.
    */
   @Query("""
       SELECT COUNT(m) > 0 FROM StudentSessionInstituteGroupMapping m
       WHERE m.userPlanId = :userPlanId
         AND m.status <> 'INVITED'
         AND (m.type IS NULL OR m.type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
+        AND m.packageSession.status <> 'INVITED'
       """)
   boolean existsRealEnrollmentForPlan(@Param("userPlanId") String userPlanId);
+
+  /**
+   * Does this plan carry any mapping at all, of any status, in any session?
+   *
+   * <p>Used to tell two look-alikes apart when a plan shows no real enrolment. A plan with
+   * mappings that are all attempts is a dead checkout. A plan with no mapping row at all is
+   * more likely a member imported by direct SQL, whose access row was never stamped with the
+   * plan id -- the MYCPD import brought in 939 of those. The first must not be offered a
+   * renewal; the second must keep one.
+   */
+  boolean existsByUserPlanId(String userPlanId);
 
   long countByPackageSessionIdAndStatus(String packageSessionId, String status);
 
