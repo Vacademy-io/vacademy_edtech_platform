@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -120,10 +122,11 @@ class TelephonyBalanceServiceTest {
         assertFalse(row.toString().contains("owner@example.com"));
         assertFalse(row.toString().contains("secret-token"));
 
-        when(exotel.getBalanceRaw(any())).thenThrow(new ResourceAccessException("connect timed out"));
+        // doThrow/doReturn: re-stubbing with when() would call the stub that already throws.
+        doThrow(new ResourceAccessException("connect timed out")).when(exotel).getBalanceRaw(any());
         assertEquals("Could not reach Exotel", service.check(c, null).get("message"));
 
-        when(exotel.getBalanceRaw(any())).thenReturn("{\"Unexpected\":true}");
+        doReturn("{\"Unexpected\":true}").when(exotel).getBalanceRaw(any());
         assertEquals("Exotel's response had no balance", service.check(c, null).get("message"));
     }
 
