@@ -180,6 +180,15 @@ public class AdminExportManager {
     @Autowired
     ClassAiNarrativeService classAiNarrativeService;
 
+    /** The class an AI report compares against: learners, or a paper's checked copies when it has none. */
+    @Autowired
+    vacademy.io.assessment_service.features.learner_assessment.service.CopyCheckClassContextService copyCheckClassContext;
+
+    /** Re-sends a bulk-check copy whose analysis data never reached admin_core. */
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckReportDataSender copyCheckReportDataSender;
+
     @Autowired
     AiServiceCreditClient aiServiceCreditClient;
 
@@ -922,6 +931,17 @@ public class AdminExportManager {
         }
 
         String processedJson = adminCoreServiceClient.getProcessedAIReport(studentUserId, assessmentId);
+        if (processedJson != null && !processedJson.isBlank()
+                && copyCheckAnalysisPending(attemptId, studentUserId, assessmentId)) {
+            // A bulk AI check changed the marks after this analysis was made.
+            return AiStudentReportStatusDto.builder()
+                    .status(AiStudentReportStatusDto.STATUS_NOT_GENERATED)
+                    .available(false)
+                    .requiresGeneration(true)
+                    .message("The marks changed after the AI analysis was made (AI copy check). "
+                            + "Downloading it will make a new analysis with your institute's AI credits.")
+                    .build();
+        }
         if (processedJson != null && !processedJson.isBlank()) {
             return AiStudentReportStatusDto.builder()
                     .status(AiStudentReportStatusDto.STATUS_AVAILABLE)
@@ -969,6 +989,15 @@ public class AdminExportManager {
         }
 
         String processedJson = adminCoreServiceClient.getProcessedAIReport(studentUserId, assessmentId);
+        boolean bulkCopy = copyCheckReportDataSender != null && copyCheckReportDataSender.fromBulkCheck(attemptId);
+        if (bulkCopy && generateIfMissing) {
+            // A bulk AI check's copy: its analysis waits ('on_demand') for this request.
+            String fresh = generateCopyCheckInsights(attemptId, studentUserId, assessmentId,
+                    processedJson == null || processedJson.isBlank());
+            if (fresh != null) {
+                processedJson = fresh;
+            }
+        }
         if ((processedJson == null || processedJson.isBlank()) && generateIfMissing) {
             processedJson = generateAiInsights(studentUserId, assessmentId);
         }
@@ -1004,7 +1033,7 @@ public class AdminExportManager {
             log.warn("AI report: could not build comparison data for attempt {}: {}", attemptId, e.getMessage());
         }
 
-        ReportClassContext ctx = learnerReportService.loadClassContext(assessmentId, instituteId);
+        ReportClassContext ctx = copyCheckClassContext.forAiReport(assessmentId, instituteId);
 
         StudentReportAnalyticsService.StudentReportAnalytics analytics = null;
         try {
@@ -1172,7 +1201,11 @@ public class AdminExportManager {
         // Stale = results changed after this was generated. Surfaced, never
         // auto-refreshed: regenerating spends the institute's money, so it stays
         // an explicit choice.
-        out.put("stale", ready && isReportStale(existing.get(), assessmentId, instituteId));
+        boolean bulkChecked = copyCheckClassContext.hasBulkCheck(assessmentId, instituteId);
+        // Loaded once for both the staleness check and the copy counts (the dialog polls this).
+        ReportClassContext classCtx = (ready || bulkChecked)
+                ? copyCheckClassContext.forAiReport(assessmentId, instituteId) : null;
+        out.put("stale", ready && isReportStale(existing.get(), classCtx));
         // Every past generation, newest first — a paid Refresh supersedes rather
         // than destroys, so a version already shared with staff stays available.
         out.put("history", classAiReportGenerationService.history(assessmentId, instituteId).stream()
@@ -1186,7 +1219,44 @@ public class AdminExportManager {
         out.put("credits_required", estimate.credits());
         out.put("current_balance", estimate.currentBalance());
         out.put("sufficient", estimate.sufficient());
+        addMissingAnalyses(out, assessmentId, bulkChecked, classCtx);
         return out;
+    }
+
+    /**
+     * How many of the paper's checked bulk-AI-check copies have no up-to-date AI analysis
+     * (waiting, being made, failed, or their data never arrived): the class report would
+     * leave them out of topics and mistakes, or read marks the check replaced. A paper without a bulk
+     * check gets 0 and its dialog is unchanged. Best-effort: on failure the field is left out.
+     */
+    private void addMissingAnalyses(Map<String, Object> out, String assessmentId, boolean bulkChecked,
+                                    ReportClassContext classCtx) {
+        try {
+            List<LeaderBoardDto> leaderboard = classCtx != null ? classCtx.getFullLeaderboard() : null;
+            if (!bulkChecked || leaderboard == null || leaderboard.isEmpty()) {
+                out.put("checked_copies_without_analysis", 0);
+                return;
+            }
+            java.util.Set<String> bulk = copyCheckClassContext.bulkCheckedAttemptIds(leaderboard.stream()
+                    .map(LeaderBoardDto::getAttemptId).filter(Objects::nonNull).toList());
+            if (bulk.isEmpty()) {
+                out.put("checked_copies_without_analysis", 0);
+                return;
+            }
+            Map<String, String> state = adminCoreServiceClient.getCopyCheckAnalysisState(assessmentId);
+            if (state == null) {
+                return;
+            }
+            // Up to date only once made: waiting, queued, being made, failed or skipped for
+            // credits all still count, so the dialog never says "done" early.
+            long missing = leaderboard.stream()
+                    .filter(r -> bulk.contains(r.getAttemptId()) && r.getUserId() != null)
+                    .filter(r -> !"processed".equals(state.get(r.getUserId())))
+                    .count();
+            out.put("checked_copies_without_analysis", missing);
+        } catch (Exception e) {
+            log.warn("Could not count missing AI analyses for {}: {}", assessmentId, e.getMessage());
+        }
     }
 
     /**
@@ -1197,16 +1267,23 @@ public class AdminExportManager {
      * trigger, so a re-evaluation moves no timestamp at all and any time-based
      * check would never fire.
      */
-    private boolean isReportStale(AssessmentClassAiAnalysis row, String assessmentId, String instituteId) {
-        String now = computeContentFingerprint(assessmentId, instituteId);
+    private boolean isReportStale(AssessmentClassAiAnalysis row, ReportClassContext ctx) {
+        String now = ctx != null ? fingerprintOf(ctx.getFullLeaderboard()) : null;
         return now != null && row.getContentFingerprint() != null
                 && !now.equals(row.getContentFingerprint());
     }
 
     private String computeContentFingerprint(String assessmentId, String instituteId) {
         try {
-            List<LeaderBoardDto> rows = learnerReportService.loadClassContext(assessmentId, instituteId)
-                    .getFullLeaderboard();
+            return fingerprintOf(copyCheckClassContext.forAiReport(assessmentId, instituteId).getFullLeaderboard());
+        } catch (Exception e) {
+            log.warn("Could not fingerprint assessment {} for staleness: {}", assessmentId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String fingerprintOf(List<LeaderBoardDto> rows) {
+        try {
             if (rows == null) return null;
             // Sorted per-attempt marks, rounded. A bare SUM is float-fragile and
             // misses two learners' marks swapping without changing the total.
@@ -1222,7 +1299,7 @@ public class AdminExportManager {
             for (byte b : hash) hex.append(String.format("%02x", b));
             return hex.toString();
         } catch (Exception e) {
-            log.warn("Could not fingerprint assessment {} for staleness: {}", assessmentId, e.getMessage());
+            log.warn("Could not fingerprint a class for staleness: {}", e.getMessage());
             return null;
         }
     }
@@ -1246,13 +1323,28 @@ public class AdminExportManager {
                 .body(pdf);
     }
 
+    /**
+     * Whose analyses a class report reads: the learners, never a copy checked without a
+     * student (those stay out of a class of learners, as they do everywhere else) - or, on
+     * a paper whose class IS its checked copies, only those copies.
+     */
+    private static java.util.function.Predicate<String> sameClassAs(List<LeaderBoardDto> leaderboard) {
+        boolean copiesAreTheClass = !leaderboard.isEmpty() && leaderboard.stream()
+                .allMatch(r -> r.getUserId() != null && r.getUserId().startsWith(COPY_CHECK_USER_PREFIX));
+        return userId -> copiesAreTheClass
+                == (userId != null && userId.startsWith(COPY_CHECK_USER_PREFIX));
+    }
+
+    /** Mirrors CopyIntakeService: the user id of a copy checked without a student. */
+    private static final String COPY_CHECK_USER_PREFIX = "copy-check:";
+
     /** The compact facts blob the model reasons over — never raw learner data. */
     private Map<String, Object> buildClassFacts(String assessmentId, String instituteId) {
-        ReportClassContext ctx = learnerReportService.loadClassContext(assessmentId, instituteId);
+        ReportClassContext ctx = copyCheckClassContext.forAiReport(assessmentId, instituteId);
         List<LeaderBoardDto> leaderboard = ctx.getFullLeaderboard() != null
                 ? ctx.getFullLeaderboard() : List.of();
         ClassAiInsightsAggregator.ClassInsights insights = classAiInsightsAggregator.aggregate(
-                adminCoreServiceClient.getProcessedAIReportsForAssessment(assessmentId));
+                adminCoreServiceClient.getProcessedAIReportsForAssessment(assessmentId, sameClassAs(leaderboard)));
         Double totalMarks = ctx.getTotalMarks();
 
         Map<String, Object> facts = new LinkedHashMap<>();
@@ -1289,11 +1381,11 @@ public class AdminExportManager {
     /** Builds the report HTML around a generated (or previously stored) narrative. */
     private String buildClassReportHtml(Assessment assessment, String assessmentId, String instituteId,
                                         String narrativeJson) {
-        ReportClassContext ctx = learnerReportService.loadClassContext(assessmentId, instituteId);
+        ReportClassContext ctx = copyCheckClassContext.forAiReport(assessmentId, instituteId);
         List<LeaderBoardDto> leaderboard = ctx.getFullLeaderboard() != null
                 ? ctx.getFullLeaderboard() : List.of();
         ClassAiInsightsAggregator.ClassInsights insights = classAiInsightsAggregator.aggregate(
-                adminCoreServiceClient.getProcessedAIReportsForAssessment(assessmentId));
+                adminCoreServiceClient.getProcessedAIReportsForAssessment(assessmentId, sameClassAs(leaderboard)));
         Double totalMarks = ctx.getTotalMarks();
 
         String narrative = null;
@@ -1492,6 +1584,124 @@ public class AdminExportManager {
      * "out of credits" is a billing action, "still generating" is a wait, and
      * "no submission data" is neither.
      */
+    /** Statuses of an analysis row that can be made now (mirrors admin_core). */
+    private static final java.util.Set<String> CLAIMABLE_ANALYSIS = java.util.Set.of(
+            "on_demand", "raw", "failed", "skipped_no_credits", "skipped_usage_limit");
+    /** Copies re-sent per "Analyse" request, so the request stays well inside the gateway timeout. */
+    private static final int MAX_RESENDS_PER_REQUEST = 20;
+
+    /**
+     * Whether a bulk AI check changed this attempt's marks after its analysis was made.
+     * Normal attempts are answered without asking admin_core: their status is as before.
+     */
+    private boolean copyCheckAnalysisPending(String attemptId, String studentUserId, String assessmentId) {
+        try {
+            if (copyCheckReportDataSender == null || !copyCheckReportDataSender.fromBulkCheck(attemptId)) {
+                return false;
+            }
+            // The newest analysis row is not the made one: the check's marks are not in it yet.
+            String newest = adminCoreServiceClient.getNewestAnalysisStatus(studentUserId, assessmentId);
+            return newest != null && !newest.isEmpty() && !"processed".equals(newest);
+        } catch (Exception e) {
+            log.warn("Could not read the copy-check analysis state of attempt {}: {}", attemptId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Makes a bulk-check copy's waiting analysis (spends AI credits). When none waits and
+     * the copy has no analysis at all - its data never reached admin_core - it is sent
+     * again first. Null when nothing was made here (the caller then goes on as before).
+     */
+    private String generateCopyCheckInsights(String attemptId, String studentUserId, String assessmentId,
+                                             boolean hasNoAnalysis) {
+        String newest = adminCoreServiceClient.getNewestAnalysisStatus(studentUserId, assessmentId);
+        // No analysis row at all: the copy's data never reached admin_core. Send it again.
+        if (hasNoAnalysis && "".equals(newest) && copyCheckReportDataSender.sendNow(attemptId)) {
+            newest = adminCoreServiceClient.getNewestAnalysisStatus(studentUserId, assessmentId);
+        }
+        if (newest == null) {
+            // admin_core could not say what state the analysis is in. Falling through to the
+            // general on-demand path could start a second run of one already in flight.
+            throw new VacademyException("The AI analysis could not be checked right now. Please try again.");
+        }
+        if ("processing".equals(newest)) {
+            // Being made right now (an earlier click, or the hourly job): never start another.
+            throw new VacademyException("The AI analysis is still being generated. Try the download again in a "
+                    + "minute — it will not be charged twice.");
+        }
+        if (newest == null || !CLAIMABLE_ANALYSIS.contains(newest)) {
+            return null; // made already: the usual path below decides, exactly as before
+        }
+        AdminCoreServiceClient.AiReportGenerationResult result =
+                adminCoreServiceClient.processCopyCheckAnalysisNow(studentUserId, assessmentId);
+        if (result.isProcessed()) {
+            return result.processedJson();
+        }
+        if (result.isOutOfCredits()) {
+            throw new VacademyException("Your institute has run out of AI credits, so this report could not be "
+                    + "generated. Top up AI credits and try again.");
+        }
+        if (AdminCoreServiceClient.AiReportGenerationResult.STATUS_GENERATING.equalsIgnoreCase(result.status())) {
+            throw new VacademyException("The AI analysis is still being generated. Try the download again in a "
+                    + "minute — it will not be charged twice.");
+        }
+        throw new VacademyException("The AI analysis could not be generated for this attempt. Please try again.");
+    }
+
+    /**
+     * "Analyse N copies" of the class AI report: makes every waiting analysis of the paper's
+     * bulk-check copies (spends AI credits, each at most once), re-sending first any copy
+     * whose data never reached admin_core.
+     */
+    public Map<String, Object> analyseCheckedCopies(CustomUserDetails user, String assessmentId, String instituteId) {
+        List<LeaderBoardDto> leaderboard = copyCheckClassContext.forAiReport(assessmentId, instituteId)
+                .getFullLeaderboard();
+        java.util.Set<String> bulk = leaderboard == null ? java.util.Set.of()
+                : copyCheckClassContext.bulkCheckedAttemptIds(leaderboard.stream()
+                        .map(LeaderBoardDto::getAttemptId).filter(Objects::nonNull).toList());
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (bulk.isEmpty()) {
+            out.put("queued", 0);
+            out.put("resent", 0);
+            return out;
+        }
+        Map<String, String> state = adminCoreServiceClient.getCopyCheckAnalysisState(assessmentId);
+        if (state == null) {
+            throw new VacademyException("The analysis could not be started. Please try again.");
+        }
+        List<String> users = new ArrayList<>();
+        int resent = 0;
+        boolean moreToResend = false;
+        for (LeaderBoardDto row : leaderboard) {
+            if (!bulk.contains(row.getAttemptId()) || row.getUserId() == null) {
+                continue;
+            }
+            if (!state.containsKey(row.getUserId())) {
+                // No analysis row: its data never reached admin_core. Checked again right
+                // before sending, so a second click does not send the same copy twice.
+                if (resent >= MAX_RESENDS_PER_REQUEST) {
+                    moreToResend = true;
+                    continue;
+                }
+                if ("".equals(adminCoreServiceClient.getNewestAnalysisStatus(row.getUserId(), assessmentId))
+                        && copyCheckReportDataSender.sendNow(row.getAttemptId())) {
+                    resent++;
+                }
+            }
+            users.add(row.getUserId());
+        }
+        // admin_core makes only rows that can be made now, each taken by exactly one caller.
+        Integer queued = adminCoreServiceClient.processCopyCheckAnalyses(assessmentId, users);
+        if (queued == null) {
+            throw new VacademyException("The analysis could not be started. Please try again.");
+        }
+        out.put("queued", queued);
+        out.put("resent", resent);
+        out.put("more_to_resend", moreToResend);
+        return out;
+    }
+
     private String generateAiInsights(String studentUserId, String assessmentId) {
         AdminCoreServiceClient.AiReportGenerationResult result =
                 adminCoreServiceClient.generateAiReportOnDemand(studentUserId, assessmentId);
