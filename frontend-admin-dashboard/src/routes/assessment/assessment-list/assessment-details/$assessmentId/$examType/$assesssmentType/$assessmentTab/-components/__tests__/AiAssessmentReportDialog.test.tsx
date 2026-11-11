@@ -103,3 +103,54 @@ describe('AiAssessmentReportDialog history', () => {
         expect(screen.queryByText('aiReport.historyTitle')).toBeNull();
     });
 });
+
+describe('AiAssessmentReportDialog checked copies without an analysis', () => {
+    beforeEach(() => {
+        request.mockReset();
+    });
+
+    it('says nothing on a test without copy checks', async () => {
+        request.mockResolvedValue({
+            data: status({ checked_copies_without_analysis: 0 }),
+        });
+        renderDialog();
+
+        await screen.findByText('aiReport.downloadFree');
+        expect(screen.queryByText('aiReport.missingAnalyses')).toBeNull();
+        expect(screen.queryByText('aiReport.analyseCopies')).toBeNull();
+    });
+
+    it('says nothing when the backend does not report the counts', async () => {
+        request.mockResolvedValue({ data: status() });
+        renderDialog();
+
+        await screen.findByText('aiReport.downloadFree');
+        expect(screen.queryByText('aiReport.analyseCopies')).toBeNull();
+    });
+
+    it('offers to analyse the waiting copies first', async () => {
+        request.mockImplementation((config: { method?: string }) =>
+            config.method === 'POST'
+                ? Promise.resolve({ data: { job_id: 'j1' } })
+                : Promise.resolve({
+                      data: status({
+                          available: false,
+                          checked_copies_without_analysis: 2,
+                      }),
+                  })
+        );
+        renderDialog();
+
+        expect(await screen.findByText('aiReport.missingAnalyses')).toBeTruthy();
+        fireEvent.click(await screen.findByText('aiReport.analyseCopies'));
+
+        await waitFor(() => {
+            const post = request.mock.calls
+                .map((c) => c[0] as { method?: string; url?: string; params?: Record<string, unknown> })
+                .find((c) => c.method === 'POST');
+            expect(post?.url).toContain('/ai-assessment-report/analyse-copies');
+            expect(post?.params).toEqual({ assessmentId: 'a1', instituteId: 'i1' });
+        });
+        expect(await screen.findByText('aiReport.analysing')).toBeTruthy();
+    });
+});

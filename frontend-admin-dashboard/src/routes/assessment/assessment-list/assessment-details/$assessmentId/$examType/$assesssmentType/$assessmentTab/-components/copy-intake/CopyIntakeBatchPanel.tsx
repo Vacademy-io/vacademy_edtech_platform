@@ -9,6 +9,7 @@ import {
     CircleNotch,
     DownloadSimple,
     MagnifyingGlass,
+    Sparkle,
     UserCircle,
     WarningCircle,
     X,
@@ -46,6 +47,9 @@ import {
     fetchIndividualParticipants,
 } from '@/routes/assessment/assessment-list/offline-entry/$assessmentId/-services/offline-entry-services';
 import { downloadCheckedCopies } from './download-checked-copies';
+import { Dialog } from '@/components/ui/dialog';
+import { AiAssessmentReportDialog } from '../AiAssessmentReportDialog';
+import { StudentAiReportDialog } from '../assessment-submissions-dropdown-individual/StudentAiReportDialog';
 
 const ITEM_TONE: Record<CopyIntakeItemStatus, StatusType> = {
     PENDING: 'INFO',
@@ -230,7 +234,11 @@ export const CopyIntakeBatchPanel = ({
                 <p className="text-sm text-neutral-500">{t('panel.empty')}</p>
             ) : (
                 <>
-                    <BatchSummary batch={batch} instituteId={instituteId} />
+                    <BatchSummary
+                        batch={batch}
+                        assessmentId={assessmentId}
+                        instituteId={instituteId}
+                    />
 
                     {waiting.length > 0 && (
                         <div className="flex items-start gap-2 rounded-md border border-warning-200 bg-warning-50 p-3 text-sm text-warning-700">
@@ -293,7 +301,15 @@ export const CopyIntakeBatchPanel = ({
     );
 };
 
-const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; instituteId: string }) => {
+const BatchSummary = ({
+    batch,
+    assessmentId,
+    instituteId,
+}: {
+    batch: CopyIntakeBatch;
+    assessmentId: string;
+    instituteId: string;
+}) => {
     const otherLanguage = (batch.items ?? []).filter(
         (i) => languageConfirmationOf(i) !== null
     ).length;
@@ -395,8 +411,57 @@ const BatchSummary = ({ batch, instituteId }: { batch: CopyIntakeBatch; institut
                     {t('stats.otherLanguage', { count: otherLanguage })}
                 </div>
             )}
-            <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <DownloadCheckedCopiesButton batch={batch} instituteId={instituteId} />
+                <ClassReportButton
+                    batch={batch}
+                    assessmentId={assessmentId}
+                    instituteId={instituteId}
+                />
+            </div>
         </div>
+    );
+};
+
+/**
+ * The class AI report of the paper, the same one the Submissions tab offers: weak
+ * topics, common mistakes and a plan. For copies checked without students, those copies
+ * are the class. Shown once a copy has been checked.
+ */
+const ClassReportButton = ({
+    batch,
+    assessmentId,
+    instituteId,
+}: {
+    batch: CopyIntakeBatch;
+    assessmentId: string;
+    instituteId: string;
+}) => {
+    const { t } = useTranslation('assessmentCopyIntake');
+    const [open, setOpen] = useState(false);
+    if (batch.evaluated <= 0) return null;
+    return (
+        <>
+            <MyButton
+                type="button"
+                buttonType="secondary"
+                scale="medium"
+                className="w-full sm:w-auto"
+                onClick={() => setOpen(true)}
+            >
+                <Sparkle size={14} />
+                {t('actions.classReport')}
+            </MyButton>
+            <Dialog open={open} onOpenChange={setOpen}>
+                {open && (
+                    <AiAssessmentReportDialog
+                        assessmentId={assessmentId}
+                        instituteId={instituteId}
+                        onClose={() => setOpen(false)}
+                    />
+                )}
+            </Dialog>
+        </>
     );
 };
 
@@ -629,6 +694,7 @@ const ItemActions = ({
 }: ItemContext & { className?: string }) => {
     const { t } = useTranslation('assessmentCopyIntake');
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [reportOpen, setReportOpen] = useState(false);
 
     const skip = useMutation({
         mutationFn: () => skipCopyIntakeItem(item.id, instituteId),
@@ -741,7 +807,30 @@ const ItemActions = ({
                         {t('actions.openResult')}
                     </MyButton>
                 )}
+                {item.status === 'COMPLETED' && item.attempt_id && (
+                    <MyButton
+                        type="button"
+                        buttonType="secondary"
+                        scale="small"
+                        onClick={() => setReportOpen(true)}
+                    >
+                        <Sparkle size={14} />
+                        {t('actions.aiReport')}
+                    </MyButton>
+                )}
             </div>
+            {reportOpen && item.attempt_id && (
+                <StudentAiReportDialog
+                    open={reportOpen}
+                    onOpenChange={setReportOpen}
+                    assessmentId={assessmentId}
+                    attemptId={item.attempt_id}
+                    instituteId={instituteId}
+                    studentName={
+                        item.matched_name || item.extracted_name || item.file_name || t('actions.aiReport')
+                    }
+                />
+            )}
             {pickerOpen && (
                 <StudentPicker
                     item={item}

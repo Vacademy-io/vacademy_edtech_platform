@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+    CheckCircle,
+    CircleNotch,
     ClockCounterClockwise,
     Coins,
     DownloadSimple,
@@ -12,9 +15,19 @@ import { MyButton } from '@/components/design-system/button';
 import { DialogContent } from '@/components/ui/dialog';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
+    BASE_URL,
     GET_AI_ASSESSMENT_REPORT_STATUS_URL,
     GET_EXPORT_PDF_URL_AI_ASSESSMENT_REPORT,
 } from '@/constants/urls';
+
+/**
+ * Makes the AI analyses a bulk AI check left waiting, so the class report covers those
+ * copies (spends AI credits; each copy at most once, however often it is clicked).
+ */
+const ANALYSE_CHECKED_COPIES_URL = `${BASE_URL}/assessment-service/assessment/export/ai-assessment-report/analyse-copies`;
+const ANALYSIS_POLL_MS = 15000;
+/** Stop re-reading the status when the count has not moved for this long (failed copies). */
+const ANALYSIS_STALL_MS = 2 * 60 * 1000;
 
 interface ReportVersion {
     id: string;
@@ -34,6 +47,11 @@ interface ReportStatus {
     sufficient: boolean | null;
     /** Every generation so far, newest first. Each is downloadable for free. */
     history?: ReportVersion[];
+    /**
+     * Copies of a bulk AI check without an up-to-date AI analysis (it waits for a report to
+     * ask for it). Absent or 0 on a test without a bulk check.
+     */
+    checked_copies_without_analysis?: number;
 }
 
 /**
@@ -90,6 +108,11 @@ export const AiAssessmentReportDialog = ({
 }: AiAssessmentReportDialogProps) => {
     const { t } = useTranslation('assessmentSubmissionsTab');
     const queryClient = useQueryClient();
+    // Set once the teacher starts analysing the checked copies; the status is then
+    // re-read until none is left (any pod can answer it, unlike the job itself).
+    const [analysing, setAnalysing] = useState(false);
+    // When the count of copies left last moved; a stall ends the wait so the teacher can retry.
+    const lastProgress = useRef<{ count: number | null; at: number }>({ count: null, at: 0 });
 
     const statusQuery = useQuery({
         queryKey: ['AI_ASSESSMENT_REPORT_STATUS', assessmentId, instituteId],
@@ -104,6 +127,10 @@ export const AiAssessmentReportDialog = ({
         enabled: !!assessmentId && !!instituteId,
         staleTime: 30 * 1000,
         retry: false,
+        refetchInterval: (query) =>
+            analysing && (query.state.data?.checked_copies_without_analysis ?? 0) > 0
+                ? ANALYSIS_POLL_MS
+                : false,
     });
 
     const status = statusQuery.data;
@@ -116,6 +143,43 @@ export const AiAssessmentReportDialog = ({
     // Only past versions — the live one already has its own download button, and
     // repeating it here would read as two different reports.
     const pastVersions = (status?.history ?? []).filter((h) => !h.current);
+    // Copies of a bulk AI check are analysed only when a report asks for it, so the class
+    // report offers to analyse them first. A test without a bulk check never shows this.
+    const copiesLeft = status?.checked_copies_without_analysis ?? 0;
+
+    useEffect(() => {
+        if (!analysing) return;
+        const now = Date.now();
+        if (lastProgress.current.count !== copiesLeft) {
+            lastProgress.current = { count: copiesLeft, at: now };
+        } else if (copiesLeft > 0 && now - lastProgress.current.at > ANALYSIS_STALL_MS) {
+            setAnalysing(false);
+        }
+    }, [analysing, copiesLeft, statusQuery.dataUpdatedAt]);
+
+    const analyse = useMutation({
+        mutationFn: () =>
+            authenticatedAxiosInstance({
+                method: 'POST',
+                url: ANALYSE_CHECKED_COPIES_URL,
+                params: { assessmentId, instituteId },
+            }),
+        onSuccess: (res) => {
+            lastProgress.current = { count: null, at: Date.now() };
+            setAnalysing(true);
+            // Copies whose data had to be re-sent go a batch per click; the rest wait for the next.
+            if ((res as { data?: { more_to_resend?: boolean } })?.data?.more_to_resend) {
+                toast.info(t('aiReport.analyseMore'));
+                setAnalysing(false);
+            } else {
+                toast.success(t('aiReport.analysisStarted'));
+            }
+            void queryClient.invalidateQueries({
+                queryKey: ['AI_ASSESSMENT_REPORT_STATUS', assessmentId, instituteId],
+            });
+        },
+        onError: () => toast.error(t('aiReport.analyseFailed')),
+    });
 
     const download = useMutation({
         mutationFn: async (opts: {
@@ -253,6 +317,39 @@ export const AiAssessmentReportDialog = ({
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+
+                {!statusQuery.isLoading && copiesLeft > 0 && (
+                    <div className="flex flex-col gap-2 rounded-md border border-warning-200 bg-warning-50 p-3">
+                        <div className="flex items-start gap-2 text-caption text-warning-700">
+                            <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                            <p>{t('aiReport.missingAnalyses', { count: copiesLeft })}</p>
+                        </div>
+                        <MyButton
+                            type="button"
+                            scale="medium"
+                            buttonType="secondary"
+                            className="self-start"
+                            disabled={analysing || analyse.isPending || busy}
+                            onClick={() => analyse.mutate()}
+                        >
+                            {analysing || analyse.isPending ? (
+                                <CircleNotch size={14} className="animate-spin" />
+                            ) : (
+                                <Sparkle size={14} />
+                            )}
+                            {analysing
+                                ? t('aiReport.analysing', { count: copiesLeft })
+                                : t('aiReport.analyseCopies', { count: copiesLeft })}
+                        </MyButton>
+                    </div>
+                )}
+
+                {!statusQuery.isLoading && analysing && copiesLeft === 0 && (
+                    <div className="flex items-start gap-2 rounded-md bg-success-50 p-3 text-caption text-success-600">
+                        <CheckCircle size={16} className="mt-0.5 shrink-0" />
+                        <p>{t('aiReport.analysesDone')}</p>
                     </div>
                 )}
 
