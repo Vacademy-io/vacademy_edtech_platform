@@ -9,20 +9,19 @@
   "hero": {
     "continueLabel": "पढ़ाई जारी रखें",
     "continue": "जारी रखें",
-    "count": "{{total}} में से {{done}} {{slides}} पूरे",
+    "count": "{{total}} में से {{done}} {{slides}} पूर्ण",
     "percent": "{{percent}}%",
     "percentOfCourse": "{{course}} का {{percent}}%",
     "progressLabel": "{{course}} की प्रगति",
     "startLabel": "अपना पहला {{course}} शुरू करें",
     "startHere": "यहाँ से शुरू करें",
     "start": "{{name}} शुरू करें",
-    "startPlain": "शुरू करें",
     "coursesTitle": "जहाँ छोड़ा था, वहीं से शुरू करें",
     "coursesBody": "आपके {{courses}} आपका इंतज़ार कर रहे हैं।",
     "coursesCta": "{{courses}} पर जाएँ",
     "nearlyThere": "बस थोड़ा और · {{percent}}%",
     "loading": "लोड हो रहा है",
-    "errorTitle": "आपका होम लोड नहीं हो सका",
+    "errorTitle": "आपके होम का कुछ हिस्सा लोड नहीं हो सका",
     "errorBody": "अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
     "retry": "फिर से कोशिश करें",
     "type": {
@@ -35,7 +34,9 @@
       "AUDIO": "ऑडियो",
       "QUESTION": "प्रश्न",
       "PRESENTATION": "स्लाइड"
-    }
+    },
+    "coursesTitleNew": "शुरू करने के लिए तैयार?",
+    "coursesBodyNew": "शुरू करने के लिए अपना कोई {{course}} चुनें।"
   },
   "empty": {
     "title": "अपना पहला {{course}} खोजें",
@@ -51,9 +52,9 @@
   },
   "done": {
     "title": "आपने हर {{course}} पूरा कर लिया!",
-    "body": "{{total}} में से {{done}} {{courses}} पूरे। बहुत बढ़िया।",
+    "body": "{{total}} में से {{done}} {{courses}} पूर्ण। बहुत बढ़िया।",
     "caughtUpTitle": "सब कुछ पूरा",
-    "caughtUpBody": "अभी कुछ भी अधूरा नहीं है। तैयार हों तो कुछ नया चुनें।",
+    "caughtUpBody": "जहाँ छोड़ा था, वहाँ कुछ बाकी नहीं है। आगे क्या करना है, यह चुनने के लिए कोई {{course}} खोलें।",
     "next": "आगे क्या",
     "testsTitle_one": "{{count}} टेस्ट खुला है",
     "testsTitle_other": "{{count}} टेस्ट खुले हैं",
@@ -87,12 +88,15 @@
     "testsEyebrow": "टेस्ट",
     "testsSee": "टेस्ट में देखें",
     "chipToday": "आज {{time}}",
-    "chipTomorrow": "कल {{time}}"
+    "chipTomorrow": "कल {{time}}",
+    "openTask": "अगला काम खोलें",
+    "openPlan": "आज की योजना खोलें",
+    "seePlan": "आज की योजना देखें"
   },
   "tiles": {
     "title": "आपके {{courses}}",
     "otherTitle": "आपके दूसरे {{courses}}",
-    "lookBack": "दोहराएँ",
+    "lookBack": "पीछे मुड़कर देखें",
     "seeAll": "सभी देखें",
     "seeAllCount": "सभी {{count}} देखें",
     "open": "{{course}} खोलें"
@@ -103,5 +107,15 @@
     "inProgress_one": "{{count}} जारी है",
     "inProgress_other": "{{count}} जारी हैं",
     "seeAll": "सभी देखें"
+  },
+  "pins": {
+    "unread": "नया",
+    "dismiss": "{{title}} हटाएँ",
+    "dismissShort": "हटाएँ",
+    "showAll": "सभी {{count}} देखें",
+    "showFewer": "कम दिखाएँ"
+  },
+  "nav": {
+    "allPages": "सभी पेज"
   }
 }

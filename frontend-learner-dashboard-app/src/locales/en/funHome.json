@@ -16,13 +16,12 @@
     "startLabel": "Start your first {{course}}",
     "startHere": "Start here",
     "start": "Start {{name}}",
-    "startPlain": "Start",
     "coursesTitle": "Pick up where you left off",
     "coursesBody": "Your {{courses}} are ready when you are.",
     "coursesCta": "Go to {{courses}}",
     "nearlyThere": "Nearly there · {{percent}}%",
     "loading": "Loading",
-    "errorTitle": "We could not load your home",
+    "errorTitle": "Some of your home did not load",
     "errorBody": "Check your connection and try again.",
     "retry": "Try again",
     "type": {
@@ -35,7 +34,9 @@
       "AUDIO": "Audio",
       "QUESTION": "Question",
       "PRESENTATION": "Slides"
-    }
+    },
+    "coursesTitleNew": "Ready to begin?",
+    "coursesBodyNew": "Pick one of your {{courses}} to start."
   },
   "empty": {
     "title": "Find your first {{course}}",
@@ -53,7 +54,7 @@
     "title": "You finished every {{course}}!",
     "body": "{{done}} of {{total}} {{courses}} done. Great work.",
     "caughtUpTitle": "All caught up",
-    "caughtUpBody": "Nothing is in progress right now. Pick something new when you are ready.",
+    "caughtUpBody": "Nothing is waiting where you left off. Open a {{course}} to choose what's next.",
     "next": "What's next",
     "testsTitle_one": "{{count}} test is open",
     "testsTitle_other": "{{count}} tests are open",
@@ -87,7 +88,10 @@
     "testsEyebrow": "Tests",
     "testsSee": "See them in Tests",
     "chipToday": "Today {{time}}",
-    "chipTomorrow": "Tomorrow {{time}}"
+    "chipTomorrow": "Tomorrow {{time}}",
+    "openTask": "Open the next task",
+    "openPlan": "Open today's plan",
+    "seePlan": "See today's plan"
   },
   "tiles": {
     "title": "Your {{courses}}",
@@ -103,5 +107,15 @@
     "inProgress_one": "{{count}} in progress",
     "inProgress_other": "{{count}} in progress",
     "seeAll": "See all"
+  },
+  "pins": {
+    "unread": "New",
+    "dismiss": "Dismiss {{title}}",
+    "dismissShort": "Dismiss",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer"
+  },
+  "nav": {
+    "allPages": "All pages"
   }
 }

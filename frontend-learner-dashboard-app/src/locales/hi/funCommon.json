@@ -5,5 +5,6 @@
   "new": "नया",
   "progress": "प्रगति",
   "percentDone": "{{percent}}% पूरा",
+  "percent": "{{percent}}%",
   "notStarted": "शुरू नहीं किया"
 }

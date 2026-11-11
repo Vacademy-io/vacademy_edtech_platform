@@ -3,7 +3,6 @@
     "count_one": "{{count}} {{course}}",
     "count_other": "{{count}} {{courses}}",
     "searchLabel": "अपने {{courses}} खोजें",
-    "tabsLabel": "{{course}} सूचियाँ",
     "retry": "फिर से कोशिश करें"
   },
   "course": {
@@ -12,7 +11,6 @@
     "percentOfCourse": "{{course}} का {{percent}}%",
     "sizeLabel": "{{course}} का आकार",
     "countChip": "{{count}} {{term}}",
-    "views": "{{course}} के दृश्य",
     "doneOf": "{{total}} में से {{done}} {{slides}} पूरे",
     "levelEyebrow": "{{level}} {{index}}",
     "levelDone": "{{count}} {{term}} · पूरा",
@@ -25,6 +23,7 @@
     "locked": "बंद",
     "quizTag": "क्विज़",
     "pickUpEyebrow": "जहाँ छोड़ा था वहीं से शुरू करें",
+    "nextUpEyebrow": "आगे पढ़ें",
     "pickUpCta": "जारी रखें",
     "inProgress": "जारी है",
     "stateLabel": "{{state}}: {{title}}"
@@ -34,8 +33,15 @@
     "positionLabel": "{{slide}} {{total}} में से {{index}}",
     "chapterProgress": "{{chapter}} की प्रगति",
     "upNext": "अगला: {{title}}",
+    "upNextShort": "अगला",
+    "upNextLocked": "अगला: {{title}} · बंद",
     "chapterComplete": "{{chapter}} पूरा हुआ",
     "dismiss": "बंद करें",
-    "navLabel": "{{slide}} नेविगेशन"
+    "navLabel": "{{slide}} नेविगेशन",
+    "close": "{{slide}} बंद करें",
+    "outline": "{{chapter}} की सूची",
+    "prevShort": "पिछला",
+    "nextChapterShort": "अगला: {{chapter}}",
+    "feedback": "प्रतिक्रिया"
   }
 }

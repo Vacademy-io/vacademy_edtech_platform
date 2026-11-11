@@ -13,20 +13,19 @@
   "hero": {
     "continueLabel": "تابع التعلّم",
     "continue": "متابعة",
-    "count": "{{done}} من {{total}} {{slides}} مكتمل",
+    "count": "{{done}} من {{total}} {{slides}} مكتملة",
     "percent": "{{percent}}٪",
     "percentOfCourse": "{{percent}}٪ من {{course}}",
     "progressLabel": "تقدّم {{course}}",
     "startLabel": "ابدأ {{course}} الأول",
     "startHere": "ابدأ من هنا",
     "start": "ابدأ {{name}}",
-    "startPlain": "ابدأ",
     "coursesTitle": "تابع من حيث توقفت",
     "coursesBody": "{{courses}} جاهزة متى كنت جاهزًا.",
     "coursesCta": "انتقل إلى {{courses}}",
     "nearlyThere": "اقتربت · {{percent}}٪",
     "loading": "جارٍ التحميل",
-    "errorTitle": "تعذّر تحميل صفحتك الرئيسية",
+    "errorTitle": "تعذّر تحميل جزء من صفحتك الرئيسية",
     "errorBody": "تحقّق من اتصالك وحاول مرة أخرى.",
     "retry": "إعادة المحاولة",
     "type": {
@@ -39,7 +38,9 @@
       "AUDIO": "صوت",
       "QUESTION": "سؤال",
       "PRESENTATION": "شرائح"
-    }
+    },
+    "coursesTitleNew": "لنبدأ",
+    "coursesBodyNew": "افتح {{courses}} للبدء."
   },
   "empty": {
     "title": "اعثر على {{course}} الأول",
@@ -57,7 +58,7 @@
     "title": "أنهيت كل {{course}}!",
     "body": "{{done}} من {{total}} {{courses}} مكتملة. عمل رائع.",
     "caughtUpTitle": "أنجزت كل شيء",
-    "caughtUpBody": "لا شيء قيد التقدّم الآن. اختر شيئًا جديدًا متى شئت.",
+    "caughtUpBody": "لا شيء بانتظارك لتستأنفه الآن. افتح {{courses}} لتختار ما التالي.",
     "next": "ما التالي",
     "testsTitle_zero": "لا توجد اختبارات مفتوحة",
     "testsTitle_one": "اختبار واحد مفتوح",
@@ -111,11 +112,14 @@
     "testsEyebrow": "الاختبارات",
     "testsSee": "اعرضها في الاختبارات",
     "chipToday": "اليوم {{time}}",
-    "chipTomorrow": "غدًا {{time}}"
+    "chipTomorrow": "غدًا {{time}}",
+    "openTask": "افتح المهمة التالية",
+    "openPlan": "افتح خطة اليوم",
+    "seePlan": "اعرض خطة اليوم"
   },
   "tiles": {
-    "title": "{{courses}} الخاصة بك",
-    "otherTitle": "{{courses}} الأخرى",
+    "title": "{{courses}} مسجَّل فيها",
+    "otherTitle": "{{courses}} أخرى",
     "lookBack": "راجع",
     "seeAll": "عرض الكل",
     "seeAllCount": "عرض الكل ({{count}})",
@@ -135,5 +139,15 @@
     "inProgress_many": "{{count}} قيد التقدّم",
     "inProgress_other": "{{count}} قيد التقدّم",
     "seeAll": "عرض الكل"
+  },
+  "pins": {
+    "unread": "جديد",
+    "dismiss": "إخفاء {{title}}",
+    "dismissShort": "إخفاء",
+    "showAll": "عرض الكل ({{count}})",
+    "showFewer": "عرض أقل"
+  },
+  "nav": {
+    "allPages": "كل الصفحات"
   }
 }

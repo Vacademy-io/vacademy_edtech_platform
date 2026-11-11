@@ -5,5 +5,6 @@
   "new": "جديد",
   "progress": "التقدّم",
   "percentDone": "{{percent}}٪ مكتمل",
+  "percent": "{{percent}}٪",
   "notStarted": "لم يبدأ"
 }

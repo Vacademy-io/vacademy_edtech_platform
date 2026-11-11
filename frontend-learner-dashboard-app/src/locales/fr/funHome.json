@@ -9,20 +9,19 @@
   "hero": {
     "continueLabel": "Continuer à apprendre",
     "continue": "Continuer",
-    "count": "{{done}} sur {{total}} {{slides}} terminés",
+    "count": "Avancement : {{done}} sur {{total}} {{slides}}",
     "percent": "{{percent}} %",
     "percentOfCourse": "{{percent}} % du {{course}}",
     "progressLabel": "Progression du {{course}}",
     "startLabel": "Commencez votre premier {{course}}",
     "startHere": "Commencez ici",
     "start": "Commencer {{name}}",
-    "startPlain": "Commencer",
     "coursesTitle": "Reprenez là où vous vous êtes arrêté",
     "coursesBody": "Vos {{courses}} vous attendent.",
     "coursesCta": "Aller aux {{courses}}",
     "nearlyThere": "Presque fini · {{percent}} %",
     "loading": "Chargement",
-    "errorTitle": "Impossible de charger votre accueil",
+    "errorTitle": "Une partie de votre accueil n'a pas pu se charger",
     "errorBody": "Vérifiez votre connexion et réessayez.",
     "retry": "Réessayer",
     "type": {
@@ -35,7 +34,9 @@
       "AUDIO": "Audio",
       "QUESTION": "Question",
       "PRESENTATION": "Diapositives"
-    }
+    },
+    "coursesTitleNew": "On commence ?",
+    "coursesBodyNew": "Ouvrez vos {{courses}} pour commencer."
   },
   "empty": {
     "title": "Trouvez votre premier {{course}}",
@@ -53,7 +54,7 @@
     "title": "Vous avez terminé chaque {{course}} !",
     "body": "{{done}} sur {{total}} {{courses}} terminés. Bravo.",
     "caughtUpTitle": "Tout est à jour",
-    "caughtUpBody": "Rien n'est en cours pour le moment. Choisissez quelque chose de nouveau quand vous voulez.",
+    "caughtUpBody": "Rien n'est à reprendre pour le moment. Ouvrez vos {{courses}} pour choisir la suite.",
     "next": "Et ensuite",
     "testsTitle_one": "{{count}} test est ouvert",
     "testsTitle_other": "{{count}} tests sont ouverts",
@@ -87,7 +88,10 @@
     "testsEyebrow": "Tests",
     "testsSee": "Voir dans Tests",
     "chipToday": "Aujourd'hui {{time}}",
-    "chipTomorrow": "Demain {{time}}"
+    "chipTomorrow": "Demain {{time}}",
+    "openTask": "Ouvrir la tâche suivante",
+    "openPlan": "Ouvrir le plan du jour",
+    "seePlan": "Voir le plan du jour"
   },
   "tiles": {
     "title": "Vos {{courses}}",
@@ -103,5 +107,15 @@
     "inProgress_one": "{{count}} en cours",
     "inProgress_other": "{{count}} en cours",
     "seeAll": "Tout voir"
+  },
+  "pins": {
+    "unread": "Nouveau",
+    "dismiss": "Masquer {{title}}",
+    "dismissShort": "Masquer",
+    "showAll": "Tout afficher ({{count}})",
+    "showFewer": "Afficher moins"
+  },
+  "nav": {
+    "allPages": "Toutes les pages"
   }
 }
