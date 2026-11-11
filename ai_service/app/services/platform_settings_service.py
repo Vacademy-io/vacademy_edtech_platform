@@ -500,10 +500,10 @@ SETTING_SPECS["external_apis.auto_capture"] = SettingSpec(
     description=(
         "Logs host, method, status and timing of each third-party call ai-service makes through httpx, so a "
         "new vendor appears on the External APIs page by itself. Never logs bodies or query strings. Adds rows "
-        "to external_api_call_log, which has no automatic cleanup yet."
+        "to external_api_call_log, which has no automatic cleanup yet. On unless switched off on the portal."
     ),
     type="bool",
-    default=lambda: False,
+    default=lambda: True,
 )
 
 SETTING_SPECS["metering.history_v2_institutes"] = SettingSpec(
