@@ -98,6 +98,17 @@ class PublicCourseInstructorsTest {
     }
 
     @Test
+    void publicProfilesKeepsNullAndDropsNullRows() {
+        assertNull(PublicCourseInstructors.publicProfiles(null));
+
+        List<UserDTO> profiles = PublicCourseInstructors.publicProfiles(Arrays.asList(fullUser(), null));
+
+        assertEquals(1, profiles.size());
+        assertNull(profiles.get(0).getEmail());
+        assertEquals("A. Teacher", profiles.get(0).getFullName());
+    }
+
+    @Test
     void handlesMissingData() {
         assertNull(PublicCourseInstructors.strip(null));
 
