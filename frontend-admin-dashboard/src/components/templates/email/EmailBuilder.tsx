@@ -14,6 +14,7 @@ type FormApi<T, U> = {
 import AssetPicker from './AssetPicker';
 import { registerTextBorderFrame } from './textBorderFrame';
 import { registerTextAttributePanel } from './TextAttributePanel';
+import { registerContactLinks } from './ContactLinks';
 import { MessageTemplate, TEMPLATE_VARIABLES } from '@/types/message-template-types';
 import { UploadFileInS3, getPublicUrl } from '@/services/upload_file';
 import { getUserId } from '@/utils/userDetails';
@@ -28,6 +29,8 @@ import '@arco-themes/react-easy-email-theme/css/arco.css';
 // Text-block border / radius: render override + the panel section that edits it.
 registerTextBorderFrame();
 registerTextAttributePanel();
+// Click-to-email / click-to-call: Button link modes + "Contact" blocks in the "+" panel.
+registerContactLinks();
 
 // Define the email template interface
 interface IEmailTemplate {

@@ -299,6 +299,63 @@
     flex: 1;
 }
 
+/* Button panel → Link field (ContactLinks.tsx) */
+.vac-link-field__label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #1e293b;
+    min-height: 24px;
+}
+
+.vac-link-field__item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vac-link-field__kind {
+    display: flex;
+}
+
+.vac-link-field__kind .arco-radio {
+    flex: 1;
+    text-align: center;
+}
+
+/* "+" panel → Contact category previews */
+.vac-contact-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vac-contact-presets__item {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+.vac-contact-presets__button {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: pre;
+}
+
+.vac-contact-presets__text {
+    justify-content: flex-start;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
 /*
  * Note: The email preview whitespace (left/right of content) is the actual
  * email background-color area. It renders inside a Shadow DOM so external
