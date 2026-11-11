@@ -1,0 +1,75 @@
+{
+    "notTelleo": {
+        "title": "Nothing to set up here",
+        "body": "This workspace was not created through Telleo sign-up."
+    },
+    "goToDashboard": "Go to your dashboard",
+    "submitFailed": "That did not save. Try again.",
+    "questions": {
+        "title": "Let's build your first AI agent",
+        "subtitle": "Answer a few questions (under a minute). We write a draft agent from them, and it calls your phone so you can hear it.",
+        "business": "What does your business do?",
+        "businessPlaceholder": "e.g. We sell 2 and 3 BHK flats in Pune.",
+        "website": "Website (optional)",
+        "goal": "What should the agent do?",
+        "goalDetail": "Tell us what it should do",
+        "audience": "Who will it call, and why do they expect the call?",
+        "audiencePlaceholder": "e.g. People who filled our Facebook ad form for a site visit.",
+        "outcome": "What counts as a good call?",
+        "pricing": "What may it say about price or offers? (optional)",
+        "pricingPlaceholder": "Leave blank and the agent says your team will confirm.",
+        "language": "Language",
+        "voice": "Voice",
+        "saving": "Saving…",
+        "build": "Build my agent"
+    },
+    "goals": {
+        "QUALIFY_LEADS": "Qualify new leads",
+        "BOOK_APPOINTMENTS": "Book appointments",
+        "PAYMENT_REMINDERS": "Payment reminders",
+        "FEEDBACK": "Collect feedback",
+        "OTHER": "Something else"
+    },
+    "outcomes": {
+        "INTERESTED": "They say they are interested",
+        "BOOKED": "An appointment is booked",
+        "TRANSFER": "They agree to talk to our team",
+        "DETAILS_COLLECTED": "Their details are collected"
+    },
+    "languages": {
+        "english": "English",
+        "hinglish": "Hinglish",
+        "hindi": "Hindi"
+    },
+    "voices": {
+        "female": "Female",
+        "male": "Male"
+    },
+    "steps": {
+        "line": "Your trial calling line",
+        "settings": "Your workspace",
+        "agent": "Your draft agent"
+    },
+    "building": {
+        "title": "Building your agent…",
+        "subtitle": "This usually takes under a minute. You can keep this page open."
+    },
+    "failed": {
+        "title": "We could not finish setting up",
+        "retry": "Try again"
+    },
+    "ready": {
+        "title": "Your agent is ready",
+        "subtitle": "We wrote a draft from your answers. Edit the script any time.",
+        "subtitleTemplate": "We started you from a template for your use case. Edit the script any time.",
+        "callMe": "Call me now on {{phone}}",
+        "placing": "Placing the call…",
+        "calling": "Calling {{phone}} now. Pick up!",
+        "queued": "Your call is queued and will ring {{phone}} shortly.",
+        "callFailed": "The call could not be placed. Try again.",
+        "trialNote": "During your free trial the agent can only call this number. Upgrade to call your leads.",
+        "trialNoteWithDate": "During your free trial (until {{date}}) the agent can only call this number. Upgrade to call your leads.",
+        "editAgent": "Edit the script and voice",
+        "apiKeys": "API keys"
+    }
+}

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallService;
+import vacademy.io.admin_core_service.features.telleo.service.TelleoTrialService;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallingSettingsService;
 import vacademy.io.admin_core_service.features.telephony.core.CallingWindowUtil;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
@@ -313,6 +314,9 @@ public class AiCallQueueDrainJob {
             if (AiCallService.TOLL_FREE_MESSAGE.equals(item.getStatusReason())) {
                 throw new VacademyException(AiCallService.TOLL_FREE_MESSAGE);
             }
+            if (TelleoTrialService.MSG_TRIAL_NUMBER.equals(item.getStatusReason())) {
+                throw new VacademyException(TelleoTrialService.MSG_TRIAL_NUMBER);
+            }
             return Optional.empty();
         }
 
@@ -416,6 +420,12 @@ public class AiCallQueueDrainJob {
                     // Can never succeed, so FAILED at once rather than three refused
                     // dials (dispatchNowIfLineFree tells the person who clicked why).
                     finish(item, AiCallQueueStatus.FAILED, AiCallService.TOLL_FREE_MESSAGE);
+                    return DispatchOutcome.ITEM_HANDLED;
+                }
+                case AiCallService.SKIPPED_TRIAL_NUMBER -> {
+                    // A Telleo trial may only ring its verified phone. Retrying cannot change
+                    // that, so FAILED at once; only this lead's item, the lane keeps going.
+                    finish(item, AiCallQueueStatus.FAILED, TelleoTrialService.MSG_TRIAL_NUMBER);
                     return DispatchOutcome.ITEM_HANDLED;
                 }
                 case SKIPPED_LEAD_DAILY_CAP -> {

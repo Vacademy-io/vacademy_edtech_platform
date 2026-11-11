@@ -9,6 +9,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallService;
+import vacademy.io.admin_core_service.features.telleo.service.TelleoTrialService;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallResponseDTO;
 import vacademy.io.admin_core_service.features.telephony.enums.CallTrigger;
@@ -116,6 +117,30 @@ public class AiCallingApiService {
                             String externalId, Map<String, Object> variables, Map<String, Object> metadata) {
     }
 
+    // ── Telleo trial ─────────────────────────────────────────────────────────────
+
+    /**
+     * Refuses a real call that a Telleo trial may not place, at request time and with a stable
+     * code, instead of accepting it and failing it in the queue (placeCall applies the same rule
+     * again as the backstop).
+     */
+    private void requireTrialAllows(String instituteId, String phone) {
+        TelleoTrialService.Verdict trial = trialVerdict(instituteId, phone);
+        if (trial != TelleoTrialService.Verdict.ALLOW) throw trialRefusal(trial);
+    }
+
+    /** Never null: a mocked or unwired call service reads as "not a trial". */
+    private TelleoTrialService.Verdict trialVerdict(String instituteId, String phone) {
+        TelleoTrialService.Verdict v = aiCallService.trialVerdict(instituteId, phone);
+        return v == null ? TelleoTrialService.Verdict.ALLOW : v;
+    }
+
+    private static AiCallingApiException trialRefusal(TelleoTrialService.Verdict trial) {
+        HttpStatus status = trial == TelleoTrialService.Verdict.TRIAL_ENDED
+                ? HttpStatus.PAYMENT_REQUIRED : HttpStatus.FORBIDDEN;
+        return new AiCallingApiException(status, trial.code, trial.message);
+    }
+
     // ── Create ───────────────────────────────────────────────────────────────────
 
     public Map<String, Object> createCall(AiCallingApiAuth.Principal p, CallInput in, boolean test,
@@ -142,6 +167,7 @@ public class AiCallingApiService {
             throw new AiCallingApiException(HttpStatus.PAYMENT_REQUIRED, "insufficient_credits",
                     OUT_OF_CREDITS);
         }
+        if (!test) requireTrialAllows(p.instituteId(), v.phone());
         AiCallApiCall call = newCall(p, v, null, test, idem);
         try {
             call = detach(callRepository.saveAndFlush(call));
@@ -225,6 +251,14 @@ public class AiCallingApiService {
             throw new AiCallingApiException(HttpStatus.PAYMENT_REQUIRED, "insufficient_credits",
                     OUT_OF_CREDITS);
         }
+        // Ended or suspended stops the whole batch. A running trial answers NUMBER_NOT_ALLOWED
+        // for "no number", which marks it as a trial whose rows are checked one by one below.
+        boolean trialAccount = false;
+        if (!test) {
+            TelleoTrialService.Verdict trial = trialVerdict(p.instituteId(), null);
+            if (trial.blocksInstitute()) throw trialRefusal(trial);
+            trialAccount = trial == TelleoTrialService.Verdict.NUMBER_NOT_ALLOWED;
+        }
         String batchId = newId("batch_");
         List<Map<String, Object>> accepted = new ArrayList<>();
         List<Map<String, Object>> rejected = new ArrayList<>();
@@ -238,6 +272,13 @@ public class AiCallingApiService {
                 continue;
             }
             Validated v = rc.validated();
+            if (trialAccount) {
+                TelleoTrialService.Verdict rowVerdict = trialVerdict(p.instituteId(), v.phone());
+                if (rowVerdict != TelleoTrialService.Verdict.ALLOW) {
+                    rejected.add(rejection(i, v.phone(), rowVerdict.code, rowVerdict.message));
+                    continue;
+                }
+            }
             String rowKey = idem == null ? null : idem + "#" + i;
             AiCallApiCall call;
             try {

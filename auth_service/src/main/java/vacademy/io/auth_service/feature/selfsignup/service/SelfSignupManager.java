@@ -61,6 +61,7 @@ public class SelfSignupManager {
     private final SelfSignupAlertClient alertClient;
     private final SelfSignupRateLimiter rateLimiter;
     private final ProductConfigClient productConfigClient;
+    private final SelfSignupRulesClient rulesClient;
 
     public String requestOtp(SelfSignupOtpRequest request, String ip) {
         ProductConfigDTO product = requireProduct(request.getProduct());
@@ -97,15 +98,69 @@ public class SelfSignupManager {
                 .build();
     }
 
+    /**
+     * Products that guard their trial with a phone (Telleo): after the email, the visitor proves a
+     * phone number with a WhatsApp code. The email proof must come first, so a code is never sent
+     * for nobody, and a number that already had a trial is refused before a message is spent.
+     */
+    public String requestPhoneOtp(SelfSignupOtpRequest request, String ip) {
+        ProductConfigDTO product = requireProduct(request.getProduct());
+        SelfSignupRulesClient.Rules rules = rulesOf(product);
+        if (!rules.requiresPhone()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "This product does not verify phone numbers");
+        }
+        tokenService.verify(request.getSignupToken());
+        String phone = normalisePhone(request.getPhone());
+        rateLimiter.checkPhoneOtp(phone, ip);
+        assertPhoneHasNoTrial(product, rules, phone);
+        notificationService.sendPlatformDefaultWhatsAppOtp(phone);
+        return "WhatsApp code sent to +" + phone;
+    }
+
+    /** Checks the WhatsApp code and returns a new sign-up proof carrying the email AND the phone. */
+    public SelfSignupVerifyResponse verifyPhoneOtp(SelfSignupOtpRequest request) {
+        ProductConfigDTO product = requireProduct(request.getProduct());
+        SelfSignupRulesClient.Rules rules = rulesOf(product);
+        if (!rules.requiresPhone()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "This product does not verify phone numbers");
+        }
+        Claims proof = tokenService.verify(request.getSignupToken());
+        String phone = normalisePhone(request.getPhone());
+        if (!StringUtils.hasText(request.getOtp())) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Enter the code we sent on WhatsApp");
+        }
+        rateLimiter.checkPhoneVerify(phone);
+        boolean valid = Boolean.TRUE.equals(notificationService.verifyWhatsAppOTP(
+                vacademy.io.auth_service.feature.auth.dto.WhatsAppOTPVerifyRequest.builder()
+                        .phoneNumber(phone).otp(request.getOtp().trim()).build()));
+        if (!valid) {
+            throw new VacademyException(HttpStatus.UNAUTHORIZED, "That code is wrong or has expired");
+        }
+        assertPhoneHasNoTrial(product, rules, phone);
+        String email = proof.get("email", String.class);
+        return SelfSignupVerifyResponse.builder()
+                .signupToken(tokenService.issue(email, proof.get("method", String.class),
+                        proof.get("name", String.class), proof.get("subject_id", String.class),
+                        proof.get("vendor_id", String.class), phone))
+                .email(email)
+                .expiresAt(System.currentTimeMillis() + tokenService.ttlMillis())
+                .build();
+    }
+
     /** What the sign-up screen shows. Public, so nothing about the sender is in it. */
     public SelfSignupConfigResponse config(String product) {
         ProductConfigDTO config = requireProduct(product);
+        SelfSignupRulesClient.Rules rules = rulesOf(config);
         return SelfSignupConfigResponse.builder()
                 .product(config.getProductKey())
                 .displayName(config.getDisplayName())
                 .trialDays(config.getTrialDays())
                 .logoUrl(config.getLogoUrl())
                 .appPath(config.getAppPath())
+                .phoneVerificationRequired(rules.requiresPhone())
+                .hideTeachers(rules.hidesTeachers())
+                .instituteTypes(rules.getInstituteTypes() == null || rules.getInstituteTypes().isEmpty()
+                        ? null : rules.getInstituteTypes())
                 .build();
     }
 
@@ -121,15 +176,29 @@ public class SelfSignupManager {
         if (!StringUtils.hasText(fullName)) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Your name is required");
         }
-        String phone = requirePhone(request.getPhone());
+        SelfSignupRulesClient.Rules rules = rulesOf(product);
+        String phone;
+        if (rules.requiresPhone()) {
+            // Only the number the WhatsApp code proved: whatever the form sends is ignored.
+            phone = proof.get("phone", String.class);
+            if (!StringUtils.hasText(phone)) {
+                throw new VacademyException(HttpStatus.UNAUTHORIZED, "Verify your phone number first");
+            }
+        } else {
+            phone = requirePhone(request.getPhone());
+        }
         String instituteName = StringUtils.hasText(request.getInstituteName())
                 ? request.getInstituteName().trim() : fullName;
         String type = request.getInstituteType() == null
                 ? "" : request.getInstituteType().trim().toLowerCase(Locale.ROOT);
-        if (!INSTITUTE_TYPES.contains(type)) {
-            throw new VacademyException(HttpStatus.BAD_REQUEST, "Pick what kind of institute this is");
+        java.util.Collection<String> allowedTypes = rules.getInstituteTypes() == null || rules.getInstituteTypes().isEmpty()
+                ? INSTITUTE_TYPES : rules.getInstituteTypes();
+        if (!allowedTypes.contains(type)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, rules.getInstituteTypes() == null
+                    ? "Pick what kind of institute this is" : "Pick what kind of business this is");
         }
-        if (request.getTeachers() != null && request.getTeachers() < 1) {
+        Integer teachers = rules.hidesTeachers() ? null : request.getTeachers();
+        if (teachers != null && teachers < 1) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Number of teachers must be at least 1");
         }
 
@@ -149,6 +218,8 @@ public class SelfSignupManager {
             throw new VacademyException(HttpStatus.CONFLICT, "That username is taken. Pick another.");
         }
         rateLimiter.checkSignup(ip);
+        // Checked again here: the phone may have started a trial since its code was sent.
+        assertPhoneHasNoTrial(product, rules, phone);
 
         Timestamp trialEnds = Timestamp.from(
                 Instant.now().plus(product.getTrialDays(), ChronoUnit.DAYS));
@@ -160,7 +231,7 @@ public class SelfSignupManager {
         institute.setType(type);
         institute.setCity(emptyToNull(request.getCity()));
         institute.setState(emptyToNull(request.getState()));
-        institute.setStaffStrength(request.getTeachers());
+        institute.setStaffStrength(teachers);
         institute.setModuleRequestIds(List.of(ASSESS_MODULE_ID));
         institute.setProduct(product.getProductKey());
         institute.setLeadTag(LEAD_TAG_TRIAL);
@@ -204,6 +275,28 @@ public class SelfSignupManager {
         return productConfigClient.get(product).filter(ProductConfigDTO::isSignupOpen)
                 .orElseThrow(() -> new VacademyException(HttpStatus.BAD_REQUEST,
                         "Sign-up is not available for this product"));
+    }
+
+    /** Never null: a product without rules (or an unwired client in a test) signs up the default way. */
+    private SelfSignupRulesClient.Rules rulesOf(ProductConfigDTO product) {
+        SelfSignupRulesClient.Rules rules = rulesClient == null ? null : rulesClient.rules(product.getProductKey());
+        return rules == null ? new SelfSignupRulesClient.Rules() : rules;
+    }
+
+    private void assertPhoneHasNoTrial(ProductConfigDTO product, SelfSignupRulesClient.Rules rules, String phone) {
+        if (Boolean.TRUE.equals(rules.getTrialDialLock())
+                && !rulesClient.isTrialPhoneAvailable(product.getProductKey(), phone)) {
+            throw new VacademyException(HttpStatus.CONFLICT,
+                    "This phone number has already been used for a free trial. Please log in instead.");
+        }
+    }
+
+    /** Digits with the country code; a bare 10-digit number is Indian, like the dialer assumes. */
+    private String normalisePhone(String phone) {
+        String digits = requirePhone(phone);
+        if (digits.length() == 10) return "91" + digits;
+        if (digits.length() == 11 && digits.startsWith("0")) return "91" + digits.substring(1);
+        return digits;
     }
 
     private String requireEmail(String email) {

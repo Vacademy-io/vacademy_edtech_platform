@@ -39,6 +39,18 @@ public class SelfSignupController {
         return manager.verifyOtp(request);
     }
 
+    /** Products that verify a phone (Telleo): {product, signup_token, phone}. */
+    @PostMapping("/request-phone-otp")
+    public String requestPhoneOtp(@RequestBody SelfSignupOtpRequest request, HttpServletRequest http) {
+        return manager.requestPhoneOtp(request, clientIp(http));
+    }
+
+    /** {product, signup_token, phone, otp}: returns a new signup_token that also carries the phone. */
+    @PostMapping("/verify-phone-otp")
+    public SelfSignupVerifyResponse verifyPhoneOtp(@RequestBody SelfSignupOtpRequest request) {
+        return manager.verifyPhoneOtp(request);
+    }
+
     @PostMapping("/signup")
     public JwtResponseDto signup(@RequestBody SelfSignupRequest request, HttpServletRequest http) {
         return manager.signup(request, clientIp(http));

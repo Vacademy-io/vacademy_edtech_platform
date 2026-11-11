@@ -318,6 +318,19 @@ export function mergeDisplayWithDefaults(
     };
 
     // Sidebar merge
+    //
+    // Allow-list mode (ui.sidebarAllowList, set for Telleo sign-ups): a tab or sub-tab the
+    // saved blob does not list is HIDDEN instead of filled in visible from the defaults, so
+    // a tab added to the product later stays out of these accounts' sidebars.
+    const allowList = incoming?.ui?.sidebarAllowList === true;
+    const listedTabs = new Map(
+        ((incoming?.sidebar ?? []) as Array<Partial<DisplaySettingsData['sidebar'][number]>>)
+            .filter((tab) => tab?.id)
+            .map((tab) => [
+                tab.id as string,
+                new Set((tab.subTabs ?? []).map((s) => s?.id).filter(Boolean) as string[]),
+            ])
+    );
     const mergedSidebar = mergeArrayById(
         incoming?.sidebar as Array<Partial<DisplaySettingsData['sidebar'][number]>> | undefined,
         defaults.sidebar
@@ -342,12 +355,14 @@ export function mergeDisplayWithDefaults(
                 | undefined,
             defTab.subTabs || []
         );
+        const listedSubs = listedTabs.get(tab.id);
+        const tabListed = !allowList || listedSubs !== undefined;
         return {
             id: tab.id,
             label: tab.label ?? defTab.label,
             route: tab.route ?? defTab.route,
             order: tab.order ?? defTab.order ?? 0,
-            visible: tab.visible ?? defTab.visible ?? true,
+            visible: tabListed && (tab.visible ?? defTab.visible ?? true),
             locked: tab.locked ?? defTab.locked ?? false,
             isCustom: tab.isCustom ?? (defTab as Partial<typeof defTab>).isCustom ?? false,
             category: tab.category ?? (defTab as Partial<typeof defTab>).category,
@@ -357,12 +372,13 @@ export function mergeDisplayWithDefaults(
                     ({ id: s.id!, order: 0, route: '#', visible: true } as NonNullable<
                         DisplaySettingsData['sidebar'][number]['subTabs']
                     >[number]);
+                const subListed = !allowList || (listedSubs?.has(s.id!) ?? false);
                 return {
                     id: s.id!,
                     label: s.label ?? defSub.label,
                     route: s.route ?? defSub.route ?? '#',
                     order: s.order ?? defSub.order ?? 0,
-                    visible: s.visible ?? defSub.visible ?? true,
+                    visible: subListed && (s.visible ?? defSub.visible ?? true),
                     locked: s.locked ?? defSub.locked ?? false,
                 };
             }),
@@ -564,6 +580,8 @@ export function mergeDisplayWithDefaults(
             incoming?.ui?.showAssistDock ??
             defaults.ui?.showAssistDock ??
             role === ADMIN_DISPLAY_SETTINGS_KEY,
+        // Opt-in only (Telleo sign-ups): never taken from the defaults.
+        sidebarAllowList: incoming?.ui?.sidebarAllowList === true,
     };
 
     // Content Types

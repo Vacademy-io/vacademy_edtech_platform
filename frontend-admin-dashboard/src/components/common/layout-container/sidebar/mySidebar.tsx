@@ -311,10 +311,13 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
         );
 
         const tabVis = new Map(roleDisplay.sidebar.map((t) => [t.id, t]));
+        // Allow-list mode (Telleo sign-ups): an entry the settings do not mention is hidden,
+        // not shown. Everyone else keeps "unmentioned = shown".
+        const allowList = roleDisplay.ui?.sidebarAllowList === true;
         const mapped = base
             .filter((item) => {
                 const cfg = tabVis.get(item.id);
-                return cfg ? cfg.visible !== false : true;
+                return cfg ? cfg.visible !== false : !allowList;
             })
             .map((item) => {
                 const cfg = tabVis.get(item.id);
@@ -358,7 +361,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                     const filteredSubs = item.subItems
                         .filter((s) => {
                             const c = subVis.get(s.subItemId);
-                            return c ? c.visible !== false : true;
+                            return c ? c.visible !== false : !allowList;
                         })
                         .sort((a, b) => {
                             const ao = subVis.get(a.subItemId)?.order ?? 0;
@@ -569,10 +572,18 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
             items: finalSidebarItems,
             sidebarCategories: roleDisplay?.sidebarCategories ?? null,
             settingsReady: roleDisplayResolved,
+            allowListOnly: roleDisplayResolved && roleDisplay?.ui?.sidebarAllowList === true,
         });
         // finalSidebarItems/roleDisplay are captured through the signatures.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navSignature, categoriesSignature, roleDisplayResolved, data?.id, setNavSnapshot]);
+    }, [
+        navSignature,
+        categoriesSignature,
+        roleDisplayResolved,
+        roleDisplay?.ui?.sidebarAllowList,
+        data?.id,
+        setNavSnapshot,
+    ]);
 
     // Browser tab title leads with the section ("All Leads · I2CAN"), so several
     // tabs open on lists that share one page can still be told apart.

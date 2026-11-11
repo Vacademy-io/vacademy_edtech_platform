@@ -14,4 +14,10 @@ public class SelfSignupConfigResponse {
     private Integer trialDays;
     private String logoUrl;
     private String appPath;
+    /** The form asks for a WhatsApp code on the phone number before the account is created. */
+    private Boolean phoneVerificationRequired;
+    /** The form does not ask how many teachers there are. */
+    private Boolean hideTeachers;
+    /** The "what kind of business" choices; null = the default institute types. */
+    private java.util.List<String> instituteTypes;
 }

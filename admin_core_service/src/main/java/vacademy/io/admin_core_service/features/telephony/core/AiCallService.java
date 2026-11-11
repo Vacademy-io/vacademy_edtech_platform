@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
+import vacademy.io.admin_core_service.features.telleo.service.TelleoTrialService;
 import vacademy.io.admin_core_service.features.audience.enums.AudienceStatusEnum;
 import vacademy.io.admin_core_service.features.audience.entity.UserLeadProfile;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
@@ -145,6 +146,31 @@ public class AiCallService {
 
     @Autowired
     private CreditClient creditClient;
+
+    /** placeCall's status when a Telleo trial asks to call a number other than its verified one. */
+    public static final String SKIPPED_TRIAL_NUMBER = "SKIPPED_TRIAL_NUMBER";
+
+    @Autowired(required = false)
+    private TelleoTrialService telleoTrialService;
+
+    /**
+     * The Telleo trial rule for a real call to {@code phone}.
+     *
+     * <p>Fails OPEN on a read error, unlike the credit gate: the check runs for every
+     * institute, and an error cannot tell a Telleo trial from a paying customer, so failing
+     * closed would stop every customer's calls with a Telleo message. The exposure is one
+     * trial call during a database fault, and that call still needs credits.
+     */
+    public TelleoTrialService.Verdict trialVerdict(String instituteId, String phone) {
+        if (telleoTrialService == null) return TelleoTrialService.Verdict.ALLOW;
+        try {
+            return telleoTrialService.checkDial(instituteId, phone);
+        } catch (Exception e) {
+            log.warn("Telleo trial check failed for institute {}, allowing the call: {}",
+                    instituteId, e.getMessage());
+            return TelleoTrialService.Verdict.ALLOW;
+        }
+    }
 
     /**
      * True only when the institute can actually pay for a call. Fails CLOSED on
@@ -286,6 +312,25 @@ public class AiCallService {
                         .status(SKIPPED_TOLL_FREE)
                         .dispatched(false)
                         .providerMessage(TOLL_FREE_MESSAGE)
+                        .build();
+            }
+            // TELLEO TRIAL GUARD. Every real dial (manual, bulk, workflow, API, agent test)
+            // reaches this line with its destination resolved, so the one-number trial rule
+            // lives here and cannot be routed around. Institutes that are not Telleo self
+            // sign-ups have no state row and always pass.
+            TelleoTrialService.Verdict trial = trialVerdict(req.getInstituteId(), phone);
+            if (trial.blocksInstitute()) {
+                // Institute-wide and clears only on payment / by staff: a conflict, so the
+                // queue holds the lane instead of burning each call's retries.
+                throw new ConflictException(trial.message);
+            }
+            if (trial == TelleoTrialService.Verdict.NUMBER_NOT_ALLOWED) {
+                log.info("AI call skipped: institute {} is on a Telleo trial and phone ***{} is not its verified number",
+                        req.getInstituteId(), phone.substring(Math.max(0, phone.length() - 4)));
+                return AiCallResponseDTO.builder()
+                        .status(SKIPPED_TRIAL_NUMBER)
+                        .dispatched(false)
+                        .providerMessage(TelleoTrialService.MSG_TRIAL_NUMBER)
                         .build();
             }
             if (isBlank(campaignId)) {

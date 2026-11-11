@@ -14,6 +14,7 @@ import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { RouteAccessGuard } from './route-access-guard';
+import { TelleoTrialBanner } from './telleo-trial-banner';
 
 /**
  * New sidebar dimensions (Gmail-style two-bar):
@@ -149,6 +150,7 @@ export const LayoutContainer = ({
                 )}
             >
                 <Navbar showMobileBackButton={showMobileBackButton} />
+                <TelleoTrialBanner />
                 <StudentSidebarProvider>
                     <div
                         className={cn(

@@ -30,6 +30,14 @@ public class SelfSignupTokenService {
     private static final String PURPOSE = "self-signup";
 
     public String issue(String email, String method, String name, String subjectId, String vendorId) {
+        return issue(email, method, name, subjectId, vendorId, null);
+    }
+
+    /**
+     * @param phone a phone number the visitor ALSO proved (WhatsApp code), digits with the country
+     *              code; null when only the email is proven.
+     */
+    public String issue(String email, String method, String name, String subjectId, String vendorId, String phone) {
         long now = System.currentTimeMillis();
         Map<String, Object> claims = new HashMap<>();
         claims.put("purpose", PURPOSE);
@@ -38,6 +46,7 @@ public class SelfSignupTokenService {
         claims.put("name", name == null ? "" : name);
         claims.put("subject_id", subjectId == null ? "" : subjectId);
         claims.put("vendor_id", vendorId == null ? "" : vendorId);
+        claims.put("phone", phone == null ? "" : phone);
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date(now))
