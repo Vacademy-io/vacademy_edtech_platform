@@ -34,7 +34,7 @@ def test_parsers():
     capped = vb.parse_openrouter_key({"data": {"limit": 100, "limit_remaining": 74.5}})
     assert capped["balance"] == 74.5 and capped["kind"] == vb.KEY_LIMIT
     uncapped = vb.parse_openrouter_key({"data": {"limit": None, "limit_remaining": None}})
-    assert uncapped["status"] == "not_set_up" and "OPENROUTER_MANAGEMENT_KEY" in uncapped["message"]
+    assert uncapped["status"] == "not_set_up" and "management key" in uncapped["message"] and "_KEY" not in uncapped["message"]
 
 
 def test_parsers_reject_missing_figures():
@@ -110,9 +110,9 @@ def test_errors_never_echo_key_or_body():
 
     env = {"OPENROUTER_MANAGEMENT_KEY": OR_MGMT, "FAL_API_KEY": FAL_KEY, "RUNPOD_API_KEY": RP_KEY}
     rows = _by_vendor(vb.fetch_all(env, _client(handler)))
-    assert rows["fal.ai"]["message"] == "fal.ai refused this key for balance reads (HTTP 403)"
-    assert rows["RunPod"]["message"] == "RunPod did not answer within 10s"
-    assert rows["OpenRouter"]["message"] == "OpenRouter sent a response we could not read"
+    assert rows["fal.ai"]["message"] == "fal.ai refused our key, so the balance could not be read. The key may be expired or revoked."
+    assert rows["RunPod"]["message"] == "RunPod took too long to answer. Try again later."
+    assert rows["OpenRouter"]["message"] == "OpenRouter answered, but not in the format we expected."
     dumped = json.dumps(list(rows.values()))
     for leaked in (OR_MGMT, FAL_KEY, RP_KEY, secret_body):
         assert leaked not in dumped
