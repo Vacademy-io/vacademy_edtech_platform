@@ -401,6 +401,16 @@
     "slotEmpty": "Vide — glissez un composant ici depuis la bibliothèque",
     "clickToEdit": "Cliquer pour modifier",
     "removeFromSlot": "Retirer de l'emplacement",
+    "tagFilter": "Filtre par étiquette",
+    "showTagFilter": "Afficher le filtre par étiquette au-dessus de cette mise en page",
+    "tagFilterHint": "Les puces viennent des étiquettes de toutes les mises en colonnes de cette page. Un clic n'affiche que les colonnes portant cette étiquette. Pour ouvrir la page déjà filtrée, utilisez un lien avec ?tag=<nom de l'étiquette>.",
+    "noTagsYet": "Aucune étiquette — ajoutez des étiquettes de filtre aux colonnes ci-dessous (ou à d'autres mises en colonnes de cette page).",
+    "allLabel": "Libellé de la puce « Tous »",
+    "allPlaceholder": "Tous",
+    "chipsGroup": "Puces du filtre",
+    "columnTags": "Étiquettes de filtre",
+    "columnTagsPlaceholder": "ex. Storybooks, 2 year old",
+    "columnTagsHint": "Séparez les étiquettes par des virgules. Utilisées par le filtre de cette page.",
     "componentCount_many": "{{count}} composants"
   },
   "mediaShowcase": {

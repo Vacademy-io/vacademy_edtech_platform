@@ -6,6 +6,7 @@
         "spacing": "Espacement",
         "layoutWidth": "Mise en page et largeur",
         "background": "Arrière-plan",
+        "buttons": "Boutons",
         "borderShadow": "Bordure et ombre",
         "premiumEffects": "Effets premium",
         "decorations": "Décorations",
@@ -13,6 +14,15 @@
         "typography": "Typographie",
         "animation": "Animation",
         "visibility": "Visibilité"
+    },
+    "buttons": {
+        "hint": "Couleur des boutons principaux de cette section (boutons du hero, cartes de cours, Télécharger…). Vide : couleur principale du site.",
+        "color": {
+            "label": "Couleur du bouton"
+        },
+        "textColor": {
+            "label": "Couleur du texte du bouton"
+        }
     },
     "presetRow": {
         "custom": "Personnalisé ({{value}})"
@@ -83,7 +93,8 @@
     },
     "background": {
         "color": {
-            "label": "Couleur d'arrière-plan"
+            "label": "Couleur d'arrière-plan",
+            "sectionHint": "C'est la couleur propre de la section — la choisir ici la modifie aussi."
         },
         "image": {
             "label": "Image d'arrière-plan",

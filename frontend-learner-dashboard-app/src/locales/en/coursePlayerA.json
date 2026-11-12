@@ -186,6 +186,8 @@
   },
   "jsonRenderer": {
     "hiddenBlock": "Hidden: {{label}}",
+    "tagFilterAll": "All",
+    "tagFilterLabel": "Filter by tag",
     "video": "Video",
     "noVideoUrlConfigured": "No video URL configured",
     "play": "Play",

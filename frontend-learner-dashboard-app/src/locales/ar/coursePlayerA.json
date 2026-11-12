@@ -190,6 +190,8 @@
   },
   "jsonRenderer": {
     "hiddenBlock": "مخفي: {{label}}",
+    "tagFilterAll": "الكل",
+    "tagFilterLabel": "التصفية حسب الوسم",
     "video": "فيديو",
     "noVideoUrlConfigured": "لم يتم تكوين رابط فيديو",
     "play": "تشغيل",
