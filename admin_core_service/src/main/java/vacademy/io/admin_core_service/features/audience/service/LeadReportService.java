@@ -78,24 +78,16 @@ public class LeadReportService {
         // Total Leads here equals the All Leads count. The Converted KPI stays admissions-based.
         boolean excludeConverted = settingService.get(instituteId).hideConvertedInAllLeads();
 
-        LeadReportProjections.TotalsProjection totals =
-                audienceResponseRepository.findReportTotals(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
-        LeadReportProjections.ResponseStatsProjection response =
-                audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatMinutesParam, tatRule,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
-        List<LeadReportProjections.StatusCountProjection> statusRows =
-                audienceResponseRepository.findReportStatusBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
-        List<LeadReportProjections.SourceCountProjection> sourceRows =
-                audienceResponseRepository.findReportSourceBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
-        List<LeadReportProjections.TierCountProjection> tierRows =
-                audienceResponseRepository.findReportTierBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
-        List<LeadReportProjections.DailyTrendProjection> trendRows =
-                audienceResponseRepository.findReportDailyTrend(instituteId, range.from, range.to,
-                        range.zone, scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted);
+        // One pass over the lead set for every figure below (it used to be read six times).
+        SummaryParts parts = SummaryParts.of(audienceResponseRepository.findReportSummaryAggregates(
+                instituteId, range.from, range.to, range.zone, tatMinutesParam, tatRule,
+                scopeCsv, audienceFilter, sourceFilter, excludeDuplicates, excludeConverted));
+        LeadReportProjections.TotalsProjection totals = parts.totals();
+        LeadReportProjections.ResponseStatsProjection response = parts.response();
+        List<LeadReportProjections.StatusCountProjection> statusRows = parts.status();
+        List<LeadReportProjections.SourceCountProjection> sourceRows = parts.sources();
+        List<LeadReportProjections.TierCountProjection> tierRows = parts.tiers();
+        List<LeadReportProjections.DailyTrendProjection> trendRows = parts.trend();
 
         long total = nz(totals != null ? totals.getTotalLeads() : null);
         // Converted = admissions in the window (per student x month, exactly as the Admissions,
@@ -392,6 +384,62 @@ public class LeadReportService {
     }
 
     /** The TAT config when TAT is enabled; null otherwise (drives "is TAT shown?" downstream). */
+    /**
+     * The one-pass summary rows split back into the six result shapes the summary used to get from
+     * six queries, with their old order: sources by lead count desc, the trend by day.
+     */
+    record SummaryParts(LeadReportProjections.TotalsProjection totals,
+                        LeadReportProjections.ResponseStatsProjection response,
+                        List<LeadReportProjections.StatusCountProjection> status,
+                        List<LeadReportProjections.SourceCountProjection> sources,
+                        List<LeadReportProjections.TierCountProjection> tiers,
+                        List<LeadReportProjections.DailyTrendProjection> trend) {
+
+        record Totals(Long getTotalLeads, Long getConvertedLeads, Long getLostLeads, Long getActiveLeads,
+                      Long getOverdueLeads) implements LeadReportProjections.TotalsProjection { }
+
+        record Response(Long getRespondedLeads, Double getAvgResponseMinutes, Double getMedianResponseMinutes,
+                        Long getTatMetCount) implements LeadReportProjections.ResponseStatsProjection { }
+
+        record Status(String getStatusKey, Long getLeadCount) implements LeadReportProjections.StatusCountProjection { }
+
+        record Source(String getSourceType, Boolean getFromCampaignType, Long getTotalCount, Long getConvertedCount)
+                implements LeadReportProjections.SourceCountProjection { }
+
+        record Tier(String getTier, Long getLeadCount) implements LeadReportProjections.TierCountProjection { }
+
+        record Day(java.sql.Date getDay, Long getSubmittedCount, Long getConvertedCount)
+                implements LeadReportProjections.DailyTrendProjection { }
+
+        static SummaryParts of(List<LeadReportProjections.SummaryAggregateProjection> rows) {
+            LeadReportProjections.TotalsProjection totals = null;
+            LeadReportProjections.ResponseStatsProjection response = null;
+            List<LeadReportProjections.StatusCountProjection> status = new java.util.ArrayList<>();
+            List<LeadReportProjections.SourceCountProjection> sources = new java.util.ArrayList<>();
+            List<LeadReportProjections.TierCountProjection> tiers = new java.util.ArrayList<>();
+            List<LeadReportProjections.DailyTrendProjection> trend = new java.util.ArrayList<>();
+            for (LeadReportProjections.SummaryAggregateProjection r : rows == null
+                    ? List.<LeadReportProjections.SummaryAggregateProjection>of() : rows) {
+                switch (r.getKind()) {
+                    case "TOTALS" -> totals = new Totals(r.getN1(), r.getN2(), r.getN3(), r.getN4(), r.getN5());
+                    case "RESPONSE" -> response = new Response(r.getN1(), r.getD1(), r.getD2(), r.getN2());
+                    case "STATUS" -> status.add(new Status(r.getGroupKey(), r.getN1()));
+                    case "SOURCE" -> sources.add(new Source(r.getGroupKey(), r.getFlag(), r.getN1(), r.getN2()));
+                    case "TIER" -> tiers.add(new Tier(r.getGroupKey(), r.getN1()));
+                    case "DAY" -> trend.add(new Day(r.getGroupKey() == null ? null : java.sql.Date.valueOf(r.getGroupKey()),
+                            r.getN1(), r.getN2()));
+                    default -> log.warn("[LeadReport] unknown summary row kind {}", r.getKind());
+                }
+            }
+            sources.sort(Comparator.comparing(
+                    (LeadReportProjections.SourceCountProjection s) -> s.getTotalCount() == null ? 0L : s.getTotalCount())
+                    .reversed());
+            trend.sort(Comparator.comparing(LeadReportProjections.DailyTrendProjection::getDay,
+                    Comparator.nullsLast(Comparator.naturalOrder())));
+            return new SummaryParts(totals, response, status, sources, tiers, trend);
+        }
+    }
+
     private LeadSlaConfigDTO.TatReminder resolveTat(String instituteId) {
         try {
             LeadSlaConfigDTO sla = leadSlaConfigService.getSchedulerConfig(instituteId);

@@ -54,6 +54,23 @@ public final class LeadReportProjections {
         Long getConvertedCount();
     }
 
+    /**
+     * One row of the one-pass summary query; what n1..n5 / d1, d2 hold depends on {@code kind}
+     * (see AudienceResponseRepository#findReportSummaryAggregates).
+     */
+    public interface SummaryAggregateProjection {
+        String getKind();
+        String getGroupKey();
+        Boolean getFlag();
+        Long getN1();
+        Long getN2();
+        Long getN3();
+        Long getN4();
+        Long getN5();
+        Double getD1();
+        Double getD2();
+    }
+
     /** Per-counsellor aggregate row. */
     public interface CounselorRowProjection {
         String getCounselorId();

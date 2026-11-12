@@ -3234,6 +3234,117 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("excludeConverted") boolean excludeConverted);
 
         /**
+         * Every figure of the Lead Reports summary in one pass: the same lead set as
+         * {@link #findReportTotals}, {@link #findReportResponseStats}, {@link #findReportStatusBreakdown},
+         * {@link #findReportSourceBreakdown}, {@link #findReportTierBreakdown} and
+         * {@link #findReportDailyTrend} (identical joins and filters), read ONCE into a materialized
+         * CTE instead of six times. One row per figure, tagged by {@code kind}:
+         * <ul>
+         *   <li>TOTALS: n1 total, n2 converted, n3 lost, n4 active, n5 overdue</li>
+         *   <li>STATUS / TIER: groupKey, n1 count</li>
+         *   <li>SOURCE: groupKey source, flag from campaign type, n1 total, n2 converted</li>
+         *   <li>DAY: groupKey yyyy-MM-dd, n1 submitted, n2 converted</li>
+         *   <li>RESPONSE: n1 responded, n2 TAT met, d1 average and d2 median minutes</li>
+         * </ul>
+         * Keep the lead-set predicate identical to the six queries above when changing either.
+         */
+        @Query(value = """
+                            WITH base AS MATERIALIZED (
+                                SELECT ar.id, ar.user_id, ar.student_user_id, ar.submitted_at,
+                                       ar.tat_due_override_at, ar.tat_reminder_stage,
+                                       COALESCE(lst.status_key, ulp.conversion_status) AS status_key,
+                                       (CASE WHEN NULLIF(TRIM(a.campaign_type), '') IS NOT NULL THEN TRIM(a.campaign_type) ELSE COALESCE(ar.source_type, 'UNKNOWN') END) AS source_key,
+                                       (NULLIF(TRIM(a.campaign_type), '') IS NOT NULL) AS from_campaign_type,
+                                       COALESCE(NULLIF(ulp.lead_tier, ''),
+                                                (SELECT lt.tier_key FROM lead_tier lt
+                                             WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
+                                               AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
+                                             ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
+                                           CASE WHEN ulp.best_score >= 80 THEN 'HOT'
+                                                     WHEN ulp.best_score >= 50 THEN 'WARM'
+                                                     WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                                     ELSE 'UNCLASSIFIED' END) AS tier,
+                                       DATE((ar.submitted_at AT TIME ZONE 'UTC') AT TIME ZONE :zone) AS day
+                                FROM audience_response ar
+                                JOIN audience a ON a.id = ar.audience_id
+                                LEFT JOIN LATERAL (
+                                    SELECT lu.user_id FROM linked_users lu
+                                    WHERE lu.source='ENQUIRY' AND lu.source_id = ar.enquiry_id
+                                    ORDER BY lu.created_at DESC LIMIT 1
+                                ) lu ON true
+                                LEFT JOIN user_lead_profile ulp
+                                    ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                                LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
+                                WHERE a.institute_id = :instituteId
+                                  AND ar.submitted_at >= CAST(:fromTs AS timestamp)
+                                  AND ar.submitted_at <  CAST(:toTs   AS timestamp)
+                                  AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
+                                  AND ar.audience_status = 'ACTIVE'
+                                  AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                  AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
+                                  AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                                  AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
+                                  AND (:sourceType IS NULL OR ar.source_type = :sourceType)
+                            ),
+                            first_acts AS MATERIALIZED (
+                                SELECT b.submitted_at, b.tat_due_override_at,
+                                       (SELECT MIN(te.created_at) FROM timeline_event te
+                                          WHERE (te.category = 'ACTIVITY' OR te.action_type = 'REACHOUT' OR (te.action_type IN ('STATUS_CHANGED','LEAD_CONVERTED','LEAD_LOST','COUNSELOR_ASSIGNED','COUNSELOR_UNASSIGNED','MANUAL_SCORE_UPDATE') AND te.actor_id IS NOT NULL))
+                                            AND te.created_at >= b.submitted_at
+                                            AND ( (te.type='AUDIENCE_RESPONSE' AND te.type_id = b.id)
+                                                  OR (b.user_id IS NOT NULL AND te.student_user_id = b.user_id)
+                                                  OR (b.student_user_id IS NOT NULL AND te.student_user_id = b.student_user_id) )
+                                       ) AS first_action_at
+                                FROM base b
+                            )
+                            SELECT 'TOTALS' AS kind, CAST(NULL AS text) AS groupKey, CAST(NULL AS boolean) AS flag,
+                                   COUNT(*) AS n1,
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END) AS n2,
+                                   SUM(CASE WHEN status_key = 'LOST' THEN 1 ELSE 0 END) AS n3,
+                                   SUM(CASE WHEN status_key IS NULL OR status_key NOT IN ('CONVERTED','LOST') THEN 1 ELSE 0 END) AS n4,
+                                   SUM(CASE WHEN tat_reminder_stage IN ('TAT_OVERDUE','FOLLOW_UP_OVERDUE')
+                                              AND (status_key IS NULL OR status_key NOT IN ('CONVERTED','LOST')) THEN 1 ELSE 0 END) AS n5,
+                                   CAST(NULL AS double precision) AS d1, CAST(NULL AS double precision) AS d2
+                            FROM base
+                            UNION ALL
+                            SELECT 'STATUS', COALESCE(status_key, '__NO_STATUS__'), NULL, COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'SOURCE', source_key, BOOL_OR(from_campaign_type), COUNT(*),
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END), NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'TIER', tier, NULL, COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'DAY', CAST(day AS text), NULL, COUNT(*),
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END), NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY day
+                            UNION ALL
+                            SELECT 'RESPONSE', NULL, NULL,
+                                   COUNT(first_action_at),
+                                   SUM(CASE WHEN first_action_at IS NOT NULL
+                                                 AND first_action_at <= COALESCE(tat_due_override_at, lead_sla_due_at(submitted_at, :tatMinutes, CAST(:tatRule AS jsonb)))
+                                                THEN 1 ELSE 0 END),
+                                   NULL, NULL, NULL,
+                                   AVG(EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0),
+                                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0)
+                            FROM first_acts
+                        """, nativeQuery = true)
+        List<LeadReportProjections.SummaryAggregateProjection> findReportSummaryAggregates(
+                        @Param("instituteId") String instituteId,
+                        @Param("fromTs") String fromTs,
+                        @Param("toTs") String toTs,
+                        @Param("zone") String zone,
+                        @Param("tatMinutes") Integer tatMinutes,
+                        @Param("tatRule") String tatRule,
+                        @Param("scopeUsersCsv") String scopeUsersCsv,
+                        @Param("audienceId") String audienceId,
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
+
+        /**
          * Per-counsellor aggregate row. Counsellor resolution mirrors the leads list filter.
          * "first_response_at" = MIN(response event on this lead) — the RESPONSE EVENT definition
          * on {@link #findCounselorActionsByResponseIds}, so per-counsellor numbers match the list.
