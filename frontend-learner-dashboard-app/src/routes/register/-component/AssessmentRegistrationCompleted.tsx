@@ -120,7 +120,7 @@ const AssessmentRegistrationCompleted = ({
           />
 
           {/* Success icon with halo */}
-          <div className="relative -mt-6 flex items-center justify-center">
+          <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 animate-ping rounded-full bg-success-200/60" />
             <div className="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-success-500 to-success-400 shadow-lg shadow-success-200">
               <CheckCircle size={44} weight="fill" className="text-white" />
