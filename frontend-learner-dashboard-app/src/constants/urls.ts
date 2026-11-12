@@ -291,6 +291,9 @@ export const ENROLLMENT_PAYMENT_GATEWAY_DETAILS = `${BASE_URL}/admin-core-servic
 export const ENROLLMENT_INVITE_DETAILS = `${BASE_URL}/admin-core-service/v1/enroll-invite`;
 export const ENROLLMENT_PAYMENT_INITIATION = `${BASE_URL}/admin-core-service/v1/learner/enroll`;
 export const ENROLLMENT_PAYMENT_INITIATION_V2 = `${BASE_URL}/admin-core-service/v2/learner/enroll`;
+// Whether the signed-in learner still owes a once-per-user rent charge (the refundable
+// security deposit): GET ?instituteId=&catalogueTag= → { due, charge_key, amount }.
+export const SECURITY_DEPOSIT_STATUS = `${BASE_URL}/admin-core-service/learner/v1/security-deposit/status`;
 export const PAYMENT_LOGS_URL = `${BASE_URL}/admin-core-service/v1/user-plan/payment-logs`;
 export const COLLECT_PUBLIC_USER_DATA = `${BASE_URL}/admin-core-service/v1/learner/enroll/detail`;
 
