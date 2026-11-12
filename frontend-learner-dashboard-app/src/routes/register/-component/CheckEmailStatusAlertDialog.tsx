@@ -73,6 +73,8 @@ const CheckEmailStatusAlertDialog = ({
   setUserHasAttemptCount,
   case3Status,
   serverTime,
+  open,
+  onOpenChange,
 }: {
   timeLeft: TimeLeft;
   registrationData: OpenTestAssessmentRegistrationDetails;
@@ -86,6 +88,13 @@ const CheckEmailStatusAlertDialog = ({
   setUserHasAttemptCount: React.Dispatch<React.SetStateAction<boolean>>;
   case3Status: boolean;
   serverTime: number;
+  /**
+   * Controlled by the page. It no longer opens by itself: a first-time visitor
+   * goes straight to the form, and only someone who says "I've already
+   * registered" (or lands after registration closed) is asked for an email.
+   */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) => {
   const { t } = useTranslation("registrationA");
   const [
@@ -99,7 +108,6 @@ const CheckEmailStatusAlertDialog = ({
   ] = useState(false);
 
   const [isOtpSent, setIsOTPSent] = useState(false);
-  const [open, setOpen] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -111,7 +119,7 @@ const CheckEmailStatusAlertDialog = ({
   const navigate = useNavigate();
 
   const handleCloseAlertDialog = () => {
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -195,10 +203,20 @@ const CheckEmailStatusAlertDialog = ({
         return;
       }
       await removeTokensAndLogout();
-      toast.error(t("checkEmailDialog.toast.notRegisteredTitle"), {
-        description: t("checkEmailDialog.toast.notRegisteredDescription"),
-        duration: 3000,
-      });
+      if (case3Status) {
+        // Registration has closed, so an unknown email has nowhere to go.
+        toast.error(t("checkEmailDialog.toast.notRegisteredTitle"), {
+          description: t("checkEmailDialog.toast.notRegisteredDescription"),
+          duration: 3000,
+        });
+      } else {
+        // Not an error: this is a first-time visitor. Send them to the form
+        // with their email already filled in.
+        toast.info(t("checkEmailDialog.toast.newHereTitle"), {
+          description: t("checkEmailDialog.toast.newHereDescription"),
+          duration: 4000,
+        });
+      }
       setUserAlreadyRegistered(true);
       handleCloseAlertDialog();
       // The email field is optional on the admin side (built-in fields can be
@@ -431,14 +449,6 @@ const CheckEmailStatusAlertDialog = ({
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpen(true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -492,7 +502,7 @@ const CheckEmailStatusAlertDialog = ({
     );
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="p-0 overflow-hidden border border-primary-100 shadow-2xl sm:max-w-reg-430 rounded-2xl">
         <div className="px-5 py-4 bg-gradient-to-r from-primary-50 to-white border-b border-primary-100">
           <h1 className="text-primary-600 font-semibold text-base">
@@ -587,6 +597,17 @@ const CheckEmailStatusAlertDialog = ({
                   {verifyOtpMutation.isPending ? t("common.verifying") : t("checkEmailDialog.verify")}
                 </MyButton>
               )}
+              <MyButton
+                type="button"
+                buttonType="text"
+                scale="medium"
+                layoutVariant="default"
+                onClick={handleCloseAlertDialog}
+              >
+                {case3Status
+                  ? t("checkEmailDialog.cancel")
+                  : t("checkEmailDialog.newHere")}
+              </MyButton>
             </div>
           </form>
         </FormProvider>
