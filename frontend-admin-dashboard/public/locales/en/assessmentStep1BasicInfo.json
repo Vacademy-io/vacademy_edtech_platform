@@ -39,6 +39,10 @@
     "attemptSettingsSection": {
         "title": "Attempt Settings",
         "description": "Control how participants take this assessment.",
+        "advanced": {
+            "title": "Advanced settings",
+            "summary": "AI evaluation, OMR sheet mode, proctoring, preview and section switching. The defaults suit most assessments."
+        },
         "reattemptCountPlaceholder": "Reattempt Count",
         "reattemptCountLabel": "Reattempt Count",
         "resultEvaluationType": {

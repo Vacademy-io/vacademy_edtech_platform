@@ -122,3 +122,45 @@ describe('testAccessSchema — open test registration window', () => {
         expect(result.success).toBe(true);
     });
 });
+
+describe('testAccessSchema — who must be picked', () => {
+    const closedForm = {
+        ...baseForm,
+        closed_test: true,
+        open_test: { ...baseForm.open_test, checked: false, start_date: '', end_date: '' },
+    };
+    const paths = (result: ReturnType<typeof testAccessSchema.safeParse>) =>
+        result.success ? [] : result.error.issues.map((i) => i.path.join('.'));
+
+    it('lets an open test go through with no batch or learner picked', () => {
+        // One tab is always "checked" — it is just the tab on screen.
+        expect(
+            testAccessSchema.safeParse({
+                ...baseForm,
+                select_batch: { checked: true, batch_details: {} },
+            }).success
+        ).toBe(true);
+        expect(
+            testAccessSchema.safeParse({
+                ...baseForm,
+                select_individually: { checked: true, student_details: [] },
+            }).success
+        ).toBe(true);
+    });
+
+    it('still asks a closed test for at least one batch', () => {
+        const result = testAccessSchema.safeParse({
+            ...closedForm,
+            select_batch: { checked: true, batch_details: {} },
+        });
+        expect(paths(result)).toContain('select_batch.batch_details');
+    });
+
+    it('still asks a closed test for at least one learner', () => {
+        const result = testAccessSchema.safeParse({
+            ...closedForm,
+            select_individually: { checked: true, student_details: [] },
+        });
+        expect(paths(result)).toContain('select_individually.student_details');
+    });
+});
