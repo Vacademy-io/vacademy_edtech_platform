@@ -162,6 +162,18 @@ class EngagementWhatsAppTemplateUpgradeTest {
     }
 
     @Test
+    @DisplayName("a person can retire a live template; a row in no withdrawable state is refused")
+    void withdrawRetiresLive() {
+        proposal("p-ok", "META_APPROVED");
+        when(proposals.withdraw(eq("p-ok"), eq("i1"), any())).thenReturn(0);
+        when(proposals.retireLive(eq("p-ok"), eq("i1"), any())).thenReturn(1);
+        service.withdraw("p-ok", "i1");
+        verify(proposals).retireLive(eq("p-ok"), eq("i1"), any());
+        when(proposals.retireLive(eq("p-ok"), eq("i1"), any())).thenReturn(0);
+        assertThrows(VacademyException.class, () -> service.withdraw("p-ok", "i1"));
+    }
+
+    @Test
     @DisplayName("an approved template can't be regenerated")
     void regenerateApprovedRefused() {
         proposal("p-ok", "META_APPROVED");
