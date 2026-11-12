@@ -794,9 +794,48 @@ public class AnnouncementService {
     @Transactional(readOnly = true)
     public Page<AnnouncementRecipientInteractionResponse> getRecipientInteractions(
             String announcementId, ModeType modeType, Pageable pageable) {
-        Page<RecipientMessage> messages = modeType != null
-                ? recipientMessageRepository.findByAnnouncementIdAndModeTypeOrderByCreatedAtDesc(announcementId, modeType, pageable)
-                : recipientMessageRepository.findByAnnouncementIdOrderByCreatedAtDesc(announcementId, pageable);
+        return getRecipientInteractions(announcementId, modeType, null, null, pageable);
+    }
+
+    /**
+     * Report table page.
+     *
+     * @param channel a MediumType (EMAIL, WHATSAPP, PUSH_NOTIFICATION) or a ModeType for in-app
+     *                rows, matching {@link AnnouncementResponse.ChannelStats#getChannel()}; null = all
+     * @param outcome DELIVERED (sent, delivered or read), FAILED or PENDING; null = all
+     */
+    @Transactional(readOnly = true)
+    public Page<AnnouncementRecipientInteractionResponse> getRecipientInteractions(
+            String announcementId, ModeType modeType, String channel, String outcome, Pageable pageable) {
+        MediumType mediumFilter = null;
+        ModeType modeFilter = modeType;
+        boolean inAppOnly = false;
+        if (channel != null && !channel.isBlank()) {
+            String key = channel.trim().toUpperCase();
+            mediumFilter = parseEnum(MediumType.class, key);
+            if (mediumFilter == null) {
+                modeFilter = parseEnum(ModeType.class, key);
+                if (modeFilter == null) {
+                    throw new IllegalArgumentException("Unknown channel: " + channel);
+                }
+                inAppOnly = true;
+            }
+        }
+
+        Page<RecipientMessage> messages = recipientMessageRepository.findReportPage(
+                announcementId, statusesFor(outcome), modeFilter, mediumFilter, inAppOnly, pageable);
+
+        // Email detail for the email rows on this page, in one query.
+        String[] emailUserIds = messages.getContent().stream()
+                .filter(rm -> rm.getMediumType() == MediumType.EMAIL)
+                .map(RecipientMessage::getUserId)
+                .distinct()
+                .toArray(String[]::new);
+        Map<String, NotificationLogRepository.AnnouncementRecipientEmailRow> emailByUser = new HashMap<>();
+        if (emailUserIds.length > 0) {
+            notificationLogRepository.findAnnouncementEmailsForUsers(announcementId, emailUserIds)
+                    .forEach(e -> emailByUser.put(e.getUserId(), e));
+        }
 
         return messages.map(rm -> {
             AnnouncementRecipientInteractionResponse row = new AnnouncementRecipientInteractionResponse();
@@ -804,7 +843,9 @@ public class AnnouncementService {
             row.setUserId(rm.getUserId());
             row.setUserName(rm.getUserName());
             row.setModeType(rm.getModeType());
+            row.setMediumType(rm.getMediumType());
             row.setStatus(rm.getStatus());
+            row.setErrorMessage(rm.getErrorMessage());
             row.setDeliveredAt(rm.getDeliveredAt());
             messageInteractionRepository.findByRecipientMessageIdAndUserIdAndInteractionType(
                     rm.getId(), rm.getUserId(), InteractionType.READ)
@@ -812,8 +853,56 @@ public class AnnouncementService {
             messageInteractionRepository.findByRecipientMessageIdAndUserIdAndInteractionType(
                     rm.getId(), rm.getUserId(), InteractionType.DISMISSED)
                     .ifPresent(i -> row.setDismissedAt(i.getInteractionTime()));
+            if (rm.getMediumType() == MediumType.EMAIL) {
+                NotificationLogRepository.AnnouncementRecipientEmailRow email = emailByUser.get(rm.getUserId());
+                if (email != null) {
+                    row.setEmail(email.getEmail());
+                    row.setEmailStatus(emailStatusOf(email));
+                    row.setEmailOpenedAt(toUtcLocal(email.getOpenedAt()));
+                    row.setEmailClickedAt(toUtcLocal(email.getClickedAt()));
+                    if (row.getErrorMessage() == null && email.getSendError() != null) {
+                        row.setErrorMessage(email.getSendError());
+                    }
+                }
+            }
             return row;
         });
+    }
+
+    private static List<MessageStatus> statusesFor(String outcome) {
+        if (outcome == null || outcome.isBlank()) {
+            return List.of(MessageStatus.values());
+        }
+        return switch (outcome.trim().toUpperCase()) {
+            case "DELIVERED" -> List.of(MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.READ);
+            case "FAILED" -> List.of(MessageStatus.FAILED);
+            case "PENDING" -> List.of(MessageStatus.PENDING);
+            default -> throw new IllegalArgumentException("Unknown outcome: " + outcome);
+        };
+    }
+
+    /** Most significant thing SES said about this email: a failure beats engagement beats delivery. */
+    public static String emailStatusOf(NotificationLogRepository.AnnouncementRecipientEmailRow email) {
+        if ("FAILED".equalsIgnoreCase(email.getSendStatus())) return "FAILED";
+        if (Boolean.TRUE.equals(email.getBounced())) return "BOUNCED";
+        if (Boolean.TRUE.equals(email.getRejected())) return "REJECTED";
+        if (Boolean.TRUE.equals(email.getComplained())) return "COMPLAINED";
+        if (email.getClickedAt() != null) return "CLICKED";
+        if (email.getOpenedAt() != null) return "OPENED";
+        if (Boolean.TRUE.equals(email.getDelivered())) return "DELIVERED";
+        return "SENT";
+    }
+
+    private static LocalDateTime toUtcLocal(java.sql.Timestamp ts) {
+        return ts == null ? null : LocalDateTime.ofInstant(ts.toInstant(), java.time.ZoneOffset.UTC);
+    }
+
+    private static <E extends Enum<E>> E parseEnum(Class<E> type, String name) {
+        try {
+            return Enum.valueOf(type, name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
     
     /**
@@ -920,132 +1009,102 @@ public class AnnouncementService {
 
     private AnnouncementResponse.AnnouncementStatsResponse computeAnnouncementStats(String announcementId) {
         AnnouncementResponse.AnnouncementStatsResponse stats = new AnnouncementResponse.AnnouncementStatsResponse();
-        
-        // Original stats from recipient_messages table
-        long totalRecipients = recipientMessageRepository.countByAnnouncementId(announcementId);
-        long deliveredCount = recipientMessageRepository.countByAnnouncementIdAndStatus(announcementId, MessageStatus.DELIVERED);
-        long failedCount = recipientMessageRepository.countByAnnouncementIdAndStatus(announcementId, MessageStatus.FAILED);
-        long readCount = messageInteractionRepository.countByAnnouncementIdAndInteractionType(announcementId, InteractionType.READ);
-        long dismissedCount = messageInteractionRepository.countByAnnouncementIdAndInteractionType(announcementId, InteractionType.DISMISSED);
 
-        stats.setTotalRecipients(totalRecipients);
-        stats.setDeliveredCount(deliveredCount);
-        stats.setFailedCount(failedCount);
-        stats.setReadCount(readCount);
-        stats.setDismissedCount(dismissedCount);
+        // People, not rows: an announcement holds one recipient row per user per mode per medium.
+        RecipientMessageRepository.PeopleSummaryRow people = recipientMessageRepository.summarizePeople(announcementId);
+        long totalPeople = asLong(people == null ? null : people.getPeople());
+        long reached = asLong(people == null ? null : people.getReached());
+        RecipientMessageRepository.EngagementSummaryRow engagement =
+                recipientMessageRepository.summarizeEngagement(announcementId);
+        long readPeople = asLong(engagement == null ? null : engagement.getReadPeople());
+        long dismissedPeople = asLong(engagement == null ? null : engagement.getDismissedPeople());
 
-        if (totalRecipients > 0) {
-            stats.setDeliveryRate((double) deliveredCount / totalRecipients * 100);
-            stats.setReadRate((double) readCount / totalRecipients * 100);
-            stats.setDismissRate((double) dismissedCount / totalRecipients * 100);
-        } else {
-            stats.setDeliveryRate(0.0);
-            stats.setReadRate(0.0);
-            stats.setDismissRate(0.0);
-        }
-        
-        // Enhanced SES Email Event Stats from notification_log table
+        stats.setTotalRecipients(totalPeople);
+        stats.setTotalMessages(asLong(people == null ? null : people.getMessages()));
+        stats.setDeliveredCount(reached);
+        stats.setFailedCount(asLong(people == null ? null : people.getFailed()));
+        stats.setPendingCount(asLong(people == null ? null : people.getPending()));
+        stats.setReadCount(readPeople);
+        stats.setDismissedCount(dismissedPeople);
+        stats.setDeliveryRate(rate(reached, totalPeople));
+        stats.setReadRate(rate(readPeople, totalPeople));
+        stats.setDismissRate(rate(dismissedPeople, totalPeople));
+
+        stats.setChannels(recipientMessageRepository.summarizeChannels(announcementId).stream()
+                .map(row -> new AnnouncementResponse.ChannelStats(
+                        row.getChannel(),
+                        asLong(row.getPeople()),
+                        asLong(row.getReached()),
+                        asLong(row.getFailed()),
+                        asLong(row.getPending())))
+                .collect(Collectors.toList()));
+
+        // SES email stats, cumulative over every event linked to each announcement email.
         try {
-            // 1. Find all original EMAIL logs for this announcement
-            List<NotificationLog> emailLogs = notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL");
-            long emailsSent = emailLogs.size();
-            stats.setEmailsSent(emailsSent);
-            
-            if (emailsSent > 0) {
-                // 2. Get all email log IDs to query their events
-                List<String> emailLogIds = emailLogs.stream()
-                        .map(NotificationLog::getId)
-                        .collect(Collectors.toList());
-                
-                // 3. Get latest event for each email using native query (more reliable for duplicates)
-                String[] emailLogIdsArray = emailLogIds.toArray(new String[0]);
-                List<NotificationLog> latestEvents = notificationLogRepository.findLatestEmailEventsBySourceIdsNative(emailLogIdsArray);
-                
-                // 4. Count events by extracting event type from body
-                Map<String, Long> eventCounts = countEventsByType(latestEvents);
-                
-                // Log event breakdown for debugging
-                log.debug("Event counts for announcement {}: {}", announcementId, eventCounts);
-                
-                long emailsSend = eventCounts.getOrDefault("send", 0L);
-                long emailsDelivered = eventCounts.getOrDefault("delivery", 0L);
-                long emailsOpened = eventCounts.getOrDefault("open", 0L);
-                long emailsClicked = eventCounts.getOrDefault("click", 0L);
-                long emailsBounced = eventCounts.getOrDefault("bounce", 0L);
-                long emailsRejected = eventCounts.getOrDefault("reject", 0L);
-                long emailsComplained = eventCounts.getOrDefault("complaint", 0L);
-                long emailsPending = emailsSent - latestEvents.size(); // Emails without any event yet
-                
-                stats.setEmailsSend(emailsSend);
-                stats.setEmailsDelivered(emailsDelivered);
-                stats.setEmailsOpened(emailsOpened);
-                stats.setEmailsClicked(emailsClicked);
-                stats.setEmailsBounced(emailsBounced);
-                stats.setEmailsRejected(emailsRejected);
-                stats.setEmailsComplained(emailsComplained);
-                stats.setEmailsPending(emailsPending);
-                
-                // Calculate enhanced rates
-                stats.setEmailDeliveryRate(emailsSent > 0 ? (double) emailsDelivered / emailsSent * 100 : 0.0);
-                stats.setEmailOpenRate(emailsDelivered > 0 ? (double) emailsOpened / emailsDelivered * 100 : 0.0);
-                stats.setEmailClickRate(emailsDelivered > 0 ? (double) emailsClicked / emailsDelivered * 100 : 0.0);
-                stats.setEmailBounceRate(emailsSent > 0 ? (double) emailsBounced / emailsSent * 100 : 0.0);
-                stats.setEmailRejectRate(emailsSent > 0 ? (double) emailsRejected / emailsSent * 100 : 0.0);
-                stats.setEmailComplaintRate(emailsSent > 0 ? (double) emailsComplained / emailsSent * 100 : 0.0);
-            } else {
-                // No emails sent yet, set all to 0
-                stats.setEmailsSend(0L);
-                stats.setEmailsDelivered(0L);
-                stats.setEmailsOpened(0L);
-                stats.setEmailsClicked(0L);
-                stats.setEmailsBounced(0L);
-                stats.setEmailsRejected(0L);
-                stats.setEmailsComplained(0L);
-                stats.setEmailsPending(0L);
-                stats.setEmailDeliveryRate(0.0);
-                stats.setEmailOpenRate(0.0);
-                stats.setEmailClickRate(0.0);
-                stats.setEmailBounceRate(0.0);
-                stats.setEmailRejectRate(0.0);
-                stats.setEmailComplaintRate(0.0);
-            }
+            NotificationLogRepository.AnnouncementEmailFunnelRow email =
+                    notificationLogRepository.summarizeAnnouncementEmails(announcementId);
+            long logged = asLong(email == null ? null : email.getLogged());
+            long failedToSend = asLong(email == null ? null : email.getFailedToSend());
+            long sent = Math.max(0, logged - failedToSend);
+            long delivered = asLong(email == null ? null : email.getDelivered());
+            long opened = asLong(email == null ? null : email.getOpened());
+            long clicked = asLong(email == null ? null : email.getClicked());
+            long bounced = asLong(email == null ? null : email.getBounced());
+            long rejected = asLong(email == null ? null : email.getRejected());
+            long complained = asLong(email == null ? null : email.getComplained());
+
+            stats.setEmailsSent(sent);
+            stats.setEmailsFailedToSend(failedToSend);
+            stats.setEmailsSend(asLong(email == null ? null : email.getAccepted()));
+            stats.setEmailsDelivered(delivered);
+            stats.setEmailsOpened(opened);
+            stats.setEmailsClicked(clicked);
+            stats.setEmailsBounced(bounced);
+            stats.setEmailsRejected(rejected);
+            stats.setEmailsComplained(complained);
+            stats.setEmailsPending(asLong(email == null ? null : email.getAwaiting()));
+            stats.setEmailDeliveryRate(rate(delivered, sent));
+            stats.setEmailOpenRate(rate(opened, delivered));
+            stats.setEmailClickRate(rate(clicked, delivered));
+            stats.setEmailBounceRate(rate(bounced, sent));
+            stats.setEmailRejectRate(rate(rejected, sent));
+            stats.setEmailComplaintRate(rate(complained, sent));
         } catch (Exception e) {
             log.error("Error computing SES email event stats for announcement {}: {}", announcementId, e.getMessage(), e);
-            // Set default values if error occurs
-            stats.setEmailsSent(0L);
-            stats.setEmailsSend(0L);
-            stats.setEmailsDelivered(0L);
-            stats.setEmailsOpened(0L);
-            stats.setEmailsClicked(0L);
-            stats.setEmailsBounced(0L);
-            stats.setEmailsRejected(0L);
-            stats.setEmailsComplained(0L);
-            stats.setEmailsPending(0L);
-            stats.setEmailDeliveryRate(0.0);
-            stats.setEmailOpenRate(0.0);
-            stats.setEmailClickRate(0.0);
-            stats.setEmailBounceRate(0.0);
-            stats.setEmailRejectRate(0.0);
-            stats.setEmailComplaintRate(0.0);
+            zeroEmailStats(stats);
         }
 
         return stats;
     }
-    
-    /**
-     * Helper method to extract event type from notification log body and count occurrences
-     */
-    private Map<String, Long> countEventsByType(List<NotificationLog> events) {
-        Map<String, Long> counts = new HashMap<>();
-        
-        for (NotificationLog event : events) {
-            String eventType = extractEventTypeFromBody(event.getBody());
-            counts.put(eventType, counts.getOrDefault(eventType, 0L) + 1);
-        }
-        
-        return counts;
+
+    private static void zeroEmailStats(AnnouncementResponse.AnnouncementStatsResponse stats) {
+        stats.setEmailsSent(0L);
+        stats.setEmailsFailedToSend(0L);
+        stats.setEmailsSend(0L);
+        stats.setEmailsDelivered(0L);
+        stats.setEmailsOpened(0L);
+        stats.setEmailsClicked(0L);
+        stats.setEmailsBounced(0L);
+        stats.setEmailsRejected(0L);
+        stats.setEmailsComplained(0L);
+        stats.setEmailsPending(0L);
+        stats.setEmailDeliveryRate(0.0);
+        stats.setEmailOpenRate(0.0);
+        stats.setEmailClickRate(0.0);
+        stats.setEmailBounceRate(0.0);
+        stats.setEmailRejectRate(0.0);
+        stats.setEmailComplaintRate(0.0);
     }
-    
+
+    private static long asLong(Number n) {
+        return n == null ? 0L : n.longValue();
+    }
+
+    /** Percentage, 0 when the base is empty. */
+    public static double rate(long part, long whole) {
+        return whole > 0 ? (double) part / whole * 100 : 0.0;
+    }
+
     /**
      * Extract event type from the notification log body
      * Body format: "Email Event: DELIVERY\n..." or "Email Event: OPEN\n..." etc.

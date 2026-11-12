@@ -40,19 +40,34 @@ export type Announcement = {
     };
 };
 
+export type ChannelStats = {
+    /** EMAIL / WHATSAPP / PUSH_NOTIFICATION, or the mode for in-app delivery. */
+    channel: string;
+    people: number;
+    delivered: number;
+    failed: number;
+    pending: number;
+};
+
 export type AnnouncementStats = {
-    // Recipient-level rollup (all mediums)
+    // People-level rollup (distinct users, all channels)
     totalRecipients: number;
+    /** Recipient rows: one per person per mode per channel. */
+    totalMessages?: number;
     deliveredCount: number;
     readCount: number;
     failedCount: number;
+    pendingCount?: number;
     deliveryRate: number;
     readRate: number;
+    channels?: ChannelStats[];
     // APP_OVERLAY dismiss tracking (also covers other dismissible modes)
     dismissedCount?: number;
     dismissRate?: number;
     // Email-specific (driven by SES events)
     emailsSent: number;
+    /** Never handed to SES: unsubscribed, no address, send error. */
+    emailsFailedToSend?: number;
     emailsDelivered: number;
     emailsOpened: number;
     emailsClicked: number;

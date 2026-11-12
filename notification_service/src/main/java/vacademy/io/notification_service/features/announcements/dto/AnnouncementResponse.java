@@ -108,26 +108,33 @@ public class AnnouncementResponse {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class AnnouncementStatsResponse {
-        // Original stats
-        private Long totalRecipients;
-        private Long deliveredCount;
-        private Long readCount;
-        private Long dismissedCount;
-        private Long failedCount;
+        // People-level rollup. An announcement holds one recipient row per user per mode per
+        // medium, so these count distinct people, not rows.
+        private Long totalRecipients;          // distinct people targeted
+        private Long totalMessages;            // recipient rows (deliveries across channels)
+        private Long deliveredCount;           // people reached on at least one channel
+        private Long readCount;                // distinct people who read it
+        private Long dismissedCount;           // distinct people who dismissed it
+        private Long failedCount;              // people not reached on any channel, with a failure
+        private Long pendingCount;             // people not yet processed
         private Double deliveryRate;
         private Double readRate;
         private Double dismissRate;
-        
-        // Enhanced SES Email Event Stats
-        private Long emailsSent;               // Total emails sent
-        private Long emailsSend;               // Emails accepted by SES (SES send event)
-        private Long emailsDelivered;          // Emails successfully delivered (SES delivery event)
-        private Long emailsOpened;             // Emails opened by recipients (SES open event)
-        private Long emailsClicked;            // Emails with links clicked (SES click event)
-        private Long emailsBounced;            // Emails that bounced (SES bounce event)
-        private Long emailsRejected;           // Emails rejected by SES (SES reject event)
-        private Long emailsComplained;         // Emails marked as spam/complaint (SES complaint event)
-        private Long emailsPending;            // Emails sent but no SES event received yet
+
+        // Per channel (medium, or the mode for in-app rows), in distinct people
+        private List<ChannelStats> channels;
+
+        // SES email stats, cumulative over every event per email
+        private Long emailsSent;               // emails handed to SES (excludes failed-to-send)
+        private Long emailsFailedToSend;       // never sent: unsubscribed, no address, send error
+        private Long emailsSend;               // emails with an SES send (accepted) event
+        private Long emailsDelivered;          // delivered (an open or click implies delivery)
+        private Long emailsOpened;             // opened (a click implies an open)
+        private Long emailsClicked;            // at least one link clicked
+        private Long emailsBounced;            // bounced
+        private Long emailsRejected;           // rejected by SES
+        private Long emailsComplained;         // marked as spam
+        private Long emailsPending;            // sent, no delivery or failure event yet
         
         // Enhanced rates
         private Double emailDeliveryRate;      // (emailsDelivered / emailsSent) * 100
@@ -136,5 +143,17 @@ public class AnnouncementResponse {
         private Double emailBounceRate;        // (emailsBounced / emailsSent) * 100
         private Double emailRejectRate;        // (emailsRejected / emailsSent) * 100
         private Double emailComplaintRate;     // (emailsComplained / emailsSent) * 100
+    }
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChannelStats {
+        private String channel;                // EMAIL, WHATSAPP, PUSH_NOTIFICATION or an in-app mode
+        private Long people;
+        private Long delivered;
+        private Long failed;
+        private Long pending;
     }
 }

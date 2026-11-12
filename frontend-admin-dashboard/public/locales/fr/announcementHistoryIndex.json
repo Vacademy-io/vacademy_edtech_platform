@@ -98,7 +98,10 @@
             "read": "Lues",
             "failed": "Échouées",
             "dismissed": "Ignorées",
-            "dismissRate": "Taux d'ignorance"
+            "dismissRate": "Taux d'ignorance",
+            "deliveriesSub_one": "{{count}} envoi sur tous les canaux",
+            "deliveriesSub_other": "{{count}} envois sur tous les canaux",
+            "pending": "En attente"
         },
         "emailEventsTitle": "Événements e-mail",
         "viaSes": "via SES",
@@ -110,7 +113,9 @@
             "bounced": "Rejetés (bounce)",
             "rejected": "Refusés",
             "complained": "Signalés comme spam",
-            "awaitingEvents": "En attente d'événements"
+            "awaitingEvents": "En attente d'événements",
+            "failedToSend": "Échec d'envoi",
+            "accepted": "Accepté par SES"
         },
         "pendingNote": "Les e-mails ont été envoyés mais aucun événement SES n'est encore revenu. En local, vérifiez que le webhook SES → SNS → notification_service est configuré.",
         "noEmails": "Aucun e-mail n'a été envoyé pour cette annonce.",
@@ -125,7 +130,10 @@
                 "status": "Statut",
                 "seenAt": "Vu le",
                 "dismissedAt": "Ignoré le",
-                "deliveredAt": "Livré le"
+                "deliveredAt": "Livré le",
+                "channel": "Canal",
+                "emailActivity": "Activité e-mail",
+                "reason": "Raison"
             },
             "pagePagination": "Page {{page}} sur {{totalPages}}",
             "titleCount_one": "Destinataires ({{count}})",
@@ -140,6 +148,44 @@
             "delivery": "Taux de livraison",
             "read": "Taux de lecture",
             "dismiss": "Taux de fermeture"
+        },
+        "channels": {
+            "title": "Livraison par canal",
+            "delivered": "Livré",
+            "failed": "Échec",
+            "pending": "En attente",
+            "summary": "{{delivered}} sur {{total}}"
+        },
+        "funnelTitle": "Entonnoir e-mail",
+        "emailStatus": {
+            "SENT": "Envoyé",
+            "DELIVERED": "Livré",
+            "OPENED": "Ouvert",
+            "CLICKED": "Cliqué",
+            "BOUNCED": "Rebond",
+            "COMPLAINED": "Signalé comme spam",
+            "REJECTED": "Refusé",
+            "FAILED": "Non envoyé"
+        },
+        "filters": {
+            "allChannels": "Tous les canaux",
+            "allStatuses": "Tous les statuts"
+        },
+        "csv": {
+            "export": "Exporter CSV",
+            "exporting": "Exportation...",
+            "failed": "Impossible d'exporter le rapport",
+            "name": "Nom",
+            "email": "E-mail",
+            "channel": "Canal",
+            "status": "Statut",
+            "emailActivity": "Activité e-mail",
+            "deliveredAt": "Livré le",
+            "openedAt": "Ouvert le",
+            "clickedAt": "Cliqué le",
+            "seenAt": "Vu le",
+            "dismissedAt": "Ignoré le",
+            "reason": "Raison"
         }
     },
     "rejectDialog": {
