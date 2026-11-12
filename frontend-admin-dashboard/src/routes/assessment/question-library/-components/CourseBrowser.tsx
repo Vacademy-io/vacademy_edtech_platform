@@ -3,9 +3,9 @@ import {
     ArrowDown,
     ArrowUp,
     ArrowsOutCardinal,
-    Buildings,
     CaretRight,
     DotsThreeVertical,
+    EyeSlash,
     FolderSimple,
     PencilSimple,
     Plus,
@@ -108,7 +108,7 @@ const TopicCard = ({
         {
             label: t('browse.institutes'),
             value: 'institutes',
-            icon: <Buildings size={16} />,
+            icon: <EyeSlash size={16} />,
         },
         ...(node.depth < maxDepth
             ? [{ label: t('tree.addSubtopic'), value: 'addChild', icon: <Plus size={16} /> }]
@@ -123,7 +123,7 @@ const TopicCard = ({
             : []),
         { label: t('tree.delete'), value: 'delete', icon: <Trash size={16} /> },
     ];
-    const institutes = node.access_count ?? 0;
+    const institutes = node.hidden_count ?? 0;
 
     return (
         <article className="flex items-start gap-1 rounded-lg border border-neutral-200 bg-white shadow-sm transition-colors hover:border-primary-300">
@@ -160,11 +160,11 @@ const TopicCard = ({
                         className={cn(
                             'flex items-center gap-1 self-start rounded-full px-2 py-0.5 text-caption',
                             institutes > 0
-                                ? 'bg-info-50 text-info-600'
+                                ? 'bg-warning-50 text-warning-600'
                                 : 'bg-neutral-100 text-neutral-500'
                         )}
                     >
-                        <Buildings size={12} />
+                        <EyeSlash size={12} />
                         {institutes > 0
                             ? t('browse.instituteCount', { count: institutes })
                             : t('browse.noInstitutes')}

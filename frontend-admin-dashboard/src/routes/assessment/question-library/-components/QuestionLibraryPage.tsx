@@ -4,9 +4,9 @@ import { toast } from 'sonner';
 import {
     ArrowsLeftRight,
     Books,
-    Buildings,
     CaretDown,
     ChartBar,
+    EyeSlash,
     FolderMinus,
     FolderPlus,
     Files,
@@ -402,9 +402,9 @@ export const QuestionLibraryPage = () => {
                             className="gap-1"
                             onClick={() => setAccessNode(currentNode)}
                         >
-                            <Buildings size={14} />
+                            <EyeSlash size={14} />
                             {t('browse.institutesWithCount', {
-                                count: currentNode.access_count ?? 0,
+                                count: currentNode.hidden_count ?? 0,
                             })}
                         </MyButton>
                         <MyButton

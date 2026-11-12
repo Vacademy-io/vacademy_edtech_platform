@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Buildings, Trash, WarningCircle } from '@phosphor-icons/react';
+import { Buildings, Eye, EyeSlash, WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyDropdown } from '@/components/design-system/dropdown';
@@ -9,9 +9,9 @@ import { MyInput } from '@/components/design-system/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
     LIBRARY_TAG_KINDS,
-    grantLibraryAccess,
+    hideLibraryTopic,
     libraryErrorMessage,
-    revokeLibraryAccess,
+    showLibraryTopic,
     useLibraryAccess,
     useLibraryRefresh,
     type LibraryNode,
@@ -46,7 +46,7 @@ export const InstituteAccessDialog = ({
         const target = newId.trim();
         if (!target) return;
         try {
-            const added = await grantLibraryAccess(instituteId, {
+            const added = await hideLibraryTopic(instituteId, {
                 node_id: node.id,
                 institute_id: target,
             });
@@ -63,7 +63,7 @@ export const InstituteAccessDialog = ({
     const takeBack = async (target: string, name: string) => {
         setRemoving(target);
         try {
-            await revokeLibraryAccess(instituteId, { node_id: node.id, institute_id: target });
+            await showLibraryTopic(instituteId, { node_id: node.id, institute_id: target });
             toast.success(t('access.removed', { name, topic: node.name }));
             refresh();
         } catch (error) {
@@ -134,7 +134,7 @@ export const InstituteAccessDialog = ({
                     </div>
                 ) : rows.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-neutral-300 p-6 text-center">
-                        <Buildings size={28} className="text-neutral-300" />
+                        <EyeSlash size={28} className="text-neutral-300" />
                         <span className="text-body text-neutral-600">{t('access.empty')}</span>
                     </div>
                 ) : (
@@ -162,7 +162,7 @@ export const InstituteAccessDialog = ({
                                         disable={removing === row.institute_id}
                                         onClick={() => void takeBack(row.institute_id, name)}
                                     >
-                                        <Trash size={16} />
+                                        <Eye size={16} />
                                     </MyButton>
                                 </li>
                             );
