@@ -140,7 +140,9 @@ public class StudentRegistrationManager {
         instituteStudentDTO
                 .setInstituteStudentDetails(InstituteStudentDetails.builder().instituteId(instituteId).build());
 
-        Student student = checkAndCreateStudent(instituteStudentDTO);
+        // The open assessment link signs the learner in with an email OTP, so a username +
+        // password email here is noise (and arrived before they had even verified the address).
+        Student student = checkAndCreateStudent(instituteStudentDTO, false);
         InstituteStudentDetails details = instituteStudentDTO.getInstituteStudentDetails();
         if (details != null && StringUtils.hasText(details.getPackageSessionId())) {
             linkStudentToInstitute(student, details);
@@ -181,6 +183,14 @@ public class StudentRegistrationManager {
     }
 
     private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO) {
+        return checkAndCreateStudent(instituteStudentDTO, true);
+    }
+
+    /**
+     * @param credentialEmailAllowed false for sign-ups that log in with an OTP and never use the
+     *                               generated password (the open assessment link).
+     */
+    private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO, boolean credentialEmailAllowed) {
         instituteStudentDTO.getUserDetails().setRoles(getStudentRoles());
         setRandomPasswordIfNull(instituteStudentDTO.getUserDetails());
         setRandomUserNameIfNull(instituteStudentDTO.getUserDetails());
@@ -199,8 +209,9 @@ public class StudentRegistrationManager {
         String instituteId = instituteStudentDTO.getInstituteStudentDetails().getInstituteId();
         boolean enrollmentWorkflowWillFire = LearnerSessionStatusEnum.ACTIVE.name()
                 .equalsIgnoreCase(instituteStudentDTO.getInstituteStudentDetails().getEnrollmentStatus());
-        boolean sendCredentials = !enrollmentWorkflowWillFire
-                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId);
+        boolean sendCredentials = credentialEmailAllowed
+                && (!enrollmentWorkflowWillFire
+                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId));
         UserDTO createdUser = createUserFromAuthService(instituteStudentDTO.getUserDetails(),
                 instituteId, sendCredentials);
         instituteStudentDTO.getUserDetails().setId(createdUser.getId());

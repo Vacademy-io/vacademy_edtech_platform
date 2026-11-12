@@ -229,7 +229,6 @@ public class AssessmentPublicPageManager {
                 // A reactivated soft-deleted row is still a fresh form submission from the
                 // registrant's point of view; only the "already active" case below is a no-op.
                 assessmentWorkflowEventPublisher.publishFormSubmission(reactivated, assessment.get());
-                confirmAfterCommit(assessment.get().getId(), reactivated.getId());
                 return ResponseEntity.ok("Registered successfully");
             }
             // An active registration already exists — treat a repeat submission as idempotent.
@@ -253,27 +252,31 @@ public class AssessmentPublicPageManager {
         // Emitted outside the try above so a failure in here can never be caught and
         // reported to the registrant as a duplicate-registration conflict.
         assessmentWorkflowEventPublisher.publishFormSubmission(registration, assessment.get());
-        confirmAfterCommit(assessment.get().getId(), registration.getId());
         return ResponseEntity.ok("Registered successfully");
     }
 
     /**
-     * Emails the "you're registered" confirmation once the registration is committed, so a
-     * rolled-back registration never gets one. A repeat submission for an already active
-     * registration returns earlier and is not confirmed again.
+     * Called by the learner page once the registrant has verified their email with the OTP —
+     * the "You're registered" email waits for that, so nobody is confirmed for an address they
+     * do not own. Only the signed-in learner's own open-link registration counts, and it is
+     * claimed so the email goes out once.
      */
-    private void confirmAfterCommit(String assessmentId, String registrationId) {
-        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
-            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                    new org.springframework.transaction.support.TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registrationId);
-                        }
-                    });
-        } else {
-            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registrationId);
+    public ResponseEntity<String> confirmVerifiedRegistration(String userId, String assessmentId) {
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(assessmentId)) {
+            return ResponseEntity.ok("Nothing to confirm");
         }
+        Optional<AssessmentUserRegistration> registration =
+                assessmentUserRegistrationRepository.findTopByUserIdAndAssessmentId(userId, assessmentId);
+        if (registration.isEmpty()
+                || !ACTIVE.name().equals(registration.get().getStatus())
+                || !UserRegistrationSources.OPEN_REGISTRATION.name().equals(registration.get().getSource())) {
+            return ResponseEntity.ok("Nothing to confirm");
+        }
+        if (assessmentUserRegistrationRepository.claimConfirmationEmail(registration.get().getId()) == 1) {
+            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registration.get().getId());
+            return ResponseEntity.ok("Confirmation sent");
+        }
+        return ResponseEntity.ok("Already confirmed");
     }
 
     AssessmentUserRegistration addUserToAssessment(BasicParticipantDTO basicParticipantDTO, String userId, String instituteId, Assessment assessment, List<AssessmentRegistrationCustomFieldRequest> customFieldRequestList) {
