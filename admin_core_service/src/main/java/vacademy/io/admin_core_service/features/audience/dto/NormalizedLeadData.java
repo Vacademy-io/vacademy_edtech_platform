@@ -67,4 +67,7 @@ public class NormalizedLeadData {
 
     /** Lead form id on the platform. */
     private String adFormId;
+
+    /** When the platform says the lead was submitted (Meta created_time, e.g. 2026-11-09T15:36:36+0000). */
+    private String platformCreatedTime;
 }

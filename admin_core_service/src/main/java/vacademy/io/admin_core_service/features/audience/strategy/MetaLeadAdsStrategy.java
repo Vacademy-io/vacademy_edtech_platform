@@ -442,6 +442,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .adId(idText(leadNode, "ad_id"))
                 .adName(nameText(leadNode, "ad_name"))
                 .adFormId(idText(leadNode, "form_id"))
+                .platformCreatedTime(idText(leadNode, "created_time"))
                 .build();
     }
 
