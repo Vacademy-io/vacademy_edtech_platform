@@ -93,3 +93,123 @@ export const resolveActiveFilterTag = (fromUrl: string | null, pageTags: string[
   const key = normalizeFilterTag(fromUrl);
   return pageTags.find((tag) => normalizeFilterTag(tag) === key) ?? null;
 };
+
+/* ── Page-level filter (a layout with showTagFilter hosts it) ─────────────
+ * With a host on the page, every tagged column of every column layout is
+ * shown as ONE grid at the host's place (a Books page is 8 rows of 4: a
+ * filter used to leave each row with its own gaps). Untagged layouts are
+ * untouched.
+ *
+ *   props.tagFilterStyle   'chips' (default) | 'sidebar' (the Courses page look)
+ *   props.tagFilterGroups  [{ label, tags[] }] sidebar checkbox groups;
+ *                          OR inside a group, AND across groups
+ *   props.tagFilterColumns 2 | 3 | 4 cards per row (default 3 sidebar / 4 chips)
+ */
+
+export interface FilterGroup {
+  label: string;
+  tags: string[];
+}
+
+export interface FilterItem {
+  /** The column layout the item comes from (builder selection). */
+  layoutId: string;
+  slotIndex: number;
+  tags: string[];
+  /** The column's blocks (rendered as the layout would). */
+  children: unknown[];
+}
+
+interface LayoutLike {
+  id?: string;
+  type?: string;
+  enabled?: boolean;
+  props?: Record<string, unknown>;
+}
+
+/** The layout that hosts the page's filter: the first enabled one with the bar on. */
+export const findFilterHost = <T extends LayoutLike>(components: T[] | undefined): T | undefined =>
+  (components || []).find((c) => c?.type === "columnLayout" && c.enabled !== false && !!c.props?.showTagFilter);
+
+/** Every column of every tagged, enabled column layout, in page order. */
+export const collectFilterItems = (components: LayoutLike[] | undefined): FilterItem[] => {
+  const items: FilterItem[] = [];
+  for (const c of components || []) {
+    if (c?.type !== "columnLayout" || c.enabled === false) continue;
+    const lists = columnTagLists(c.props);
+    if (!layoutHasFilterTags(lists)) continue;
+    const slots = Array.isArray(c.props?.slots) ? (c.props!.slots as unknown[]) : [];
+    slots.forEach((slot, i) => {
+      items.push({
+        layoutId: String(c.id ?? ""),
+        slotIndex: i,
+        tags: lists[i] || [],
+        children: Array.isArray(slot) ? slot : [],
+      });
+    });
+  }
+  return items;
+};
+
+/**
+ * The sidebar groups: authored groups keep their order and only the tags that
+ * exist on the page; tags in no group go to a last group named `otherLabel`.
+ * No groups authored → one group with every tag.
+ */
+export const resolveFilterGroups = (raw: unknown, pageTags: string[], otherLabel: string): FilterGroup[] => {
+  const onPage = new Map(pageTags.map((t) => [normalizeFilterTag(t), t]));
+  const used = new Set<string>();
+  const groups: FilterGroup[] = [];
+  for (const g of Array.isArray(raw) ? raw : []) {
+    if (!g || typeof g !== "object") continue;
+    const label = typeof (g as FilterGroup).label === "string" ? (g as FilterGroup).label.trim() : "";
+    const tags: string[] = [];
+    for (const name of parseFilterTags((g as FilterGroup).tags)) {
+      const key = normalizeFilterTag(name);
+      const label2 = onPage.get(key);
+      if (label2 && !used.has(key)) {
+        used.add(key);
+        tags.push(label2);
+      }
+    }
+    if (tags.length) groups.push({ label: label || otherLabel, tags });
+  }
+  const rest = pageTags.filter((t) => !used.has(normalizeFilterTag(t)));
+  if (rest.length) groups.push({ label: otherLabel, tags: rest });
+  return groups;
+};
+
+/** The picked tags from the URL (?tag=a,b), kept only when they exist on the page. */
+export const resolveSelectedTags = (fromUrl: string[], pageTags: string[]): string[] => {
+  const out: string[] = [];
+  for (const raw of fromUrl) {
+    const hit = resolveActiveFilterTag(raw, pageTags);
+    if (hit && !out.includes(hit)) out.push(hit);
+  }
+  return out;
+};
+
+/** OR inside a group, AND across groups; nothing picked = everything. */
+export const itemMatchesSelection = (itemTags: string[], selected: string[], groups: FilterGroup[]): boolean => {
+  if (!selected.length) return true;
+  const have = new Set(itemTags.map(normalizeFilterTag));
+  const picked = new Set(selected.map(normalizeFilterTag));
+  return groups.every((g) => {
+    const inGroup = g.tags.map(normalizeFilterTag).filter((k) => picked.has(k));
+    return inGroup.length === 0 || inGroup.some((k) => have.has(k));
+  });
+};
+
+/** Items each option would show if it were ticked (with the other groups' picks kept). */
+export const filterOptionCounts = (items: FilterItem[], selected: string[], groups: FilterGroup[]): Record<string, number> => {
+  const counts: Record<string, number> = {};
+  for (const g of groups) {
+    const groupKeys = new Set(g.tags.map(normalizeFilterTag));
+    const others = selected.filter((s) => !groupKeys.has(normalizeFilterTag(s)));
+    for (const tag of g.tags) {
+      const sel = [...others, tag];
+      counts[normalizeFilterTag(tag)] = items.filter((it) => itemMatchesSelection(it.tags, sel, groups)).length;
+    }
+  }
+  return counts;
+};

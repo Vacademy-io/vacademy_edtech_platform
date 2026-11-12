@@ -414,7 +414,19 @@
     "chipsGroup": "شرائح التصفية",
     "columnTags": "وسوم التصفية",
     "columnTagsPlaceholder": "مثل Storybooks, 2 year old",
-    "columnTagsHint": "افصل بين الوسوم بفواصل. تستخدمها تصفية الوسوم في هذه الصفحة."
+    "columnTagsHint": "افصل بين الوسوم بفواصل. تستخدمها تصفية الوسوم في هذه الصفحة.",
+    "mergedHint": "عند تفعيل التصفية تظهر كل تخطيطات الأعمدة الموسومة في هذه الصفحة هنا في شبكة واحدة.",
+    "filterStyle": "نمط التصفية",
+    "styleChips": "شرائح في الأعلى",
+    "styleSidebar": "شريط جانبي (مثل صفحة الدورات)",
+    "perRow": "بطاقات في كل صف",
+    "perRowAuto": "تلقائي",
+    "groups": "مجموعات التصفية",
+    "groupsHint": "يمكن للزائر اختيار عدة مربعات: «أو» داخل المجموعة و«و» بين المجموعات (مثل Storybooks + 3+ year).",
+    "groupLabel": "اسم المجموعة",
+    "groupLabelPlaceholder": "مثل العمر",
+    "addGroup": "إضافة مجموعة",
+    "ungroupedHint": "ليست في أي مجموعة (تظهر تحت «الوسوم»): {{tags}}"
   },
   "mediaShowcase": {
     "defaults": {

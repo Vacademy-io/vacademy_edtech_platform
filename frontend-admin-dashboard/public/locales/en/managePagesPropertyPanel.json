@@ -410,7 +410,19 @@
     "chipsGroup": "Filter chips",
     "columnTags": "Filter tags",
     "columnTagsPlaceholder": "e.g. Storybooks, 2 year old",
-    "columnTagsHint": "Separate tags with commas. Used by the tag filter on this page."
+    "columnTagsHint": "Separate tags with commas. Used by the tag filter on this page.",
+    "mergedHint": "With the filter on, every tagged column layout on this page shows in one grid here.",
+    "filterStyle": "Filter style",
+    "styleChips": "Chips on top",
+    "styleSidebar": "Sidebar (like Courses page)",
+    "perRow": "Cards per row",
+    "perRowAuto": "Auto",
+    "groups": "Filter groups",
+    "groupsHint": "Visitors can tick several boxes: OR inside a group, AND across groups (e.g. Storybooks + 3+ year shows 3+ year storybooks).",
+    "groupLabel": "Group name",
+    "groupLabelPlaceholder": "e.g. Age",
+    "addGroup": "Add group",
+    "ungroupedHint": "Not in any group (shown under “Tags”): {{tags}}"
   },
   "mediaShowcase": {
     "defaults": {
