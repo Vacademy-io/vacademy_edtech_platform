@@ -3019,9 +3019,11 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * RESPONSE EVENT definition on {@link #findCounselorActionsByResponseIds}, so the report
          * agrees with the leads list badge. tatMinutes = 0 (or null) makes tat_met never match;
          * the service surfaces tatMetCount as null when TAT is disabled.
+         * <p>first_acts is MATERIALIZED so the per-lead timeline lookup runs once per lead; inlined,
+         * Postgres repeats it for every aggregate that reads first_action_at (2x the work).
          */
         @Query(value = """
-                            WITH first_acts AS (
+                            WITH first_acts AS MATERIALIZED (
                                 SELECT ar.id            AS lead_id,
                                        ar.submitted_at  AS submitted_at,
                                        ar.tat_due_override_at AS tat_due_override_at,
@@ -3235,9 +3237,11 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * Per-counsellor aggregate row. Counsellor resolution mirrors the leads list filter.
          * "first_response_at" = MIN(response event on this lead) — the RESPONSE EVENT definition
          * on {@link #findCounselorActionsByResponseIds}, so per-counsellor numbers match the list.
+         * <p>lead_meta is MATERIALIZED so the per-lead timeline lookup runs once per lead; inlined,
+         * Postgres repeats it for every aggregate that reads first_response_at (4x the work).
          */
         @Query(value = """
-                            WITH lead_meta AS (
+                            WITH lead_meta AS MATERIALIZED (
                                 SELECT ar.id            AS lead_id,
                                        ar.submitted_at  AS submitted_at,
                                        ar.tat_due_override_at AS tat_due_override_at,
