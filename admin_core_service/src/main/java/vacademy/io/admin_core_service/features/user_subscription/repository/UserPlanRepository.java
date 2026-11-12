@@ -437,6 +437,67 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                 @Param("now") java.util.Date now);
 
         /**
+         * Whether the person ever held a plan at this institute on a package of one of
+         * {@code packageTypes} (compared upper-cased and trimmed) that was actually granted: its
+         * status is one of {@code grantedStatuses}, or a payment of one of {@code paidStatuses} was
+         * recorded on it (a plan cancelled, terminated or refunded after it was paid still counts).
+         *
+         * <p>The person is {@code userId} and, when {@code phone10} is not blank, every account
+         * whose student mobile number ends in those ten digits (a phone-identified institute: one
+         * number can front several accounts). Pass blank strings, never null, for an unknown side.
+         *
+         * <p>A plan is on such a package only when its invite is wholly of those types: the
+         * invite links at least one session of {@code packageTypes} AND every session it links is
+         * of them. A plan has no package session of its own, so a plan on a shared invite (a book
+         * and a membership) cannot be told apart from a book buy and does not count. The links
+         * considered are the plan's payment option's when {@code up.payment_option_id} is set (a
+         * link without an option applies to every option), else all of the invite's. Links count
+         * whatever their status, so an invite edited later does not erase history.
+         * Used by SecurityDepositDueService.
+         */
+        @Query(value = """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM user_plan up
+                    JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
+                    WHERE ei.institute_id = :instituteId
+                      AND (up.user_id = :userId
+                           OR (:phone10 <> '' AND EXISTS (
+                                SELECT 1 FROM student s
+                                WHERE s.user_id = up.user_id
+                                  AND length(regexp_replace(coalesce(s.mobile_number, ''), '[^0-9]', '', 'g')) >= 10
+                                  AND right(regexp_replace(s.mobile_number, '[^0-9]', '', 'g'), 10) = :phone10)))
+                      AND EXISTS (
+                            SELECT 1
+                            FROM package_session_learner_invitation_to_payment_option psli
+                            JOIN package_session ps ON ps.id = psli.package_session_id
+                            JOIN package p ON p.id = ps.package_id
+                            WHERE psli.enroll_invite_id = up.enroll_invite_id
+                              AND (up.payment_option_id IS NULL OR psli.payment_option_id IS NULL
+                                   OR psli.payment_option_id = up.payment_option_id)
+                              AND upper(trim(p.package_type)) IN (:packageTypes))
+                      AND NOT EXISTS (
+                            SELECT 1
+                            FROM package_session_learner_invitation_to_payment_option psli
+                            JOIN package_session ps ON ps.id = psli.package_session_id
+                            JOIN package p ON p.id = ps.package_id
+                            WHERE psli.enroll_invite_id = up.enroll_invite_id
+                              AND (up.payment_option_id IS NULL OR psli.payment_option_id IS NULL
+                                   OR psli.payment_option_id = up.payment_option_id)
+                              AND (p.package_type IS NULL OR upper(trim(p.package_type)) NOT IN (:packageTypes)))
+                      AND (up.status IN (:grantedStatuses)
+                           OR EXISTS (SELECT 1 FROM payment_log pl
+                                      WHERE pl.user_plan_id = up.id AND pl.payment_status IN (:paidStatuses)))
+                )
+                """, nativeQuery = true)
+        boolean existsGrantedPlanOnPackageTypes(@Param("userId") String userId,
+                @Param("phone10") String phone10,
+                @Param("instituteId") String instituteId,
+                @Param("packageTypes") List<String> packageTypes,
+                @Param("grantedStatuses") List<String> grantedStatuses,
+                @Param("paidStatuses") List<String> paidStatuses);
+
+        /**
          * As {@link #findDueForRenewal} but restricted to institutes that have authorised the
          * charge sweep (PAYMENT_SETTING.autopayChargeSchedulerEnabled). The sweep is a single
          * platform-wide cron, so without this scoping every institute with an armed plan is

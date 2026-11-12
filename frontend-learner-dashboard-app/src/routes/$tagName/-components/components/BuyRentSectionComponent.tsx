@@ -2,27 +2,33 @@ import React, { useState } from "react";
 import { RouteMatcher } from "../../-services/route-matcher";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ShoppingBag, BookOpen, ArrowRight, X } from "@phosphor-icons/react";
+import { ShoppingBag, BookOpen, ArrowRight } from "@phosphor-icons/react";
+import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
+import { rentLocationCityOf, setCatalogueMode } from "../../-utils/catalogue-mode";
+import type { GlobalSettings } from "../../-types/course-catalogue-types";
+
+interface BuyRentOption {
+  buttonLabel: string;
+  /** The level name the catalogue filters on in this mode ("Buy" / "Rent"). */
+  levelFilterValue: string;
+  /** Page the card opens — the catalogue's ("library"). Absent = the site root, as before. */
+  targetRoute?: string;
+}
 
 interface BuyRentSectionProps {
   heading?: string;
-  buy: {
-    buttonLabel: string;
-    levelFilterValue: string;
-    targetRoute: string;
-  };
-  rent: {
-    buttonLabel: string;
-    levelFilterValue: string;
-    targetRoute: string;
-  };
+  buy: BuyRentOption;
+  rent: BuyRentOption;
   tagName?: string;
+  /** Its `rentLocationCity`, when set, makes the Rent card ask the location question first. */
+  globalSettings?: GlobalSettings;
 }
 
 export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
   buy,
   rent,
   tagName,
+  globalSettings,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const navigate = useNavigate();
@@ -32,25 +38,34 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
 
   const currentTagName = tagName || location.pathname.split("/").filter(Boolean)[0] || "";
 
-  const handleCardClick = (levelFilterValue: string) => {
-    if (levelFilterValue) {
-      sessionStorage.setItem("levelFilter", levelFilterValue);
-      window.dispatchEvent(new CustomEvent('levelFilterChanged', { 
-        detail: { levelFilter: levelFilterValue } 
-      }));
+  // Switch the storefront's mode, then open the option's page (the catalogue).
+  const handleCardClick = (option: BuyRentOption) => {
+    if (option.levelFilterValue) setCatalogueMode(option.levelFilterValue);
+    const target = (option.targetRoute || "").trim();
+    if (RouteMatcher.isExternalLink(target)) {
+      window.location.href = target;
+      return;
     }
-    navigate({ to: RouteMatcher.pagePath(currentTagName) as any });
+    navigate({ to: RouteMatcher.pagePath(currentTagName, target) as never });
   };
 
-  const handleRentClick = () => setShowRentConfirmation(true);
+  // The location question only when the catalogue names its rent city; else straight to rent.
+  const rentCity = rentLocationCityOf(globalSettings);
+  const handleRentClick = () => {
+    if (rentCity) {
+      setShowRentConfirmation(true);
+      return;
+    }
+    handleCardClick(rent);
+  };
   const handleRentConfirm = () => {
     setShowRentConfirmation(false);
-    handleCardClick(rent.levelFilterValue);
+    handleCardClick(rent);
   };
   const handleRentCancel = () => setShowRentConfirmation(false);
   const handleBuyRedirect = () => {
     setShowRentConfirmation(false);
-    handleCardClick(buy.levelFilterValue);
+    handleCardClick(buy);
   };
 
   return (
@@ -111,7 +126,7 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
             }`}
             onMouseEnter={() => setHoveredCard("buy")}
             onMouseLeave={() => setHoveredCard(null)}
-            onClick={() => handleCardClick(buy.levelFilterValue)}
+            onClick={() => handleCardClick(buy)}
           >
             <div className="p-3 sm:p-5 flex flex-col items-center text-center">
               {/* Icon - PRIMARY accent */}
@@ -173,45 +188,15 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
         </div>
       </div>
 
-      {/* Rent Confirmation Modal */}
-      {showRentConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          {/* NEUTRAL: Modal background */}
-          <div className="bg-white rounded-catalogue-md max-w-sm w-full p-4 relative">
-            <button
-              onClick={handleRentCancel}
-              className="absolute top-3 end-3 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label={t("buyRentSection.close")}
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="mt-1">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
-                {t("buyRentSection.locationRestrictionTitle")}
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {t("buyRentSection.locationRestrictionMessage", { city: "Jabalpur" })}
-              </p>
-
-              <div className="flex gap-2">
-                {/* PRIMARY ACCENT: Buttons */}
-                <button
-                  onClick={handleBuyRedirect}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-primary-600 border border-primary-400 rounded-catalogue-sm hover:bg-primary-50 transition-colors"
-                >
-                  {t("buyRentSection.buyInstead")}
-                </button>
-                <button
-                  onClick={handleRentConfirm}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-primary-foreground bg-primary-500 rounded-catalogue-sm hover:brightness-90 transition"
-                >
-                  {t("buyRentSection.continue")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Rent Confirmation Modal (only when the catalogue names its rent city) */}
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={showRentConfirmation}
+          onCancel={handleRentCancel}
+          onContinue={handleRentConfirm}
+          onBuyInstead={handleBuyRedirect}
+          city={rentCity}
+        />
       )}
     </div>
   );

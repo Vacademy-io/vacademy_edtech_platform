@@ -988,6 +988,21 @@ public class LearnerEnrollRequestService {
     }
 
     /**
+     * Whether this request is a gateway's "phase 2" payment confirmation of an enrollment the
+     * first call already created ({@link #recordLearnerRequest} completes it and enrolls nothing
+     * new). Read-only; lets the public endpoint skip its pre-enrollment checks for a payment
+     * that was already taken.
+     */
+    public boolean isClientPaymentConfirmation(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
+        LearnerPackageSessionsEnrollDTO enrollDTO = learnerEnrollRequestDTO != null
+                ? learnerEnrollRequestDTO.getLearnerPackageSessionEnroll()
+                : null;
+        PaymentServiceStrategy gatewayStrategy = resolvePaymentStrategy(enrollDTO);
+        return gatewayStrategy != null
+                && gatewayStrategy.isClientPaymentConfirmation(enrollDTO.getPaymentInitiationRequest());
+    }
+
+    /**
      * Resolves the {@link PaymentServiceStrategy} for the request's payment
      * vendor, or null when the request has no payment initiation / an unknown
      * vendor (e.g. MANUAL) — callers then proceed with the normal enrollment

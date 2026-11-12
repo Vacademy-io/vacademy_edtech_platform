@@ -12,6 +12,11 @@ public enum CourseTypeEnum {
 
     public static final String DEFAULT = "COURSE";
 
+    /** Whether a {@code package.package_type} value is a membership (ReadOnRent's rent plans). */
+    public static boolean isMembership(String packageType) {
+        return packageType != null && MEMBERSHIP.name().equalsIgnoreCase(packageType.trim());
+    }
+
     /**
      * Safely parses the given string to a CourseTypeEnum.
      * Returns the default (COURSE) if input is null, blank, or invalid.

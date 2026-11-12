@@ -32,10 +32,24 @@ import { performFullAuthCycle } from "@/services/auth-cycle-service";
 import { loginEnrolledUser } from "@/services/signup-api";
 import { AddressForm, AddressFormHandle } from "./AddressForm";
 import {
-    ResolvedCharge,
+    ChargeLine,
     buildChargeEnrollmentEntries,
     sumChargeAmounts,
 } from "../../-utils/additional-charges-util";
+import {
+    DEPOSIT_MISSING_TOKEN,
+    DEPOSIT_NOT_DUE_TOKEN,
+    InvitePlan,
+    RentMembershipLine,
+    buildRentV2Payload,
+    findDepositErrorToken,
+    invitePlanOf,
+    planDepositRetry,
+    rentBooksPreferenceValue,
+    rentMembershipPrice,
+    rentOrderAmount,
+    rentRequestedBookPackageSessionIds,
+} from "../../-utils/rent-checkout-payload";
 import { clearPendingCheckout, useCartStore } from "../../-stores/cart-store";
 import { pollPaymentOutcome } from "../../-utils/payment-confirmation";
 import { releaseStockHold } from "@/components/common/enroll-by-invite/-services/enroll-invite-services";
@@ -60,9 +74,22 @@ interface CheckoutFormProps {
     items: any[];
     membershipPlan?: any;
     isRentMode?: boolean;
-    additionalCharges?: ResolvedCharge[];
-    /** The storefront catalogue tag the learner is on. A buy checkout sends it so the
-     *  server checks the shipping tier against that catalogue. */
+    /** The charges this order pays: buy-mode shipping, or the rent-mode charges still due. */
+    additionalCharges?: ChargeLine[];
+    /** Rent only: the catalogue links a rent-mode charge (even one this learner no longer
+     *  owes), so the order goes through the v2 multi-item endpoint. False keeps the v1 call. */
+    rentChargesLinked?: boolean;
+    /** Rent only: every rent-mode charge the catalogue links, due or not. A checkout the
+     *  server answers "deposit missing" adds the once-per-user ones left out back from here. */
+    linkedRentCharges?: ChargeLine[];
+    /** Rent only: the server said the learner already paid these once-per-user charges, so
+     *  the cart stops showing them. */
+    onRentChargesWaived?: (chargeKeys: string[]) => void;
+    /** Rent only: the server said the learner still owes these once-per-user charges (the
+     *  cart had them as paid), so the cart shows them again. */
+    onRentChargesDue?: (chargeKeys: string[]) => void;
+    /** The storefront catalogue tag the learner is on. A buy checkout (and a rent one with
+     *  charges) sends it so the server checks the charges against that catalogue. */
     catalogueTag?: string;
     /** The page editor's preview: nothing is sent (no real enrolment,
      *  payment, lead or paid WhatsApp OTP from an editor trying the cart). */
@@ -78,6 +105,10 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     membershipPlan,
     isRentMode = false,
     additionalCharges = [],
+    rentChargesLinked = false,
+    linkedRentCharges = [],
+    onRentChargesWaived,
+    onRentChargesDue,
     catalogueTag,
     isPreviewMode = false,
 }) => {
@@ -129,7 +160,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         usePreferredPhoneCountries({ freeze: phoneFieldHasInput(phone) });
     const [nameError, setNameError] = useState("");
 
-    const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
+    // The invite's resolved plan (what `plan_id` sends), with its price, read when the dialog opens.
+    const [paymentPlanData, setPaymentPlanData] = useState<InvitePlan | null>(null);
     // Per-item plan data: maps enrollInviteId -> { planId, paymentOptionId }
     const [perItemPlanData, setPerItemPlanData] = useState<Record<string, { planId: string; paymentOptionId: string }>>({});
     const otpInputRef = React.useRef<HTMLInputElement>(null);
@@ -144,6 +176,19 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
     const targetInviteId = membershipPlan?.enrollInviteId ||
         (items.length > 0 ? items[0]?.enrollInviteId : null);
+
+    // What the order costs. A rent order with charges (v2) prices its membership line from the
+    // plan actually sent — the invite's plan, read when this dialog opened — not the price the
+    // cart remembered when the plan was picked (it may be stale, or not that plan's). Every
+    // other checkout keeps the cart's total, exactly as before.
+    const isRentV2 = isRentMode && rentChargesLinked;
+    const cartPlanPrice = totalAmount - sumChargeAmounts(additionalCharges);
+    const summaryPlanPrice = isRentV2
+        ? rentMembershipPrice(paymentPlanData?.actualPrice, cartPlanPrice)
+        : cartPlanPrice;
+    const summaryTotal = isRentV2 ? rentOrderAmount(summaryPlanPrice, additionalCharges) : totalAmount;
+    const formatRupees = (amount: number) =>
+        `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
     // Add validation
     useEffect(() => {
@@ -242,30 +287,23 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         )
             .then(results => {
                 const perItemData: Record<string, { planId: string; paymentOptionId: string }> = {};
-                let firstPlanData: any = null;
+                let firstPlanData: InvitePlan | null = null;
 
                 for (const result of results) {
                     if (!result) continue;
                     const { inviteId, data } = result;
 
-                    if (data.package_session_to_payment_options?.length > 0) {
-                        const firstOption = data.package_session_to_payment_options[0];
-                        const plans = firstOption.payment_option.payment_plans;
-                        if (plans?.length > 0) {
-                            perItemData[inviteId] = {
-                                planId: plans[0].id,
-                                paymentOptionId: firstOption.payment_option.id,
-                            };
+                    // The invite's first option's first plan, with its price.
+                    const invitePlan = invitePlanOf(data, inviteId);
+                    if (invitePlan) {
+                        perItemData[inviteId] = {
+                            planId: invitePlan.planId,
+                            paymentOptionId: invitePlan.paymentOptionId,
+                        };
 
-                            // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
-                            if (!firstPlanData) {
-                                firstPlanData = {
-                                    planId: plans[0].id,
-                                    paymentOptionId: firstOption.payment_option.id,
-                                    enrollInviteId: firstOption.enroll_invite_id || data.id,
-                                    vendorId: data.vendor_id || "RAZORPAY"
-                                };
-                            }
+                        // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
+                        if (!firstPlanData) {
+                            firstPlanData = invitePlan;
                         }
                     }
                 }
@@ -423,9 +461,10 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             const redirectUrl = window.location.href;
 
             let response;
+            // What Razorpay is told the order costs when the server's answer omits it.
+            let orderAmount = totalAmount;
 
             if (isRentMode) {
-                // ============ RENT MODE: Use v1 API with custom_field_values ============
                 console.log("[CheckoutForm] Processing RENT mode checkout");
 
                 // Fetch the "Books Preference" custom field ID
@@ -436,75 +475,159 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 }
 
                 // Build the books preference value - only the book names (titles)
-                const bookNames = items.map(item => item.title || item.name || "Unknown Book");
-                const booksPreferenceValue = bookNames.join(", ");
+                const booksPreferenceValue = rentBooksPreferenceValue(items);
 
                 console.log("[CheckoutForm] Books preference value (names only):", booksPreferenceValue);
 
-                // Use membership plan for Rent mode
-                const sessionIds = membershipPlan?.packageSessionId
-                    ? [membershipPlan.packageSessionId]
-                    : [];
-
                 // The rent package session of each chosen book: the server holds one
                 // of each while the learner pays. De-duplicated, blanks dropped.
-                const requestedBookPackageSessionIds = [
-                    ...new Set(
-                        items
-                            .map((item) => item.packageSessionId)
-                            .filter((id): id is string => typeof id === "string" && id.trim() !== ""),
-                    ),
-                ];
+                const requestedBookPackageSessionIds = rentRequestedBookPackageSessionIds(items);
 
-                const rentPayload = {
-                    user: {
+                if (rentChargesLinked) {
+                    // ============ RENT MODE WITH CHARGES: v2 API, membership + charge entries ============
+                    // The membership must enroll by real ids: the server prices the order from them.
+                    // ...and those ids must be this plan's invite (not one read for an earlier pick).
+                    if (
+                        !membershipPlan?.packageSessionId ||
+                        !paymentPlanData?.planId ||
+                        !paymentPlanData?.paymentOptionId ||
+                        paymentPlanData.inviteId !== targetInviteId
+                    ) {
+                        throw new Error(t("checkoutForm.toast.loadPaymentOptionsFailed"));
+                    }
+                    const membership: RentMembershipLine = {
+                        packageSessionId: membershipPlan.packageSessionId,
+                        planId: paymentPlanData.planId,
+                        paymentOptionId: paymentPlanData.paymentOptionId,
+                        enrollInviteId: paymentPlanData.enrollInviteId || membershipPlan.enrollInviteId,
+                        // The price of the plan sent (the server checks the line against it).
+                        price: summaryPlanPrice,
+                    };
+                    const rentUser = {
                         ...userPayload,
                         username: email.split('@')[0],
                         mobile_number: phone,
                         root_user: true,
-                    },
-                    institute_id: instituteId,
-                    subject_id: "",
-                    vendor_id: "RAZORPAY",
-                    learner_package_session_enroll: {
-                        package_session_ids: sessionIds,
-                        plan_id: paymentPlanData?.planId || membershipPlan?.id || items[0]?.id,
-                        payment_option_id: paymentPlanData?.paymentOptionId || "default",
-                        enroll_invite_id: paymentPlanData?.enrollInviteId || membershipPlan?.enrollInviteId || items[0]?.enrollInviteId || items[0]?.id,
-                        requested_book_package_session_ids: requestedBookPackageSessionIds,
-                        payment_initiation_request: {
-                            amount: totalAmount,
-                            currency: "INR",
-                            description: `Rent subscription for ${items.length} books`,
-                            charge_automatically: true,
-                            institute_id: instituteId,
-                            order_id: orderId,
-                            redirect_url: redirectUrl,
-                            razorpay_request: {
-                                redirect_url: redirectUrl
+                    };
+                    const submitRentOrder = (charges: ChargeLine[]) => {
+                        const payload = buildRentV2Payload({
+                            user: rentUser,
+                            instituteId,
+                            catalogueTag,
+                            membership,
+                            booksPreferenceFieldId,
+                            books: items,
+                            charges,
+                            redirectUrl,
+                        });
+                        orderAmount = payload.payment_initiation_request.amount;
+                        console.log("[CheckoutForm] Sending RENT (v2) Checkout Payload:", payload);
+                        return axios.post(ENROLLMENT_PAYMENT_INITIATION_V2, payload, {
+                            headers: {
+                                "Content-Type": "application/json",
+                                "clientId": instituteId,
+                                "X-Institute-Id": instituteId
                             }
-                        },
-                        custom_field_values: [
-                            {
-                                custom_field_id: booksPreferenceFieldId,
-                                value: booksPreferenceValue
-                            }
-                        ],
-                    },
-                };
+                        });
+                    };
 
-                console.log("[CheckoutForm] Sending RENT Checkout Payload:", rentPayload);
-
-                response = await axios.post(
-                    ENROLLMENT_PAYMENT_INITIATION,
-                    rentPayload,
-                    {
-                        headers: {
-                            "clientId": instituteId,
-                            "X-Institute-Id": instituteId
+                    try {
+                        response = await submitRentOrder(additionalCharges);
+                    } catch (firstError) {
+                        // The server decides whether a once-per-user charge is due, for the person
+                        // the typed phone / email belong to. When it disagrees with the cart, fix the
+                        // charges and place the order again — once per click, whichever way it
+                        // disagreed. A second refusal goes to the error handling below.
+                        const retry = planDepositRetry(
+                            findDepositErrorToken(firstError),
+                            additionalCharges,
+                            linkedRentCharges,
+                        );
+                        if (!retry) throw firstError;
+                        const changedKeys = retry.changed.map((charge) => charge.key);
+                        const total = formatRupees(rentOrderAmount(membership.price, retry.charges));
+                        if (retry.token === DEPOSIT_NOT_DUE_TOKEN) {
+                            onRentChargesWaived?.(changedKeys);
+                            toast.info(
+                                t("checkoutForm.toast.chargeNotDue", {
+                                    label: retry.changed.map((charge) => charge.label).join(", "),
+                                    total,
+                                }),
+                                { duration: 6000 },
+                            );
+                        } else {
+                            onRentChargesDue?.(changedKeys);
+                            const values = {
+                                label: retry.changed.map((charge) => charge.label).join(", "),
+                                amount: formatRupees(sumChargeAmounts(retry.changed)),
+                                total,
+                            };
+                            toast.info(
+                                retry.changed.every((charge) => charge.refundable)
+                                    ? t("checkoutForm.toast.chargeAddedRefundable", values)
+                                    : t("checkoutForm.toast.chargeAdded", values),
+                                { duration: 8000 },
+                            );
                         }
+                        response = await submitRentOrder(retry.charges);
                     }
-                );
+                } else {
+                    // ============ RENT MODE: Use v1 API with custom_field_values ============
+                    // Use membership plan for Rent mode
+                    const sessionIds = membershipPlan?.packageSessionId
+                        ? [membershipPlan.packageSessionId]
+                        : [];
+
+                    const rentPayload = {
+                        user: {
+                            ...userPayload,
+                            username: email.split('@')[0],
+                            mobile_number: phone,
+                            root_user: true,
+                        },
+                        institute_id: instituteId,
+                        subject_id: "",
+                        vendor_id: "RAZORPAY",
+                        learner_package_session_enroll: {
+                            package_session_ids: sessionIds,
+                            plan_id: paymentPlanData?.planId || membershipPlan?.id || items[0]?.id,
+                            payment_option_id: paymentPlanData?.paymentOptionId || "default",
+                            enroll_invite_id: paymentPlanData?.enrollInviteId || membershipPlan?.enrollInviteId || items[0]?.enrollInviteId || items[0]?.id,
+                            requested_book_package_session_ids: requestedBookPackageSessionIds,
+                            payment_initiation_request: {
+                                amount: totalAmount,
+                                currency: "INR",
+                                description: `Rent subscription for ${items.length} books`,
+                                charge_automatically: true,
+                                institute_id: instituteId,
+                                order_id: orderId,
+                                redirect_url: redirectUrl,
+                                razorpay_request: {
+                                    redirect_url: redirectUrl
+                                }
+                            },
+                            custom_field_values: [
+                                {
+                                    custom_field_id: booksPreferenceFieldId,
+                                    value: booksPreferenceValue
+                                }
+                            ],
+                        },
+                    };
+
+                    console.log("[CheckoutForm] Sending RENT Checkout Payload:", rentPayload);
+
+                    response = await axios.post(
+                        ENROLLMENT_PAYMENT_INITIATION,
+                        rentPayload,
+                        {
+                            headers: {
+                                "clientId": instituteId,
+                                "X-Institute-Id": instituteId
+                            }
+                        }
+                    );
+                }
             } else {
                 // ============ BUY MODE: Use v2 API with learner_package_session_enrollments array ============
                 console.log("[CheckoutForm] Processing BUY mode checkout");
@@ -648,7 +771,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 let paymentSubmitted = false;
                 const options = {
                     key: razorpayKeyId,
-                    amount: response.data?.payment_response?.response_data?.amountDue || (totalAmount * 100),
+                    amount: response.data?.payment_response?.response_data?.amountDue || (orderAmount * 100),
                     currency: response.data?.payment_response?.response_data?.currency || "INR",
                     name: t("checkoutForm.header.title"),
                     description: t("checkoutForm.razorpayDescription", {
@@ -759,6 +882,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             if (paymentLogId && !razorpayOpened) {
                 void releaseStockHold(paymentLogId);
                 clearPendingCheckout();
+            }
+            // A rent order the server still says is missing a once-per-user charge after the one
+            // automatic resubmit (or with none left out to add back): no further retry.
+            if (isRentMode && rentChargesLinked && findDepositErrorToken(error) === DEPOSIT_MISSING_TOKEN) {
+                toast.error(t("checkoutForm.toast.chargeMissing"));
+                return;
             }
             // The server explains a refusal in `ex`: "Only N left" for a 409 out of
             // stock, the quantity or shipping problem for a 400.
@@ -920,25 +1049,26 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                 {additionalCharges.length > 0 ? (
                                     <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 space-y-1">
                                         <div className="flex justify-between text-xs text-gray-700">
-                                            <span>{t("checkoutForm.summary.subtotalCount", { count: itemCount })}</span>
-                                            <span className="font-medium">₹{(totalAmount - sumChargeAmounts(additionalCharges)).toFixed(2)}</span>
+                                            {/* Rent: the line before the charges is the membership plan, not the books. */}
+                                            <span>{isRentMode && membershipPlan?.title ? membershipPlan.title : t("checkoutForm.summary.subtotalCount", { count: itemCount })}</span>
+                                            <span className="font-medium">₹{summaryPlanPrice.toFixed(2)}</span>
                                         </div>
                                         {additionalCharges.map((charge) => (
                                             <div key={charge.key} className="flex justify-between text-xs text-gray-700">
-                                                <span>{charge.label}</span>
+                                                <span>{charge.refundable ? t("cart.rentCharge.refundableLabel", { label: charge.label }) : charge.label}</span>
                                                 <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
                                         <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
                                             <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(2)}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(0)}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(0)}</span>
                                         </div>
                                         <div className="text-end">
                                             <span className="text-caption text-gray-400 font-medium block">{t("checkoutForm.summary.itemsCount", { count: itemCount })}</span>

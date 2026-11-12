@@ -13,6 +13,8 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.course.enums.CourseTypeEnum;
+import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository.StockInfoProjection;
 import vacademy.io.admin_core_service.features.stock_hold.entity.StockHold;
@@ -42,8 +44,15 @@ import java.util.stream.Collectors;
 /**
  * Stock held while a learner pays, and every later movement of that stock (V640).
  *
- * <p>Only package sessions with {@code max_seats} set are stock-tracked; every method here
- * ignores unlimited sessions, so courses without stock never see a row.
+ * <p>Only package sessions with {@code max_seats} set on a package that has copies are
+ * stock-tracked ({@link #tracksStock}); every method here ignores the rest, so courses without
+ * stock never see a row. A MEMBERSHIP package's max_seats is not stock — the rent feature uses it
+ * as "books per period" and its available_slots as "books at once" — and a charge package
+ * (shipping / deposit) has no copies, so neither is ever held, taken on activation, reported as
+ * limited or given back ({@link #restoreForPlan} skips their rows by package type alone: a book
+ * made unlimited after its hold still has its row released / restored). The package_session
+ * stock UPDATEs skip both types as well
+ * (PackageSessionRepository), which covers the legacy increment / decrement callers too.
  *
  * <p>CONTRACT — other code calls exactly these signatures. Bodies are implemented by the
  * stock work package; do not change a signature without updating every caller.
@@ -148,13 +157,13 @@ public class StockHoldService {
             String packageSessionId = entry.getKey();
             int quantity = entry.getValue();
             StockInfoProjection info = stock.get(packageSessionId);
-            if (info == null || info.getMaxSeats() == null) {
-                continue; // unlimited (or unknown): nothing to hold
+            if (!tracksStock(info)) {
+                continue; // unlimited, unknown, a membership or a charge: nothing to hold
             }
             if (packageSessionRepository.takeAvailableSlots(packageSessionId, quantity) == 0) {
                 // Read again: the admin may have made the session unlimited since the read above.
                 StockInfoProjection now = stockInfo(List.of(packageSessionId)).get(packageSessionId);
-                if (now == null || now.getMaxSeats() == null) {
+                if (!tracksStock(now)) {
                     continue;
                 }
                 int left = now.getAvailableSlots() != null ? Math.max(now.getAvailableSlots(), 0) : 0;
@@ -413,8 +422,20 @@ public class StockHoldService {
         }
         afterCommit("Stock restore failed", tags("userPlanId", userPlanId, "packageSessionId", packageSessionIdOrNull), () -> {
             int restored = 0;
-            for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
+            List<StockHoldRow> rows = sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId));
+            Map<String, StockInfoProjection> stock = stockInfo(rows.stream()
+                    .map(StockHoldRow::getPackageSessionId)
+                    .collect(Collectors.toSet()));
+            for (StockHoldRow row : rows) {
                 if (packageSessionIdOrNull != null && !packageSessionIdOrNull.equals(row.getPackageSessionId())) {
+                    continue;
+                }
+                StockInfoProjection info = stock.get(row.getPackageSessionId());
+                if (info != null && !isStockPackageType(info.getPackageType())) {
+                    // A membership's "books at once" or a charge: never stock, so nothing goes
+                    // back. Rows written there by activations before this rule stay as they are.
+                    // A book made unlimited after the hold still moves on below (HELD → RELEASED,
+                    // SOLD → RESTORED); its give-back is then a no-op.
                     continue;
                 }
                 boolean claimedByPlan = userPlanId.equals(row.getClaimedByUserPlanId());
@@ -577,8 +598,8 @@ public class StockHoldService {
         List<StockHoldRow> rentPicks = null;
         for (String packageSessionId : uncovered) {
             StockInfoProjection info = stock.get(packageSessionId);
-            if (info == null || info.getMaxSeats() == null) {
-                continue; // unlimited: nothing to track
+            if (!tracksStock(info)) {
+                continue; // unlimited, a membership or a charge: nothing to track
             }
             if (rentPicks == null) {
                 rentPicks = StringUtils.hasText(userPlan.getUserId())
@@ -637,7 +658,7 @@ public class StockHoldService {
             return;
         }
         StockInfoProjection now = stockInfo(List.of(packageSessionId)).get(packageSessionId);
-        boolean tracked = now != null && now.getMaxSeats() != null;
+        boolean tracked = tracksStock(now);
         if (stockHoldRepository.markSold(row.getId(), RELEASED, tracked) == 1 && tracked) {
             reportOversold(packageSessionId, quantity, userPlan, row.getId());
         }
@@ -648,7 +669,7 @@ public class StockHoldService {
         boolean oversold = false;
         if (packageSessionRepository.takeAvailableSlots(packageSessionId, quantity) == 0) {
             StockInfoProjection now = stockInfo(List.of(packageSessionId)).get(packageSessionId);
-            if (now == null || now.getMaxSeats() == null) {
+            if (!tracksStock(now)) {
                 return; // became unlimited meanwhile
             }
             oversold = true;
@@ -686,13 +707,13 @@ public class StockHoldService {
 
     /**
      * How many copies are left of each stock-limited session, so the cart can warn before the
-     * checkout form. The count already excludes other orders' holds. A session with no limit, or
-     * an unknown id, is simply absent. Only a hint: {@link #hold} still decides at payment.
+     * checkout form. The count already excludes other orders' holds. A session with no limit, a
+     * membership or charge session, or an unknown id, is simply absent. Only a hint: {@link #hold} still decides at payment.
      */
     public Map<String, Integer> availableStock(Collection<String> packageSessionIds) {
         Map<String, Integer> left = new HashMap<>();
         stockInfo(packageSessionIds).forEach((packageSessionId, info) -> {
-            if (info.getMaxSeats() != null) {
+            if (tracksStock(info)) {
                 left.put(packageSessionId, info.getAvailableSlots() != null ? Math.max(info.getAvailableSlots(), 0) : 0);
             }
         });
@@ -708,6 +729,21 @@ public class StockHoldService {
             byId.put(info.getPackageSessionId(), info);
         }
         return byId;
+    }
+
+    /**
+     * Whether a package of this type has copies whose stock is counted. Not a MEMBERSHIP (its
+     * max_seats is books per period, its available_slots books at once) and not a charge
+     * (shipping / deposit). Keep in step with the type list in PackageSessionRepository's stock
+     * UPDATEs.
+     */
+    public static boolean isStockPackageType(String packageType) {
+        return !CourseTypeEnum.isMembership(packageType) && !ChargePackageType.isCharge(packageType);
+    }
+
+    /** A stock-tracked session: a limited max_seats on a package that has copies. */
+    static boolean tracksStock(StockInfoProjection info) {
+        return info != null && info.getMaxSeats() != null && isStockPackageType(info.getPackageType());
     }
 
     private String instituteIdOf(UserPlan userPlan, String packageSessionId) {

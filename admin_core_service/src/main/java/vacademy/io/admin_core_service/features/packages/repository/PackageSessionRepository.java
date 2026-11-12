@@ -608,35 +608,46 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
     // PackageSession entity saved later in the same transaction fails loudly instead of
     // writing its old count back. No @Transactional: callers are transactional services, and a
     // participating proxy would mark a webhook transaction rollback-only on any exception.
+    //
+    // A MEMBERSHIP package's max_seats is not stock (the rent feature reads it as books per
+    // period, available_slots as books at once) and a charge package (DELIVERY_CHARGE /
+    // SECURITY_DEPOSIT) has no copies: these UPDATEs never touch either, whoever calls them.
+    // Keep the type list in step with StockHoldService.isStockPackageType.
 
-    /** Takes :qty only when that much is left. 1 = taken; 0 = short, unlimited, or no such row. */
+    /** Takes :qty only when that much is left. 1 = taken; 0 = short, unlimited, not stock, or no such row. */
     @Modifying
     @Query(value = """
             UPDATE package_session
             SET available_slots = available_slots - :qty, version = COALESCE(version, 0) + 1
             WHERE id = :id AND max_seats IS NOT NULL AND available_slots >= :qty
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
             """, nativeQuery = true)
     int takeAvailableSlots(@Param("id") String id, @Param("qty") int qty);
 
-    /** Gives :qty back, capped at max_seats. 0 = unlimited or no such row. */
+    /** Gives :qty back, capped at max_seats. 0 = unlimited, not stock, or no such row. */
     @Modifying
     @Query(value = """
             UPDATE package_session
             SET available_slots = LEAST(COALESCE(available_slots, 0) + :qty, max_seats),
                 version = COALESCE(version, 0) + 1
             WHERE id = :id AND max_seats IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
             """, nativeQuery = true)
     int giveBackAvailableSlots(@Param("id") String id, @Param("qty") int qty);
 
     /**
      * The old decrementAvailability semantics in one statement: takes up to :qty and stops at 0
-     * instead of refusing. 0 = nothing left, unlimited, or no such row.
+     * instead of refusing. 0 = nothing left, unlimited, not stock, or no such row.
      */
     @Modifying
     @Query(value = """
             UPDATE package_session
             SET available_slots = GREATEST(available_slots - :qty, 0), version = COALESCE(version, 0) + 1
             WHERE id = :id AND max_seats IS NOT NULL AND available_slots > 0
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
             """, nativeQuery = true)
     int decrementAvailableSlotsClamped(@Param("id") String id, @Param("qty") int qty);
 
@@ -669,5 +680,14 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             """, nativeQuery = true)
     List<String> findIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
                                     @Param("instituteId") String instituteId);
+
+    /** The subset of {@code ids} that are live (ACTIVE or HIDDEN) package sessions whose package belongs to the institute. */
+    @Query(value = """
+            SELECT DISTINCT ps.id FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            WHERE ps.id IN (:ids) AND pi.institute_id = :instituteId AND ps.status IN ('ACTIVE', 'HIDDEN')
+            """, nativeQuery = true)
+    List<String> findActiveIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
+                                          @Param("instituteId") String instituteId);
 
 }
