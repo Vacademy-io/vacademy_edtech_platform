@@ -56,6 +56,27 @@ describe("findCatalogueListingRoute", () => {
     expect(findCatalogueListingRoute(pages)).toBe("library");
   });
 
+  it("does not take a former home page that kept id 'home' but moved to 'library' for the root", () => {
+    const pages = [
+      { id: "home", route: "library", components: [catalogue()] },
+      { id: "landing", route: "homepage", components: [{ type: "buyRentSection", enabled: true }] },
+    ];
+    expect(findCatalogueListingRoute(pages)).toBe("library");
+  });
+
+  it("falls back to id 'home' as the root only when no page has a root route", () => {
+    const pages = [
+      { id: "home", route: "books", components: [catalogue()] },
+      { id: "about", route: "about", components: [] },
+    ];
+    expect(findCatalogueListingRoute(pages)).toBe("");
+  });
+
+  it("treats '/' and '' routes as the root too", () => {
+    expect(findCatalogueListingRoute([{ id: "main", route: "/", components: [catalogue()] }])).toBe("");
+    expect(findCatalogueListingRoute([{ id: "main", route: "", components: [catalogue()] }])).toBe("");
+  });
+
   it("builds the tagged path", () => {
     expect(catalogueListingPath("collections", swappedPages)).toBe(
       RouteMatcher.pagePath("collections", "library"),

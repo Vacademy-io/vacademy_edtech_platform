@@ -5,6 +5,7 @@ import type { ResolvedCharge } from "../../-utils/additional-charges-util";
 import {
   buildDepositNotes,
   planDurationMonths,
+  refreshSelectedMembershipPlan,
   sortMembershipPlans,
   toCartMembershipPlan,
   toMembershipPlanCard,
@@ -105,6 +106,43 @@ describe("toCartMembershipPlan", () => {
     expect(stored.id).toBe("pkg-1");
     expect(stored.numberOfBooks).toBeUndefined();
     expect(stored.maxSeats).toBeUndefined();
+  });
+});
+
+describe("refreshSelectedMembershipPlan", () => {
+  // What the cart stored when the plan was picked, before a price cut.
+  const stored = toCartMembershipPlan(plan({ available_slots: 2, max_seats: 8 }));
+
+  it("takes today's price and title for the same plan", () => {
+    const fresh = plan({ min_plan_actual_price: 349, package_name: "Store Pick Up 2 Months", available_slots: 2, max_seats: 8 });
+    expect(refreshSelectedMembershipPlan(stored, [plan({ id: "pkg-2", enroll_invite_id: "invite-2" }), fresh])).toEqual({
+      ...stored,
+      price: 349,
+      title: "Store Pick Up 2 Months",
+    });
+  });
+
+  it("changes nothing when the plan is unchanged (so the cart never rewrites it in a loop)", () => {
+    expect(refreshSelectedMembershipPlan(stored, [plan({ available_slots: 2, max_seats: 8 })])).toBeUndefined();
+    // A pick stored before optional limits existed reads the same as one without them.
+    const bare = toCartMembershipPlan(plan());
+    expect(refreshSelectedMembershipPlan(JSON.parse(JSON.stringify(bare)), [plan()])).toBeUndefined();
+  });
+
+  it("drops the pick when its plan is gone", () => {
+    expect(refreshSelectedMembershipPlan(stored, [plan({ id: "pkg-2", enroll_invite_id: "invite-2" })])).toBeNull();
+    expect(refreshSelectedMembershipPlan(stored, [])).toBeNull();
+  });
+
+  it("does nothing without a pick", () => {
+    expect(refreshSelectedMembershipPlan(null, [plan()])).toBeUndefined();
+    expect(refreshSelectedMembershipPlan(undefined, [])).toBeUndefined();
+  });
+
+  it("matches a plan without an invite by its package id, as the cart stores it", () => {
+    const noInvite = plan({ enroll_invite_id: "" });
+    const storedNoInvite = toCartMembershipPlan(noInvite);
+    expect(refreshSelectedMembershipPlan(storedNoInvite, [{ ...noInvite, min_plan_actual_price: 300 }])?.price).toBe(300);
   });
 });
 

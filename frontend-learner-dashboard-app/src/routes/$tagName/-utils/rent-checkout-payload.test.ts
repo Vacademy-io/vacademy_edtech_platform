@@ -5,6 +5,9 @@ import {
   DEPOSIT_NOT_DUE_TOKEN,
   buildRentV2Payload,
   findDepositErrorToken,
+  invitePlanOf,
+  planDepositRetry,
+  rentMembershipPrice,
   rentOrderAmount,
   waivedKeysFromStatus,
   withoutOncePerUserCharges,
@@ -201,5 +204,133 @@ describe("waivedKeysFromStatus", () => {
 describe("rentOrderAmount", () => {
   it("adds charges to the plan price without float drift", () => {
     expect(rentOrderAmount(349.1, [{ ...deposit, amount: 300.2 }])).toBe(649.3);
+  });
+});
+
+describe("planDepositRetry", () => {
+  const shipping: ChargeLine = {
+    ...deposit,
+    key: "RENT_SHIPPING",
+    label: "Delivery",
+    amount: 50,
+    planId: "plan-ship",
+    packageSessionId: "ps-ship",
+    refundable: false,
+    oncePerUser: false,
+  };
+  const linked = [deposit, shipping];
+
+  it("NOT_DUE: drops the once-per-user charges that were sent", () => {
+    expect(planDepositRetry(DEPOSIT_NOT_DUE_TOKEN, [deposit, shipping], linked)).toEqual({
+      token: DEPOSIT_NOT_DUE_TOKEN,
+      charges: [shipping],
+      changed: [deposit],
+    });
+  });
+
+  it("NOT_DUE with no once-per-user charge sent: nothing to fix", () => {
+    expect(planDepositRetry(DEPOSIT_NOT_DUE_TOKEN, [shipping], linked)).toBeNull();
+  });
+
+  it("MISSING: adds back the linked once-per-user charge the cart left out", () => {
+    const retry = planDepositRetry(DEPOSIT_MISSING_TOKEN, [shipping], linked);
+    expect(retry).toEqual({ token: DEPOSIT_MISSING_TOKEN, charges: [shipping, deposit], changed: [deposit] });
+    // The resubmitted order: membership + shipping + deposit, priced plan + both charges.
+    const payload = buildRentV2Payload(input(retry!.charges));
+    expect(payload.learner_package_session_enrollments).toEqual([
+      membershipEntry,
+      expect.objectContaining({ plan_id: "plan-ship" }),
+      depositEntry,
+    ]);
+    expect(payload.payment_initiation_request.amount).toBe(699);
+  });
+
+  it("MISSING with only the deposit linked and none sent: membership + deposit", () => {
+    const retry = planDepositRetry(DEPOSIT_MISSING_TOKEN, [], [deposit]);
+    expect(retry?.charges).toEqual([deposit]);
+    expect(buildRentV2Payload(input(retry!.charges)).payment_initiation_request.amount).toBe(649);
+  });
+
+  it("MISSING when the deposit was already sent, or none is linked: nothing to fix", () => {
+    expect(planDepositRetry(DEPOSIT_MISSING_TOKEN, [deposit], linked)).toBeNull();
+    expect(planDepositRetry(DEPOSIT_MISSING_TOKEN, [], [shipping])).toBeNull();
+    expect(planDepositRetry(DEPOSIT_MISSING_TOKEN, [], [])).toBeNull();
+  });
+
+  it("another refusal is never retried", () => {
+    expect(planDepositRetry(null, [deposit], linked)).toBeNull();
+  });
+
+  it("a NOT_DUE retry answered MISSING would add the deposit back, so the checkout caps resubmits", () => {
+    // Fed contradicting answers, the two plans would flip forever: the checkout resubmits at
+    // most once per click, NOT_DUE and MISSING combined.
+    const first = planDepositRetry(DEPOSIT_NOT_DUE_TOKEN, [deposit], linked)!;
+    expect(planDepositRetry(DEPOSIT_MISSING_TOKEN, first.charges, linked)?.charges).toEqual([deposit]);
+  });
+});
+
+describe("invitePlanOf", () => {
+  const invite = (plans: unknown[]) => ({
+    id: "invite-2m",
+    vendor_id: "RAZORPAY",
+    package_session_to_payment_options: [
+      {
+        enroll_invite_id: "invite-2m",
+        payment_option: { id: "po-2m", payment_plans: plans },
+      },
+    ],
+  });
+
+  it("reads the plan the checkout sends (first option, first plan) with its own price", () => {
+    expect(
+      invitePlanOf(invite([{ id: "plan-2m", actual_price: 349 }, { id: "plan-cheap", actual_price: 99 }]), "invite-2m"),
+    ).toEqual({
+      inviteId: "invite-2m",
+      planId: "plan-2m",
+      paymentOptionId: "po-2m",
+      enrollInviteId: "invite-2m",
+      vendorId: "RAZORPAY",
+      actualPrice: 349,
+    });
+  });
+
+  it("keeps a free plan's 0 and leaves an absent price unknown", () => {
+    expect(invitePlanOf(invite([{ id: "p", actual_price: 0 }]), "i")?.actualPrice).toBe(0);
+    expect(invitePlanOf(invite([{ id: "p" }]), "i")?.actualPrice).toBeNull();
+    expect(invitePlanOf(invite([{ id: "p", actual_price: "349" }]), "i")?.actualPrice).toBeNull();
+  });
+
+  it("falls back to the invite's own id and the default vendor", () => {
+    const data = {
+      id: "invite-x",
+      package_session_to_payment_options: [{ payment_option: { id: "po", payment_plans: [{ id: "p", actual_price: 1 }] } }],
+    };
+    expect(invitePlanOf(data, "invite-x")).toMatchObject({ enrollInviteId: "invite-x", vendorId: "RAZORPAY" });
+  });
+
+  it("returns null for an invite without a plan", () => {
+    expect(invitePlanOf(invite([]), "i")).toBeNull();
+    expect(invitePlanOf({ package_session_to_payment_options: [] }, "i")).toBeNull();
+    expect(invitePlanOf({ package_session_to_payment_options: [{}] }, "i")).toBeNull();
+    expect(invitePlanOf(null, "i")).toBeNull();
+  });
+});
+
+describe("rentMembershipPrice", () => {
+  it("prices the membership from the plan sent, not the cart's remembered price", () => {
+    // The cart stored 649 before a price cut; the invite's plan is now 349.
+    expect(rentMembershipPrice(349, 649)).toBe(349);
+    const payload = buildRentV2Payload({
+      ...input([deposit]),
+      membership: { ...input([]).membership, price: rentMembershipPrice(349, 649) },
+    });
+    expect(payload.payment_initiation_request.amount).toBe(649);
+  });
+
+  it("keeps the cart's price only when the invite gave none", () => {
+    expect(rentMembershipPrice(null, 649)).toBe(649);
+    expect(rentMembershipPrice(undefined, 649)).toBe(649);
+    expect(rentMembershipPrice(Number.NaN, 649)).toBe(649);
+    expect(rentMembershipPrice(0, 649)).toBe(0);
   });
 });
