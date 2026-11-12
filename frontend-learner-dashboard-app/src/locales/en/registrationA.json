@@ -23,7 +23,9 @@
         "closed": {
             "badge": "Closed",
             "title": "Registration Closed",
-            "description": "Registration for this assessment has closed. Please contact your institute for more information."
+            "description": "Registration for this assessment has closed. Please contact your institute for more information.",
+            "registeredDescription": "Registration has closed, but the assessment is still on. If you registered earlier, continue with your email to take it.",
+            "continueWithEmail": "Continue with email"
         }
     },
     "completed": {
@@ -71,6 +73,8 @@
         },
         "instructions": "Instructions",
         "aboutAssessment": "About Assessment",
+        "alreadyRegistered": "Registered before?",
+        "continueWithEmail": "Continue with email",
         "registrationFormSubheading": "Fill in your details to register for this assessment.",
         "phoneNumberLabel": "Phone Number",
         "phoneNumberPlaceholder": "123 456 7890",
@@ -84,8 +88,10 @@
         "noClosingDate": "No closing date"
     },
     "checkEmailDialog": {
-        "title": "Check Registration Status",
-        "subtitle": "Verify your email to continue with assessment registration.",
+        "title": "Continue with your email",
+        "subtitle": "Registered before? Enter the email you registered with and we'll send you a one-time code.",
+        "newHere": "New here? Register instead",
+        "cancel": "Cancel",
         "emailPlaceholder": "Enter your email",
         "resendIn": "Resend OTP in {{seconds}} seconds",
         "sending": "Sending OTP...",
@@ -94,7 +100,9 @@
         "toast": {
             "otpSent": "OTP sent successfully",
             "notRegisteredTitle": "This email is not registered",
-            "notRegisteredDescription": "Please register yourself to attempt this assessment",
+            "notRegisteredDescription": "Registration for this assessment has closed, so new learners can't join.",
+            "newHereTitle": "Looks like you're new here",
+            "newHereDescription": "Fill in the form to register. We've added your email for you.",
             "attemptsOverTitle": "Your remaining attempts are over to attempt this assessment!",
             "attemptsOverDescription": "Your attempts are over!",
             "invalidOtpTitle": "Invalid OTP",

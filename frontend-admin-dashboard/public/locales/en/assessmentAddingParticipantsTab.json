@@ -1,7 +1,8 @@
 {
     "header": {
         "title": "Participant Selection",
-        "description": "Pick entire batches or hand-select individual learners."
+        "description": "Pick entire batches or hand-select individual learners.",
+        "descriptionOpenTest": "Optional for an open test: anyone with the link can register. Pick batches or learners only to register them in advance."
     },
     "tabs": {
         "selectBatch": "Select Batch",

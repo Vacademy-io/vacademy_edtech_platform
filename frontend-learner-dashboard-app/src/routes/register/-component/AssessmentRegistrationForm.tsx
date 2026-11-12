@@ -12,6 +12,7 @@ import {
   CheckCircle,
   ClipboardText,
   UserPlus,
+  EnvelopeSimple,
 } from "@phosphor-icons/react";
 import {
   InstituteBrandingComponent,
@@ -177,6 +178,14 @@ const AssessmentRegistrationForm = () => {
   // CheckEmailStatusAlertDialog when an OTP is sent). onSubmit no longer relies
   // on this flag to decide the user_id — it keys off participantsDto.user_id.
   const [userAlreadyRegistered, setUserAlreadyRegistered] = useState(false);
+  // The "continue with your email" dialog. It never opens on its own: a
+  // first-time visitor goes straight to the form, and only a learner who says
+  // they registered before (or lands after registration closed) is asked.
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  // False until we know whether a saved session belongs to a learner already
+  // registered here. The loader stays up until then, so a returning learner
+  // never sees the form flash before their start screen.
+  const [sessionChecked, setSessionChecked] = useState(false);
   const { code } = Route.useSearch();
   const { data: instituteDetails } = useInstituteDetails();
   const { setPrimaryColor } = useTheme();
@@ -550,8 +559,29 @@ const AssessmentRegistrationForm = () => {
       }
     };
 
-    fetchToken();
+    // Never hold the page longer than 5 s on this check: if the lookups hang,
+    // show the page as before and let the start screen replace it if they land.
+    const giveUp = setTimeout(() => setSessionChecked(true), 5000);
+    fetchToken().finally(() => {
+      clearTimeout(giveUp);
+      setSessionChecked(true);
+    });
+    return () => clearTimeout(giveUp);
   }, []);
+
+  // The page decided "not open yet" when it loaded. When the countdown reaches
+  // zero, load it again so the form appears without the learner refreshing.
+  // At most once every 15 s, so a clock a little off the server cannot loop.
+  useEffect(() => {
+    if (!case1Status) return;
+    const { days, hours, minutes, seconds } = timeLeftForRegistrationCase1;
+    if (days > 0 || hours > 0 || minutes > 0 || seconds > 0) return;
+    const key = `register-opened-reload:${code}`;
+    const last = Number(sessionStorage.getItem(key) || 0);
+    if (Date.now() - last < 15000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+    window.location.reload();
+  }, [case1Status, timeLeftForRegistrationCase1, code]);
 
   useEffect(() => {
     if (data.error_message === "Assessment is Private") {
@@ -561,7 +591,12 @@ const AssessmentRegistrationForm = () => {
     }
   }, []);
 
-  if (isLoading) return <DashboardLoader />;
+  if (isLoading || !sessionChecked) return <DashboardLoader />;
+
+  const assessmentStillRunning = calculateTimeDifference(
+    serverTime.current,
+    data.assessment_public_dto.bound_end_time,
+  );
 
   if (
     userAlreadyRegistered &&
@@ -593,8 +628,12 @@ const AssessmentRegistrationForm = () => {
       />
     );
 
-  // Returning user who re-authenticated via OTP: already logged in, go straight to assessment.
-  if (isAlreadyLoggedIn && case2Status)
+  // A registered learner who is already signed in goes straight to the start
+  // screen — also after registration has closed, as long as the test is on.
+  if (
+    isAlreadyLoggedIn &&
+    (case2Status || (case3Status && assessmentStillRunning))
+  )
     return (
       <AssessmentRegistrationCompleted
         assessmentId={data.assessment_public_dto.assessment_id}
@@ -627,19 +666,49 @@ const AssessmentRegistrationForm = () => {
   // Render a clear "closed" screen instead of falling through to the
   // email-check dialog flow. The private-assessment case has its own
   // dedicated redirect handled elsewhere.
+  //
+  // "Not open yet" also arrives with can_register=false; it falls through to
+  // the countdown below instead of being called closed.
   if (
     data.can_register === false &&
-    data.error_message !== "Assessment is Private"
+    data.error_message !== "Assessment is Private" &&
+    !case1Status
   ) {
-    const isHardExpired = !calculateTimeDifference(
-      serverTime.current,
-      data.assessment_public_dto.bound_end_time,
-    );
+    if (!assessmentStillRunning) {
+      return (
+        <AssessmentClosedExpiredComponent
+          isExpired={true}
+          assessmentName={data.assessment_public_dto.assessment_name}
+        />
+      );
+    }
+    // Registration is over but the test is still on: anyone who registered
+    // earlier can sign in with their email and take it.
     return (
-      <AssessmentClosedExpiredComponent
-        isExpired={isHardExpired}
-        assessmentName={data.assessment_public_dto.assessment_name}
-      />
+      <>
+        {!userHasAttemptCount && (
+          <AssessmentClosedExpiredComponent
+            isExpired={false}
+            assessmentName={data.assessment_public_dto.assessment_name}
+            externalBranding={branding}
+            onContinueWithEmail={() => setEmailDialogOpen(true)}
+          />
+        )}
+        <CheckEmailStatusAlertDialog
+          timeLeft={timeLeft}
+          registrationData={data}
+          registrationForm={form}
+          setParticipantsDto={setParticipantsDto}
+          userAlreadyRegistered={userAlreadyRegistered}
+          setUserAlreadyRegistered={setUserAlreadyRegistered}
+          userHasAttemptCount={userHasAttemptCount}
+          setUserHasAttemptCount={setUserHasAttemptCount}
+          case3Status={true}
+          serverTime={serverTime.current}
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+        />
+      </>
     );
   }
 
@@ -689,6 +758,8 @@ const AssessmentRegistrationForm = () => {
                 {t("form.opensIn")}
               </div>
               <span className="text-2xl sm:text-3xl font-bold tabular-nums text-primary-600">
+                {timeLeftForRegistrationCase1.days > 0 &&
+                  `${timeLeftForRegistrationCase1.days} ${t("form.countdown.dayUnit", { count: timeLeftForRegistrationCase1.days })} `}
                 {String(timeLeftForRegistrationCase1.hours).padStart(2, "0")}
                 :
                 {String(timeLeftForRegistrationCase1.minutes).padStart(2, "0")}
@@ -820,6 +891,8 @@ const AssessmentRegistrationForm = () => {
           setUserHasAttemptCount={setUserHasAttemptCount}
           case3Status={case3Status}
           serverTime={serverTime.current}
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
         />
       )}
       {!userHasAttemptCount && case2Status && (
@@ -1030,6 +1103,22 @@ const AssessmentRegistrationForm = () => {
                     {t("form.registrationFormSubheading")}
                   </p>
                 </div>
+              </div>
+              <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2.5">
+                <span className="text-xs sm:text-sm text-neutral-600">
+                  {t("form.alreadyRegistered")}
+                </span>
+                <MyButton
+                  type="button"
+                  buttonType="secondary"
+                  scale="medium"
+                  layoutVariant="default"
+                  className="gap-1.5"
+                  onClick={() => setEmailDialogOpen(true)}
+                >
+                  <EnvelopeSimple size={14} weight="bold" />
+                  {t("form.continueWithEmail")}
+                </MyButton>
               </div>
               {!isRichTextEmpty(
                 data.assessment_public_dto.registration_instructions?.content,

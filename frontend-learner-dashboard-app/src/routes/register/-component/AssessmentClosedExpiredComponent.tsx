@@ -9,6 +9,7 @@ import { MyButton } from "@/components/design-system/button";
 import {
   ArrowClockwise,
   Clock,
+  EnvelopeSimple,
   LinkBreak,
   Lock,
   Warning,
@@ -40,6 +41,7 @@ const AssessmentClosedExpiredComponent = ({
   variant,
   detail,
   onRetry,
+  onContinueWithEmail,
 }: {
   isExpired?: boolean;
   /** Omit on load failures — the name is unknown and the box is hidden. */
@@ -52,6 +54,11 @@ const AssessmentClosedExpiredComponent = ({
   detail?: string;
   /** Shown as a "Try again" button when provided. */
   onRetry?: () => void;
+  /**
+   * Registration has closed but the assessment is still running: a learner who
+   * registered earlier can still sign in with their email and take it.
+   */
+  onContinueWithEmail?: () => void;
 }) => {
   const { t } = useTranslation("registrationA");
   const resolvedVariant: AssessmentStatusVariant =
@@ -198,7 +205,9 @@ const AssessmentClosedExpiredComponent = ({
                 {config.title}
               </h1>
               <p className="text-sm text-slate-600 leading-relaxed">
-                {config.description}
+                {onContinueWithEmail
+                  ? t("closedExpired.closed.registeredDescription")
+                  : config.description}
               </p>
               {detail && (
                 <p className="text-xs text-slate-500 leading-relaxed break-words">
@@ -216,6 +225,22 @@ const AssessmentClosedExpiredComponent = ({
                 <p className="text-sm font-medium text-slate-900 truncate">
                   {assessmentName}
                 </p>
+              </div>
+            )}
+
+            {onContinueWithEmail && (
+              <div className="mt-6 flex justify-center">
+                <MyButton
+                  type="button"
+                  buttonType="primary"
+                  scale="large"
+                  layoutVariant="default"
+                  className="w-full sm:w-auto gap-2"
+                  onClick={onContinueWithEmail}
+                >
+                  <EnvelopeSimple size={16} weight="bold" />
+                  {t("closedExpired.closed.continueWithEmail")}
+                </MyButton>
               </div>
             )}
 

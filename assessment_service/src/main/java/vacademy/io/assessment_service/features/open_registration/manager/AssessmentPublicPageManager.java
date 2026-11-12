@@ -41,6 +41,12 @@ public class AssessmentPublicPageManager {
     @Autowired
     AssessmentRepository assessmentRepository;
 
+    @Autowired
+    vacademy.io.assessment_service.features.notification.service.LearnerAssessmentNoticeService learnerAssessmentNoticeService;
+
+    /** error_message when the registration window has not opened yet. */
+    static final String REGISTRATION_NOT_OPEN_YET = "Registration not open yet";
+
     public ResponseEntity<GetAssessmentPublicResponseDto> getAssessmentPage(String code) {
         Optional<AssessmentInstituteMapping> assessmentInstituteMapping = assessmentInstituteMappingRepository.findTopByAssessmentUrl(code);
 
@@ -80,8 +86,10 @@ public class AssessmentPublicPageManager {
         // precondition: an unset bound simply means "no limit on that side".
         // bound_end_time is already enforced above.
         Date now = new Date();
+        // Not open YET is a different state from closed: the learner page shows a countdown to
+        // the opening time for it, not "Registration Closed".
         if (assessment.getRegistrationOpenDate() != null && assessment.getRegistrationOpenDate().after(now)) {
-            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
+            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage(REGISTRATION_NOT_OPEN_YET).build());
         }
         if (assessment.getRegistrationCloseDate() != null && assessment.getRegistrationCloseDate().before(now)) {
             return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
@@ -221,6 +229,7 @@ public class AssessmentPublicPageManager {
                 // A reactivated soft-deleted row is still a fresh form submission from the
                 // registrant's point of view; only the "already active" case below is a no-op.
                 assessmentWorkflowEventPublisher.publishFormSubmission(reactivated, assessment.get());
+                confirmAfterCommit(assessment.get().getId(), reactivated.getId());
                 return ResponseEntity.ok("Registered successfully");
             }
             // An active registration already exists — treat a repeat submission as idempotent.
@@ -244,7 +253,27 @@ public class AssessmentPublicPageManager {
         // Emitted outside the try above so a failure in here can never be caught and
         // reported to the registrant as a duplicate-registration conflict.
         assessmentWorkflowEventPublisher.publishFormSubmission(registration, assessment.get());
+        confirmAfterCommit(assessment.get().getId(), registration.getId());
         return ResponseEntity.ok("Registered successfully");
+    }
+
+    /**
+     * Emails the "you're registered" confirmation once the registration is committed, so a
+     * rolled-back registration never gets one. A repeat submission for an already active
+     * registration returns earlier and is not confirmed again.
+     */
+    private void confirmAfterCommit(String assessmentId, String registrationId) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registrationId);
+                        }
+                    });
+        } else {
+            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registrationId);
+        }
     }
 
     AssessmentUserRegistration addUserToAssessment(BasicParticipantDTO basicParticipantDTO, String userId, String instituteId, Assessment assessment, List<AssessmentRegistrationCustomFieldRequest> customFieldRequestList) {

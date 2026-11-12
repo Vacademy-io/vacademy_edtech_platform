@@ -47,7 +47,7 @@ import { useBasicInfoStore } from '../../-utils/zustand-global-states/step1-basi
 import { toast } from 'sonner';
 import { reportApiError } from '@/lib/report-api-error';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
-import { CaretLeft } from '@phosphor-icons/react';
+import { CaretDown, CaretLeft, SlidersHorizontal } from '@phosphor-icons/react';
 import { useParams } from '@tanstack/react-router';
 import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
@@ -653,6 +653,21 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
 
     const { handleSubmit, control, watch } = form;
 
+    // AI evaluation, OMR mode, proctoring, preview and section switching sit behind one
+    // "Advanced settings" row, so a first assessment is name, dates, attempts and result
+    // type. The row opens by itself whenever any of them is in use, and on a failed save.
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const proctoringTier = watch('proctoring')?.tier;
+    const advancedInUse =
+        watch('aiEvaluationEnabled') === true ||
+        watch('omrMode') === true ||
+        (proctoringTier !== undefined && proctoringTier !== 'NONE') ||
+        watch('assessmentPreview.checked') === true ||
+        watch('switchSections') === false;
+    useEffect(() => {
+        if (advancedInUse) setShowAdvanced(true);
+    }, [advancedInUse]);
+
     // Watch form fields
     const selectedSubjectId = watch('testCreation.subject');
     // The dropdown comes from a list admin_core deduplicates by subject name, so a
@@ -762,12 +777,17 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                 : t('validation.cannotSaveGeneric'),
             { className: 'error-toast', duration: 6000 }
         );
+        // The failing field may be inside the collapsed advanced settings.
+        setShowAdvanced(true);
         const firstPath = problems[0]?.path;
         if (firstPath) {
-            const target =
-                document.querySelector(`[name="${firstPath}"]`) ??
-                document.querySelector(`[name="${firstPath.split('.')[0]}"]`);
-            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Next tick, so a field that just became visible can be found.
+            setTimeout(() => {
+                const target =
+                    document.querySelector(`[name="${firstPath}"]`) ??
+                    document.querySelector(`[name="${firstPath.split('.')[0]}"]`);
+                target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 0);
         }
     };
 
@@ -1303,7 +1323,32 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                     </div>
                     )}
 
-                    <div className="flex flex-col gap-6" id="attempt-settings">
+                    <div className="flex flex-col gap-4" id="attempt-settings">
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="large"
+                            layoutVariant="default"
+                            className="w-full justify-between"
+                            aria-expanded={showAdvanced}
+                            onClick={() => setShowAdvanced((open) => !open)}
+                        >
+                            <span className="flex items-center gap-2">
+                                <SlidersHorizontal size={16} weight="bold" />
+                                {t('attemptSettingsSection.advanced.title')}
+                            </span>
+                            <CaretDown
+                                size={16}
+                                className={cn('transition-transform', showAdvanced && 'rotate-180')}
+                            />
+                        </MyButton>
+                        {!showAdvanced && (
+                            <p className="-mt-2 text-caption text-neutral-500">
+                                {t('attemptSettingsSection.advanced.summary')}
+                            </p>
+                        )}
+                        {showAdvanced && (
+                    <div className="flex flex-col gap-6">
                         {/*
                           * Automatic AI evaluation. Deliberately OFF by default and shown
                           * with its cost stated: every submission that this grades charges
@@ -1552,6 +1597,8 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 )}
                             />
                         )} */}
+                    </div>
+                        )}
                     </div>
                     </SectionCard>
                 </div>
