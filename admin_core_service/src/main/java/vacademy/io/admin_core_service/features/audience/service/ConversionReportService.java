@@ -71,8 +71,16 @@ public class ConversionReportService {
     private static final String ENROLLED_STATUSES = " ('ACTIVE', 'COMPLETED', 'INVITED')\n"
             + "              AND NOT (m.status = 'INVITED' AND COALESCE(m.source, '') = 'TERMINATED')\n";
 
-    /** The admission day: enrolled_date, else the mapping's created_at in the institute timezone. */
-    private static final String ENROLLED_DAY = "COALESCE(m.enrolled_date, (m.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date)";
+    /**
+     * The admission day (enrolled_date, else the mapping's created_at day in the institute
+     * timezone) falls in [fromDay, toDay). Checked on the plain columns, with fromTs/toTs the
+     * window's local midnights as UTC wall clock: the same rows as comparing the day expression,
+     * but Postgres can estimate them. On the expression it guessed ~0.5% of the rows and
+     * nested-looped the fee join, which took seconds on long ranges.
+     */
+    private static final String IN_WINDOW = "((m.enrolled_date >= :fromDay AND m.enrolled_date < :toDay)"
+            + " OR (m.enrolled_date IS NULL AND m.created_at >= CAST(:fromTs AS timestamp)"
+            + " AND m.created_at < CAST(:toTs AS timestamp)))";
 
     /** Courses with an in-window enrolment — the candidates the conversion policy is evaluated on. */
     private static final String CANDIDATE_PACKAGES_SQL = """
@@ -80,8 +88,8 @@ public class ConversionReportService {
             FROM student_session_institute_group_mapping m
             JOIN package_session ps ON ps.id = m.package_session_id
             WHERE m.institute_id = :instituteId
-              AND """ + " " + ENROLLED_DAY + " >= :fromDay AND " + ENROLLED_DAY + """
-               < :toDay
+              AND """ + " " + IN_WINDOW + """
+
               AND m.status IN """ + ENROLLED_STATUSES;
 
     /**
@@ -113,8 +121,8 @@ public class ConversionReportService {
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE m.institute_id = :instituteId
-                  AND """ + " " + ENROLLED_DAY + " >= :fromDay AND " + ENROLLED_DAY + """
-                   < :toDay
+                  AND """ + " " + IN_WINDOW + """
+
                   AND m.status IN """ + ENROLLED_STATUSES + """
                   AND ps.package_id = ANY(STRING_TO_ARRAY(:packageCsv, ','))
                   AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
@@ -405,7 +413,9 @@ public class ConversionReportService {
                 .addValue("instituteId", instituteId)
                 .addValue("tz", zone.getId())
                 .addValue("fromDay", java.sql.Date.valueOf(w.fromDay()), Types.DATE)
-                .addValue("toDay", java.sql.Date.valueOf(w.toDay()), Types.DATE);
+                .addValue("toDay", java.sql.Date.valueOf(w.toDay()), Types.DATE)
+                .addValue("fromTs", AdmissionReportService.utcWallClock(w.fromDay(), zone), Types.VARCHAR)
+                .addValue("toTs", AdmissionReportService.utcWallClock(w.toDay(), zone), Types.VARCHAR);
     }
 
     private ZoneId safeZone(String tz) {
