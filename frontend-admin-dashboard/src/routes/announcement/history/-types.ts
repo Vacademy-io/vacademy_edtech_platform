@@ -68,6 +68,8 @@ export type AnnouncementStats = {
     emailsSent: number;
     /** Never handed to SES: unsubscribed, no address, send error. */
     emailsFailedToSend?: number;
+    /** Emails with an SES send (accepted) event. */
+    emailsSend: number;
     emailsDelivered: number;
     emailsOpened: number;
     emailsClicked: number;

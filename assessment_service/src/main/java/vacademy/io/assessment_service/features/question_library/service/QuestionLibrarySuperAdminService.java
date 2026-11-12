@@ -15,9 +15,10 @@ import java.util.List;
 
 /**
  * The platform portal's view of the Content Library, institute by institute: the owner's
- * whole tree, which topics one institute was given, and giving or taking one back. It
- * acts on the owner's behalf, so it goes through the same curation code as the owner's
- * own Institutes dialog. The controller checks the caller is platform staff.
+ * whole tree, which topics are hidden from one institute, and hiding or showing one. Every
+ * institute sees the whole library unless something is hidden from it. It acts on the
+ * owner's behalf, so it goes through the same curation code as the owner's own Institutes
+ * dialog. The controller checks the caller is platform staff.
  */
 @Service
 public class QuestionLibrarySuperAdminService {
@@ -43,24 +44,24 @@ public class QuestionLibrarySuperAdminService {
         String owner = access.ownerInstituteId();
         String target = clean(instituteId);
         if (owner == null) {
-            return LibraryInstituteAccessDto.builder().libraryConfigured(false).grantedNodeIds(List.of()).build();
+            return LibraryInstituteAccessDto.builder().libraryConfigured(false).hiddenNodeIds(List.of()).build();
         }
         if (owner.equals(target)) {
-            return LibraryInstituteAccessDto.builder().libraryConfigured(true).owner(true).grantedNodeIds(List.of()).build();
+            return LibraryInstituteAccessDto.builder().libraryConfigured(true).owner(true).hiddenNodeIds(List.of()).build();
         }
         return LibraryInstituteAccessDto.builder()
                 .libraryConfigured(true)
                 .owner(false)
-                .grantedNodeIds(nodeRepository.findGrantedNodeIds(owner, target))
+                .hiddenNodeIds(nodeRepository.findHiddenNodeIds(owner, target))
                 .build();
     }
 
-    public LibraryAccessDto grant(CustomUserDetails user, String instituteId, String nodeId) {
-        return curationService.grant(user, requireOwner(), request(instituteId, nodeId));
+    public LibraryAccessDto hide(CustomUserDetails user, String instituteId, String nodeId) {
+        return curationService.hide(user, requireOwner(), request(instituteId, nodeId));
     }
 
-    public LibraryActionResponse revoke(String instituteId, String nodeId) {
-        return curationService.revoke(requireOwner(), request(instituteId, nodeId));
+    public LibraryActionResponse show(String instituteId, String nodeId) {
+        return curationService.unhide(requireOwner(), request(instituteId, nodeId));
     }
 
     private String requireOwner() {

@@ -17,7 +17,7 @@ import static vacademy.io.assessment_service.features.question_library.service.Q
 
 /**
  * The owner's tools for shaping what institutes see in the Question Library: which
- * institute is given which topic, the concept / past-paper / source tags on questions, and
+ * topic is hidden from which institute, the concept / past-paper / source tags on questions, and
  * difficulty in bulk. Tag lists are read by everyone, scoped to what each one sees.
  * <p>
  * Every write method expects the controller to have checked the caller is the owner.
@@ -46,12 +46,13 @@ public class QuestionLibraryCurationService {
     @Autowired
     private AdminCoreServiceClient adminCoreServiceClient;
 
-    // ---------------------------------------------------------------- access
+    // ---------------------------------------------------------------- hidden topics
 
-    public List<LibraryAccessDto> listAccess(String ownerId, String nodeId) {
+    /** Institutes a topic is hidden from. Every other institute sees it. */
+    public List<LibraryAccessDto> listHidden(String ownerId, String nodeId) {
         QuestionLibraryNode node = requireNode(ownerId, nodeId);
         List<LibraryAccessDto> result = new ArrayList<>();
-        for (Object[] row : nodeRepository.findAccessOfNode(node.getId())) {
+        for (Object[] row : nodeRepository.findHiddenOfNode(node.getId())) {
             result.add(LibraryAccessDto.builder()
                     .instituteId((String) row[0])
                     .instituteName((String) row[1])
@@ -61,27 +62,28 @@ public class QuestionLibraryCurationService {
         return result;
     }
 
-    /** Gives the topic and everything below it to an institute. Giving it twice only refreshes the name. */
+    /** Hides the topic and everything below it from an institute. Hiding it twice only refreshes the name. */
     @Transactional
-    public LibraryAccessDto grant(CustomUserDetails user, String ownerId, LibraryAccessRequest request) {
+    public LibraryAccessDto hide(CustomUserDetails user, String ownerId, LibraryAccessRequest request) {
         if (request == null) throw new VacademyException("Request body is required");
         QuestionLibraryNode node = requireNode(ownerId, request.getNodeId());
         String target = blankToNull(request.getInstituteId());
         if (target == null) throw new VacademyException("Institute ID is required");
-        if (target.equals(ownerId)) throw new VacademyException("This institute owns the library and already sees all of it");
+        if (target.equals(ownerId)) throw new VacademyException("This institute owns the library and always sees all of it");
         String name = adminCoreServiceClient.getInstituteName(target);
         if (name == null || name.isBlank()) throw new VacademyException("No institute found with this ID");
-        nodeRepository.grantAccess(node.getId(), target, name.trim(), user == null ? null : user.getUserId());
+        nodeRepository.hideNode(node.getId(), target, name.trim(), user == null ? null : user.getUserId());
         return LibraryAccessDto.builder().instituteId(target).instituteName(name.trim()).createdAt(new Date()).build();
     }
 
+    /** Shows a hidden topic to the institute again. */
     @Transactional
-    public LibraryActionResponse revoke(String ownerId, LibraryAccessRequest request) {
+    public LibraryActionResponse unhide(String ownerId, LibraryAccessRequest request) {
         if (request == null) throw new VacademyException("Request body is required");
         QuestionLibraryNode node = requireNode(ownerId, request.getNodeId());
         String target = blankToNull(request.getInstituteId());
         if (target == null) throw new VacademyException("Institute ID is required");
-        int removed = nodeRepository.revokeAccess(node.getId(), target);
+        int removed = nodeRepository.unhideNode(node.getId(), target);
         return LibraryActionResponse.builder().nodesCreated(0).affected(removed).build();
     }
 
@@ -99,7 +101,7 @@ public class QuestionLibraryCurationService {
         String topic = blankToNull(nodeId);
         if (topic != null) {
             if (!view.sees(topic)) return List.of();
-            nodeIdsCsv = String.join(",", treeResolver.withDescendants(view.owner(), List.of(topic)));
+            nodeIdsCsv = String.join(",", view.visibleOnly(treeResolver.withDescendants(view.owner(), List.of(topic))));
         } else if (view.manager()) {
             placedOnly = null;
             nodeIdsCsv = null;

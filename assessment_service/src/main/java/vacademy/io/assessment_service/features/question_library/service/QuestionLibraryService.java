@@ -71,8 +71,8 @@ public class QuestionLibraryService {
 
     /**
      * The topics the caller sees with their counts. The owner gets the whole tree. Anyone
-     * else gets only the topics it was given and what is below them, those topics as its
-     * top level, and header numbers counted over that part alone.
+     * else gets the tree minus the topics hidden from it (and what is below them), and
+     * header numbers counted over what is left.
      */
     public LibraryTreeResponse getTree(String callerInstituteId) {
         QuestionLibraryScope.View view = scope.of(callerInstituteId);
@@ -90,13 +90,16 @@ public class QuestionLibraryService {
         for (QuestionLibraryNode node : nodes) parentOf.put(node.getId(), view.parentOf(node));
 
         Map<String, long[]> counts = new HashMap<>();
-        for (Object[] row : nodeRepository.countQuestionsPerNode(instituteId)) {
+        List<Object[]> perNode = view.manager()
+                ? nodeRepository.countQuestionsPerNode(instituteId)
+                : nodeRepository.countQuestionsPerVisibleNode(instituteId, view.limitCsv());
+        for (Object[] row : perNode) {
             counts.put((String) row[0], new long[]{toLong(row[1]), toLong(row[2]), toLong(row[3]), toLong(row[4])});
         }
-        Map<String, Long> accessCounts = new HashMap<>();
+        Map<String, Long> hiddenCounts = new HashMap<>();
         if (view.manager()) {
-            for (Object[] row : nodeRepository.countAccessPerNode(instituteId)) {
-                accessCounts.put((String) row[0], toLong(row[1]));
+            for (Object[] row : nodeRepository.countHiddenPerNode(instituteId)) {
+                hiddenCounts.put((String) row[0], toLong(row[1]));
             }
         }
 
@@ -118,7 +121,7 @@ public class QuestionLibraryService {
                     .easyCount(c[1])
                     .mediumCount(c[2])
                     .hardCount(c[3])
-                    .accessCount(view.manager() ? accessCounts.getOrDefault(node.getId(), 0L) : null)
+                    .hiddenCount(view.manager() ? hiddenCounts.getOrDefault(node.getId(), 0L) : null)
                     .build());
         }
 
@@ -379,7 +382,7 @@ public class QuestionLibraryService {
         String nodeIdsCsv = view.limitCsv();
         if (blankToNull(nodeId) != null) {
             if (!view.sees(nodeId.trim())) return List.of();
-            List<String> expanded = treeResolver.withDescendants(owner, List.of(nodeId.trim()));
+            List<String> expanded = view.visibleOnly(treeResolver.withDescendants(owner, List.of(nodeId.trim())));
             if (expanded.isEmpty()) return List.of();
             nodeIdsCsv = String.join(",", expanded);
         }
@@ -475,7 +478,11 @@ public class QuestionLibraryService {
         QuestionBankFilter scoped = manager ? filter : readerFilter(view, filter);
         if (scoped == null) return Page.empty(PageRequest.of(pageNo, pageSize));
 
-        Page<QuestionDTO> page = questionBankManager.getQuestions(user, scoped, owner, pageNo, pageSize);
+        // A reader's topics are already expanded to what it sees; expanding again would
+        // reach topics hidden from it.
+        Page<QuestionDTO> page = manager
+                ? questionBankManager.getQuestions(user, scoped, owner, pageNo, pageSize)
+                : questionBankManager.getQuestions(user, scoped, owner, pageNo, pageSize, false);
         List<QuestionDTO> questions = page.getContent();
         if (questions.isEmpty()) return page.map(q -> LibraryQuestionDto.builder().question(q).build());
         Map<String, LibraryQuestionDto> rows = toRows(owner, manager, questions).stream()
@@ -521,7 +528,7 @@ public class QuestionLibraryService {
         boolean all = cleanIds(requested).isEmpty();
         List<String> allowed = view.restrict(requested);
         if (allowed.isEmpty()) return null;
-        List<String> nodeIds = all ? allowed : treeResolver.withDescendants(view.owner(), allowed);
+        List<String> nodeIds = all ? allowed : view.visibleOnly(treeResolver.withDescendants(view.owner(), allowed));
         return nodeIds.isEmpty() ? null : String.join(",", nodeIds);
     }
 
@@ -597,7 +604,9 @@ public class QuestionLibraryService {
     private QuestionBankFilter readerFilter(QuestionLibraryScope.View view, QuestionBankFilter filter) {
         if (view.empty()) return null;
         QuestionBankFilter requested = filter == null ? new QuestionBankFilter() : filter;
-        List<String> nodeIds = view.restrict(requested.getLibraryNodeIds());
+        List<String> allowed = view.restrict(requested.getLibraryNodeIds());
+        if (allowed.isEmpty()) return null;
+        List<String> nodeIds = view.visibleOnly(treeResolver.withDescendants(view.owner(), allowed));
         if (nodeIds.isEmpty()) return null;
         QuestionBankFilter scoped = new QuestionBankFilter();
         scoped.setName(requested.getName());

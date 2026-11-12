@@ -43,7 +43,7 @@ class QuestionLibraryCurationServiceTest {
                 QuestionLibraryTestScopes.node("ssc", null)));
         when(repository.findByIdAndInstituteIdAndStatus("upsc", OWNER, "ACTIVE"))
                 .thenReturn(Optional.of(QuestionLibraryTestScopes.node("upsc", null)));
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("upsc"));
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("ssc"));
         QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
         ReflectionTestUtils.setField(resolver, "nodeRepository", repository);
         tags = mock(TagCommunityRepository.class);
@@ -56,38 +56,38 @@ class QuestionLibraryCurationServiceTest {
         ReflectionTestUtils.setField(service, "adminCoreServiceClient", adminCore);
     }
 
-    private static LibraryAccessRequest give(String nodeId, String instituteId) {
+    private static LibraryAccessRequest hide(String nodeId, String instituteId) {
         return LibraryAccessRequest.builder().nodeId(nodeId).instituteId(instituteId).build();
     }
 
     @Test
-    void grantingStoresTheInstituteNameFromAdminCore() {
+    void hidingStoresTheInstituteNameFromAdminCore() {
         when(adminCore.getInstituteName(CLIENT)).thenReturn(" Sharma IAS Academy ");
 
-        assertThat(service.grant(null, OWNER, give("upsc", " client-inst ")).getInstituteName())
+        assertThat(service.hide(null, OWNER, hide("upsc", " client-inst ")).getInstituteName())
                 .isEqualTo("Sharma IAS Academy");
-        verify(repository).grantAccess("upsc", CLIENT, "Sharma IAS Academy", null);
+        verify(repository).hideNode("upsc", CLIENT, "Sharma IAS Academy", null);
     }
 
     @Test
     void anUnknownInstituteIdIsRefused() {
-        assertThatThrownBy(() -> service.grant(null, OWNER, give("upsc", "typo-id")))
+        assertThatThrownBy(() -> service.hide(null, OWNER, hide("upsc", "typo-id")))
                 .isInstanceOf(VacademyException.class).hasMessageContaining("No institute");
-        verify(repository, never()).grantAccess(any(), any(), any(), any());
+        verify(repository, never()).hideNode(any(), any(), any(), any());
     }
 
     @Test
-    void theOwnerCannotBeGivenItsOwnLibrary() {
-        assertThatThrownBy(() -> service.grant(null, OWNER, give("upsc", OWNER)))
+    void nothingCanBeHiddenFromTheOwner() {
+        assertThatThrownBy(() -> service.hide(null, OWNER, hide("upsc", OWNER)))
                 .isInstanceOf(VacademyException.class);
         verifyNoInteractions(adminCore);
     }
 
     @Test
-    void aTopicOutsideTheLibraryCannotBeGiven() {
+    void aTopicOutsideTheLibraryCannotBeHidden() {
         when(repository.findByIdAndInstituteIdAndStatus("elsewhere", OWNER, "ACTIVE")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.grant(null, OWNER, give("elsewhere", CLIENT)))
+        assertThatThrownBy(() -> service.hide(null, OWNER, hide("elsewhere", CLIENT)))
                 .isInstanceOf(VacademyException.class).hasMessageContaining("Topic not found");
     }
 
@@ -124,7 +124,7 @@ class QuestionLibraryCurationServiceTest {
     }
 
     @Test
-    void aReaderSeesTagsOnlyFromTheTopicsItWasGiven() {
+    void aReaderSeesTagsOnlyFromTheTopicsNotHiddenFromIt() {
         List<Object[]> rows = new ArrayList<>();
         rows.add(new Object[]{"tag-1", "Article 21", "CONCEPT", 4L});
         when(repository.findLibraryTagsWithCounts(OWNER, "1", "upsc,polity")).thenReturn(rows);
@@ -133,7 +133,20 @@ class QuestionLibraryCurationServiceTest {
 
         assertThat(list).extracting(LibraryTagDto::getTagName).containsExactly("Article 21");
         assertThat(service.listTags(CLIENT, "ssc")).isEmpty();
-        assertThat(service.listTags("stranger-inst", null)).isEmpty();
+        // An institute with nothing hidden reads tags across the whole library.
+        service.listTags("stranger-inst", null);
+        verify(repository).findLibraryTagsWithCounts(OWNER, "1", "upsc,polity,ssc");
+    }
+
+    @Test
+    void tagsOfATopicLeaveOutAHiddenTopicBelowIt() {
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("polity"));
+        when(repository.findByInstituteIdAndStatusAndIdIn(OWNER, "ACTIVE", List.of("upsc")))
+                .thenReturn(List.of(QuestionLibraryTestScopes.node("upsc", null)));
+
+        service.listTags(CLIENT, "upsc");
+
+        verify(repository).findLibraryTagsWithCounts(OWNER, "1", "upsc");
     }
 
     @Test

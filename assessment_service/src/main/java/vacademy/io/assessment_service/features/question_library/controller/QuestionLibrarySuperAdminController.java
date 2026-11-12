@@ -13,8 +13,8 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 
 /**
- * Content Library for the platform portal: per institute, which courses and topics it
- * sees. Platform staff only (SUPER_ADMIN_USER_IDS), never institute admins.
+ * Content Library for the platform portal: per institute, which courses and topics are
+ * hidden from it (it sees everything else). Platform staff only (SUPER_ADMIN_USER_IDS), never institute admins.
  */
 @RestController
 @RequestMapping("/assessment-service/super-admin/v1/content-library")
@@ -36,21 +36,21 @@ public class QuestionLibrarySuperAdminController {
         return ResponseEntity.ok(superAdminService.accessOf(instituteId));
     }
 
-    /** Gives a course or topic, with everything below it. Body: node_id. */
-    @PostMapping("/institutes/{instituteId}/grant")
-    public ResponseEntity<LibraryAccessDto> grant(@RequestAttribute("user") CustomUserDetails user,
+    /** Hides a course or topic, with everything below it. Body: node_id. */
+    @PostMapping("/institutes/{instituteId}/hide")
+    public ResponseEntity<LibraryAccessDto> hide(@RequestAttribute("user") CustomUserDetails user,
                                                   @PathVariable("instituteId") String instituteId,
                                                   @RequestBody LibraryAccessRequest request) {
         SuperAdminAuthUtil.requireSuperAdmin(user);
-        return ResponseEntity.ok(superAdminService.grant(user, instituteId, request == null ? null : request.getNodeId()));
+        return ResponseEntity.ok(superAdminService.hide(user, instituteId, request == null ? null : request.getNodeId()));
     }
 
-    /** Takes a course or topic back. Body: node_id. */
-    @PostMapping("/institutes/{instituteId}/revoke")
-    public ResponseEntity<LibraryActionResponse> revoke(@RequestAttribute("user") CustomUserDetails user,
+    /** Shows a hidden course or topic again. Body: node_id. */
+    @PostMapping("/institutes/{instituteId}/show")
+    public ResponseEntity<LibraryActionResponse> show(@RequestAttribute("user") CustomUserDetails user,
                                                         @PathVariable("instituteId") String instituteId,
                                                         @RequestBody LibraryAccessRequest request) {
         SuperAdminAuthUtil.requireSuperAdmin(user);
-        return ResponseEntity.ok(superAdminService.revoke(instituteId, request == null ? null : request.getNodeId()));
+        return ResponseEntity.ok(superAdminService.show(instituteId, request == null ? null : request.getNodeId()));
     }
 }

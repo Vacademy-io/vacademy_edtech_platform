@@ -49,19 +49,19 @@ class QuestionLibrarySuperAdminServiceTest {
     }
 
     @Test
-    void accessOfAClientListsWhatItWasGiven() {
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("upsc"));
+    void accessOfAClientListsWhatIsHiddenFromIt() {
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("upsc"));
         LibraryInstituteAccessDto dto = service.accessOf(" " + CLIENT + " ");
         assertThat(dto.isLibraryConfigured()).isTrue();
         assertThat(dto.isOwner()).isFalse();
-        assertThat(dto.getGrantedNodeIds()).containsExactly("upsc");
+        assertThat(dto.getHiddenNodeIds()).containsExactly("upsc");
     }
 
     @Test
-    void theOwnerIsReportedAsOwnerWithoutGrants() {
+    void theOwnerIsReportedAsOwnerWithNothingHidden() {
         LibraryInstituteAccessDto dto = service.accessOf(OWNER);
         assertThat(dto.isOwner()).isTrue();
-        assertThat(dto.getGrantedNodeIds()).isEmpty();
+        assertThat(dto.getHiddenNodeIds()).isEmpty();
         verifyNoInteractions(repository);
     }
 
@@ -70,22 +70,22 @@ class QuestionLibrarySuperAdminServiceTest {
         ReflectionTestUtils.setField(access, "ownerInstituteId", "");
         assertThat(service.accessOf(CLIENT).isLibraryConfigured()).isFalse();
         assertThatThrownBy(() -> service.tree()).isInstanceOf(VacademyException.class);
-        assertThatThrownBy(() -> service.grant(null, CLIENT, "upsc")).isInstanceOf(VacademyException.class);
+        assertThatThrownBy(() -> service.hide(null, CLIENT, "upsc")).isInstanceOf(VacademyException.class);
         verifyNoInteractions(curation);
     }
 
     @Test
-    void grantAndRevokeGoThroughTheOwnersCurationCode() {
-        service.grant(null, CLIENT, " upsc ");
-        service.revoke(CLIENT, "upsc");
+    void hideAndShowGoThroughTheOwnersCurationCode() {
+        service.hide(null, CLIENT, " upsc ");
+        service.show(CLIENT, "upsc");
         LibraryAccessRequest expected = LibraryAccessRequest.builder().instituteId(CLIENT).nodeId("upsc").build();
-        verify(curation).grant(any(), eq(OWNER), eq(expected));
-        verify(curation).revoke(OWNER, expected);
+        verify(curation).hide(any(), eq(OWNER), eq(expected));
+        verify(curation).unhide(OWNER, expected);
     }
 
     @Test
     void aBlankInstituteIsRefused() {
-        assertThatThrownBy(() -> service.grant(null, " ", "upsc")).isInstanceOf(VacademyException.class);
+        assertThatThrownBy(() -> service.hide(null, " ", "upsc")).isInstanceOf(VacademyException.class);
         verifyNoInteractions(curation);
     }
 }

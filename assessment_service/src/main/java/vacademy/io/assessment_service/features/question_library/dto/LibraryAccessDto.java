@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
-/** One institute that was given a topic of the library. */
+/** One institute a topic of the library is hidden from. */
 @Data
 @Builder
 @NoArgsConstructor

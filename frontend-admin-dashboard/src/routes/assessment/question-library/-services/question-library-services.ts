@@ -36,8 +36,8 @@ export interface LibraryNode {
     easy_count: number;
     medium_count: number;
     hard_count: number;
-    /** Owner only: how many institutes were given this topic. */
-    access_count?: number | null;
+    /** Owner only: how many institutes this topic is hidden from. */
+    hidden_count?: number | null;
 }
 
 export interface LibrarySummary {
@@ -90,7 +90,7 @@ export interface LibraryTag {
     question_count?: number | null;
 }
 
-/** An institute that was given a topic. */
+/** An institute a topic is hidden from. */
 export interface LibraryAccess {
     institute_id: string;
     institute_name?: string | null;
@@ -436,22 +436,23 @@ export const setLibraryDifficulty = (
 
 export const fetchLibraryAccess = async (instituteId: string, nodeId: string) => {
     const { data } = await authenticatedAxiosInstance.get<LibraryAccess[]>(
-        `${LIBRARY_BASE}/access`,
+        `${LIBRARY_BASE}/hidden`,
         { params: { instituteId, nodeId } }
     );
     return data;
 };
 
-/** Gives a topic, with everything below it, to another institute (by its id). */
-export const grantLibraryAccess = (
+/** Hides a topic, with everything below it, from another institute (by its id). */
+export const hideLibraryTopic = (
     instituteId: string,
     body: { node_id: string; institute_id: string }
-) => post<LibraryAccess>('/access', instituteId, body);
+) => post<LibraryAccess>('/hidden', instituteId, body);
 
-export const revokeLibraryAccess = (
+/** Shows a hidden topic to that institute again. */
+export const showLibraryTopic = (
     instituteId: string,
     body: { node_id: string; institute_id: string }
-) => post<LibraryActionResult>('/access/remove', instituteId, body);
+) => post<LibraryActionResult>('/hidden/remove', instituteId, body);
 
 // ------------------------------------------------------------------ hooks
 

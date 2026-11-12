@@ -63,6 +63,36 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             """, nativeQuery = true)
     List<Object[]> countQuestionsPerNode(@Param("instituteId") String instituteId);
 
+    /**
+     * Same counts as countQuestionsPerNode, walking only the given topics: a reader's count
+     * for a topic it sees must leave out a topic below it that is hidden from it.
+     */
+    @Query(value = """
+            WITH RECURSIVE sub AS (
+                SELECT n.id AS root_id, n.id AS node_id
+                  FROM question_library_node n
+                 WHERE n.institute_id = :instituteId AND n.status = 'ACTIVE'
+                   AND n.id = ANY(string_to_array(:nodeIdsCsv, ','))
+                UNION ALL
+                SELECT s.root_id, c.id
+                  FROM sub s
+                  JOIN question_library_node c ON c.parent_id = s.node_id AND c.status = 'ACTIVE'
+                   AND c.id = ANY(string_to_array(:nodeIdsCsv, ','))
+            )
+            SELECT s.root_id,
+                   COUNT(DISTINCT q.id) AS total,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'EASY') AS easy,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'MEDIUM') AS medium,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'HARD') AS hard
+              FROM sub s
+              JOIN question_library_mapping m ON m.node_id = s.node_id
+              JOIN question q ON q.id = m.question_id AND q.status = 'ACTIVE'
+             WHERE NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+             GROUP BY s.root_id
+            """, nativeQuery = true)
+    List<Object[]> countQuestionsPerVisibleNode(@Param("instituteId") String instituteId,
+                                                @Param("nodeIdsCsv") String nodeIdsCsv);
+
     /** Live questions of the institute grouped by difficulty and type. Columns are difficulty, question_type, count. */
     @Query(value = """
             SELECT q.difficulty, q.question_type, COUNT(*)
@@ -124,7 +154,7 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
 
     /**
      * Those of the given questions that the library offers: live, and placed on an active
-     * topic. With nodeIdsCsv, only on one of those topics (what one institute was given).
+     * topic. With nodeIdsCsv, only on one of those topics (what one institute sees).
      */
     @Query(value = """
             SELECT q.id
@@ -427,28 +457,30 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
     long countQuestionsOnNodesAddedLastWeek(@Param("instituteId") String instituteId,
                                             @Param("nodeIdsCsv") String nodeIdsCsv);
 
-    // ---------------------------------------------------------------- access
+    // ---------------------------------------------------------------- hidden topics
+    // A row in question_library_access hides one topic, and everything below it, from one
+    // institute. With no row an institute sees the whole library.
 
-    /** Active topics of the library that were given to one institute. */
+    /** Active topics of the library hidden from one institute. */
     @Query(value = """
             SELECT a.node_id
               FROM question_library_access a
               JOIN question_library_node n ON n.id = a.node_id AND n.status = 'ACTIVE'
              WHERE n.institute_id = :ownerId AND a.institute_id = :instituteId
             """, nativeQuery = true)
-    List<String> findGrantedNodeIds(@Param("ownerId") String ownerId,
-                                    @Param("instituteId") String instituteId);
+    List<String> findHiddenNodeIds(@Param("ownerId") String ownerId,
+                                   @Param("instituteId") String instituteId);
 
-    /** Institutes given one topic, newest first. Columns are institute_id, institute_name, created_at. */
+    /** Institutes one topic is hidden from, newest first. Columns are institute_id, institute_name, created_at. */
     @Query(value = """
             SELECT a.institute_id, a.institute_name, a.created_at
               FROM question_library_access a
              WHERE a.node_id = :nodeId
              ORDER BY a.created_at DESC
             """, nativeQuery = true)
-    List<Object[]> findAccessOfNode(@Param("nodeId") String nodeId);
+    List<Object[]> findHiddenOfNode(@Param("nodeId") String nodeId);
 
-    /** How many institutes each active topic was given to. Columns are node_id, count. */
+    /** How many institutes each active topic is hidden from. Columns are node_id, count. */
     @Query(value = """
             SELECT a.node_id, COUNT(*)
               FROM question_library_access a
@@ -456,7 +488,7 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
              WHERE n.institute_id = :ownerId
              GROUP BY a.node_id
             """, nativeQuery = true)
-    List<Object[]> countAccessPerNode(@Param("ownerId") String ownerId);
+    List<Object[]> countHiddenPerNode(@Param("ownerId") String ownerId);
 
     @Modifying
     @Query(value = """
@@ -464,17 +496,17 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             VALUES (:nodeId, :instituteId, :instituteName, :createdBy)
             ON CONFLICT (node_id, institute_id) DO UPDATE SET institute_name = EXCLUDED.institute_name
             """, nativeQuery = true)
-    int grantAccess(@Param("nodeId") String nodeId,
-                    @Param("instituteId") String instituteId,
-                    @Param("instituteName") String instituteName,
-                    @Param("createdBy") String createdBy);
+    int hideNode(@Param("nodeId") String nodeId,
+                 @Param("instituteId") String instituteId,
+                 @Param("instituteName") String instituteName,
+                 @Param("createdBy") String createdBy);
 
     @Modifying
     @Query(value = """
             DELETE FROM question_library_access
              WHERE node_id = :nodeId AND institute_id = :instituteId
             """, nativeQuery = true)
-    int revokeAccess(@Param("nodeId") String nodeId, @Param("instituteId") String instituteId);
+    int unhideNode(@Param("nodeId") String nodeId, @Param("instituteId") String instituteId);
 
     // ---------------------------------------------------------------- library tags
 

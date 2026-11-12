@@ -37,6 +37,17 @@ public class GetQuestionBankManager {
 
     public Page<QuestionDTO> getQuestions(CustomUserDetails user, QuestionBankFilter filter,
                                           String instituteId, int pageNo, int pageSize) {
+        return getQuestions(user, filter, instituteId, pageNo, pageSize, true);
+    }
+
+    /**
+     * Same as above. With expandLibraryNodes false the library topics are used exactly as
+     * given: the caller already added the topics below them it is allowed to read (the
+     * Content Library can hide a topic inside one an institute still sees).
+     */
+    public Page<QuestionDTO> getQuestions(CustomUserDetails user, QuestionBankFilter filter,
+                                          String instituteId, int pageNo, int pageSize,
+                                          boolean expandLibraryNodes) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("instituteId is required");
         }
@@ -49,7 +60,9 @@ public class GetQuestionBankManager {
         // empty page rather than dropping the filter and showing the whole bank.
         String libraryNodeIdsCsv = null;
         if (safeFilter.getLibraryNodeIds() != null && !safeFilter.getLibraryNodeIds().isEmpty()) {
-            List<String> expanded = libraryTreeResolver.withDescendants(instituteId, safeFilter.getLibraryNodeIds());
+            List<String> expanded = expandLibraryNodes
+                    ? libraryTreeResolver.withDescendants(instituteId, safeFilter.getLibraryNodeIds())
+                    : safeFilter.getLibraryNodeIds();
             if (expanded.isEmpty()) return Page.empty(pageable);
             libraryNodeIdsCsv = toCsv(expanded);
         }
