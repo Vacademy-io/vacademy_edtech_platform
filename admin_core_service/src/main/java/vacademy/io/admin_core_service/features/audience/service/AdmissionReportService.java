@@ -49,7 +49,14 @@ public class AdmissionReportService {
     private final LeadReportSettingService settingService;
     private final AuthService authService;
 
-    /** The student's enrolments in the window, with the course and its tags. */
+    /**
+     * The student's enrolments in the window, with the course and its tags. An enrolment's day is
+     * its enrolled_date, else its created_at day in the institute's zone. The window is checked on
+     * the plain columns (fromTs/toTs are the window's local midnights as UTC wall clock), which
+     * selects the same rows as comparing that day but lets Postgres estimate the row count; the
+     * estimate on the day expression was ~0.5% of the rows, which turned every join below into a
+     * nested loop on long ranges.
+     */
     private static final String ENR_CTE = """
             enr AS (
                 SELECT s.id, s.user_id, s.user_plan_id, s.created_at, ps.package_id, p.package_name,
@@ -63,8 +70,9 @@ public class AdmissionReportService {
                 WHERE s.institute_id = :instituteId
                   AND s.status IN ('ACTIVE', 'COMPLETED', 'INVITED')
                   AND NOT (s.status = 'INVITED' AND COALESCE(s.source, '') = 'TERMINATED')
-                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) >= :fromDay
-                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) <  :toDay
+                  AND ((s.enrolled_date >= :fromDay AND s.enrolled_date < :toDay)
+                       OR (s.enrolled_date IS NULL
+                           AND s.created_at >= CAST(:fromTs AS timestamp) AND s.created_at < CAST(:toTs AS timestamp)))
             )
             """;
 
@@ -415,6 +423,8 @@ public class AdmissionReportService {
                 .addValue("tz", zone.getId())
                 .addValue("fromDay", java.sql.Date.valueOf(from), Types.DATE)
                 .addValue("toDay", java.sql.Date.valueOf(to.plusDays(1)), Types.DATE)
+                .addValue("fromTs", utcWallClock(from, zone), Types.VARCHAR)
+                .addValue("toTs", utcWallClock(to.plusDays(1), zone), Types.VARCHAR)
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
                 .addValue("tagOrderCsv", String.join(",", tagOrder), Types.VARCHAR)
                 .addValue("fieldId", fieldId, Types.VARCHAR);
@@ -435,6 +445,11 @@ public class AdmissionReportService {
                 trimToNull(rs.getString("field_value")),
                 rs.getString("first_audience_id"),
                 rs.getString("first_day")));
+    }
+
+    /** The day's local midnight in {@code zone}, as the UTC wall clock created_at is stored in. */
+    static String utcWallClock(LocalDate day, ZoneId zone) {
+        return day.atStartOfDay(zone).withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime().toString();
     }
 
     private ZoneId safeZone(String tz) {
