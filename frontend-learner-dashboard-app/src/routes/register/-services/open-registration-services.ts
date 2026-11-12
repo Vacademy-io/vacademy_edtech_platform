@@ -1,6 +1,7 @@
 import {
   GET_OPEN_REGISTRATION_DETAILS,
   GET_PARTICIPANTS_STATUS,
+  REGISTRATION_VERIFIED_URL,
   GET_USERID_URL,
   PUBLIC_INSTITUTE_BRANDING_URL,
   REGISTER_PARTICIPANT_URL,
@@ -43,6 +44,21 @@ export const getOpenTestRegistrationDetails = (code: string | number) => {
     retry: (failureCount: number, error: unknown) =>
       isTransientRequestError(error) && failureCount < 2,
   };
+};
+
+/**
+ * Tells the backend the learner just verified their email with the OTP, so it can send the
+ * "You're registered" email (it waits for this; the backend sends it once). Never blocks or
+ * fails the sign-in: any error is only logged.
+ */
+export const notifyRegistrationVerified = (assessmentId: string) => {
+  authenticatedAxiosInstance({
+    method: "POST",
+    url: REGISTRATION_VERIFIED_URL,
+    params: { assessmentId },
+  }).catch((error) => {
+    console.warn("[register] registration-verified call failed:", error);
+  });
 };
 
 export const handleGetParticipantsTest = async (

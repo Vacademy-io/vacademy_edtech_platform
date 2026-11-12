@@ -24,6 +24,7 @@ import {
 import {
   handleGetParticipantsTest,
   handleGetStudentDetailsOfInstitute,
+  notifyRegistrationVerified,
 } from "../-services/open-registration-services";
 import { TokenKey } from "@/constants/auth/tokens";
 import {
@@ -302,6 +303,11 @@ const CheckEmailStatusAlertDialog = ({
           duration: 4000,
         });
         return;
+      }
+      // A registrant who left before verifying and signs in here now gets their
+      // "You're registered" email (the backend sends it at most once).
+      if (getTestDetailsOfParticipants.is_already_registered) {
+        notifyRegistrationVerified(assessmentId);
       }
       if (userDetails) {
         setParticipantsDto({
