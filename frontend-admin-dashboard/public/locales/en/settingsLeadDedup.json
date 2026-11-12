@@ -99,6 +99,10 @@
                 "label": "Only while the earlier lead is open",
                 "hint": "A repeat is a duplicate only when the earlier lead is neither converted nor discarded. A repeat of a converted or discarded lead comes in as a new lead."
             },
+            "closedRepeatTakesOver": {
+                "label": "Closed lead's repeat replaces it in the lists",
+                "hint": "When a converted or discarded lead enquires again, the new enquiry becomes the lead and the old one moves under it as a duplicate, so the lists show the person once, with the new date. Its open follow-ups move to the new enquiry when it is the same person."
+            },
             "journeyEntry": {
                 "label": "Add a Reattempt entry to the lead journey",
                 "hint": "The original lead's journey shows when and through which source the person enquired again."
