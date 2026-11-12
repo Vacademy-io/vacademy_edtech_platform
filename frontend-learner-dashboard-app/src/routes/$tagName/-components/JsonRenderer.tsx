@@ -97,6 +97,7 @@ import { CourseShowcaseComponent } from "./components/CourseShowcaseComponent";
 import { TestimonialSectionComponent } from "./components/TestimonialSectionComponent";
 import { CartComponent } from "./components/CartComponent";
 import { BuyRentSectionComponent } from "./components/BuyRentSectionComponent";
+import { MembershipPlansComponent } from "./components/MembershipPlansComponent";
 import { BookCatalogueComponent } from "./components/BookCatalogueComponent";
 import { BookDetailsComponent } from "./components/BookDetailsComponent";
 import { DocumentViewerComponent } from "./components/DocumentViewerComponent";
@@ -362,6 +363,18 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         return <CartComponent key={id} {...props} instituteId={instituteId} tagName={tagName} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
         return <BuyRentSectionComponent key={id} {...props} tagName={tagName} />;
+      case "membershipPlans":
+        // The institute's MEMBERSHIP (rent) plans as cards, read live; a plan opens the library in rent mode.
+        return (
+          <MembershipPlansComponent
+            key={id}
+            {...props}
+            instituteId={instituteId}
+            tagName={tagName}
+            globalSettings={globalSettings}
+            isPreviewMode={isPreviewMode}
+          />
+        );
       case "policyRenderer":
         return <Policy key={id} {...props} />;
 
