@@ -133,35 +133,60 @@ public class AdmissionReportService {
                   AND ulp.merged_into_user_id IS NULL
                   AND ulp.user_id IN (SELECT user_id FROM main)
             )
+            """ + "%FIELD_CTE%" + """
             SELECT m.user_id, m.month, to_char(c.first_day, 'YYYY-MM-DD') AS first_day,
                    m.package_id, m.package_name, m.tag, c.n_courses,
                    COALESCE(mo.fee, 0)  AS fee,
                    COALESCE(mo.paid, 0) AS paid,
                    ld.source_type, ld.from_campaign, ld.first_audience_id, ld.counsellor_id,
-                   """ + "%FIELD_VALUE%" + """
-                       AS field_value
+                   fv.value AS field_value
             FROM main m
             JOIN courses c ON c.user_id = m.user_id AND c.month = m.month
             LEFT JOIN money mo ON mo.user_id = m.user_id AND mo.month = m.month
             LEFT JOIN ld ON ld.user_id = m.user_id
+            LEFT JOIN fv ON fv.user_id = m.user_id AND fv.month = m.month
             WHERE (:scopeCsv IS NULL OR ld.counsellor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
             """;
 
     /**
-     * The admission's value of the chosen field: pinned on one of the month's enrolments first,
-     * else the latest on the student's profile or any of their enquiries.
+     * The admission's value of the chosen field, one row per student and month: pinned on one of
+     * the month's enrolments first, else the latest on the student's profile or any of their
+     * enquiries. Built once for the whole range and joined, not looked up per admission: the
+     * per-row lookup read every enquiry value of the field each time and took minutes on a
+     * multi-year range.
      */
-    private static final String FIELD_VALUE_SQL = """
-            (SELECT v.value FROM custom_field_values v
-                WHERE v.custom_field_id = :fieldId AND v.value <> ''
-                  AND ((v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING'
-                        AND v.source_id IN (SELECT e2.id FROM enr e2 WHERE e2.user_id = m.user_id AND e2.month = m.month))
-                    OR (v.source_type = 'USER' AND v.source_id = m.user_id)
-                    OR (v.source_type = 'AUDIENCE_RESPONSE'
-                        AND v.source_id IN (SELECT r.id FROM audience_response r WHERE r.user_id = m.user_id)))
-                ORDER BY CASE WHEN v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING' THEN 0 ELSE 1 END,
-                         COALESCE(v.updated_at, v.created_at) DESC
-                LIMIT 1)""";
+    private static final String FIELD_VALUE_CTE = """
+            , fv AS (
+                SELECT DISTINCT ON (k.user_id, k.month) k.user_id, k.month, k.value
+                FROM (
+                    SELECT e.user_id, e.month, v.value, 0 AS pri, COALESCE(v.updated_at, v.created_at) AS ts
+                    FROM enr e
+                    JOIN custom_field_values v
+                      ON v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING' AND v.source_id = e.id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                    UNION ALL
+                    SELECT c.user_id, c.month, v.value, 1, COALESCE(v.updated_at, v.created_at)
+                    FROM courses c
+                    JOIN custom_field_values v ON v.source_type = 'USER' AND v.source_id = c.user_id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                    UNION ALL
+                    SELECT c.user_id, c.month, v.value, 1, COALESCE(v.updated_at, v.created_at)
+                    FROM courses c
+                    JOIN audience_response r ON r.user_id = c.user_id
+                    JOIN custom_field_values v ON v.source_type = 'AUDIENCE_RESPONSE' AND v.source_id = r.id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                ) k
+                ORDER BY k.user_id, k.month, k.pri, k.ts DESC
+            )
+            """;
+
+    /** No field picked: an empty {@code fv} so the main query stays the same. */
+    private static final String NO_FIELD_VALUE_CTE = """
+            , fv AS (
+                SELECT CAST(NULL AS varchar) AS user_id, CAST(NULL AS text) AS month, CAST(NULL AS text) AS value
+                WHERE false
+            )
+            """;
 
     private static final String CURRENCY_SQL = """
             SELECT pl.currency
@@ -393,7 +418,7 @@ public class AdmissionReportService {
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
                 .addValue("tagOrderCsv", String.join(",", tagOrder), Types.VARCHAR)
                 .addValue("fieldId", fieldId, Types.VARCHAR);
-        String sql = ADMISSIONS_SQL.replace("%FIELD_VALUE%", fieldId != null ? FIELD_VALUE_SQL : "CAST(NULL AS text)");
+        String sql = ADMISSIONS_SQL.replace("%FIELD_CTE%", fieldId != null ? FIELD_VALUE_CTE : NO_FIELD_VALUE_CTE);
 
         return jdbc.query(sql, p, (rs, i) -> new AdmissionRow(
                 rs.getString("user_id"),
