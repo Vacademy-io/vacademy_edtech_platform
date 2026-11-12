@@ -134,12 +134,12 @@ public class UserInstituteService {
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.staffStrength: {}", savedInstitute.getStaffStrength());
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.schoolStrength: {}", savedInstitute.getSchoolStrength());
 
-                // A product whose trial may only call its verified phone (Telleo): record that
-                // phone and open the trial in THIS transaction, so a phone that already had a
-                // trial rolls the institute back instead of leaving a second free account.
+                // A product whose sign-up proves a phone (Telleo): record that phone in THIS
+                // transaction, so a phone that already had a trial rolls the institute back
+                // instead of leaving a second free account.
                 var signupRules = "FREE_TRIAL".equals(savedInstitute.getLeadTag())
                         ? platformProductService.signupRulesFor(savedInstitute.getProduct()) : null;
-                if (signupRules != null && signupRules.locksTrialDialling()) {
+                if (signupRules != null && signupRules.requiresPhone()) {
                     telleoTrialService.registerTrial(savedInstitute.getId(), instituteDto.getPhone());
                 }
 

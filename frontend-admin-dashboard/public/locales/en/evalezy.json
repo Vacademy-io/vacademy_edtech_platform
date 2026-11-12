@@ -45,7 +45,7 @@
         "subtitleCreditsGeneric": "{{days}} days free with {{credits}} credits. No card needed.",
         "detailsTitleBusiness": "About you and your business",
         "phoneTitle": "Verify your phone",
-        "phoneSubtitle": "During the trial your AI agent calls this number, so you can hear it for yourself.",
+        "phoneSubtitle": "We send a code on WhatsApp. Your AI agent can ring this number so you can hear it for yourself.",
         "whatsappNumber": "WhatsApp number",
         "sendWhatsappCode": "Send code on WhatsApp",
         "whatsappCodeSent": "We sent a code on WhatsApp to {{phone}}.",

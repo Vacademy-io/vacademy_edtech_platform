@@ -58,6 +58,12 @@
         "title": "We could not finish setting up",
         "retry": "Try again"
     },
+    "trial": {
+        "left_one": "Free trial: {{count}} day left",
+        "left_other": "Free trial: {{count}} days left",
+        "ended": "Your free trial has ended, so calls are paused. Your leads and call logs are safe.",
+        "upgrade": "Recharge"
+    },
     "ready": {
         "title": "Your agent is ready",
         "subtitle": "We wrote a draft from your answers. Edit the script any time.",
@@ -67,8 +73,8 @@
         "calling": "Calling {{phone}} now. Pick up!",
         "queued": "Your call is queued and will ring {{phone}} shortly.",
         "callFailed": "The call could not be placed. Try again.",
-        "trialNote": "During your free trial the agent can only call this number. Upgrade to call your leads.",
-        "trialNoteWithDate": "During your free trial (until {{date}}) the agent can only call this number. Upgrade to call your leads.",
+        "trialNote": "Your free trial includes the credits on your account. Recharge any time to keep calling.",
+        "trialNoteWithDate": "Your free trial runs until {{date}} and includes the credits on your account. Recharge any time to keep calling.",
         "editAgent": "Edit the script and voice",
         "apiKeys": "API keys"
     }

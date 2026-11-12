@@ -22,13 +22,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class SignupRulesDTO {
-    /** The visitor proves a phone number with a WhatsApp code, and one phone gets one trial. */
-    private Boolean phoneVerificationRequired;
     /**
-     * A new institute starts as a TRIAL that can only call its verified phone number until it
-     * goes live (institute_telleo_state, telleo_trial_phone).
+     * The visitor proves a phone number with a WhatsApp code, and one phone gets one trial
+     * (telleo_trial_phone).
      */
-    private Boolean trialDialLock;
+    private Boolean phoneVerificationRequired;
     /** The sign-up form does not ask how many teachers there are. */
     private Boolean hideTeachers;
     /** The "what kind of business" choices; none keeps the platform's institute types. */
@@ -36,9 +34,5 @@ public class SignupRulesDTO {
 
     public boolean requiresPhone() {
         return Boolean.TRUE.equals(phoneVerificationRequired);
-    }
-
-    public boolean locksTrialDialling() {
-        return Boolean.TRUE.equals(trialDialLock);
     }
 }

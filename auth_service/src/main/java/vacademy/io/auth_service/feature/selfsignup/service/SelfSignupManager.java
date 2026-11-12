@@ -284,8 +284,8 @@ public class SelfSignupManager {
     }
 
     private void assertPhoneHasNoTrial(ProductConfigDTO product, SelfSignupRulesClient.Rules rules, String phone) {
-        if (Boolean.TRUE.equals(rules.getTrialDialLock())
-                && !rulesClient.isTrialPhoneAvailable(product.getProductKey(), phone)) {
+        if (rules.requiresPhone()
+                &&!rulesClient.isTrialPhoneAvailable(product.getProductKey(), phone)) {
             throw new VacademyException(HttpStatus.CONFLICT,
                     "This phone number has already been used for a free trial. Please log in instead.");
         }

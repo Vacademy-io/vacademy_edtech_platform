@@ -26,9 +26,7 @@ public class TelleoOnboardingStatusDTO {
     private String agentSource;
     private String error;
     private TelleoAnswersDTO answers;
-    /** TRIAL | LIVE | SUSPENDED. */
-    private String accountState;
-    /** The only number a trial can call: the one proven at sign-up. */
+    /** The phone proven at sign-up: where "Call me now" rings. */
     private String verifiedPhone;
     private String trialEndsAt;
 }

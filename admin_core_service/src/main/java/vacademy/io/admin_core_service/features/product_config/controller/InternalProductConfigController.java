@@ -42,8 +42,8 @@ public class InternalProductConfigController {
     @GetMapping("/{productKey}/trial-phone-available")
     public java.util.Map<String, Object> trialPhoneAvailable(@PathVariable String productKey,
             @org.springframework.web.bind.annotation.RequestParam String phone) {
-        boolean locked = service.signupRulesFor(productKey).locksTrialDialling();
-        return java.util.Map.of("available", !locked || trialService.isPhoneAvailable(phone));
+        boolean onePerPhone = service.signupRulesFor(productKey).requiresPhone();
+        return java.util.Map.of("available", !onePerPhone || trialService.isPhoneAvailable(phone));
     }
 
     /** auth_service, after a self sign-up: tell the team. */

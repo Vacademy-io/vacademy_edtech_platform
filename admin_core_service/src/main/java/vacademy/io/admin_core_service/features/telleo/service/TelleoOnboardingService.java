@@ -111,7 +111,6 @@ public class TelleoOnboardingService {
         Optional<Row> row = row(instituteId);
         TelleoOnboardingStatusDTO.TelleoOnboardingStatusDTOBuilder out = TelleoOnboardingStatusDTO.builder()
                 .instituteId(instituteId)
-                .accountState(trial.state())
                 .verifiedPhone(trial.phoneE164())
                 .trialEndsAt(trial.trialEndsAt() == null ? null : trial.trialEndsAt().toString());
         if (row.isEmpty()) {

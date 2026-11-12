@@ -40,7 +40,6 @@ public class SelfSignupRulesClient {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Rules {
         private Boolean phoneVerificationRequired;
-        private Boolean trialDialLock;
         private Boolean hideTeachers;
         private List<String> instituteTypes;
 

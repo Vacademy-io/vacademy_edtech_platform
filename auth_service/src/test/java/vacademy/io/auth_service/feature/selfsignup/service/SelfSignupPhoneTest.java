@@ -56,7 +56,6 @@ class SelfSignupPhoneTest {
                 .trialDays(7).selfSignupEnabled(true).appPath("/telleo/setup").build()));
         SelfSignupRulesClient.Rules rules = new SelfSignupRulesClient.Rules();
         rules.setPhoneVerificationRequired(true);
-        rules.setTrialDialLock(true);
         rules.setHideTeachers(true);
         rules.setInstituteTypes(List.of("real_estate", "other"));
         when(rulesClient.rules("telleo")).thenReturn(rules);

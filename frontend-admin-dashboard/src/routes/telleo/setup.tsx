@@ -465,7 +465,7 @@ const ReadyStep = ({ status }: { status: TelleoOnboardingStatus }) => {
                 buttonType="primary"
                 scale="large"
                 className="w-full"
-                disabled={call.isPending || status.account_state === 'SUSPENDED'}
+                disabled={call.isPending}
                 onClick={() => {
                     setMessage(null);
                     call.mutate();
@@ -488,20 +488,18 @@ const ReadyStep = ({ status }: { status: TelleoOnboardingStatus }) => {
                     {message.text}
                 </p>
             )}
-            {status.account_state === 'TRIAL' && (
-                <p className="text-caption text-neutral-500">
-                    {trialEnds
-                        ? t('ready.trialNoteWithDate', {
-                              date: trialEnds.toLocaleDateString(i18n.language),
-                              defaultValue:
-                                  'During your free trial (until {{date}}) the agent can only call this number. Upgrade to call your leads.',
-                          })
-                        : t(
-                              'ready.trialNote',
-                              'During your free trial the agent can only call this number. Upgrade to call your leads.'
-                          )}
-                </p>
-            )}
+            <p className="text-caption text-neutral-500">
+                {trialEnds
+                    ? t('ready.trialNoteWithDate', {
+                          date: trialEnds.toLocaleDateString(i18n.language),
+                          defaultValue:
+                              'Your free trial runs until {{date}} and includes the credits on your account. Recharge any time to keep calling.',
+                      })
+                    : t(
+                          'ready.trialNote',
+                          'Your free trial includes the credits on your account. Recharge any time to keep calling.'
+                      )}
+            </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <MyButton
                     type="button"

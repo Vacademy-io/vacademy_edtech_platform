@@ -29,7 +29,6 @@ export interface TelleoOnboardingStatus {
     agent_source?: 'AI' | 'TEMPLATE' | null;
     error?: string | null;
     answers?: TelleoAnswers | null;
-    account_state: 'TRIAL' | 'LIVE' | 'SUSPENDED';
     verified_phone?: string | null;
     trial_ends_at?: string | null;
 }
