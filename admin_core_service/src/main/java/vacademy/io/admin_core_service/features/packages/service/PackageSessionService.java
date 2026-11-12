@@ -149,8 +149,8 @@ public class PackageSessionService {
             return;
         }
         PackageSessionRepository.StockInfoProjection stock = stockInfo(packageSessionId);
-        if (stock.getMaxSeats() == null) {
-            return; // Unlimited
+        if (stock.getMaxSeats() == null || !StockHoldService.isStockPackageType(stock.getPackageType())) {
+            return; // Unlimited, or not stock (a membership's books per period, a charge)
         }
         throw new ConflictException("No slots available");
     }
@@ -190,8 +190,9 @@ public class PackageSessionService {
             log.warn("Inventory decrement skipped — packageSession {} not found", packageSessionId);
             return;
         }
-        if (stock.getMaxSeats() == null) {
-            log.debug("Skipping inventory decrement for packageSession {} — unlimited seats", packageSessionId);
+        if (stock.getMaxSeats() == null || !StockHoldService.isStockPackageType(stock.getPackageType())) {
+            log.debug("Skipping inventory decrement for packageSession {} — unlimited seats, or not stock",
+                    packageSessionId);
             return;
         }
         log.warn("Inventory decrement skipped for packageSession {} — availableSlots is {} but enrollment proceeding",
