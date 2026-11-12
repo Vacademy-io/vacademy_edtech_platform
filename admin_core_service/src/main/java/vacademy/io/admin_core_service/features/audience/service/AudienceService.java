@@ -874,11 +874,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName(), dto.getEmail(), dto.getMobileNumber());
-        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 dto.getEmail(), dto.getMobileNumber(),
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
-                dto.getEmail(), dto.getMobileNumber());
+                dto.getEmail(), dto.getMobileNumber(), closedLeadTakenOver);
 
         return savedResponse.getId();
     }
@@ -1095,11 +1095,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName(), email, mobileNumber);
-        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 email, mobileNumber,
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
-                email, mobileNumber);
+                email, mobileNumber, closedLeadTakenOver);
 
         return savedResponse.getId();
     }
@@ -1651,11 +1651,11 @@ public class AudienceService {
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         userForNotification.getFullName(), audience.getCampaignName(),
                         userDTO.getEmail(), userDTO.getMobileNumber());
-                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         userForNotification.getFullName(), audience.getCampaignName());
                 applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                        userDTO.getEmail(), userDTO.getMobileNumber());
+                        userDTO.getEmail(), userDTO.getMobileNumber(), closedLeadTakenOver);
 
                 // 4. Build custom field map for email
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -2405,6 +2405,17 @@ public class AudienceService {
      */
     private void applyRepeatLeadStatus(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
             String leadUserId, String instituteId, AudienceResponse savedResponse, String email, String phone) {
+        applyRepeatLeadStatus(repeatLeadSettings, leadUserId, instituteId, savedResponse, email, phone, false);
+    }
+
+    /**
+     * @param closedLeadTakenOver the repeat just took a closed lead's place (recordReattempt
+     *        returned true): that lead was closed, so RESET_CLOSED_TO_NEW resets without the
+     *        lookup, which no longer finds it now that it is flagged a duplicate
+     */
+    private void applyRepeatLeadStatus(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+            String leadUserId, String instituteId, AudienceResponse savedResponse, String email, String phone,
+            boolean closedLeadTakenOver) {
         if (repeatLeadSettings == null) {
             return;
         }
@@ -2413,18 +2424,20 @@ public class AudienceService {
             if (savedResponse == null || savedResponse.getId() == null) {
                 return;
             }
-            try {
-                boolean earlierLeadOpen = leadDeduplicationService.findPrimaryLead(instituteId,
-                                savedResponse.getAudienceId(), email, phone, savedResponse.getId())
-                        .map(p -> isOpenLeadStatus(p.getStatusKey()))
-                        .orElse(false);
-                if (earlierLeadOpen) {
+            if (!closedLeadTakenOver) {
+                try {
+                    boolean earlierLeadOpen = leadDeduplicationService.findPrimaryLead(instituteId,
+                                    savedResponse.getAudienceId(), email, phone, savedResponse.getId())
+                            .map(p -> isOpenLeadStatus(p.getStatusKey()))
+                            .orElse(false);
+                    if (earlierLeadOpen) {
+                        return;
+                    }
+                } catch (Exception e) {
+                    logger.error("Repeat lead {}: could not tell whether the earlier lead is open, status kept: {}",
+                            savedResponse.getId(), e.getMessage());
                     return;
                 }
-            } catch (Exception e) {
-                logger.error("Repeat lead {}: could not tell whether the earlier lead is open, status kept: {}",
-                        savedResponse.getId(), e.getMessage());
-                return;
             }
         } else if (mode != LeadDedupSettingService.StatusMode.RESET_TO_NEW) {
             return;
@@ -2450,16 +2463,18 @@ public class AudienceService {
      *
      * @param email the submission's email, as passed to the dedup check
      * @param phone the submission's phone, as passed to the dedup check
+     * @return true when the repeat took a closed lead's place (reattempt.closedRepeatTakesOver),
+     *         for the status reset that follows
      */
-    private void recordReattempt(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+    private boolean recordReattempt(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
             AudienceResponse savedResponse, String leadUserId, String instituteId, String email,
             String phone, String leadName, String campaignName) {
         if (repeatLeadSettings == null || savedResponse == null || savedResponse.getId() == null) {
-            return;
+            return false;
         }
         LeadDedupSettingService.ReattemptSettings reattempt = repeatLeadSettings.reattempt();
         if (!reattempt.anyIntakeAction()) {
-            return;
+            return false;
         }
         AudienceResponseRepository.PrimaryLeadRow primary;
         try {
@@ -2468,23 +2483,30 @@ public class AudienceService {
         } catch (Exception e) {
             logger.error("Repeat lead {}: lookup of the lead it repeats failed: {}",
                     savedResponse.getId(), e.getMessage());
-            return;
+            return false;
         }
         if (primary == null || !StringUtils.hasText(primary.getResponseId())) {
-            return;
+            return false;
         }
         String sourceLabel = reattemptSourceLabel(savedResponse.getSourceType());
 
         // A same-list repeat adds no row to flag, and applySameListRepeat writes its journey
         // entry on the lead it repeats in that list.
         boolean sameListRepeat = isSameListRepeat(savedResponse);
-        if (!sameListRepeat && reattempt.markDuplicate()
-                && (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey()))) {
-            try {
-                audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
-            } catch (Exception e) {
-                logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
-                        savedResponse.getId(), primary.getResponseId(), e.getMessage());
+        // The enquiry the lists show for this person after the repeat: the lead it repeats,
+        // or the repeat itself when it took a closed lead's place (closedRepeatTakesOver).
+        String leadResponseId = primary.getResponseId();
+        if (!sameListRepeat && reattempt.markDuplicate()) {
+            if (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey())) {
+                try {
+                    audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
+                } catch (Exception e) {
+                    logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
+                            savedResponse.getId(), primary.getResponseId(), e.getMessage());
+                }
+            } else if (reattempt.closedRepeatTakesOver()
+                    && foldClosedLeadUnderRepeat(primary.getResponseId(), savedResponse.getId())) {
+                leadResponseId = savedResponse.getId();
             }
         }
         if (reattempt.journeyEntry() && !sameListRepeat) {
@@ -2517,7 +2539,7 @@ public class AudienceService {
         }
 
         if (reattempt.followUp()) {
-            openReattemptFollowUp(primary.getResponseId(), instituteId, ownerId, sourceLabel, campaignName,
+            openReattemptFollowUp(leadResponseId, instituteId, ownerId, sourceLabel, campaignName,
                     savedResponse.getId());
         }
 
@@ -2533,6 +2555,7 @@ public class AudienceService {
 
         emitLeadReattempt(savedResponse, primary, leadUserId, instituteId, ownerId, email, phone,
                 sourceLabel, campaignName, sameListRepeat);
+        return !leadResponseId.equals(primary.getResponseId());
     }
 
     /**
@@ -2562,6 +2585,32 @@ public class AudienceService {
         } catch (Exception e) {
             logger.error("Repeat lead {}: failed to emit LEAD_REATTEMPT: {}", savedResponse.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * A repeat of a closed lead takes its place (reattempt.closedRepeatTakesOver): the old lead
+     * and its duplicates become duplicates of the repeat, and the old lead's open follow-ups
+     * move to it when both are the same person. Best-effort like the other intake steps.
+     *
+     * @return true when the old lead was flagged, so the repeat is now the lead
+     */
+    private boolean foldClosedLeadUnderRepeat(String oldLeadId, String repeatId) {
+        try {
+            if (audienceResponseRepository.foldLeadUnderRepeat(oldLeadId, repeatId) == 0) {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to take the place of closed lead {}: {}",
+                    repeatId, oldLeadId, e.getMessage());
+            return false;
+        }
+        try {
+            leadFollowupRepository.moveOpenToResponse(oldLeadId, repeatId);
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to move the open follow-ups of {}: {}",
+                    repeatId, oldLeadId, e.getMessage());
+        }
+        return true;
     }
 
     /** A lead still being worked: not converted and not LOST (Discarded). */
@@ -2796,11 +2845,11 @@ public class AudienceService {
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         createdUser.getFullName(), audience.getCampaignName(),
                         userDTO.getEmail(), userDTO.getMobileNumber());
-                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         createdUser.getFullName(), audience.getCampaignName());
                 applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                        userDTO.getEmail(), userDTO.getMobileNumber());
+                        userDTO.getEmail(), userDTO.getMobileNumber(), closedLeadTakenOver);
 
                 // 4. Build custom field map for email (to pass to workflow)
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -6235,11 +6284,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                 null, null, createdUser.getFullName(), audience.getCampaignName(),
                 processedData.getEmail(), processedData.getPhone());
-        recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                 processedData.getEmail(), processedData.getPhone(),
                 createdUser.getFullName(), audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                processedData.getEmail(), processedData.getPhone());
+                processedData.getEmail(), processedData.getPhone(), closedLeadTakenOver);
 
         // 4. Build custom field map for workflow
         Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());

@@ -3335,6 +3335,26 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("primaryResponseId") String primaryResponseId);
 
         /**
+         * A closed lead's repeat takes its place: the old lead, and every duplicate that
+         * pointed at it, become duplicates of the repeat, so the lists show the person once,
+         * as the new enquiry. Column-only, like {@link #markDuplicateOf}.
+         *
+         * @return rows changed; 0 when the old lead no longer exists
+         */
+        @Modifying
+        @Transactional
+        @Query(value = """
+                            UPDATE audience_response
+                               SET is_duplicate = true,
+                                   primary_response_id = :newPrimaryId
+                             WHERE id <> :newPrimaryId
+                               AND (id = :oldPrimaryId
+                                    OR (is_duplicate = true AND primary_response_id = :oldPrimaryId))
+                        """, nativeQuery = true)
+        int foldLeadUnderRepeat(@Param("oldPrimaryId") String oldPrimaryId,
+                        @Param("newPrimaryId") String newPrimaryId);
+
+        /**
          * Move one enquiry to {@code toStatusId} only while its status is still
          * {@code fromStatusId}. Returns 1 when it moved, 0 when the status had changed in the
          * meantime (the newer status is kept). Writes lead_status_id alone.
