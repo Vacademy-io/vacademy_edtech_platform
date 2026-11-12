@@ -49,7 +49,9 @@ import java.util.stream.Collectors;
  * stock never see a row. A MEMBERSHIP package's max_seats is not stock — the rent feature uses it
  * as "books per period" and its available_slots as "books at once" — and a charge package
  * (shipping / deposit) has no copies, so neither is ever held, taken on activation, reported as
- * limited or given back. The package_session stock UPDATEs skip both types as well
+ * limited or given back ({@link #restoreForPlan} skips their rows by package type alone: a book
+ * made unlimited after its hold still has its row released / restored). The package_session
+ * stock UPDATEs skip both types as well
  * (PackageSessionRepository), which covers the legacy increment / decrement callers too.
  *
  * <p>CONTRACT — other code calls exactly these signatures. Bodies are implemented by the
@@ -428,10 +430,12 @@ public class StockHoldService {
                 if (packageSessionIdOrNull != null && !packageSessionIdOrNull.equals(row.getPackageSessionId())) {
                     continue;
                 }
-                if (!tracksStock(stock.get(row.getPackageSessionId()))) {
-                    // A membership's "books at once" (or a charge, or a session made unlimited):
-                    // nothing was stock, so nothing goes back. Rows written there by activations
-                    // before this rule stay as they are.
+                StockInfoProjection info = stock.get(row.getPackageSessionId());
+                if (info != null && !isStockPackageType(info.getPackageType())) {
+                    // A membership's "books at once" or a charge: never stock, so nothing goes
+                    // back. Rows written there by activations before this rule stay as they are.
+                    // A book made unlimited after the hold still moves on below (HELD → RELEASED,
+                    // SOLD → RESTORED); its give-back is then a no-op.
                     continue;
                 }
                 boolean claimedByPlan = userPlanId.equals(row.getClaimedByUserPlanId());

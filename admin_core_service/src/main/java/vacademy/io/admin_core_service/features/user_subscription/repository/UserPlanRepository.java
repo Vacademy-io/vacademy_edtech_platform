@@ -446,8 +446,14 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
          * whose student mobile number ends in those ten digits (a phone-identified institute: one
          * number can front several accounts). Pass blank strings, never null, for an unknown side.
          *
-         * <p>The plan's package is the one its invite links to, whatever the link's status, so an
-         * invite edited later does not erase history. Used by SecurityDepositDueService.
+         * <p>A plan is on such a package only when its invite is wholly of those types: the
+         * invite links at least one session of {@code packageTypes} AND every session it links is
+         * of them. A plan has no package session of its own, so a plan on a shared invite (a book
+         * and a membership) cannot be told apart from a book buy and does not count. The links
+         * considered are the plan's payment option's when {@code up.payment_option_id} is set (a
+         * link without an option applies to every option), else all of the invite's. Links count
+         * whatever their status, so an invite edited later does not erase history.
+         * Used by SecurityDepositDueService.
          */
         @Query(value = """
                 SELECT EXISTS (
@@ -467,7 +473,18 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                             JOIN package_session ps ON ps.id = psli.package_session_id
                             JOIN package p ON p.id = ps.package_id
                             WHERE psli.enroll_invite_id = up.enroll_invite_id
+                              AND (up.payment_option_id IS NULL OR psli.payment_option_id IS NULL
+                                   OR psli.payment_option_id = up.payment_option_id)
                               AND upper(trim(p.package_type)) IN (:packageTypes))
+                      AND NOT EXISTS (
+                            SELECT 1
+                            FROM package_session_learner_invitation_to_payment_option psli
+                            JOIN package_session ps ON ps.id = psli.package_session_id
+                            JOIN package p ON p.id = ps.package_id
+                            WHERE psli.enroll_invite_id = up.enroll_invite_id
+                              AND (up.payment_option_id IS NULL OR psli.payment_option_id IS NULL
+                                   OR psli.payment_option_id = up.payment_option_id)
+                              AND (p.package_type IS NULL OR upper(trim(p.package_type)) NOT IN (:packageTypes)))
                       AND (up.status IN (:grantedStatuses)
                            OR EXISTS (SELECT 1 FROM payment_log pl
                                       WHERE pl.user_plan_id = up.id AND pl.payment_status IN (:paidStatuses)))
