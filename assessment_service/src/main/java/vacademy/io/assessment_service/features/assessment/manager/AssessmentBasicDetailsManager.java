@@ -47,6 +47,9 @@ public class AssessmentBasicDetailsManager {
     vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher assessmentWorkflowEventPublisher;
 
     @Autowired
+    vacademy.io.assessment_service.features.notification.service.LearnerAssessmentNoticeService learnerAssessmentNoticeService;
+
+    @Autowired
     vacademy.io.assessment_service.features.proctoring.service.ProctoringConfigService proctoringConfigService;
 
     @Autowired
@@ -282,6 +285,8 @@ public class AssessmentBasicDetailsManager {
         if (wasUnpublished) {
             assessmentWorkflowEventPublisher.publishAssessmentPublished(assessment, instituteId,
                     user != null ? user.getUserId() : null);
+            // "When Assessment is created" email to learners the admin registered one by one.
+            learnerAssessmentNoticeService.sendAssignedOnPublish(assessment.getId());
         }
 
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.PUBLISHED.name()));
