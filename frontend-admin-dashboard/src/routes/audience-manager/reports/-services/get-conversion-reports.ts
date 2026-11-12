@@ -19,9 +19,9 @@ export interface ConversionTotals {
     converted_leads: number;
     /**
      * Admissions: a student x the month they enrolled, as the Admissions tab counts them, so a
-     * course package is one admission however many courses it holds.
+     * course package is one admission however many courses it holds. Absent from an older backend.
      */
-    admissions: number;
+    admissions?: number;
     /** Course enrolments (a lead enrolled into two courses counts twice). */
     enrolments: number;
 }
@@ -31,7 +31,8 @@ export interface ConversionCounsellorRow {
     user_id: string | null;
     name: string | null;
     converted_leads: number;
-    admissions: number;
+    /** Admissions (student x month); absent from an older backend. */
+    admissions?: number;
     enrolments: number;
 }
 

@@ -70,7 +70,7 @@ const lead = (
 });
 
 const conversions: ConversionReport = {
-    totals: { converted_leads: 3, enrolments: 4 },
+    totals: { converted_leads: 3, admissions: 3, enrolments: 4 },
     by_counsellor: [],
     leads: [
         // A student in two courses is ONE converted lead.
