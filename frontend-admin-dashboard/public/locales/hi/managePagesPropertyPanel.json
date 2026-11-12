@@ -410,7 +410,19 @@
     "chipsGroup": "फ़िल्टर चिप्स",
     "columnTags": "फ़िल्टर टैग",
     "columnTagsPlaceholder": "जैसे Storybooks, 2 year old",
-    "columnTagsHint": "टैग को कॉमा से अलग करें। इस पेज के टैग फ़िल्टर में इस्तेमाल होते हैं।"
+    "columnTagsHint": "टैग को कॉमा से अलग करें। इस पेज के टैग फ़िल्टर में इस्तेमाल होते हैं।",
+    "mergedHint": "फ़िल्टर चालू होने पर इस पेज के सभी टैग वाले कॉलम लेआउट यहीं एक ग्रिड में दिखते हैं।",
+    "filterStyle": "फ़िल्टर स्टाइल",
+    "styleChips": "ऊपर चिप्स",
+    "styleSidebar": "साइडबार (कोर्स पेज जैसा)",
+    "perRow": "एक पंक्ति में कार्ड",
+    "perRowAuto": "ऑटो",
+    "groups": "फ़िल्टर समूह",
+    "groupsHint": "विज़िटर कई बॉक्स चुन सकते हैं: एक समूह के अंदर “या”, अलग समूहों में “और” (जैसे Storybooks + 3+ year = 3+ साल की स्टोरीबुक)।",
+    "groupLabel": "समूह का नाम",
+    "groupLabelPlaceholder": "जैसे Age",
+    "addGroup": "समूह जोड़ें",
+    "ungroupedHint": "किसी समूह में नहीं (“टैग” में दिखेंगे): {{tags}}"
   },
   "mediaShowcase": {
     "defaults": {

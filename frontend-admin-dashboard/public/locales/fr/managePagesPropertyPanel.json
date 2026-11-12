@@ -411,6 +411,18 @@
     "columnTags": "Étiquettes de filtre",
     "columnTagsPlaceholder": "ex. Storybooks, 2 year old",
     "columnTagsHint": "Séparez les étiquettes par des virgules. Utilisées par le filtre de cette page.",
+    "mergedHint": "Filtre activé : toutes les mises en colonnes étiquetées de cette page s'affichent ici dans une seule grille.",
+    "filterStyle": "Style du filtre",
+    "styleChips": "Puces en haut",
+    "styleSidebar": "Barre latérale (comme la page Cours)",
+    "perRow": "Cartes par ligne",
+    "perRowAuto": "Auto",
+    "groups": "Groupes de filtres",
+    "groupsHint": "Les visiteurs peuvent cocher plusieurs cases : OU dans un groupe, ET entre les groupes (ex. Storybooks + 3+ year = livres d'histoires 3+).",
+    "groupLabel": "Nom du groupe",
+    "groupLabelPlaceholder": "ex. Âge",
+    "addGroup": "Ajouter un groupe",
+    "ungroupedHint": "Dans aucun groupe (affichées sous « Étiquettes ») : {{tags}}",
     "componentCount_many": "{{count}} composants"
   },
   "mediaShowcase": {

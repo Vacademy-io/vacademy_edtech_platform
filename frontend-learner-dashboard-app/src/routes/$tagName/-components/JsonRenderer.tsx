@@ -105,8 +105,9 @@ import { ScormViewerComponent } from "./components/ScormViewerComponent";
 import { Policy } from "./components/Policy";
 import { RAIL_CLONE_PROPS, useAutoScrollRail, useRailArrows } from "../-utils/use-auto-scroll-rail";
 import { useCatalogueSearchParams } from "../-utils/catalogue-url-state";
-import { collectPageFilterTags, columnTagLists, layoutHasFilterTags } from "../-utils/tag-filter";
+import { collectFilterItems, collectPageFilterTags, columnTagLists, findFilterHost, layoutHasFilterTags } from "../-utils/tag-filter";
 import { FilterableColumnLayout } from "./components/TagFilterColumns";
+import { TagFilterCatalog } from "./components/TagFilterCatalog";
 
 // Opt-in section: loaded only by pages that have a learningPath, so every
 // other page (and the logged-in app, which bundles this renderer) skips it.
@@ -157,10 +158,10 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
 
   /** Chips of the page's tag filter: every tag on its column layouts, in the
    *  order the first filter-bar layout sets. Empty on untagged pages. */
-  const pageFilterTags = collectPageFilterTags(
-    page.components as any,
-    (page.components as any[]).find((c) => c?.type === 'columnLayout' && c.props?.showTagFilter)?.props?.tagOrder,
-  );
+  const filterHost = findFilterHost(page.components as any[]);
+  const pageFilterTags = collectPageFilterTags(page.components as any, filterHost?.props?.tagOrder);
+  /** With a host, every tagged column of the page renders in its one grid. */
+  const pageFilterItems = filterHost ? collectFilterItems(page.components as any[]) : [];
 
   /** A section with visibleWhen rules (e.g. "Start free" only on the
    *  unfiltered Courses view) follows the URL through VisibleWhenGate, around
@@ -704,6 +705,26 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         // Tagged columns (or a filter bar) join the page's tag filter;
         // anything else renders exactly as before.
         const tagLists = columnTagLists(props);
+        if (filterHost) {
+          if (id === filterHost.id) {
+            return (
+              <TagFilterCatalog
+                key={id}
+                items={pageFilterItems}
+                pageTags={pageFilterTags}
+                style={props.tagFilterStyle === 'sidebar' ? 'sidebar' : 'chips'}
+                groups={props.tagFilterGroups}
+                columns={Number(props.tagFilterColumns) || undefined}
+                allLabel={props.tagFilterAllLabel}
+                renderItem={(item) => (item.children as any[]).map((child) => renderChild(child, item.layoutId))}
+              />
+            );
+          }
+          // Shown inside the host's grid; the editor still marks where it sits.
+          if (layoutHasFilterTags(tagLists)) {
+            return previewChrome ? <MergedIntoFilterStrip key={id} /> : null;
+          }
+        }
         if (!props.showTagFilter && !layoutHasFilterTags(tagLists)) return renderGrid(() => true);
         return (
           <FilterableColumnLayout
@@ -856,6 +877,17 @@ const PreviewBlockFrame: React.FC<{
     <div className={interactive ? undefined : 'pointer-events-none'}>{children}</div>
   </div>
 );
+
+/** Builder preview only: a tagged column layout whose books are shown in the
+ *  page's tag filter grid (the layout with the filter switched on). */
+const MergedIntoFilterStrip: React.FC = () => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
+    <div className="mx-auto my-2 max-w-5xl rounded-catalogue-md border border-dashed border-catalogue-border px-4 py-2 text-center text-xs text-catalogue-text-muted">
+      {t("jsonRenderer.tagFilterMerged")}
+    </div>
+  );
+};
 
 /** Builder preview only: a block switched off in the editor, dimmed and
  *  labelled so it can still be found and picked. Visitors never see it. */

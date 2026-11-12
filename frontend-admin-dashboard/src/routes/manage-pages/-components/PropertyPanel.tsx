@@ -1881,6 +1881,99 @@ const collectFilterTags = (components: any[] | undefined): string[] => {
     return [...seen.values()];
 };
 
+/**
+ * Sidebar filter groups (Category, Age, Subject…): each group has a name and
+ * the page tags it holds. A tag sits in one group at most; tags in no group
+ * show under "Tags" on the site. OR inside a group, AND across groups.
+ */
+const TagFilterGroupsEditor = ({
+    pageTags,
+    groups: raw,
+    onChange,
+}: {
+    pageTags: string[];
+    groups: unknown;
+    onChange: (next: { label: string; tags: string[] }[]) => void;
+}) => {
+    const { t } = useTranslation('managePagesPropertyPanel');
+    const groups: { label: string; tags: string[] }[] = Array.isArray(raw)
+        ? raw
+              .filter((g) => g && typeof g === 'object')
+              .map((g: any) => ({ label: typeof g.label === 'string' ? g.label : '', tags: splitFilterTags(g.tags) }))
+        : [];
+    const key = (tag: string) => tag.trim().toLowerCase();
+    const owner = (tag: string) => groups.findIndex((g) => g.tags.some((x) => key(x) === key(tag)));
+    const toggleTag = (gi: number, tag: string) => {
+        const inThis = owner(tag) === gi;
+        onChange(
+            groups.map((g, i) => ({
+                ...g,
+                tags:
+                    i === gi
+                        ? inThis
+                            ? g.tags.filter((x) => key(x) !== key(tag))
+                            : [...g.tags, tag]
+                        : g.tags.filter((x) => key(x) !== key(tag)),
+            }))
+        );
+    };
+    const move = (gi: number, delta: number) => {
+        const next = [...groups];
+        const [g] = next.splice(gi, 1);
+        next.splice(gi + delta, 0, g!);
+        onChange(next);
+    };
+    const ungrouped = pageTags.filter((tag) => owner(tag) < 0);
+    return (
+        <div className="space-y-2">
+            <Label className="text-xs">{t('columnLayout.groups')}</Label>
+            <p className="text-caption text-gray-400">{t('columnLayout.groupsHint')}</p>
+            {groups.map((g, gi) => (
+                <div key={gi} className="space-y-2 rounded border border-gray-200 p-2">
+                    <div className="flex items-center gap-1">
+                        <Input
+                            aria-label={t('columnLayout.groupLabel')}
+                            value={g.label}
+                            onChange={(e) => onChange(groups.map((x, i) => (i === gi ? { ...x, label: e.target.value } : x)))}
+                            placeholder={t('columnLayout.groupLabelPlaceholder')}
+                            className="h-8 text-xs"
+                        />
+                        <RowActions
+                            index={gi}
+                            count={groups.length}
+                            item={g.label || t('columnLayout.groupLabel')}
+                            onMove={(d) => move(gi, d)}
+                            onRemove={() => onChange(groups.filter((_, i) => i !== gi))}
+                        />
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                        {pageTags.map((tag) => {
+                            const o = owner(tag);
+                            return (
+                                <button
+                                    key={tag}
+                                    type="button"
+                                    aria-pressed={o === gi}
+                                    onClick={() => toggleTag(gi, tag)}
+                                    className={`rounded-full border px-2 py-0.5 text-caption transition-colors ${o === gi ? 'border-teal-500 bg-teal-50 text-teal-700' : o >= 0 ? 'border-gray-100 text-gray-300' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={() => onChange([...groups, { label: '', tags: [] }])}>
+                <Plus className="me-1 size-3" /> {t('columnLayout.addGroup')}
+            </Button>
+            {ungrouped.length > 0 && (
+                <p className="text-caption text-gray-400">{t('columnLayout.ungroupedHint', { tags: ungrouped.join(', ') })}</p>
+            )}
+        </div>
+    );
+};
+
 /** A column's filter tags as comma text, saved when the box loses focus (so typing ", " is kept). */
 const ColumnTagsField = ({ id, value, onCommit }: { id: string; value: string[]; onCommit: (next: string[]) => void }) => {
     const { t } = useTranslation('managePagesPropertyPanel');
@@ -2115,8 +2208,48 @@ const ColumnLayoutEditor = ({ component, pageId, updateComponent }: any) => {
                 {component.props.showTagFilter && (
                     <>
                         <p className="text-caption text-gray-400">{t('columnLayout.tagFilterHint')}</p>
+                        <p className="text-caption text-gray-400">{t('columnLayout.mergedHint')}</p>
+                        <div>
+                            <Label className="text-xs">{t('columnLayout.filterStyle')}</Label>
+                            <div className="mt-1 flex gap-1.5">
+                                {(['chips', 'sidebar'] as const).map((v) => {
+                                    const active = (component.props.tagFilterStyle === 'sidebar' ? 'sidebar' : 'chips') === v;
+                                    return (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            onClick={() => updateProp('tagFilterStyle', v === 'chips' ? undefined : v)}
+                                            className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${active ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        >
+                                            {t(v === 'chips' ? 'columnLayout.styleChips' : 'columnLayout.styleSidebar')}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="text-xs">{t('columnLayout.perRow')}</Label>
+                            <div className="mt-1 flex gap-1.5">
+                                {([undefined, 2, 3, 4] as const).map((n) => (
+                                    <button
+                                        key={n ?? 'auto'}
+                                        type="button"
+                                        onClick={() => updateProp('tagFilterColumns', n)}
+                                        className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${(component.props.tagFilterColumns ?? undefined) === n ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                    >
+                                        {n ?? t('columnLayout.perRowAuto')}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         {pageFilterTags.length === 0 ? (
                             <p className="text-caption text-warning-600">{t('columnLayout.noTagsYet')}</p>
+                        ) : component.props.tagFilterStyle === 'sidebar' ? (
+                            <TagFilterGroupsEditor
+                                pageTags={pageFilterTags}
+                                groups={component.props.tagFilterGroups}
+                                onChange={(next) => updateProp('tagFilterGroups', next.length ? next : undefined)}
+                            />
                         ) : (
                             <>
                                 <div className="space-y-1">
