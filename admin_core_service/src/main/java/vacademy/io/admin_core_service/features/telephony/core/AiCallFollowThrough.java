@@ -58,6 +58,7 @@ import java.util.Map;
 public class AiCallFollowThrough {
 
     private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a", Locale.ENGLISH);
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH);
 
     @Autowired @Lazy private AiCallQueueService queueService;
     @Autowired @Lazy private TimelineEventService timelineEventService;
@@ -124,10 +125,13 @@ public class AiCallFollowThrough {
         JsonNode root = objectMapper.readTree(r.getRawPayload());
         if (!root.path("meetingRequested").asBoolean(false)) return;
         Instant at = null;
+        java.time.LocalDate dayOnly = null;
         String iso = root.path("meetingDatetimeIso").asText("").trim();
         if (!iso.isEmpty()) {
             try {
-                at = java.time.OffsetDateTime.parse(iso).toInstant();
+                java.time.OffsetDateTime parsed = java.time.OffsetDateTime.parse(iso);
+                if (isDayOnly(parsed)) dayOnly = parsed.toLocalDate();
+                else at = parsed.toInstant();
             } catch (Exception e) {
                 log.info("ai-call: demo time '{}' on result {} could not be read", iso, r.getId());
             }
@@ -135,7 +139,9 @@ public class AiCallFollowThrough {
         ZoneId zone = zoneOf(instituteId);
         String who = r.getCustomerName() == null || r.getCustomerName().isBlank() ? "The lead" : r.getCustomerName();
         String phone = r.getPhoneNumber() == null ? "" : r.getPhoneNumber();
-        String when = at == null ? "a time that could not be read" : WHEN.format(at.atZone(zone)) + " (" + zone.getId() + ")";
+        String when = at != null ? WHEN.format(at.atZone(zone)) + " (" + zone.getId() + ")"
+                : dayOnly != null ? DAY.format(dayOnly) + ", with no time of day fixed"
+                : "a time that could not be read";
         boolean booked = at != null && isBooked(responseId, at);
         String next = booked
                 ? "It is booked on the booking page."
@@ -165,6 +171,14 @@ public class AiCallFollowThrough {
                         + ") agreed to a demo for " + EngagementPointsOfContact.esc(when) + ". "
                         + EngagementPointsOfContact.esc(next) + "</p>" + summary,
                 "AI_DEMO", r.getId());
+    }
+
+    /**
+     * The bot reports a day the lead agreed to without a time of day as midnight of that day. Nobody
+     * agrees to a demo at midnight, so that is a day only: it must not be booked or shown as a time.
+     */
+    static boolean isDayOnly(java.time.OffsetDateTime t) {
+        return t != null && t.toLocalTime().equals(java.time.LocalTime.MIDNIGHT);
     }
 
     /** Whether the outcome processor's auto-booking (or a person) already holds this lead's slot. */

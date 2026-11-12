@@ -1076,6 +1076,13 @@ public class AiCallOutcomeProcessor {
         // 'in a few minutes' cases.
         try {
             java.time.OffsetDateTime when = java.time.OffsetDateTime.parse(rawIso);
+            // A day with no time of day arrives as midnight. Booking it would put a demo at
+            // 12:00 AM in the host's calendar; the follow-through asks a person to fix the time.
+            if (AiCallFollowThrough.isDayOnly(when)) {
+                log.info("ai-call: skip auto-book for result {} — '{}' is a day with no time of day",
+                        r.getId(), rawIso);
+                return;
+            }
             if (when.toInstant().isBefore(java.time.Instant.now().minusSeconds(120))) {
                 log.info("ai-call: skip auto-book for result {} — resolved time {} is in the past",
                         r.getId(), rawIso);

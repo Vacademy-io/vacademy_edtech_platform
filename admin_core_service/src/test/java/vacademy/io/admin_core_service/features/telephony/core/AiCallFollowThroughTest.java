@@ -363,6 +363,26 @@ class AiCallFollowThroughTest {
     }
 
     @Test
+    @DisplayName("a day with no time of day is never reported as a booked midnight demo")
+    void demoAgreedDayOnly() {
+        AiCallResult r = result();
+        String iso = java.time.LocalDate.now().plusDays(2) + "T00:00:00+05:30";
+        r.setRawPayload("{\"meetingRequested\": true, \"meetingDatetimeIso\": \"" + iso + "\"}");
+        var b = new vacademy.io.admin_core_service.features.booking.entity.BookingInstance();
+        b.setStatus("CONFIRMED");
+        b.setScheduledStartUtc(java.sql.Timestamp.from(java.time.OffsetDateTime.parse(iso).toInstant()));
+        org.mockito.Mockito.lenient().when(bookings.findByAudienceResponseId("resp1")).thenReturn(java.util.List.of(b));
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var body = ArgumentCaptor.forClass(String.class);
+        verify(poc).alert(any(), any(), startsWith("Demo agreed"), body.capture(), eq("AI_DEMO"), any());
+        assertTrue(body.getValue().contains("no time of day fixed"), body.getValue());
+        assertTrue(body.getValue().contains("NOT booked"), body.getValue());
+        assertFalse(body.getValue().contains("12:00 AM"), body.getValue());
+        assertTrue(AiCallFollowThrough.isDayOnly(java.time.OffsetDateTime.parse(iso)));
+        assertFalse(AiCallFollowThrough.isDayOnly(java.time.OffsetDateTime.parse("2026-11-13T12:30:00+05:30")));
+    }
+
+    @Test
     @DisplayName("a call with no meeting in its report raises no demo alert")
     void noDemoNoAlert() {
         AiCallResult r = result();
