@@ -24,6 +24,18 @@ export const getCatalogueMode = (): CatalogueMode => {
 };
 
 /**
+ * The city the storefront rents in (`globalSettings.rentLocationCity`), trimmed; "" when the
+ * catalogue names none. Only a non-empty city makes the way into rent mode ask the
+ * RentLocationConfirmDialog question; otherwise rent mode opens directly.
+ */
+export const rentLocationCityOf = (
+  globalSettings: { rentLocationCity?: unknown } | null | undefined,
+): string => {
+  const city = globalSettings?.rentLocationCity;
+  return typeof city === "string" ? city.trim() : "";
+};
+
+/**
  * Switch the storefront to the mode of `levelFilterValue` (the level name, e.g. "Rent").
  * Writes sessionStorage and fires `levelFilterChanged` so open screens update at once.
  */

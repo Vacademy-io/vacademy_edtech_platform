@@ -39,13 +39,16 @@ import {
 import {
     DEPOSIT_MISSING_TOKEN,
     DEPOSIT_NOT_DUE_TOKEN,
+    InvitePlan,
     RentMembershipLine,
     buildRentV2Payload,
     findDepositErrorToken,
+    invitePlanOf,
+    planDepositRetry,
     rentBooksPreferenceValue,
+    rentMembershipPrice,
     rentOrderAmount,
     rentRequestedBookPackageSessionIds,
-    withoutOncePerUserCharges,
 } from "../../-utils/rent-checkout-payload";
 import { clearPendingCheckout, useCartStore } from "../../-stores/cart-store";
 import { pollPaymentOutcome } from "../../-utils/payment-confirmation";
@@ -76,9 +79,15 @@ interface CheckoutFormProps {
     /** Rent only: the catalogue links a rent-mode charge (even one this learner no longer
      *  owes), so the order goes through the v2 multi-item endpoint. False keeps the v1 call. */
     rentChargesLinked?: boolean;
+    /** Rent only: every rent-mode charge the catalogue links, due or not. A checkout the
+     *  server answers "deposit missing" adds the once-per-user ones left out back from here. */
+    linkedRentCharges?: ChargeLine[];
     /** Rent only: the server said the learner already paid these once-per-user charges, so
      *  the cart stops showing them. */
     onRentChargesWaived?: (chargeKeys: string[]) => void;
+    /** Rent only: the server said the learner still owes these once-per-user charges (the
+     *  cart had them as paid), so the cart shows them again. */
+    onRentChargesDue?: (chargeKeys: string[]) => void;
     /** The storefront catalogue tag the learner is on. A buy checkout (and a rent one with
      *  charges) sends it so the server checks the charges against that catalogue. */
     catalogueTag?: string;
@@ -97,7 +106,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     isRentMode = false,
     additionalCharges = [],
     rentChargesLinked = false,
+    linkedRentCharges = [],
     onRentChargesWaived,
+    onRentChargesDue,
     catalogueTag,
     isPreviewMode = false,
 }) => {
@@ -149,7 +160,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         usePreferredPhoneCountries({ freeze: phoneFieldHasInput(phone) });
     const [nameError, setNameError] = useState("");
 
-    const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
+    // The invite's resolved plan (what `plan_id` sends), with its price, read when the dialog opens.
+    const [paymentPlanData, setPaymentPlanData] = useState<InvitePlan | null>(null);
     // Per-item plan data: maps enrollInviteId -> { planId, paymentOptionId }
     const [perItemPlanData, setPerItemPlanData] = useState<Record<string, { planId: string; paymentOptionId: string }>>({});
     const otpInputRef = React.useRef<HTMLInputElement>(null);
@@ -164,6 +176,19 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
     const targetInviteId = membershipPlan?.enrollInviteId ||
         (items.length > 0 ? items[0]?.enrollInviteId : null);
+
+    // What the order costs. A rent order with charges (v2) prices its membership line from the
+    // plan actually sent — the invite's plan, read when this dialog opened — not the price the
+    // cart remembered when the plan was picked (it may be stale, or not that plan's). Every
+    // other checkout keeps the cart's total, exactly as before.
+    const isRentV2 = isRentMode && rentChargesLinked;
+    const cartPlanPrice = totalAmount - sumChargeAmounts(additionalCharges);
+    const summaryPlanPrice = isRentV2
+        ? rentMembershipPrice(paymentPlanData?.actualPrice, cartPlanPrice)
+        : cartPlanPrice;
+    const summaryTotal = isRentV2 ? rentOrderAmount(summaryPlanPrice, additionalCharges) : totalAmount;
+    const formatRupees = (amount: number) =>
+        `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
     // Add validation
     useEffect(() => {
@@ -262,30 +287,23 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         )
             .then(results => {
                 const perItemData: Record<string, { planId: string; paymentOptionId: string }> = {};
-                let firstPlanData: any = null;
+                let firstPlanData: InvitePlan | null = null;
 
                 for (const result of results) {
                     if (!result) continue;
                     const { inviteId, data } = result;
 
-                    if (data.package_session_to_payment_options?.length > 0) {
-                        const firstOption = data.package_session_to_payment_options[0];
-                        const plans = firstOption.payment_option.payment_plans;
-                        if (plans?.length > 0) {
-                            perItemData[inviteId] = {
-                                planId: plans[0].id,
-                                paymentOptionId: firstOption.payment_option.id,
-                            };
+                    // The invite's first option's first plan, with its price.
+                    const invitePlan = invitePlanOf(data, inviteId);
+                    if (invitePlan) {
+                        perItemData[inviteId] = {
+                            planId: invitePlan.planId,
+                            paymentOptionId: invitePlan.paymentOptionId,
+                        };
 
-                            // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
-                            if (!firstPlanData) {
-                                firstPlanData = {
-                                    planId: plans[0].id,
-                                    paymentOptionId: firstOption.payment_option.id,
-                                    enrollInviteId: firstOption.enroll_invite_id || data.id,
-                                    vendorId: data.vendor_id || "RAZORPAY"
-                                };
-                            }
+                        // Use first result as the shared paymentPlanData (for vendorId, rent mode, etc.)
+                        if (!firstPlanData) {
+                            firstPlanData = invitePlan;
                         }
                     }
                 }
@@ -468,10 +486,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 if (rentChargesLinked) {
                     // ============ RENT MODE WITH CHARGES: v2 API, membership + charge entries ============
                     // The membership must enroll by real ids: the server prices the order from them.
+                    // ...and those ids must be this plan's invite (not one read for an earlier pick).
                     if (
                         !membershipPlan?.packageSessionId ||
                         !paymentPlanData?.planId ||
-                        !paymentPlanData?.paymentOptionId
+                        !paymentPlanData?.paymentOptionId ||
+                        paymentPlanData.inviteId !== targetInviteId
                     ) {
                         throw new Error(t("checkoutForm.toast.loadPaymentOptionsFailed"));
                     }
@@ -480,8 +500,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                         planId: paymentPlanData.planId,
                         paymentOptionId: paymentPlanData.paymentOptionId,
                         enrollInviteId: paymentPlanData.enrollInviteId || membershipPlan.enrollInviteId,
-                        // The plan alone: the total the cart passed, less the charges it added.
-                        price: totalAmount - sumChargeAmounts(additionalCharges),
+                        // The price of the plan sent (the server checks the line against it).
+                        price: summaryPlanPrice,
                     };
                     const rentUser = {
                         ...userPayload,
@@ -514,22 +534,42 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                     try {
                         response = await submitRentOrder(additionalCharges);
                     } catch (firstError) {
-                        // The server decides whether a once-per-user charge is due. When this learner
-                        // already paid it, drop it and place the order again, once.
-                        const waived = additionalCharges.filter((charge) => charge.oncePerUser);
-                        if (findDepositErrorToken(firstError) !== DEPOSIT_NOT_DUE_TOKEN || waived.length === 0) {
-                            throw firstError;
-                        }
-                        const remaining = withoutOncePerUserCharges(additionalCharges);
-                        onRentChargesWaived?.(waived.map((charge) => charge.key));
-                        toast.info(
-                            t("checkoutForm.toast.chargeNotDue", {
-                                label: waived.map((charge) => charge.label).join(", "),
-                                total: `₹${rentOrderAmount(membership.price, remaining).toFixed(2)}`,
-                            }),
-                            { duration: 6000 },
+                        // The server decides whether a once-per-user charge is due, for the person
+                        // the typed phone / email belong to. When it disagrees with the cart, fix the
+                        // charges and place the order again — once per click, whichever way it
+                        // disagreed. A second refusal goes to the error handling below.
+                        const retry = planDepositRetry(
+                            findDepositErrorToken(firstError),
+                            additionalCharges,
+                            linkedRentCharges,
                         );
-                        response = await submitRentOrder(remaining);
+                        if (!retry) throw firstError;
+                        const changedKeys = retry.changed.map((charge) => charge.key);
+                        const total = formatRupees(rentOrderAmount(membership.price, retry.charges));
+                        if (retry.token === DEPOSIT_NOT_DUE_TOKEN) {
+                            onRentChargesWaived?.(changedKeys);
+                            toast.info(
+                                t("checkoutForm.toast.chargeNotDue", {
+                                    label: retry.changed.map((charge) => charge.label).join(", "),
+                                    total,
+                                }),
+                                { duration: 6000 },
+                            );
+                        } else {
+                            onRentChargesDue?.(changedKeys);
+                            const values = {
+                                label: retry.changed.map((charge) => charge.label).join(", "),
+                                amount: formatRupees(sumChargeAmounts(retry.changed)),
+                                total,
+                            };
+                            toast.info(
+                                retry.changed.every((charge) => charge.refundable)
+                                    ? t("checkoutForm.toast.chargeAddedRefundable", values)
+                                    : t("checkoutForm.toast.chargeAdded", values),
+                                { duration: 8000 },
+                            );
+                        }
+                        response = await submitRentOrder(retry.charges);
                     }
                 } else {
                     // ============ RENT MODE: Use v1 API with custom_field_values ============
@@ -843,8 +883,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 void releaseStockHold(paymentLogId);
                 clearPendingCheckout();
             }
-            // A rent order the server says is missing a once-per-user charge the learner still
-            // owes: the cart is out of date (its status check said otherwise), so no retry.
+            // A rent order the server still says is missing a once-per-user charge after the one
+            // automatic resubmit (or with none left out to add back): no further retry.
             if (isRentMode && rentChargesLinked && findDepositErrorToken(error) === DEPOSIT_MISSING_TOKEN) {
                 toast.error(t("checkoutForm.toast.chargeMissing"));
                 return;
@@ -1011,7 +1051,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                         <div className="flex justify-between text-xs text-gray-700">
                                             {/* Rent: the line before the charges is the membership plan, not the books. */}
                                             <span>{isRentMode && membershipPlan?.title ? membershipPlan.title : t("checkoutForm.summary.subtotalCount", { count: itemCount })}</span>
-                                            <span className="font-medium">₹{(totalAmount - sumChargeAmounts(additionalCharges)).toFixed(2)}</span>
+                                            <span className="font-medium">₹{summaryPlanPrice.toFixed(2)}</span>
                                         </div>
                                         {additionalCharges.map((charge) => (
                                             <div key={charge.key} className="flex justify-between text-xs text-gray-700">
@@ -1021,14 +1061,14 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                         ))}
                                         <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
                                             <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(2)}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(0)}</span>
+                                            <span className="text-base font-black text-primary-600">₹{summaryTotal.toFixed(0)}</span>
                                         </div>
                                         <div className="text-end">
                                             <span className="text-caption text-gray-400 font-medium block">{t("checkoutForm.summary.itemsCount", { count: itemCount })}</span>

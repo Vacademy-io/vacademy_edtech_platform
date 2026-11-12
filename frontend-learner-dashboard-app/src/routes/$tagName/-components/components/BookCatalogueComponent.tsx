@@ -33,7 +33,7 @@ import {
 import { toTitleCase, formatTagForDisplay, cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
-import { setCatalogueMode, type CatalogueMode } from "../../-utils/catalogue-mode";
+import { rentLocationCityOf, setCatalogueMode, type CatalogueMode } from "../../-utils/catalogue-mode";
 import { useCartStore, CartItem } from "../../-stores/cart-store";
 import { toast } from "sonner";
 import { ShareButton } from "./ShareButton";
@@ -341,15 +341,17 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
   // The Buy | Rent switch only makes sense when the institute sells both ways.
   const canSwitchMode = !!(levelIdMap?.buy && levelIdMap?.rent);
 
-  // Switching to rent asks the location question first (RentLocationConfirmDialog).
+  // Switching to rent asks the location question first (RentLocationConfirmDialog), but only
+  // when the catalogue names its rent city; otherwise it switches straight away.
+  const rentCity = rentLocationCityOf(globalSettings);
   const [rentConfirmOpen, setRentConfirmOpen] = useState(false);
   const requestMode = (mode: CatalogueMode) => {
     if (mode === cartMode) return;
-    if (mode === "rent") {
+    if (mode === "rent" && rentCity) {
       setRentConfirmOpen(true);
       return;
     }
-    setCatalogueMode(modeLevelNames.buy);
+    setCatalogueMode(modeLevelNames[mode]);
   };
   const confirmRent = () => {
     setRentConfirmOpen(false);
@@ -1067,12 +1069,15 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
         )}
       </div>
 
-      <RentLocationConfirmDialog
-        open={rentConfirmOpen}
-        onCancel={() => setRentConfirmOpen(false)}
-        onContinue={confirmRent}
-        onBuyInstead={stayInBuy}
-      />
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={rentConfirmOpen}
+          onCancel={() => setRentConfirmOpen(false)}
+          onContinue={confirmRent}
+          onBuyInstead={stayInBuy}
+          city={rentCity}
+        />
+      )}
     </div>
   );
 };

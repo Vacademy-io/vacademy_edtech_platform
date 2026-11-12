@@ -8,22 +8,23 @@
  * the mobile bar mirror the same `authLinks` config so both stay consistent.
  */
 
+import { findRootPage } from './catalogue-root-page';
+
 type AuthLink = { label?: string; route?: string; audienceId?: string; formTitle?: string };
 
 const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z]/g, '');
 
-const HOME_PAGE_ROUTES = ['homepage', '/', ''];
-
 /**
- * The page a visitor is on: the one routed at `pageSlug`, else the home page.
- * The home page is matched by its route first and only then by id 'home', so a
- * site that moved its old home page elsewhere (its route changed, its id did
- * not) still reads the header of the page actually served at the root.
+ * The page a visitor is on: the one routed at `pageSlug`, else the home page
+ * (catalogue-root-page.ts: matched by its route first and only then by id
+ * 'home'), so a site that moved its old home page elsewhere (its route
+ * changed, its id did not) still reads the header of the page actually served
+ * at the root.
  */
 function findActivePage(catalogueData: any, pageSlug?: string): any {
     const pages: any[] = catalogueData?.pages || [];
     if (pageSlug) return pages.find((p) => p?.route === pageSlug || p?.route === `/${pageSlug}`);
-    return pages.find((p) => HOME_PAGE_ROUTES.includes(p?.route)) ?? pages.find((p) => p?.id === 'home');
+    return findRootPage(pages);
 }
 
 /**

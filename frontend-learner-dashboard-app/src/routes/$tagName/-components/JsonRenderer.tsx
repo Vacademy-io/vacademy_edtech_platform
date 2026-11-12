@@ -362,7 +362,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
       case "cartComponent":
         return <CartComponent key={id} {...props} instituteId={instituteId} tagName={tagName} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
-        return <BuyRentSectionComponent key={id} {...props} tagName={tagName} />;
+        return <BuyRentSectionComponent key={id} {...props} tagName={tagName} globalSettings={globalSettings} />;
       case "membershipPlans":
         // The institute's MEMBERSHIP (rent) plans as cards, read live; a plan opens the library in rent mode.
         return (

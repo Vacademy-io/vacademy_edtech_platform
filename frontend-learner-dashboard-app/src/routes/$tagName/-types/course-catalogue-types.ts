@@ -176,6 +176,12 @@ export interface GlobalSettings {
   };
   communityJoinLink?: string;
   /**
+   * The one city this storefront rents books in. When set (non-empty), every way into rent mode
+   * (the Buy/Rent section, the catalogue's Buy | Rent switch, a membership plan card) first asks
+   * "We only rent in <city>. Continue?". Absent or empty = no question: rent mode opens directly.
+   */
+  rentLocationCity?: string;
+  /**
    * Site content languages (हिन्दी / EN switcher). The site is authored in
    * `defaultLocale`; every other language is a dictionary of translations
    * keyed by the source text — see -utils/catalogue-i18n.ts. Absent = a

@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ShoppingBag, BookOpen, ArrowRight } from "@phosphor-icons/react";
 import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
-import { setCatalogueMode } from "../../-utils/catalogue-mode";
+import { rentLocationCityOf, setCatalogueMode } from "../../-utils/catalogue-mode";
+import type { GlobalSettings } from "../../-types/course-catalogue-types";
 
 interface BuyRentOption {
   buttonLabel: string;
@@ -19,12 +20,15 @@ interface BuyRentSectionProps {
   buy: BuyRentOption;
   rent: BuyRentOption;
   tagName?: string;
+  /** Its `rentLocationCity`, when set, makes the Rent card ask the location question first. */
+  globalSettings?: GlobalSettings;
 }
 
 export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
   buy,
   rent,
   tagName,
+  globalSettings,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const navigate = useNavigate();
@@ -45,7 +49,15 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
     navigate({ to: RouteMatcher.pagePath(currentTagName, target) as never });
   };
 
-  const handleRentClick = () => setShowRentConfirmation(true);
+  // The location question only when the catalogue names its rent city; else straight to rent.
+  const rentCity = rentLocationCityOf(globalSettings);
+  const handleRentClick = () => {
+    if (rentCity) {
+      setShowRentConfirmation(true);
+      return;
+    }
+    handleCardClick(rent);
+  };
   const handleRentConfirm = () => {
     setShowRentConfirmation(false);
     handleCardClick(rent);
@@ -176,13 +188,16 @@ export const BuyRentSectionComponent: React.FC<BuyRentSectionProps> = ({
         </div>
       </div>
 
-      {/* Rent Confirmation Modal */}
-      <RentLocationConfirmDialog
-        open={showRentConfirmation}
-        onCancel={handleRentCancel}
-        onContinue={handleRentConfirm}
-        onBuyInstead={handleBuyRedirect}
-      />
+      {/* Rent Confirmation Modal (only when the catalogue names its rent city) */}
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={showRentConfirmation}
+          onCancel={handleRentCancel}
+          onContinue={handleRentConfirm}
+          onBuyInstead={handleBuyRedirect}
+          city={rentCity}
+        />
+      )}
     </div>
   );
 };

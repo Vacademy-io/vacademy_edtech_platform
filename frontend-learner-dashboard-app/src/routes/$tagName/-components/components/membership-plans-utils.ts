@@ -1,7 +1,7 @@
 import type { MembershipPlan } from "../../-services/membership-plan-service";
 import type { MembershipPlan as CartMembershipPlan } from "../../-stores/cart-store";
 import type { GlobalSettings } from "../../-types/course-catalogue-types";
-import { isOncePerUserCharge, type ResolvedCharge } from "../../-utils/additional-charges-util";
+import { findRentModeChargeConfig, isOncePerUserCharge, type ResolvedCharge } from "../../-utils/additional-charges-util";
 
 /**
  * Pure logic behind the `membershipPlans` section. The rent cart (CartComponent) lists the same
@@ -77,6 +77,27 @@ export const toCartMembershipPlan = (plan: MembershipPlan): CartMembershipPlan =
   enrollInviteId: plan.enroll_invite_id,
 });
 
+/**
+ * The rent cart's remembered plan brought up to date from a freshly loaded plan list:
+ *  - undefined: nothing to change (no plan picked, or it already matches the list);
+ *  - a plan: the same plan (same id) as the list has it now — new price, title or limits;
+ *  - null: the picked plan is no longer in the list, so the pick is dropped.
+ * Pass only a list that loaded: a failed fetch is not "every plan is gone".
+ */
+export const refreshSelectedMembershipPlan = (
+  selected: CartMembershipPlan | null | undefined,
+  plans: MembershipPlan[],
+): CartMembershipPlan | null | undefined => {
+  if (!selected) return undefined;
+  const match = plans.find((plan) => (plan.enroll_invite_id || plan.id) === selected.id);
+  if (!match) return null;
+  const fresh = toCartMembershipPlan(match);
+  const changed = (Object.keys(fresh) as Array<keyof CartMembershipPlan>).some(
+    (field) => fresh[field] !== selected[field],
+  );
+  return changed ? fresh : undefined;
+};
+
 export type DepositNoteKey =
   | "membershipPlans.depositNote"
   | "membershipPlans.depositNoteOneTime"
@@ -107,7 +128,7 @@ export const buildDepositNotes = (
   globalSettings: GlobalSettings | undefined | null,
 ): DepositNote[] =>
   charges.map((charge) => {
-    const config = globalSettings?.payment?.additionalCharges?.find((c) => c.key === charge.key);
+    const config = findRentModeChargeConfig(globalSettings, charge.key);
     return {
       key: charge.key,
       label: charge.label,

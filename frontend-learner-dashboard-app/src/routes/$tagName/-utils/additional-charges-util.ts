@@ -109,8 +109,17 @@ export const resolveRentModeCharges = (
 export const isOncePerUserCharge = (
   globalSettings: GlobalSettings | undefined | null,
   key: string,
-): boolean =>
-  Boolean(globalSettings?.payment?.additionalCharges?.find((c) => c.key === key)?.oncePerUser);
+): boolean => Boolean(findRentModeChargeConfig(globalSettings, key)?.oncePerUser);
+
+/**
+ * The rent-mode config entry of a charge key. A buy-mode entry can share the key (e.g. "shipping"
+ * in both modes), so rent wording must never be read from it.
+ */
+export const findRentModeChargeConfig = (
+  globalSettings: GlobalSettings | undefined | null,
+  key: string,
+): AdditionalCharge | undefined =>
+  globalSettings?.payment?.additionalCharges?.find((c) => c.key === key && isApplicable(c, "rent"));
 
 /**
  * A resolved charge plus the config flags the cart shows and the checkout acts on. The flags

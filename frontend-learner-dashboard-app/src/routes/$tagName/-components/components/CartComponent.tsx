@@ -8,6 +8,7 @@ import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { Trash, Plus, Minus, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { getMembershipPlans, MembershipPlan } from "../../-services/membership-plan-service";
+import { refreshSelectedMembershipPlan, toCartMembershipPlan } from "./membership-plans-utils";
 import { INSTITUTE_ID } from "@/constants/urls";
 import { toast } from "sonner";
 import { CheckoutForm } from "./CheckoutForm";
@@ -226,15 +227,8 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
 
   const handleSelectPlan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMembershipPlan({
-      id: plan.enroll_invite_id || plan.id,
-      title: plan.package_name,
-      price: plan.min_plan_actual_price,
-      numberOfBooks: plan.available_slots ?? undefined,
-      maxSeats: plan.max_seats ?? undefined,
-      packageSessionId: plan.package_session_id,
-      enrollInviteId: plan.enroll_invite_id,
-    });
+    // The same shape the plan cards store and refreshSelectedMembershipPlan compares against.
+    setMembershipPlan(toCartMembershipPlan(plan));
   };
 
   // Extract fields - handle various possible field names
@@ -397,11 +391,14 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const resolvedEmptyStateMessage = emptyStateMessage || t("cart.emptyDefault");
-  const { items, removeItem, updateQuantity, clearCart, membershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart, membershipPlan, setMembershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [isRentMode, setIsRentMode] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  // True while the plan list on screen is one that loaded (a failed fetch leaves it false):
+  // only such a list may refresh or drop the plan the cart remembers.
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [isCheckoutFormOpen, setIsCheckoutFormOpen] = useState(false);
   const [isCheckingStock, setIsCheckingStock] = useState(false);
   const [stockShortages, setStockShortages] = useState<StockShortages>({});
@@ -608,9 +605,11 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         console.log("[CartComponent] Fetched membership plans:", plans);
         console.log("[CartComponent] Number of plans:", plans.length);
         setMembershipPlans(plans);
+        setPlansLoaded(true);
       } catch (error) {
         console.error("[CartComponent] Error fetching membership plans:", error);
         setMembershipPlans([]);
+        setPlansLoaded(false);
       } finally {
         setIsLoadingPlans(false);
         console.log("[CartComponent] Finished fetching membership plans");
@@ -619,6 +618,15 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
     fetchMembershipPlans();
   }, [isRentMode, instituteId]);
+
+  // The cart remembers the picked plan (title, price…) as it was when picked. Once the plan list
+  // loads, bring it up to date from the list (same plan), or drop it when that plan is gone, so
+  // the total shown is today's. Not from the editor's preview or the hidden payment-check cart.
+  useEffect(() => {
+    if (!isRentMode || !plansLoaded || onlyLogic || isPreviewMode) return;
+    const refreshed = refreshSelectedMembershipPlan(membershipPlan, membershipPlans);
+    if (refreshed !== undefined) setMembershipPlan(refreshed);
+  }, [isRentMode, plansLoaded, onlyLogic, isPreviewMode, membershipPlan, membershipPlans, setMembershipPlan]);
 
   // Cache for fetched images to prevent repeated API calls
   const fetchedImagesRef = useRef<Set<string>>(new Set());
@@ -763,6 +771,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   );
   const handleRentChargesWaived = (chargeKeys: string[]) =>
     setWaivedRentChargeKeys((prev) => [...new Set([...prev, ...chargeKeys])]);
+  // The server says the learner still owes these after all (checkout added them back).
+  const handleRentChargesDue = (chargeKeys: string[]) =>
+    setWaivedRentChargeKeys((prev) => prev.filter((key) => !chargeKeys.includes(key)));
   // The plan's price, plus the charges once a plan is picked (no plan, no order to charge).
   const rentPlanPrice = getTotal();
   const rentGrandTotal = membershipPlan
@@ -999,7 +1010,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
           isRentMode={true}
           additionalCharges={membershipPlan ? dueRentCharges : []}
           rentChargesLinked={rentChargesLinked}
+          linkedRentCharges={rentChargeLines}
           onRentChargesWaived={handleRentChargesWaived}
+          onRentChargesDue={handleRentChargesDue}
           catalogueTag={tagName}
         />
       </>

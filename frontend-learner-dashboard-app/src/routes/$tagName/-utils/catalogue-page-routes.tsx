@@ -15,6 +15,7 @@ import { RouteMatcher } from "../-services/route-matcher";
 import { CourseCatalogueService } from "../-services/course-catalogue-service";
 import type { Page } from "../-types/course-catalogue-types";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
+import { servedAtRootIn } from "./catalogue-root-page";
 
 /** Section types that list what the site sells. */
 export const CATALOGUE_LISTING_TYPES: readonly string[] = ["bookCatalogue", "courseCatalog"];
@@ -25,10 +26,6 @@ interface ListingPageLike {
   components?: ReadonlyArray<{ type?: string; enabled?: unknown } | null | undefined> | null;
 }
 
-/** The page the site renders at its root — the same rule CourseCataloguePage applies. */
-const servedAtRoot = (page: ListingPageLike) =>
-  page.id === "home" || (typeof page.route === "string" && ["homepage", "/", ""].includes(page.route));
-
 const listsCatalogue = (page: ListingPageLike, types: readonly string[]) =>
   (page.components || []).some(
     (c) => !!c && types.includes(c.type ?? "") && c.enabled !== false && c.enabled !== "false",
@@ -36,7 +33,10 @@ const listsCatalogue = (page: ListingPageLike, types: readonly string[]) =>
 
 /**
  * Route of the page that hosts the catalogue ("library"), or "" (the root)
- * when the home page hosts one or no page does.
+ * when the home page hosts one or no page does. The home page is the one the
+ * header resolves too (catalogue-root-page.ts): routed at the root, or with
+ * id "home" only when no page is — so a former home page that kept its id but
+ * moved to "library" is not mistaken for the root.
  */
 export const findCatalogueListingRoute = (
   pages: ReadonlyArray<ListingPageLike | null | undefined> | null | undefined,
@@ -45,7 +45,7 @@ export const findCatalogueListingRoute = (
   const hosts = (pages || []).filter(
     (page): page is ListingPageLike => !!page && listsCatalogue(page, types),
   );
-  if (hosts.length === 0 || hosts.some(servedAtRoot)) return "";
+  if (hosts.length === 0 || hosts.some(servedAtRootIn(pages))) return "";
   return (hosts[0].route || "").trim().replace(/^\/+|\/+$/g, "");
 };
 

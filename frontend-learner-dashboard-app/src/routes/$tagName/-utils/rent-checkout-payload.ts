@@ -100,6 +100,90 @@ export const buildRentV2Payload = (input: RentV2PayloadInput) => ({
 export const withoutOncePerUserCharges = (charges: ChargeLine[]): ChargeLine[] =>
   charges.filter((charge) => !charge.oncePerUser);
 
+/** A rent order to place again: its charges, and what changed from the refused one. */
+export interface DepositRetry {
+  token: DepositErrorToken;
+  /** The charges the resubmitted order pays. */
+  charges: ChargeLine[];
+  /** The once-per-user charges dropped (NOT_DUE) or added back (MISSING). */
+  changed: ChargeLine[];
+}
+
+/**
+ * How to place a rent order again after the server refused it over a once-per-user charge, or
+ * null when resubmitting can't fix it (another refusal, or nothing to change):
+ *  - NOT_DUE: the learner already paid it — drop the once-per-user charges that were sent.
+ *  - MISSING: the learner still owes one the order left out (the cart's status check, made for
+ *    the signed-in account, said otherwise than the server, which goes by the phone / email
+ *    typed at checkout) — add back every linked once-per-user charge that was not sent.
+ * The caller resubmits at most once per click, whatever the token.
+ */
+export const planDepositRetry = (
+  token: DepositErrorToken | null,
+  sent: ChargeLine[],
+  linked: ChargeLine[],
+): DepositRetry | null => {
+  if (token === DEPOSIT_NOT_DUE_TOKEN) {
+    const changed = sent.filter((charge) => charge.oncePerUser);
+    if (changed.length === 0) return null;
+    return { token, charges: withoutOncePerUserCharges(sent), changed };
+  }
+  if (token === DEPOSIT_MISSING_TOKEN) {
+    const sentKeys = new Set(sent.map((charge) => charge.key));
+    const changed = linked.filter((charge) => charge.oncePerUser && !sentKeys.has(charge.key));
+    if (changed.length === 0) return null;
+    return { token, charges: [...sent, ...changed], changed };
+  }
+  return null;
+};
+
+/**
+ * The plan an enroll invite resolves to — its first payment option's first plan, which is what
+ * the checkout sends as `plan_id` — with that plan's own price. Null when the invite has none.
+ */
+export interface InvitePlan {
+  /** The invite this was read from (the one the checkout asked for). */
+  inviteId: string;
+  planId: string;
+  paymentOptionId: string;
+  enrollInviteId: string;
+  vendorId: string;
+  /** The plan's `actual_price`, which the server prices the order line from; null if absent. */
+  actualPrice: number | null;
+}
+
+export const invitePlanOf = (data: unknown, inviteId: string): InvitePlan | null => {
+  const invite = data as {
+    id?: string;
+    vendor_id?: string;
+    package_session_to_payment_options?: Array<{
+      enroll_invite_id?: string;
+      payment_option?: { id?: string; payment_plans?: Array<{ id?: string; actual_price?: unknown }> };
+    }>;
+  } | null;
+  const firstOption = invite?.package_session_to_payment_options?.[0];
+  const plan = firstOption?.payment_option?.payment_plans?.[0];
+  if (!firstOption?.payment_option || !plan) return null;
+  const price = plan.actual_price;
+  return {
+    inviteId,
+    planId: plan.id as string,
+    paymentOptionId: firstOption.payment_option.id as string,
+    enrollInviteId: (firstOption.enroll_invite_id || invite?.id) as string,
+    vendorId: invite?.vendor_id || "RAZORPAY",
+    actualPrice: typeof price === "number" && Number.isFinite(price) && price >= 0 ? price : null,
+  };
+};
+
+/**
+ * The membership line's price in a rent order: the price of the plan actually sent (the
+ * invite's plan, read at checkout), else — when the invite gave none — what the cart holds.
+ */
+export const rentMembershipPrice = (invitePlanPrice: number | null | undefined, cartPlanPrice: number): number =>
+  typeof invitePlanPrice === "number" && Number.isFinite(invitePlanPrice) && invitePlanPrice >= 0
+    ? invitePlanPrice
+    : cartPlanPrice;
+
 /**
  * Which deposit token a failed enroll call carries, if any. The server wraps its message in an
  * error DTO (`{ ex, responseCode, … }`), so the whole body is searched. A 5xx is never one.

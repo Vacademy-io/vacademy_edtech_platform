@@ -11,7 +11,7 @@ import { RouteMatcher } from "../../-services/route-matcher";
 import { useCartStore } from "../../-stores/cart-store";
 import type { GlobalSettings } from "../../-types/course-catalogue-types";
 import { resolveRentModeCharges } from "../../-utils/additional-charges-util";
-import { setCatalogueMode } from "../../-utils/catalogue-mode";
+import { rentLocationCityOf, setCatalogueMode } from "../../-utils/catalogue-mode";
 import { useSiteNavigate } from "../../-utils/catalogue-route-search";
 import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
 import {
@@ -24,8 +24,9 @@ import {
 
 /**
  * Catalogue section `membershipPlans`: the institute's membership (rent) plans — packages of type
- * MEMBERSHIP — as cards, read live. "Choose plan" asks the rent-location question; going on picks
- * the plan for the rent cart, switches the storefront to rent mode and opens the library page.
+ * MEMBERSHIP — as cards, read live. "Choose plan" picks the plan for the rent cart, switches the
+ * storefront to rent mode and opens the library page — after the rent-location question when the
+ * catalogue names its rent city (`globalSettings.rentLocationCity`), directly otherwise.
  * Visitors never see an empty section; the builder preview explains it.
  */
 export interface MembershipPlansProps {
@@ -92,20 +93,34 @@ export const MembershipPlansComponent: React.FC<MembershipPlansProps> = ({
     [showDepositNote, globalSettings],
   );
 
+  const rentCity = rentLocationCityOf(globalSettings);
+
   const openTarget = () => {
     void siteNavigate(RouteMatcher.pagePath(currentTagName, targetRoute || DEFAULT_TARGET_ROUTE));
   };
 
-  const handleContinue = () => {
-    const plan = pendingPlan;
-    setPendingPlan(null);
-    if (!plan) return;
+  const choosePlan = (plan: MembershipPlan) => {
     // The editor preview shows the flow without touching the admin's own cart.
     if (!isPreviewMode) {
       setMembershipPlan(toCartMembershipPlan(plan));
       setCatalogueMode(rentLevelFilterValue || DEFAULT_RENT_LEVEL);
     }
     openTarget();
+  };
+
+  // The location question first only when the catalogue names its rent city.
+  const handleChoose = (plan: MembershipPlan) => {
+    if (rentCity) {
+      setPendingPlan(plan);
+      return;
+    }
+    choosePlan(plan);
+  };
+
+  const handleContinue = () => {
+    const plan = pendingPlan;
+    setPendingPlan(null);
+    if (plan) choosePlan(plan);
   };
 
   const handleBuyInstead = () => {
@@ -169,7 +184,7 @@ export const MembershipPlansComponent: React.FC<MembershipPlansProps> = ({
                   <PlanCard
                     key={plan.id}
                     card={toMembershipPlanCard(plan)}
-                    onChoose={() => setPendingPlan(plan)}
+                    onChoose={() => handleChoose(plan)}
                   />
                 ))}
           </div>
@@ -193,12 +208,15 @@ export const MembershipPlansComponent: React.FC<MembershipPlansProps> = ({
         )}
       </div>
 
-      <RentLocationConfirmDialog
-        open={!!pendingPlan}
-        onCancel={() => setPendingPlan(null)}
-        onContinue={handleContinue}
-        onBuyInstead={handleBuyInstead}
-      />
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={!!pendingPlan}
+          onCancel={() => setPendingPlan(null)}
+          onContinue={handleContinue}
+          onBuyInstead={handleBuyInstead}
+          city={rentCity}
+        />
+      )}
     </section>
   );
 };
