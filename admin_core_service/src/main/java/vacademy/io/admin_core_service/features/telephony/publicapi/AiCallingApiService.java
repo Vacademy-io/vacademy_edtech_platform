@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.credits.service.SelfSignupTrialGate;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallService;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallResponseDTO;
@@ -116,6 +117,19 @@ public class AiCallingApiService {
                             String externalId, Map<String, Object> variables, Map<String, Object> metadata) {
     }
 
+    // ── Self sign-up trial ───────────────────────────────────────────────────────
+
+    /**
+     * Refuses a real call once a self sign-up's trial has ended with nothing bought, at request
+     * time with a stable code (placeCall applies the same rule again as the backstop).
+     */
+    private void requireTrialNotEnded(String instituteId) {
+        if (aiCallService.trialEnded(instituteId)) {
+            throw new AiCallingApiException(HttpStatus.PAYMENT_REQUIRED, SelfSignupTrialGate.CODE_TRIAL_ENDED,
+                    SelfSignupTrialGate.MSG_TRIAL_ENDED);
+        }
+    }
+
     // ── Create ───────────────────────────────────────────────────────────────────
 
     public Map<String, Object> createCall(AiCallingApiAuth.Principal p, CallInput in, boolean test,
@@ -142,6 +156,7 @@ public class AiCallingApiService {
             throw new AiCallingApiException(HttpStatus.PAYMENT_REQUIRED, "insufficient_credits",
                     OUT_OF_CREDITS);
         }
+        if (!test) requireTrialNotEnded(p.instituteId());
         AiCallApiCall call = newCall(p, v, null, test, idem);
         try {
             call = detach(callRepository.saveAndFlush(call));
@@ -225,6 +240,7 @@ public class AiCallingApiService {
             throw new AiCallingApiException(HttpStatus.PAYMENT_REQUIRED, "insufficient_credits",
                     OUT_OF_CREDITS);
         }
+        if (!test) requireTrialNotEnded(p.instituteId());
         String batchId = newId("batch_");
         List<Map<String, Object>> accepted = new ArrayList<>();
         List<Map<String, Object>> rejected = new ArrayList<>();

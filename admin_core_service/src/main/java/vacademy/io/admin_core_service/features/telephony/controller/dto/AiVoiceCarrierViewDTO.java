@@ -35,6 +35,11 @@ public class AiVoiceCarrierViewDTO {
 
     // ── The dedicated line, when there is one ───────────────────────────────────
     private boolean dedicatedConfigured;
+    /**
+     * Set up by us on the platform's account (a Telleo trial line): shown, but not editable,
+     * and its account id is withheld.
+     */
+    private boolean platformManaged;
     private boolean dedicatedEnabled;
     /** Plivo subaccount Auth ID (not a secret — it's the username half). */
     private String authId;

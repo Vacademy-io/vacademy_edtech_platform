@@ -62,6 +62,7 @@ import { Route as AccessPassesIndexRouteImport } from "./routes/access-passes/in
 import { Route as VimWaitlistRouteImport } from "./routes/vim/waitlist"
 import { Route as VimLoginRouteImport } from "./routes/vim/login"
 import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
+import { Route as TelleoSetupRouteImport } from "./routes/telleo/setup"
 import { Route as SignupStartRouteImport } from "./routes/signup/start"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
@@ -623,6 +624,11 @@ const VimLoginRoute = VimLoginRouteImport.update({
 const VimDashboardRoute = VimDashboardRouteImport.update({
   id: "/vim/dashboard",
   path: "/vim/dashboard",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelleoSetupRoute = TelleoSetupRouteImport.update({
+  id: "/telleo/setup",
+  path: "/telleo/setup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupStartRoute = SignupStartRouteImport.update({
@@ -2289,6 +2295,7 @@ export interface FileRoutesByFullPath {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -2548,6 +2555,7 @@ export interface FileRoutesByTo {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -2810,6 +2818,7 @@ export interface FileRoutesById {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
   "/vim/waitlist": typeof VimWaitlistRoute
@@ -3073,6 +3082,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3332,6 +3342,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3593,6 +3604,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
     | "/vim/waitlist"
@@ -3850,6 +3862,7 @@ export interface RootRouteChildren {
   KnowledgeBasePublishRoute: typeof KnowledgeBasePublishRoute
   McpAuthorizeRoute: typeof McpAuthorizeRoute
   SignupStartRoute: typeof SignupStartRoute
+  TelleoSetupRoute: typeof TelleoSetupRoute
   VimDashboardRoute: typeof VimDashboardRoute
   VimLoginRoute: typeof VimLoginRoute
   VimWaitlistRoute: typeof VimWaitlistRoute
@@ -4474,6 +4487,13 @@ declare module "@tanstack/react-router" {
       path: "/vim/dashboard"
       fullPath: "/vim/dashboard"
       preLoaderRoute: typeof VimDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/telleo/setup": {
+      id: "/telleo/setup"
+      path: "/telleo/setup"
+      fullPath: "/telleo/setup"
+      preLoaderRoute: typeof TelleoSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/signup/start": {
@@ -5956,6 +5976,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeBasePublishRoute: KnowledgeBasePublishRoute,
   McpAuthorizeRoute: McpAuthorizeRoute,
   SignupStartRoute: SignupStartRoute,
+  TelleoSetupRoute: TelleoSetupRoute,
   VimDashboardRoute: VimDashboardRoute,
   VimLoginRoute: VimLoginRoute,
   VimWaitlistRoute: VimWaitlistRoute,

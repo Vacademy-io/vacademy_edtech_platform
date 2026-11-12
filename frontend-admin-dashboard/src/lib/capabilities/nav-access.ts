@@ -272,7 +272,15 @@ export interface DecideRouteAccessArgs {
      * known (sidebar not mounted / settings still loading) — then no lock check.
      */
     navEntries: NavEntry[] | null;
+    /**
+     * The role's display settings are an allow-list (ui.sidebarAllowList, Telleo sign-ups): a
+     * page no visible entry covers is blocked too, not only a locked one. Needs navEntries.
+     */
+    allowListOnly?: boolean;
 }
+
+/** The label the locked page shows for a page outside an allow-list. */
+export const NOT_IN_ALLOW_LIST_LABEL = 'This page';
 
 /**
  * (a) MANAGED: the most specific catalogue/sidebar claims on the path are all
@@ -286,6 +294,7 @@ export function decideRouteAccess({
     pathname,
     entitlement,
     navEntries,
+    allowListOnly = false,
 }: DecideRouteAccessArgs): RouteAccessDecision {
     const path = toAppPath(pathname);
     if (!path || isAlwaysAllowedPath(path)) return { kind: 'allow' };
@@ -308,6 +317,10 @@ export function decideRouteAccess({
         }
         if (tier.length > 0 && tier.every((e) => e.locked)) {
             return { kind: 'locked', label: tier[0]!.label };
+        }
+        // (c) Allow-list: nothing the user can see covers this page.
+        if (allowListOnly && tier.length === 0) {
+            return { kind: 'locked', label: NOT_IN_ALLOW_LIST_LABEL };
         }
     }
     return { kind: 'allow' };

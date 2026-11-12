@@ -36,6 +36,11 @@ export interface NavSnapshot {
     sidebarCategories: CategoryState[] | null;
     /** True once the role's display settings were applied (false = still the defaults). */
     settingsReady?: boolean;
+    /**
+     * The role's settings are an allow-list (ui.sidebarAllowList): a page not under a visible
+     * sidebar entry is blocked, not just unlisted. Only ever true once settingsReady.
+     */
+    allowListOnly?: boolean;
 }
 
 export const useNavSnapshotStore = create<{

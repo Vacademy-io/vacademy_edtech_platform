@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, EnvelopeSimple, GoogleLogo } from '@phosphor-icons/react';
+import { CheckCircle, EnvelopeSimple, GoogleLogo, WhatsappLogo } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import PhoneInputField from '@/components/design-system/phone-input-field';
@@ -21,9 +21,11 @@ import {
     consumeGoogleReturn,
     fetchProductOffer,
     fetchSignupConfig,
+    requestPhoneOtp,
     requestSignupOtp,
     signupErrorMessage,
     startGoogleSignup,
+    verifyPhoneOtp,
     verifySignupOtp,
     type SignupContext,
     type SignupProductConfig,
@@ -33,7 +35,22 @@ import {
 const MAX_RESENDS = 3;
 const RESEND_SECONDS = 30;
 
-type Step = 'method' | 'otp' | 'details';
+/** 'phone' and 'phoneOtp' only for products that verify a phone (Telleo). */
+type Step = 'method' | 'otp' | 'phone' | 'phoneOtp' | 'details';
+
+/** "real_estate" -> "Real estate", for business types the translations do not list. */
+const humanise = (value: string) => {
+    const words = value.replace(/_/g, ' ');
+    return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+/** Digits with the country code; a bare 10-digit number is Indian. */
+const phoneDigits = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 10) return `91${digits}`;
+    if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`;
+    return digits;
+};
 
 const INSTITUTE_TYPES = ['school', 'coaching', 'college', 'university', 'company', 'other'];
 /** What each answer stores as the teacher count. */
@@ -90,10 +107,16 @@ const SignupSteps = ({
         staleTime: 60_000,
     });
     const google = useMemo(() => consumeGoogleReturn(), []);
-    const [step, setStep] = useState<Step>(google?.signupToken ? 'details' : 'method');
+    const needsPhone = !!product.phone_verification_required;
+    /** Where the visitor goes once the email is proven. */
+    const afterEmail: Step = needsPhone ? 'phone' : 'details';
+    const [step, setStep] = useState<Step>(google?.signupToken ? afterEmail : 'method');
     const [email, setEmail] = useState(google?.email ?? '');
     const [otp, setOtp] = useState('');
     const [signupToken, setSignupToken] = useState(google?.signupToken ?? '');
+    const [phone, setPhone] = useState('');
+    const [phoneOtp, setPhoneOtp] = useState('');
+    const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [googleFailed, setGoogleFailed] = useState(!!google?.failed);
     const [resendsLeft, setResendsLeft] = useState(MAX_RESENDS);
@@ -130,10 +153,34 @@ const SignupSteps = ({
         onSuccess: (token) => {
             setSignupToken(token);
             setError(null);
+            setStep(afterEmail);
+        },
+        onError: onFail(t('signup.codeWrong')),
+    });
+
+    const sendPhoneCode = useMutation({
+        mutationFn: () => requestPhoneOtp(context.product, signupToken, phoneDigits(phone)),
+        onSuccess: () => {
+            setError(null);
+            setResendIn(RESEND_SECONDS);
+            setStep('phoneOtp');
+        },
+        onError: onFail(t('signup.sendFailed')),
+    });
+
+    const checkPhoneCode = useMutation({
+        mutationFn: () =>
+            verifyPhoneOtp(context.product, signupToken, phoneDigits(phone), phoneOtp.trim()),
+        onSuccess: (token) => {
+            setSignupToken(token);
+            setVerifiedPhone(phoneDigits(phone));
+            setError(null);
             setStep('details');
         },
         onError: onFail(t('signup.codeWrong')),
     });
+
+    const phoneValid = /^\d{10,15}$/.test(phoneDigits(phone));
 
     const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.trim());
 
@@ -144,16 +191,36 @@ const SignupSteps = ({
     return (
         <Shell
             product={product}
-            title={step === 'details' ? t('signup.detailsTitle') : t('signup.title')}
+            title={
+                step === 'details'
+                    ? needsPhone
+                        ? t('signup.detailsTitleBusiness', 'About you and your business')
+                        : t('signup.detailsTitle')
+                    : step === 'phone' || step === 'phoneOtp'
+                      ? t('signup.phoneTitle', 'Verify your phone')
+                      : t('signup.title')
+            }
             subtitle={
                 step === 'details'
                     ? t('signup.detailsSubtitle', { days: product.trial_days })
-                    : offer.data?.demo_credits != null
-                      ? t('signup.subtitleCredits', {
-                            days: product.trial_days,
-                            credits: offer.data.demo_credits,
-                        })
-                      : t('signup.subtitle', { days: product.trial_days })
+                    : step === 'phone' || step === 'phoneOtp'
+                      ? t(
+                            'signup.phoneSubtitle',
+                            'During the trial your AI agent calls this number, so you can hear it for yourself.'
+                        )
+                      : offer.data?.demo_credits != null
+                        ? product.product === 'evalezy'
+                            ? t('signup.subtitleCredits', {
+                                  days: product.trial_days,
+                                  credits: offer.data.demo_credits,
+                              })
+                            : t('signup.subtitleCreditsGeneric', {
+                                  days: product.trial_days,
+                                  credits: offer.data.demo_credits,
+                                  defaultValue:
+                                      '{{days}} days free with {{credits}} credits. No card needed.',
+                              })
+                        : t('signup.subtitle', { days: product.trial_days })
             }
         >
             {(error || googleFailed) && (
@@ -278,6 +345,101 @@ const SignupSteps = ({
                 </form>
             )}
 
+            {step === 'phone' && (
+                <form
+                    className="flex flex-col gap-3"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        if (phoneValid) sendPhoneCode.mutate();
+                    }}
+                >
+                    <MyInput
+                        label={t('signup.whatsappNumber', 'WhatsApp number')}
+                        required
+                        inputType="tel"
+                        autoComplete="tel"
+                        inputPlaceholder="+91 98765 43210"
+                        input={phone}
+                        onChangeFunction={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, ''))}
+                        className="w-full sm:w-full"
+                    />
+                    <MyButton
+                        type="submit"
+                        buttonType="primary"
+                        scale="large"
+                        className="w-full"
+                        disabled={!phoneValid || sendPhoneCode.isPending}
+                    >
+                        <WhatsappLogo size={18} />
+                        {sendPhoneCode.isPending
+                            ? t('signup.sending')
+                            : t('signup.sendWhatsappCode', 'Send code on WhatsApp')}
+                    </MyButton>
+                </form>
+            )}
+
+            {step === 'phoneOtp' && (
+                <form
+                    className="flex flex-col gap-3"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        if (phoneOtp.trim().length >= 4) checkPhoneCode.mutate();
+                    }}
+                >
+                    <p className="text-body text-neutral-600">
+                        {t('signup.whatsappCodeSent', {
+                            phone: `+${phoneDigits(phone)}`,
+                            defaultValue: 'We sent a code on WhatsApp to {{phone}}.',
+                        })}
+                    </p>
+                    <MyInput
+                        label={t('signup.code')}
+                        required
+                        inputType="tel"
+                        autoComplete="one-time-code"
+                        input={phoneOtp}
+                        onChangeFunction={(e) =>
+                            setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
+                        className="w-full sm:w-full"
+                    />
+                    <MyButton
+                        type="submit"
+                        buttonType="primary"
+                        scale="large"
+                        className="w-full"
+                        disabled={phoneOtp.trim().length < 4 || checkPhoneCode.isPending}
+                    >
+                        {checkPhoneCode.isPending
+                            ? t('signup.checking')
+                            : t('signup.verifyPhone', 'Verify phone')}
+                    </MyButton>
+                    <div className="flex items-center justify-between text-body">
+                        <button
+                            type="button"
+                            className="text-neutral-500"
+                            onClick={() => {
+                                setPhoneOtp('');
+                                setError(null);
+                                setStep('phone');
+                            }}
+                        >
+                            {t('signup.changePhone', 'Change number')}
+                        </button>
+                        <button
+                            type="button"
+                            className="font-medium text-primary-500 disabled:text-neutral-400"
+                            disabled={resendIn > 0 || sendPhoneCode.isPending}
+                            onClick={() => sendPhoneCode.mutate()}
+                        >
+                            {resendIn > 0
+                                ? t('signup.resendIn', { seconds: resendIn })
+                                : t('signup.resend')}
+                        </button>
+                    </div>
+                </form>
+            )}
+
             {step === 'details' && (
                 <DetailsForm
                     context={context}
@@ -286,6 +448,7 @@ const SignupSteps = ({
                     email={email.trim()}
                     googleName={google?.name}
                     viaGoogle={viaGoogle}
+                    verifiedPhone={verifiedPhone}
                     onError={setError}
                 />
             )}
@@ -325,6 +488,7 @@ const DetailsForm = ({
     email,
     googleName,
     viaGoogle,
+    verifiedPhone,
     onError,
 }: {
     context: SignupContext;
@@ -333,14 +497,20 @@ const DetailsForm = ({
     email: string;
     googleName?: string;
     viaGoogle: boolean;
+    /** Proven by a WhatsApp code: shown, not asked for again (the server uses the proven one). */
+    verifiedPhone: string | null;
     onError: (message: string | null) => void;
 }) => {
     const { t } = useTranslation('evalezy');
+    const businessTypes = product.institute_types?.length ? product.institute_types : null;
+    const askTeachers = !product.hide_teachers;
     const schema = useMemo(
         () =>
             z.object({
                 fullName: z.string().trim().min(1, t('signup.required')),
-                phone: phoneSchema({ required: true, label: t('signup.phone') }),
+                phone: verifiedPhone
+                    ? z.string().optional()
+                    : phoneSchema({ required: true, label: t('signup.phone') }),
                 username: viaGoogle
                     ? z.string().optional()
                     : z
@@ -352,11 +522,13 @@ const DetailsForm = ({
                     : z.string().min(8, t('signup.passwordShort')),
                 instituteName: z.string().trim().min(1, t('signup.required')),
                 instituteType: z.string().min(1, t('signup.required')),
-                teachers: z.string().min(1, t('signup.required')),
+                teachers: askTeachers
+                    ? z.string().min(1, t('signup.required'))
+                    : z.string().optional(),
                 city: z.string().trim().min(1, t('signup.required')),
                 state: z.string().min(1, t('signup.required')),
             }),
-        [t, viaGoogle]
+        [t, viaGoogle, verifiedPhone, askTeachers]
     );
     type Values = z.infer<typeof schema>;
     const form = useForm<Values>({
@@ -379,14 +551,14 @@ const DetailsForm = ({
             completeSignup(context, {
                 signup_token: signupToken,
                 full_name: values.fullName,
-                phone: values.phone ?? '',
+                phone: verifiedPhone ?? values.phone ?? '',
                 username: viaGoogle ? undefined : values.username,
                 password: viaGoogle ? undefined : values.password,
                 institute_name: values.instituteName,
                 institute_type: values.instituteType,
                 city: values.city,
                 state: values.state,
-                teachers: Number(values.teachers),
+                teachers: askTeachers ? Number(values.teachers) : undefined,
             }),
         onSuccess: (tokens) => enterApp(tokens, product.app_path),
         onError: (error) => onError(signupErrorMessage(error) ?? t('signup.createFailed')),
@@ -438,39 +610,63 @@ const DetailsForm = ({
                     />
                 )}
                 {textField('fullName', t('signup.fullName'))}
-                <PhoneInputField
-                    label={t('signup.phone')}
-                    name="phone"
-                    placeholder={t('signup.phone')}
-                    control={form.control}
-                    required
-                    validate={false}
-                />
+                {verifiedPhone ? (
+                    <MyInput
+                        label={t('signup.phoneVerified', 'Phone number (verified)')}
+                        inputType="tel"
+                        input={`+${verifiedPhone}`}
+                        onChangeFunction={() => undefined}
+                        disabled
+                        className="w-full sm:w-full"
+                    />
+                ) : (
+                    <PhoneInputField
+                        label={t('signup.phone')}
+                        name="phone"
+                        placeholder={t('signup.phone')}
+                        control={form.control}
+                        required
+                        validate={false}
+                    />
+                )}
                 {!viaGoogle && textField('username', t('signup.username'))}
                 {!viaGoogle && textField('password', t('signup.password'), 'password')}
-                {textField('instituteName', t('signup.instituteName'))}
+                {textField(
+                    'instituteName',
+                    businessTypes
+                        ? t('signup.companyName', 'Company name')
+                        : t('signup.instituteName')
+                )}
                 <SelectField
-                    label={t('signup.instituteType')}
+                    label={
+                        businessTypes
+                            ? t('signup.businessType', 'Type of business')
+                            : t('signup.instituteType')
+                    }
                     name="instituteType"
                     required
                     control={form.control}
-                    options={INSTITUTE_TYPES.map((value) => ({
+                    options={(businessTypes ?? INSTITUTE_TYPES).map((value) => ({
                         _id: value,
                         value,
-                        label: t(`signup.types.${value}`),
+                        label: businessTypes
+                            ? t(`signup.businessTypes.${value}`, humanise(value))
+                            : t(`signup.types.${value}`),
                     }))}
                 />
-                <SelectField
-                    label={t('signup.teachers')}
-                    name="teachers"
-                    required
-                    control={form.control}
-                    options={TEACHER_BANDS.map((value) => ({
-                        _id: value,
-                        value: String(value),
-                        label: t(`signup.teacherBands.b${value}`),
-                    }))}
-                />
+                {askTeachers && (
+                    <SelectField
+                        label={t('signup.teachers')}
+                        name="teachers"
+                        required
+                        control={form.control}
+                        options={TEACHER_BANDS.map((value) => ({
+                            _id: value,
+                            value: String(value),
+                            label: t(`signup.teacherBands.b${value}`),
+                        }))}
+                    />
+                )}
                 {textField('city', t('signup.city'))}
                 <SelectField
                     label={t('signup.state')}

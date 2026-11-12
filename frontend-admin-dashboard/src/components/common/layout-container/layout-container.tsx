@@ -14,6 +14,9 @@ import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { RouteAccessGuard } from './route-access-guard';
+import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
+import { useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
+import { PLANS_SETTINGS_PATH } from '@/services/ai-plans/storefront';
 
 /**
  * New sidebar dimensions (Gmail-style two-bar):
@@ -67,6 +70,7 @@ export const LayoutContainer = ({
     // for this role — shares AssistDock's own resolution so the reserved right
     // gutter collapses exactly when the rail is hidden.
     const showAssistDock = useAssistDockVisible();
+    const allowListOnly = useNavSnapshotStore((s) => s.snapshot?.allowListOnly === true);
 
     // Track previous sidebar config to detect actual changes vs re-renders
     const prevConfigRef = useRef<string | null>(null);
@@ -149,6 +153,17 @@ export const LayoutContainer = ({
                 )}
             >
                 <Navbar showMobileBackButton={showMobileBackButton} />
+                {/* Product sign-ups shown the four-page dashboard (Telleo): the platform trial
+                    banner, asked only for them. Recharge opens Settings, AI plan. */}
+                <TrialBanner
+                    ns="telleoSetup"
+                    enabled={allowListOnly}
+                    renderUpgrade={(label) => (
+                        <a href={PLANS_SETTINGS_PATH} className="shrink-0 font-semibold underline">
+                            {label}
+                        </a>
+                    )}
+                />
                 <StudentSidebarProvider>
                     <div
                         className={cn(

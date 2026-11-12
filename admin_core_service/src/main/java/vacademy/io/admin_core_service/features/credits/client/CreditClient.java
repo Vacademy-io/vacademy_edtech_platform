@@ -692,6 +692,27 @@ public class CreditClient {
     }
 
     /**
+     * The institute's self sign-up trial as ai_service sees it ({@code is_trial}, {@code expired},
+     * {@code days_left}, {@code ends_at}): the one rule that also counts purchases, grants and a
+     * live plan. Null when it cannot be read.
+     */
+    public Map<String, Object> getTrialStatus(String instituteId) {
+        try {
+            String url = aiServiceUrl + "/ai-service/credits/v1/institutes/" + instituteId + "/trial";
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(buildInternalHeaders()),
+                    (Class<Map<String, Object>>) (Class<?>) Map.class);
+            return response.getStatusCode().is2xxSuccessful() ? response.getBody() : null;
+        } catch (Exception e) {
+            log.warn("Error reading the trial of institute {}: {}", instituteId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Grant credits to an institute (super admin action).
      *
      * The caller (SuperAdminCreditController) has already enforced isRootUser, and

@@ -11,4 +11,7 @@ public class SelfSignupOtpRequest {
     private String email;
     /** Only when verifying. */
     private String otp;
+    /** Phone step only: the email proof from the step before, and the number being proven. */
+    private String signupToken;
+    private String phone;
 }

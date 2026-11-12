@@ -31,9 +31,10 @@ export function RouteAccessGuard({ children }: { children?: ReactNode }) {
         });
     }, [snapshot, currentInstituteId]);
 
+    const allowListOnly = !!navEntries && snapshot?.allowListOnly === true;
     const decision = useMemo(
-        () => decideRouteAccess({ pathname, entitlement, navEntries }),
-        [pathname, entitlement, navEntries]
+        () => decideRouteAccess({ pathname, entitlement, navEntries, allowListOnly }),
+        [pathname, entitlement, navEntries, allowListOnly]
     );
 
     const lockedLabel = decision.kind === 'locked' ? decision.label : null;

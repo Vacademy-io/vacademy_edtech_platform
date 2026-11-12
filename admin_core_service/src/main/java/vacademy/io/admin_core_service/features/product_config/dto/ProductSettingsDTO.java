@@ -53,6 +53,9 @@ public class ProductSettingsDTO {
     /** Price of one extra credit after a plan's credits are used, in rupees. */
     private java.math.BigDecimal extraCreditPriceInr;
 
+    /** How this product's self sign-up differs from the default. None = the default. */
+    private SignupRulesDTO signupRules;
+
     private String updatedBy;
     private String updatedAt;
 }

@@ -1,11 +1,11 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Prohibit } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { EvalezyHeader } from './-components/EvalezyHeader';
-import { TrialBanner } from './-components/TrialBanner';
+import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
 
 export const Route = createFileRoute('/evalezy')({
@@ -29,7 +29,14 @@ function EvalezyLayout() {
         // long nowrap titles widen the page and the WebView zooms the whole app out.
         <div className="min-h-screen-safe flex w-full min-w-0 flex-col bg-neutral-50">
             <EvalezyHeader />
-            <TrialBanner />
+            <TrialBanner
+                ns="evalezy"
+                renderUpgrade={(label) => (
+                    <Link to="/evalezy/credits" className="shrink-0 font-semibold underline">
+                        {label}
+                    </Link>
+                )}
+            />
             <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
                 {isLoading ? (
                     <DashboardLoader />

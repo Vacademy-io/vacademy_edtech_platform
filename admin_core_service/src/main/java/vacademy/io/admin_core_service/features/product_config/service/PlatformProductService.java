@@ -12,6 +12,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.PublicProductOfferDTO;
+import vacademy.io.admin_core_service.features.product_config.dto.SignupRulesDTO;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -103,6 +104,7 @@ public class PlatformProductService {
                 ? body.getPlanValidityMonths() : existing.getPlanValidityMonths());
         row.put("extra_credit_price_inr", body.getExtraCreditPriceInr() != null
                 ? body.getExtraCreditPriceInr() : existing.getExtraCreditPriceInr());
+        row.put("signup_rules", body.getSignupRules() != null ? body.getSignupRules() : existing.getSignupRules());
         if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
@@ -132,6 +134,18 @@ public class PlatformProductService {
                 "Return hosts must be comma-separated hosts, like vacademy.io,evalezy.com");
         validateAlerts(b);
         validatePlans(b);
+        validateSignupRules(b.getSignupRules());
+    }
+
+    static void validateSignupRules(SignupRulesDTO rules) {
+        if (rules == null || rules.getInstituteTypes() == null) {
+            return;
+        }
+        require(rules.getInstituteTypes().size() <= 20, "At most 20 business types");
+        for (String type : rules.getInstituteTypes()) {
+            require(type != null && type.matches("^[a-z0-9_]{1,40}$"),
+                    "Business types can have only small letters, numbers and _");
+        }
     }
 
     private static void validateAlerts(ProductSettingsDTO b) {
@@ -229,6 +243,24 @@ public class PlatformProductService {
                     .stream().findFirst().map(ProductSettingsDTO::getDemoCredits).orElse(null);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * The product's sign-up rules; empty rules (Evalezy's behaviour) when it has none, is the
+     * platform itself, or cannot be read.
+     */
+    public SignupRulesDTO signupRulesFor(String productKey) {
+        if (!StringUtils.hasText(productKey) || "vacademy".equalsIgnoreCase(productKey)
+                || !PRODUCT_KEY.matcher(productKey).matches()) {
+            return new SignupRulesDTO();
+        }
+        try {
+            return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                    .stream().findFirst().map(ProductSettingsDTO::getSignupRules)
+                    .orElseGet(SignupRulesDTO::new);
+        } catch (Exception e) {
+            return new SignupRulesDTO();
         }
     }
 

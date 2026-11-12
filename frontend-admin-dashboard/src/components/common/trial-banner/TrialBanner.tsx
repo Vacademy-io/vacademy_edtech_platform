@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Warning } from '@phosphor-icons/react';
@@ -13,19 +13,31 @@ interface TrialStatus {
     days_left: number | null;
 }
 
-/** Days left of a self sign-up's trial, or the way forward once it has ended. Silent otherwise. */
-export const TrialBanner = () => {
-    const { t } = useTranslation('evalezy');
+interface TrialBannerProps {
+    /** Translation namespace with trial.left_one / trial.left_other / trial.ended / trial.upgrade. */
+    ns: string;
+    /** The way to pay, rendered on the right; gets the translated trial.upgrade label. */
+    renderUpgrade: (label: string) => ReactNode;
+    /** False skips the request (e.g. not a product sign-up). */
+    enabled?: boolean;
+}
+
+/**
+ * Days left of a self sign-up's trial, or the way forward once it has ended. Silent otherwise.
+ * One banner for every product (docs/PRODUCT_SELF_SIGNUP.md): ai_service decides who is on a trial.
+ */
+export const TrialBanner = ({ ns, renderUpgrade, enabled = true }: TrialBannerProps) => {
+    const { t } = useTranslation(ns);
     const instituteId = getCurrentInstituteId();
     const { data } = useQuery({
-        queryKey: ['EVALEZY_TRIAL', instituteId],
+        queryKey: ['SELF_SIGNUP_TRIAL', instituteId],
         queryFn: async () =>
             (
                 await authenticatedAxiosInstance.get<TrialStatus>(
                     `${AI_SERVICE_BASE_URL}/credits/v1/institutes/${instituteId}/trial`
                 )
             ).data,
-        enabled: !!instituteId,
+        enabled: enabled && !!instituteId,
         staleTime: 5 * 60 * 1000,
         retry: false,
     });
@@ -47,9 +59,7 @@ export const TrialBanner = () => {
                         ? t('trial.ended')
                         : t('trial.left', { count: data.days_left ?? 0 })}
                 </span>
-                <Link to="/evalezy/credits" className="shrink-0 font-semibold underline">
-                    {t('trial.upgrade')}
-                </Link>
+                {renderUpgrade(t('trial.upgrade'))}
             </div>
         </div>
     );
