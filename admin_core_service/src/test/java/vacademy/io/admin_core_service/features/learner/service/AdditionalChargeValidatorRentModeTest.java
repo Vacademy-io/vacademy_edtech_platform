@@ -13,11 +13,15 @@ import org.mockito.quality.Strictness;
 import vacademy.io.admin_core_service.features.course_catalogue.entity.CatalogueInstituteMapping;
 import vacademy.io.admin_core_service.features.course_catalogue.entity.CourseCatalogue;
 import vacademy.io.admin_core_service.features.course_catalogue.repository.CatalogueInstituteMappingRepository;
+import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
 import vacademy.io.admin_core_service.features.learner.dto.SecurityDepositStatusDTO;
 import vacademy.io.admin_core_service.features.learner.dto.v2.LearnerPackageSessionEnrollmentItemDTO;
 import vacademy.io.admin_core_service.features.learner.service.SecurityDepositDueService.Person;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
+import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.ArrayList;
@@ -25,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,6 +78,7 @@ class AdditionalChargeValidatorRentModeTest {
     @Mock private CatalogueInstituteMappingRepository catalogueInstituteMappingRepository;
     @Mock private PackageSessionRepository packageSessionRepository;
     @Mock private SecurityDepositDueService securityDepositDueService;
+    @Mock private EnrollInviteRepository enrollInviteRepository;
     @Spy private ObjectMapper objectMapper = new ObjectMapper();
     @InjectMocks private AdditionalChargeValidator validator;
 
@@ -98,6 +105,15 @@ class AdditionalChargeValidatorRentModeTest {
         when(securityDepositDueService.buyer(any(), anyString())).thenReturn(new Person("", "9876543210"));
         when(securityDepositDueService.signedInUser(anyString(), anyString())).thenReturn(new Person("u-1", ""));
         catalogue(SHIPPING, DEPOSIT);
+        // Every package session id starting "book-" is an ACTIVE session of INSTITUTE.
+        when(packageSessionRepository.findActiveIdsOfInstitute(anyCollection(), anyString())).thenAnswer(invocation -> {
+            Collection<String> ids = invocation.getArgument(0);
+            String institute = invocation.getArgument(1);
+            return INSTITUTE.equals(institute) ? ids.stream().filter(id -> id.startsWith("book-")).toList() : List.of();
+        });
+        EnrollInvite membershipInvite = new EnrollInvite();
+        membershipInvite.setInstituteId(INSTITUTE);
+        when(enrollInviteRepository.findById("inv-mem")).thenReturn(Optional.of(membershipInvite));
     }
 
     private static PackageSessionRepository.StockInfoProjection stockInfo(String id, String packageType) {
@@ -182,6 +198,44 @@ class AdditionalChargeValidatorRentModeTest {
         assertEquals(AdditionalChargeValidator.RENT_CHARGE_MISMATCH_MESSAGE, e.getMessage());
     }
 
+    private static CatalogueInstituteMapping mappingWith(String... charges) {
+        CourseCatalogue catalogue = new CourseCatalogue();
+        catalogue.setCatalogueJson("{\"globalSettings\":{\"payment\":{\"additionalCharges\":["
+                + String.join(",", charges) + "]}}}");
+        CatalogueInstituteMapping mapping = new CatalogueInstituteMapping();
+        mapping.setCourseCatalogue(catalogue);
+        return mapping;
+    }
+
+    @Test
+    void namingAnotherCatalogueThatLinksNoRentChargeDoesNotSkipTheDeposit() {
+        // "courses" links only shipping; the institute's storefront catalogue links the deposit.
+        CatalogueInstituteMapping courses = mappingWith(SHIPPING);
+        when(catalogueInstituteMappingRepository.findByInstituteIdAndTagName(eq(INSTITUTE), eq("courses"), anyList()))
+                .thenReturn(Optional.of(courses));
+        when(catalogueInstituteMappingRepository.findByInstituteIdAndStatusIn(eq(INSTITUTE), anyList()))
+                .thenReturn(List.of(courses, mappingWith(SHIPPING, DEPOSIT)));
+        depositDue(true);
+
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> validator.validateRentMode(INSTITUTE, "courses", List.of(MEMBERSHIP), buyer));
+        assertTrue(e.getMessage().startsWith("SECURITY_DEPOSIT_MISSING"), e.getMessage());
+    }
+
+    @Test
+    void twoCataloguesWithTheirOwnDepositAcceptEitherOneWithoutATag() {
+        String otherDeposit = DEPOSIT.replace("ps-dep", "ps-dep-2").replace("plan-dep", "plan-dep-2");
+        when(catalogueInstituteMappingRepository.findByInstituteIdAndStatusIn(eq(INSTITUTE), anyList()))
+                .thenReturn(List.of(mappingWith(DEPOSIT), mappingWith(otherDeposit)));
+        depositDue(true);
+
+        assertDoesNotThrow(() -> validator.validateRentMode(INSTITUTE, null,
+                List.of(MEMBERSHIP, line("ps-dep-2", "plan-dep-2")), buyer));
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> validator.validateRentMode(INSTITUTE, null, List.of(MEMBERSHIP), buyer));
+        assertTrue(e.getMessage().startsWith("SECURITY_DEPOSIT_MISSING"), e.getMessage());
+    }
+
     @Test
     void droppingTheTagDoesNotSkipTheDeposit() {
         depositDue(true);
@@ -252,5 +306,128 @@ class AdditionalChargeValidatorRentModeTest {
         assertNull(status.getChargeKey());
         assertEquals(0.0, status.getAmount());
         verify(securityDepositDueService, never()).isDue(any(), any());
+    }
+
+    // ── One package-type read per order ──────────────────────────────────────────
+
+    @Test
+    void anOrderReadsItsPackageTypesOnceForBothChecks() {
+        depositDue(true);
+        List<LearnerPackageSessionEnrollmentItemDTO> items = List.of(MEMBERSHIP, line("ps-dep", "plan-dep"));
+
+        Map<String, String> types = validator.packageTypes(items);
+        validator.validate(INSTITUTE, TAG, items, types);
+        validator.validateRentMode(INSTITUTE, TAG, items, types, buyer);
+
+        verify(packageSessionRepository, times(1)).findStockInfoByIds(anyCollection());
+    }
+
+    // ── Rent picks (requested_book_package_session_ids) ─────────────────────────
+
+    private static List<String> books(int count) {
+        return IntStream.rangeClosed(1, count).mapToObj(i -> "book-" + i).toList();
+    }
+
+    @Test
+    void upToTwentyActivePicksOfTheInstitutePass() {
+        List<String> picks = new ArrayList<>(books(AdditionalChargeValidator.MAX_RENT_PICKS));
+        picks.add("book-1"); // a repeat is one book
+        picks.add(" ");      // blank entries are never held
+
+        assertDoesNotThrow(() -> validator.validateRentPicks(INSTITUTE, picks));
+    }
+
+    @Test
+    void moreThanTwentyDistinctPicksAreRefusedWithoutAQuery() {
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> validator.validateRentPicks(INSTITUTE, books(AdditionalChargeValidator.MAX_RENT_PICKS + 1)));
+        assertEquals(AdditionalChargeValidator.RENT_PICKS_TOO_MANY_MESSAGE, e.getMessage());
+        verify(packageSessionRepository, never()).findActiveIdsOfInstitute(anyCollection(), anyString());
+    }
+
+    @Test
+    void aPickThatIsNotAnActiveSessionOfTheInstituteIsRefused() {
+        // "ps-other" stands for another institute's session, or a hidden / deleted one.
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> validator.validateRentPicks(INSTITUTE, List.of("book-1", "ps-other")));
+        assertEquals(AdditionalChargeValidator.RENT_PICKS_UNAVAILABLE_MESSAGE, e.getMessage());
+
+        assertThrows(InvalidRequestException.class,
+                () -> validator.validateRentPicks("inst-2", List.of("book-1")));
+    }
+
+    @Test
+    void noPicksMeansNoQuery() {
+        assertDoesNotThrow(() -> validator.validateRentPicks(INSTITUTE, null));
+        assertDoesNotThrow(() -> validator.validateRentPicks(INSTITUTE, List.of(" ", "")));
+        verify(packageSessionRepository, never()).findActiveIdsOfInstitute(anyCollection(), anyString());
+    }
+
+    // ── The public v1 request ────────────────────────────────────────────────────
+
+    private static LearnerEnrollRequestDTO v1Request(String packageSessionId, List<String> picks) {
+        LearnerPackageSessionsEnrollDTO enroll = new LearnerPackageSessionsEnrollDTO();
+        enroll.setPackageSessionIds(List.of(packageSessionId));
+        enroll.setEnrollInviteId("ps-mem".equals(packageSessionId) ? "inv-mem" : "inv-book");
+        enroll.setPlanId("plan-mem");
+        enroll.setRequestedBookPackageSessionIds(picks);
+        LearnerEnrollRequestDTO request = new LearnerEnrollRequestDTO();
+        request.setUser(new UserDTO());
+        // The browser may name another institute: the invite's is the one enrolled into.
+        request.setInstituteId("inst-from-browser");
+        request.setLearnerPackageSessionEnroll(enroll);
+        return request;
+    }
+
+    @Test
+    void aV1MembershipWhoseDepositIsDueIsRefused() {
+        depositDue(true);
+
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> validator.validateLegacyRentRequest(v1Request("ps-mem", List.of("book-1", "book-2"))));
+        assertTrue(e.getMessage().startsWith("SECURITY_DEPOSIT_MISSING"), e.getMessage());
+        verify(securityDepositDueService).buyer(any(), eq(INSTITUTE));
+    }
+
+    @Test
+    void aV1MembershipOfAMemberWhoAlreadyPaidPasses() {
+        depositDue(false);
+
+        assertDoesNotThrow(() -> validator.validateLegacyRentRequest(v1Request("ps-mem", List.of("book-1"))));
+    }
+
+    @Test
+    void aV1MembershipWhereNoCatalogueLinksAOncePerUserChargeIsUnaffected() {
+        catalogue(SHIPPING, RENT_DELIVERY);
+        depositDue(true);
+
+        assertDoesNotThrow(() -> validator.validateLegacyRentRequest(v1Request("ps-mem", null)));
+        verify(securityDepositDueService, never()).isDue(any(), any());
+    }
+
+    @Test
+    void aV1BuyNeverReadsTheCataloguesOrTheDueRule() {
+        depositDue(true);
+
+        assertDoesNotThrow(() -> validator.validateLegacyRentRequest(v1Request("ps-book", null)));
+        verify(catalogueInstituteMappingRepository, never()).findByInstituteIdAndStatusIn(any(), anyList());
+        verify(securityDepositDueService, never()).isDue(any(), any());
+        verify(enrollInviteRepository, never()).findById(any());
+        verify(packageSessionRepository, never()).findActiveIdsOfInstitute(anyCollection(), anyString());
+    }
+
+    @Test
+    void aV1RentRequestIsHeldToTheSamePickRules() {
+        depositDue(false);
+
+        InvalidRequestException tooMany = assertThrows(InvalidRequestException.class,
+                () -> validator.validateLegacyRentRequest(
+                        v1Request("ps-mem", books(AdditionalChargeValidator.MAX_RENT_PICKS + 1))));
+        assertEquals(AdditionalChargeValidator.RENT_PICKS_TOO_MANY_MESSAGE, tooMany.getMessage());
+
+        InvalidRequestException foreign = assertThrows(InvalidRequestException.class,
+                () -> validator.validateLegacyRentRequest(v1Request("ps-mem", List.of("ps-other"))));
+        assertEquals(AdditionalChargeValidator.RENT_PICKS_UNAVAILABLE_MESSAGE, foreign.getMessage());
+        verify(packageSessionRepository).findActiveIdsOfInstitute(anyCollection(), eq(INSTITUTE));
     }
 }

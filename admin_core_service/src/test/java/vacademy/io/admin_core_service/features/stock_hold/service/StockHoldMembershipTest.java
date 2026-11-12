@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +59,9 @@ class StockHoldMembershipTest {
     private static final Map<String, StockInfoProjection> SESSIONS = Map.of(
             "ps-mem", session("ps-mem", "MEMBERSHIP", 20, 1),
             "ps-dep", session("ps-dep", "SECURITY_DEPOSIT", 5, 5),
-            "ps-book", session("ps-book", "COURSE", 10, 3));
+            "ps-book", session("ps-book", "COURSE", 10, 3),
+            // A book an admin made unlimited after it was held / sold.
+            "ps-unlimited", session("ps-unlimited", "COURSE", null, null));
 
     private static StockInfoProjection session(String id, String packageType, Integer maxSeats, Integer slots) {
         StockInfoProjection info = mock(StockInfoProjection.class);
@@ -78,6 +81,12 @@ class StockHoldMembershipTest {
         when(row.getKind()).thenReturn(StockHoldKind.PURCHASE.name());
         when(row.getStatus()).thenReturn("SOLD");
         when(row.getQuantity()).thenReturn(1);
+        return row;
+    }
+
+    private static StockHoldRow heldRow(String id, String packageSessionId) {
+        StockHoldRow row = soldRow(id, packageSessionId);
+        when(row.getStatus()).thenReturn("HELD");
         return row;
     }
 
@@ -144,6 +153,28 @@ class StockHoldMembershipTest {
         verify(stockHoldRepository, never()).restoreUnclaimed("row-mem");
         verify(packageSessionRepository, never()).giveBackAvailableSlots(eq("ps-mem"), anyInt());
         verify(packageSessionRepository).giveBackAvailableSlots("ps-book", 1);
+    }
+
+    @Test
+    void restoringABookMadeUnlimitedAfterItsHoldStillReleasesAndRestoresItsRows() {
+        // Only a membership / charge row is skipped. A book that is no longer limited moves on as
+        // before (SOLD → RESTORED, HELD → RELEASED); giving its stock back is then a no-op.
+        StockHoldRow sold = soldRow("row-sold", "ps-unlimited");
+        StockHoldRow held = heldRow("row-held", "ps-unlimited");
+        StockHoldRow membershipHeld = heldRow("row-mem-held", "ps-mem");
+        when(stockHoldRepository.existsByUserPlanIdOrClaimedByUserPlanId(PLAN, PLAN)).thenReturn(true);
+        when(stockHoldRepository.findRowsOwnedOrClaimedByPlan(PLAN)).thenReturn(List.of(sold, held, membershipHeld));
+        when(stockHoldRepository.restoreUnclaimed("row-sold")).thenReturn(1);
+        when(stockHoldRepository.transitionStatus("row-held", "HELD", "RELEASED")).thenReturn(1);
+        when(packageSessionRepository.giveBackAvailableSlots("ps-unlimited", 1)).thenReturn(0);
+
+        assertTrue(service.restoreForPlan(PLAN, null));
+
+        verify(stockHoldRepository).restoreUnclaimed("row-sold");
+        verify(stockHoldRepository).transitionStatus("row-held", "HELD", "RELEASED");
+        verify(packageSessionRepository, times(2)).giveBackAvailableSlots("ps-unlimited", 1);
+        verify(stockHoldRepository, never()).transitionStatus(eq("row-mem-held"), anyString(), anyString());
+        verify(packageSessionRepository, never()).giveBackAvailableSlots(eq("ps-mem"), anyInt());
     }
 
     @Test

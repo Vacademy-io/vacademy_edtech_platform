@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.stock_hold.enums.StockHoldKind;
 import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
 import vacademy.io.common.common.dto.CustomFieldValueDTO;
+import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,8 +22,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,5 +129,24 @@ class MultiPackageRentOrderHoldTest {
                 legacy.getLearnerPackageSessionEnroll().getRequestedBookPackageSessionIds());
         assertEquals(List.of("ps-mem"), legacy.getLearnerPackageSessionEnroll().getPackageSessionIds());
         assertEquals(List.of(booksPreference), legacy.getLearnerPackageSessionEnroll().getCustomFieldValues());
+    }
+
+    @Test
+    void picksAreAcceptedOnAMembershipLineOnly() {
+        assertDoesNotThrow(() -> MultiPackageLearnerEnrollService.rejectRentPicksOffMembership(
+                List.of(line("ps-mem", 1, "book-1"), line("ps-dep", 1)), TYPES));
+
+        for (String notAMembership : List.of("ps-book", "ps-dep", "ps-ship", "ps-unknown")) {
+            assertThrows(InvalidRequestException.class,
+                    () -> MultiPackageLearnerEnrollService.rejectRentPicksOffMembership(
+                            List.of(line("ps-mem", 1), line(notAMembership, 1, "book-1")), TYPES),
+                    notAMembership);
+        }
+
+        // An empty or blank-only list is no picks at all.
+        LearnerPackageSessionEnrollmentItemDTO empty = line("ps-book", 1);
+        empty.setRequestedBookPackageSessionIds(List.of());
+        assertDoesNotThrow(() -> MultiPackageLearnerEnrollService.rejectRentPicksOffMembership(
+                List.of(empty, line("ps-ship", 1, " ")), TYPES));
     }
 }

@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.jpa.repository.Query;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.enroll_invite.service.PhoneIdentifierInviteSubmissionGuard;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
@@ -16,6 +17,7 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanS
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.common.auth.dto.UserDTO;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
@@ -151,5 +153,28 @@ class SecurityDepositDueServiceTest {
     void aShortNumberMatchesNobody() {
         assertEquals("", SecurityDepositDueService.lastTenDigits("12345"));
         assertEquals("", SecurityDepositDueService.lastTenDigits(null));
+    }
+
+    /**
+     * The native query needs a database, so its intent is pinned on its text: a plan counts only
+     * when its invite links at least one DEPOSIT / MEMBERSHIP session AND no session of any other
+     * type (a plan on an invite shared with a book could be the book, so it must not make a book
+     * buyer "not due"), among the links of the plan's payment option, whatever their status.
+     */
+    @Test
+    void aPlanCountsOnlyWhenItsInviteLinksNothingButTheseTypes() throws Exception {
+        Method method = UserPlanRepository.class.getMethod("existsGrantedPlanOnPackageTypes",
+                String.class, String.class, String.class, List.class, List.class, List.class);
+        String sql = method.getAnnotation(Query.class).value().replaceAll("\\s+", " ");
+
+        String links = "SELECT 1 FROM package_session_learner_invitation_to_payment_option psli";
+        assertTrue(sql.contains("AND EXISTS ( " + links), sql);
+        assertTrue(sql.contains("AND upper(trim(p.package_type)) IN (:packageTypes))"), sql);
+        assertTrue(sql.contains("AND NOT EXISTS ( " + links), sql);
+        assertTrue(sql.contains("AND (p.package_type IS NULL OR upper(trim(p.package_type)) NOT IN (:packageTypes)))"), sql);
+        String ofThePlansOption = "(up.payment_option_id IS NULL OR psli.payment_option_id IS NULL "
+                + "OR psli.payment_option_id = up.payment_option_id)";
+        assertEquals(2, sql.split(java.util.regex.Pattern.quote(ofThePlansOption), -1).length - 1, sql);
+        assertFalse(sql.contains("psli.status"), "link status stays unrestricted: " + sql);
     }
 }
