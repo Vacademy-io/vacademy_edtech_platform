@@ -75,7 +75,33 @@ public class EngagementPointsOfContact {
      */
     public int alert(String instituteId, String leadUserId, String title, String htmlBody,
                      String sourceKind, String sourceId) {
-        List<UserDTO> people = recipients(instituteId, leadUserId);
+        return send(recipients(instituteId, leadUserId), instituteId, title, htmlBody, sourceKind, sourceId);
+    }
+
+    /**
+     * The same alert for something that is about the institute's engines, not one lead: the admins
+     * plus the people chosen on the engines ({@code alsoUserIds}), each told once.
+     */
+    public int alertTeam(String instituteId, java.util.Collection<String> alsoUserIds, String title, String htmlBody,
+                         String sourceKind, String sourceId) {
+        Map<String, UserDTO> byId = new LinkedHashMap<>();
+        for (UserDTO u : recipients(instituteId, null)) byId.put(u.getId(), u);
+        List<String> extra = alsoUserIds == null ? List.of() : alsoUserIds.stream()
+                .filter(id -> id != null && !id.isBlank() && !byId.containsKey(id)).distinct().toList();
+        if (!extra.isEmpty()) {
+            try {
+                for (UserDTO u : authService.getUsersFromAuthServiceByUserIds(extra)) {
+                    if (u != null && u.getId() != null) byId.putIfAbsent(u.getId(), u);
+                }
+            } catch (Exception e) {
+                log.warn("Alert '{}': could not resolve the engines' contacts: {}", title, e.getMessage());
+            }
+        }
+        return send(new ArrayList<>(byId.values()), instituteId, title, htmlBody, sourceKind, sourceId);
+    }
+
+    private int send(List<UserDTO> people, String instituteId, String title, String htmlBody,
+                     String sourceKind, String sourceId) {
         if (people.isEmpty()) {
             log.warn("Alert '{}' for institute {}: nobody to tell (no admin or counsellor found)", title, instituteId);
             return 0;
