@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Where;
 import vacademy.io.common.auth.dto.UserTopLevelDto;
 import vacademy.io.common.core.utils.TextSanitizer;
@@ -37,6 +38,9 @@ public class User {
     private String fullName;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Where(clause = "status IN ('ACTIVE', 'INVITED')")
+    // Load the roles of up to 100 users in one query when several users are read together
+    // (bulk user-details lookups read thousands), instead of one query per user.
+    @BatchSize(size = 100)
     private Set<UserRole> roles;
     @Column(name = "address_line")
     private String addressLine;
