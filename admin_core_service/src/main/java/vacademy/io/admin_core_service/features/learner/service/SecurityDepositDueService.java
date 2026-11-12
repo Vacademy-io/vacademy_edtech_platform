@@ -23,7 +23,10 @@ import java.util.List;
  * <p><b>Rule:</b> due unless the person ever held, at this institute, a successfully paid or
  * granted plan on a SECURITY_DEPOSIT package or on a MEMBERSHIP package (memberships sold before
  * the deposit became its own line had it built into their price, and every first membership
- * after launch comes with the deposit, so any membership covers both).
+ * after launch comes with the deposit, so any membership covers both). A plan is on such a
+ * package only when its invite links nothing else (for the plan's payment option): a plan on an
+ * invite shared with a book could be the book, so it never waives the deposit
+ * (UserPlanRepository.existsGrantedPlanOnPackageTypes).
  *
  * <p><b>Paid or granted</b> = the plan's status is ACTIVE (paid, free or admin-granted), PENDING
  * (paid or granted and queued behind another plan) or EXPIRED (it ran), or a PAID payment log is

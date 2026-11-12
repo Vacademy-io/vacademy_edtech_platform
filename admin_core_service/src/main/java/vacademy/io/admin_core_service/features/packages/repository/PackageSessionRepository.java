@@ -681,4 +681,13 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
     List<String> findIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
                                     @Param("instituteId") String instituteId);
 
+    /** The subset of {@code ids} that are live (ACTIVE or HIDDEN) package sessions whose package belongs to the institute. */
+    @Query(value = """
+            SELECT DISTINCT ps.id FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            WHERE ps.id IN (:ids) AND pi.institute_id = :instituteId AND ps.status IN ('ACTIVE', 'HIDDEN')
+            """, nativeQuery = true)
+    List<String> findActiveIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
+                                          @Param("instituteId") String instituteId);
+
 }

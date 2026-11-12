@@ -10,16 +10,22 @@ import vacademy.io.admin_core_service.features.course.enums.CourseTypeEnum;
 import vacademy.io.admin_core_service.features.course_catalogue.entity.CatalogueInstituteMapping;
 import vacademy.io.admin_core_service.features.course_catalogue.enums.CatalogueStatusEnum;
 import vacademy.io.admin_core_service.features.course_catalogue.repository.CatalogueInstituteMappingRepository;
+import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
 import vacademy.io.admin_core_service.features.learner.dto.SecurityDepositStatusDTO;
 import vacademy.io.admin_core_service.features.learner.dto.v2.LearnerPackageSessionEnrollmentItemDTO;
 import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
+import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +63,12 @@ import java.util.stream.Collectors;
  * rent charge always. Orders without a membership line, and institutes whose catalogues link no
  * rent-mode charge, are judged exactly as before.
  *
+ * <p><b>Rent picks</b> ({@code requested_book_package_session_ids}, {@link #validateRentPicks}):
+ * at most {@link #MAX_RENT_PICKS} distinct books per order, each a live (ACTIVE or HIDDEN) package session of the
+ * order's institute. Shared by the v2 order and the public v1 rent request
+ * ({@link #validateLegacyRentRequest}), which also refuses a membership whose deposit is due: the
+ * v1 request has no line to carry it.
+ *
  * <p>Catalogues are read through the repository, which returns empty instead of throwing: this
  * runs inside the enrollment transaction, and an exception thrown out of a transactional
  * service would mark the whole enrollment rollback-only even when caught. Every check here runs
@@ -79,6 +91,13 @@ public class AdditionalChargeValidator {
             "A charge is missing from this order. Please reload the cart and try again.";
     static final String RENT_CHARGE_MISMATCH_MESSAGE =
             "A charge in this order does not match the catalogue. Please reload the cart and try again.";
+
+    /** Most distinct books one order may pick for a rent (requested_book_package_session_ids). */
+    public static final int MAX_RENT_PICKS = 20;
+    static final String RENT_PICKS_TOO_MANY_MESSAGE =
+            "At most " + MAX_RENT_PICKS + " books can be picked in one order.";
+    static final String RENT_PICKS_UNAVAILABLE_MESSAGE =
+            "A picked book is not available. Please reload the cart and try again.";
 
     /** {@code applicableTo} value of a buy-mode (storefront cart) charge. */
     private static final String BUY_MODE = "COURSE";
@@ -103,16 +122,29 @@ public class AdditionalChargeValidator {
     private SecurityDepositDueService securityDepositDueService;
 
     @Autowired
+    private EnrollInviteRepository enrollInviteRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
+
+    /** As {@link #validate(String, String, List, Map)}, reading the lines' package types itself. */
+    public void validate(String instituteId, String catalogueTag,
+                         List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        validate(instituteId, catalogueTag, items, packageTypes(items));
+    }
 
     /**
      * Buy-mode charges (shipping by number of copies).
      *
-     * @param items the order's lines, quantities already normalised (null counts as 1)
+     * @param items        the order's lines, quantities already normalised (null counts as 1)
+     * @param packageTypes {@link #packageTypes} of those lines (read once per order by the caller)
      * @throws InvalidRequestException (400) on a wrong tier plan or a missing charge line
      */
     public void validate(String instituteId, String catalogueTag,
-                         List<LearnerPackageSessionEnrollmentItemDTO> items) {
+                         List<LearnerPackageSessionEnrollmentItemDTO> items, Map<String, String> packageTypes) {
         if (items == null || items.isEmpty()) {
             return;
         }
@@ -123,7 +155,6 @@ public class AdditionalChargeValidator {
                 .map(ChargeConfig::packageSessionId)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toSet());
-        Map<String, String> packageTypes = packageTypes(items);
         boolean rentOrder = hasMembershipLine(items, packageTypes);
 
         // Copies in the cart = every line that is neither a charge nor a membership (a plan,
@@ -197,10 +228,20 @@ public class AdditionalChargeValidator {
         }
     }
 
+    /** As {@link #validateRentMode(String, String, List, Map, UserDTO)}, reading the lines' package types itself. */
+    public void validateRentMode(String instituteId, String catalogueTag,
+                                 List<LearnerPackageSessionEnrollmentItemDTO> items, UserDTO buyer) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        validateRentMode(instituteId, catalogueTag, items, packageTypes(items), buyer);
+    }
+
     /**
      * Rent-mode charges of a rent order (one with a MEMBERSHIP-package line); a no-op for any
-     * other order. The rent charges are the tagged catalogue's; with no tag (or an unknown one),
-     * every catalogue's of the institute, so dropping the tag cannot skip the deposit.
+     * other order. The rent charges are the tagged catalogue's when it links any; otherwise (no
+     * tag, an unknown one, or a catalogue that links none) every catalogue's of the institute,
+     * grouped by charge key — see {@link #requiredRentCharges}.
      *
      * <ul>
      *   <li>A rent charge line must carry the plan its config sets for a rent cart.</li>
@@ -210,16 +251,18 @@ public class AdditionalChargeValidator {
      *   <li>Any other linked rent charge must be present.</li>
      * </ul>
      *
-     * @param buyer the order's user as sent (id, or the identifier the enrolment resolves by);
-     *              nobody is created to answer this
+     * @param packageTypes {@link #packageTypes} of the lines (read once per order by the caller)
+     * @param buyer        the order's user as sent (id, or the identifier the enrolment resolves
+     *                     by); nobody is created to answer this
      * @throws InvalidRequestException (400) on any of the above
      */
     public void validateRentMode(String instituteId, String catalogueTag,
-                                 List<LearnerPackageSessionEnrollmentItemDTO> items, UserDTO buyer) {
+                                 List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                 Map<String, String> packageTypes, UserDTO buyer) {
         if (items == null || items.isEmpty()) {
             return;
         }
-        if (!hasMembershipLine(items, packageTypes(items))) {
+        if (!hasMembershipLine(items, packageTypes)) {
             return;
         }
         Optional<List<ChargeConfig>> tagged = taggedCatalogue(instituteId, catalogueTag);
@@ -248,40 +291,62 @@ public class AdditionalChargeValidator {
             }
         }
 
-        List<ChargeConfig> required = tagged.isPresent()
-                ? taggedRent
-                : (allRent != null ? allRent : rentOnly(allCatalogueCharges(instituteId)));
+        List<ChargeConfig> required = requiredRentCharges(instituteId, taggedRent, allRent);
         if (required.isEmpty()) {
             return;
         }
         Set<String> orderedSessions = orderedSessions(items);
         Boolean due = null;
-        for (ChargeConfig config : required) {
-            if (!config.chargedInRentCart()) {
-                continue;
-            }
-            boolean present = orderedSessions.contains(config.packageSessionId());
-            if (config.oncePerUser()) {
+        for (Map.Entry<String, List<ChargeConfig>> charge : byChargeKey(required).entrySet()) {
+            List<ChargeConfig> variants = charge.getValue();
+            // Any catalogue's variant of this charge satisfies it (two catalogues may each link
+            // their own deposit package session).
+            boolean present = variants.stream().anyMatch(c -> orderedSessions.contains(c.packageSessionId()));
+            if (variants.stream().anyMatch(ChargeConfig::oncePerUser)) {
                 if (due == null) {
                     due = securityDepositDueService.isDue(
                             securityDepositDueService.buyer(buyer, instituteId), instituteId);
                 }
                 if (due && !present) {
-                    log.info("Rent order on institute {} (catalogue {}) is missing due charge {} ({})",
-                            instituteId, catalogueTag, config.key(), config.packageSessionId());
+                    log.info("Rent order on institute {} (catalogue {}) is missing due charge {}",
+                            instituteId, catalogueTag, charge.getKey());
                     throw new InvalidRequestException(DEPOSIT_MISSING_MESSAGE);
                 }
                 if (!due && present) {
                     log.info("Rent order on institute {} (catalogue {}) carries charge {} the buyer already paid",
-                            instituteId, catalogueTag, config.key());
+                            instituteId, catalogueTag, charge.getKey());
                     throw new InvalidRequestException(DEPOSIT_NOT_DUE_MESSAGE);
                 }
             } else if (!present) {
-                log.warn("Rent order on institute {} (catalogue {}) is missing charge {} ({})",
-                        instituteId, catalogueTag, config.key(), config.packageSessionId());
+                log.warn("Rent order on institute {} (catalogue {}) is missing charge {}",
+                        instituteId, catalogueTag, charge.getKey());
                 throw new InvalidRequestException(RENT_CHARGE_MISSING_MESSAGE);
             }
         }
+    }
+
+    /**
+     * The rent charges an order must settle: the tagged catalogue's when it links any; otherwise
+     * every live catalogue's of the institute. So neither dropping the tag nor naming another
+     * catalogue of the institute that links none can skip a deposit — a rent-mode charge applies
+     * institute-wide once any storefront catalogue links it.
+     */
+    private List<ChargeConfig> requiredRentCharges(String instituteId, List<ChargeConfig> taggedRent,
+                                                   List<ChargeConfig> allRentOrNull) {
+        List<ChargeConfig> source = !taggedRent.isEmpty()
+                ? taggedRent
+                : (allRentOrNull != null ? allRentOrNull : rentOnly(allCatalogueCharges(instituteId)));
+        return source.stream().filter(ChargeConfig::chargedInRentCart).toList();
+    }
+
+    /** Rent charges grouped by their key (the package session when a config has no key), in order. */
+    private static Map<String, List<ChargeConfig>> byChargeKey(List<ChargeConfig> charges) {
+        Map<String, List<ChargeConfig>> byKey = new java.util.LinkedHashMap<>();
+        for (ChargeConfig config : charges) {
+            String key = StringUtils.hasText(config.key()) ? config.key() : config.packageSessionId();
+            byKey.computeIfAbsent(key, k -> new ArrayList<>()).add(config);
+        }
+        return byKey;
     }
 
     /**
@@ -291,9 +356,10 @@ public class AdditionalChargeValidator {
      * same due rule the checkout enforces.
      */
     public SecurityDepositStatusDTO securityDepositStatus(String instituteId, String catalogueTag, String userId) {
-        List<ChargeConfig> rentCharges = taggedCatalogue(instituteId, catalogueTag)
+        List<ChargeConfig> taggedRent = taggedCatalogue(instituteId, catalogueTag)
                 .map(AdditionalChargeValidator::rentOnly)
-                .orElseGet(() -> rentOnly(allCatalogueCharges(instituteId)));
+                .orElse(List.of());
+        List<ChargeConfig> rentCharges = requiredRentCharges(instituteId, taggedRent, null);
         Optional<ChargeConfig> onceCharge = rentCharges.stream()
                 .filter(ChargeConfig::oncePerUser)
                 .filter(ChargeConfig::chargedInRentCart)
@@ -305,6 +371,103 @@ public class AdditionalChargeValidator {
                 securityDepositDueService.signedInUser(userId, instituteId), instituteId);
         Double amount = onceCharge.get().expectedAmount(RENT_CART_QUANTITY);
         return new SecurityDepositStatusDTO(due, onceCharge.get().key(), amount != null ? amount : 0.0);
+    }
+
+    /**
+     * The books an order picked for a rent ({@code requested_book_package_session_ids}): at most
+     * {@link #MAX_RENT_PICKS} distinct ids, each a live (ACTIVE or HIDDEN) package session of the order's
+     * institute. Blank entries are ignored (they are never held). No query when nothing is picked.
+     *
+     * @throws InvalidRequestException (400) on too many picks or one that is not such a session
+     */
+    public void validateRentPicks(String instituteId, Collection<String> requestedBookPackageSessionIds) {
+        Set<String> picks = new LinkedHashSet<>();
+        if (requestedBookPackageSessionIds != null) {
+            requestedBookPackageSessionIds.stream().filter(StringUtils::hasText).forEach(picks::add);
+        }
+        if (picks.isEmpty()) {
+            return;
+        }
+        if (picks.size() > MAX_RENT_PICKS) {
+            log.warn("Rent order on institute {} picks {} books (max {})", instituteId, picks.size(), MAX_RENT_PICKS);
+            throw new InvalidRequestException(RENT_PICKS_TOO_MANY_MESSAGE);
+        }
+        Set<String> available = StringUtils.hasText(instituteId)
+                ? new HashSet<>(packageSessionRepository.findActiveIdsOfInstitute(picks, instituteId))
+                : Set.of();
+        List<String> unavailable = picks.stream().filter(pick -> !available.contains(pick)).toList();
+        if (!unavailable.isEmpty()) {
+            log.warn("Rent order on institute {} picks books that are not its active sessions: {}",
+                    instituteId, unavailable);
+            throw new InvalidRequestException(RENT_PICKS_UNAVAILABLE_MESSAGE);
+        }
+    }
+
+    /**
+     * The public v1 enroll request (LearnerEnrollRequestController), checked before it enrolls anyone:
+     * <ul>
+     *   <li>its rent picks, as {@link #validateRentPicks} (no query when there are none);</li>
+     *   <li>a MEMBERSHIP package in it, at an institute whose live catalogues link a
+     *       {@code oncePerUser} rent charge (the security deposit) that is due for this person,
+     *       is refused with {@link #DEPOSIT_MISSING_MESSAGE}: a v1 request has no line to carry
+     *       the deposit, so a stale storefront or a direct call would rent without it. The person
+     *       is resolved as on the v2 order (id, else phone / email), nobody is created.</li>
+     * </ul>
+     * Everything else passes untouched. One package-type read per request with package sessions;
+     * the catalogues and the due rule are read only when a membership is in it.
+     *
+     * @throws InvalidRequestException (400) as above
+     */
+    public void validateLegacyRentRequest(LearnerEnrollRequestDTO request) {
+        LearnerPackageSessionsEnrollDTO enroll = request != null ? request.getLearnerPackageSessionEnroll() : null;
+        if (enroll == null) {
+            return;
+        }
+        String instituteId = null;
+        if (enroll.getRequestedBookPackageSessionIds() != null
+                && enroll.getRequestedBookPackageSessionIds().stream().anyMatch(StringUtils::hasText)) {
+            instituteId = legacyRequestInstituteId(request);
+            validateRentPicks(instituteId, enroll.getRequestedBookPackageSessionIds());
+        }
+
+        Set<String> packageSessionIds = new HashSet<>();
+        if (enroll.getPackageSessionIds() != null) {
+            enroll.getPackageSessionIds().stream().filter(StringUtils::hasText).forEach(packageSessionIds::add);
+        }
+        if (packageSessionIds.isEmpty() || !packageTypesOf(packageSessionIds).values().stream()
+                .anyMatch(CourseTypeEnum::isMembership)) {
+            return;
+        }
+        if (instituteId == null) {
+            instituteId = legacyRequestInstituteId(request);
+        }
+        boolean depositLinked = rentOnly(allCatalogueCharges(instituteId)).stream()
+                .anyMatch(config -> config.oncePerUser() && config.chargedInRentCart());
+        if (!depositLinked) {
+            return;
+        }
+        if (securityDepositDueService.isDue(securityDepositDueService.buyer(request.getUser(), instituteId), instituteId)) {
+            log.info("v1 enroll of membership {} on institute {} refused: the security deposit is due",
+                    packageSessionIds, instituteId);
+            throw new InvalidRequestException(DEPOSIT_MISSING_MESSAGE);
+        }
+    }
+
+    /**
+     * The institute a v1 request enrolls into: its invite's (LearnerEnrollRequestService
+     * normalises to it whatever the request says), else the request's.
+     */
+    private String legacyRequestInstituteId(LearnerEnrollRequestDTO request) {
+        String inviteId = request.getLearnerPackageSessionEnroll().getEnrollInviteId();
+        if (StringUtils.hasText(inviteId)) {
+            String inviteInstituteId = enrollInviteRepository.findById(inviteId)
+                    .map(EnrollInvite::getInstituteId)
+                    .orElse(null);
+            if (StringUtils.hasText(inviteInstituteId)) {
+                return inviteInstituteId;
+            }
+        }
+        return request.getInstituteId();
     }
 
     private static int quantityOf(LearnerPackageSessionEnrollmentItemDTO item) {
@@ -324,11 +487,20 @@ public class AdditionalChargeValidator {
         return items.stream().anyMatch(item -> CourseTypeEnum.isMembership(packageTypes.get(item.getPackageSessionId())));
     }
 
-    /** Package type of each line's package session, by package session id; unknown ids are absent. */
-    private Map<String, String> packageTypes(List<LearnerPackageSessionEnrollmentItemDTO> items) {
-        Set<String> ids = orderedSessions(items).stream()
+    /**
+     * Package type of each line's package session (MEMBERSHIP, DELIVERY_CHARGE, ...), by package
+     * session id; unknown ids are absent. One query: an order reads this once and passes it on.
+     */
+    public Map<String, String> packageTypes(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        if (items == null || items.isEmpty()) {
+            return new HashMap<>();
+        }
+        return packageTypesOf(orderedSessions(items).stream()
                 .filter(StringUtils::hasText)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()));
+    }
+
+    private Map<String, String> packageTypesOf(Set<String> ids) {
         Map<String, String> types = new HashMap<>();
         if (ids.isEmpty()) {
             return types;

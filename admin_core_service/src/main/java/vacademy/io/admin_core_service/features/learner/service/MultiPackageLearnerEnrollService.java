@@ -17,7 +17,6 @@ import vacademy.io.admin_core_service.features.regional_pricing.dto.RegionalQuot
 import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceResolver;
 import vacademy.io.admin_core_service.features.stock_hold.entity.StockHold;
 import vacademy.io.admin_core_service.features.stock_hold.enums.StockHoldKind;
-import vacademy.io.admin_core_service.features.stock_hold.service.RepeatPurchasePolicyService;
 import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
@@ -83,9 +82,6 @@ public class MultiPackageLearnerEnrollService {
     private StockHoldService stockHoldService;
 
     @Autowired
-    private RepeatPurchasePolicyService repeatPurchasePolicyService;
-
-    @Autowired
     private AdditionalChargeValidator additionalChargeValidator;
 
     @Autowired
@@ -140,12 +136,15 @@ public class MultiPackageLearnerEnrollService {
         }
         boolean isManual = "MANUAL".equalsIgnoreCase(request.getEnrollmentType());
 
+        // Package type of every line (MEMBERSHIP, DELIVERY_CHARGE, ...), read once for the whole
+        // order and passed to every check below: a membership (rent plan) is one plan whose
+        // max_seats means books per period, never copies or stock; a charge is never a copy.
+        Map<String, String> packageTypeByPackageSessionId = additionalChargeValidator.packageTypes(items);
         // 0. One line per item, its copies in requested_quantity (null → 1).
-        validateQuantities(items);
-        // Package type of every line (MEMBERSHIP, DELIVERY_CHARGE, ...): a membership (rent plan)
-        // is one plan whose max_seats means books per period, never copies or stock.
-        Map<String, String> packageTypeByPackageSessionId = packageTypes(items);
+        validateQuantities(items, packageTypeByPackageSessionId);
         rejectMembershipQuantities(items, packageTypeByPackageSessionId);
+        // Rent picks belong to a membership line only.
+        rejectRentPicksOffMembership(items, packageTypeByPackageSessionId);
 
         // 0. Initialize PaymentInitiationRequest if missing
         if (request.getPaymentInitiationRequest() == null) {
@@ -250,10 +249,15 @@ public class MultiPackageLearnerEnrollService {
         Map<String, Double> lineAmountByPackageSessionId = lineAmounts(items, regionalPrice);
         String orderInstituteId = resolveOrderInstituteId(request, items.get(0));
 
+        // 0.35 The order's rent picks: at most MAX_RENT_PICKS distinct books, each an ACTIVE
+        // package session of the order's institute (no query when nothing is picked).
+        additionalChargeValidator.validateRentPicks(orderInstituteId, rentPicks(items));
+
         // 0.4 Shipping / additional charges must match the catalogue's tier for the number
         // of copies, and must not be dropped. Storefront orders only.
         if (!isManual && paymentInit.getAmount() != null && paymentInit.getAmount() > 0) {
-            additionalChargeValidator.validate(orderInstituteId, request.getCatalogueTag(), items);
+            additionalChargeValidator.validate(orderInstituteId, request.getCatalogueTag(), items,
+                    packageTypeByPackageSessionId);
         }
         // 0.5 A rent order (a membership line) carries the catalogue's rent charges, the
         // once-per-user security deposit exactly when it is due. Checked whatever the amount, so
@@ -261,7 +265,7 @@ public class MultiPackageLearnerEnrollService {
         // before anything is written, held or sent to a gateway, so a 400 leaves nothing.
         if (!isManual) {
             additionalChargeValidator.validateRentMode(orderInstituteId, request.getCatalogueTag(), items,
-                    request.getUser());
+                    packageTypeByPackageSessionId, request.getUser());
         }
 
         // 1. Ensure a consistent OrderId for the entire multi-package transaction
@@ -516,7 +520,8 @@ public class MultiPackageLearnerEnrollService {
      * quantity); and above 1 only on a one-time item that is not a charge (shipping / deposit).
      * A subscription is one membership, not copies.
      */
-    private void validateQuantities(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+    private void validateQuantities(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                    Map<String, String> packageTypeByPackageSessionId) {
         Set<String> seen = new HashSet<>();
         for (LearnerPackageSessionEnrollmentItemDTO item : items) {
             if (!StringUtils.hasText(item.getPackageSessionId())) {
@@ -534,14 +539,14 @@ public class MultiPackageLearnerEnrollService {
             if (quantity < 1) {
                 throw new InvalidRequestException("requested_quantity must be at least 1");
             }
-            if (quantity > 1 && !allowsQuantity(item)) {
+            if (quantity > 1 && !allowsQuantity(item, packageTypeByPackageSessionId.get(item.getPackageSessionId()))) {
                 throw new InvalidRequestException(
                         "Only one-time purchases can be bought in a quantity above 1");
             }
         }
     }
 
-    private boolean allowsQuantity(LearnerPackageSessionEnrollmentItemDTO item) {
+    private boolean allowsQuantity(LearnerPackageSessionEnrollmentItemDTO item, String packageType) {
         String optionType = null;
         if (StringUtils.hasText(item.getPaymentOptionId())) {
             vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption option =
@@ -554,7 +559,7 @@ public class MultiPackageLearnerEnrollService {
                     .orElse(null);
         }
         return PaymentOptionType.ONE_TIME.name().equals(optionType)
-                && !repeatPurchasePolicyService.isChargePackageSession(item.getPackageSessionId());
+                && !ChargePackageType.isCharge(packageType);
     }
 
     /**
@@ -654,23 +659,32 @@ public class MultiPackageLearnerEnrollService {
         return holdsByPackageSessionId;
     }
 
-    /** Package type of each line's package session, by package session id; unknown ids are absent. */
-    private Map<String, String> packageTypes(List<LearnerPackageSessionEnrollmentItemDTO> items) {
-        List<String> ids = items.stream()
-                .map(LearnerPackageSessionEnrollmentItemDTO::getPackageSessionId)
-                .filter(StringUtils::hasText)
-                .distinct()
-                .toList();
-        Map<String, String> types = new HashMap<>();
-        if (ids.isEmpty()) {
-            return types;
-        }
-        for (PackageSessionRepository.StockInfoProjection info : packageSessionRepository.findStockInfoByIds(ids)) {
-            if (info.getPackageSessionId() != null && info.getPackageType() != null) {
-                types.put(info.getPackageSessionId(), info.getPackageType());
+    /**
+     * Rent picks ({@code requested_book_package_session_ids}) are the books a membership line
+     * asks for; on any other line they would hold stock nobody rents, so they are refused.
+     * An empty or blank-only list is the same as none.
+     */
+    static void rejectRentPicksOffMembership(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                             Map<String, String> packageTypeByPackageSessionId) {
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            List<String> picks = item.getRequestedBookPackageSessionIds();
+            if (picks != null && picks.stream().anyMatch(StringUtils::hasText)
+                    && !CourseTypeEnum.isMembership(packageTypeByPackageSessionId.get(item.getPackageSessionId()))) {
+                throw new InvalidRequestException(
+                        "requested_book_package_session_ids is only accepted on a membership line");
             }
         }
-        return types;
+    }
+
+    /** Every line's rent picks, in order (blank entries included: the validator skips them). */
+    private static List<String> rentPicks(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        List<String> picks = new ArrayList<>();
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            if (item.getRequestedBookPackageSessionIds() != null) {
+                picks.addAll(item.getRequestedBookPackageSessionIds());
+            }
+        }
+        return picks;
     }
 
     /** A membership is one plan, as on the v1 rent request: never bought in a quantity. */
