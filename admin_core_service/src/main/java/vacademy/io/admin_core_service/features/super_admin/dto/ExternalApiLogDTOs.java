@@ -14,7 +14,7 @@ public final class ExternalApiLogDTOs {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record LogRow(String id, Instant occurredAt, String vendor, String operation, String status, String error,
             String instituteId, String instituteName, BigDecimal amount, String currency, BigDecimal durationMs,
-            Boolean creditsBilled) {
+            Boolean creditsBilled, Integer httpStatus) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
