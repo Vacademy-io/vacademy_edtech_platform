@@ -186,6 +186,8 @@
   },
   "jsonRenderer": {
     "hiddenBlock": "छिपा हुआ: {{label}}",
+    "tagFilterAll": "सभी",
+    "tagFilterLabel": "टैग से फ़िल्टर करें",
     "video": "वीडियो",
     "noVideoUrlConfigured": "कोई वीडियो URL कॉन्फ़िगर नहीं है",
     "play": "चलाएँ",

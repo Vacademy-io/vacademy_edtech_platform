@@ -400,7 +400,17 @@
     "componentCount_other": "{{count}} components",
     "slotEmpty": "Empty — drag a component here from the library",
     "clickToEdit": "Click to edit",
-    "removeFromSlot": "Remove from slot"
+    "removeFromSlot": "Remove from slot",
+    "tagFilter": "Tag filter",
+    "showTagFilter": "Show tag filter above this layout",
+    "tagFilterHint": "Chips are made from the tags on every column layout of this page. Clicking one shows only the columns with that tag. To open the page already filtered, link to it with ?tag=<tag name>.",
+    "noTagsYet": "No tags yet — add Filter tags to the columns below (or to other column layouts on this page).",
+    "allLabel": "\"All\" chip label",
+    "allPlaceholder": "All",
+    "chipsGroup": "Filter chips",
+    "columnTags": "Filter tags",
+    "columnTagsPlaceholder": "e.g. Storybooks, 2 year old",
+    "columnTagsHint": "Separate tags with commas. Used by the tag filter on this page."
   },
   "mediaShowcase": {
     "defaults": {

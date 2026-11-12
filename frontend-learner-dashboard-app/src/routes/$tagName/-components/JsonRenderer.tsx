@@ -104,6 +104,8 @@ import { ScormViewerComponent } from "./components/ScormViewerComponent";
 import { Policy } from "./components/Policy";
 import { RAIL_CLONE_PROPS, useAutoScrollRail, useRailArrows } from "../-utils/use-auto-scroll-rail";
 import { useCatalogueSearchParams } from "../-utils/catalogue-url-state";
+import { collectPageFilterTags, columnTagLists, layoutHasFilterTags } from "../-utils/tag-filter";
+import { FilterableColumnLayout } from "./components/TagFilterColumns";
 
 // Opt-in section: loaded only by pages that have a learningPath, so every
 // other page (and the logged-in app, which bundles this renderer) skips it.
@@ -151,6 +153,13 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
   // Site language (catalogue-locale): the dictionary for the visitor's
   // language, undefined in the base language or on a single-language site.
   const { dict } = useCatalogueLocale();
+
+  /** Chips of the page's tag filter: every tag on its column layouts, in the
+   *  order the first filter-bar layout sets. Empty on untagged pages. */
+  const pageFilterTags = collectPageFilterTags(
+    page.components as any,
+    (page.components as any[]).find((c) => c?.type === 'columnLayout' && c.props?.showTagFilter)?.props?.tagOrder,
+  );
 
   /** A section with visibleWhen rules (e.g. "Start free" only on the
    *  unfiltered Courses view) follows the URL through VisibleWhenGate, around
@@ -650,7 +659,9 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         // Use a CSS custom property so the @media rule in index.css can override it
         // on mobile (inline styles can't be overridden by regular rules, but CSS
         // custom properties cascade normally and can be overridden with !important).
-        return (
+        // Columns hidden by the page's tag filter are skipped; the track
+        // count stays, so the books left keep their width and move left.
+        const renderGrid = (isVisible: (index: number) => boolean) => (
           <div
             key={id}
             className={`${stackOnMobile ? 'grid-layout-responsive' : ''} ${stackOnMobile && reverseOnMobile ? 'grid-layout-reverse' : ''}`}
@@ -662,7 +673,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
               alignItems: alignMap[align] || 'start',
             } as React.CSSProperties}
           >
-            {slots.map((slotComponents: any[], slotIndex: number) => (
+            {slots.map((slotComponents: any[], slotIndex: number) => isVisible(slotIndex) && (
               <div
                 key={slotIndex}
                 className="min-w-0"
@@ -676,6 +687,20 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
               </div>
             ))}
           </div>
+        );
+        // Tagged columns (or a filter bar) join the page's tag filter;
+        // anything else renders exactly as before.
+        const tagLists = columnTagLists(props);
+        if (!props.showTagFilter && !layoutHasFilterTags(tagLists)) return renderGrid(() => true);
+        return (
+          <FilterableColumnLayout
+            key={id}
+            pageTags={pageFilterTags}
+            tagLists={tagLists}
+            showBar={!!props.showTagFilter}
+            allLabel={props.tagFilterAllLabel}
+            renderGrid={renderGrid}
+          />
         );
       }
 
@@ -1169,7 +1194,7 @@ const PricingTableRenderer: React.FC<any> = ({ headerText, subheading, plans = [
               ))}
             </ul>
             {plan.buttonText && (
-              <CatalogueLink to={plan.buttonTarget || '#'} className={`mt-8 block rounded-lg py-3 text-center font-semibold transition ${plan.highlighted ? 'text-white hover:opacity-90' : 'border border-catalogue-border text-catalogue-text-primary hover:bg-catalogue-interactive-hover'}`} style={plan.highlighted ? { backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' } : undefined}>
+              <CatalogueLink to={plan.buttonTarget || '#'} className={`mt-8 block rounded-lg py-3 text-center font-semibold transition ${plan.highlighted ? 'text-white hover:opacity-90' : 'border border-catalogue-border text-catalogue-text-primary hover:bg-catalogue-interactive-hover'}`} style={plan.highlighted ? { backgroundColor: 'var(--catalogue-btn-bg, hsl(var(--primary-500, 217 91% 60%)))', color: 'var(--catalogue-btn-ink, white)' } : undefined}>
                 {plan.buttonText}
               </CatalogueLink>
             )}
@@ -1328,7 +1353,7 @@ const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], 
               <label>{t("jsonRenderer.companyWebsite")}<input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
             </div>
             {error && <p className="rounded-lg bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary" role="alert">{error}</p>}
-            <button type="submit" disabled={submitting} className="w-full rounded-lg py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60" style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}>
+            <button type="submit" disabled={submitting} className="w-full rounded-lg py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60" style={{ backgroundColor: 'var(--catalogue-btn-bg, hsl(var(--primary-500, 217 91% 60%)))', color: 'var(--catalogue-btn-ink, white)' }}>
               {submitting ? t("jsonRenderer.sendingEllipsis") : (submitLabel || t("jsonRenderer.sendMessage"))}
             </button>
           </form>
@@ -2461,8 +2486,9 @@ const openWhatsApp = (phone?: string, message?: string) => {
 const ButtonBlockRenderer: React.FC<any> = ({ text, url = '#', target = '_self', variant = 'filled', size = 'large', alignment = 'center', backgroundColor = '', textColor = '', borderRadius = '8px', fullWidth = false, action = 'link', audienceId = '', formTitle = '', whatsappPhone = '', whatsappMessage = '' }) => {
   const { t } = useTranslation("coursePlayerA");
   const buttonText = text || t("jsonRenderer.button");
-  const bg = backgroundColor || 'hsl(var(--primary-500, 217 91% 60%))';
-  const fg = textColor || (variant === 'filled' ? 'white' : bg);
+  // No colour of its own → the section's button colour (Style → Buttons), else the site's primary.
+  const bg = backgroundColor || 'var(--catalogue-btn-bg, hsl(var(--primary-500, 217 91% 60%)))';
+  const fg = textColor || (variant === 'filled' ? (backgroundColor ? 'white' : 'var(--catalogue-btn-ink, white)') : bg);
   const padding = size === 'small' ? '10px 24px' : size === 'large' ? '16px 40px' : '12px 32px';
   const fontSize = size === 'small' ? '14px' : size === 'large' ? '18px' : '16px';
   const styleProps: React.CSSProperties = {
@@ -2538,7 +2564,7 @@ const NewsletterSignupRenderer: React.FC<any> = ({ heading, subheading, placehol
               type="submit"
               disabled={submitting}
               className="rounded-lg px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}
+              style={{ backgroundColor: 'var(--catalogue-btn-bg, hsl(var(--primary-500, 217 91% 60%)))', color: 'var(--catalogue-btn-ink, white)' }}
             >
               {submitting ? '…' : (buttonText || t("jsonRenderer.subscribe"))}
             </button>

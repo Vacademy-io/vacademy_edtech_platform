@@ -187,6 +187,8 @@
   },
   "jsonRenderer": {
     "hiddenBlock": "Masqué : {{label}}",
+    "tagFilterAll": "Tous",
+    "tagFilterLabel": "Filtrer par étiquette",
     "video": "Vidéo",
     "noVideoUrlConfigured": "Aucune URL vidéo configurée",
     "play": "Lecture",
