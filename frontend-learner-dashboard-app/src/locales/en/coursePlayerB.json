@@ -186,7 +186,9 @@
             "paymentFailed": "Your payment could not be completed. Your cart is unchanged, so you can try again.",
             "paymentPending": "Your payment is being confirmed. Your cart will clear once it is.",
             "chargeNotDue": "Your {{label}} is already with us, so it isn't charged again. New total: {{total}}.",
-            "chargeMissing": "Your cart is out of date. Please reload the page and check out again."
+            "chargeMissing": "Your cart is out of date. Please reload the page and check out again.",
+            "chargeAddedRefundable": "A refundable {{label}} of {{amount}} has been added to this order. New total: {{total}}.",
+            "chargeAdded": "{{label}} of {{amount}} has been added to this order. New total: {{total}}."
         },
         "razorpayDescription": "{{course}} Enrollment",
         "errors": {

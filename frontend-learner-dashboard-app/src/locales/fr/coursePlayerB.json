@@ -102,7 +102,9 @@
             "paymentFailed": "Votre paiement n'a pas pu être finalisé. Votre panier n'a pas changé, vous pouvez donc réessayer.",
             "paymentPending": "Votre paiement est en cours de confirmation. Votre panier sera vidé dès qu'il sera confirmé.",
             "chargeNotDue": "Votre {{label}} est déjà chez nous, il n'est donc pas facturé à nouveau. Nouveau total : {{total}}.",
-            "chargeMissing": "Votre panier n'est plus à jour. Veuillez recharger la page et relancer le paiement."
+            "chargeMissing": "Votre panier n'est plus à jour. Veuillez recharger la page et relancer le paiement.",
+            "chargeAddedRefundable": "Un(e) {{label}} remboursable de {{amount}} a été ajouté(e) à cette commande. Nouveau total : {{total}}.",
+            "chargeAdded": "{{label}} de {{amount}} a été ajouté(e) à cette commande. Nouveau total : {{total}}."
         },
         "razorpayDescription": "Inscription au {{course}}",
         "errors": {
