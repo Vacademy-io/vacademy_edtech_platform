@@ -123,6 +123,103 @@ public interface RecipientMessageRepository extends JpaRepository<RecipientMessa
     @Query("SELECT DISTINCT rm.userId FROM RecipientMessage rm WHERE rm.announcementId = :announcementId AND rm.userId IS NOT NULL")
     List<String> findDistinctUserIdsByAnnouncementId(@Param("announcementId") String announcementId);
 
+    // ==================== Delivery report ====================
+    //
+    // An announcement holds one row per user per mode per medium, so counting rows counts
+    // deliveries, not people. The report queries below roll rows up per person first: a person
+    // is reached when any of their rows went out (SENT, DELIVERED or READ), failed when none went
+    // out and at least one failed, and pending otherwise.
+
+    interface PeopleSummaryRow {
+        Number getPeople();
+        Number getMessages();
+        Number getReached();
+        Number getFailed();
+        Number getPending();
+    }
+
+    @Query(value = """
+            SELECT COUNT(*) AS "people",
+                   COALESCE(SUM(p.msgs), 0) AS "messages",
+                   COUNT(*) FILTER (WHERE p.reached) AS "reached",
+                   COUNT(*) FILTER (WHERE NOT p.reached AND p.failed) AS "failed",
+                   COUNT(*) FILTER (WHERE NOT p.reached AND NOT p.failed) AS "pending"
+            FROM (
+                SELECT rm.user_id,
+                       COUNT(*) AS msgs,
+                       BOOL_OR(rm.status IN ('SENT', 'DELIVERED', 'READ')) AS reached,
+                       BOOL_OR(rm.status = 'FAILED') AS failed
+                FROM recipient_messages rm
+                WHERE rm.announcement_id = :announcementId
+                GROUP BY rm.user_id
+            ) p
+            """, nativeQuery = true)
+    PeopleSummaryRow summarizePeople(@Param("announcementId") String announcementId);
+
+    /** Per channel: the medium (EMAIL, WHATSAPP, PUSH_NOTIFICATION) or, for in-app rows, the mode. */
+    interface ChannelSummaryRow {
+        String getChannel();
+        Number getPeople();
+        Number getReached();
+        Number getFailed();
+        Number getPending();
+    }
+
+    @Query(value = """
+            SELECT c.channel AS "channel",
+                   COUNT(*) AS "people",
+                   COUNT(*) FILTER (WHERE c.reached) AS "reached",
+                   COUNT(*) FILTER (WHERE NOT c.reached AND c.failed) AS "failed",
+                   COUNT(*) FILTER (WHERE NOT c.reached AND NOT c.failed) AS "pending"
+            FROM (
+                SELECT COALESCE(rm.medium_type, rm.mode_type) AS channel,
+                       rm.user_id,
+                       BOOL_OR(rm.status IN ('SENT', 'DELIVERED', 'READ')) AS reached,
+                       BOOL_OR(rm.status = 'FAILED') AS failed
+                FROM recipient_messages rm
+                WHERE rm.announcement_id = :announcementId
+                GROUP BY COALESCE(rm.medium_type, rm.mode_type), rm.user_id
+            ) c
+            GROUP BY c.channel
+            ORDER BY COUNT(*) DESC, c.channel
+            """, nativeQuery = true)
+    List<ChannelSummaryRow> summarizeChannels(@Param("announcementId") String announcementId);
+
+    /** Distinct people who read / dismissed, not interaction rows (a person can have several). */
+    interface EngagementSummaryRow {
+        Number getReadPeople();
+        Number getDismissedPeople();
+    }
+
+    @Query(value = """
+            SELECT COUNT(DISTINCT rm.user_id) FILTER (WHERE mi.interaction_type = 'READ') AS "readPeople",
+                   COUNT(DISTINCT rm.user_id) FILTER (WHERE mi.interaction_type = 'DISMISSED') AS "dismissedPeople"
+            FROM message_interactions mi
+            JOIN recipient_messages rm ON rm.id = mi.recipient_message_id
+            WHERE rm.announcement_id = :announcementId
+            """, nativeQuery = true)
+    EngagementSummaryRow summarizeEngagement(@Param("announcementId") String announcementId);
+
+    /**
+     * Report table page. Statuses is always non-empty (the service passes every status when
+     * unfiltered). An in-app channel is a mode with no medium, hence inAppOnly.
+     */
+    @Query("""
+            SELECT rm FROM RecipientMessage rm
+            WHERE rm.announcementId = :announcementId
+              AND rm.status IN :statuses
+              AND (:modeType IS NULL OR rm.modeType = :modeType)
+              AND (:mediumType IS NULL OR rm.mediumType = :mediumType)
+              AND (:inAppOnly = false OR rm.mediumType IS NULL)
+            ORDER BY rm.createdAt DESC
+            """)
+    Page<RecipientMessage> findReportPage(@Param("announcementId") String announcementId,
+                                          @Param("statuses") List<MessageStatus> statuses,
+                                          @Param("modeType") ModeType modeType,
+                                          @Param("mediumType") MediumType mediumType,
+                                          @Param("inAppOnly") boolean inAppOnly,
+                                          Pageable pageable);
+
     // Mode-specific queries with joins to mode-specific tables
     
     /**

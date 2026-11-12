@@ -105,7 +105,14 @@
             "read": "تمت القراءة",
             "failed": "فشل",
             "dismissed": "تم التجاهل",
-            "dismissRate": "معدل التجاهل"
+            "dismissRate": "معدل التجاهل",
+            "deliveriesSub_zero": "{{count}} عملية تسليم عبر القنوات",
+            "deliveriesSub_one": "عملية تسليم واحدة عبر القنوات",
+            "deliveriesSub_two": "عمليتا تسليم عبر القنوات",
+            "deliveriesSub_few": "{{count}} عمليات تسليم عبر القنوات",
+            "deliveriesSub_many": "{{count}} عملية تسليم عبر القنوات",
+            "deliveriesSub_other": "{{count}} عملية تسليم عبر القنوات",
+            "pending": "قيد الانتظار"
         },
         "emailEventsTitle": "أحداث البريد الإلكتروني",
         "viaSes": "عبر SES",
@@ -117,7 +124,9 @@
             "bounced": "مرتدة",
             "rejected": "مرفوضة",
             "complained": "تم الإبلاغ عنها كسبام",
-            "awaitingEvents": "بانتظار الأحداث"
+            "awaitingEvents": "بانتظار الأحداث",
+            "failedToSend": "فشل الإرسال",
+            "accepted": "مقبول من SES"
         },
         "pendingNote": "تم إرسال الرسائل ولكن لم تصل أي أحداث من SES بعد. إذا كنت تعمل محليًا، تأكد من تكوين الويب هوك SES → SNS → notification_service.",
         "noEmails": "لم يتم إرسال أي بريد إلكتروني لهذا الإعلان.",
@@ -132,7 +141,10 @@
                 "status": "الحالة",
                 "seenAt": "وقت المشاهدة",
                 "dismissedAt": "وقت التجاهل",
-                "deliveredAt": "وقت التسليم"
+                "deliveredAt": "وقت التسليم",
+                "channel": "القناة",
+                "emailActivity": "نشاط البريد",
+                "reason": "السبب"
             },
             "pagePagination": "صفحة {{page}} من {{totalPages}}",
             "titleCount_zero": "المستلمون ({{count}})",
@@ -151,6 +163,44 @@
             "delivery": "معدل التسليم",
             "read": "معدل القراءة",
             "dismiss": "معدل الإغلاق"
+        },
+        "channels": {
+            "title": "التسليم حسب القناة",
+            "delivered": "تم التسليم",
+            "failed": "فشل",
+            "pending": "قيد الانتظار",
+            "summary": "{{delivered}} من {{total}}"
+        },
+        "funnelTitle": "مسار البريد الإلكتروني",
+        "emailStatus": {
+            "SENT": "مُرسل",
+            "DELIVERED": "تم التسليم",
+            "OPENED": "مفتوح",
+            "CLICKED": "تم النقر",
+            "BOUNCED": "مرتد",
+            "COMPLAINED": "مُبلغ عنه كبريد مزعج",
+            "REJECTED": "مرفوض",
+            "FAILED": "لم يُرسل"
+        },
+        "filters": {
+            "allChannels": "كل القنوات",
+            "allStatuses": "كل الحالات"
+        },
+        "csv": {
+            "export": "تصدير CSV",
+            "exporting": "جارٍ التصدير...",
+            "failed": "تعذر تصدير التقرير",
+            "name": "الاسم",
+            "email": "البريد الإلكتروني",
+            "channel": "القناة",
+            "status": "الحالة",
+            "emailActivity": "نشاط البريد",
+            "deliveredAt": "وقت التسليم",
+            "openedAt": "وقت الفتح",
+            "clickedAt": "وقت النقر",
+            "seenAt": "وقت المشاهدة",
+            "dismissedAt": "وقت التجاهل",
+            "reason": "السبب"
         }
     },
     "rejectDialog": {
