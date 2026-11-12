@@ -106,7 +106,9 @@
             "checkoutFailedDefault": "فشل إتمام الدفع. حاول مرة أخرى.",
             "confirmingPayment": "جارٍ تأكيد الدفع...",
             "paymentFailed": "تعذّر إتمام الدفع. لم تتغير سلة التسوق، لذا يمكنك المحاولة مرة أخرى.",
-            "paymentPending": "جارٍ تأكيد الدفع. ستُفرَّغ سلة التسوق فور تأكيده."
+            "paymentPending": "جارٍ تأكيد الدفع. ستُفرَّغ سلة التسوق فور تأكيده.",
+            "chargeNotDue": "{{label}} الخاص بك لدينا بالفعل، لذا لن يُحتسب مرة أخرى. الإجمالي الجديد: {{total}}.",
+            "chargeMissing": "سلة التسوق غير محدّثة. يرجى إعادة تحميل الصفحة وإتمام الدفع مرة أخرى."
         },
         "razorpayDescription": "التسجيل في {{course}}",
         "errors": {
@@ -189,6 +191,12 @@
         "subtotalCount_few": "الإجمالي الفرعي ({{count}} كتب)",
         "subtotalCount_many": "الإجمالي الفرعي ({{count}} كتابًا)",
         "subtotalCount_other": "الإجمالي الفرعي ({{count}} كتاب)",
+        "rentCharge": {
+            "noteOnceRefundable": "يُضاف عند الدفع {{label}} قابل للاسترداد لمرة واحدة بقيمة {{amount}}.",
+            "note": "يُضاف {{label}} بقيمة {{amount}} عند الدفع.",
+            "onFile": "{{label}} الخاص بك مسجّل لدينا بالفعل، لذا لن يُحتسب مرة أخرى.",
+            "refundableLabel": "{{label}} (قابل للاسترداد)"
+        },
         "crossStore": {
             "multiple": "تحتوي سلتك على عناصر من {{count}} متاجر مختلفة ({{stores}}). يتولى كل متجر تنفيذ طلبه بنفسه، لذا قد تحتاج إلى إتمام الدفع لكل متجر على حدة.",
             "mismatch": "عناصر سلتك من {{store}}، لكن متجرك النشط مختلف. بدّل المتجر أو أزل هذه العناصر للحفاظ على الاتساق."
@@ -311,6 +319,9 @@
         "browseByGenre": "تصفّح حسب النوع",
         "rentMode": "وضع الاستئجار",
         "buyMode": "وضع الشراء",
+        "modeSwitchLabel": "شراء أو استئجار",
+        "modeBuy": "شراء",
+        "modeRent": "استئجار",
         "clearAll": "مسح الكل",
         "pickStoreTitle": "اختر متجرًا لتصفح خيارات الاستئجار",
         "pickStoreDescription": "يتم استلام كتب الاستئجار من متجر، لذا يختلف المخزون حسب المتجر. اختر متجرًا أعلاه لمعرفة المتاح.",
@@ -384,6 +395,21 @@
         "locationRestrictionMessage": "نسمح باستئجار الكتب فقط في {{city}}. هل تريد المتابعة؟",
         "buyInstead": "الشراء بدلًا من ذلك",
         "continue": "متابعة"
+    },
+    "membershipPlans": {
+        "defaultHeading": "خطط العضوية",
+        "defaultName": "الخطة",
+        "booksAtOnce": "الكتب في المرة الواحدة",
+        "booksPerPeriod": "الكتب خلال فترة الخطة",
+        "unlimited": "غير محدود",
+        "choosePlan": "اختر الخطة",
+        "loadError": "تعذّر تحميل الخطط الآن.",
+        "retry": "حاول مرة أخرى",
+        "emptyPreview": "لا توجد خطط عضوية بعد. يبقى هذا القسم مخفيًا عن الزوار حتى يتم نشر باقة عضوية.",
+        "depositNote": "+ {{amount}} {{label}}، تُضاف عند الدفع",
+        "depositNoteOneTime": "+ {{amount}} {{label}} (لمرة واحدة)، تُضاف عند الدفع",
+        "depositNoteRefundable": "+ {{amount}} {{label}} (قابلة للاسترداد)، تُضاف عند الدفع",
+        "depositNoteRefundableOneTime": "+ {{amount}} {{label}} (قابلة للاسترداد، لمرة واحدة)، تُضاف عند الدفع"
     },
     "header": {
         "toggleMenu": "تبديل القائمة",

@@ -184,7 +184,9 @@
             "checkoutFailedDefault": "Checkout failed. Please try again.",
             "confirmingPayment": "Confirming your payment...",
             "paymentFailed": "Your payment could not be completed. Your cart is unchanged, so you can try again.",
-            "paymentPending": "Your payment is being confirmed. Your cart will clear once it is."
+            "paymentPending": "Your payment is being confirmed. Your cart will clear once it is.",
+            "chargeNotDue": "Your {{label}} is already with us, so it isn't charged again. New total: {{total}}.",
+            "chargeMissing": "Your cart is out of date. Please reload the page and check out again."
         },
         "razorpayDescription": "{{course}} Enrollment",
         "errors": {
@@ -259,6 +261,12 @@
         "dismiss": "Dismiss",
         "subtotalCount_one": "Subtotal ({{count}} book)",
         "subtotalCount_other": "Subtotal ({{count}} books)",
+        "rentCharge": {
+            "noteOnceRefundable": "A one-time, refundable {{label}} of {{amount}} is added at checkout.",
+            "note": "{{label}} of {{amount}} is added at checkout.",
+            "onFile": "Your {{label}} is already on file, so it isn't charged again.",
+            "refundableLabel": "{{label}} (refundable)"
+        },
         "crossStore": {
             "multiple": "Your cart contains items from {{count}} different stores ({{stores}}). Each store handles its own fulfillment, so you may need to check out separately.",
             "mismatch": "Your cart items are from {{store}}, but your active store is different. Switch stores or remove these items to keep things consistent."
@@ -377,6 +385,9 @@
         "browseByGenre": "Browse by Genre",
         "rentMode": "Rent Mode",
         "buyMode": "Buy Mode",
+        "modeSwitchLabel": "Buy or rent",
+        "modeBuy": "Buy",
+        "modeRent": "Rent",
         "clearAll": "Clear all",
         "pickStoreTitle": "Pick a store to browse rentals",
         "pickStoreDescription": "Rental books are picked up at a store, so inventory is store-specific. Choose a store above to see what's available.",
@@ -490,6 +501,21 @@
         "locationRestrictionMessage": "We only allow renting books in {{city}}. Do you want to continue?",
         "buyInstead": "Buy Instead",
         "continue": "Continue"
+    },
+    "membershipPlans": {
+        "defaultHeading": "Membership plans",
+        "defaultName": "Plan",
+        "booksAtOnce": "Books at a time",
+        "booksPerPeriod": "Books per plan period",
+        "unlimited": "Unlimited",
+        "choosePlan": "Choose plan",
+        "loadError": "We couldn't load the plans right now.",
+        "retry": "Try again",
+        "emptyPreview": "No membership plans yet. This section stays hidden from visitors until a membership package is published.",
+        "depositNote": "+ {{amount}} {{label}}, added at checkout",
+        "depositNoteOneTime": "+ {{amount}} {{label}} (one-time), added at checkout",
+        "depositNoteRefundable": "+ {{amount}} {{label}} (refundable), added at checkout",
+        "depositNoteRefundableOneTime": "+ {{amount}} {{label}} (refundable, one-time), added at checkout"
     },
     "header": {
         "toggleMenu": "Toggle menu",
