@@ -9,17 +9,17 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** What one institute was given in the Content Library, as the platform portal sees it. */
+/** What is hidden from one institute in the Content Library, as the platform portal sees it. */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class LibraryInstituteAccessDto {
-    /** False when no owner institute is configured: there is no library to give. */
+    /** False when no owner institute is configured: there is no library to show. */
     private boolean libraryConfigured;
     /** True for the owner institute itself, which always sees and manages all of it. */
     private boolean owner;
-    /** Topics given to this institute directly. Everything below each one is included. */
-    private List<String> grantedNodeIds;
+    /** Topics hidden from this institute directly. Everything below each one is hidden too. */
+    private List<String> hiddenNodeIds;
 }

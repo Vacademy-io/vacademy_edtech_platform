@@ -64,10 +64,10 @@ class QuestionLibraryCopyServiceTest {
         ReflectionTestUtils.setField(service, "access", access);
         ReflectionTestUtils.setField(service, "scope", QuestionLibraryTestScopes.scope(access, nodeRepository));
         ReflectionTestUtils.setField(service, "nodeRepository", nodeRepository);
-        // The client was given one topic, "ssc".
+        // "upsc" is hidden from the client, so it sees only "ssc".
         when(nodeRepository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE"))
                 .thenReturn(List.of(QuestionLibraryTestScopes.node("ssc", null), QuestionLibraryTestScopes.node("upsc", null)));
-        when(nodeRepository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("ssc"));
+        when(nodeRepository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("upsc"));
         ReflectionTestUtils.setField(service, "questionRepository", questionRepository);
         ReflectionTestUtils.setField(service, "optionRepository", optionRepository);
         ReflectionTestUtils.setField(service, "importManager", importManager);
@@ -231,7 +231,8 @@ class QuestionLibraryCopyServiceTest {
     }
 
     @Test
-    void anInstituteGivenNothingCannotCopyAnything() {
+    void anInstituteWithEverythingHiddenCannotCopyAnything() {
+        when(nodeRepository.findHiddenNodeIds(OWNER, "stranger-inst")).thenReturn(List.of("ssc", "upsc"));
         assertThatThrownBy(() -> service.copy("stranger-inst", pick("lib-q")))
                 .isInstanceOf(VacademyException.class);
         verify(nodeRepository, never()).findPlacedLiveQuestionIds(any(), any(), any());

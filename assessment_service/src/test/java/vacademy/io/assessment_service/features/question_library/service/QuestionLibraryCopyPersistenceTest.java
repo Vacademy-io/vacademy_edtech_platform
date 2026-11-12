@@ -109,7 +109,7 @@ class QuestionLibraryCopyPersistenceTest {
     void setUp() throws Exception {
         // Inside the test transaction, so these roll back with everything else.
         for (String migration : List.of("V61__question_library.sql", "V62__question_library_paper.sql",
-                "V64__question_library_access.sql")) {
+                "V64__question_library_access.sql", "V65__question_library_access_hides.sql")) {
             jdbc.execute(Files.readString(Path.of("src/main/resources/db/migration", migration)));
         }
         rich("zz-t", "<p>Library question</p>");
@@ -124,9 +124,7 @@ class QuestionLibraryCopyPersistenceTest {
         jdbc.update("INSERT INTO option (id, question_id, text_id) VALUES ('zz-opt-a', ?, 'zz-a'), ('zz-opt-b', ?, 'zz-b')", LIB, LIB);
         jdbc.update("INSERT INTO question_library_node (id, institute_id, name) VALUES ('zz-node', ?, 'SSC')", OWNER);
         jdbc.update("INSERT INTO question_library_mapping (node_id, question_id, institute_id) VALUES ('zz-node', ?, ?)", LIB, OWNER);
-        // Both client institutes were given the topic. Without these rows they could copy nothing.
-        jdbc.update("INSERT INTO question_library_access (node_id, institute_id, institute_name) VALUES ('zz-node', ?, 'Client'), ('zz-node', ?, 'Other')",
-                CLIENT, OTHER_CLIENT);
+        // Nothing is hidden from either client institute, so both see and can copy the topic.
 
         QuestionEvaluationService evaluation = new QuestionEvaluationService();
         ReflectionTestUtils.setField(evaluation, "objectMapper",
@@ -361,6 +359,10 @@ class QuestionLibraryCopyPersistenceTest {
         assertLibraryUntouched();
     }
 
+    private static long totalOf(List<Object[]> rows, String nodeId) {
+        return rows.stream().filter(r -> nodeId.equals(r[0])).mapToLong(r -> ((Number) r[1]).longValue()).findFirst().orElse(0L);
+    }
+
     private void libraryQuestion(String id, String difficulty, String type, String parentText) {
         jdbc.update("""
                 INSERT INTO question (id, text_id, parent_rich_text_id, question_response_type, question_type, access_level, status, institute_id, difficulty)
@@ -464,16 +466,32 @@ class QuestionLibraryCopyPersistenceTest {
     /** Every query the curation tools added, on real rows: access, tags, scoped counts and difficulty. */
     @Test
     void curationQueriesWorkOnRealRows() {
-        // Access: the setup gave zz-node to both clients.
-        assertThat(nodeRepository.findGrantedNodeIds(OWNER, CLIENT)).containsExactly("zz-node");
-        assertThat(nodeRepository.findGrantedNodeIds(OWNER, "zz-stranger")).isEmpty();
-        assertThat(nodeRepository.grantAccess("zz-node", CLIENT, "Client renamed", null)).isEqualTo(1);
-        assertThat(nodeRepository.findAccessOfNode("zz-node")).hasSize(2)
+        // Hidden topics: hide zz-node from both clients, rename one, count, then show it again.
+        assertThat(nodeRepository.findHiddenNodeIds(OWNER, CLIENT)).isEmpty();
+        assertThat(nodeRepository.hideNode("zz-node", CLIENT, "Client", null)).isEqualTo(1);
+        assertThat(nodeRepository.hideNode("zz-node", OTHER_CLIENT, "Other", null)).isEqualTo(1);
+        assertThat(nodeRepository.findHiddenNodeIds(OWNER, CLIENT)).containsExactly("zz-node");
+        assertThat(nodeRepository.findHiddenNodeIds(OWNER, "zz-stranger")).isEmpty();
+        assertThat(nodeRepository.hideNode("zz-node", CLIENT, "Client renamed", null)).isEqualTo(1);
+        assertThat(nodeRepository.findHiddenOfNode("zz-node")).hasSize(2)
                 .anyMatch(row -> CLIENT.equals(row[0]) && "Client renamed".equals(row[1]));
-        assertThat(QuestionLibraryCurationService.toDate(nodeRepository.findAccessOfNode("zz-node").get(0)[2])).isNotNull();
-        assertThat(nodeRepository.countAccessPerNode(OWNER)).singleElement()
+        assertThat(QuestionLibraryCurationService.toDate(nodeRepository.findHiddenOfNode("zz-node").get(0)[2])).isNotNull();
+        assertThat(nodeRepository.countHiddenPerNode(OWNER)).singleElement()
                 .satisfies(row -> assertThat(((Number) row[1]).longValue()).isEqualTo(2L));
-        assertThat(nodeRepository.revokeAccess("zz-node", OTHER_CLIENT)).isEqualTo(1);
+        assertThat(nodeRepository.unhideNode("zz-node", OTHER_CLIENT)).isEqualTo(1);
+        assertThat(nodeRepository.unhideNode("zz-node", CLIENT)).isEqualTo(1);
+
+        // Topic counts for a reader walk only the topics it sees.
+        jdbc.update("INSERT INTO question_library_node (id, institute_id, parent_id, name) VALUES ('zz-kid', ?, 'zz-node', 'Kid')", OWNER);
+        jdbc.update("""
+                INSERT INTO question (id, text_id, question_response_type, question_type, access_level, status, institute_id, difficulty)
+                VALUES ('zz-kid-q', 'zz-t', 'OPTION', 'MCQS', 'PRIVATE', 'ACTIVE', ?, 'EASY')
+                """, OWNER);
+        jdbc.update("INSERT INTO question_library_mapping (node_id, question_id, institute_id) VALUES ('zz-kid', 'zz-kid-q', ?)", OWNER);
+        assertThat(totalOf(nodeRepository.countQuestionsPerVisibleNode(OWNER, "zz-node,zz-kid"), "zz-node")).isEqualTo(2L);
+        assertThat(totalOf(nodeRepository.countQuestionsPerVisibleNode(OWNER, "zz-node"), "zz-node")).isEqualTo(1L);
+        assertThat(totalOf(nodeRepository.countQuestionsPerNode(OWNER), "zz-node")).isEqualTo(2L);
+        assertThat(nodeRepository.countQuestionsPerVisibleNode(OWNER, "zz-missing")).isEmpty();
 
         // Tags: created once, linked, listed, scoped, removed. A SUBJECT tag is never touched.
         jdbc.update("INSERT INTO tags (tag_id, tag_name, institute_id) VALUES ('zz-tag', 'Article 21', ?)", OWNER);

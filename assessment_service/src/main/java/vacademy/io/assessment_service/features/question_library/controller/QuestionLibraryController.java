@@ -26,8 +26,8 @@ import static vacademy.io.common.core.constants.PageConstants.DEFAULT_PAGE_SIZE;
  * <p>
  * Every call is staff-only and pinned to the caller's active institute (the clientId
  * header), with the same guard as assessment folders. Every other institute reads and copies
- * only the topics the owner gave it (see QuestionLibraryScope). Everything that changes the
- * library, including who is given what, is limited to its owner institute.
+ * all of it except the topics hidden from it (see QuestionLibraryScope). Everything that
+ * changes the library, including what is hidden from whom, is limited to its owner institute.
  */
 @RestController
 @RequestMapping("/assessment-service/question-library/v1")
@@ -287,32 +287,33 @@ public class QuestionLibraryController {
         return ResponseEntity.ok(curationService.setDifficulty(instituteId, request));
     }
 
-    /** Institutes given one topic. */
-    @GetMapping("/access")
-    public ResponseEntity<List<LibraryAccessDto>> listAccess(@RequestAttribute("user") CustomUserDetails user,
+    /** Institutes one topic is hidden from. Every other institute sees it. */
+    @GetMapping("/hidden")
+    public ResponseEntity<List<LibraryAccessDto>> listHidden(@RequestAttribute("user") CustomUserDetails user,
                                                              @RequestHeader(value = "clientId", required = false) String clientId,
                                                              @RequestParam("instituteId") String instituteId,
                                                              @RequestParam("nodeId") String nodeId) {
         requireManager(user, clientId, instituteId);
-        return ResponseEntity.ok(curationService.listAccess(instituteId, nodeId));
+        return ResponseEntity.ok(curationService.listHidden(instituteId, nodeId));
     }
 
-    /** Gives a topic, with everything below it, to another institute (by its id). */
-    @PostMapping("/access")
-    public ResponseEntity<LibraryAccessDto> grantAccess(@RequestAttribute("user") CustomUserDetails user,
+    /** Hides a topic, with everything below it, from another institute (by its id). */
+    @PostMapping("/hidden")
+    public ResponseEntity<LibraryAccessDto> hideFromInstitute(@RequestAttribute("user") CustomUserDetails user,
                                                         @RequestHeader(value = "clientId", required = false) String clientId,
                                                         @RequestParam("instituteId") String instituteId,
                                                         @RequestBody LibraryAccessRequest request) {
         requireManager(user, clientId, instituteId);
-        return ResponseEntity.ok(curationService.grant(user, instituteId, request));
+        return ResponseEntity.ok(curationService.hide(user, instituteId, request));
     }
 
-    @PostMapping("/access/remove")
-    public ResponseEntity<LibraryActionResponse> revokeAccess(@RequestAttribute("user") CustomUserDetails user,
+    /** Shows a hidden topic to that institute again. */
+    @PostMapping("/hidden/remove")
+    public ResponseEntity<LibraryActionResponse> showToInstitute(@RequestAttribute("user") CustomUserDetails user,
                                                               @RequestHeader(value = "clientId", required = false) String clientId,
                                                               @RequestParam("instituteId") String instituteId,
                                                               @RequestBody LibraryAccessRequest request) {
         requireManager(user, clientId, instituteId);
-        return ResponseEntity.ok(curationService.revoke(instituteId, request));
+        return ResponseEntity.ok(curationService.unhide(instituteId, request));
     }
 }

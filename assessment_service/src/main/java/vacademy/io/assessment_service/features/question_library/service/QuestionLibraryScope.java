@@ -11,10 +11,9 @@ import java.util.stream.Collectors;
 /**
  * Which part of the Question Library one institute may see.
  * <p>
- * The owner institute sees and manages all of it. Every other institute sees only the
- * topics the owner gave it (question_library_access) and everything below them. Those
- * topics become its top level: their parents, and the rest of the library, stay hidden.
- * An institute that was given nothing sees nothing.
+ * The owner institute sees and manages all of it. Every other institute sees all of it
+ * too, except the topics hidden from it (question_library_access) and everything below
+ * them. Platform staff hide topics per institute from the health dashboard.
  */
 @Component
 public class QuestionLibraryScope {
@@ -35,31 +34,14 @@ public class QuestionLibraryScope {
         if (access.isOwner(callerInstituteId)) return new View(owner, true, active, Set.of());
 
         Set<String> activeIds = active.stream().map(QuestionLibraryNode::getId).collect(Collectors.toSet());
-        Set<String> granted = new HashSet<>(nodeRepository.findGrantedNodeIds(owner, callerInstituteId));
-        granted.retainAll(activeIds);
-        if (granted.isEmpty()) return new View(owner, false, List.of(), Set.of());
+        Set<String> hidden = new HashSet<>(nodeRepository.findHiddenNodeIds(owner, callerInstituteId));
+        hidden.retainAll(activeIds);
+        if (hidden.isEmpty()) return new View(owner, false, active, Set.of());
 
         Map<String, List<QuestionLibraryNode>> children = QuestionLibraryTreeResolver.childrenByParent(active);
-        Set<String> visible = QuestionLibraryTreeResolver.subtreeIds(children, granted);
-        // A topic given on its own and also inside a bigger given topic is not a root.
-        Map<String, QuestionLibraryNode> byId = active.stream()
-                .collect(Collectors.toMap(QuestionLibraryNode::getId, n -> n));
-        Set<String> roots = new HashSet<>();
-        for (String id : granted) {
-            if (!hasGrantedAncestor(id, byId, granted)) roots.add(id);
-        }
-        List<QuestionLibraryNode> nodes = active.stream().filter(n -> visible.contains(n.getId())).toList();
-        return new View(owner, false, nodes, roots);
-    }
-
-    private static boolean hasGrantedAncestor(String id, Map<String, QuestionLibraryNode> byId, Set<String> granted) {
-        Set<String> seen = new HashSet<>();
-        String current = byId.get(id).getParentId();
-        while (current != null && byId.containsKey(current) && seen.add(current)) {
-            if (granted.contains(current)) return true;
-            current = byId.get(current).getParentId();
-        }
-        return false;
+        Set<String> gone = QuestionLibraryTreeResolver.subtreeIds(children, hidden);
+        List<QuestionLibraryNode> nodes = active.stream().filter(n -> !gone.contains(n.getId())).toList();
+        return new View(owner, false, nodes, Set.of());
     }
 
     /**
@@ -68,7 +50,8 @@ public class QuestionLibraryScope {
      * @param owner   the owner institute, null when no library is configured
      * @param manager true for the owner institute itself
      * @param nodes   the active topics this institute sees, in display order
-     * @param roots   for a reader, the topics shown at its top level
+     * @param roots   topics shown at the top level although they have a parent (none today:
+     *                a hidden topic takes everything below it, so parents stay visible)
      */
     public record View(String owner, boolean manager, List<QuestionLibraryNode> nodes, Set<String> roots) {
 
@@ -92,7 +75,7 @@ public class QuestionLibraryScope {
 
         /**
          * The topics a request may read. Empty means everything this institute sees. A reader
-         * asking for topics it was not given gets the empty list back, which callers treat as
+         * asking for topics hidden from it gets the empty list back, which callers treat as
          * "nothing matches", never as "everything".
          */
         public List<String> restrict(List<String> requested) {
@@ -105,6 +88,17 @@ public class QuestionLibraryScope {
             if (manager) return clean;
             Set<String> visible = nodeIds();
             return clean.stream().filter(visible::contains).toList();
+        }
+
+        /**
+         * Drops the topics this institute does not see. A topic it sees can have a hidden
+         * topic below it, so every "topic and everything below it" list goes through here.
+         */
+        public List<String> visibleOnly(Collection<String> ids) {
+            if (ids == null) return List.of();
+            if (manager) return new ArrayList<>(ids);
+            Set<String> visible = nodeIds();
+            return ids.stream().filter(visible::contains).distinct().toList();
         }
 
         /** For queries: null for the owner (any active topic), the csv of visible topics otherwise. */

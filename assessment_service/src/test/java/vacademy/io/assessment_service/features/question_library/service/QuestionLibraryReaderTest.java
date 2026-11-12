@@ -50,8 +50,14 @@ class QuestionLibraryReaderTest {
         QuestionLibraryTreeResolver resolver = new QuestionLibraryTreeResolver();
         ReflectionTestUtils.setField(resolver, "nodeRepository", repository);
         bank = mock(GetQuestionBankManager.class);
-        // The client was given both topics unless a test says otherwise.
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("physics", "chemistry"));
+        // Nothing is hidden from the client unless a test says otherwise.
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of());
+        // Ids that are active topics, as the tree resolver looks them up.
+        when(repository.findByInstituteIdAndStatusAndIdIn(eq(OWNER), eq("ACTIVE"), anyList())).thenAnswer(inv -> {
+            List<String> ids = inv.getArgument(2);
+            return repository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE").stream()
+                    .filter(n -> ids.contains(n.getId())).toList();
+        });
         service = new QuestionLibraryService();
         ReflectionTestUtils.setField(service, "scope", QuestionLibraryTestScopes.scope(access, repository));
         ReflectionTestUtils.setField(service, "nodeRepository", repository);
@@ -69,15 +75,79 @@ class QuestionLibraryReaderTest {
         return dto;
     }
 
+    /** What a reader's list asked the bank for. Its topics are already expanded, so the bank must not expand them. */
     private QuestionBankFilter filterSentToTheBank() {
+        ArgumentCaptor<QuestionBankFilter> filter = ArgumentCaptor.forClass(QuestionBankFilter.class);
+        verify(bank).getQuestions(any(), filter.capture(), eq(OWNER), anyInt(), anyInt(), eq(false));
+        return filter.getValue();
+    }
+
+    private QuestionBankFilter ownerFilterSentToTheBank() {
         ArgumentCaptor<QuestionBankFilter> filter = ArgumentCaptor.forClass(QuestionBankFilter.class);
         verify(bank).getQuestions(any(), filter.capture(), eq(OWNER), anyInt(), anyInt());
         return filter.getValue();
     }
 
+    private void readerTree() {
+        when(repository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE")).thenReturn(List.of(
+                QuestionLibraryTestScopes.node("ncert", null),
+                QuestionLibraryTestScopes.node("class-10", "ncert"),
+                QuestionLibraryTestScopes.node("science", "class-10"),
+                QuestionLibraryTestScopes.node("maths", "class-10"),
+                QuestionLibraryTestScopes.node("upsc", null)));
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("science"));
+    }
+
+    @Test
+    void aReadersListNeverReachesATopicHiddenBelowOneItSees() {
+        readerTree();
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false))).thenReturn(Page.empty());
+        QuestionBankFilter asked = new QuestionBankFilter();
+        asked.setLibraryNodeIds(List.of("class-10"));
+
+        service.listQuestions(null, CLIENT, asked, 0, 20);
+
+        assertThat(filterSentToTheBank().getLibraryNodeIds()).containsExactlyInAnyOrder("class-10", "maths");
+    }
+
+    @Test
+    void aReadersWholeListLeavesOutTheHiddenTopic() {
+        readerTree();
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false))).thenReturn(Page.empty());
+
+        service.listQuestions(null, CLIENT, null, 0, 20);
+
+        assertThat(filterSentToTheBank().getLibraryNodeIds())
+                .containsExactlyInAnyOrder("ncert", "class-10", "maths", "upsc");
+    }
+
+    @Test
+    void papersOfATopicLeaveOutTheHiddenTopicBelowIt() {
+        readerTree();
+
+        service.listPapers(CLIENT, "class-10");
+
+        ArgumentCaptor<String> csv = ArgumentCaptor.forClass(String.class);
+        verify(repository).findPapersOnNodes(eq(OWNER), csv.capture());
+        assertThat(csv.getValue().split(",")).containsExactlyInAnyOrder("class-10", "maths");
+    }
+
+    @Test
+    void aReadersTopicCountsWalkOnlyTheTopicsItSees() {
+        readerTree();
+
+        service.getTree(CLIENT);
+        service.getTree(OWNER);
+
+        ArgumentCaptor<String> csv = ArgumentCaptor.forClass(String.class);
+        verify(repository).countQuestionsPerVisibleNode(eq(OWNER), csv.capture());
+        assertThat(csv.getValue().split(",")).containsExactlyInAnyOrder("ncert", "class-10", "maths", "upsc");
+        verify(repository, times(1)).countQuestionsPerNode(OWNER);
+    }
+
     @Test
     void aReaderOnlyEverSeesQuestionsPlacedOnATopic() {
-        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt())).thenReturn(Page.empty());
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false))).thenReturn(Page.empty());
         QuestionBankFilter asked = new QuestionBankFilter();
         asked.setUnsortedOnly(true);
         asked.setStatuses(List.of("DELETED"));
@@ -110,12 +180,12 @@ class QuestionLibraryReaderTest {
 
         service.listQuestions(null, OWNER, asked, 0, 20);
 
-        assertThat(filterSentToTheBank()).isSameAs(asked);
+        assertThat(ownerFilterSentToTheBank()).isSameAs(asked);
     }
 
     @Test
     void aReaderDoesNotSeeTheOwnersProvenanceOrUsage() {
-        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt()))
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false)))
                 .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ownerQuestion()))));
 
         Page<LibraryQuestionDto> page = service.listQuestions(null, CLIENT, null, 0, 20);
@@ -130,7 +200,7 @@ class QuestionLibraryReaderTest {
 
     @Test
     void aSectionsCopiesHideTheLibraryQuestionsTheyCameFrom() {
-        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt())).thenReturn(Page.empty());
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false))).thenReturn(Page.empty());
         when(repository.findLibrarySourcesOfCopies("copy-1,own-q")).thenReturn(List.of("lib-q"));
         QuestionBankFilter asked = new QuestionBankFilter();
         asked.setExcludeQuestionIds(List.of("copy-1", "own-q"));
@@ -186,8 +256,16 @@ class QuestionLibraryReaderTest {
     }
 
     @Test
-    void anInstituteGivenNothingSeesNothing() {
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of());
+    void anInstituteWithNothingHiddenSeesTheWholeLibrary() {
+        assertThat(service.getTree(CLIENT).getNodes()).extracting(LibraryNodeDto::getId)
+                .containsExactly("physics", "chemistry");
+        service.listPapers(CLIENT, null);
+        verify(repository).findPapersOnNodes(OWNER, "physics,chemistry");
+    }
+
+    @Test
+    void anInstituteWithEverythingHiddenSeesNothing() {
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("physics", "chemistry"));
 
         assertThat(service.getTree(CLIENT).getNodes()).isEmpty();
         assertThat(service.getTree(CLIENT).getSummary().getTotalQuestions()).isZero();
@@ -198,28 +276,26 @@ class QuestionLibraryReaderTest {
     }
 
     @Test
-    void aReaderSeesOnlyTheGivenTopicAndBelowItAsItsTopLevel() {
+    void aHiddenTopicTakesEverythingBelowItAndLeavesTheRest() {
         when(repository.findByInstituteIdAndStatusOrderByDisplayOrderAscCreatedAtAsc(OWNER, "ACTIVE")).thenReturn(List.of(
                 QuestionLibraryTestScopes.node("ncert", null),
                 QuestionLibraryTestScopes.node("class-10", "ncert"),
                 QuestionLibraryTestScopes.node("science", "class-10"),
                 QuestionLibraryTestScopes.node("upsc", null)));
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("class-10"));
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("class-10"));
 
         LibraryTreeResponse tree = service.getTree(CLIENT);
 
-        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getId).containsExactly("class-10", "science");
-        assertThat(tree.getNodes().get(0).getParentId()).isNull();
-        assertThat(tree.getNodes().get(0).getDepth()).isEqualTo(1);
-        assertThat(tree.getNodes().get(1).getDepth()).isEqualTo(2);
-        assertThat(tree.getNodes()).allMatch(n -> n.getAccessCount() == null);
-        verify(repository).countQuestionsOnNodesByDifficultyAndType(OWNER, "class-10,science");
-        verify(repository, never()).countAccessPerNode(any());
+        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getId).containsExactly("ncert", "upsc");
+        assertThat(tree.getNodes()).allMatch(n -> n.getParentId() == null && n.getDepth() == 1);
+        assertThat(tree.getNodes()).allMatch(n -> n.getHiddenCount() == null);
+        verify(repository).countQuestionsOnNodesByDifficultyAndType(OWNER, "ncert,upsc");
+        verify(repository, never()).countHiddenPerNode(any());
     }
 
     @Test
-    void aReaderAskingForATopicItWasNotGivenGetsNothing() {
-        when(repository.findGrantedNodeIds(OWNER, CLIENT)).thenReturn(List.of("physics"));
+    void aReaderAskingForAHiddenTopicGetsNothing() {
+        when(repository.findHiddenNodeIds(OWNER, CLIENT)).thenReturn(List.of("chemistry"));
         QuestionBankFilter asked = new QuestionBankFilter();
         asked.setLibraryNodeIds(List.of("chemistry"));
 
@@ -230,7 +306,7 @@ class QuestionLibraryReaderTest {
 
     @Test
     void aReadersTagFilterReachesTheBank() {
-        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt())).thenReturn(Page.empty());
+        when(bank.getQuestions(any(), any(), eq(OWNER), anyInt(), anyInt(), eq(false))).thenReturn(Page.empty());
         QuestionBankFilter asked = new QuestionBankFilter();
         asked.setTagIds(List.of("tag-pyq-2023"));
 
@@ -240,13 +316,13 @@ class QuestionLibraryReaderTest {
     }
 
     @Test
-    void theOwnerSeesHowManyInstitutesHaveEachTopic() {
-        List<Object[]> access = new ArrayList<>();
-        access.add(new Object[]{"physics", 3L});
-        when(repository.countAccessPerNode(OWNER)).thenReturn(access);
+    void theOwnerSeesHowManyInstitutesEachTopicIsHiddenFrom() {
+        List<Object[]> hidden = new ArrayList<>();
+        hidden.add(new Object[]{"physics", 3L});
+        when(repository.countHiddenPerNode(OWNER)).thenReturn(hidden);
 
         LibraryTreeResponse tree = service.getTree(OWNER);
 
-        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getAccessCount).containsExactly(3L, 0L);
+        assertThat(tree.getNodes()).extracting(LibraryNodeDto::getHiddenCount).containsExactly(3L, 0L);
     }
 }
