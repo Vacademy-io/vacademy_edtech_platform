@@ -6,6 +6,7 @@ import { HeaderProps } from "../../-types/course-catalogue-types";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { RouteMatcher } from "../../-services/route-matcher";
+import { catalogueListingPath } from "../../-utils/catalogue-page-routes";
 import { CourseCatalogueData } from "../../-types/course-catalogue-types";
 import { createElement, useState, useEffect, useRef } from "react";
 import { MagnifyingGlass, ShoppingCart } from "@phosphor-icons/react";
@@ -506,7 +507,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
       }
 
       if (normalizedRoute === 'courses') {
-        navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
+        // The catalogue's own page when it has one (e.g. "library"); the root otherwise.
+        navigate({ to: catalogueListingPath(effectiveTagName, catalogueData?.pages) });
         return;
       }
 
@@ -601,9 +603,10 @@ export const HeaderComponent: React.FC<HeaderProps & {
           const pageRouteLower = (page.route || '').toLowerCase();
           const pageIdLower = (page.id || '').toLowerCase();
 
+          // The root ("") is the home page, whatever route it is stored under.
           const isCurrentPage = pageRouteLower === pageRoute.toLowerCase() ||
             pageIdLower === pageRoute.toLowerCase() ||
-            (pageRoute === '' && pageRouteLower === '');
+            (pageRoute === '' && (pageRouteLower === '' || pageRouteLower === 'homepage' || pageRouteLower === '/' || pageIdLower === 'home'));
 
           if (isCurrentPage && page.components) {
             const hasBuyRentSection = page.components.some(
@@ -1148,8 +1151,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
                             setIsGenreDropdownOpen(false);
                             // Set genre filter in sessionStorage
                             sessionStorage.setItem('genreFilter', genre.toLowerCase());
-                            // Navigate to homepage with genre filter
-                            navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
+                            // Navigate to the catalogue with genre filter
+                            navigate({ to: catalogueListingPath(effectiveTagName, catalogueData?.pages) });
                           }}
                           className="group w-full text-left px-6 py-3 text-sm font-medium text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-bg-subtle border-b border-catalogue-border-subtle last:border-b-0 transition-all duration-200 ease-in-out transform hover:translate-x-1"
                         >

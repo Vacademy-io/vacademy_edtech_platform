@@ -5,6 +5,7 @@ import { RouteMatcher } from "./-services/route-matcher";
 import { CatalogueTagContext } from "./-components/CatalogueTagContext";
 import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { RootMountedSegment } from "./-components/RootMountedSegment";
+import { PageAliasRedirect, looksLikeCourseIdSegment } from "./-utils/catalogue-page-routes";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import RootNotFoundComponent from "@/components/core/default-not-found";
 import { useEffect, useState, lazy, Suspense } from "react";
@@ -159,14 +160,23 @@ function RouteComponent() {
       // root page renders as a normal visit and never answers the editor.
       return isPreviewUrl() ? <Navigate to="/" search={true} replace /> : <Navigate to="/" replace />;
     }
+    // "/<old-route>" of a renamed root page (page.aliases) forwards to the
+    // page; every other segment is classified exactly as before.
     return (
-      <RootMountedSegment
-        rootTag={rootTag}
-        segment={resolvedTagName}
+      <PageAliasRedirect
         instituteId={domainRouting.instituteId}
-        instituteThemeCode={domainRouting.instituteThemeCode}
-        fallback={classic}
-      />
+        tagName={rootTag}
+        slug={resolvedTagName}
+        enabled={!looksLikeCourseIdSegment(resolvedTagName)}
+      >
+        <RootMountedSegment
+          rootTag={rootTag}
+          segment={resolvedTagName}
+          instituteId={domainRouting.instituteId}
+          instituteThemeCode={domainRouting.instituteThemeCode}
+          fallback={classic}
+        />
+      </PageAliasRedirect>
     );
   }
 

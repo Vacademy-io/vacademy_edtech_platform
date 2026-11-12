@@ -37,6 +37,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useInstituteFeatureStore } from "@/stores/insititute-feature-store";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
+import { useCatalogueEntryPath } from "@/routes/$tagName/-utils/catalogue-page-routes";
 import { useSignupAvailability } from "@/hooks/use-signup-availability";
 import { usePublicDoubtConfig } from "@/services/public-doubt-config";
 import { GuestQueryDialog } from "@/components/common/queries/GuestQueryDialog";
@@ -153,6 +154,12 @@ export function LoginForm({
   const { setInstituteId } = useInstituteFeatureStore();
   const domainRouting = useDomainRouting();
   const routedInstituteId = domainRouting?.instituteId ?? null;
+  // "Explore <courses>" opens the catalogue's own page when the site has one
+  // (ReadOnRent: Home is the landing page, the books are on "Library").
+  const exploreCatalogueTarget = useCatalogueEntryPath(
+    domainRouting?.redirectPath ?? "",
+    routedInstituteId,
+  );
   // "Sign up here" is offered only when BOTH the portal (domain routing) and
   // the institute's signup settings say so. Routing alone is not enough: a
   // portal can carry allowSignup=true while the admin has switched signup off
@@ -1326,7 +1333,7 @@ export function LoginForm({
                       variant="default"
                       className="w-full h-11 text-base font-medium shadow-sm hover:shadow-md transition-all duration-200"
                       onClick={() =>
-                        navigate({ to: domainRouting.redirectPath as never })
+                        navigate({ to: exploreCatalogueTarget as never })
                       }
                     >
                       {t("login.exploreCourses", {

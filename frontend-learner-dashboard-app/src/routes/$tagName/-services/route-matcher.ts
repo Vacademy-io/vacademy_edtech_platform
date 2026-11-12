@@ -95,8 +95,36 @@ export class RouteMatcher {
   }
 
   /**
+   * A page's former addresses (`page.aliases`, e.g. ["buy-rent"] after the
+   * page moved to "homepage"), normalized like routes. [] for every page that
+   * declares none, which is every page of a catalogue that never renamed one.
+   */
+  static pageAliases(page: Pick<Page, "aliases"> | null | undefined): string[] {
+    const raw = page?.aliases;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((alias): alias is string => typeof alias === "string")
+      .map((alias) => this.normalizeRoute(alias))
+      .filter(Boolean);
+  }
+
+  /**
+   * The page that used to answer on `slug` — undefined when a page still has
+   * that route (a live route always wins over an alias) or none lists it.
+   */
+  static findPageByAlias(
+    slug: string,
+    pages: Array<Pick<Page, "route" | "aliases">> | null | undefined
+  ): Page | undefined {
+    const wanted = this.normalizeRoute(slug || "");
+    if (!wanted || !pages || pages.length === 0) return undefined;
+    if (pages.some((page) => this.normalizeRoute(page.route || "") === wanted)) return undefined;
+    return pages.find((page) => this.pageAliases(page).includes(wanted)) as Page | undefined;
+  }
+
+  /**
    * Find a matching page in the catalogue pages array
-   * Matches by route, id, or normalized names
+   * Matches by route, id, aliases, or normalized names
    */
   static findMatchingPage(
     route: string,
@@ -121,6 +149,14 @@ export class RouteMatcher {
     matchedPage = pages.find(
       (page) => this.normalizeRoute(page.id) === normalizedRoute
     );
+
+    if (matchedPage) {
+      return matchedPage;
+    }
+
+    // A former address of a renamed page (page.aliases) — before the loose
+    // partial match below, which could otherwise claim it for another page.
+    matchedPage = this.findPageByAlias(route, pages);
 
     if (matchedPage) {
       return matchedPage;

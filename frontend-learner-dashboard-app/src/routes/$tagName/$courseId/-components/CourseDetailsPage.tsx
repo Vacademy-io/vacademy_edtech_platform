@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImageFitProvider, siteImageFit } from "@/components/common/fit-image/FitImage";
 import { RouteMatcher } from "../../-services/route-matcher";
+import { catalogueListingPath } from "../../-utils/catalogue-page-routes";
 import { useTranslation } from "react-i18next";
 import { DEVANAGARI_FALLBACK_FAMILY, withArabicFallback, withDevanagariFallback } from "@/utils/branding";
 import { siteUsesDevanagari } from "../../-utils/catalogue-site-language";
@@ -1655,7 +1656,7 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
             })}
           </p>
           <button
-            onClick={() => navigate({ to: RouteMatcher.pagePath(tagName) })}
+            onClick={() => navigate({ to: catalogueListingPath(tagName, catalogueData?.pages) })}
             className="px-4 py-2 bg-primary-500 text-white rounded-catalogue-sm hover:bg-primary-400 transition-colors"
           >
             {t("courseDetails.backToCatalog")}

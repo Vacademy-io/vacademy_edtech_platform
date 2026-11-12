@@ -48,6 +48,13 @@ export interface AdditionalCharge {
   amount?: number;
   refundable?: boolean;
   description?: string;
+  /**
+   * Charge it on a user's first order in this mode only (e.g. a refundable security deposit).
+   * The server decides whether it is due — it skips the charge for a user who has paid it
+   * before, or who held a plan of this mode before it existed — so the cart treats the line as
+   * expected-but-confirmed-at-payment.
+   */
+  oncePerUser?: boolean;
 }
 
 export interface GlobalSettings {
@@ -252,6 +259,12 @@ export interface Page {
   route: string;
   title?: string;
   components: Component[];
+  /**
+   * Former routes of this page (e.g. ["buy-rent"] after it moved to "homepage").
+   * A visit to "<base>/<alias>" redirects here, so old links keep working.
+   * A page that still has the route wins over an alias.
+   */
+  aliases?: string[];
 }
 
 export type { VisibleWhenRule };

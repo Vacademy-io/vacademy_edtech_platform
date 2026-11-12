@@ -8,6 +8,7 @@ import { CatalogueTagContext } from "./-components/CatalogueTagContext";
 import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { CourseCataloguePage } from "./-components/CourseCataloguePage";
 import { RootMountedSegment } from "./-components/RootMountedSegment";
+import { PageAliasRedirect } from "./-utils/catalogue-page-routes";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -73,14 +74,22 @@ function RouteComponent() {
     return <Navigate to={`/${resolvedPageSlug}` as never} search={true} replace />;
   }
 
+  // A renamed page's former route (page.aliases) forwards to the page, so old
+  // links keep working; without aliases this renders the page as before.
   const classic = (
     <CatalogueTagContext.Provider value={resolvedTagName}>
-      <CourseCataloguePage
-        tagName={resolvedTagName}
+      <PageAliasRedirect
         instituteId={domainRouting.instituteId}
-        instituteThemeCode={domainRouting.instituteThemeCode}
-        pageSlug={resolvedPageSlug}
-      />
+        tagName={resolvedTagName}
+        slug={resolvedPageSlug}
+      >
+        <CourseCataloguePage
+          tagName={resolvedTagName}
+          instituteId={domainRouting.instituteId}
+          instituteThemeCode={domainRouting.instituteThemeCode}
+          pageSlug={resolvedPageSlug}
+        />
+      </PageAliasRedirect>
     </CatalogueTagContext.Provider>
   );
 

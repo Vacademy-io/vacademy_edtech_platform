@@ -12,18 +12,27 @@ type AuthLink = { label?: string; route?: string; audienceId?: string; formTitle
 
 const norm = (s?: string) => (s || '').toLowerCase().replace(/[^a-z]/g, '');
 
+const HOME_PAGE_ROUTES = ['homepage', '/', ''];
+
+/**
+ * The page a visitor is on: the one routed at `pageSlug`, else the home page.
+ * The home page is matched by its route first and only then by id 'home', so a
+ * site that moved its old home page elsewhere (its route changed, its id did
+ * not) still reads the header of the page actually served at the root.
+ */
+function findActivePage(catalogueData: any, pageSlug?: string): any {
+    const pages: any[] = catalogueData?.pages || [];
+    if (pageSlug) return pages.find((p) => p?.route === pageSlug || p?.route === `/${pageSlug}`);
+    return pages.find((p) => HOME_PAGE_ROUTES.includes(p?.route)) ?? pages.find((p) => p?.id === 'home');
+}
+
 /**
  * Resolve the auth links for the header the learner actually sees on a page: the
  * page's own header component if it has one, else the global header template.
  * Returns [] when the catalogue defines no auth links at all.
  */
 export function resolveHeaderAuthLinks(catalogueData: any, pageSlug?: string): AuthLink[] {
-    const pages: any[] = catalogueData?.pages || [];
-    const page = pages.find((p) =>
-        pageSlug
-            ? p?.route === pageSlug || p?.route === `/${pageSlug}`
-            : p?.id === 'home' || p?.route === 'homepage' || p?.route === '/' || p?.route === ''
-    );
+    const page = findActivePage(catalogueData, pageSlug);
     const pageHeader = page?.components?.find((c: any) => c?.type === 'header');
     const links =
         pageHeader?.props?.authLinks ??
@@ -59,12 +68,7 @@ export function shouldShowMobileGetStarted(catalogueData: any, pageSlug?: string
  *  - [...] → render these (login routes, campaign-form buttons, page links).
  */
 export function resolveMobileBarLinks(catalogueData: any, pageSlug?: string): AuthLink[] | null {
-    const pages: any[] = catalogueData?.pages || [];
-    const page = pages.find((p) =>
-        pageSlug
-            ? p?.route === pageSlug || p?.route === `/${pageSlug}`
-            : p?.id === 'home' || p?.route === 'homepage' || p?.route === '/' || p?.route === ''
-    );
+    const page = findActivePage(catalogueData, pageSlug);
     const pageHeader = page?.components?.find((c: any) => c?.type === 'header');
     const links =
         pageHeader?.props?.authLinks ??
