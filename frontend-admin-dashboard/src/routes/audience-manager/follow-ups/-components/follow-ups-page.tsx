@@ -563,7 +563,12 @@ const FollowUpsContent = () => {
             );
         },
         enabled: !!instituteId && !noTypeAudiences && statusFilterReady,
-        staleTime: 30 * 1000,
+        // Four lead-list queries per refresh, and counsellors switch between the dialer, WhatsApp
+        // and this tab all day: refetching on every return was most of the CRM's database load
+        // (2026-11-12). Their own changes invalidate ['follow-ups'], so the tiles still move
+        // when they complete or reschedule something.
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
     });
 
     const { data, isLoading, error } = useQuery({

@@ -96,6 +96,9 @@ public class AudienceService {
 
     private static final Logger logger = LoggerFactory.getLogger(AudienceService.class);
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Autowired
     private AudienceRepository audienceRepository;
 
@@ -3865,6 +3868,23 @@ public class AudienceService {
                 || (mobile != null && mobile.toLowerCase().contains(qLower));
     }
 
+    /**
+     * Per-call planning for the rest of the current transaction. Through pgbouncer the lead
+     * queries are named prepared statements, and the generic plan Postgres switches to after five
+     * executions keeps every optional-filter guard. For the institute lead list that means the
+     * follow-up id list is checked against every lead of the institute instead of fetching those
+     * leads by id (7-45 s instead of under 0.4 s for I2CAN). SET LOCAL ends with the transaction,
+     * so nothing leaks to other clients on the pooled connection. The connection is the one the
+     * lead query then uses (lazy routing, so the replica in a read-only transaction).
+     */
+    private void forceCustomPlansForThisTransaction() {
+        entityManager.unwrap(org.hibernate.Session.class).doWork(connection -> {
+            try (java.sql.Statement statement = connection.createStatement()) {
+                statement.execute("SET LOCAL plan_cache_mode = force_custom_plan");
+            }
+        });
+    }
+
     @Transactional(readOnly = true)
     public Page<LeadDetailDTO> getLeads(LeadFilterDTO filterDTO, CustomUserDetails user) {
         Pageable pageable = PageRequest.of(
@@ -4077,6 +4097,7 @@ public class AudienceService {
             // Leads" (Lead Settings) hides them here; off = no filter, as before.
             String duplicateFilter = resolveListDuplicateFilter(filterDTO.getDuplicateFilter(),
                     () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
+            forceCustomPlansForThisTransaction();
             Page<AudienceResponse> all = audienceResponseRepository.findInstituteLeadsWithFilters(
                     filterDTO.getInstituteId(),
                     filterDTO.getLeadStatusId(),

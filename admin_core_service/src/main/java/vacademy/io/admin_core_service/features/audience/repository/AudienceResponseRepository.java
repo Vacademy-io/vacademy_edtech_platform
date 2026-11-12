@@ -1160,6 +1160,18 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
+                              -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
+                              -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
+                              -- leads are fetched by primary key from the open follow-ups of the institute (about 20k at
+                              -- most) instead of probing lead_followup once per lead of the institute (185k for I2CAN).
+                              -- Needs per-call planning (AudienceService.getLeads sets it): a generic plan keeps the OR
+                              -- and checks the whole id array for every lead.
+                              AND (COALESCE(:followUpPending, FALSE) = FALSE
+                                   OR ar.id = ANY(ARRAY(SELECT lf0.audience_response_id FROM lead_followup lf0
+                                                        WHERE lf0.institute_id = :instituteId
+                                                          AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
+                                                          AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
+                                                          AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
                               AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
@@ -1582,6 +1594,18 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
+                              -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
+                              -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
+                              -- leads are fetched by primary key from the open follow-ups of the institute (about 20k at
+                              -- most) instead of probing lead_followup once per lead of the institute (185k for I2CAN).
+                              -- Needs per-call planning (AudienceService.getLeads sets it): a generic plan keeps the OR
+                              -- and checks the whole id array for every lead.
+                              AND (COALESCE(:followUpPending, FALSE) = FALSE
+                                   OR ar.id = ANY(ARRAY(SELECT lf0.audience_response_id FROM lead_followup lf0
+                                                        WHERE lf0.institute_id = :instituteId
+                                                          AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
+                                                          AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
+                                                          AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
                               AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
