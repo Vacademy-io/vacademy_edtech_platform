@@ -66,7 +66,10 @@ import { fetchLeadSettingRawData } from '@/hooks/use-lead-report-settings';
 
 const SETTING_KEY = 'LEAD_SETTING';
 
-type ReattemptSwitchKey = Exclude<keyof ReattemptSettings, 'tier' | 'duplicateOpenOnly'>;
+type ReattemptSwitchKey = Exclude<
+    keyof ReattemptSettings,
+    'tier' | 'duplicateOpenOnly' | 'closedRepeatTakesOver'
+>;
 
 /** Reattempt switches in display order; labels/hints live under repeatLead.reattempt.<key>. */
 const REATTEMPT_SWITCHES: ReattemptSwitchKey[] = [
@@ -669,6 +672,44 @@ export default function LeadDedupSettings() {
                                                                                 'repeatLead.reattempt.duplicateOpenOnly.hint'
                                                                             )}
                                                                         </p>
+                                                                        {repeatLead.reattempt
+                                                                            .duplicateOpenOnly && (
+                                                                            <div className="mt-2 flex items-start gap-2">
+                                                                                <Switch
+                                                                                    id="repeat-reattempt-closed-takes-over"
+                                                                                    checked={
+                                                                                        repeatLead
+                                                                                            .reattempt
+                                                                                            .closedRepeatTakesOver
+                                                                                    }
+                                                                                    onCheckedChange={(
+                                                                                        v
+                                                                                    ) =>
+                                                                                        updateReattempt(
+                                                                                            {
+                                                                                                closedRepeatTakesOver:
+                                                                                                    v,
+                                                                                            }
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                                <div className="flex flex-col gap-0.5">
+                                                                                    <Label
+                                                                                        htmlFor="repeat-reattempt-closed-takes-over"
+                                                                                        className="cursor-pointer"
+                                                                                    >
+                                                                                        {t(
+                                                                                            'repeatLead.reattempt.closedRepeatTakesOver.label'
+                                                                                        )}
+                                                                                    </Label>
+                                                                                    <p className="text-xs text-muted-foreground">
+                                                                                        {t(
+                                                                                            'repeatLead.reattempt.closedRepeatTakesOver.hint'
+                                                                                        )}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             )}

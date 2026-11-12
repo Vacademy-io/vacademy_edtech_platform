@@ -58,6 +58,11 @@ export interface ReattemptSettings {
      * once, badged. Off = lists unchanged. A route's own duplicates= still wins.
      */
     duplicatesTabOnly: boolean;
+    /**
+     * With duplicateOpenOnly: a repeat of a converted / discarded lead becomes the lead and
+     * the old one is flagged its duplicate, so the lists show the person once. Default off.
+     */
+    closedRepeatTakesOver: boolean;
 }
 
 /** Raw shape persisted at LEAD_SETTING.data.dedup.repeatLead (backend contract). */
@@ -123,6 +128,7 @@ export const REATTEMPT_SETTINGS_DEFAULTS: ReattemptSettings = {
     tier: null,
     duplicateOpenOnly: true,
     duplicatesTabOnly: false,
+    closedRepeatTakesOver: false,
 };
 
 export const REPEAT_LEAD_SETTINGS_DEFAULTS: RepeatLeadSettings = {
@@ -181,6 +187,7 @@ function withRepeatLeadDefaults(subtree: RepeatLeadSettingsSubtree | undefined):
                     : null,
             duplicateOpenOnly: subtree?.reattempt?.duplicateOpenOnly !== false,
             duplicatesTabOnly: subtree?.reattempt?.duplicatesTabOnly === true,
+            closedRepeatTakesOver: subtree?.reattempt?.closedRepeatTakesOver === true,
         },
     };
 }

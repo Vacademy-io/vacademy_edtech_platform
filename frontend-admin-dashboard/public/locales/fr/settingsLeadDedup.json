@@ -99,6 +99,10 @@
                 "label": "Seulement si le prospect précédent est ouvert",
                 "hint": "Une répétition n'est un doublon que si le prospect précédent n'est ni converti ni écarté. Celle d'un prospect converti ou écarté arrive comme un nouveau prospect."
             },
+            "closedRepeatTakesOver": {
+                "label": "La répétition d'un prospect clos le remplace dans les listes",
+                "hint": "Quand un prospect converti ou écarté revient, la nouvelle demande devient le prospect et l'ancienne passe dessous comme doublon : les listes montrent la personne une seule fois, à la nouvelle date. Ses relances ouvertes passent à la nouvelle demande s'il s'agit de la même personne."
+            },
             "journeyEntry": {
                 "label": "Ajouter une entrée Nouvelle tentative au parcours",
                 "hint": "Le parcours du prospect d'origine indique quand et par quelle source la personne s'est à nouveau manifestée."
