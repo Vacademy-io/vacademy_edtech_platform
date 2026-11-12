@@ -32,4 +32,12 @@ public class LearnerPackageSessionEnrollmentItemDTO {
      */
     @JsonProperty("requested_quantity")
     private Integer requestedQuantity;
+
+    /**
+     * Rent (membership) line only: the books the learner picked, as rent-level package session
+     * ids. Same meaning as on the v1 rent request: they are not enrolled by this order; the order
+     * holds 1 of each (RENT_PREFERENCE) until an admin assigns them. Null for every other line.
+     */
+    @JsonProperty("requested_book_package_session_ids")
+    private List<String> requestedBookPackageSessionIds;
 }
