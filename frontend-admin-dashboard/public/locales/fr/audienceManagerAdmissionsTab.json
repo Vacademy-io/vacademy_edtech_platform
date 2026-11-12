@@ -1,6 +1,23 @@
 {
     "title": "Admissions",
     "empty": "Aucune admission sur cette période.",
+    "students": {
+        "title": "Étudiants",
+        "hint": "Toutes les admissions de la période avec les coordonnées de l'étudiant, ses cours, frais, payé et dû. Un pack de cours = une ligne.",
+        "show": "Afficher les étudiants",
+        "showMore": "Afficher plus ({{shown}} sur {{total}})",
+        "truncated": "Affichage des {{count}} admissions les plus récentes. Réduisez la période pour voir le reste.",
+        "courseCount": "{{count}} cours",
+        "column": {
+            "student": "Étudiant",
+            "phone": "Téléphone",
+            "email": "E-mail",
+            "admissionDate": "Date d'admission",
+            "courses": "Cours",
+            "courseCount": "Nombre de cours",
+            "mainCourse": "Cours principal"
+        }
+    },
     "column": {
         "admissions": "Admissions",
         "fees": "Frais",

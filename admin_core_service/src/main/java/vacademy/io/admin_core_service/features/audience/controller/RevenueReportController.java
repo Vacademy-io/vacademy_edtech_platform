@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionReportDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionStudentsDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.CohortAnalysisReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForecastDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenuePaymentsDTO;
@@ -40,6 +41,19 @@ public class RevenueReportController {
             @RequestParam(required = false) String counsellorUserId,
             @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(admissionReportService.getAdmissions(
+                instituteId, fromDate, toDate, teamId, counsellorUserId, user.getUserId()));
+    }
+
+    /** The students behind the Admissions report: one row per admission, with fee / paid / due. */
+    @GetMapping("/admissions/students")
+    public ResponseEntity<AdmissionStudentsDTO> getAdmissionStudents(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String teamId,
+            @RequestParam(required = false) String counsellorUserId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(admissionReportService.getAdmissionStudents(
                 instituteId, fromDate, toDate, teamId, counsellorUserId, user.getUserId()));
     }
 

@@ -48,6 +48,11 @@ public class ConversionReportDTO {
     public static class Totals {
         /** Distinct leads with at least one counted enrolment. */
         private long convertedLeads;
+        /**
+         * Admissions: a student x the month they enrolled, as the Admissions tab counts them, so a
+         * course package is one admission however many courses it holds.
+         */
+        private long admissions;
         /** Counted enrolment rows (a lead enrolled into two courses counts twice). */
         private long enrolments;
     }
@@ -61,6 +66,7 @@ public class ConversionReportDTO {
         private String userId;
         private String name;
         private long convertedLeads;
+        private long admissions;
         private long enrolments;
     }
 

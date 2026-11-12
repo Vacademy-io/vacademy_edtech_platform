@@ -136,6 +136,9 @@ public class ConversionReportService {
     private static final String BY_COUNSELLOR_SQL = "WITH " + CONV_CTE + """
             SELECT counsellor_id,
                    COUNT(DISTINCT user_id) AS converted_leads,
+                   COUNT(DISTINCT user_id || '|' || to_char(
+                       COALESCE(enrolled_day, (enrolled_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date), 'YYYY-MM'))
+                                           AS admissions,
                    COUNT(*)                AS enrolments
             FROM conv
             GROUP BY counsellor_id
@@ -249,10 +252,12 @@ public class ConversionReportService {
                 ConversionReportDTO.CounsellorRow.builder()
                         .userId(rs.getString("counsellor_id"))
                         .convertedLeads(rs.getLong("converted_leads"))
+                        .admissions(rs.getLong("admissions"))
                         .enrolments(rs.getLong("enrolments"))
                         .build());
         ConversionReportDTO.Totals totals = ConversionReportDTO.Totals.builder()
                 .convertedLeads(byCounsellor.stream().mapToLong(ConversionReportDTO.CounsellorRow::getConvertedLeads).sum())
+                .admissions(byCounsellor.stream().mapToLong(ConversionReportDTO.CounsellorRow::getAdmissions).sum())
                 .enrolments(byCounsellor.stream().mapToLong(ConversionReportDTO.CounsellorRow::getEnrolments).sum())
                 .build();
 

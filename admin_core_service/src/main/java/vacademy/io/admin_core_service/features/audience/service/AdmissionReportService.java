@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionReportDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionStudentsDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
 
@@ -104,7 +105,8 @@ public class AdmissionReportService {
                 ORDER BY user_id, month, COALESCE(tag_rank, 2000000), created_at, package_name
             ),
             courses AS (
-                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses, MIN(enr_day) AS first_day
+                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses, MIN(enr_day) AS first_day,
+                       STRING_AGG(DISTINCT package_name, ', ' ORDER BY package_name) AS course_names
                 FROM enr GROUP BY user_id, month
             ),
             plans AS (
@@ -143,7 +145,7 @@ public class AdmissionReportService {
             )
             """ + "%FIELD_CTE%" + """
             SELECT m.user_id, m.month, to_char(c.first_day, 'YYYY-MM-DD') AS first_day,
-                   m.package_id, m.package_name, m.tag, c.n_courses,
+                   m.package_id, m.package_name, m.tag, c.n_courses, c.course_names,
                    COALESCE(mo.fee, 0)  AS fee,
                    COALESCE(mo.paid, 0) AS paid,
                    ld.source_type, ld.from_campaign, ld.first_audience_id, ld.counsellor_id,
@@ -234,13 +236,13 @@ public class AdmissionReportService {
     record AdmissionRow(String userId, String month, String packageId, String packageName,
                                 String tag, int courses, double fee, double paid,
                                 String source, boolean fromCampaign, String counsellorId, String fieldValue,
-                                String firstAudienceId, String day) {
+                                String firstAudienceId, String day, String courseNames) {
 
         AdmissionRow(String userId, String month, String packageId, String packageName,
                      String tag, int courses, double fee, double paid,
                      String source, boolean fromCampaign, String counsellorId, String fieldValue) {
             this(userId, month, packageId, packageName, tag, courses, fee, paid, source, fromCampaign,
-                    counsellorId, fieldValue, null, null);
+                    counsellorId, fieldValue, null, null, null);
         }
     }
 
@@ -296,6 +298,92 @@ public class AdmissionReportService {
                 .byCounsellor(byCounsellor)
                 .byField(byField)
                 .build();
+    }
+
+    /** Most admissions the student list returns; student details are fetched for each one. */
+    static final int MAX_STUDENT_ROWS = 5000;
+    private static final int AUTH_BATCH_SIZE = 500;
+
+    /**
+     * The students behind {@link #getAdmissions}: one row per admission, from the very same rows,
+     * newest admission first, with the student's name and contact. Asked for separately (only when
+     * the list is opened) because it fetches every student's details from the auth service.
+     */
+    @Transactional(readOnly = true)
+    public AdmissionStudentsDTO getAdmissionStudents(String instituteId, String fromDate, String toDate,
+                                                     String teamId, String counsellorUserId, String callerUserId) {
+        LeadReportSettingService.ReportSettings settings = settingService.get(instituteId);
+        String scopeCsv = scopeResolver.resolveScopeUsersCsv(
+                instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
+        String fieldId = settings.admissionFieldId();
+
+        List<AdmissionRow> rows = new ArrayList<>(
+                queryRows(instituteId, fromDate, toDate, scopeCsv, settings, fieldId));
+        rows.sort(newestFirst());
+        boolean truncated = rows.size() > MAX_STUDENT_ROWS;
+        if (truncated) {
+            rows = new ArrayList<>(rows.subList(0, MAX_STUDENT_ROWS));
+        }
+
+        Map<String, UserDTO> students = resolveUsers(rows.stream().map(AdmissionRow::userId).toList());
+        Map<String, String> counsellors = resolveNames(rows.stream().map(AdmissionRow::counsellorId).toList());
+
+        List<AdmissionStudentsDTO.Row> out = rows.stream().map(r -> {
+            UserDTO u = students.get(r.userId());
+            return AdmissionStudentsDTO.Row.builder()
+                    .userId(r.userId())
+                    .name(u != null ? u.getFullName() : null)
+                    .phone(u != null ? u.getMobileNumber() : null)
+                    .email(u != null ? u.getEmail() : null)
+                    .month(r.month())
+                    .admissionDate(r.day())
+                    .courses(r.courseNames() != null ? r.courseNames() : r.packageName())
+                    .courseCount(r.courses())
+                    .mainCourse(r.packageName())
+                    .courseTag(r.tag())
+                    .source(r.source())
+                    .counsellorId(r.counsellorId())
+                    .counsellorName(r.counsellorId() == null ? null
+                            : counsellors.getOrDefault(r.counsellorId(), r.counsellorId()))
+                    .fieldValue(r.fieldValue())
+                    .fees(round2(r.fee()))
+                    .paid(round2(r.paid()))
+                    .due(round2(r.fee() - r.paid()))
+                    .build();
+        }).toList();
+
+        return AdmissionStudentsDTO.builder()
+                .currency(resolveCurrency(instituteId))
+                .fieldName(fieldId == null ? null : fieldName(fieldId))
+                .rows(out)
+                .truncated(truncated)
+                .build();
+    }
+
+    /** Latest admission day first, then month, then student, so the order is stable. */
+    static Comparator<AdmissionRow> newestFirst() {
+        return Comparator.comparing(AdmissionRow::day, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AdmissionRow::month, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AdmissionRow::userId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    /** Student details in batches, so one call never carries thousands of ids. */
+    private Map<String, UserDTO> resolveUsers(Collection<String> userIds) {
+        List<String> ids = userIds.stream()
+                .filter(s -> s != null && !s.isBlank()).distinct().collect(Collectors.toList());
+        Map<String, UserDTO> out = new LinkedHashMap<>();
+        for (int from = 0; from < ids.size(); from += AUTH_BATCH_SIZE) {
+            List<String> batch = ids.subList(from, Math.min(from + AUTH_BATCH_SIZE, ids.size()));
+            try {
+                List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(batch);
+                if (users == null) continue;
+                users.stream().filter(u -> u != null && u.getId() != null)
+                        .forEach(u -> out.putIfAbsent(u.getId(), u));
+            } catch (Exception e) {
+                log.warn("[AdmissionReport] student details failed for a batch of {}: {}", batch.size(), e.getMessage());
+            }
+        }
+        return out;
     }
 
     /** The course tags and custom fields an admin can pick in the report settings. */
@@ -444,7 +532,8 @@ public class AdmissionReportService {
                 rs.getString("counsellor_id"),
                 trimToNull(rs.getString("field_value")),
                 rs.getString("first_audience_id"),
-                rs.getString("first_day")));
+                rs.getString("first_day"),
+                rs.getString("course_names")));
     }
 
     /** The day's local midnight in {@code zone}, as the UTC wall clock created_at is stored in. */
