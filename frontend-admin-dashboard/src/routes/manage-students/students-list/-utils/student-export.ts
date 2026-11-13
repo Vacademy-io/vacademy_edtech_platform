@@ -49,6 +49,33 @@ const formatDate = (value: unknown): string => {
 };
 
 /**
+ * Ids of the institute's "Phone Number" custom field(s). Settings classes a
+ * field with that name as a system field (SYSTEM_FIELD_NAMES), so it is kept
+ * out of the custom-field columns, yet enrol-invite forms, audience forms and
+ * migrations write the learner's phone there without ever copying it into
+ * student.mobile_number.
+ */
+const getPhoneCustomFieldIds = (): string[] => {
+    const cache = getCustomFieldSettingsFromCache();
+    if (!cache) return [];
+    return cache.fixedFields
+        .filter((f) => f.id && f.name?.trim().toLowerCase() === 'phone number')
+        .map((f) => f.id);
+};
+
+/**
+ * Fallback for an empty student.mobile_number: the first non-empty value of
+ * the Phone Number custom field (already in the list response).
+ */
+const phoneFromCustomFields = (student: StudentTable, phoneFieldIds: string[]): string => {
+    for (const id of phoneFieldIds) {
+        const value = str(student.custom_fields?.[id]).trim();
+        if (value) return value;
+    }
+    return '';
+};
+
+/**
  * Build the full list of selectable export columns. Headers use the institute's
  * custom terminology and the list ends with one column per custom field.
  *
@@ -63,6 +90,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
     const sessionTerm = getTerminology(ContentTerms.Session, SystemTerms.Session);
     const learnerTerm = getTerminology('Learner', SystemTerms.Learner);
     const inviteTerm = getTerminology(OtherTerms.Invite, SystemTerms.Invite);
+    const phoneFieldIds = getPhoneCustomFieldIds();
 
     const columns: ExportColumn[] = [
         // Identity
@@ -100,7 +128,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             asText: true,
-            getValue: (s) => str(s.mobile_number),
+            getValue: (s) => str(s.mobile_number) || phoneFromCustomFields(s, phoneFieldIds),
         },
         {
             id: 'gender',
