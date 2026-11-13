@@ -374,6 +374,9 @@ const RecentLeadsContent = ({
     // (`duplicates=exclude` on All Leads) or are the whole list (`duplicates=only`).
     const duplicatesRef = useRef(urlSearch.duplicates);
     const routeDuplicateFilter = toDuplicateFilter(duplicatesRef.current);
+    // Route-owned too: enquiryDates=latest opts this tab into latest-enquiry dates.
+    const enquiryDatesRef = useRef(urlSearch.enquiryDates);
+    const latestEnquiryDates = enquiryDatesRef.current?.trim().toLowerCase() === 'latest';
     // The user's Duplicates filter is offered only where the list shows duplicate enquiries:
     // the route says `include`, or says nothing while Lead Settings marks duplicates and does
     // not keep them on the Duplicate Leads tab (the backend's default). So it never fights a
@@ -636,6 +639,7 @@ const RecentLeadsContent = ({
             // Carried through untouched: the route owns it, not the user.
             lock: lockRef.current || undefined,
             duplicates: duplicatesRef.current || undefined,
+            enquiryDates: enquiryDatesRef.current || undefined,
             duplicateView: duplicateView || undefined,
             status: leadStatusFilters.length > 0 ? leadStatusFilters.join(',') : undefined,
             statusExclude: statusExclude ? '1' : undefined,
@@ -906,6 +910,7 @@ const RecentLeadsContent = ({
             'recent-leads',
             instituteId,
             duplicateFilter,
+            latestEnquiryDates,
             appliedRange.from,
             appliedRange.to,
             (resolvedAudienceIds ?? []).join(','),
@@ -955,6 +960,7 @@ const RecentLeadsContent = ({
                 lead_status_id: leadStatusId,
                 lead_status_exclude_id: leadStatusExcludeId,
                 duplicate_filter: duplicateFilter,
+                latest_enquiry_dates: latestEnquiryDates || undefined,
                 conversion_status_filter: conversionFilter,
                 audience_status_filter: audienceStatusFilter,
                 sla_filter: slaFilters.length > 0 ? (slaFilters.join(',') as SlaFilter) : undefined,
@@ -1148,6 +1154,7 @@ const RecentLeadsContent = ({
                 lead_status_id: leadStatusId,
                 lead_status_exclude_id: leadStatusExcludeId,
                 duplicate_filter: duplicateFilter,
+                latest_enquiry_dates: latestEnquiryDates || undefined,
                 conversion_status_filter: conversionFilter,
                 audience_status_filter: audienceStatusFilter,
                 sla_filter: slaFilters.length > 0 ? (slaFilters.join(',') as SlaFilter) : undefined,
@@ -1562,6 +1569,7 @@ const RecentLeadsContent = ({
                     lead_status_id: leadStatusId,
                     lead_status_exclude_id: leadStatusExcludeId,
                     duplicate_filter: duplicateFilter,
+                    latest_enquiry_dates: latestEnquiryDates || undefined,
                     conversion_status_filter: conversionFilter,
                     audience_status_filter: audienceStatusFilter,
                     sla_filter:

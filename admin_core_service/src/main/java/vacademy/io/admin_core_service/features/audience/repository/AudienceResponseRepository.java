@@ -1208,9 +1208,18 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                           AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
                                                           AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
                                                           AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
-                              AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
-                              AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE)
+                                   -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
+                                   -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
+                                       AND ar.first_enquiry_at IS NOT NULL AND COALESCE(ar.is_duplicate, FALSE) = FALSE))
+                              AND (((CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
+                                    AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp)))
+                                   -- With repeatDates on, a lead also matches when it enquired again inside the window
+                                   -- (V676 last_enquiry_at, the newest later duplicate). Off = folds away, as before.
+                                   OR (COALESCE(:repeatDates, FALSE) = TRUE AND ar.last_enquiry_at IS NOT NULL
+                                       AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.last_enquiry_at >= CAST(:submittedFrom AS timestamp))
+                                       AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.last_enquiry_at <= CAST(:submittedTo AS timestamp))))
                               -- "How many did I work / call in the last 24h / 7d" -- deliberately
                               -- INDEPENDENT of submitted_at, which answers when the lead arrived,
                               -- not when the counsellor last touched it. Two separate windows:
@@ -1495,6 +1504,12 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                    AND lfp.is_closed = FALSE
                                                    AND lfp.is_priority = TRUE)
                                    THEN 0 ELSE 1 END ASC,
+                              -- Date of the latest enquiry (repeatDates lists, see AudienceService),
+                              -- walked through idx_audience_response_latest_enquiry (V676).
+                              CASE WHEN :sortBy = 'LATEST_ENQUIRY' AND :sortDirection = 'ASC'
+                                   THEN COALESCE(ar.last_enquiry_at, ar.submitted_at) END ASC,
+                              CASE WHEN :sortBy = 'LATEST_ENQUIRY' AND (:sortDirection IS NULL OR :sortDirection = 'DESC')
+                                   THEN COALESCE(ar.last_enquiry_at, ar.submitted_at) END DESC,
                               CASE WHEN :sortBy = 'SUBMITTED_AT' AND :sortDirection = 'ASC'
                                    THEN ar.submitted_at END ASC,
                               CASE WHEN :sortBy = 'SUBMITTED_AT' AND (:sortDirection IS NULL OR :sortDirection = 'DESC')
@@ -1653,9 +1668,18 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                           AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
                                                           AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
                                                           AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
-                              AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
-                              AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE)
+                                   -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
+                                   -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
+                                       AND ar.first_enquiry_at IS NOT NULL AND COALESCE(ar.is_duplicate, FALSE) = FALSE))
+                              AND (((CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
+                                    AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp)))
+                                   -- With repeatDates on, a lead also matches when it enquired again inside the window
+                                   -- (V676 last_enquiry_at, the newest later duplicate). Off = folds away, as before.
+                                   OR (COALESCE(:repeatDates, FALSE) = TRUE AND ar.last_enquiry_at IS NOT NULL
+                                       AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.last_enquiry_at >= CAST(:submittedFrom AS timestamp))
+                                       AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.last_enquiry_at <= CAST(:submittedTo AS timestamp))))
                               -- "How many did I work / call in the last 24h / 7d" -- deliberately
                               -- INDEPENDENT of submitted_at, which answers when the lead arrived,
                               -- not when the counsellor last touched it. Two separate windows:
@@ -1972,6 +1996,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("statusMarkedKeys") String statusMarkedKeys,
                         @Param("statusMarkedFrom") Timestamp statusMarkedFrom,
                         @Param("statusMarkedTo") Timestamp statusMarkedTo,
+                        @Param("repeatDates") Boolean repeatDates,
                         Pageable pageable);
 
         /**
@@ -3542,6 +3567,34 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         """, nativeQuery = true)
         int foldLeadUnderRepeat(@Param("oldPrimaryId") String oldPrimaryId,
                         @Param("newPrimaryId") String newPrimaryId);
+
+        /**
+         * Re-reads this lead's enquiry dates from its live duplicates (V676): last_enquiry_at =
+         * the newest one after it, first_enquiry_at = the oldest one before it, NULL when none.
+         * Lists that hide duplicates sort and date-filter on last_enquiry_at, and Duplicate Leads
+         * lists a lead with first_enquiry_at (it repeats an earlier enquiry). Column-only, like
+         * {@link #markDuplicateOf}. Its own transaction: the caller runs it after the intake
+         * commits, where a joined transaction would never commit.
+         */
+        @Modifying
+        @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+        @Query(value = """
+                            UPDATE audience_response p
+                               SET last_enquiry_at = (SELECT MAX(d.submitted_at)
+                                                        FROM audience_response d
+                                                       WHERE d.primary_response_id = p.id
+                                                         AND d.is_duplicate = TRUE
+                                                         AND d.audience_status = 'ACTIVE'
+                                                         AND d.submitted_at > p.submitted_at),
+                                   first_enquiry_at = (SELECT MIN(d.submitted_at)
+                                                         FROM audience_response d
+                                                        WHERE d.primary_response_id = p.id
+                                                          AND d.is_duplicate = TRUE
+                                                          AND d.audience_status = 'ACTIVE'
+                                                          AND d.submitted_at < p.submitted_at)
+                             WHERE p.id = :id
+                        """, nativeQuery = true)
+        int refreshEnquiryDates(@Param("id") String id);
 
         /**
          * Move one enquiry to {@code toStatusId} only while its status is still

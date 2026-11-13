@@ -117,6 +117,12 @@ public class LeadFilterDTO {
      * (a Duplicate Leads tab). Null = no filter. Driven by the sidebar route, per tab.
      */
     private String duplicateFilter;
+    /**
+     * Route enquiryDates=latest: place each lead at its latest enquiry (sort, date filter,
+     * Duplicate Leads also lists a closed lead's repeat that took its place). Opt-in per tab;
+     * null / false = submitted_at, as before.
+     */
+    private Boolean latestEnquiryDates;
 
     // ── Search ──
     private String searchQuery;             // Searches parent name, email, mobile

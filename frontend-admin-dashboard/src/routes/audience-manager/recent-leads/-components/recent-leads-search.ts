@@ -100,6 +100,11 @@ export const RecentLeadsSearchSchema = z.object({
     /** The user's Duplicates filter ('only' | 'exclude'), offered only where the list shows
      *  duplicates (see `duplicates`). Absent = every enquiry. */
     duplicateView: looseString.optional(),
+    /** Route-owned, opt-in per tab: 'latest' places each lead at its latest enquiry (a lead
+     *  that enquired again sorts and date-filters on that date, and Duplicate Leads also lists
+     *  a closed lead's repeat that took its place). Needs `duplicates` and the Lead Settings
+     *  "Show duplicates only in Duplicate Leads". Absent = submitted date, as before. */
+    enquiryDates: looseString.optional(),
     lock: looseString.optional(),
     calledFrom: looseString.optional(),
     calledTo: looseString.optional(),

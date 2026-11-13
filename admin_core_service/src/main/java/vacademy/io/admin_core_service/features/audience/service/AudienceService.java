@@ -2537,6 +2537,7 @@ public class AudienceService {
             if (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey())) {
                 try {
                     audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
+                    refreshEnquiryDates(primary.getResponseId());
                 } catch (Exception e) {
                     logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
                             savedResponse.getId(), primary.getResponseId(), e.getMessage());
@@ -2641,6 +2642,10 @@ public class AudienceService {
                     repeatId, oldLeadId, e.getMessage());
             return false;
         }
+        // The repeat now repeats the old lead (first_enquiry_at), and the old lead, a duplicate
+        // with no duplicates left, drops its own dates.
+        refreshEnquiryDates(repeatId);
+        refreshEnquiryDates(oldLeadId);
         try {
             leadFollowupRepository.moveOpenToResponse(oldLeadId, repeatId);
         } catch (Exception e) {
@@ -2735,6 +2740,85 @@ public class AudienceService {
         if (explicit != null) return explicit;
         if (includesDuplicates(duplicateFilter)) return null;
         return duplicatesTabOnly.getAsBoolean() ? "EXCLUDE" : null;
+    }
+
+    /**
+     * A list whose route hides duplicates (EXCLUDE) or lists only them (ONLY), with "Show
+     * duplicates only in Duplicate Leads" on, places each lead at its latest enquiry: a lead that
+     * enquired again sorts and date-filters on that date, and Duplicate Leads also lists a closed
+     * lead's repeat that took its place (V676 last/first_enquiry_at). Follow-up queues keep their
+     * own order.
+     *
+     * @param routeDuplicateFilter the filter the request named (normalized), not the setting's
+     *        fallback, so exports and reports that send none keep submitted_at
+     */
+    static boolean usesRepeatDates(String routeDuplicateFilter, Boolean followUpPending,
+                                   java.util.function.BooleanSupplier duplicatesTabOnly) {
+        if (routeDuplicateFilter == null || Boolean.TRUE.equals(followUpPending)) return false;
+        return duplicatesTabOnly.getAsBoolean();
+    }
+
+    /**
+     * Opt-in per tab: the route says enquiryDates=latest AND names a duplicate filter. Every
+     * other list, export and report keeps submitted_at.
+     */
+    static boolean usesRepeatDates(LeadFilterDTO filter, java.util.function.BooleanSupplier duplicatesTabOnly) {
+        return Boolean.TRUE.equals(filter.getLatestEnquiryDates())
+                && usesRepeatDates(normalizeDuplicateFilter(filter.getDuplicateFilter()),
+                        filter.getFollowUpPending(), duplicatesTabOnly);
+    }
+
+    /** With repeat dates on, the default and Submitted sorts order by the latest enquiry. */
+    static String repeatDatesSortBy(String sortBy, boolean repeatDates) {
+        if (!repeatDates) return sortBy;
+        return !StringUtils.hasText(sortBy) || "SUBMITTED_AT".equals(sortBy) ? "LATEST_ENQUIRY" : sortBy;
+    }
+
+    /**
+     * No sort named = newest first, whatever direction came with it (the query's final
+     * submitted_at DESC). Keeps that when the default sort becomes LATEST_ENQUIRY.
+     */
+    static String repeatDatesSortDirection(String sortBy, String sortDirection, boolean repeatDates) {
+        return repeatDates && !StringUtils.hasText(sortBy) ? "DESC" : sortDirection;
+    }
+
+    /**
+     * A duplicate was deleted or restored: the lead it repeats must re-read its enquiry dates.
+     * Collected so a bulk change refreshes each lead once.
+     */
+    private static void collectRepeatedLead(AudienceResponse response, Set<String> repeatedLeadIds) {
+        if (Boolean.TRUE.equals(response.getIsDuplicate()) && StringUtils.hasText(response.getPrimaryResponseId())) {
+            repeatedLeadIds.add(response.getPrimaryResponseId());
+        }
+    }
+
+    /**
+     * Re-reads a lead's enquiry dates after a duplicate was flagged or moved under it.
+     * Runs after the intake transaction commits (its own transaction, see the repository
+     * method), so intake never holds a lock on the lead it repeats and a rolled-back intake
+     * changes nothing. Immediately when there is no transaction. Best-effort: a failure only
+     * leaves the list order stale, never fails intake.
+     */
+    private void refreshEnquiryDates(String responseId) {
+        if (!StringUtils.hasText(responseId)) return;
+        Runnable refresh = () -> {
+            try {
+                audienceResponseRepository.refreshEnquiryDates(responseId);
+            } catch (Exception e) {
+                logger.error("Lead {}: failed to refresh enquiry dates: {}", responseId, e.getMessage());
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            refresh.run();
+                        }
+                    });
+        } else {
+            refresh.run();
+        }
     }
 
     /** Readable channel name for a lead's source_type, for reattempt journey and bell text. */
@@ -3405,6 +3489,9 @@ public class AudienceService {
         AudienceResponse savedResponse = audienceResponseRepository.save(response);
         logger.info("Saved audience response with ID: {} linked to enquiry: {} with parent user_id: {}",
                 savedResponse.getId(), enquiryId, parentUserId);
+        if (Boolean.TRUE.equals(savedResponse.getIsDuplicate())) {
+            refreshEnquiryDates(savedResponse.getPrimaryResponseId());
+        }
         logLeadSubmitted(savedResponse);
 
         // STEP 4b: Calculate initial lead score (real-time)
@@ -4131,6 +4218,8 @@ public class AudienceService {
             // Leads" (Lead Settings) hides them here; off = no filter, as before.
             String duplicateFilter = resolveListDuplicateFilter(filterDTO.getDuplicateFilter(),
                     () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
+            boolean repeatDates = usesRepeatDates(filterDTO,
+                    () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
             forceCustomPlansForThisTransaction();
             Page<AudienceResponse> all = audienceResponseRepository.findInstituteLeadsWithFilters(
                     filterDTO.getInstituteId(),
@@ -4160,8 +4249,8 @@ public class AudienceService {
                     customFieldExcludedIdsCsv,
                     filterDTO.getCallHistoryFilter(),
                     filterDTO.getCallCountValue(),
-                    filterDTO.getSortBy(),
-                    filterDTO.getSortDirection(),
+                    repeatDatesSortBy(filterDTO.getSortBy(), repeatDates),
+                    repeatDatesSortDirection(filterDTO.getSortBy(), filterDTO.getSortDirection(), repeatDates),
                     filterDTO.getSortCustomFieldId(),
                     filterDTO.getCalledFromLocal(),
                     filterDTO.getCalledToLocal(),
@@ -4170,9 +4259,10 @@ public class AudienceService {
                     filterDTO.getStatusMarkedKeys(),
                     filterDTO.getStatusMarkedFromLocal(),
                     filterDTO.getStatusMarkedToLocal(),
+                    repeatDates,
                     pageable);
             return mapResponsesToLeadDetails(all, filterDTO.getInstituteId(),
-                    !includesDuplicates(filterDTO.getDuplicateFilter()));
+                    !includesDuplicates(filterDTO.getDuplicateFilter()), repeatDates);
         }
 
         Page<AudienceResponse> responses = audienceResponseRepository.findLeadsWithFilters(
@@ -4230,7 +4320,7 @@ public class AudienceService {
                     .map(Audience::getInstituteId).orElse(null);
         }
         return mapResponsesToLeadDetails(responses, campaignInstituteId,
-                !includesDuplicates(filterDTO.getDuplicateFilter()));
+                !includesDuplicates(filterDTO.getDuplicateFilter()), false);
     }
 
     /**
@@ -4297,9 +4387,11 @@ public class AudienceService {
     /**
      * @param badgeRepeatedLeads false when the list shows duplicate enquiries as their own
      *        rows (route duplicates=include), so the lead they repeat is not badged as well
+     * @param latestEnquiryDates the list places leads at their latest enquiry (route
+     *        enquiryDates=latest), so each row says when that was
      */
     private Page<LeadDetailDTO> mapResponsesToLeadDetails(Page<AudienceResponse> responses, String instituteId,
-                                                          boolean badgeRepeatedLeads) {
+                                                          boolean badgeRepeatedLeads, boolean latestEnquiryDates) {
         List<AudienceResponse> content = responses.getContent();
 
         // Batch fetch UserDTOs
@@ -4603,6 +4695,10 @@ public class AudienceService {
                     .isDuplicate(response.getIsDuplicate())
                     .primaryResponseId(response.getPrimaryResponseId())
                     .duplicateCount(duplicateCountByResponseId.get(response.getId()))
+                    // Only lists that place leads at their latest enquiry, and only while the
+                    // lead still has live duplicates.
+                    .lastEnquiryAtLocal(latestEnquiryDates && duplicateCountByResponseId.containsKey(response.getId())
+                            ? response.getLastEnquiryAt() : null)
                     .followUpPriority(priorityFollowupResponseIds.contains(response.getId()))
                     .overallStatus(response.getOverallStatus())
                     .conversionStatus(response.getConversionStatus())
@@ -4776,16 +4872,19 @@ public class AudienceService {
         }
 
         int deleted = 0;
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         for (AudienceResponse response : targets) {
             if (AudienceStatusEnum.INACTIVE.name().equalsIgnoreCase(response.getAudienceStatus())) {
                 continue; // already deleted — idempotent
             }
             response.setAudienceStatus(AudienceStatusEnum.INACTIVE.name());
             audienceResponseRepository.save(response);
+            collectRepeatedLead(response, repeatedLeadIds);
             logLeadCurationEvent(response, actor, LeadJourneyActionType.LEAD_DELETED,
                     "Lead deleted", "Lead removed from the CRM", request.getScope(), request.getInstituteId());
             deleted++;
         }
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         logger.info("Soft-deleted {} lead(s) (scope={}) by user {}",
                 deleted, resolveScope(request), actor.getUserId());
         return deleted;
@@ -4801,16 +4900,19 @@ public class AudienceService {
         List<AudienceResponse> targets = resolveDeleteTargets(request, actor);
 
         int restored = 0;
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         for (AudienceResponse response : targets) {
             if (!AudienceStatusEnum.INACTIVE.name().equalsIgnoreCase(response.getAudienceStatus())) {
                 continue; // already active — idempotent
             }
             response.setAudienceStatus(AudienceStatusEnum.ACTIVE.name());
             audienceResponseRepository.save(response);
+            collectRepeatedLead(response, repeatedLeadIds);
             logLeadCurationEvent(response, actor, LeadJourneyActionType.LEAD_RESTORED,
                     "Lead restored", "Lead restored to the CRM", request.getScope(), request.getInstituteId());
             restored++;
         }
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         logger.info("Restored {} lead(s) (scope={}) by user {}",
                 restored, resolveScope(request), actor.getUserId());
         return restored;
@@ -4841,11 +4943,14 @@ public class AudienceService {
         if (CollectionUtils.isEmpty(hidden)) {
             return false;
         }
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         hidden.forEach(lead -> {
             lead.setAudienceStatus(AudienceStatusEnum.ACTIVE.name());
             audienceResponseRepository.save(lead);
+            collectRepeatedLead(lead, repeatedLeadIds);
             logger.info("Reactivated soft-deleted lead {} on re-submission", lead.getId());
         });
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         return true;
     }
 

@@ -45,6 +45,8 @@ export interface RecentLeadDetail {
     is_duplicate?: boolean | null;
     /** Live duplicate enquiries that repeat this lead; absent when there are none. */
     duplicate_count?: number | null;
+    /** When this lead last enquired again; set only on tabs with enquiryDates=latest. */
+    last_enquiry_at_local?: string | null;
     /** Open priority follow-up (opened for a reattempt). */
     follow_up_priority?: boolean | null;
     /** First time the assigned counselor acted — drives "Responded in N" in the Reach-out-by cell. */
@@ -112,6 +114,8 @@ export interface RecentLeadsRequest {
     /** EXCLUDE = hide enquiries flagged as duplicates; ONLY = just those; INCLUDE = list them
      *  too, even with "Show duplicates only in Duplicate Leads" on. Omitted = that setting. */
     duplicate_filter?: 'EXCLUDE' | 'ONLY' | 'INCLUDE';
+    /** Route enquiryDates=latest: place each lead at its latest enquiry. */
+    latest_enquiry_dates?: boolean;
     /** Follow-ups page: only leads carrying an OPEN, scheduled follow-up… */
     follow_up_pending?: boolean;
     /** …and, optionally, only those whose follow-up falls in this window. The caller sends
