@@ -48,32 +48,53 @@ const formatDate = (value: unknown): string => {
     return Number.isNaN(date.getTime()) ? str(value) : date.toLocaleDateString();
 };
 
-/**
- * Ids of the institute's "Phone Number" custom field(s). Settings classes a
- * field with that name as a system field (SYSTEM_FIELD_NAMES), so it is kept
- * out of the custom-field columns, yet enrol-invite forms, audience forms and
- * migrations write the learner's phone there without ever copying it into
- * student.mobile_number.
- */
-const getPhoneCustomFieldIds = (): string[] => {
-    const cache = getCustomFieldSettingsFromCache();
-    if (!cache) return [];
-    return cache.fixedFields
-        .filter((f) => f.id && f.name?.trim().toLowerCase() === 'phone number')
-        .map((f) => f.id);
-};
+const PHONE_FIELD_NAMES = new Set(['phone', 'phone number', 'mobile', 'mobile number']);
 
 /**
- * Fallback for an empty student.mobile_number: the first non-empty value of
- * the Phone Number custom field (already in the list response).
+ * Ids of the institute's phone custom fields: any field named Phone / Phone
+ * Number / Mobile / Mobile Number, or of type phone. Institutes collect the
+ * phone through these fields on enrol-invite and audience forms, while
+ * imports and admin edits write student.mobile_number, so a learner usually
+ * has the number in only one of the two places. Settings also treats a field
+ * named Phone Number as a system field (SYSTEM_FIELD_NAMES), so it can sit in
+ * fixedFields rather than the custom-field lists.
  */
-const phoneFromCustomFields = (student: StudentTable, phoneFieldIds: string[]): string => {
+const getPhoneCustomFieldIds = (): Set<string> => {
+    const cache = getCustomFieldSettingsFromCache();
+    if (!cache) return new Set();
+    const fields = [
+        ...cache.fixedFields,
+        ...cache.instituteFields,
+        ...cache.customFields,
+        ...cache.fieldGroups.flatMap((g) => g.fields),
+    ];
+    return new Set(
+        fields
+            .filter(
+                (f) =>
+                    f.id &&
+                    (f.type === 'phone' ||
+                        PHONE_FIELD_NAMES.has((f.name ?? '').trim().toLowerCase()))
+            )
+            .map((f) => f.id)
+    );
+};
+
+/** First non-empty value among the learner's phone custom fields. */
+const phoneFromCustomFields = (student: StudentTable, phoneFieldIds: Set<string>): string => {
     for (const id of phoneFieldIds) {
         const value = str(student.custom_fields?.[id]).trim();
         if (value) return value;
     }
     return '';
 };
+
+/**
+ * The learner's phone from wherever it is stored: student.mobile_number
+ * first, then any phone custom field.
+ */
+const learnerPhone = (student: StudentTable, phoneFieldIds: Set<string>): string =>
+    str(student.mobile_number).trim() || phoneFromCustomFields(student, phoneFieldIds);
 
 /**
  * Build the full list of selectable export columns. Headers use the institute's
@@ -128,7 +149,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             asText: true,
-            getValue: (s) => str(s.mobile_number) || phoneFromCustomFields(s, phoneFieldIds),
+            getValue: (s) => learnerPhone(s, phoneFieldIds),
         },
         {
             id: 'gender',
@@ -320,9 +341,18 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
                 label: convertToUpperCase(field.name),
                 group: t('manageStudentsExportUtil:groups.customFields'),
                 defaultSelected: true,
-                asText: field.type === 'phone',
-                getValue: (s) =>
-                    formatCustomFieldValue(str(s.custom_fields?.[field.id]), field.type),
+                asText: phoneFieldIds.has(field.id),
+                // A phone column falls back to the learner's phone stored
+                // elsewhere (usually student.mobile_number) when this field is
+                // empty, so the column is not blank for learners who gave
+                // their number through another path.
+                getValue: (s) => {
+                    const raw = str(s.custom_fields?.[field.id]);
+                    if (phoneFieldIds.has(field.id) && !raw.trim()) {
+                        return learnerPhone(s, phoneFieldIds);
+                    }
+                    return formatCustomFieldValue(raw, field.type);
+                },
             });
         }
     }
