@@ -15,7 +15,7 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import vacademy.io.admin_core_service.features.live_session.provider.manager.BbbMeetingManager;
 import vacademy.io.admin_core_service.features.white_label.dto.*;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -80,7 +80,7 @@ public class WhiteLabelService {
     private final InstituteDomainRoutingRepository routingRepository;
     private final DomainRoutingAdminService domainRoutingAdminService;
     private final CloudflareService cloudflareService;
-    private final UserRoleRepository userRoleRepository;
+    private final InstituteRoleUserClient instituteRoleUserClient;
     private final PortalUrlReconciler portalUrlReconciler;
 
     // ── Setup ─────────────────────────────────────────────────────────────────
@@ -518,12 +518,11 @@ public class WhiteLabelService {
         }
 
         // 2) Users with an active ADMIN role on the *specific* target institute are
-        // allowed. This uses the canonical user_role table (the same source the
-        // auth service builds the JWT's per-institute authorities from), so it
-        // correctly authorizes admins regardless of how they were provisioned —
-        // including admins who don't have a row in the `staff` table.
-        if (userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
-                user.getUserId(), instituteId, ROLE_NAME_ADMIN)) {
+        // allowed. Roles live in auth_service's DB (admin_core has no user_role
+        // table), so ask auth_service; a failed lookup falls through to the
+        // staff-membership check below.
+        if (instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false)) {
             return true;
         }
 
