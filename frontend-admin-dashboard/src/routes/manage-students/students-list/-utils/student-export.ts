@@ -31,6 +31,12 @@ export interface ExportColumn {
     group: string;
     /** Whether the column is pre-checked when the dialog opens. */
     defaultSelected: boolean;
+    /**
+     * Write the cell as forced text. Phone numbers are stored as long digit
+     * strings (e.g. 917736011420); written bare, Excel turns them into a number
+     * and shows 9.17736E+11, dropping any leading + or 0.
+     */
+    asText?: boolean;
     getValue: (student: StudentTable, ctx: ExportContext) => string;
 }
 
@@ -40,6 +46,33 @@ const formatDate = (value: unknown): string => {
     if (value === null || value === undefined || value === '') return '';
     const date = new Date(value as string | number);
     return Number.isNaN(date.getTime()) ? str(value) : date.toLocaleDateString();
+};
+
+/**
+ * Ids of the institute's "Phone Number" custom field(s). Settings classes a
+ * field with that name as a system field (SYSTEM_FIELD_NAMES), so it is kept
+ * out of the custom-field columns, yet enrol-invite forms, audience forms and
+ * migrations write the learner's phone there without ever copying it into
+ * student.mobile_number.
+ */
+const getPhoneCustomFieldIds = (): string[] => {
+    const cache = getCustomFieldSettingsFromCache();
+    if (!cache) return [];
+    return cache.fixedFields
+        .filter((f) => f.id && f.name?.trim().toLowerCase() === 'phone number')
+        .map((f) => f.id);
+};
+
+/**
+ * Fallback for an empty student.mobile_number: the first non-empty value of
+ * the Phone Number custom field (already in the list response).
+ */
+const phoneFromCustomFields = (student: StudentTable, phoneFieldIds: string[]): string => {
+    for (const id of phoneFieldIds) {
+        const value = str(student.custom_fields?.[id]).trim();
+        if (value) return value;
+    }
+    return '';
 };
 
 /**
@@ -57,6 +90,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
     const sessionTerm = getTerminology(ContentTerms.Session, SystemTerms.Session);
     const learnerTerm = getTerminology('Learner', SystemTerms.Learner);
     const inviteTerm = getTerminology(OtherTerms.Invite, SystemTerms.Invite);
+    const phoneFieldIds = getPhoneCustomFieldIds();
 
     const columns: ExportColumn[] = [
         // Identity
@@ -93,7 +127,8 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.mobileNumber'),
             group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
-            getValue: (s) => str(s.mobile_number),
+            asText: true,
+            getValue: (s) => str(s.mobile_number) || phoneFromCustomFields(s, phoneFieldIds),
         },
         {
             id: 'gender',
@@ -208,6 +243,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.fatherMobile'),
             group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_mobile_number),
         },
         {
@@ -229,6 +265,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.motherMobile'),
             group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_to_mother_mobile_number),
         },
         {
@@ -283,6 +320,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
                 label: convertToUpperCase(field.name),
                 group: t('manageStudentsExportUtil:groups.customFields'),
                 defaultSelected: true,
+                asText: field.type === 'phone',
                 getValue: (s) =>
                     formatCustomFieldValue(str(s.custom_fields?.[field.id]), field.type),
             });
@@ -305,6 +343,17 @@ const escapeCsvCell = (value: string): string => {
     return value;
 };
 
+/**
+ * Wrap a value as an Excel text formula (="...") so spreadsheet apps keep it
+ * verbatim instead of coercing it to a number. Excel, Google Sheets and
+ * LibreOffice all evaluate it to the plain string. Empty and placeholder
+ * values are left as they are.
+ */
+const asTextCell = (value: string): string => {
+    if (!value || value === '-') return value;
+    return `="${value.replace(/"/g, '""')}"`;
+};
+
 /** Build a CSV string (with BOM for Excel) from students and the selected columns. */
 export const buildStudentsCsv = (
     students: StudentTable[],
@@ -313,7 +362,12 @@ export const buildStudentsCsv = (
 ): string => {
     const header = columns.map((c) => escapeCsvCell(c.label)).join(',');
     const rows = students.map((student) =>
-        columns.map((c) => escapeCsvCell(c.getValue(student, ctx))).join(',')
+        columns
+            .map((c) => {
+                const value = c.getValue(student, ctx);
+                return escapeCsvCell(c.asText ? asTextCell(value) : value);
+            })
+            .join(',')
     );
     // Prefix a BOM so Excel opens the UTF-8 CSV with correct encoding.
     return '﻿' + [header, ...rows].join('\r\n');
