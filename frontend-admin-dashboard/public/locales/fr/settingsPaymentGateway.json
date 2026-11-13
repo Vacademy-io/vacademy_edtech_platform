@@ -43,6 +43,8 @@
         "dashboardLinkText": "tableau de bord {{vendor}}",
         "findValuesSuffix": ".",
         "whereToFind": "Où trouver ces valeurs",
+        "setupGuidePdf": "Guide de configuration {{vendor}} étape par étape (PDF) — clés, webhook et tests",
+        "openGuide": "Ouvrir",
         "webhookUrlLabel": "URL du webhook — à coller dans le tableau de bord {{vendor}}",
         "copyUrl": "Copier l'URL",
         "hide": "Masquer",

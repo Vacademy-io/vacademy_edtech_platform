@@ -43,6 +43,8 @@
         "dashboardLinkText": "{{vendor}}",
         "findValuesSuffix": ".",
         "whereToFind": "أين تجد هذه القيم",
+        "setupGuidePdf": "دليل إعداد {{vendor}} خطوة بخطوة (PDF) — المفاتيح والـ webhook والاختبار",
+        "openGuide": "فتح",
         "webhookUrlLabel": "رابط الويب هوك — الصقه في لوحة تحكم {{vendor}}",
         "copyUrl": "نسخ الرابط",
         "hide": "إخفاء",

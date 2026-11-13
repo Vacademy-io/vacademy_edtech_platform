@@ -7,6 +7,7 @@ import {
     CreditCard,
     Eye,
     EyeSlash,
+    FilePdf,
     Info,
     PencilSimple,
     Plus,
@@ -89,6 +90,11 @@ interface VendorSchema {
      * fields. Use for gateways whose credentials are buried in a dashboard.
      */
     setupSteps?: string[];
+    /**
+     * Step-by-step setup guide (keys, webhook, testing) served from
+     * public/guides/. Shown as a link at the top of the add/edit dialog.
+     */
+    guidePdfUrl?: string;
     fields: VendorFieldSchema[];
     /**
      * Returns the webhook URL the admin must paste into the vendor's dashboard.
@@ -139,6 +145,7 @@ const VENDOR_SCHEMAS: VendorSchema[] = [
         label: 'vendors.razorpay.label',
         description: 'vendors.razorpay.description',
         docsUrl: 'https://dashboard.razorpay.com/app/keys',
+        guidePdfUrl: '/guides/razorpay-setup-guide.pdf',
         fields: [
             {
                 key: 'keyId',
@@ -226,6 +233,7 @@ const VENDOR_SCHEMAS: VendorSchema[] = [
         vendor: 'CASHFREE',
         label: 'vendors.cashfree.label',
         description: 'vendors.cashfree.description',
+        guidePdfUrl: '/guides/cashfree-setup-guide.pdf',
         fields: [
             {
                 key: 'clientId',
@@ -500,6 +508,24 @@ const GatewayDialog = ({
                                 {schema && t(schema.description)}
                             </span>
                         </div>
+                    )}
+
+                    {/* Full setup guide (keys, webhook, testing) */}
+                    {schema?.guidePdfUrl && (
+                        <a
+                            href={schema.guidePdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            <FilePdf className="size-5 shrink-0 text-danger-500" />
+                            <span className="flex-1">
+                                {t('dialog.setupGuidePdf', { vendor: t(schema.label) })}
+                            </span>
+                            <span className="text-caption font-medium text-primary-500 underline">
+                                {t('dialog.openGuide')}
+                            </span>
+                        </a>
                     )}
 
                     {/* Helper text */}
