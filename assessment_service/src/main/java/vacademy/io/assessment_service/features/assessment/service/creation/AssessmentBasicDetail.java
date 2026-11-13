@@ -2,6 +2,7 @@ package vacademy.io.assessment_service.features.assessment.service.creation;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService;
 import vacademy.io.assessment_service.features.proctoring.service.ProctoringConfigService;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentInstituteMapping;
@@ -21,6 +22,9 @@ public class AssessmentBasicDetail extends IStep {
 
     @Autowired
     private ProctoringConfigService proctoringConfigService;
+
+    @Autowired
+    private ExamInterfaceService examInterfaceService;
 
     @Override
     public void checkStatusAndFetchData(Optional<Assessment> assessment) {
@@ -55,6 +59,8 @@ public class AssessmentBasicDetail extends IStep {
         // Effective config (defaults filled, NONE when unset) so the wizard's picker
         // and the learner runtime read the same thing.
         savedData.put(AssessmentCreationEnum.PROCTORING_CONFIG.name().toLowerCase(), proctoringConfigService.effectiveConfig(assessment.get()));
+        // The stored object as saved (unknown keys kept), or null for the default screen.
+        savedData.put(AssessmentCreationEnum.EXAM_INTERFACE.name().toLowerCase(), examInterfaceService.read(assessment.get()));
         setSavedData(savedData);
         updateStatusForStep();
     }

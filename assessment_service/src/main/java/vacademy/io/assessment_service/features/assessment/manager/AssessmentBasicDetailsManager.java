@@ -55,6 +55,9 @@ public class AssessmentBasicDetailsManager {
     @Autowired
     OmrPaperLoader omrPaperLoader;
 
+    @Autowired
+    vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
+
     public ResponseEntity<AssessmentSaveResponseDto> saveBasicAssessmentDetails(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, String assessmentId, String instituteId, String type) {
 
         if (!StringUtils.hasText(assessmentId))
@@ -68,6 +71,8 @@ public class AssessmentBasicDetailsManager {
 
     private ResponseEntity<AssessmentSaveResponseDto> handleExistingAssessment(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, Assessment assessment, String instituteId, String type) {
         if (!assessment.getPlayMode().equals(type)) throw new VacademyException("Assessment type cannot be changed");
+        // First, so an invalid value is refused before any other field is touched.
+        applyExamInterface(assessment, basicAssessmentDetailsDTO);
 
         Optional.ofNullable(basicAssessmentDetailsDTO.getAssessmentPreviewTime()).ifPresent(assessment::setPreviewTime);
         Optional.ofNullable(basicAssessmentDetailsDTO.getSwitchSections()).ifPresent(assessment::setCanSwitchSection);
@@ -151,6 +156,8 @@ public class AssessmentBasicDetailsManager {
     private ResponseEntity<AssessmentSaveResponseDto> handleNewAssessment(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, String assessmentId, String instituteId, String type, String source, String sourceId) {
 
         Assessment assessment = new Assessment();
+        // First, so an invalid value is refused before anything is created.
+        applyExamInterface(assessment, basicAssessmentDetailsDTO);
         if (source != null) {
             assessment.setSource(source);
             assessment.setSourceId(sourceId);
@@ -204,6 +211,16 @@ public class AssessmentBasicDetailsManager {
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.DRAFT.name()));
     }
 
+
+    /**
+     * Exam interface (V68). Absent (Java null) leaves the stored value alone, like
+     * proctoring_config; an explicit JSON null (NullNode) or preset "default" clears it.
+     * Invalid input is a 400, raised before anything is saved.
+     */
+    private void applyExamInterface(Assessment assessment, BasicAssessmentDetailsDTO dto) {
+        if (dto.getExamInterface() == null) return;
+        assessment.setExamInterface(examInterfaceService.toStoredJson(dto.getExamInterface()));
+    }
 
     /** Result type every API exam keeps (spec 3.2): AI marks are a draft until released. */
     static final String API_RESULT_TYPE = "MANUAL";
