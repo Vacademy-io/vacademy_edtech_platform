@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.engagement.dto.CreateEngineReques
 import vacademy.io.admin_core_service.features.engagement.dto.PromptEditRequest;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementPromptVersion;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementPromptVersionRepository;
@@ -53,6 +54,10 @@ public class EngagementEngineService {
     /** Field-injected for the same reason; checks that alert contacts are staff of the institute. */
     @Autowired(required = false)
     private vacademy.io.admin_core_service.features.auth_service.service.AuthService authService;
+
+    /** Field-injected for the same reason; releases what the kill switch parked when autonomy resumes. */
+    @Autowired(required = false)
+    private EngagementActionRepository actionRepository;
 
     /** Field-injected for the same reason; the assets are optional on an engine. */
     @Autowired(required = false)
@@ -503,8 +508,18 @@ public class EngagementEngineService {
     public EngagementEngine setAutonomyKilled(String engineId, String instituteId, boolean killed) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
         requireAdminManaged(engine);
+        boolean resuming = !killed && Boolean.TRUE.equals(engine.getAutoSendKilled());
         engine.setAutoSendKilled(killed);
-        return engineRepository.save(engine);
+        EngagementEngine saved = engineRepository.save(engine);
+        if (resuming && actionRepository != null) {
+            // What the stop parked goes out again (2026-11-13: ~890 emails and ~140 calls stayed in the
+            // inbox after a resume, each still stamped "autonomy off").
+            int released = actionRepository.clearAutonomyStamps(engineId, List.of(
+                    EngagementDispatchJob.AUTONOMY_OFF_REASON, EngagementCrmActionService.KILL_SWITCH_CALL_REASON),
+                    Instant.now());
+            if (released > 0) log.info("Engine {}: autonomy back on, {} parked draft(s) released", engineId, released);
+        }
+        return saved;
     }
 
     /** Refuses an admin change to an engine the platform runs (see EngagementEngine#isSystemManaged). */

@@ -131,6 +131,13 @@ public class EngagementDispatchJob {
     }
 
     /**
+     * The stamp on a send the kill switch (or a channel set to manual) turned back into a draft. Turning
+     * autonomy on again clears it ({@link EngagementEngineService#setAutonomyKilled}); a stamped draft is
+     * never promoted, so without that it waited until it expired.
+     */
+    public static final String AUTONOMY_OFF_REASON = "Autonomy off for this channel — sent to the inbox for review.";
+
+    /**
      * Graduation applies to the drafts already in the inbox, not only to future ones: once a person
      * has approved first_n sends on a channel the admin set to auto, the rest of that channel's waiting
      * drafts go out on the next run (20 drafts, 5 approved: the other 15 send). A killed engine, a
@@ -247,8 +254,7 @@ public class EngagementDispatchJob {
         }
         if (Boolean.TRUE.equals(engine.getAutoSendKilled())
                 || !channelAutoEnabled(engine, action.getChannel())) {
-            actionRepository.demoteSendToTask(action.getId(),
-                    "Autonomy off for this channel — sent to the inbox for review.", now);
+            actionRepository.demoteSendToTask(action.getId(), AUTONOMY_OFF_REASON, now);
             return false;
         }
         // B5: flagged do-not-automate, or a counsellor got in touch, after this was decided. To the

@@ -260,6 +260,23 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     List<EngagementAction> findDueAutoSends(@Param("now") Instant now, @Param("limit") int limit);
 
+    /**
+     * Autonomy is back on: the drafts and AI calls the kill switch parked in the inbox lose their stamp,
+     * so graduation promotes them again (promoteTasksToAutoSends and findWaitingCallTasks skip any row
+     * with an error). Only untouched OPEN tasks with exactly these stamps; anything a person acked, or
+     * that was held for another reason, stays as it is.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET error_message = NULL, updated_at = :now
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'OPEN'
+               AND error_message IN (:reasons)
+            """, nativeQuery = true)
+    int clearAutonomyStamps(@Param("engineId") String engineId, @Param("reasons") List<String> reasons,
+                            @Param("now") Instant now);
+
     /** Convert an autonomous SEND back to a human copilot TASK (kill switch / out of credits). */
     @Modifying
     @Transactional

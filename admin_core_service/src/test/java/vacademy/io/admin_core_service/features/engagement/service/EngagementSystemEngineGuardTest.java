@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.features.engagement.service;
 
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
+import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
@@ -85,5 +88,28 @@ class EngagementSystemEngineGuardTest {
         assertFalse(own.isSystemManaged());
         assertEquals("PAUSED", service.transition("e2", "i1", "PAUSED").getStatus());
         assertTrue(service.setAutonomyKilled("e2", "i1", true).getAutoSendKilled());
+    }
+
+    @Test
+    void resumingAutonomyReleasesWhatTheStopParked() {
+        EngagementEngine own = new EngagementEngine();
+        own.setId("e2");
+        own.setInstituteId("i1");
+        own.setStatus("ACTIVE");
+        own.setCreatedBy("some-admin-user");
+        own.setAutoSendKilled(true);
+        when(engines.findById("e2")).thenReturn(Optional.of(own));
+        when(engines.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        EngagementActionRepository actions = mock(EngagementActionRepository.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "actionRepository", actions);
+
+        assertFalse(service.setAutonomyKilled("e2", "i1", false).getAutoSendKilled());
+        verify(actions).clearAutonomyStamps(eq("e2"), eq(java.util.List.of(EngagementDispatchJob.AUTONOMY_OFF_REASON,
+                EngagementCrmActionService.KILL_SWITCH_CALL_REASON)), any());
+
+        // Turning it off, or "on" when it was already on, releases nothing.
+        service.setAutonomyKilled("e2", "i1", true);
+        service.setAutonomyKilled("e2", "i1", true);
+        verify(actions, times(1)).clearAutonomyStamps(any(), any(), any());
     }
 }
