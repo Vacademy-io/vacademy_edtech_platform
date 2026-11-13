@@ -31,6 +31,12 @@ export interface ExportColumn {
     group: string;
     /** Whether the column is pre-checked when the dialog opens. */
     defaultSelected: boolean;
+    /**
+     * Write the cell as forced text. Phone numbers are stored as long digit
+     * strings (e.g. 917736011420); written bare, Excel turns them into a number
+     * and shows 9.17736E+11, dropping any leading + or 0.
+     */
+    asText?: boolean;
     getValue: (student: StudentTable, ctx: ExportContext) => string;
 }
 
@@ -93,6 +99,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.mobileNumber'),
             group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
+            asText: true,
             getValue: (s) => str(s.mobile_number),
         },
         {
@@ -208,6 +215,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.fatherMobile'),
             group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_mobile_number),
         },
         {
@@ -229,6 +237,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
             label: t('manageStudentsExportUtil:columns.motherMobile'),
             group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
+            asText: true,
             getValue: (s) => str(s.parents_to_mother_mobile_number),
         },
         {
@@ -283,6 +292,7 @@ export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
                 label: convertToUpperCase(field.name),
                 group: t('manageStudentsExportUtil:groups.customFields'),
                 defaultSelected: true,
+                asText: field.type === 'phone',
                 getValue: (s) =>
                     formatCustomFieldValue(str(s.custom_fields?.[field.id]), field.type),
             });
@@ -305,6 +315,17 @@ const escapeCsvCell = (value: string): string => {
     return value;
 };
 
+/**
+ * Wrap a value as an Excel text formula (="...") so spreadsheet apps keep it
+ * verbatim instead of coercing it to a number. Excel, Google Sheets and
+ * LibreOffice all evaluate it to the plain string. Empty and placeholder
+ * values are left as they are.
+ */
+const asTextCell = (value: string): string => {
+    if (!value || value === '-') return value;
+    return `="${value.replace(/"/g, '""')}"`;
+};
+
 /** Build a CSV string (with BOM for Excel) from students and the selected columns. */
 export const buildStudentsCsv = (
     students: StudentTable[],
@@ -313,7 +334,12 @@ export const buildStudentsCsv = (
 ): string => {
     const header = columns.map((c) => escapeCsvCell(c.label)).join(',');
     const rows = students.map((student) =>
-        columns.map((c) => escapeCsvCell(c.getValue(student, ctx))).join(',')
+        columns
+            .map((c) => {
+                const value = c.getValue(student, ctx);
+                return escapeCsvCell(c.asText ? asTextCell(value) : value);
+            })
+            .join(',')
     );
     // Prefix a BOM so Excel opens the UTF-8 CSV with correct encoding.
     return '﻿' + [header, ...rows].join('\r\n');
