@@ -16,6 +16,8 @@ import { phoneSchema } from '@/lib/phone-validation';
 import { isNative } from '@/native/platform';
 import { INDIAN_GST_STATES } from '@/services/ai-credits/credit-pack-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { cn } from '@/lib/utils';
+import { clearPlanBuyIntent, isPaidPlanKey, rememberPlanBuyIntent } from '@/lib/plan-buy-intent';
 import {
     completeSignup,
     consumeGoogleReturn,
@@ -52,7 +54,7 @@ const enterApp = async (tokens: SignupTokens, appPath: string) => {
  * Sign up and start a trial, on the website and in the app: prove the email (Google, or a code
  * by email), set a username and password unless Google is the login, tell us about the institute.
  */
-export const SelfSignupFlow = ({ context }: { context: SignupContext }) => {
+export const SelfSignupFlow = ({ context, buy }: { context: SignupContext; buy?: string }) => {
     const { t } = useTranslation('evalezy');
     const config = useQuery({
         queryKey: ['SELF_SIGNUP_CONFIG', context.product],
@@ -71,15 +73,18 @@ export const SelfSignupFlow = ({ context }: { context: SignupContext }) => {
             </Shell>
         );
     }
-    return <SignupSteps context={context} product={config.data} />;
+    return <SignupSteps context={context} product={config.data} buy={buy} />;
 };
 
 const SignupSteps = ({
     context,
     product,
+    buy,
 }: {
     context: SignupContext;
     product: SignupProductConfig;
+    /** ?buy=<plan> from the website's Buy button; ?plan= alone is still a trial. */
+    buy?: string;
 }) => {
     const { t } = useTranslation('evalezy');
     // Credits shown only when the dashboard sets them; a failed read keeps the plain line.
@@ -99,6 +104,18 @@ const SignupSteps = ({
     const [resendsLeft, setResendsLeft] = useState(MAX_RESENDS);
     const [resendIn, setResendIn] = useState(0);
     const viaGoogle = !!google?.signupToken;
+    // "Buy <plan>" on the website: same sign-up, then the app opens that plan's checkout.
+    const buyPlan = isPaidPlanKey(buy) ? buy.trim().toLowerCase() : null;
+    const buyPlanName = buyPlan
+        ? offer.data?.plans?.find((p) => p.key?.toLowerCase() === buyPlan)?.name ??
+          buyPlan.charAt(0).toUpperCase() + buyPlan.slice(1)
+        : null;
+
+    // Remembered, so it survives Google, or "I already have an account" → log in.
+    useEffect(() => {
+        if (buyPlan) rememberPlanBuyIntent(buyPlan, context.product);
+        else clearPlanBuyIntent();
+    }, [buyPlan, context.product]);
 
     // A Google account that already has a workspace comes back signed in.
     useEffect(() => {
@@ -144,20 +161,34 @@ const SignupSteps = ({
     return (
         <Shell
             product={product}
-            title={step === 'details' ? t('signup.detailsTitle') : t('signup.title')}
+            buySteps={!!buyPlan}
+            title={
+                buyPlanName
+                    ? t('signup.buyTitle', { plan: buyPlanName })
+                    : step === 'details'
+                      ? t('signup.detailsTitle')
+                      : t('signup.title')
+            }
             subtitle={
-                step === 'details'
-                    ? t('signup.detailsSubtitle', { days: product.trial_days })
-                    : offer.data?.demo_credits != null
-                      ? t('signup.subtitleCredits', {
-                            days: product.trial_days,
-                            credits: offer.data.demo_credits,
-                        })
-                      : t('signup.subtitle', { days: product.trial_days })
+                buyPlanName
+                    ? step === 'details'
+                        ? t('signup.buyDetailsSubtitle', { plan: buyPlanName })
+                        : t('signup.buySubtitle')
+                    : step === 'details'
+                      ? t('signup.detailsSubtitle', { days: product.trial_days })
+                      : offer.data?.demo_credits != null
+                        ? t('signup.subtitleCredits', {
+                              days: product.trial_days,
+                              credits: offer.data.demo_credits,
+                          })
+                        : t('signup.subtitle', { days: product.trial_days })
             }
         >
             {(error || googleFailed) && (
-                <p role="alert" className="rounded-md bg-danger-50 p-2 text-caption text-danger-700">
+                <p
+                    role="alert"
+                    className="rounded-md bg-danger-50 p-2 text-caption text-danger-700"
+                >
                     {error ?? t('signup.googleFailed')}
                 </p>
             )}
@@ -172,7 +203,7 @@ const SignupSteps = ({
                                 buttonType="secondary"
                                 scale="large"
                                 className="w-full"
-                                onClick={() => startGoogleSignup(context)}
+                                onClick={() => startGoogleSignup(context, buyPlan)}
                             >
                                 <GoogleLogo size={18} weight="bold" />
                                 {t('signup.google')}
@@ -237,7 +268,9 @@ const SignupSteps = ({
                         inputType="tel"
                         autoComplete="one-time-code"
                         input={otp}
-                        onChangeFunction={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        onChangeFunction={(e) =>
+                            setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
                         className="w-full sm:w-full"
                     />
                     <MyButton
@@ -286,6 +319,7 @@ const SignupSteps = ({
                     email={email.trim()}
                     googleName={google?.name}
                     viaGoogle={viaGoogle}
+                    buying={!!buyPlan}
                     onError={setError}
                 />
             )}
@@ -293,15 +327,43 @@ const SignupSteps = ({
     );
 };
 
+/** Choose plan (done) → Create account (here) → Pay, so a buyer expects the payment screen. */
+const BuySteps = () => {
+    const { t } = useTranslation('evalezy');
+    const steps = [t('signup.steps.plan'), t('signup.steps.account'), t('signup.steps.pay')];
+    return (
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-neutral-500">
+            {steps.map((label, i) => (
+                <li key={label} className="flex items-center gap-2">
+                    <span
+                        className={cn(
+                            'flex size-5 items-center justify-center rounded-full text-caption font-semibold',
+                            i === 0 && 'bg-success-100 text-success-700',
+                            i === 1 && 'bg-primary-500 text-white',
+                            i === 2 && 'bg-neutral-100 text-neutral-500'
+                        )}
+                    >
+                        {i === 0 ? <CheckCircle size={12} weight="bold" /> : i + 1}
+                    </span>
+                    <span className={cn(i === 1 && 'font-semibold text-neutral-800')}>{label}</span>
+                    {i < steps.length - 1 && <span className="text-neutral-300">→</span>}
+                </li>
+            ))}
+        </ol>
+    );
+};
+
 const Shell = ({
     product,
     title,
     subtitle,
+    buySteps,
     children,
 }: {
     product?: SignupProductConfig;
     title: string;
     subtitle?: string;
+    buySteps?: boolean;
     children?: React.ReactNode;
 }) => (
     <main className="min-h-screen-safe flex w-full min-w-0 flex-col items-center bg-neutral-50 p-4 sm:justify-center">
@@ -309,6 +371,7 @@ const Shell = ({
             {product?.logo_url && (
                 <img src={product.logo_url} alt={product.display_name} className="h-8 w-fit" />
             )}
+            {buySteps && <BuySteps />}
             <div className="flex flex-col gap-1">
                 <h1 className="text-h3 font-semibold text-neutral-800">{title}</h1>
                 {subtitle && <p className="text-body text-neutral-500">{subtitle}</p>}
@@ -325,6 +388,7 @@ const DetailsForm = ({
     email,
     googleName,
     viaGoogle,
+    buying,
     onError,
 }: {
     context: SignupContext;
@@ -333,6 +397,7 @@ const DetailsForm = ({
     email: string;
     googleName?: string;
     viaGoogle: boolean;
+    buying: boolean;
     onError: (message: string | null) => void;
 }) => {
     const { t } = useTranslation('evalezy');
@@ -485,7 +550,7 @@ const DetailsForm = ({
                 />
                 <p className="flex items-start gap-1 text-caption text-neutral-500">
                     <CheckCircle size={14} className="mt-px shrink-0 text-success-600" />
-                    {t('signup.noCard')}
+                    {buying ? t('signup.buyNote') : t('signup.noCard')}
                 </p>
                 <MyButton
                     type="submit"
@@ -496,7 +561,9 @@ const DetailsForm = ({
                 >
                     {create.isPending
                         ? t('signup.creating')
-                        : t('signup.start', { days: product.trial_days })}
+                        : buying
+                          ? t('signup.buyStart')
+                          : t('signup.start', { days: product.trial_days })}
                 </MyButton>
             </form>
         </FormProvider>

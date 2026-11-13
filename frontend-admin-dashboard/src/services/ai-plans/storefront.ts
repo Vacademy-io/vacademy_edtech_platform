@@ -804,13 +804,35 @@ export async function downloadBillingDocumentPdf(
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Where Razorpay sends the browser back: the Plan & billing tab on this same host. */
+/** The Evalezy app's credits page, which also sells its plans. */
+export const EVALEZY_PLANS_PATH = '/evalezy/credits';
+
+/**
+ * Where Razorpay sends the browser back, on this same host: the page the plan was bought
+ * from (the Evalezy credits page inside the Evalezy app, else Settings → Plan & billing).
+ */
 export function planReturnUrl(): string {
+    let path = PLANS_SETTINGS_PATH;
     try {
-        return new URL(PLANS_SETTINGS_PATH, window.location.origin).toString();
+        if (window.location.pathname.startsWith('/evalezy')) path = EVALEZY_PLANS_PATH;
+        return new URL(path, window.location.origin).toString();
     } catch {
-        return PLANS_SETTINGS_PATH;
+        return path;
     }
+}
+
+/**
+ * The storefront plan a "Buy <plan>" link names. Product plans are keyed `<product>_<plan>`
+ * (evalezy_team) while the website says `team`; an exact key wins.
+ */
+export function findPlanByKey(plans: StorefrontPlan[], key: string | null | undefined) {
+    const k = (key ?? '').trim().toLowerCase();
+    if (!k) return null;
+    return (
+        plans.find((p) => p.plan_key.toLowerCase() === k) ??
+        plans.find((p) => p.plan_key.toLowerCase().endsWith(`_${k}`)) ??
+        null
+    );
 }
 
 /** A fresh idempotency key per checkout dialog open. */

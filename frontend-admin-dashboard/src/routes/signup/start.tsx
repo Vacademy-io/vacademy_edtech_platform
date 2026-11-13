@@ -6,6 +6,9 @@ import { SelfSignupFlow } from './-components/SelfSignupFlow';
 const searchSchema = z.object({
     product: z.string().optional(),
     plan: z.string().optional(),
+    // "Buy <plan>" on the website: sign up, then that plan's checkout. Not part of the sign-up
+    // context (plan= alone stays a trial, as older links and trial buttons send it).
+    buy: z.string().optional(),
     source: z.string().optional(),
     utm_source: z.string().optional(),
     campaign: z.string().optional(),
@@ -27,6 +30,7 @@ function SignupStartPage() {
                 source: search.source || search.utm_source,
                 campaign: search.campaign || search.utm_campaign,
             }}
+            buy={search.buy}
         />
     );
 }

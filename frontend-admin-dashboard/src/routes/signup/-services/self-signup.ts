@@ -29,6 +29,8 @@ export interface ProductOffer {
     trial_days: number;
     /** AI credits a new sign-up opens with; null = the platform's default. */
     demo_credits: number | null;
+    /** Paid plans shown on the product website (key = the website's ?plan=). */
+    plans?: { key: string; name: string }[] | null;
 }
 
 export const fetchProductOffer = async (product: string): Promise<ProductOffer> => {
@@ -89,11 +91,13 @@ export const completeSignup = async (
 };
 
 /** Google comes back to this same page, carrying the proof of the email or the login tokens. */
-export const startGoogleSignup = (context: SignupContext) => {
+export const startGoogleSignup = (context: SignupContext, buy?: string | null) => {
     const back = new URL(`${window.location.origin}/signup/start`);
     Object.entries(context).forEach(([key, value]) => {
         if (value) back.searchParams.set(key, value);
     });
+    // A "Buy <plan>" sign-up stays one after Google.
+    if (buy) back.searchParams.set('buy', buy);
     const state = btoa(
         JSON.stringify({
             from: back.toString(),

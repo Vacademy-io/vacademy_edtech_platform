@@ -8,7 +8,7 @@
  *  - always        → what the current plan covers (AiPlanSection) and the
  *                    plan invoices / credit notes
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SealCheck } from '@phosphor-icons/react';
@@ -32,6 +32,7 @@ import { PlanBillingDocuments } from '@/components/common/ai-credits/PlanBilling
 import {
     apiErrorCode,
     changePlan,
+    findPlanByKey,
     loadStorefront,
     useInvalidatePlanQueries,
     useStorefrontQuery,
@@ -51,7 +52,19 @@ interface CheckoutState {
     resumePaymentId: string | null;
 }
 
-export function AiPlanBilling() {
+interface AiPlanBillingProps {
+    /**
+     * Open the checkout for this plan once the plans load (a "Buy <plan>" link from the
+     * website, carried through sign-up). Matched with findPlanByKey.
+     */
+    buyPlanKey?: string | null;
+    /** Called once the buy request has been acted on, so the caller can drop it from the URL. */
+    onBuyHandled?: () => void;
+    /** The host page shows its own title (the Evalezy credits page). */
+    hideHeading?: boolean;
+}
+
+export function AiPlanBilling({ buyPlanKey, onBuyHandled, hideHeading }: AiPlanBillingProps = {}) {
     const { t } = useTranslation('aiPlans');
     const instituteId = getInstituteId() ?? '';
     const brand = usePlatformBrand(instituteId);
@@ -77,6 +90,22 @@ export function AiPlanBilling() {
         // Runs once per mount by design.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // "Buy <plan>" from the website: open that plan's checkout once, when the plans are in.
+    const buyHandled = useRef(false);
+    useEffect(() => {
+        if (!buyPlanKey || buyHandled.current || storefrontQuery.isLoading) return;
+        const plans = storefrontQuery.data?.plans ?? [];
+        buyHandled.current = true;
+        onBuyHandled?.();
+        const plan = findPlanByKey(plans, buyPlanKey);
+        if (plan?.action === 'SUBSCRIBE') setCheckout({ plan, kind: 'NEW', resumePaymentId: null });
+        else if (plan?.action === 'UPGRADE')
+            setCheckout({ plan, kind: 'UPGRADE', resumePaymentId: null });
+        else if (plan?.action === 'CURRENT')
+            toast.message(t('buyLink.current', { plan: plan.name }));
+        else toast.message(t('buyLink.notAvailable'));
+    }, [buyPlanKey, onBuyHandled, storefrontQuery.isLoading, storefrontQuery.data, t]);
 
     const sf = storefrontQuery.data;
     if (storefrontQuery.isLoading) {
@@ -135,7 +164,7 @@ export function AiPlanBilling() {
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-col gap-1">
+            <div className={hideHeading ? 'hidden' : 'flex flex-col gap-1'}>
                 <div className="flex items-center gap-2">
                     <SealCheck className="size-5 text-primary-500" weight="fill" />
                     <h3 className="text-h3 font-semibold text-neutral-700">{t('heading')}</h3>

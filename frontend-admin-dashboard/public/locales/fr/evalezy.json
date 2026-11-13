@@ -34,6 +34,16 @@
         "city": "Ville",
         "state": "État",
         "noCard": "Sans carte bancaire. Vos rapports restent disponibles après l’essai.",
+        "buyTitle": "Créez votre compte pour acheter {{plan}}",
+        "buySubtitle": "Le paiement se fait à l’écran suivant. Les crédits de l’offre sont ajoutés dès que le paiement est validé.",
+        "buyDetailsSubtitle": "Plus qu’une étape, puis le paiement de {{plan}}.",
+        "buyStart": "Créer le compte et passer au paiement",
+        "buyNote": "Rien n’est débité avant le paiement à l’écran suivant.",
+        "steps": {
+            "plan": "Choisir l’offre",
+            "account": "Créer le compte",
+            "pay": "Payer"
+        },
         "start": "Démarrer l’essai de {{days}} jours",
         "creating": "Création de votre compte…",
         "createFailed": "Le compte n’a pas pu être créé. Réessayez.",
@@ -109,7 +119,10 @@
         "tabUsage": "Utilisation",
         "bills": "Factures",
         "loadError": "Impossible de charger les crédits.",
-        "retry": "Réessayer"
+        "retry": "Réessayer",
+        "plansTitle": "Offres",
+        "plansSubtitle": "Achetez une offre annuelle avec crédits IA inclus. Le paiement ici ajoute les crédits de l’offre à ce compte.",
+        "planUnavailable": "Les offres ne peuvent pas encore être achetées en ligne pour ce compte. Écrivez-nous et nous les mettrons en place."
     },
     "header": {
         "backToPortal": "Retour au tableau de bord",
