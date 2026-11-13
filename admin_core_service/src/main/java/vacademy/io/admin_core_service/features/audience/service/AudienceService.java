@@ -2804,6 +2804,7 @@ public class AudienceService {
         Runnable refresh = () -> {
             try {
                 audienceResponseRepository.refreshEnquiryDates(responseId);
+                audienceResponseRepository.refreshDuplicateOrder(responseId);
             } catch (Exception e) {
                 logger.error("Lead {}: failed to refresh enquiry dates: {}", responseId, e.getMessage());
             }

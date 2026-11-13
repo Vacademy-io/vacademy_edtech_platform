@@ -186,6 +186,8 @@ class ClosedRepeatTakesOverTest {
         // lead drops its own dates.
         verify(responses, times(2)).refreshEnquiryDates("resp-new");
         verify(responses, times(2)).refreshEnquiryDates("resp-old");
+        // The old lead, now a duplicate that came first, is marked so (V677 precedes_lead).
+        verify(responses, times(2)).refreshDuplicateOrder("resp-new");
         // The journey still records the reattempt on the person.
         verify(dedup, times(2)).logReattempt(eq(primary), any(AudienceResponse.class), any(), any());
     }
