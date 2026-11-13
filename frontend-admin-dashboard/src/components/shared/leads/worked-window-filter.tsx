@@ -1,4 +1,4 @@
-import { Phone, ClockCounterClockwise, CalendarBlank } from '@phosphor-icons/react';
+import { Phone, ClockCounterClockwise } from '@phosphor-icons/react';
 import {
     Select,
     SelectContent,
@@ -7,10 +7,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { DatePickerButton } from '@/components/shared/crm-enhance/date-picker-button';
 
 /** Sentinel for "no window" — the Select can't hold an empty value. */
 export const WORKED_WINDOW_ANY = 'ANY';
@@ -74,7 +72,8 @@ interface WorkedWindowFilterProps {
         from: string;
         to: string;
         onChange: (from: string, to: string) => void;
-        labels: { setDates: string; from: string; to: string; done: string };
+        /** `done` is no longer shown (each calendar closes on pick); kept so callers compile. */
+        labels: { setDates: string; from: string; to: string; done?: string };
     };
 }
 
@@ -96,14 +95,20 @@ export function WorkedWindowFilter({
     custom,
 }: WorkedWindowFilterProps) {
     const Icon = kind === 'CALLED' ? Phone : ClockCounterClockwise;
-    const [rangeOpen, setRangeOpen] = useState(false);
+    // Which calendar is open. Picking "Custom range" opens From; picking a From day
+    // opens To, so a range is two clicks, the same as the submitted-date filter.
+    const [openSide, setOpenSide] = useState<'from' | 'to' | null>(null);
     const offersCustom = Boolean(custom && labels.customLabel);
+    const today = format(new Date(), 'yyyy-MM-dd');
 
     return (
         <>
             <Select
                 value={value || WORKED_WINDOW_ANY}
-                onValueChange={(v) => onValueChange(v === WORKED_WINDOW_ANY ? '' : v)}
+                onValueChange={(v) => {
+                    onValueChange(v === WORKED_WINDOW_ANY ? '' : v);
+                    if (v === WORKED_WINDOW_CUSTOM && custom && !custom.from) setOpenSide('from');
+                }}
             >
                 <SelectTrigger className="h-10 w-44">
                     <Icon className="mr-1.5 size-4 shrink-0 text-neutral-400" />
@@ -122,45 +127,34 @@ export function WorkedWindowFilter({
                 </SelectContent>
             </Select>
             {offersCustom && value === WORKED_WINDOW_CUSTOM && custom && (
-                <Popover open={rangeOpen} onOpenChange={setRangeOpen}>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-10">
-                            <CalendarBlank className="mr-1.5 size-4 text-neutral-400" />
-                            {custom.from && custom.to
-                                ? `${custom.from} → ${custom.to}`
-                                : custom.labels.setDates}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-72 space-y-3">
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-neutral-600">
-                                    {custom.labels.from}
-                                </Label>
-                                <Input
-                                    type="date"
-                                    value={custom.from}
-                                    onChange={(e) => custom.onChange(e.target.value, custom.to)}
-                                    className="h-9"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-neutral-600">
-                                    {custom.labels.to}
-                                </Label>
-                                <Input
-                                    type="date"
-                                    value={custom.to}
-                                    onChange={(e) => custom.onChange(custom.from, e.target.value)}
-                                    className="h-9"
-                                />
-                            </div>
-                        </div>
-                        <Button size="sm" className="w-full" onClick={() => setRangeOpen(false)}>
-                            {custom.labels.done}
-                        </Button>
-                    </PopoverContent>
-                </Popover>
+                <div className="flex min-w-0 items-center gap-1.5">
+                    <DatePickerButton
+                        label={custom.labels.from}
+                        value={custom.from}
+                        onChange={(from) => {
+                            // A From after the current To would make an empty range: drop To.
+                            const to = custom.to && custom.to < from ? '' : custom.to;
+                            custom.onChange(from, to);
+                            if (!to) setOpenSide('to');
+                        }}
+                        max={custom.to || today}
+                        placeholder={custom.labels.setDates}
+                        open={openSide === 'from'}
+                        onOpenChange={(open) => setOpenSide(open ? 'from' : null)}
+                        className="h-10 min-w-0 flex-1"
+                    />
+                    <DatePickerButton
+                        label={custom.labels.to}
+                        value={custom.to}
+                        onChange={(to) => custom.onChange(custom.from, to)}
+                        min={custom.from || undefined}
+                        max={today}
+                        placeholder={custom.labels.setDates}
+                        open={openSide === 'to'}
+                        onOpenChange={(open) => setOpenSide(open ? 'to' : null)}
+                        className="h-10 min-w-0 flex-1"
+                    />
+                </div>
             )}
         </>
     );
