@@ -66,6 +66,7 @@ export const buildExamTheme = (
   presetId: ExamPresetId,
   layout?: ExamLayoutVariant,
   strict = true,
+  calculatorOff = false,
 ): ResolvedExamTheme => {
   const preset = EXAM_PRESETS[presetId];
   const family = EXAM_FAMILIES[preset.family];
@@ -84,7 +85,9 @@ export const buildExamTheme = (
   if (!strict) {
     theme = { ...theme, policy: { ...theme.policy, ...family.practice } };
   }
-  return { ...theme, strict, availableLayouts };
+  const builtInCalculator =
+    preset.builtInCalculator && !calculatorOff ? preset.builtInCalculator : null;
+  return { ...theme, strict, availableLayouts, builtInCalculator };
 };
 
 /** The default screen: today's look and behaviour. */
@@ -134,5 +137,8 @@ const resolveUncached = (examInterface: ExamInterface): ResolvedExamTheme => {
       reportUnknownExamTheme("layout", `${preset}/${requestedLayout}`);
     }
   }
-  return buildExamTheme(preset, layout, strict);
+  const tools = examInterface.tools;
+  const calculatorOff =
+    typeof tools === "object" && tools !== null && tools.calculator === false;
+  return buildExamTheme(preset, layout, strict, calculatorOff);
 };

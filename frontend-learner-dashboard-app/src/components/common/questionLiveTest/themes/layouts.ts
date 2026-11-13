@@ -9,13 +9,12 @@ import type {
  * yet is drawn with the default layout (its policy still resolves, so the
  * admin's choice is kept and shown once the layout ships).
  *
- * Until "console" is listed here, no preset applies strict saving or the
- * early-Submit lock (policy.earlySubmit is not read yet), so an admin screen
- * that offers those presets must not promise either.
+ * "console" draws every TCS-family preset (layouts/ConsoleLayout.tsx), so
+ * those presets apply strict saving and the early-Submit lock.
  */
 export const IMPLEMENTED_LAYOUT_KINDS: ReadonlySet<ExamLayoutKind> = new Set<
   ExamLayoutKind
->(["default"]);
+>(["default", "console"]);
 
 /**
  * Layout kinds that draw commit buttons (Save & Next, Save & Mark for Review,

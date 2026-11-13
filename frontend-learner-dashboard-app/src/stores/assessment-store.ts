@@ -19,6 +19,7 @@ import {
   resolveExamTheme,
 } from "@/components/common/questionLiveTest/themes";
 import type { AnswerCommit } from "@/types/exam-theme";
+import { isForwardSectionStep } from "@/components/common/questionLiveTest/engine/navigation-logic";
 
 const LEGACY_STATE_KEY_PREFIX = "ASSESSMENT_STATE_";
 
@@ -423,7 +424,15 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         const previousSectionsComplete = [...Array(sectionIndex)].every(
           (_, idx) => state.sectionTimers[idx]?.timeLeft === 0
         );
-        if (!previousSectionsComplete) return {};
+        // Sections without their own clocks open one after another: the step
+        // from the open section to the next one is always allowed.
+        const forwardStep = isForwardSectionStep(
+          false,
+          state.sectionTimers,
+          state.currentSection,
+          sectionIndex
+        );
+        if (!previousSectionsComplete && !forwardStep) return {};
       }
 
       const updatedTimers = { ...state.sectionTimers };
@@ -491,8 +500,12 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
 
   commitDraft: (questionId) =>
     set((state) => {
-      const draft = state.draftAnswers[questionId];
-      if (!draft) return {};
+      const pending = state.draftAnswers[questionId];
+      if (!pending) return {};
+      // A number box holding only "-", "." or "-." has no number in it yet:
+      // saving it saves no answer (it would otherwise count as Answered).
+      const draft =
+        pending.length === 1 && /^(?:-|-?\.)$/.test(pending[0] ?? "") ? [] : pending;
       return {
         answers: { ...state.answers, [questionId]: draft },
         draftAnswers: withoutDraft(state.draftAnswers, questionId),

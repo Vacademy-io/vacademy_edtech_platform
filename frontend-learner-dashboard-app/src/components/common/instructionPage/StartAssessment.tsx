@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
@@ -12,12 +12,36 @@ import { useAssessmentStore } from "@/stores/assessment-store";
 import { usePreloadExamRoutes } from "@/hooks/use-preload-exam-routes";
 // import { enableProtection } from "@/constants/helper";
 
+export interface StartTriggerProps {
+  /** Opens the confirmation, or starts at once when `confirm` is false. */
+  onClick: () => void;
+  disabled: boolean;
+  /** The start request is in flight. */
+  isLoading: boolean;
+  /** "Start Assessment" or "Upload Answer" (manual evaluation). */
+  defaultLabel: string;
+}
+
 interface AssessmentStartModalProps {
   /** Held closed until the learner acknowledges the proctoring rules. */
   disabled?: boolean;
+  /**
+   * Draws the start button (a themed instruction page has its own). The
+   * start flow behind it is the same.
+   */
+  renderTrigger?: (props: StartTriggerProps) => ReactNode;
+  /**
+   * Show the "Start Assessment" confirmation first (default). A page whose
+   * own declaration step already confirms the start passes false.
+   */
+  confirm?: boolean;
 }
 
-const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
+const AssessmentStartModal = ({
+  disabled,
+  renderTrigger,
+  confirm = true,
+}: AssessmentStartModalProps) => {
   const { t } = useTranslation("layoutCommonB");
   const location = useLocation();
   const pathSegments = location.pathname.split("/");
@@ -152,6 +176,15 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
     <div className="flex flex-col items-center">
       {examHasStarted ? (
         <div className="test-container">{getContent()}</div>
+      ) : renderTrigger ? (
+        renderTrigger({
+          onClick: confirm ? () => setIsOpen(true) : handleAssessmentAction,
+          disabled: Boolean(disabled) || isLoading,
+          isLoading,
+          defaultLabel: isManual
+            ? t("instructionPage.startAssessment.uploadAnswer")
+            : t("instructionPage.startAssessment.startAssessment"),
+        })
       ) : (
         <MyButton
           onClick={() => setIsOpen(true)}

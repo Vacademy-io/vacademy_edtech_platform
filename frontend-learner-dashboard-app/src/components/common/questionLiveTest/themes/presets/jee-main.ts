@@ -32,6 +32,9 @@ export const JEE_MAIN_PRESET: ExamPresetDefinition = {
           "answered-marked",
         ],
         sectionBar: false,
+        // The mock's palette and legend counts cover the whole paper
+        // (chips 01..N across subjects), not only the open subject.
+        countsScope: "paper",
       },
     },
     "tcs-console": {

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings";
+import { withThemeTools } from "./themes/tools";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import type { AnswerCommit, ResolvedExamTheme } from "@/types/exam-theme";
 import {
@@ -94,10 +95,16 @@ const COMPACT_QUERY = "(max-width: 767px)";
  * toggles they both drive live here instead of being drilled through `Page`.
  */
 export function LiveTestUiProvider({ children }: { children: ReactNode }) {
-  const settings = useExamExperienceSettings();
+  const instituteSettings = useExamExperienceSettings();
   const examInterface = useAssessmentStore((s) => s.assessment?.exam_interface);
   // resolveExamTheme caches per object, so this is stable across renders.
   const examTheme = resolveExamTheme(examInterface);
+  // A theme's built-in tools (GATE's calculator) on top of the institute's
+  // settings; memoised so the context value stays stable.
+  const settings = useMemo(
+    () => withThemeTools(instituteSettings, examTheme),
+    [instituteSettings, examTheme],
+  );
   const answerCommit = effectiveAnswerCommit(examTheme);
   const [activeTool, setActiveTool] = useState<ExamTool | null>(null);
   const [scratchpad, setScratchpad] = useState("");

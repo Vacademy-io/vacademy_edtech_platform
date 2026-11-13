@@ -10,19 +10,6 @@ vi.mock("@capacitor/storage", () => ({
   },
 }));
 vi.mock("@sentry/react", () => ({ addBreadcrumb: () => undefined }));
-// Explicit saving is held back to "auto" until a layout with commit buttons
-// ships (themes/layouts.ts). These tests exercise the store as it will run
-// under such a layout, so the theme's policy is applied as-is.
-vi.mock("@/components/common/questionLiveTest/themes/layouts", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("@/components/common/questionLiveTest/themes/layouts")>();
-  return {
-    ...original,
-    effectiveAnswerCommit: (theme: { policy: { answerCommit: "auto" | "explicit" } }) =>
-      theme.policy.answerCommit,
-  };
-});
-
 const { useAssessmentStore, answerCommitModeOf, displayedAnswerFor } = await import(
   "./assessment-store"
 );
@@ -148,6 +135,20 @@ describe("explicit mode (strict TCS themes)", () => {
     store().commitDraft("q3");
     expect(store().answers.q3).toEqual([""]);
     expect(store().questionStates.q3.isAnswered).toBe(false);
+  });
+
+  it("a lone minus or point saves no answer", () => {
+    for (const partial of ["-", ".", "-."]) {
+      store().setAnswer("q3", ["4"]);
+      store().commitDraft("q3");
+      store().setAnswer("q3", [partial]);
+      store().commitDraft("q3");
+      expect(store().answers.q3).toEqual([]);
+      expect(store().questionStates.q3.isAnswered).toBe(false);
+    }
+    store().setAnswer("q3", ["-0.5"]);
+    store().commitDraft("q3");
+    expect(store().answers.q3).toEqual(["-0.5"]);
   });
 
   it("leaving a question discards its draft and keeps the saved answer", () => {

@@ -67,6 +67,7 @@ import { useOfflineInit } from "@/hooks/offline/useOfflineInit";
 import { RevokedDeviceDialog } from "@/components/common/offline/revoked-device-dialog";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
+import { applyAppSkinClass } from "@/lib/app-skin";
 import { useFunSkinRuntime } from "@/components/design-system/fun/use-fun-skin-runtime";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
 import { clearArrivalTokens, readArrivalTokens } from "@/lib/auth/arrival-tokens";
@@ -428,20 +429,15 @@ const RootComponent = () => {
       .then((settings) => setIsChatbotEnabled(settings?.enable === true))
       .catch(() => setIsChatbotEnabled(false));
     // Apply global ui-vibrant class based on override/settings and expose debug helpers
+    // Through lib/app-skin so a themed exam screen, which holds the skin
+    // off <html> while it is open, gets it back only when it closes.
     const applyUiType = (t: StudentUIType) => {
-      const root = document.documentElement;
-      root.classList.remove(
-      "ui-vibrant",
-      "ui-play",
-      "ui-cleaner-play",
-      "ui-corporate",
-      "ui-fun"
-    );
-      if (t === "vibrant") root.classList.add("ui-vibrant");
-      else if (t === "play") root.classList.add("ui-play");
-      else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
-      else if (t === "corporate") root.classList.add("ui-corporate");
-      else if (t === "fun") root.classList.add("ui-fun");
+      if (t === "vibrant") applyAppSkinClass("ui-vibrant");
+      else if (t === "play") applyAppSkinClass("ui-play");
+      else if (t === "cleanerPlay") applyAppSkinClass("ui-cleaner-play");
+      else if (t === "corporate") applyAppSkinClass("ui-corporate");
+      else if (t === "fun") applyAppSkinClass("ui-fun");
+      else applyAppSkinClass(null);
     };
 
     const DEBUG_KEY = "DEBUG_UI_TYPE";
@@ -739,15 +735,21 @@ const RootComponent = () => {
     const isPopupWindow = (() => {
       try {
         if (window.opener && !window.opener.closed) return true;
-      } catch {}
+      } catch {
+        // Not readable here; this check then says "not a popup".
+      }
       try {
         if (window.name && window.name.toLowerCase() === "oauth_popup")
           return true;
-      } catch {}
+      } catch {
+        // Not readable here; this check then says "not a popup".
+      }
       try {
         const q = new URLSearchParams(window.location.search);
         if (q.get("popup") === "1") return true;
-      } catch {}
+      } catch {
+        // Not readable here; this check then says "not a popup".
+      }
       return false;
     })();
 

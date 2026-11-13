@@ -23,6 +23,10 @@ import { ProctorCheckIn } from "@/components/common/proctoring/ProctorCheckIn";
 import { fetchProctoringConfig } from "@/services/proctoring";
 import { isProctored, type ProctoringConfig } from "@/types/proctoring";
 import { useAssessmentExamTheme } from "@/hooks/use-assessment-exam-theme";
+import { DEFAULT_EXAM_THEME } from "@/components/common/questionLiveTest/themes";
+import { withThemeTools } from "@/components/common/questionLiveTest/themes/tools";
+import { instructionTemplateFor } from "./templates";
+import { TcsInstructionTemplate } from "./templates/tcs";
 
 const InstructionPage = () => {
   const { t } = useTranslation("layoutCommonB");
@@ -37,13 +41,14 @@ const InstructionPage = () => {
   const [proctorReady, setProctorReady] = useState(false);
   const { assessmentId } = useParams({ strict: false });
   const examExperience = useExamExperienceSettings();
-  // Exam theme (V68). Only exposed on the root for now; themed instruction
-  // templates come with the themed layouts. The page keeps its loading state
-  // until the theme is known (the call runs in parallel with the instruction
-  // fetch and is capped), so a themed test is not drawn under the institute
-  // skin first and restyled a moment later.
-  const { theme: examTheme, isLoading: examThemeLoading } =
+  // Exam theme (V68). Console themes get their own template (templates/);
+  // the state, proctoring and start flow below are shared by every template.
+  // The page keeps its loading state until the theme is known (the call runs
+  // in parallel with the instruction fetch and is capped), so a themed test
+  // is not drawn under the institute skin first and restyled a moment later.
+  const { theme: fetchedExamTheme, isLoading: examThemeLoading } =
     useAssessmentExamTheme(assessmentId);
+
   // The brief is part of the assessment safe zone: it is a full-bleed screen
   // with a sticky Start bar, so Android's system bars must come down here too,
   // not only once the paper opens.
@@ -115,10 +120,40 @@ const InstructionPage = () => {
     };
   }, [assessmentId]);
 
+  // A teacher-checked paper (evaluation MANUAL) always uses the default
+  // screen (answer-sheet upload, no self-submit), so it gets the default brief.
+  const examTheme =
+    assessmentInfo?.evaluation_type === "MANUAL" ? DEFAULT_EXAM_THEME : fetchedExamTheme;
+  // The brief lists the tools the test will have, so apply the theme's
+  // built-in ones (GATE's calculator) the same way the test screen does.
+  const themedExamExperience = withThemeTools(examExperience, examTheme);
   const pageLoading = isLoading || examThemeLoading;
   const isReady = !pageLoading && !hasError && !!assessmentInfo;
   const needsCheckIn = isProctored(proctoring);
   const canStart = isReady && agreed && (!needsCheckIn || proctorReady);
+
+  if (isReady && assessmentInfo && instructionTemplateFor(examTheme) === "tcs") {
+    return (
+      <TcsInstructionTemplate
+        theme={examTheme}
+        assessmentInfo={assessmentInfo}
+        instructionsHtml={instructions?.content ?? ""}
+        examExperience={themedExamExperience}
+        agreed={agreed}
+        onAgreedChange={setAgreed}
+        proctorCheckIn={
+          needsCheckIn && proctoring && assessmentId ? (
+            <ProctorCheckIn
+              assessmentId={assessmentId}
+              config={proctoring}
+              onReadyChange={setProctorReady}
+            />
+          ) : null
+        }
+        canStart={canStart}
+      />
+    );
+  }
 
   return (
     // fixed inset-0 rather than min-h-screen: the brief is a full-bleed screen
@@ -162,7 +197,7 @@ const InstructionPage = () => {
                 preview={assessmentInfo.preview_time > 0}
                 canSwitchSections={assessmentInfo.can_switch_section}
                 assessmentInfo={assessmentInfo}
-                examExperience={examExperience}
+                examExperience={themedExamExperience}
               />
 
               {/* Explicit acknowledgement. Proctoring can auto-submit a paper,

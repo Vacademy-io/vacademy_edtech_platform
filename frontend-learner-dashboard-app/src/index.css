@@ -22,6 +22,15 @@
 /* Exam theme tokens - scoped to [data-exam-theme] (live-test shell,
    instruction page, preview); defaults equal today's look. */
 @import './styles/exam-themes/tokens.css';
+/* TCS-family exam console (JEE-, GATE- and RRB JE-style screens); every rule
+   is a tcs-* class or scoped to [data-exam-theme-family="tcs"]. */
+@import './styles/exam-themes/tcs.css';
+/* Instruction page of the TCS-family themes (tcs-brief-* and tcs-general-*
+   classes), after tcs.css. */
+@import './styles/exam-themes/tcs-brief.css';
+/* NTA mock layout (JEE Main-style web mock); scoped to
+   [data-exam-layout="nta-mock"] and nta-* classes, after tcs.css. */
+@import './styles/exam-themes/nta-mock.css';
 
 @tailwind base;
 @tailwind components;

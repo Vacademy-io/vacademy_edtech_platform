@@ -50,13 +50,20 @@ describe("resolveExamTheme", () => {
     const nta = resolveExamTheme({ v: 1, preset: "jee-main" });
     expect(nta.layout).toEqual({ kind: "console", variant: "nta-mock" });
     expect(nta.availableLayouts).toEqual(["nta-mock", "tcs-console"]);
-    expect(nta.palette).toMatchObject({ columns: 8, numbering: "two-digit" });
+    expect(nta.palette).toMatchObject({
+      columns: 8,
+      numbering: "two-digit",
+      countsScope: "paper",
+      sectionBar: false,
+      legendOrder: ["not-visited", "not-answered", "answered", "marked", "answered-marked"],
+    });
+    expect(nta.timer.format).toBe("HH:MM:SS");
     expect(nta.policy.previousButton).toBe(true);
     expect(nta.options.numbering).toBe("(1)");
 
     const tcs = resolveExamTheme({ v: 1, preset: "jee-main", layout: "tcs-console" });
     expect(tcs.layout).toEqual({ kind: "console", variant: "tcs-console" });
-    expect(tcs.palette).toMatchObject({ columns: 4, numbering: "plain" });
+    expect(tcs.palette).toMatchObject({ columns: 4, numbering: "plain", countsScope: "section" });
     expect(tcs.policy.previousButton).toBe(false);
     expect(tcs.options.numbering).toBe("(1)");
   });
@@ -113,11 +120,25 @@ describe("preset policies", () => {
 });
 
 describe("effectiveAnswerCommit", () => {
-  it("stays auto while the console layout is not built", () => {
+  it("is explicit for a strict console preset", () => {
     const theme = resolveExamTheme({ preset: "jee-advanced", strict: true });
     expect(theme.policy.answerCommit).toBe("explicit");
-    expect(renderedLayoutKind(theme)).toBe("default");
+    expect(renderedLayoutKind(theme)).toBe("console");
+    expect(effectiveAnswerCommit(theme)).toBe("explicit");
+  });
+
+  it("is auto for a practice-friendly console preset", () => {
+    const theme = resolveExamTheme({ preset: "gate", strict: false });
+    expect(renderedLayoutKind(theme)).toBe("console");
     expect(effectiveAnswerCommit(theme)).toBe("auto");
+  });
+
+  it("is explicit for both jee-main layouts", () => {
+    for (const layout of ["nta-mock", "tcs-console"]) {
+      const theme = resolveExamTheme({ preset: "jee-main", layout });
+      expect(renderedLayoutKind(theme)).toBe("console");
+      expect(effectiveAnswerCommit(theme)).toBe("explicit");
+    }
   });
 
   it("is auto for the default theme", () => {

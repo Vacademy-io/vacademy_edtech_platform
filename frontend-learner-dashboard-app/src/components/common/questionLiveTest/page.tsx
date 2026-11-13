@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { QuestionDisplay } from "./question-display";
 import { SectionTabs } from "./section-tabs";
 import { Navbar } from "./navbar";
@@ -8,7 +8,10 @@ import { Footer } from "./footer";
 import { Sidebar } from "./sidebar";
 import { QuestionNavigator } from "./question-navigator";
 import { LiveTestUiProvider, useLiveTestUi } from "./live-test-ui-context";
-import { LiveTestEngine } from "./engine/live-test-engine";
+import {
+  LiveTestEngine,
+  type SubmitDialogProps,
+} from "./engine/live-test-engine";
 import { useLiveTestEngine } from "./engine/live-test-engine-context";
 import { ExamCalculator } from "./tools/exam-calculator";
 import { ExamScratchpad } from "./tools/exam-scratchpad";
@@ -21,20 +24,66 @@ import { topSafeAreaInset } from "@/utils/safe-area";
 import NetworkStatus from "./network-status";
 import { QUESTION_TYPES } from "@/types/assessment";
 import { ProctorLayer } from "@/components/common/proctoring/ProctorLayer";
+import { renderedLayoutKind } from "./themes";
+import { useExamSkinIsolation } from "./themes/use-exam-skin-isolation";
+import { ConsoleLayout } from "./layouts/ConsoleLayout";
+import { ExamSummaryModal } from "./widgets/ExamSummaryModal";
 
 export default function Page() {
   return (
     <LiveTestUiProvider>
-      {/* Clocks, autosave, submit, proctoring and guards: mounted once and
-          independent of which parts the layout below draws. */}
-      <LiveTestEngine>
+      <ThemedLiveTestEngine>
         <LiveTestShell />
-      </LiveTestEngine>
+      </ThemedLiveTestEngine>
     </LiveTestUiProvider>
   );
 }
 
+const renderExamSummary = (props: SubmitDialogProps) => <ExamSummaryModal {...props} />;
+
+/**
+ * Clocks, autosave, submit, proctoring and guards: mounted once and
+ * independent of which parts the layout below draws. Console layouts confirm
+ * a submit with their Exam Summary table instead of the standard dialog.
+ */
+function ThemedLiveTestEngine({ children }: { children: ReactNode }) {
+  const { examTheme } = useLiveTestUi();
+  const isConsole = renderedLayoutKind(examTheme) === "console";
+  return (
+    <LiveTestEngine renderSubmitDialog={isConsole ? renderExamSummary : undefined}>
+      {children}
+    </LiveTestEngine>
+  );
+}
+
+/** Attempt-wide effects shared by every layout, then the theme's layout. */
 function LiveTestShell() {
+  const { settings, examTheme } = useLiveTestUi();
+  const setLiveTest = useLiveTestStore((s) => s.setLiveTest);
+
+  // Stand down the app-level chrome (chatbot launcher, OTA banner, announcement
+  // overlays) for as long as the learner is inside the attempt — see
+  // `stores/live-test-store.ts` for why they can't simply be z-indexed away.
+  const hideAppChrome = settings.mobile.hideAppNavigation;
+  useEffect(() => {
+    setLiveTest({ isActive: true, hideAppChrome });
+    return () => setLiveTest({ isActive: false, hideAppChrome: false });
+  }, [setLiveTest, hideAppChrome]);
+
+  // Take Android's system bars down for the attempt — they otherwise sit on top
+  // of this shell's own header and footer.
+  useImmersiveMode(hideAppChrome);
+  useIOSSafeAreaInsets();
+
+  // A themed exam screen looks like the exam it copies, not the institute's
+  // app skin; the default screen keeps the skin.
+  useExamSkinIsolation(examTheme.id);
+
+  return renderedLayoutKind(examTheme) === "console" ? <ConsoleLayout /> : <DefaultLayout />;
+}
+
+/** Today's exam screen (default theme). */
+function DefaultLayout() {
   const currentQuestion = useAssessmentStore((s) => s.currentQuestion);
   const { evaluationType, assessmentId, retrySave } = useLiveTestEngine();
   const {
@@ -50,7 +99,6 @@ function LiveTestShell() {
     isRailOpen,
     setRailOpen,
   } = useLiveTestUi();
-  const setLiveTest = useLiveTestStore((s) => s.setLiveTest);
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
   // The question area is the only scroller (see the h-dvh layout below), so it
   // keeps its offset when the question swaps — the learner would land partway
@@ -62,20 +110,6 @@ function LiveTestShell() {
     // lag on low-end devices, and the learner is already looking at the top.
     questionScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [currentQuestion?.question_id]);
-
-  // Stand down the app-level chrome (chatbot launcher, OTA banner, announcement
-  // overlays) for as long as the learner is inside the attempt — see
-  // `stores/live-test-store.ts` for why they can't simply be z-indexed away.
-  const hideAppChrome = settings.mobile.hideAppNavigation;
-  useEffect(() => {
-    setLiveTest({ isActive: true, hideAppChrome });
-    return () => setLiveTest({ isActive: false, hideAppChrome: false });
-  }, [setLiveTest, hideAppChrome]);
-
-  // Take Android's system bars down for the attempt — they otherwise sit on top
-  // of this shell's own header and footer.
-  useImmersiveMode(hideAppChrome);
-  useIOSSafeAreaInsets();
 
   // Spreadsheet & Written Response questions own the whole question area as a
   // split screen with their own scrolling panes (desktop only; phones stack).
@@ -126,8 +160,7 @@ function LiveTestShell() {
     // inset is re-applied here (see topSafeAreaInset). The bottom inset is
     // handled inside Footer.
     <div
-      // Exam theme hooks for styles/exam-themes/*.css. "default" keeps today's
-      // look; any other value also fences the app skins out (see tokens.css).
+      // Exam theme hooks for styles/exam-themes/*.css ("default" here).
       data-exam-theme={examTheme.id}
       data-exam-theme-family={examTheme.family}
       className="fixed inset-0 flex w-full flex-col overflow-hidden bg-white"

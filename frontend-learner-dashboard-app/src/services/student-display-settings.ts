@@ -13,6 +13,7 @@ import {
 } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
+import { applyAppSkinClass } from "@/lib/app-skin";
 import { readStudentPreviewDraft } from "@/lib/student-preview";
 import { setLastStudentLayout } from "@/lib/student-layout";
 
@@ -545,19 +546,14 @@ export function applyUiSkinFromSettings(
     }
     // THEME_SETTING.roles.skin wins; ui.type is the pre-migration fallback.
     const t = resolveUiSkin(settings?.ui?.type ?? null);
-    const root = document.documentElement;
-    root.classList.remove(
-      "ui-vibrant",
-      "ui-play",
-      "ui-cleaner-play",
-      "ui-corporate",
-      "ui-fun"
-    );
-    if (t === "vibrant") root.classList.add("ui-vibrant");
-    else if (t === "play") root.classList.add("ui-play");
-    else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
-    else if (t === "corporate") root.classList.add("ui-corporate");
-    else if (t === "fun") root.classList.add("ui-fun");
+    // Through lib/app-skin, so a themed exam screen that holds the skin off
+    // <html> gets the new skin only when it closes.
+    if (t === "vibrant") applyAppSkinClass("ui-vibrant");
+    else if (t === "play") applyAppSkinClass("ui-play");
+    else if (t === "cleanerPlay") applyAppSkinClass("ui-cleaner-play");
+    else if (t === "corporate") applyAppSkinClass("ui-corporate");
+    else if (t === "fun") applyAppSkinClass("ui-fun");
+    else applyAppSkinClass(null);
   } catch {
     // noop — never let skin application break a login flow
   }

@@ -79,7 +79,11 @@ export interface ExamPaletteSpec {
   /** Chip renderer. `default` = today's rounded squares. */
   chip: "default" | "tcs-shapes" | "nta-shapes";
   legendOrder: QuestionStatus[];
-  /** Counts in the legend cover the current section or the whole paper. */
+  /**
+   * What the palette covers: the open section (chips numbered from 1 in the
+   * section) or the whole paper (chips numbered across sections). The legend
+   * counts and the question heading's number follow the same scope.
+   */
   countsScope: "section" | "paper";
   /** A bar with the section name above the chips. */
   sectionBar: boolean;
@@ -137,6 +141,8 @@ export interface ExamPresetDefinition {
   defaultLayout?: ExamLayoutVariant;
   /** Per-layout patches; a preset with none supports only its base layout. */
   layouts?: Partial<Record<ExamLayoutVariant, ExamThemePatch>>;
+  /** A calculator the real exam screen always offers (see ResolvedExamTheme). */
+  builtInCalculator?: "basic" | "scientific";
 }
 
 /**
@@ -150,6 +156,8 @@ export interface ExamInterface {
   layout?: string;
   /** Strict saving; true unless the admin chose "practice-friendly". */
   strict?: boolean;
+  /** Per-test tool switches; `calculator: false` turns a built-in calculator off. */
+  tools?: { calculator?: boolean; [key: string]: unknown };
   [key: string]: unknown;
 }
 
@@ -158,4 +166,10 @@ export interface ResolvedExamTheme extends ExamThemeDefinition {
   strict: boolean;
   /** Layouts this preset offers (first = default). */
   availableLayouts: ExamLayoutVariant[];
+  /**
+   * Calculator the real exam screen has built in (GATE), unless the test turns
+   * it off. When set, the learner gets it even if the institute's calculator
+   * setting is off. null = the institute's setting decides, as before.
+   */
+  builtInCalculator: "basic" | "scientific" | null;
 }

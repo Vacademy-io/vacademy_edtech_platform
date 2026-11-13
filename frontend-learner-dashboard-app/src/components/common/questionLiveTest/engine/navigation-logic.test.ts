@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canEnterSection,
+  isForwardSectionStep,
   isSectionTabAvailable,
   nextTarget,
   previousTarget,
@@ -74,5 +75,28 @@ describe("section tabs", () => {
     expect(canEnterSection(true, 1, {})).toBe(true);
     // Without switching, an untimed earlier section never counts as done.
     expect(canEnterSection(false, 1, {})).toBe(false);
+  });
+});
+
+describe("sequential papers (no switching, no section clocks)", () => {
+  it("only the open section's tab is available and enterable", () => {
+    expect(isSectionTabAvailable(false, 1, {}, 1)).toBe(true);
+    expect(isSectionTabAvailable(false, 0, {}, 1)).toBe(false);
+    expect(isSectionTabAvailable(false, 2, {}, 1)).toBe(false);
+    expect(canEnterSection(false, 1, {}, 1)).toBe(true);
+    expect(canEnterSection(false, 0, {}, 1)).toBe(false);
+    expect(canEnterSection(false, 2, {}, 1)).toBe(false);
+  });
+  it("the step to the next section is a forward step; nothing else is", () => {
+    expect(isForwardSectionStep(false, {}, 0, 1)).toBe(true);
+    expect(isForwardSectionStep(false, {}, 1, 0)).toBe(false);
+    expect(isForwardSectionStep(false, {}, 0, 2)).toBe(false);
+    expect(isForwardSectionStep(true, {}, 0, 1)).toBe(false);
+    expect(isForwardSectionStep(false, { 0: { timeLeft: 5 } }, 0, 1)).toBe(false);
+  });
+  it("section-timed papers keep their rule when the open section is given", () => {
+    const timers = { 0: { timeLeft: 0 }, 1: { timeLeft: 5000 } };
+    expect(canEnterSection(false, 1, timers, 0)).toBe(true);
+    expect(isSectionTabAvailable(false, 1, timers, 0)).toBe(true);
   });
 });

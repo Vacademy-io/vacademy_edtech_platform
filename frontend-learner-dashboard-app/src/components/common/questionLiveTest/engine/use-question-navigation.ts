@@ -67,19 +67,20 @@ export function useQuestionNavigation(): QuestionNavigation {
   const goToSection = useCallback(
     (index: number) => {
       if (!assessment) return;
-      if (!canEnterSection(canSwitchSection, index, sectionTimers)) return;
+      if (!canEnterSection(canSwitchSection, index, sectionTimers, currentSection)) return;
       const store = useAssessmentStore.getState();
       store.setCurrentSection(index);
       store.setCurrentQuestion(
         assessment.section_dtos[index].question_preview_dto_list[0],
       );
     },
-    [assessment, canSwitchSection, sectionTimers],
+    [assessment, canSwitchSection, sectionTimers, currentSection],
   );
 
   const tabAvailable = useCallback(
-    (index: number) => isSectionTabAvailable(canSwitchSection, index, sectionTimers),
-    [canSwitchSection, sectionTimers],
+    (index: number) =>
+      isSectionTabAvailable(canSwitchSection, index, sectionTimers, currentSection),
+    [canSwitchSection, sectionTimers, currentSection],
   );
 
   return useMemo(

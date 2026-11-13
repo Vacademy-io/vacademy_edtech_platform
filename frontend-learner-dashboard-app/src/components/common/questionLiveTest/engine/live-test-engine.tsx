@@ -12,6 +12,7 @@ import { useAssessmentStore } from "@/stores/assessment-store";
 import { useAttemptContext } from "./attempt-storage";
 import { useAttemptAutosave } from "./use-attempt-autosave";
 import { useExamClock } from "./use-exam-clock";
+import { useManualPaperDefaultScreen } from "./use-manual-paper-default-screen";
 import { useLiveTestController } from "./use-live-test-controller";
 import { useQuestionNavigation } from "./use-question-navigation";
 import {
@@ -25,7 +26,24 @@ import {
  * around the exam layout, which only draws and reads this through
  * `useLiveTestEngine()`.
  */
-export function LiveTestEngine({ children }: { children: ReactNode }) {
+export interface SubmitDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => Promise<void> | void;
+}
+
+export function LiveTestEngine({
+  children,
+  renderSubmitDialog,
+}: {
+  children: ReactNode;
+  /**
+   * The layout's own submit confirmation (the console's Exam Summary). The
+   * default layout uses the standard submit dialog. Either way the engine
+   * owns the submit itself.
+   */
+  renderSubmitDialog?: (props: SubmitDialogProps) => ReactNode;
+}) {
   const { t } = useTranslation("questionTest");
   const attempt = useAttemptContext();
   // Order matters: the clock's interval must be registered before the
@@ -42,6 +60,7 @@ export function LiveTestEngine({ children }: { children: ReactNode }) {
   });
   const navigation = useQuestionNavigation();
   const hasAssessment = useAssessmentStore((s) => Boolean(s.assessment));
+  useManualPaperDefaultScreen(attempt.evaluationType);
   const tabSwitchCount = useAssessmentStore((s) => s.tabSwitchCount);
 
   const { setShowSubmitModal } = controller;
@@ -62,11 +81,19 @@ export function LiveTestEngine({ children }: { children: ReactNode }) {
       {/* The modals wait for the assessment, as they did inside the header. */}
       {hasAssessment && (
         <>
-          <SubmitModal
-            open={controller.showSubmitModal}
-            onOpenChange={controller.setShowSubmitModal}
-            onConfirm={controller.handleSubmit}
-          />
+          {renderSubmitDialog ? (
+            renderSubmitDialog({
+              open: controller.showSubmitModal,
+              onOpenChange: controller.setShowSubmitModal,
+              onConfirm: controller.handleSubmit,
+            })
+          ) : (
+            <SubmitModal
+              open={controller.showSubmitModal}
+              onOpenChange={controller.setShowSubmitModal}
+              onConfirm={controller.handleSubmit}
+            />
+          )}
 
           <TimesUpModal
             open={controller.showTimesUpModal}

@@ -5,9 +5,9 @@
    element; nothing here reaches the rest of the app. The defaults below are
    today's values, taken from the Tailwind classes the live-test components
    use (question-status-colors.ts, question-navigator.tsx, navbar.tsx,
-   footer.tsx). No component reads these yet, so the default screen is
-   unchanged; family and preset stylesheets (styles/exam-themes/<family>.css)
-   override them under [data-exam-theme-family="…"] / [data-exam-theme="…"].
+   footer.tsx). The default screen does not read them, so it is unchanged;
+   family and preset stylesheets (styles/exam-themes/<family>.css) override
+   them under [data-exam-theme-family="…"] / [data-exam-theme="…"].
    Raw hex is allowed in this folder, as in the Fun skin.
    ===================================================================== */
 
@@ -71,12 +71,13 @@
   --exam-timer-danger-border: hsl(var(--danger-200));
 }
 
-/* Skin fence, inherited half. The app skins set inherited properties above
-   the exam root (the Fun skin's font on `body > *`, the Corporate skin's
-   scrollbar colour on <html>), which a descendant fence cannot stop. A
-   non-default exam theme resets them at its root; the default theme keeps
-   today's look, skin included. Rule-by-rule fencing of the skins is not
-   done yet; it comes with the first non-default theme. */
+/* Skin isolation. While a non-default exam theme is on screen the app skin
+   class (ui-play, ui-fun, ...) is taken off <html> and put back when the
+   exam closes (lib/app-skin.ts, used by the live-test shell), so no skin
+   rule or skin-redefined token reaches a themed exam. This rule only resets
+   the inherited font and scrollbar colour at the themed root, for screens
+   that carry the attribute without holding the skin off (instructions and
+   preview); the default theme keeps today's look, skin included. */
 [data-exam-theme]:not([data-exam-theme="default"]) {
   font-family: var(--exam-font-ui);
   scrollbar-color: auto;

@@ -1,0 +1,476 @@
+/* =====================================================================
+   NTA mock layout (layouts/NtaMockScreen.tsx; jee-main's default layout).
+
+   The screen is the TCS console's widgets in another arrangement, so this
+   file (imported after tcs.css) does two things:
+   1. overrides the tcs tokens under [data-exam-layout="nta-mock"], which
+      the console root and its portalled dialogs carry (same specificity as
+      the family block, later in the cascade, so these win);
+   2. styles the NTA-only regions (nta-* classes): the white header, the
+      orange band, the button rows and strip, and the right pane.
+   Colours are sampled from the web mock this layout models. Every shape is
+   drawn here; no exam body's logo or artwork is used.
+   Raw hex is allowed in this folder.
+   ===================================================================== */
+
+[data-exam-layout="nta-mock"] {
+  --nta-header-bg: #ffffff;
+  --nta-brand-text: #1d3557;
+  --nta-label-text: #4a4a4a;
+  --nta-value-text: #e3892b;
+  --nta-photo-border: #555555;
+  --nta-photo-icon: #555555;
+  --nta-pill-bg: #4e90c8;
+  --nta-band-bg: #e99a40;
+  --nta-band-text: #f9e2bb;
+  --nta-subject-bg: #4679b4;
+  --nta-rule: #d9d9d9;
+  --nta-save-mark-bg: #e3ae5f;
+  --nta-mark-next-bg: #4877ab;
+  --nta-strip-bg: #f6f6f6;
+  --nta-strip-btn-bg: #fbfbfb;
+  --nta-strip-btn-border: #d4d4d4;
+  --nta-strip-btn-text: #555555;
+
+  /* tcs tokens the shared widgets read */
+  --tcs-subheader-bg: var(--nta-band-bg); /* phone top bar */
+  --tcs-title: #ffffff;
+  --tcs-accent: var(--nta-subject-bg); /* phone tabs */
+  --tcs-tab-text: var(--nta-subject-bg);
+  --tcs-qno-bg: #ffffff;
+  --tcs-scroll-jump: #2f5ad3;
+  --tcs-save-bg: #72b46a; /* SAVE & NEXT, Exam Summary "Yes" */
+  --tcs-submit-bg: #77b46b;
+  --tcs-secondary-border: #cfcfcf;
+  --tcs-secondary-text: #333333;
+  --tcs-secondary-weight: 700;
+  --tcs-bottom-bg: #ffffff;
+  --tcs-right-bg: #ffffff;
+  --tcs-grid-bg: #ffffff;
+  --tcs-collapse-bg: #030303;
+
+  --tcs-chip-nv-top: #f7f7f7;
+  --tcs-chip-nv-bottom: #efefef;
+  --tcs-chip-nv-edge: #bdbdbd;
+  --tcs-chip-nv-text: #333333;
+  --tcs-chip-na-top: #d4643a;
+  --tcs-chip-na-bottom: #c65226;
+  --tcs-chip-na-edge: #a8421c;
+  --tcs-chip-ans-top: #6cc046;
+  --tcs-chip-ans-bottom: #5bb335;
+  --tcs-chip-ans-edge: #46952a;
+  --tcs-chip-mk-top: #7052b8;
+  --tcs-chip-mk-bottom: #5f40a3;
+  --tcs-chip-mk-edge: #482f85;
+  --tcs-chip-tick: #5bb335;
+}
+
+/* ------------------------------------------------------------- buttons */
+
+/* All caps and bold, as on the mock (labels stay sentence case in the
+   locale files; scripts without case are unaffected). */
+[data-exam-layout="nta-mock"] .tcs-btn {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-exam-layout="nta-mock"] .tcs-btn[data-action="save-mark-review"] {
+  background: var(--nta-save-mark-bg);
+  color: #ffffff;
+}
+
+[data-exam-layout="nta-mock"] .tcs-btn[data-action="mark-review-next"] {
+  border-color: var(--nta-mark-next-bg);
+  background: var(--nta-mark-next-bg);
+  color: #ffffff;
+}
+
+[data-exam-layout="nta-mock"] .tcs-btn[data-action="mark-review-next"]:not(:disabled):hover {
+  border-color: var(--nta-mark-next-bg);
+  filter: brightness(0.92);
+}
+
+[data-exam-layout="nta-mock"] .tcs-btn[data-action="back"],
+[data-exam-layout="nta-mock"] .tcs-btn[data-action="next"] {
+  border-color: var(--nta-strip-btn-border);
+  background: var(--nta-strip-btn-bg);
+  color: var(--nta-strip-btn-text);
+}
+
+/* -------------------------------------------------------------- header */
+
+.nta-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 92px;
+  padding: 6px 16px 6px 20px;
+  background: var(--nta-header-bg);
+}
+
+.nta-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.nta-header__logo {
+  display: block;
+  flex: none;
+  width: auto;
+  max-width: 160px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.nta-header__name {
+  overflow: hidden;
+  color: var(--nta-brand-text);
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nta-candidate {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 50%;
+}
+
+.nta-candidate__photo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  overflow: hidden;
+  border: 2px solid var(--nta-photo-border);
+  background: #ffffff;
+  color: var(--nta-photo-icon);
+}
+
+.nta-candidate__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nta-candidate__rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  gap: 3px 6px;
+  margin: 0;
+  color: var(--nta-label-text);
+  font-size: 13px;
+}
+
+/* Each row's dt and dd join the grid so the colons line up. */
+.nta-candidate__row {
+  display: contents;
+}
+
+.nta-candidate__rows dt::after {
+  content: " :";
+}
+
+.nta-candidate__rows dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.nta-candidate__value {
+  overflow: hidden;
+  color: var(--nta-value-text);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nta-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.nta-clock__pill {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 10px;
+  background: var(--nta-pill-bg);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+
+/* ---------------------------------------------------------------- band */
+
+.nta-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 0 20px 0 28px;
+  background: var(--nta-band-bg);
+}
+
+.nta-band__exam {
+  flex: none;
+  color: var(--nta-band-text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nta-band__subjects {
+  display: flex;
+  flex: 1;
+  gap: 14px;
+  min-width: 0;
+  padding: 6px 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+[data-exam-layout="nta-mock"] .nta-subject {
+  flex: none;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 0;
+  background: var(--nta-subject-bg);
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.18);
+  color: #ffffff;
+  font-family: var(--tcs-font);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The mock draws every subject button alike; a faint inner ring marks the open one. */
+[data-exam-layout="nta-mock"] .nta-subject--active {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.55),
+    2px 2px 0 rgb(0 0 0 / 0.18);
+}
+
+[data-exam-layout="nta-mock"] .nta-subject:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+[data-exam-layout="nta-mock"] .nta-subject:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
+.nta-band__language {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nta-band__language select {
+  min-width: 180px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #c9c9c9;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #333333;
+  font-family: var(--tcs-font);
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------- question side */
+
+.nta-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 28px 0 24px;
+  background: #ffffff;
+}
+
+[data-exam-layout="nta-mock"] .nta-main .tcs-qno-row {
+  min-height: 44px;
+  margin-top: 26px;
+  padding: 4px 0 6px;
+  border-bottom: 2px solid var(--nta-rule);
+}
+
+[data-exam-layout="nta-mock"] .tcs-qno-row__label {
+  font-size: 16px;
+}
+
+[data-exam-layout="nta-mock"] .tcs-scroll-jump {
+  width: 30px;
+  height: 30px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+[data-exam-layout="nta-mock"] .nta-main .tcs-qpane__content {
+  padding: 14px 16px 24px;
+}
+
+.nta-actions {
+  flex: none;
+  padding-bottom: 12px;
+}
+
+.nta-actions__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0 14px;
+  border-top: 2px solid var(--nta-rule);
+}
+
+.nta-actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+[data-exam-layout="nta-mock"] .nta-actions .tcs-btn {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 12px;
+}
+
+.nta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px 8px 10px;
+  background: var(--nta-strip-bg);
+}
+
+.nta-strip__group {
+  display: flex;
+  align-items: center;
+}
+
+[data-exam-layout="nta-mock"] .nta-strip .tcs-btn[data-action="next"] {
+  margin-left: -1px;
+}
+
+.nta-strip__submit {
+  display: flex;
+}
+
+[data-exam-layout="nta-mock"] .nta-strip .tcs-btn--submit {
+  min-width: 96px;
+}
+
+/* ---------------------------------------------------------- right pane */
+
+[data-exam-layout="nta-mock"] .nta-side {
+  width: clamp(300px, 38%, 500px);
+  border-left: 0;
+}
+
+[data-exam-layout="nta-mock"] .nta-side.tcs-side--collapsed {
+  width: 0;
+}
+
+/* Small black square with ">" between the panes. */
+[data-exam-layout="nta-mock"] .nta-side .tcs-collapse {
+  left: -30px;
+  width: 22px;
+  height: 34px;
+  border-radius: 0;
+  font-size: 20px;
+}
+
+.nta-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 16px 12px 12px;
+}
+
+[data-exam-layout="nta-mock"] .nta-right .tcs-legend {
+  max-width: 400px;
+  gap: 12px 10px;
+  padding: 0 0 22px;
+}
+
+[data-exam-layout="nta-mock"] .tcs-legend__item {
+  color: #555555;
+  font-size: 13px;
+}
+
+[data-exam-layout="nta-mock"] .tcs-legend__item--wide {
+  align-items: flex-start;
+}
+
+.nta-right__grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+[data-exam-layout="nta-mock"] .nta-right .tcs-palette[data-columns="8"] {
+  grid-template-columns: repeat(8, minmax(30px, 40px));
+  gap: 3px;
+}
+
+[data-exam-layout="nta-mock"] .nta-right .tcs-chip-button {
+  justify-content: center;
+}
+
+[data-exam-layout="nta-mock"] .nta-right .tcs-palette[data-columns="8"] .tcs-chip {
+  width: 100%;
+  height: 37px;
+  font-size: 14px;
+}
+
+[data-exam-layout="nta-mock"] .nta-right .tcs-palette .tcs-chip--palette.tcs-chip--marked,
+[data-exam-layout="nta-mock"] .nta-right .tcs-palette .tcs-chip--palette.tcs-chip--answered-marked {
+  width: 37px;
+}
+
+/* --------------------------------------------------------------- phone */
+
+[data-exam-layout="nta-mock"] .tcs-phone-top .nta-clock__label {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Buttons do not inherit text-transform (UA style), so set it on the name. */
+[data-exam-layout="nta-mock"] .tcs-tab__name {
+  text-transform: uppercase;
+}
+
+/* Six buttons in two rows: the labels are long in capitals. */
+[data-exam-layout="nta-mock"].tcs-root--phone .tcs-btn {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
