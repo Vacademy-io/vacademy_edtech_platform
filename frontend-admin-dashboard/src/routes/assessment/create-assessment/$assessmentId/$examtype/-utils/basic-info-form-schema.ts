@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_PROCTORING_FORM } from '@/types/assessments/proctoring';
+import { DEFAULT_EXAM_INTERFACE_FORM } from '@/types/assessments/exam-interface';
 
 export const BasicInfoFormSchema = z.object({
     status: z.string(),
@@ -68,6 +69,16 @@ export const BasicInfoFormSchema = z.object({
             showSelfView: z.boolean(),
         })
         .default(DEFAULT_PROCTORING_FORM),
+    // Exam interface (the learner's test screen drawn like a known exam).
+    // 'default' = the standard screen, saved as exam_interface null.
+    examInterface: z
+        .object({
+            choice: z.string(),
+            strict: z.boolean(),
+            calculator: z.boolean().default(true),
+            stored: z.record(z.unknown()).nullable(),
+        })
+        .default(DEFAULT_EXAM_INTERFACE_FORM),
     switchSections: z.boolean(),
     raiseReattemptRequest: z.boolean(),
     raiseTimeIncreaseRequest: z.boolean(),

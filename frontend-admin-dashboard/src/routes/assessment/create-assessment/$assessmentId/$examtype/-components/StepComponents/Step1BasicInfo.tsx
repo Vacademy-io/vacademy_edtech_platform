@@ -55,7 +55,12 @@ import { cn, convertCapitalToTitleCase } from '@/lib/utils';
 import { unresolvedSubjectIds, useSubjectNamesByIds } from '@/services/subject-names';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_PROCTORING_FORM, proctoringFormFromWire } from '@/types/assessments/proctoring';
+import {
+    DEFAULT_EXAM_INTERFACE_FORM,
+    examInterfaceFormFromWire,
+} from '@/types/assessments/exam-interface';
 import { ProctoringSettingsCard } from './-components/ProctoringSettingsCard';
+import { ExamInterfaceSettingsCard } from './-components/ExamInterfaceSettingsCard';
 import { isApiSourced } from '../../../../../assessment-list/-utils.ts/assessment-source';
 
 // convertDateFormat lives in -utils/helper; Step 3 still imports it from here.
@@ -644,6 +649,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             // `??` for the same reason: a stored `false` must stay off.
             omrMode: storeDataStep1.omrMode ?? false,
             proctoring: storeDataStep1.proctoring ?? DEFAULT_PROCTORING_FORM,
+            examInterface: storeDataStep1.examInterface ?? DEFAULT_EXAM_INTERFACE_FORM,
             switchSections: storeDataStep1.switchSections || true, // Default to false
             raiseReattemptRequest: storeDataStep1.raiseReattemptRequest || true, // Default to true
             raiseTimeIncreaseRequest: storeDataStep1.raiseTimeIncreaseRequest || true, // Default to false
@@ -653,15 +659,16 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
 
     const { handleSubmit, control, watch } = form;
 
-    // AI evaluation, OMR mode, proctoring, preview and section switching sit behind one
-    // "Advanced settings" row, so a first assessment is name, dates, attempts and result
-    // type. The row opens by itself whenever any of them is in use, and on a failed save.
+    // AI evaluation, OMR mode, proctoring, exam interface, preview and section switching
+    // sit behind one "Advanced settings" row, so a first assessment is name, dates,
+    // attempts and result type. The row opens by itself whenever any of them is in use, and on a failed save.
     const [showAdvanced, setShowAdvanced] = useState(false);
     const proctoringTier = watch('proctoring')?.tier;
     const advancedInUse =
         watch('aiEvaluationEnabled') === true ||
         watch('omrMode') === true ||
         (proctoringTier !== undefined && proctoringTier !== 'NONE') ||
+        (watch('examInterface')?.choice ?? 'default') !== 'default' ||
         watch('assessmentPreview.checked') === true ||
         watch('switchSections') === false;
     useEffect(() => {
@@ -907,6 +914,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             aiEvaluationEnabled: savedData?.ai_evaluation_enabled ?? false,
             omrMode: savedData?.omr_mode === true,
             proctoring: proctoringFormFromWire(savedData?.proctoring_config),
+            // Step 0 saved_data.exam_interface: the stored object, or null for the
+            // standard screen (absent on an older backend, which reads the same).
+            examInterface: examInterfaceFormFromWire(savedData?.exam_interface),
             // 27 older exams carry no result_type; they are all AUTO-evaluated,
             // and preselecting MANUAL for them (the old fallback) flipped a working
             // exam to teacher-checked on any Step 1 edit.
@@ -1418,6 +1428,14 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         )}
                         {/* Surveys have nothing to cheat on. */}
                         {examType !== 'SURVEY' && <ProctoringSettingsCard control={form.control} />}
+                        {/* The learner's test screen. Surveys and homework have no exam screen. */}
+                        {examType !== 'SURVEY' && examType !== 'HOMEWORK' && (
+                            <ExamInterfaceSettingsCard
+                                control={form.control}
+                                omrMode={watch('omrMode') === true}
+                                manualEvaluation={watch('resultType') === 'MANUAL'}
+                            />
+                        )}
                         {getStepKey({
                             assessmentDetails,
                             currentStep,

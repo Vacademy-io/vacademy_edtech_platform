@@ -404,6 +404,7 @@ export const syncStep1DataWithStore = (form: UseFormReturn<BasicSectionFormType>
         aiEvaluationEnabled: getValues('aiEvaluationEnabled'),
         omrMode: getValues('omrMode'),
         proctoring: getValues('proctoring'),
+        examInterface: getValues('examInterface'),
         switchSections: getValues('switchSections'),
         raiseReattemptRequest: getValues('raiseReattemptRequest'),
         raiseTimeIncreaseRequest: getValues('raiseTimeIncreaseRequest'),

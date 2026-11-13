@@ -195,5 +195,31 @@
                 "after": "{{count}} signalements"
             }
         }
+    },
+    "examInterface": {
+        "title": "Interface d'examen",
+        "description": "L'apparence et le fonctionnement de l'écran d'épreuve pour les apprenants. Choisissez un style d'examen pour que l'entraînement ressemble au vrai examen sur ordinateur.",
+        "pickerLabel": "Style de l'écran d'épreuve",
+        "options": {
+            "standard": "Standard",
+            "jeeMainNta": "Style JEE Main (maquette d'essai en ligne)",
+            "jeeMainTcs": "Style JEE Main (disposition console)",
+            "jeeAdvanced": "Style JEE Advanced",
+            "gate": "Style GATE",
+            "rrbJe": "Style Railway JE (RRB)",
+            "custom": "Autre style ({{id}})"
+        },
+        "strict": {
+            "label": "Enregistrement strict comme à l'examen",
+            "description": "Activé : une réponse ne compte qu'après Save & Next, comme à l'examen réel. Désactivé (mode entraînement) : chaque clic est enregistré immédiatement et Submit reste toujours disponible."
+        },
+        "disclaimer": "Reprend uniquement la disposition et le comportement de l'écran d'examen. Sans lien avec l'organisme qui fait passer l'examen, ni approuvé par lui. Les noms d'examens sont des marques de leurs propriétaires.",
+        "omrDisabled": "Indisponible en mode feuille OMR : les apprenants répondent sur papier, l'écran standard est donc enregistré.",
+        "manualDisabled": "Indisponible quand un enseignant corrige les réponses : les apprenants envoient leur copie depuis l'écran standard, l'écran standard est donc enregistré.",
+        "previewHint": "Aperçu : enregistrez, puis ouvrez ce test depuis un compte apprenant pour voir l'écran d'examen.",
+        "calculator": {
+            "label": "Calculatrice à l’écran",
+            "description": "Activée, comme à l’examen réel : les apprenants disposent de la calculatrice scientifique pendant le test, même si la calculatrice de l’établissement est désactivée."
+        }
     }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ProctoringConfigForm } from '@/types/assessments/proctoring';
+import type { ExamInterfaceForm } from '@/types/assessments/exam-interface';
 
 interface BasicInfoState {
     assessmentPreview?: {
@@ -13,6 +14,7 @@ interface BasicInfoState {
     aiEvaluationEnabled?: boolean;
     omrMode?: boolean;
     proctoring?: ProctoringConfigForm;
+    examInterface?: ExamInterfaceForm;
     raiseReattemptRequest?: boolean;
     raiseTimeIncreaseRequest?: boolean;
     status?: string;
@@ -42,6 +44,7 @@ const initialState: Omit<BasicInfoState, 'setBasicInfo' | 'getBasicInfo' | 'rese
     aiEvaluationEnabled: undefined,
     omrMode: undefined,
     proctoring: undefined,
+    examInterface: undefined,
     raiseReattemptRequest: undefined,
     raiseTimeIncreaseRequest: undefined,
     status: undefined,
