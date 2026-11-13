@@ -265,12 +265,14 @@ public class CopyCheckOrchestratorService {
         marksList = inPaperOrder(marksList, process.getAssessment());
 
         // A re-dispatch (sweeper requeue, 429, stale claim) used to insert a second
-        // set of tracking rows next to the first (T0.29). Clear this process's rows
-        // first, except the ones a teacher already edited: those are kept, get no
-        // new row, and count as settled - their callbacks are skipped anyway.
-        java.util.Set<String> keptEdited = aiQuestionEvaluationService.resetForRedispatch(processId);
+        // set of tracking rows next to the first (T0.29). Clear this process's
+        // unfinished rows first. Rows a teacher edited and rows an earlier run already
+        // finished are kept, get no new row, and count as settled: a re-dispatch can be
+        // handed the same still-running ai_service job, which never re-sends the
+        // verdicts it already sent (a fresh job re-grades and overwrites them).
+        java.util.Set<String> kept = aiQuestionEvaluationService.resetForRedispatch(processId);
         int alreadySettled = (int) marksList.stream()
-                .filter(m -> m.getQuestion() != null && keptEdited.contains(m.getQuestion().getId()))
+                .filter(m -> m.getQuestion() != null && kept.contains(m.getQuestion().getId()))
                 .count();
         process.setQuestionsTotal(marksList.size());
         process.setQuestionsCompleted(alreadySettled);
@@ -280,7 +282,7 @@ public class CopyCheckOrchestratorService {
         int qNum = 1;
         for (QuestionWiseMarks marks : marksList) {
             int number = qNum++;
-            if (marks.getQuestion() != null && keptEdited.contains(marks.getQuestion().getId())) {
+            if (marks.getQuestion() != null && kept.contains(marks.getQuestion().getId())) {
                 continue;
             }
             aiQuestionEvaluationService.createQuestionEvaluation(process, marks.getQuestion(), number);

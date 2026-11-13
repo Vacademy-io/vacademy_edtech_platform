@@ -52,16 +52,17 @@ public class AiQuestionEvaluationService {
         }
 
         /**
-         * Clear a process's tracking rows before its (re-)dispatch inserts a new set,
-         * keeping the rows a teacher edited. Returns the question ids of the kept rows:
-         * the caller inserts no new row for those.
+         * Clear a process's unfinished tracking rows before its (re-)dispatch inserts a
+         * new set, keeping the rows a teacher edited and the ones an earlier run already
+         * finished. Returns the question ids of the kept rows: the caller inserts no new
+         * row for those and counts them as settled.
          */
         @Transactional
         public Set<String> resetForRedispatch(String processId) {
-                Set<String> kept = new HashSet<>(aiQuestionEvaluationRepository.findEditedQuestionIds(processId));
-                int deleted = aiQuestionEvaluationRepository.deleteNonEditedForProcess(processId);
+                Set<String> kept = new HashSet<>(aiQuestionEvaluationRepository.findKeptQuestionIds(processId));
+                int deleted = aiQuestionEvaluationRepository.deleteUnfinishedForProcess(processId);
                 if (deleted > 0 || !kept.isEmpty()) {
-                        log.info("[copy-check] re-dispatch of process {}: {} old tracking row(s) removed, {} edited kept",
+                        log.info("[copy-check] re-dispatch of process {}: {} unfinished tracking row(s) removed, {} kept",
                                         processId, deleted, kept.size());
                 }
                 return kept;
