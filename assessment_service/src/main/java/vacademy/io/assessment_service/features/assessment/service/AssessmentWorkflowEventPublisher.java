@@ -56,6 +56,10 @@ public class AssessmentWorkflowEventPublisher {
     @Autowired(required = false)
     ApiInstituteFlags apiInstituteFlags;
 
+    /** Marks onto the open assessment's own lead list; null in unit tests. */
+    @Autowired(required = false)
+    OpenAssessmentLeadPublisher openAssessmentLeadPublisher;
+
     /** Fires ASSESSMENT_CREATE when an assessment row is first saved (as a DRAFT). */
     public void publishAssessmentCreated(Assessment assessment, String instituteId, String createdByUserId) {
         if (assessment == null || instituteId == null) {
@@ -156,6 +160,9 @@ public class AssessmentWorkflowEventPublisher {
         Map<String, Object> ctx = contextBuilder.forResult(attempt, assessment, instituteId,
                 totalAchievableMarks(assessment.getId()), rank, percentile);
         emit(ASSESSMENT_RESULT_RELEASED, assessment.getId(), instituteId, ctx);
+        if (openAssessmentLeadPublisher != null) {
+            openAssessmentLeadPublisher.resultReleased(attempt, assessment, instituteId, ctx);
+        }
     }
 
     /**
@@ -190,6 +197,9 @@ public class AssessmentWorkflowEventPublisher {
                 Map<String, Object> ctx = contextBuilder.forResult(attempt, assessment, instituteId,
                         total, null, null);
                 emit(ASSESSMENT_RESULT_RELEASED, assessment.getId(), instituteId, ctx);
+                if (openAssessmentLeadPublisher != null) {
+                    openAssessmentLeadPublisher.resultReleased(attempt, assessment, instituteId, ctx);
+                }
             } catch (Exception e) {
                 log.warn("Failed to emit ASSESSMENT_RESULT_RELEASED for attempt {}: {}",
                         safeAttemptId(attempt), e.getMessage());
