@@ -534,7 +534,7 @@ public class LearnerReportService {
         try {
             pdfBytes = aiReportPdfService.renderStudentReport(user.getUserId(), assessmentId, attemptId, instituteId,
                     reportDetail, null, () -> reportPdfRenderService.render(reportDetail,
-                            self.buildComparisonData(user.getUserId(), assessmentId, attemptId, instituteId),
+                            comparisonOrNull(user.getUserId(), assessmentId, attemptId, instituteId),
                             loadClassContext(assessmentId, instituteId)));
         } catch (Exception e) {
             log.error("Error generating student report PDF for attempt {}", attemptId, e);
@@ -544,6 +544,21 @@ public class LearnerReportService {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=studentReport.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    /**
+     * Class comparison for the downloaded PDF, or null when it cannot be built. The admin
+     * download (AdminExportManager.getStudentReportPdf) already renders without it in that
+     * case; the learner download threw instead, so the student got "Failed to generate
+     * report PDF" for the same attempt the admin could download.
+     */
+    private StudentComparisonDto comparisonOrNull(String userId, String assessmentId, String attemptId, String instituteId) {
+        try {
+            return self.buildComparisonData(userId, assessmentId, attemptId, instituteId);
+        } catch (Exception e) {
+            log.warn("[report-pdf] class comparison unavailable for attempt {}: {}", attemptId, e.getMessage());
+            return null;
+        }
     }
 
     /** The normal report's per-question review, which the AI report also renders; null on failure. */
