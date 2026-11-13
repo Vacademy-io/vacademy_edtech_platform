@@ -67,6 +67,10 @@ public class AiReportModel {
 
     /** Report option (profile report_options.question_wise = HIDE): leave out every per-question item. */
     private final boolean hideQuestionWise;
+    /** Report options (assessment.report_options / profile): leave these out of every question. */
+    private final boolean hideYourAnswer;
+    private final boolean hideCorrectAnswer;
+    private final boolean hideExplanation;
 
     /** The processed AI JSON from admin_core (may be an empty object, never null). */
     private final JsonNode ai;

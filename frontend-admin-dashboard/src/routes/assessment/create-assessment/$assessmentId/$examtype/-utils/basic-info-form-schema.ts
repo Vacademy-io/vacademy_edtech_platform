@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DEFAULT_PROCTORING_FORM } from '@/types/assessments/proctoring';
 import { DEFAULT_EXAM_INTERFACE_FORM } from '@/types/assessments/exam-interface';
+import { DEFAULT_REPORT_OPTIONS_FORM } from '@/types/assessments/report-options';
 
 export const BasicInfoFormSchema = z.object({
     status: z.string(),
@@ -79,6 +80,17 @@ export const BasicInfoFormSchema = z.object({
             stored: z.record(z.unknown()).nullable(),
         })
         .default(DEFAULT_EXAM_INTERFACE_FORM),
+    // What the student's report shows per question; saved as report_options
+    // (null while useInstituteDefault is on).
+    reportOptions: z
+        .object({
+            useInstituteDefault: z.boolean(),
+            showQuestionWise: z.boolean(),
+            showYourAnswer: z.boolean(),
+            showCorrectAnswer: z.boolean(),
+            showExplanation: z.boolean(),
+        })
+        .default(DEFAULT_REPORT_OPTIONS_FORM),
     switchSections: z.boolean(),
     raiseReattemptRequest: z.boolean(),
     raiseTimeIncreaseRequest: z.boolean(),

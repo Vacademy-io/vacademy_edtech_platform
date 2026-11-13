@@ -44,7 +44,7 @@ public class AiReportHtmlBuilderV2 {
         addIfAny(pages, page(m, p, false, topicsBlock(ai, p)));
         addIfAny(pages, page(m, p, false, blocks(bloomBlock(ai, p), qw ? easyMarksBlock(m, p, ai) : "", qw ? expertiseBlock(m, p) : "", potentialBlock(m, p))));
         addIfAny(pages, page(m, p, false, behaviourBlock(m, p, ai)));
-        String fix = qw ? fixBlock(ai, p) : "", plan = planBlock(ai, p), cards = cardsAndProgress(m, p, ai);
+        String fix = qw ? fixBlock(m, ai, p) : "", plan = planBlock(ai, p), cards = cardsAndProgress(m, p, ai);
         if ((qw ? estimateFix(ai) : 0) + estimatePlan(ai) + (cards.isEmpty() ? 0 : 300) <= 960) {
             addIfAny(pages, page(m, p, false, blocks(fix, plan, cards)));
         } else {
@@ -609,8 +609,7 @@ public class AiReportHtmlBuilderV2 {
         if (m.getDetails() == null || m.getDetails().isEmpty() || m.getQuestions().isEmpty()) return "";
         StringBuilder s = new StringBuilder();
         s.append("<div class=\"tag\">Question by question</div><div class=\"h3\">All ").append(m.getQuestions().size())
-                .append(" questions, with your answers</div><div class=\"lede\">What you answered, the right answer where you missed it, ")
-                .append(m.hasClass() ? "how the class did, " : "").append("and the explanation.</div>");
+                .append(m.isHideYourAnswer() ? " questions" : " questions, with your answers").append("</div><div class=\"lede\">").append(esc(questionByQuestionLede(m))).append("</div>");
         String currentSection = null;
         for (QuestionRow q : m.getQuestions()) {
             if (m.getSections().size() > 1 && !q.sectionId().equals(currentSection)) {
@@ -621,6 +620,21 @@ public class AiReportHtmlBuilderV2 {
             s.append(questionCard(m, p, q, m.getDetails().get(AiReportDataService.key(q.questionId(), q.sectionId()))));
         }
         return s.toString();
+    }
+
+    /** "What you answered, the right answer where you missed it, how the class did, and the explanation." minus what is hidden. */
+    static String questionByQuestionLede(AiReportModel m) {
+        List<String> parts = new ArrayList<>();
+        if (!m.isHideYourAnswer()) parts.add("what you answered");
+        if (!m.isHideCorrectAnswer()) parts.add("the right answer where you missed it");
+        if (m.hasClass()) parts.add("how the class did");
+        if (!m.isHideExplanation()) parts.add("the explanation");
+        if (parts.isEmpty()) return "Each question with your marks.";
+        // Serial comma from three items on, as the original fixed sentence had it.
+        String last = parts.get(parts.size() - 1);
+        String joined = parts.size() == 1 ? last
+                : String.join(", ", parts.subList(0, parts.size() - 1)) + (parts.size() > 2 ? ", and " : " and ") + last;
+        return Character.toUpperCase(joined.charAt(0)) + joined.substring(1) + ".";
     }
 
     private String questionCard(AiReportModel m, ReportPalette p, QuestionRow q, AiReportModel.QuestionDetail d) {
@@ -641,16 +655,21 @@ public class AiReportHtmlBuilderV2 {
 
         String yours = d == null ? null : d.yourAnswer();
         String right = d == null ? null : d.correctAnswer();
-        boolean showRight = right != null && q.outcome() != Outcome.CORRECT;
-        s.append("<tr><td class=\"qc-a\"><table class=\"qc-at\"><tr>");
-        s.append("<td class=\"qc-you\" style=\"background:").append(q.outcome() == Outcome.CORRECT ? OK_50 : q.outcome() == Outcome.WRONG ? BAD_50 : SOFT)
-                .append("\"><div class=\"lbl\" style=\"color:").append(status[1]).append("\">Your answer</div>")
-                .append(esc(yours != null ? yours : q.outcome() == Outcome.SKIPPED ? "Not attempted" : "-")).append("</td>");
-        if (showRight) {
-            s.append("<td class=\"qc-right\"><div class=\"lbl\" style=\"color:").append(OK).append("\">Right answer</div>")
-                    .append(esc(right)).append("</td>");
+        boolean showYours = !m.isHideYourAnswer();
+        boolean showRight = !m.isHideCorrectAnswer() && right != null && q.outcome() != Outcome.CORRECT;
+        if (showYours || showRight) {
+            s.append("<tr><td class=\"qc-a\"><table class=\"qc-at\"><tr>");
+            if (showYours) {
+                s.append("<td class=\"qc-you\" style=\"background:").append(q.outcome() == Outcome.CORRECT ? OK_50 : q.outcome() == Outcome.WRONG ? BAD_50 : SOFT)
+                        .append("\"><div class=\"lbl\" style=\"color:").append(status[1]).append("\">Your answer</div>")
+                        .append(esc(yours != null ? yours : q.outcome() == Outcome.SKIPPED ? "Not attempted" : "-")).append("</td>");
+            }
+            if (showRight) {
+                s.append("<td class=\"qc-right\"><div class=\"lbl\" style=\"color:").append(OK).append("\">Right answer</div>")
+                        .append(esc(right)).append("</td>");
+            }
+            s.append("</tr></table></td></tr>");
         }
-        s.append("</tr></table></td></tr>");
 
         if (d != null && notBlank(d.feedback())) {
             s.append("<tr><td class=\"qc-f\"><b>Feedback:</b> ").append(esc(d.feedback())).append("</td></tr>");
@@ -671,7 +690,7 @@ public class AiReportHtmlBuilderV2 {
         if (m.hasClass() && q.classAverageTimeSeconds() != null) meta.add("class average " + Math.round(q.classAverageTimeSeconds()) + " s");
         s.append("<tr><td class=\"qc-m\">").append(esc(String.join("  ·  ", meta))).append("</td></tr>");
 
-        if (d != null && notBlank(d.explanation())) {
+        if (!m.isHideExplanation() && d != null && notBlank(d.explanation())) {
             s.append("<tr><td class=\"qc-x\"><b style=\"color:").append(p.brandInk).append("\">Explanation:</b> ").append(esc(d.explanation())).append("</td></tr>");
         }
         return s.append("</table>").toString();
@@ -684,19 +703,32 @@ public class AiReportHtmlBuilderV2 {
 
     // ── Page 5: fix and plan ──
 
-    private String fixBlock(JsonNode ai, ReportPalette p) {
+    private String fixBlock(AiReportModel m, JsonNode ai, ReportPalette p) {
         JsonNode items = ai.path("misconception_analysis");
         if (!items.isArray() || items.isEmpty()) return "";
+        // Report options: the AI's quote of the student's answer and the right answer
+        // follow the same switches as the question-by-question cards.
+        boolean yours = !m.isHideYourAnswer(), right = !m.isHideCorrectAnswer();
+        int cols = (yours ? 1 : 0) + (right ? 1 : 0);
+        String span = cols == 2 ? " colspan=\"2\"" : "";
         StringBuilder s = new StringBuilder();
         int n = 0;
         for (JsonNode it : items) {
             if (n++ >= 3) break;
-            s.append("<table class=\"fix\"><tr><td colspan=\"2\" class=\"fix-h\">").append(esc(clip(text(it, "question_summary"), 140))).append("</td></tr>")
-                    .append("<tr><td class=\"fix-you\"><div class=\"lbl\" style=\"color:").append(BAD).append("\">You answered</div>")
-                    .append(esc(clip(text(it, "student_answer"), 160))).append("</td>")
-                    .append("<td class=\"fix-right\"><div class=\"lbl\" style=\"color:").append(OK).append("\">Right answer</div>")
-                    .append(esc(clip(text(it, "correct_answer"), 160))).append("</td></tr>")
-                    .append("<tr><td colspan=\"2\" class=\"fix-w\">").append(esc(plain(text(it, "misconception"), 360)));
+            s.append("<table class=\"fix\"><tr><td").append(span).append(" class=\"fix-h\">").append(esc(clip(text(it, "question_summary"), 140))).append("</td></tr>");
+            if (cols > 0) {
+                s.append("<tr>");
+                if (yours) {
+                    s.append("<td class=\"fix-you\"><div class=\"lbl\" style=\"color:").append(BAD).append("\">You answered</div>")
+                            .append(esc(clip(text(it, "student_answer"), 160))).append("</td>");
+                }
+                if (right) {
+                    s.append("<td class=\"fix-right\"><div class=\"lbl\" style=\"color:").append(OK).append("\">Right answer</div>")
+                            .append(esc(clip(text(it, "correct_answer"), 160))).append("</td>");
+                }
+                s.append("</tr>");
+            }
+            s.append("<tr><td").append(span).append(" class=\"fix-w\">").append(esc(plain(text(it, "misconception"), 360)));
             String fix = plain(text(it, "remediation"), 240);
             if (!fix.isEmpty()) s.append("<div class=\"fix-try\" style=\"color:").append(p.brandInk).append("\"><b>Try this:</b> ").append(esc(fix)).append("</div>");
             s.append("</td></tr></table>");

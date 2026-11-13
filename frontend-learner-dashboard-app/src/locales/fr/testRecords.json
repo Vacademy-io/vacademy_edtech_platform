@@ -19,6 +19,7 @@
         "average": "Moyen",
         "low": "Faible",
         "yourResponse": "Votre réponse",
+        "hiddenByInstitute": "Non affiché dans ce rapport",
         "explanation": "Explication",
         "resultReport": "Rapport de résultat",
         "classAverageValue": "Moyenne de la classe : {{value}}",

@@ -45,6 +45,11 @@ public class BasicAssessmentDetailsDTO {
     // arrives as NullNode (Jackson's null value for JsonNode) and clears it, as does
     // preset "default". Validated and stored by ExamInterfaceService.
     private JsonNode examInterface;
+    // What the student's report shows per question (V69), e.g.
+    // {"show_question_wise":true,"show_your_answer":true,"show_correct_answer":false,"show_explanation":true}.
+    // Field absent = leave the stored value alone; explicit JSON null (NullNode) =
+    // clear it, so the institute's default report profile applies.
+    private JsonNode reportOptions;
     private String source;
     private String sourceId;
 

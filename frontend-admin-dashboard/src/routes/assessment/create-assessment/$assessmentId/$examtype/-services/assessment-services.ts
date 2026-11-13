@@ -1,5 +1,6 @@
 import { DEFAULT_PROCTORING_FORM, proctoringWireFromForm } from '@/types/assessments/proctoring';
 import { examInterfaceWireFromForm } from '@/types/assessments/exam-interface';
+import { reportOptionsWireFromForm } from '@/types/assessments/report-options';
 import {
     GET_ASSESSMENT_DETAILS,
     PUBLISH_ASSESSMENT_URL,
@@ -232,6 +233,10 @@ export const handlePostStep1Data = async (
                       omrMode: data.omrMode ?? false,
                       manualEvaluation: data.resultType === 'MANUAL',
                   }),
+        // Always sent: null = follow the institute's report settings (clears a
+        // stored value). Surveys have no marked report.
+        report_options:
+            type === 'SURVEY' ? null : reportOptionsWireFromForm(data.reportOptions),
     };
     const response = await authenticatedAxiosInstance({
         method: 'POST',

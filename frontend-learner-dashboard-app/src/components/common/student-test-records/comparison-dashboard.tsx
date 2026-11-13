@@ -54,6 +54,7 @@ import { formatDateTime, formatTime } from "@/lib/format-date";
 import { EmptyState } from "@/components/design-system/states";
 import { cn } from "@/lib/utils";
 import { playIllustrations } from "@/assets/play-illustrations";
+import { reportVisibility } from "@/lib/report-visibility";
 
 // Verdict thresholds mirror getPerformanceLevel in test-report-dialog.tsx.
 // Play-mode variants restate the verdict in play status tokens
@@ -287,6 +288,8 @@ export function ComparisonDashboard({
   const [answerReviewOpen, setAnswerReviewOpen] = useState(false);
   const [answerReviewLoading, setAnswerReviewLoading] = useState(false);
   const [reportDetail, setReportDetail] = useState<any>(null);
+  // What this assessment lets the student see per question (report_options).
+  const visibility = reportVisibility(reportDetail);
   const [questionsData, setQuestionsData] = useState<SectionQuestions | null>(null);
   const [sectionsInfo, setSectionsInfo] = useState<{ id: string; name: string }[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | undefined>(undefined);
@@ -330,8 +333,9 @@ export function ComparisonDashboard({
         setSelectedSection(sections.length > 0 ? sections[0].id : sectionIds[0]);
 
         // Fetch questions data for rendering options
+        // instituteId picks this institute's report settings for what may be sent.
         const qRes = await authenticatedAxiosInstance.get(GET_QUESTIONS_OF_SECTIONS, {
-          params: { assessmentId, sectionIds: sectionIds.join(",") },
+          params: { assessmentId, sectionIds: sectionIds.join(","), instituteId },
         });
         setQuestionsData(qRes.data);
       }
@@ -1075,7 +1079,9 @@ export function ComparisonDashboard({
                             )}
                           >
                             <AlertDescription className="text-body text-foreground">
-                              {review.student_response_options
+                              {!visibility.yourAnswer
+                                ? t("common.hiddenByInstitute")
+                                : review.student_response_options
                                 ? renderStudentResponse(review, questionsData, t)
                                 : review.mark !== 0
                                   ? t("comparisonDashboard.review.marksAwardedDirectly", {
@@ -1087,7 +1093,8 @@ export function ComparisonDashboard({
                         </div>
 
                         {/* Correct Answer */}
-                        {review.answer_status !== "CORRECT" &&
+                        {visibility.correctAnswer &&
+                          review.answer_status !== "CORRECT" &&
                           review.correct_options && (
                             <div className="space-y-1.5">
                               <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -1260,7 +1267,7 @@ export function ComparisonDashboard({
                           )}
 
                         {/* Explanation */}
-                        {review.explanation && (
+                        {visibility.explanation && review.explanation && (
                           <div className="space-y-1.5 border-t border-border/60 pt-4">
                             <span className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
                               {t("common.explanation")}

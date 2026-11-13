@@ -19,6 +19,7 @@
         "average": "متوسط",
         "low": "منخفض",
         "yourResponse": "إجابتك",
+        "hiddenByInstitute": "لا يظهر في هذا التقرير",
         "explanation": "الشرح",
         "resultReport": "تقرير النتيجة",
         "classAverageValue": "متوسط الفصل: {{value}}",

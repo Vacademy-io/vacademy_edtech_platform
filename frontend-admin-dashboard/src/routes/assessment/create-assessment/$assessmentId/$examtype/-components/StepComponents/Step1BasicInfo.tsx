@@ -61,6 +61,11 @@ import {
 } from '@/types/assessments/exam-interface';
 import { ProctoringSettingsCard } from './-components/ProctoringSettingsCard';
 import { ExamInterfaceSettingsCard } from './-components/ExamInterfaceSettingsCard';
+import { ReportOptionsSettingsCard } from './-components/ReportOptionsSettingsCard';
+import {
+    DEFAULT_REPORT_OPTIONS_FORM,
+    reportOptionsFormFromWire,
+} from '@/types/assessments/report-options';
 import { isApiSourced } from '../../../../../assessment-list/-utils.ts/assessment-source';
 
 // convertDateFormat lives in -utils/helper; Step 3 still imports it from here.
@@ -650,6 +655,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             omrMode: storeDataStep1.omrMode ?? false,
             proctoring: storeDataStep1.proctoring ?? DEFAULT_PROCTORING_FORM,
             examInterface: storeDataStep1.examInterface ?? DEFAULT_EXAM_INTERFACE_FORM,
+            reportOptions: storeDataStep1.reportOptions ?? DEFAULT_REPORT_OPTIONS_FORM,
             switchSections: storeDataStep1.switchSections || true, // Default to false
             raiseReattemptRequest: storeDataStep1.raiseReattemptRequest || true, // Default to true
             raiseTimeIncreaseRequest: storeDataStep1.raiseTimeIncreaseRequest || true, // Default to false
@@ -917,6 +923,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             // Step 0 saved_data.exam_interface: the stored object, or null for the
             // standard screen (absent on an older backend, which reads the same).
             examInterface: examInterfaceFormFromWire(savedData?.exam_interface),
+            // Step 0 saved_data.report_options: the assessment's own options, or
+            // null = the institute default.
+            reportOptions: reportOptionsFormFromWire(savedData?.report_options),
             // 27 older exams carry no result_type; they are all AUTO-evaluated,
             // and preselecting MANUAL for them (the old fallback) flipped a working
             // exam to teacher-checked on any Step 1 edit.
@@ -1331,6 +1340,10 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 </div>
                             )}
                     </div>
+                    )}
+                    {/* What the student's report shows per question. Surveys have no marked report. */}
+                    {showsResultReleaseSettings(examType) && (
+                        <ReportOptionsSettingsCard control={form.control} />
                     )}
 
                     <div className="flex flex-col gap-4" id="attempt-settings">

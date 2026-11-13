@@ -109,6 +109,15 @@ public class Assessment {
     @Column(name = "exam_interface", columnDefinition = "jsonb")
     private String examInterface;
 
+    /**
+     * What a student's report shows per question (V69), e.g.
+     * {"show_correct_answer":false}. NULL = the institute default report profile.
+     * Read through ReportProfileService.reportOptions.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "report_options", columnDefinition = "jsonb")
+    private String reportOptions;
+
     @Column(name = "submission_type", nullable = false)
     private String submissionType;
 

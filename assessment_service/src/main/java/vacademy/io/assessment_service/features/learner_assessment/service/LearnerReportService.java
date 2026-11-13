@@ -252,6 +252,9 @@ public class LearnerReportService {
 
         StudentReportOverallDetailDto reportDetail = assessmentParticipantsManager
                 .createStudentReportDetailResponse(assessmentId, attemptId, instituteId);
+        // The assessment's report options decide what leaves the server, not just
+        // what the app draws: a hidden correct answer must not be in the payload.
+        reportProfileService.reportOptions(assessmentId, instituteId).stripFrom(reportDetail);
 
         return ResponseEntity.ok(reportDetail);
     }
@@ -835,7 +838,9 @@ public class LearnerReportService {
             }
 
             // Build HTML and convert to PDF
-            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison);
+            // The assessment's report options apply to this older layout too.
+            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison,
+                    reportProfileService.reportOptions(assessmentId, instituteId));
 
             java.io.ByteArrayOutputStream pdfOutputStream = new java.io.ByteArrayOutputStream();
             com.itextpdf.html2pdf.ConverterProperties converterProperties = new com.itextpdf.html2pdf.ConverterProperties();
