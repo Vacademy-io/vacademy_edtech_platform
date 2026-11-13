@@ -2357,4 +2357,243 @@ def storefront_preview(institute_id: str = Query(..., min_length=1, max_length=6
         _rollback(db)
 
 
+
+# ── product plans (one form on the health dashboard: Products → <product> → Pricing) ──
+#
+# A product's website plans ("starter", "team") are storefront plans keyed "<product>_<key>",
+# offered to the "product_<product>" segment (every institute whose institutes.product is the
+# product, see plans_billing_internal.institute_segments). PUT makes the storefront match the
+# form in one transaction: creates missing plans, lists them, offers them to the segment, and
+# publishes a new version when the price, credits or length changed (the old one is retired;
+# its subscribers keep their terms unless migrate_existing_at_renewal). Plans of the product
+# that the form no longer has are unlisted, never deleted.
+
+PRODUCT_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{1,23}$")
+PRODUCT_PLAN_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,22}$")
+PRODUCT_PLANS_MAX = 8
+
+
+class ProductPlanIn(BaseModel):
+    key: str = Field(..., max_length=23)
+    name: str = Field(..., max_length=128)
+    price_inr: int = Field(..., ge=0, le=10_000_000)
+    credits: float = Field(..., ge=0, le=100_000_000)
+
+
+class ProductPlansPut(BaseModel):
+    plans: List[ProductPlanIn] = Field(default_factory=list, max_length=PRODUCT_PLANS_MAX)
+    period_months: int = Field(12, ge=1, le=36)
+    #: features a NEW plan's credits pay for (ALLOWANCE items); a plan with versions keeps its items
+    allowance_features: List[str] = Field(default_factory=list, max_length=20)
+    migrate_existing_at_renewal: bool = False
+    reason: Optional[str] = Field(None, max_length=2000)
+
+
+def _product_key(product: str) -> str:
+    key = str(product or "").strip().lower()
+    if not PRODUCT_KEY_RE.match(key):
+        raise HTTPException(status_code=422, detail="product must be 2-24 characters: a-z, 0-9 and _")
+    return key
+
+
+def _product_segment_key(product: str) -> str:
+    from .plans_billing_internal import PRODUCT_SEGMENT_PREFIX
+    return f"{PRODUCT_SEGMENT_PREFIX}{product}"
+
+
+def _latest_published(db: Session, plan_id: str) -> Optional[Dict[str, Any]]:
+    return one(db, "SELECT * FROM ai_plan_version WHERE plan_id = CAST(:p AS UUID) AND status = 'PUBLISHED' "
+                   "ORDER BY version_no DESC LIMIT 1", {"p": plan_id})
+
+
+def _offered_to(db: Session, plan_id: Optional[str], segment: str) -> bool:
+    plan_sql = "plan_id = CAST(:p AS UUID)" if plan_id else "plan_id IS NULL"
+    return one(db, f"SELECT 1 AS x FROM ai_storefront_audience WHERE is_active AND {plan_sql} AND segment_key = :g "
+                   "AND upper(COALESCE(rule, 'INCLUDE')) = 'INCLUDE' LIMIT 1", {"p": plan_id, "g": segment}) is not None
+
+
+def _ensure_offered(db: Session, plan_id: Optional[str], segment: str, actor: Optional[str], reason: str) -> bool:
+    """Adds an INCLUDE rule for the segment (other rules stay). True when it was missing."""
+    if _offered_to(db, plan_id, segment):
+        return False
+    db.execute(text("INSERT INTO ai_storefront_audience (id, plan_id, rule, institute_id, segment_key, is_active, "
+                    "reason, created_by, created_at) VALUES (CAST(:id AS UUID), CAST(:p AS UUID), 'INCLUDE', NULL, :g, "
+                    "true, :why, :a, now())"),
+               {"id": str(uuid.uuid4()), "p": plan_id, "g": segment, "why": reason, "a": actor or "unknown"})
+    return True
+
+
+def _product_plan_rows(db: Session, product: str, segment: str) -> List[Dict[str, Any]]:
+    """Plans keyed "<product>_..." that are offered to the product's segment. The key prefix alone
+    is not enough: another product's or a hand-made plan could share it (ai_pro for a product "ai")."""
+    return rows(db, "SELECT p.* FROM ai_plan p WHERE p.plan_key LIKE :k ESCAPE '\\' AND EXISTS (SELECT 1 FROM "
+                    "ai_storefront_audience a WHERE a.plan_id = p.id AND a.is_active AND a.segment_key = :g "
+                    "AND upper(COALESCE(a.rule, 'INCLUDE')) = 'INCLUDE') ORDER BY p.sort_order, p.plan_key",
+                {"k": product.replace("_", "\\_") + "\\_%", "g": segment})
+
+
+def product_plans_status(db: Session, product: str) -> Dict[str, Any]:
+    """What the storefront sells for a product, next to what the website form says."""
+    pb = _billing_module(db)
+    segment = _product_segment_key(product)
+    plans = []
+    for p in _product_plan_rows(db, product, segment):
+        pid = str(p["id"])
+        v = _latest_published(db, pid)
+        plans.append({
+            "plan_id": pid, "plan_key": p["plan_key"], "key": p["plan_key"][len(product) + 1:], "name": p["name"],
+            "listed": bool(p.get("listed")), "audience_mode": p.get("audience_mode"),
+            "offered": _offered_to(db, pid, segment),
+            "published": None if v is None else {
+                "version_id": str(v["id"]), "version_no": v["version_no"], "currency": v["currency"],
+                "price_inr": int(v["price_minor"] or 0) / 100, "credits": float(v["allowance_credits"] or 0),
+                "period_months": int(v["period_months"] or 1), "is_tax_inclusive": bool(v["is_tax_inclusive"]),
+                "features": [i["feature_key"] for i in version_items(db, str(v["id"]))],
+            },
+        })
+    return {
+        "product": product, "segment": segment, "plans": plans,
+        "storefront": {"mode": pb.storefront_mode(), "payments_enabled": pb.payments_enabled(),
+                       "open_to_segment": _offered_to(db, None, segment)},
+    }
+
+
+@router.get("/products/{product}", summary="A product's website plans as the storefront sells them")
+def get_product_plans(product: str, db: Session = Depends(db_dependency)):
+    require_tables(db)
+    key = _product_key(product)
+    try:
+        return product_plans_status(db, key)
+    finally:
+        _rollback(db)
+
+
+@router.put("/products/{product}", summary="Make the storefront sell a product's website plans (one transaction)")
+def put_product_plans(product: str, body: ProductPlansPut, db: Session = Depends(db_dependency),
+                      current_user: CustomUserDetails = Depends(get_current_user)):
+    require_tables(db)
+    _billing_module(db)
+    prod = _product_key(product)
+    reason = need_reason(body.reason)
+    actor = actor_of(current_user)
+    segment = _product_segment_key(prod)
+    seen: set = set()
+    wanted = []
+    for p in body.plans:
+        k = str(p.key or "").strip().lower().replace("-", "_")   # website ids may use "-"; plan keys can't
+        if not PRODUCT_PLAN_KEY_RE.match(k):
+            raise HTTPException(status_code=422, detail=f"plan id {p.key!r}: a-z, 0-9 and _, starting with a letter")
+        if k in seen:
+            raise HTTPException(status_code=422, detail=f"plan id {k!r} is listed twice")
+        seen.add(k)
+        name = str(p.name or "").strip()
+        if not name:
+            raise HTTPException(status_code=422, detail=f"plan {k!r} needs a name")
+        wanted.append((k, name, int(p.price_inr) * 100, Decimal(str(p.credits))))
+    feats = features_by_key(db)
+    new_items = [validate_item(feats.get(f), {"mode": "ALLOWANCE", "model_policy": "ANY",
+                                              "display_cap_text": "Uses the plan's credits, then your credits"}, key=f)
+                 for f in dict.fromkeys(str(x or "").strip() for x in body.allowance_features) if f]
+    changes: List[Dict[str, Any]] = []
+    try:
+        for i, (k, name, price_minor, credits) in enumerate(wanted):
+            plan_key = f"{prod}_{k}"
+            plan = one(db, "SELECT * FROM ai_plan WHERE plan_key = :k FOR UPDATE", {"k": plan_key})
+            if plan is None:
+                plan = one(db, "INSERT INTO ai_plan (id, plan_key, name, is_active, created_by, created_at, updated_at) "
+                               "VALUES (CAST(:id AS UUID), :k, :n, true, :a, now(), now()) RETURNING *",
+                           {"id": str(uuid.uuid4()), "k": plan_key, "n": name, "a": actor})
+                audit(db, "ai_plan", plan_key, None, plan_out(plan), reason, actor)
+                changes.append({"plan_key": plan_key, "change": "created"})
+            pid = str(plan["id"])
+            listing = {"name": name, "listed": True, "audience_mode": "SEGMENT", "sort_order": (i + 1) * 10}
+            if any(plan.get(f) != v for f, v in listing.items()) or not plan.get("is_active"):
+                db.execute(text("UPDATE ai_plan SET name = :n, listed = true, audience_mode = 'SEGMENT', is_active = true, "
+                                "sort_order = :o, listing_updated_by = :a, listing_updated_at = now(), updated_at = now() "
+                                "WHERE id = CAST(:p AS UUID)"), {"n": name, "o": (i + 1) * 10, "a": actor, "p": pid})
+                audit(db, "ai_plan", plan_key, {f: plan.get(f) for f in listing}, listing, reason, actor)
+            if _ensure_offered(db, pid, segment, actor, reason):
+                audit(db, "ai_storefront_audience", f"plan:{plan_key}", None, {"segments": [segment]}, reason, actor)
+            pub = _latest_published(db, pid)
+            terms = {"currency": "INR", "price_minor": price_minor, "is_tax_inclusive": False,
+                     "period_months": body.period_months, "allowance_credits": credits}
+            if pub is not None and all(
+                    (Decimal(str(pub[f])) == Decimal(str(v))) if f == "allowance_credits" else pub[f] == v
+                    for f, v in terms.items()):
+                continue
+            src = pub or one(db, "SELECT * FROM ai_plan_version WHERE plan_id = CAST(:p AS UUID) "
+                                 "ORDER BY version_no DESC LIMIT 1", {"p": pid})
+            items = version_items(db, str(src["id"])) if src is not None else []
+            if not items:
+                if not new_items:
+                    raise HTTPException(status_code=422, detail=(
+                        f"plan {plan_key!r} is new: choose which features its credits pay for (allowance_features)"))
+                items = new_items
+            problems = item_problems(feats, items)
+            if problems:
+                raise HTTPException(status_code=422, detail={"message": f"{plan_key}: fix these items first",
+                                                             "problems": problems})
+            no = int(db.execute(text("SELECT COALESCE(max(version_no), 0) + 1 FROM ai_plan_version "
+                                     "WHERE plan_id = CAST(:p AS UUID)"), {"p": pid}).scalar() or 1)
+            vterms = {**_copy_terms(src), **terms, "sac_code": DEFAULT_SUBSCRIPTION_SAC_CODE,
+                      "migrate_existing_at_renewal": bool(body.migrate_existing_at_renewal and pub is not None)}
+            vid = str(uuid.uuid4())
+            # DRAFT first: the V588 freeze trigger rejects items added to a PUBLISHED version
+            cols = ["id", "plan_id", "version_no", "status", "supersedes_version_id", "created_by", "created_at",
+                    "updated_at"] + list(vterms)
+            vals = ["CAST(:id AS UUID)", "CAST(:plan_id AS UUID)", ":version_no", "'DRAFT'", "CAST(:sup AS UUID)",
+                    ":actor", "now()", "now()"] + [f":{c}" for c in vterms]
+            one(db, f"INSERT INTO ai_plan_version ({', '.join(cols)}) VALUES ({', '.join(vals)}) RETURNING id",
+                {"id": vid, "plan_id": pid, "version_no": no, "actor": actor,
+                 "sup": str(pub["id"]) if pub else None, **vterms})
+            for it in items:
+                c = {f: it.get(f) for f in ITEM_FIELDS}
+                c["model_allowlist"] = list(c.get("model_allowlist") or []) or None
+                c["roles_included"] = list(c.get("roles_included") or []) or None
+                db.execute(text(
+                    f"INSERT INTO ai_plan_item (id, plan_version_id, {', '.join(ITEM_FIELDS)}) VALUES "
+                    "(CAST(:id AS UUID), CAST(:v AS UUID), :feature_key, :mode, :model_policy, "
+                    "CAST(:model_allowlist AS TEXT[]), :max_output_price_per_1m, :on_model_violation, "
+                    "CAST(:roles_included AS TEXT[]), :inst_units_cap, :inst_credits_cap, :inst_cost_usd_cap, "
+                    ":user_units_cap, :user_credits_cap, :user_cap_basis, :over_cap_action, :display_cap_text)"),
+                    {**c, "id": str(uuid.uuid4()), "v": vid})
+            new = one(db, "UPDATE ai_plan_version SET status = 'PUBLISHED', published_at = now(), published_by = :a, "
+                          "updated_at = now() WHERE id = CAST(:v AS UUID) RETURNING *", {"a": actor, "v": vid})
+            diff = _diff(pub, new, version_items(db, str(pub["id"])) if pub else [], version_items(db, vid))
+            audit(db, "ai_plan_version", f"{plan_key}@{no}", None, {"status": "PUBLISHED", "diff": diff}, reason, actor)
+            moved = _schedule_migration(db, new, actor, reason)
+            if pub is not None:
+                # status only: the V588 trigger allows PUBLISHED -> RETIRED on a published row
+                db.execute(text("UPDATE ai_plan_version SET status = 'RETIRED' WHERE id = CAST(:v AS UUID) "
+                                "AND status = 'PUBLISHED'"), {"v": str(pub["id"])})
+                audit(db, "ai_plan_version", str(pub["id"]), {"status": "PUBLISHED"},
+                      {"status": "RETIRED", "superseded_by": vid}, reason, actor)
+            changes.append({"plan_key": plan_key, "change": "published", "version_no": no,
+                            "subscriptions_moving_at_renewal": moved})
+        keep = {f"{prod}_{k}" for k, *_ in wanted}
+        for r in _product_plan_rows(db, prod, segment):
+            if r["plan_key"] in keep or not r.get("listed"):
+                continue
+            db.execute(text("UPDATE ai_plan SET listed = false, listing_updated_by = :a, listing_updated_at = now(), "
+                            "updated_at = now() WHERE id = CAST(:p AS UUID)"), {"a": actor, "p": str(r["id"])})
+            audit(db, "ai_plan", r["plan_key"], {"listed": True}, {"listed": False}, reason, actor)
+            changes.append({"plan_key": r["plan_key"], "change": "unlisted"})
+        if wanted and _ensure_offered(db, None, segment, actor, reason):
+            audit(db, "ai_storefront_audience", "storefront", None, {"segments": [segment]}, reason, actor)
+            changes.append({"plan_key": None, "change": f"storefront open to {segment}"})
+    except HTTPException:
+        _rollback(db)
+        raise
+    except DBAPIError as exc:
+        _rollback(db)
+        raise _db_error(exc, "product plans")
+    commit(db)
+    if changes:
+        notify_engine()
+    try:
+        return {**product_plans_status(db, prod), "changes": changes}
+    finally:
+        _rollback(db)
+
+
 __all__ = ["router"]
