@@ -26,6 +26,7 @@ import {
     getQueryKeysQuery,
     getTriggerEventsCatalogQuery,
     getTemplatesByTypeQuery,
+    fetchContextSchema,
 } from '@/services/workflow-service';
 import { whatsappTemplateParamSpec } from '@/components/shared/leads/lead-template-variables';
 
@@ -48,6 +49,41 @@ const QUERY_LIST_KEY: Record<string, string> = {
     fetch_live_session_attendance: 'presentStudents',
     getUpcomingFeeInstallments: 'feePaymentList',
 };
+
+/** Context-schema variable type the backend gives a ready-made recipient list ({#ctx['user']}). */
+const RECIPIENTS_TYPE = 'Recipients';
+
+type BuilderNode = { id: string; data?: Record<string, unknown> };
+
+/**
+ * Every node upstream of `nodeId`, nearest first, walking back through nodes that only pass
+ * the context along (DELAY, CONDITION, ...). A send node's recipients come from the TRIGGER or
+ * QUERY that ran before it, not just from its direct parent: looking only one edge back left a
+ * send node behind a DELAY with no "Send to" options at all, and the variable picker it fell
+ * back to offered the system ids, so a welcome email was saved sending to #ctx['workflowId'].
+ */
+function upstreamAncestors<N extends BuilderNode>(
+    nodeId: string,
+    nodes: N[],
+    edges: Array<{ source: string; target: string }>
+): N[] {
+    const order: string[] = [];
+    const seen = new Set<string>([nodeId]);
+    const queue = [nodeId];
+    while (queue.length > 0) {
+        const current = queue.shift()!;
+        for (const edge of edges) {
+            if (edge.target === current && !seen.has(edge.source)) {
+                seen.add(edge.source);
+                order.push(edge.source);
+                queue.push(edge.source);
+            }
+        }
+    }
+    return order
+        .map((id) => nodes.find((n) => n.id === id))
+        .filter((n): n is N => n !== undefined);
+}
 
 /** Handles auto-fill of system params and smart input for required query params */
 /**
@@ -201,6 +237,50 @@ export function NodeConfigPanel() {
 
     const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
+    // Send nodes: the trigger upstream (possibly behind a DELAY) decides who can be messaged.
+    // The backend knows which keys each trigger event really emits, so it supplies the
+    // "person this event is about" option instead of the panel guessing.
+    const selectedType = selectedNode?.data?.nodeType as string | undefined;
+    const isSendNode = selectedType === 'SEND_EMAIL' || selectedType === 'SEND_WHATSAPP';
+    const sendAncestors = isSendNode && selectedNode ? upstreamAncestors(selectedNode.id, nodes, edges) : [];
+    const triggerAncestor = sendAncestors.find((n) => n.data?.nodeType === 'TRIGGER');
+    const triggerAncestorConfig = (triggerAncestor?.data?.config ?? {}) as Record<string, unknown>;
+    const triggerEventName = triggerAncestorConfig.triggerEvent as string | undefined;
+    const { data: triggerSchema } = useQuery({
+        queryKey: ['WORKFLOW_TRIGGER_RECIPIENTS', triggerAncestor?.id, triggerEventName],
+        queryFn: () =>
+            fetchContextSchema({
+                target_node_id: selectedNode!.id,
+                upstream_nodes: [
+                    {
+                        node_id: triggerAncestor!.id,
+                        node_name: (triggerAncestor!.data?.name as string) ?? triggerAncestor!.id,
+                        node_type: 'TRIGGER',
+                        config: triggerAncestorConfig,
+                    },
+                ],
+            }),
+        enabled: isSendNode && !!triggerAncestor && !!triggerEventName,
+        staleTime: 600_000,
+    });
+    // triggerData / triggerEventName come back for every trigger; anything else is a key the
+    // event is known to emit.
+    const triggerEventVars = (triggerSchema ?? []).filter(
+        (v) =>
+            v.source_node_type === 'TRIGGER' &&
+            v.key !== 'triggerData' &&
+            v.key !== 'triggerEventName'
+    );
+    const triggerRecipients = triggerEventVars.filter((v) => v.type === RECIPIENTS_TYPE);
+    // null = the backend did not catalogue this event (or has not answered yet): keep the
+    // panel's older, event-agnostic options rather than offering nothing.
+    const triggerEmittedKeys =
+        triggerEventVars.length > 0 ? new Set(triggerEventVars.map((v) => v.key)) : null;
+    const recipientLabel = (key: string) =>
+        key === 'member' ? t('email.eventMember') : t('email.eventPerson');
+    const recipientDescription = (key: string) =>
+        key === 'member' ? t('email.eventMemberDesc') : t('email.eventPersonDesc');
+
     if (!selectedNode) {
         return (
             <div className="flex h-full items-center justify-center p-4 text-sm text-gray-400">
@@ -297,24 +377,25 @@ export function NodeConfigPanel() {
 
                 {/* Email node config — smart UI, no SpEL needed for common cases */}
                 {data.nodeType === 'SEND_EMAIL' && (() => {
-                    // Auto-detect available data sources from upstream nodes
-                    const upstreamNodes = nodes.filter((n) => {
-                        // Find nodes that have an edge pointing to this node
-                        return edges.some((e) => e.target === selectedNode.id && e.source === n.id);
-                    });
-
-                    // Build data source options based on upstream node types
+                    // Build data source options from the TRIGGER / QUERY nodes that run before
+                    // this one, looking through DELAY and other pass-through nodes.
                     const dataSources: Array<{ label: string; value: string; description: string }> = [];
 
-                    for (const upstream of upstreamNodes) {
+                    for (const upstream of sendAncestors) {
                         const uType = upstream.data?.nodeType;
                         const uConfig = upstream.data?.config as Record<string, unknown> | undefined;
 
                         if (uType === 'TRIGGER') {
-                            dataSources.push(
-                                { label: t('email.respondentEmails'), value: "#ctx['respondentEmailRequests']", description: t('email.respondentEmailsDesc') },
-                                { label: t('email.adminEmails'), value: "#ctx['adminEmailRequests']", description: t('email.adminEmailsDesc') },
-                            );
+                            for (const v of triggerRecipients) {
+                                dataSources.push({ label: recipientLabel(v.key), value: v.spel_expression, description: recipientDescription(v.key) });
+                            }
+                            // Form-submission lists exist only on events that emit them.
+                            if (!triggerEmittedKeys || triggerEmittedKeys.has('respondentEmailRequests')) {
+                                dataSources.push({ label: t('email.respondentEmails'), value: "#ctx['respondentEmailRequests']", description: t('email.respondentEmailsDesc') });
+                            }
+                            if (!triggerEmittedKeys || triggerEmittedKeys.has('adminEmailRequests')) {
+                                dataSources.push({ label: t('email.adminEmails'), value: "#ctx['adminEmailRequests']", description: t('email.adminEmailsDesc') });
+                            }
                         }
                         if (uType === 'QUERY') {
                             const queryKey = uConfig?.prebuiltKey as string;
@@ -575,20 +656,30 @@ export function NodeConfigPanel() {
 
                 {/* WhatsApp node config — upgraded with template dropdown + smart recipients */}
                 {data.nodeType === 'SEND_WHATSAPP' && (() => {
-                    // Auto-detect data sources with a mobile number from upstream nodes
-                    const upstreamNodes = nodes.filter((n) =>
-                        edges.some((e) => e.target === selectedNode.id && e.source === n.id)
-                    );
+                    // Auto-detect data sources with a mobile number from the nodes that run
+                    // before this one, looking through DELAY and other pass-through nodes.
                     const whatsappDataSources: Array<{ label: string; value: string; description: string }> = [];
-                    for (const upstream of upstreamNodes) {
+                    for (const upstream of sendAncestors) {
                         const uType = upstream.data?.nodeType;
                         const uConfig = upstream.data?.config as Record<string, unknown> | undefined;
                         if (uType === 'TRIGGER') {
-                            whatsappDataSources.push({
-                                label: t('whatsapp.leadSubmitter'),
-                                value: "{#ctx['user']}",
-                                description: t('whatsapp.leadSubmitterDesc'),
-                            });
+                            if (triggerEmittedKeys) {
+                                // Catalogued event: offer only the person it really carries.
+                                for (const v of triggerRecipients) {
+                                    const isLead = triggerEventName === 'AUDIENCE_LEAD_SUBMISSION' && v.key === 'user';
+                                    whatsappDataSources.push({
+                                        label: isLead ? t('whatsapp.leadSubmitter') : recipientLabel(v.key),
+                                        value: v.spel_expression,
+                                        description: isLead ? t('whatsapp.leadSubmitterDesc') : recipientDescription(v.key),
+                                    });
+                                }
+                            } else {
+                                whatsappDataSources.push({
+                                    label: t('whatsapp.leadSubmitter'),
+                                    value: "{#ctx['user']}",
+                                    description: t('whatsapp.leadSubmitterDesc'),
+                                });
+                            }
                         }
                         if (uType === 'QUERY') {
                             const queryKey = uConfig?.prebuiltKey as string;
