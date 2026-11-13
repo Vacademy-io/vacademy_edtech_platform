@@ -10,7 +10,7 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import vacademy.io.admin_core_service.features.ota_update.entity.OtaBundleVersion;
 import vacademy.io.admin_core_service.features.ota_update.service.OtaUpdateService;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class AppStatusService {
     private final CommunityAppRegistryClient communityAppRegistryClient;
     private final OtaUpdateService otaUpdateService;
     private final InstituteRepository instituteRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final InstituteRoleUserClient instituteRoleUserClient;
 
     public AppStatusResponse getStatus(CustomUserDetails user, String instituteId) {
         // Registry rows written before the institute field existed store a blank owner, so a blank
@@ -109,8 +109,8 @@ public class AppStatusService {
     }
 
     /**
-     * Same three-tier check as WhiteLabelService#assertInstituteAccess (root bypass → user_role
-     * ADMIN row → legacy staff-table fallback) — duplicated rather than shared because
+     * Same three-tier check as WhiteLabelService#assertInstituteAccess (root bypass → auth_service
+     * ADMIN role → legacy staff-table fallback) — duplicated rather than shared because
      * WhiteLabelService keeps it private, and this endpoint has the identical authorization
      * requirement: only that institute's admins (or a root user) may read its data.
      */
@@ -123,8 +123,9 @@ public class AppStatusService {
             return;
         }
 
-        if (userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
-                user.getUserId(), instituteId, ROLE_NAME_ADMIN)) {
+        // Roles live in auth_service's DB (admin_core has no user_role table).
+        if (instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false)) {
             return;
         }
 
