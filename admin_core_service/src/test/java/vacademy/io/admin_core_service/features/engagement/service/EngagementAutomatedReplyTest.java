@@ -123,6 +123,21 @@ class EngagementAutomatedReplyTest {
         }
 
         @Test
+        @DisplayName("a bank's system-generated ticket notice, even one that mentions the spam folder")
+        void bankTicketNotice() {
+            String bank = "CRM_ECS_Charges_Denied_New Ticket Created Dear Customer, Thank you for reaching out to us. "
+                    + "Please note that for security and verification purposes, we can only process queries received "
+                    + "from your registered email ID.\n\nFor a faster response, ensure you email us from your registered "
+                    + "email and check your SPAM or JUNK folders.\n\nThis is a\n\tsystem-generated response.";
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("customercare@bank.in", "Re: Handling loan enquiry calls", bank));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("a@abc.in", "Re: Your offer",
+                    "Hello.\n\nThis is an automatically generated email, please do not reply to this email."));
+            // Someone who calls us spam still gets read.
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("a@abc.in", "Re: Your offer",
+                    "This is spam. A new ticket created by your team? Remove us."));
+        }
+
+        @Test
         @DisplayName("a person mentioning a ticket, or writing from inside a helpdesk, is still a person")
         void ticketWordsFromPeople() {
             assertFalse(EngagementAutomatedReply.isAutomatedEmail("ravi@abc.in", "[Ticket #4411] Re: Your offer",

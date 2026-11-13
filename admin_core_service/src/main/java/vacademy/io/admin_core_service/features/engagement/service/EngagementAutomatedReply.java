@@ -46,7 +46,9 @@ public final class EngagementAutomatedReply {
 
     /** "Reply STOP to unsubscribe" inside a bot's message is an instruction, not someone asking to stop. */
     private static final Pattern STOP_INSTRUCTION = Pattern.compile(
-            "(?iU)(?:reply|send|text|type|sms)\\s+\\W*stop\\b|to (?:unsubscribe|opt[ -]?out)\\b");
+            "(?iU)(?:reply|send|text|type|sms)\\s+\\W*stop\\b|to (?:unsubscribe|opt[ -]?out)\\b"
+            // "check your SPAM or JUNK folder" in a helpdesk notice is advice, not someone calling us spam.
+            + "|(?:check|look in|see)\\s+(?:your\\s+)?(?:the\\s+)?spam\\b|\\bspam\\s*(?:or|/|and)\\s*junk\\b");
 
     private static final Pattern ROBOT_SENDER = Pattern.compile(
             "(?i)^(?:no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounces?|auto-?(?:reply|responder|confirm))"
@@ -78,11 +80,21 @@ public final class EngagementAutomatedReply {
             + "\\b(?:a|your|the)\\s+(?:new\\s+)?(?:support\\s+|service\\s+)?(?:ticket|case)\\s+(?:\\(?#?\\s*[\\w-]*\\d[\\w-]*\\)?\\s+)?"
             + "(?:has been|was|is now|have been)\\s+(?:successfully\\s+)?(?:created|raised|logged|opened|generated|assigned|closed|resolved)"
             + "|\\b(?:service request|request|case)\\s+with\\s+ticket\\s*(?:id|no\\.?|number)\\b"
+            + "|\\bnew\\s+(?:support\\s+|service\\s+)?(?:ticket|case)\\s+(?:created|raised|generated|logged|opened)\\b"
             + "|\\bwe (?:would like to |wish to )?acknowledge (?:that we have )?(?:the )?(?:receipt of|received) your"
             + "|\\breceived your (?:request|email|e-mail|message|query|enquiry|inquiry) outside (?:of )?(?:our )?"
             + "(?:business|working|office) hours");
 
     private static final int HELPDESK_HEAD = 600;
+
+    /**
+     * Says outright that no person wrote it. Searched in the whole email, because banks and helpdesks
+     * put it at the bottom; our own mail never says it, so a quoted copy cannot match.
+     */
+    private static final Pattern SYSTEM_GENERATED = Pattern.compile("(?iUs)"
+            + "\\bthis is an?\\s+(?:system|computer|auto(?:matically|mated)?)[- ]?generated\\s+"
+            + "(?:response|message|mail|email|e-mail|reply|notification)\\b"
+            + "|\\bplease do not reply to this (?:email|e-mail|mail|message)\\b");
 
     private EngagementAutomatedReply() {
     }
@@ -105,7 +117,7 @@ public final class EngagementAutomatedReply {
         if (body == null || body.isBlank() || asksToStop(body)) return false;
         if (AUTOMATED_OPENING.matcher(body).find()) return true;
         String head = body.length() > HELPDESK_HEAD ? body.substring(0, HELPDESK_HEAD) : body;
-        return HELPDESK_BODY.matcher(head).find();
+        return HELPDESK_BODY.matcher(head).find() || SYSTEM_GENERATED.matcher(body).find();
     }
 
     private static boolean asksToStop(String text) {
