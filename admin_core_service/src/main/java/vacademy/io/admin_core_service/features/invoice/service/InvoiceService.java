@@ -2749,6 +2749,9 @@ public class InvoiceService {
         filled = filled.replace("{{plan_price}}",
                 invoiceData.getPlanPrice() != null ? currencySymbol + money(invoiceData.getPlanPrice())
                         : "");
+        if (!hasDiscount) {
+            filled = dropEmptyDiscountLine(filled);
+        }
         filled = filled.replace("{{discount_amount}}",
                 hasDiscount ? currencySymbol + money(invoiceDiscount) : "");
         filled = filled.replace("{{discount_row}}",
@@ -3642,6 +3645,24 @@ public class InvoiceService {
         }
         out.append(html.substring(cursor));
         return out.toString();
+    }
+
+    /** The totals line the "Generate sample" invoice writes: {@code Discount: {{discount_amount}}<br/>}. */
+    private static final java.util.regex.Pattern EMPTY_DISCOUNT_LINE = java.util.regex.Pattern.compile(
+            "Discount\\s*:\\s*\\{\\{discount_amount\\}\\}\\s*<br\\s*/?>",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Drop the sample template's "Discount: {{discount_amount}}" line when nothing was
+     * discounted. {{discount_amount}} is empty then, so the line printed a bare "Discount:"
+     * label. Only that exact label + placeholder + line break is removed; a discount cell in a
+     * table, or any other wording, is left to the template.
+     */
+    static String dropEmptyDiscountLine(String html) {
+        if (html == null || !html.contains("{{discount_amount}}")) {
+            return html;
+        }
+        return EMPTY_DISCOUNT_LINE.matcher(html).replaceAll("");
     }
 
     /** MJML's per-section wrapper: {@code <div style="margin:0px auto;max-width:600px;">}. */
