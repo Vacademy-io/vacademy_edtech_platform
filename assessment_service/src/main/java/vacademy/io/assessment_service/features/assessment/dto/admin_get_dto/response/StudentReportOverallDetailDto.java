@@ -25,4 +25,8 @@ public class StudentReportOverallDetailDto {
     private String reportFileId;
     private ParticipantsQuestionOverallDetailDto questionOverallDetailDto;
     private Map<String, List<StudentReportAnswerReviewDto>> allSections;
+    // What the assessment lets the student see per question (ReportOptions.toJson).
+    // Set on the learner endpoint only, where hidden fields are also stripped;
+    // null on admin responses, which always carry everything.
+    private com.fasterxml.jackson.databind.JsonNode reportOptions;
 }

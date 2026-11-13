@@ -196,6 +196,31 @@
             }
         }
     },
+    "reportOptions": {
+        "title": "Rapport de l'élève",
+        "description": "Ce que le rapport de l'élève affiche pour chaque question.",
+        "instituteDefault": {
+            "label": "Utiliser les paramètres de rapport de l'établissement",
+            "description": "Désactivez pour choisir pour cette évaluation uniquement."
+        },
+        "questionWise": {
+            "label": "Section question par question",
+            "description": "Chaque question avec son résultat. Désactivé masque toute la section."
+        },
+        "yourAnswer": {
+            "label": "Réponse de l'élève",
+            "description": "Ce que l'élève a répondu."
+        },
+        "correctAnswer": {
+            "label": "Bonne réponse",
+            "description": "La bonne réponse aux questions manquées."
+        },
+        "explanation": {
+            "label": "Explication",
+            "description": "La solution rédigée pour chaque question."
+        },
+        "appliesTo": "S'applique au rapport téléchargé (le même fichier pour les élèves et les administrateurs), au rapport IA, à l'e-mail de résultat et à la revue des réponses dans l'application apprenant."
+    },
     "examInterface": {
         "title": "Interface d'examen",
         "description": "L'apparence et le fonctionnement de l'écran d'épreuve pour les apprenants. Choisissez un style d'examen pour que l'entraînement ressemble au vrai examen sur ordinateur.",

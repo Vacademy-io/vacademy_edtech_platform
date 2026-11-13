@@ -30,5 +30,6 @@ public enum AssessmentCreationEnum {
     // Proctoring tier + knobs (V50).
     PROCTORING_CONFIG,
     // Exam interface of the learner test screen (V68); null = default screen.
-    EXAM_INTERFACE;
+    EXAM_INTERFACE,
+    REPORT_OPTIONS;
 }

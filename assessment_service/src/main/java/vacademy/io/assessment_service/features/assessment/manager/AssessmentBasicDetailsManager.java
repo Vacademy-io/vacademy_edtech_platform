@@ -73,6 +73,7 @@ public class AssessmentBasicDetailsManager {
         if (!assessment.getPlayMode().equals(type)) throw new VacademyException("Assessment type cannot be changed");
         // First, so an invalid value is refused before any other field is touched.
         applyExamInterface(assessment, basicAssessmentDetailsDTO);
+        applyReportOptions(assessment, basicAssessmentDetailsDTO);
 
         Optional.ofNullable(basicAssessmentDetailsDTO.getAssessmentPreviewTime()).ifPresent(assessment::setPreviewTime);
         Optional.ofNullable(basicAssessmentDetailsDTO.getSwitchSections()).ifPresent(assessment::setCanSwitchSection);
@@ -158,6 +159,7 @@ public class AssessmentBasicDetailsManager {
         Assessment assessment = new Assessment();
         // First, so an invalid value is refused before anything is created.
         applyExamInterface(assessment, basicAssessmentDetailsDTO);
+        applyReportOptions(assessment, basicAssessmentDetailsDTO);
         if (source != null) {
             assessment.setSource(source);
             assessment.setSourceId(sourceId);
@@ -220,6 +222,28 @@ public class AssessmentBasicDetailsManager {
     private void applyExamInterface(Assessment assessment, BasicAssessmentDetailsDTO dto) {
         if (dto.getExamInterface() == null) return;
         assessment.setExamInterface(examInterfaceService.toStoredJson(dto.getExamInterface()));
+    }
+
+    /**
+     * Report options (V69). Absent (Java null) leaves the stored value alone; an
+     * explicit JSON null clears it back to the institute default. Anything but an
+     * object of booleans is a 400, raised before anything is saved.
+     */
+    static void applyReportOptions(Assessment assessment, BasicAssessmentDetailsDTO dto) {
+        com.fasterxml.jackson.databind.JsonNode options = dto.getReportOptions();
+        if (options == null) return;
+        if (options.isNull()) {
+            assessment.setReportOptions(null);
+            return;
+        }
+        try {
+            vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.validate(options);
+        } catch (IllegalArgumentException e) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+        // Stored normalised (all four keys) so a reader never has to guess a default.
+        assessment.setReportOptions(vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
+                .fromJson(options).toJson().toString());
     }
 
     /** Result type every API exam keeps (spec 3.2): AI marks are a draft until released. */

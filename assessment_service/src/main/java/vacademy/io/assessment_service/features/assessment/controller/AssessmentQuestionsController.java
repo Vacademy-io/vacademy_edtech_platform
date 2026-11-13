@@ -76,8 +76,9 @@ public class AssessmentQuestionsController {
     @GetMapping("/questions-of-sections")
     public Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSection(@RequestAttribute("user") CustomUserDetails user,
                                                                                  @RequestParam(name = "assessmentId", required = false) String assessmentId,
-                                                                                 @RequestParam(name = "sectionIds", required = false) String sectionIds) {
-        return assessmentLinkQuestionsManager.getQuestionsOfSection(user, assessmentId, sectionIds);
+                                                                                 @RequestParam(name = "sectionIds", required = false) String sectionIds,
+                                                                                 @RequestParam(name = "instituteId", required = false) String instituteId) {
+        return assessmentLinkQuestionsManager.getQuestionsOfSectionForCaller(user, assessmentId, sectionIds, instituteId);
     }
 
 

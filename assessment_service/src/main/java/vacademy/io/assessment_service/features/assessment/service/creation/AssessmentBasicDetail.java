@@ -61,8 +61,20 @@ public class AssessmentBasicDetail extends IStep {
         savedData.put(AssessmentCreationEnum.PROCTORING_CONFIG.name().toLowerCase(), proctoringConfigService.effectiveConfig(assessment.get()));
         // The stored object as saved (unknown keys kept), or null for the default screen.
         savedData.put(AssessmentCreationEnum.EXAM_INTERFACE.name().toLowerCase(), examInterfaceService.read(assessment.get()));
+        // The assessment's own report options, or null = the institute default applies.
+        savedData.put(AssessmentCreationEnum.REPORT_OPTIONS.name().toLowerCase(), readReportOptions(assessment.get().getReportOptions()));
         setSavedData(savedData);
         updateStatusForStep();
+    }
+
+    private static Object readReportOptions(String stored) {
+        if (stored == null || stored.isBlank()) return null;
+        try {
+            return vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
+                    .fromJson(new com.fasterxml.jackson.databind.ObjectMapper().readTree(stored)).toJson();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void updateStatusForStep() {

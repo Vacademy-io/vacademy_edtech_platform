@@ -204,6 +204,31 @@
             }
         }
     },
+    "reportOptions": {
+        "title": "Student report",
+        "description": "What the student's report shows for each question.",
+        "instituteDefault": {
+            "label": "Use institute report settings",
+            "description": "Turn off to choose for this assessment only."
+        },
+        "questionWise": {
+            "label": "Question-wise section",
+            "description": "Each question with its result. Off hides the whole section."
+        },
+        "yourAnswer": {
+            "label": "Student's answer",
+            "description": "What the student answered."
+        },
+        "correctAnswer": {
+            "label": "Correct answer",
+            "description": "The right answer for questions the student missed."
+        },
+        "explanation": {
+            "label": "Explanation",
+            "description": "The solution written for each question."
+        },
+        "appliesTo": "Applies to the downloaded report (the same file for students and admins), the AI report, the result email and the answer review in the learner app."
+    },
     "examInterface": {
         "title": "Exam interface",
         "description": "How the test screen looks and behaves for learners. Pick an exam style so practice feels like the real computer-based test.",
