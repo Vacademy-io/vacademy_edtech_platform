@@ -22,6 +22,7 @@ import { bottomSafeAreaInset } from "@/utils/safe-area";
 import { ProctorCheckIn } from "@/components/common/proctoring/ProctorCheckIn";
 import { fetchProctoringConfig } from "@/services/proctoring";
 import { isProctored, type ProctoringConfig } from "@/types/proctoring";
+import { useAssessmentExamTheme } from "@/hooks/use-assessment-exam-theme";
 
 const InstructionPage = () => {
   const { t } = useTranslation("layoutCommonB");
@@ -36,6 +37,13 @@ const InstructionPage = () => {
   const [proctorReady, setProctorReady] = useState(false);
   const { assessmentId } = useParams({ strict: false });
   const examExperience = useExamExperienceSettings();
+  // Exam theme (V68). Only exposed on the root for now; themed instruction
+  // templates come with the themed layouts. The page keeps its loading state
+  // until the theme is known (the call runs in parallel with the instruction
+  // fetch and is capped), so a themed test is not drawn under the institute
+  // skin first and restyled a moment later.
+  const { theme: examTheme, isLoading: examThemeLoading } =
+    useAssessmentExamTheme(assessmentId);
   // The brief is part of the assessment safe zone: it is a full-bleed screen
   // with a sticky Start bar, so Android's system bars must come down here too,
   // not only once the paper opens.
@@ -107,7 +115,8 @@ const InstructionPage = () => {
     };
   }, [assessmentId]);
 
-  const isReady = !isLoading && !hasError && !!assessmentInfo;
+  const pageLoading = isLoading || examThemeLoading;
+  const isReady = !pageLoading && !hasError && !!assessmentInfo;
   const needsCheckIn = isProctored(proctoring);
   const canStart = isReady && agreed && (!needsCheckIn || proctorReady);
 
@@ -115,12 +124,16 @@ const InstructionPage = () => {
     // fixed inset-0 rather than min-h-screen: the brief is a full-bleed screen
     // with its own scroller, so the sticky start bar stays reachable on a phone
     // instead of sitting below the fold behind the system nav bar.
-    <div className="fixed inset-0 flex flex-col bg-neutral-50">
+    <div
+      data-exam-theme={examTheme.id}
+      data-exam-theme-family={examTheme.family}
+      className="fixed inset-0 flex flex-col bg-neutral-50"
+    >
       <AssessmentNavbar title={assessmentInfo?.name ?? ""} />
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-8">
         <div className="mx-auto w-full max-w-2xl">
-          {isLoading ? (
+          {pageLoading ? (
             <div className="flex min-h-reg-320 flex-col items-center justify-center gap-4">
               <SpinnerGap
                 size={40}

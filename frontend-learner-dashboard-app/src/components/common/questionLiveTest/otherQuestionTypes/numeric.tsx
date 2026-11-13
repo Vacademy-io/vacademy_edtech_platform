@@ -2,7 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { CaretDown, CaretUp, Backspace } from "@phosphor-icons/react";
 import { QUESTION_TYPES } from "@/types/assessment";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  answerCommitModeOf,
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { cn } from "@/lib/utils";
 
 // The learner payload carries no options_json, so a question's numeric type is not
@@ -14,8 +18,17 @@ const maxDecimals = Number.POSITIVE_INFINITY;
 
 export function NumericInputWithKeypad() {
   const { t } = useTranslation("questionTest");
-  const { currentQuestion, answers, setAnswer, setQuestionState } =
-    useAssessmentStore();
+  const {
+    assessment,
+    currentQuestion,
+    answers,
+    draftAnswers,
+    setAnswer,
+    setQuestionState,
+  } = useAssessmentStore();
+  // Explicit-commit themes: typing writes a draft, so "answered" is set only
+  // when Save & Next commits it.
+  const isExplicitCommit = answerCommitModeOf({ assessment }) === "explicit";
   const [numericValue, setNumericValue] = useState("");
   // The pad is a fallback for devices where the OS keyboard covers the
   // question; a learner who prefers the system keyboard can fold it away and
@@ -32,13 +45,17 @@ export function NumericInputWithKeypad() {
       return;
     }
 
-    // Load existing answer
-    if (answers[currentQuestion.question_id]?.[0]) {
-      setNumericValue(answers[currentQuestion.question_id][0]);
+    // Load existing answer (or the unsaved draft in explicit-commit mode)
+    const shown = displayedAnswerFor(
+      { answers, draftAnswers },
+      currentQuestion.question_id,
+    );
+    if (shown?.[0]) {
+      setNumericValue(shown[0]);
     } else {
       setNumericValue("");
     }
-  }, [currentQuestion, answers]);
+  }, [currentQuestion, answers, draftAnswers]);
 
   // Auto-focus on pointer devices only. On a phone, focusing raises the OS
   // keyboard over the question the moment it loads — the learner has not read
@@ -72,10 +89,12 @@ export function NumericInputWithKeypad() {
     setAnswer(currentQuestion.question_id, [updated]);
 
     // Update question state
-    setQuestionState(currentQuestion.question_id, {
-      isVisited: true,
-      isAnswered: updated.trim() !== "",
-    });
+    setQuestionState(
+      currentQuestion.question_id,
+      isExplicitCommit
+        ? { isVisited: true }
+        : { isVisited: true, isAnswered: updated.trim() !== "" },
+    );
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,10 +109,12 @@ export function NumericInputWithKeypad() {
         setNumericValue(value);
         if (currentQuestion) {
           setAnswer(currentQuestion.question_id, [value]);
-          setQuestionState(currentQuestion.question_id, {
-            isVisited: true,
-            isAnswered: value.trim() !== "",
-          });
+          setQuestionState(
+            currentQuestion.question_id,
+            isExplicitCommit
+              ? { isVisited: true }
+              : { isVisited: true, isAnswered: value.trim() !== "" },
+          );
         }
       }
     } else {
@@ -101,10 +122,12 @@ export function NumericInputWithKeypad() {
         setNumericValue(value);
         if (currentQuestion) {
           setAnswer(currentQuestion.question_id, [value]);
-          setQuestionState(currentQuestion.question_id, {
-            isVisited: true,
-            isAnswered: value.trim() !== "",
-          });
+          setQuestionState(
+            currentQuestion.question_id,
+            isExplicitCommit
+              ? { isVisited: true }
+              : { isVisited: true, isAnswered: value.trim() !== "" },
+          );
         }
       }
     }

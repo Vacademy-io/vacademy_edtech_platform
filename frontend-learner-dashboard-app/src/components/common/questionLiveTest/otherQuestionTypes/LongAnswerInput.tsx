@@ -1,16 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { cn } from "@/lib/utils";
 
 export function LongAnswerInput() {
   const { t } = useTranslation("questionTest");
-  const { currentQuestion, answers, setAnswer, setQuestionState } =
+  const { currentQuestion, answers, draftAnswers, setAnswer, setQuestionState } =
     useAssessmentStore();
   if (!currentQuestion) {
     return null;
   }
 
-  const currentAnswer = answers[currentQuestion.question_id]?.[0] || "";
+  const currentAnswer =
+    displayedAnswerFor({ answers, draftAnswers }, currentQuestion.question_id)?.[0] ||
+    "";
   const wordCount = currentAnswer.trim()
     ? currentAnswer.trim().split(/\s+/).length
     : 0;

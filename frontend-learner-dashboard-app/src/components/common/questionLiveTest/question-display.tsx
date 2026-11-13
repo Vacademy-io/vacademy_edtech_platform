@@ -1,6 +1,9 @@
 import { Check, WarningCircle } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 import {
@@ -54,14 +57,11 @@ export function QuestionDisplay() {
     currentQuestion,
     currentSection,
     answers,
+    draftAnswers,
     setAnswer,
     sectionTimers,
     questionTimers,
     assessment,
-    updateQuestionTimer,
-    moveToNextQuestion,
-    initializeQuestionTime,
-    incrementQuestionTime,
   } = useAssessmentStore();
 
   const [playMode, setPlayMode] = useState<string | null>(null);
@@ -85,41 +85,8 @@ export function QuestionDisplay() {
   const isTimeUp = sectionTimers[currentSection]?.timeLeft === 0;
   const isPracticeMode = playMode === "PRACTICE" || playMode === "SURVEY";
 
-  useEffect(() => {
-    if (!currentQuestion?.question_id) return;
-    initializeQuestionTime(currentQuestion.question_id);
-
-    const interval = setInterval(() => {
-      incrementQuestionTime(currentQuestion.question_id);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, initializeQuestionTime, incrementQuestionTime]);
-
-  useEffect(() => {
-    if (
-      isPracticeMode ||
-      !currentQuestion ||
-      assessment?.distribution_duration !== distribution_duration_types.QUESTION
-    )
-      return;
-
-    const timer = setInterval(() => {
-      const timeLeft = questionTimers[currentQuestion.question_id] || 0;
-      if (timeLeft > 0) {
-        updateQuestionTimer(currentQuestion.question_id, timeLeft - 1000);
-      } else {
-        moveToNextQuestion();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [
-    currentQuestion,
-    assessment?.distribution_duration,
-    questionTimers,
-    isPracticeMode,
-  ]);
+  // The per-question clock and the time-spent counter tick in the engine
+  // (engine/use-exam-clock.ts); this view only draws them.
 
   if (!currentQuestion) {
     return (
@@ -140,7 +107,11 @@ export function QuestionDisplay() {
     );
   }
 
-  const currentAnswer = answers[currentQuestion.question_id] || [];
+  // An unsaved pick (explicit-commit themes) shows until it is saved or the
+  // learner leaves; in auto mode there are no drafts.
+  const currentAnswer =
+    displayedAnswerFor({ answers, draftAnswers }, currentQuestion.question_id) ||
+    [];
 
   const sectionQuestions =
     assessment?.section_dtos?.[currentSection]?.question_preview_dto_list ?? [];

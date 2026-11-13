@@ -19,6 +19,9 @@
    play-theme.css used to hardcode — and so an explicitly-chosen axis beats
    a skin's house defaults on the specificity tie (both are 0,1,1). */
 @import './styles/ui-axes.css';
+/* Exam theme tokens - scoped to [data-exam-theme] (live-test shell,
+   instruction page, preview); defaults equal today's look. */
+@import './styles/exam-themes/tokens.css';
 
 @tailwind base;
 @tailwind components;

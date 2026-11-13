@@ -15,6 +15,7 @@ import { canClearResponse, useAssessmentStore } from "@/stores/assessment-store"
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { bottomSafeAreaInset } from "@/utils/safe-area";
 import { useLiveTestUi, type ExamTool } from "./live-test-ui-context";
+import { useLiveTestEngine } from "./engine/live-test-engine-context";
 
 interface FooterProps {
   onToggleSidebar: () => void;
@@ -141,13 +142,21 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
   const { t } = useTranslation("questionTest");
   const { settings, isCompact } = useLiveTestUi();
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
+  // Previous / Next rules live in the engine (engine/use-question-navigation.ts).
+  const {
+    navigation: {
+      sectionQuestions: currentSectionQuestions,
+      currentIndex,
+      isTimeUp,
+      isLastOfTest,
+      goPrev: handlePrevQuestion,
+      goNext: handleNextQuestion,
+    },
+  } = useLiveTestEngine();
   const {
     assessment,
     currentQuestion,
     currentSection,
-    setCurrentQuestion,
-    setCurrentSection,
-    sectionTimers,
     questionStates,
     answers,
     cbeAnswers,
@@ -172,45 +181,11 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
   )
     return null;
 
-  const currentSectionQuestions =
-    assessment.section_dtos[currentSection]?.question_preview_dto_list || [];
-
-  const currentIndex = currentSectionQuestions.findIndex(
-    (q) => q.question_id === currentQuestion?.question_id,
-  );
-
-  const isTimeUp = sectionTimers[currentSection]?.timeLeft === 0;
   const isMarked = questionId
     ? Boolean(questionStates[questionId]?.isMarkedForReview)
     : false;
 
-  const isLastOfTest =
-    currentIndex === currentSectionQuestions.length - 1 &&
-    currentSection === assessment.section_dtos.length - 1;
   const showQuestionActions = evaluationType !== "MANUAL";
-
-  const handlePrevQuestion = () => {
-    if (currentIndex > 0) {
-      setCurrentQuestion(currentSectionQuestions[currentIndex - 1]);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (currentIndex < currentSectionQuestions.length - 1) {
-      setCurrentQuestion(currentSectionQuestions[currentIndex + 1]);
-    } else {
-      const nextSection = currentSection + 1;
-      if (
-        nextSection < assessment.section_dtos.length &&
-        (sectionTimers[nextSection]?.timeLeft ?? -1) !== 0
-      ) {
-        setCurrentSection(nextSection);
-        setCurrentQuestion(
-          assessment.section_dtos[nextSection].question_preview_dto_list[0],
-        );
-      }
-    }
-  };
 
   return (
     // MainActivity runs setDecorFitsSystemWindows(false), so the WebView draws

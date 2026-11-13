@@ -1,0 +1,83 @@
+/* =====================================================================
+   Exam theme tokens (live-test shell, instruction page, preview).
+
+   Scoped to [data-exam-theme], which the exam screens put on their root
+   element; nothing here reaches the rest of the app. The defaults below are
+   today's values, taken from the Tailwind classes the live-test components
+   use (question-status-colors.ts, question-navigator.tsx, navbar.tsx,
+   footer.tsx). No component reads these yet, so the default screen is
+   unchanged; family and preset stylesheets (styles/exam-themes/<family>.css)
+   override them under [data-exam-theme-family="…"] / [data-exam-theme="…"].
+   Raw hex is allowed in this folder, as in the Fun skin.
+   ===================================================================== */
+
+[data-exam-theme] {
+  /* Type */
+  --exam-font-ui: var(--app-font-family);
+  --exam-font-item: var(--app-font-family);
+
+  /* Surfaces and lines */
+  --exam-surface: #ffffff; /* bg-white (shell) */
+  --exam-canvas: #fafafa; /* bg-neutral-50 (instructions, preview) */
+  --exam-line: #e5e5e5; /* border-neutral-200 */
+  --exam-text: #262626; /* text-neutral-800 */
+  --exam-text-muted: #525252; /* text-neutral-600 */
+
+  /* Primary action (Save & Next, Submit) */
+  --exam-action-bg: hsl(var(--primary-500));
+  --exam-action-bg-hover: hsl(var(--primary-400));
+  --exam-action-bg-disabled: hsl(var(--primary-200));
+  --exam-action-text: #ffffff;
+
+  /* Question status chips: QUESTION_STATUS_GRID_CLASS */
+  --exam-chip-answered-bg: hsl(var(--success-50));
+  --exam-chip-answered-bg-hover: hsl(var(--success-100));
+  --exam-chip-answered-text: hsl(var(--success-700));
+  --exam-chip-answered-border: hsl(var(--success-200));
+
+  --exam-chip-not-answered-bg: hsl(var(--danger-50));
+  --exam-chip-not-answered-bg-hover: hsl(var(--danger-100));
+  --exam-chip-not-answered-text: hsl(var(--danger-600));
+  --exam-chip-not-answered-border: hsl(var(--danger-200));
+
+  --exam-chip-not-visited-bg: #ffffff; /* bg-white */
+  --exam-chip-not-visited-bg-hover: #f5f5f5; /* hover:bg-neutral-100 */
+  --exam-chip-not-visited-text: #525252; /* text-neutral-600 */
+  --exam-chip-not-visited-border: #e5e5e5; /* border-neutral-200 */
+
+  --exam-chip-marked-bg: #f5f3ff; /* bg-violet-50 */
+  --exam-chip-marked-bg-hover: #ede9fe; /* hover:bg-violet-100 */
+  --exam-chip-marked-text: #6d28d9; /* text-violet-700 */
+  --exam-chip-marked-border: #ddd6fe; /* border-violet-200 */
+
+  --exam-chip-answered-marked-bg: #f5f3ff;
+  --exam-chip-answered-marked-bg-hover: #ede9fe;
+  --exam-chip-answered-marked-text: #6d28d9;
+  --exam-chip-answered-marked-border: #ddd6fe;
+
+  /* Marked-for-review corner dot and the active chip ring */
+  --exam-chip-mark-dot: hsl(var(--success-500));
+  --exam-chip-active-ring: #262626; /* ring-neutral-800 */
+
+  /* Header clock tones: TIMER_TONE_CLASS in navbar.tsx */
+  --exam-timer-bg: #f5f5f5; /* bg-neutral-100 */
+  --exam-timer-text: #262626; /* text-neutral-800 */
+  --exam-timer-border: #e5e5e5; /* border-neutral-200 */
+  --exam-timer-warning-bg: hsl(var(--warning-50));
+  --exam-timer-warning-text: hsl(var(--warning-700));
+  --exam-timer-warning-border: hsl(var(--warning-200));
+  --exam-timer-danger-bg: hsl(var(--danger-50));
+  --exam-timer-danger-text: hsl(var(--danger-600));
+  --exam-timer-danger-border: hsl(var(--danger-200));
+}
+
+/* Skin fence, inherited half. The app skins set inherited properties above
+   the exam root (the Fun skin's font on `body > *`, the Corporate skin's
+   scrollbar colour on <html>), which a descendant fence cannot stop. A
+   non-default exam theme resets them at its root; the default theme keeps
+   today's look, skin included. Rule-by-rule fencing of the skins is not
+   done yet; it comes with the first non-default theme. */
+[data-exam-theme]:not([data-exam-theme="default"]) {
+  font-family: var(--exam-font-ui);
+  scrollbar-color: auto;
+}

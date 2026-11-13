@@ -14,6 +14,11 @@ import {
   type CbeAnswer,
   type CbeConfig,
 } from "@/components/cbe/types";
+import {
+  effectiveAnswerCommit,
+  resolveExamTheme,
+} from "@/components/common/questionLiveTest/themes";
+import type { AnswerCommit } from "@/types/exam-theme";
 
 const LEGACY_STATE_KEY_PREFIX = "ASSESSMENT_STATE_";
 
@@ -138,6 +143,40 @@ export const cbeConfigOf = (
   return null;
 };
 
+/**
+ * How a picked answer is saved for the loaded paper: `auto` (counts at once,
+ * the default) or `explicit` (a draft until Save & Next commits it). Comes
+ * from the assessment's exam theme; see `themes/layouts.ts`.
+ */
+export const answerCommitModeOf = (state: {
+  assessment: AssessmentPreviewData | null | undefined;
+}): AnswerCommit =>
+  effectiveAnswerCommit(resolveExamTheme(state.assessment?.exam_interface));
+
+/**
+ * The answer the question pane shows: the unsaved draft when there is one,
+ * else the saved answer. Drafts exist only in explicit mode, so in auto mode
+ * this is always the saved answer.
+ */
+export const displayedAnswerFor = (
+  state: {
+    answers: Record<string, string[]>;
+    draftAnswers: Record<string, string[]>;
+  },
+  questionId: string
+): string[] | undefined => state.draftAnswers[questionId] ?? state.answers[questionId];
+
+/** `draftAnswers` without one question's entry (the same object when it has none). */
+const withoutDraft = (
+  draftAnswers: Record<string, string[]>,
+  questionId: string | undefined
+): Record<string, string[]> => {
+  if (!questionId || !(questionId in draftAnswers)) return draftAnswers;
+  const next = { ...draftAnswers };
+  delete next[questionId];
+  return next;
+};
+
 interface PdfFile {
   fileId: string;
   fileName: string;
@@ -187,6 +226,11 @@ interface AssessmentStore {
   currentQuestionIndex: number | null;
   questionStates: Record<string, QuestionState>;
   answers: Record<string, string[]>;
+  /**
+   * Explicit-commit mode only: picks not yet saved with Save & Next. Never
+   * persisted, autosaved or submitted; leaving the question discards it.
+   */
+  draftAnswers: Record<string, string[]>;
   codingAnswers: Record<string, CodingAnswerData>;
   /** CBE_RESPONSE answers by question id (contract §4 `answer`). */
   cbeAnswers: Record<string, CbeAnswer>;
@@ -198,12 +242,19 @@ interface AssessmentStore {
   setCurrentSection: (sectionIndex: number) => void;
   setCurrentQuestion: (question: QuestionDto) => void;
   setQuestionState: (questionId: string, state: Partial<QuestionState>) => void;
+  /** Auto mode: saves the answer. Explicit mode: writes the draft only. */
   setAnswer: (questionId: string, answerId: string[]) => void;
+  /** Saves the question's draft as its answer (no-op without a draft). */
+  commitDraft: (questionId: string) => void;
+  /** Throws the question's unsaved draft away. */
+  discardDraft: (questionId: string) => void;
   setCodingAnswer: (questionId: string, data: CodingAnswerData) => void;
   incrementCodingPasteAttempt: (questionId: string) => void;
   setCbeAnswer: (questionId: string, answer: CbeAnswer) => void;
   incrementCbePasteAttempt: (questionId: string) => void;
   markForReview: (questionId: string) => void;
+  /** Sets (not toggles) the review flag, for "Mark for Review & Next". */
+  setMarkedForReview: (questionId: string, value: boolean) => void;
   clearResponse: (questionId: string) => void;
   updateSectionTimer: (sectionIndex: number, timeLeft: number) => void;
   updateQuestionTimer: (questionId: string, timeLeft: number) => void;
@@ -246,6 +297,7 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   currentQuestionIndex: 0,
   questionStates: {},
   answers: {},
+  draftAnswers: {},
   codingAnswers: {},
   cbeAnswers: {},
   cbePasteAttempts: {},
@@ -263,6 +315,7 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       currentQuestionIndex: 0,
       questionStates: {},
       answers: {},
+      draftAnswers: {},
       codingAnswers: {},
       cbeAnswers: {},
       cbePasteAttempts: {},
@@ -357,6 +410,8 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         currentSection: 0,
         currentQuestion,
         questionStartTime,
+        // Unsaved picks never survive a (re)load of the paper.
+        draftAnswers: {},
       };
     }),
 
@@ -388,6 +443,12 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   setCurrentQuestion: (question) =>
     set((state) => ({
       currentQuestion: question,
+      // Leaving a question without saving discards its unsaved pick (explicit
+      // mode; there are no drafts in auto mode).
+      draftAnswers:
+        state.currentQuestion?.question_id === question.question_id
+          ? state.draftAnswers
+          : withoutDraft(state.draftAnswers, state.currentQuestion?.question_id),
       questionStates: {
         ...state.questionStates,
         [question.question_id]: {
@@ -410,16 +471,46 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
     })),
 
   setAnswer: (questionId, answerIds) =>
-    set((state) => ({
-      answers: { ...state.answers, [questionId]: answerIds },
-      questionStates: {
-        ...state.questionStates,
-        [questionId]: {
-          ...state.questionStates[questionId],
-          isAnswered: answerIds.length > 0,
+    set((state) => {
+      if (answerCommitModeOf(state) === "explicit") {
+        return {
+          draftAnswers: { ...state.draftAnswers, [questionId]: answerIds },
+        };
+      }
+      return {
+        answers: { ...state.answers, [questionId]: answerIds },
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: answerIds.length > 0,
+          },
         },
-      },
-    })),
+      };
+    }),
+
+  commitDraft: (questionId) =>
+    set((state) => {
+      const draft = state.draftAnswers[questionId];
+      if (!draft) return {};
+      return {
+        answers: { ...state.answers, [questionId]: draft },
+        draftAnswers: withoutDraft(state.draftAnswers, questionId),
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: hasAnswerFor(questionId, { [questionId]: draft }, {}),
+          },
+        },
+      };
+    }),
+
+  discardDraft: (questionId) =>
+    set((state) => {
+      const draftAnswers = withoutDraft(state.draftAnswers, questionId);
+      return draftAnswers === state.draftAnswers ? {} : { draftAnswers };
+    }),
 
   setCodingAnswer: (questionId, data) =>
     set((state) => ({
@@ -504,6 +595,25 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       },
     })),
 
+  setMarkedForReview: (questionId, value) =>
+    set((state) => {
+      // Guard: a question with no state yet (unlike markForReview, never throws).
+      const previous: QuestionState | undefined = state.questionStates[questionId];
+      return {
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: previous
+            ? { ...previous, isMarkedForReview: value }
+            : {
+                isAnswered: false,
+                isVisited: false,
+                isDisabled: false,
+                isMarkedForReview: value,
+              },
+        },
+      };
+    }),
+
   clearResponse: (questionId) =>
     set((state) => {
       // Dropping the entry (not storing an empty one) puts the CBE workspace
@@ -512,6 +622,7 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       delete cbeAnswers[questionId];
       return {
         answers: { ...state.answers, [questionId]: [] },
+        draftAnswers: withoutDraft(state.draftAnswers, questionId),
         cbeAnswers,
         questionStates: {
           ...state.questionStates,
@@ -552,6 +663,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
             sectionTimers: updatedTimers,
             currentSection: nextSectionIndex,
             currentQuestion: firstQuestion,
+            draftAnswers: withoutDraft(
+              state.draftAnswers,
+              state.currentQuestion?.question_id
+            ),
           };
         } else {
           if (state.entireTestTimer <= 0) {

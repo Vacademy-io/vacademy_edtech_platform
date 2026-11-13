@@ -1,13 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { cn } from "@/lib/utils";
 
 export function OneWordInput() {
   const { t } = useTranslation("questionTest");
-  const { currentQuestion, answers, setAnswer, setQuestionState } =
+  const { currentQuestion, answers, draftAnswers, setAnswer, setQuestionState } =
     useAssessmentStore();
   const currentAnswer =
-    (currentQuestion && answers[currentQuestion.question_id]?.[0]) || "";
+    (currentQuestion &&
+      displayedAnswerFor(
+        { answers, draftAnswers },
+        currentQuestion.question_id,
+      )?.[0]) ||
+    "";
 
   return (
     <div>

@@ -26,6 +26,7 @@ import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings"
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { usePreloadExamRoutes } from "@/hooks/use-preload-exam-routes";
 import { topSafeAreaInset, bottomSafeAreaInset } from "@/utils/safe-area";
+import { resolveExamTheme } from "./themes";
 
 export function AssessmentPreview() {
   const { t } = useTranslation("questionTest");
@@ -179,12 +180,17 @@ export function AssessmentPreview() {
 
   if (!assessment) return null;
 
+  // The preview carries the paper's exam_interface (start preview response).
+  const examTheme = resolveExamTheme(assessment.exam_interface);
+
   return (
     <>
       {/* Same full-bleed shell as the live test: the preview is a timed screen
           of its own, so its Start button has to stay reachable on a phone
           rather than sitting at the end of a long page scroll. */}
       <div
+        data-exam-theme={examTheme.id}
+        data-exam-theme-family={examTheme.family}
         className="fixed inset-0 z-60 flex flex-col bg-neutral-50"
         style={{ // design-lint-ignore: dynamic safe-area inset padding
           paddingTop: topSafeAreaInset(immersiveActive),

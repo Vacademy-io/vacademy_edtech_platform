@@ -57,6 +57,8 @@ export const RESTART_ASSESSMENT = `${BASE_URL}/assessment-service/assessment/lea
 // Proctoring (assessment_service V48): per-assessment config, batched device events.
 export const PROCTORING_CONFIG = `${BASE_URL}/assessment-service/assessment/learner/proctoring/config`;
 export const PROCTORING_EVENTS = `${BASE_URL}/assessment-service/assessment/learner/proctoring/events`;
+// Exam screen chosen for an assessment (V68), read before the attempt starts.
+export const EXAM_INTERFACE = `${BASE_URL}/assessment-service/assessment/learner/exam-interface`;
 // Learner-raised reattempt / time-extension requests, reviewed by an admin.
 export const REATTEMPT_REQUEST = `${BASE_URL}/assessment-service/learner/reattempt-request/v1`;
 export const REATTEMPT_REQUEST_MINE = `${BASE_URL}/assessment-service/learner/reattempt-request/v1/mine`;

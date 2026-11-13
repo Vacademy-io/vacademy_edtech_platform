@@ -1,3 +1,5 @@
+import type { ExamInterface } from "./exam-theme";
+
 export type Assessment = {
   assessment_id: string;
   name: string;
@@ -51,6 +53,11 @@ export interface AssessmentPreviewData {
   section_dtos: SectionDto[];
   attempt_id: string;
   assessment_user_registration_id: string;
+  /**
+   * Exam screen chosen for this assessment (start and resume previews).
+   * null or absent = the default screen; see `types/exam-theme.ts`.
+   */
+  exam_interface?: ExamInterface | null;
 }
 export enum distribution_duration_types {
   ASSESSMENT = "ASSESSMENT",
