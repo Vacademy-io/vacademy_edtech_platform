@@ -3644,6 +3644,29 @@ public class InvoiceService {
         return out.toString();
     }
 
+    /** MJML's per-section wrapper: {@code <div style="margin:0px auto;max-width:600px;">}. */
+    private static final java.util.regex.Pattern MJML_SECTION_MAX_WIDTH = java.util.regex.Pattern.compile(
+            "(margin:\\s*0(?:px)?\\s+auto;\\s*max-width:\\s*)\\d+(?:\\.\\d+)?px",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Let an MJML-built template fill the PDF page. MJML caps every section at the email body
+     * width (600px by default) so it reads well in a mail client, but an A4 page is wider than
+     * that, so the whole invoice sat in the left part of the page with a blank strip on the
+     * right. Columns inside a section are percentages, so widening the section wrapper is all a
+     * template needs. Only MJML output is touched (hand-written HTML templates keep their own
+     * widths), and only the PDF: the preview and the invoice email still use the original HTML.
+     * A template with fixed-pixel columns ({@code mj-column-px-*}) is left alone: its columns
+     * add up to the old width, so a wider section would only move them off their edges.
+     */
+    static String widenMjmlSectionsForPdf(String html) {
+        if (html == null || !(html.contains("mj-column-per") || html.contains("mj-outlook-group-fix"))
+                || html.contains("mj-column-px")) {
+            return html;
+        }
+        return MJML_SECTION_MAX_WIDTH.matcher(html).replaceAll("$1100%");
+    }
+
     /**
      * Generate PDF from HTML
      */
@@ -3672,6 +3695,7 @@ public class InvoiceService {
             // only the PDF path is touched; the preview HTML returned to the frontend is
             // unaffected.
             htmlWithCss = unwrapScreenMediaQueries(htmlWithCss);
+            htmlWithCss = widenMjmlSectionsForPdf(htmlWithCss);
 
             // Force the embedded Unicode font everywhere so glyphs like ₹ always render,
             // regardless of the template's own font-family (an unmatched family would fall

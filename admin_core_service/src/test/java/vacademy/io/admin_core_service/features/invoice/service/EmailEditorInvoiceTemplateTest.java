@@ -154,6 +154,22 @@ class EmailEditorInvoiceTemplateTest {
     }
 
     @Test
+    @DisplayName("an MJML template fills the PDF page instead of stopping at the 600px email width")
+    void mjmlSectionsWidenForPdf() {
+        String mjml = "<div class=\"mj-column-per-100 mj-outlook-group-fix\"></div>"
+                + "<div  style=\"margin:0px auto;max-width:600px;\"><table style=\"width:100%;\"></table></div>";
+        String widened = InvoiceService.widenMjmlSectionsForPdf(mjml);
+        assertTrue(widened.contains("margin:0px auto;max-width:100%;"), widened);
+        assertFalse(widened.contains("600px"), widened);
+
+        String handWritten = "<div style=\"margin:0px auto;max-width:600px;\">x</div>";
+        assertEquals(handWritten, InvoiceService.widenMjmlSectionsForPdf(handWritten));
+
+        String pixelColumns = mjml + "<div class=\"mj-column-px-200 mj-outlook-group-fix\"></div>";
+        assertEquals(pixelColumns, InvoiceService.widenMjmlSectionsForPdf(pixelColumns));
+    }
+
+    @Test
     @DisplayName("the one-row item is the plan line, not a discount or tax line")
     void primaryItem() {
         InvoiceLineItemData discount = InvoiceLineItemData.builder().itemType("DISCOUNT").description("d").build();
