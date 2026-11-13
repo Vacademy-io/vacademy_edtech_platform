@@ -137,8 +137,60 @@ public class WorkflowValidationService {
         }
 
         validateQueryResultKeyReads(dto, errors);
+        validateSendRecipientsAreNotSystemIds(dto, errors);
 
         return errors;
+    }
+
+    /** Send nodes whose {@code on} names the people to message, one item per recipient. */
+    private static final Set<String> RECIPIENT_SEND_NODE_TYPES = Set.of("SEND_EMAIL", "SEND_WHATSAPP");
+
+    /**
+     * Context keys that always hold one id or flag stamped by the engine, never a person or a
+     * list of people. ({@code workflowId} is not in {@link TriggerContextKeyRegistry#ENGINE_KEYS}
+     * but the engine sets it too, and the builder lists it as a global variable.)
+     */
+    private static final Set<String> NON_RECIPIENT_CTX_KEYS;
+    static {
+        Set<String> keys = new HashSet<>(TriggerContextKeyRegistry.ENGINE_KEYS);
+        keys.add("workflowId");
+        NON_RECIPIENT_CTX_KEYS = Set.copyOf(keys);
+    }
+
+    /**
+     * A send node whose {@code on} reads only engine ids ({@code #ctx['workflowId']},
+     * {@code #ctx['executionId']} ...) iterates a single id string, and when {@code forEach}
+     * passes the item through as the recipient there is no address to send to: the node logs
+     * "No email address found" and the person gets nothing. The builder offered those ids as
+     * the only "Send to" candidates for a send node behind a DELAY, which shipped a VetEd course
+     * welcome email (2026-11-13) that could never have been delivered. Always an ERROR: no
+     * trigger or upstream node can make an id string a person. A custom {@code forEach.eval}
+     * that builds its own request is left alone.
+     */
+    private void validateSendRecipientsAreNotSystemIds(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            String type = node.getNodeType() == null ? "" : node.getNodeType().toUpperCase();
+            if (!RECIPIENT_SEND_NODE_TYPES.contains(type) || !(node.getConfig() instanceof Map<?, ?> config)) {
+                continue;
+            }
+            if (!(config.get("on") instanceof String onExpr) || onExpr.isBlank()) continue;
+            if (!itemIsTheRecipient(config.get("forEach"))) continue;
+            Set<String> referenced = TriggerContextKeyRegistry.referencedCtxKeys(onExpr);
+            if (referenced.isEmpty() || !NON_RECIPIENT_CTX_KEYS.containsAll(referenced)) continue;
+            errors.add(new ValidationError(node.getId(), "config.on",
+                    "'Send to' is " + onExpr + ", which is a system id, not a person, so this node"
+                            + " would send to no one. Pick who to send to, e.g. {#ctx['user']} for the"
+                            + " learner who triggered the workflow, or a list from a query node.",
+                    "ERROR"));
+        }
+    }
+
+    /** True when forEach is absent or passes each item straight through ({@code #ctx['item']}). */
+    private static boolean itemIsTheRecipient(Object forEach) {
+        if (!(forEach instanceof Map<?, ?> fe)) return true;
+        Object eval = fe.get("eval");
+        if (!(eval instanceof String ev) || ev.isBlank()) return true;
+        return ev.replace(" ", "").replace("\"", "'").equals("#ctx['item']");
     }
 
     /**

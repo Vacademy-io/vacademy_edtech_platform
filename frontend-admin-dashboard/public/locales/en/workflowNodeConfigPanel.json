@@ -23,6 +23,10 @@
     "email": {
         "sendEmailsTo": "Send emails to",
         "selectDataSource": "Select data source...",
+        "eventPerson": "Learner who triggered this",
+        "eventPersonDesc": "The person this event is about, e.g. the learner who just enrolled",
+        "eventMember": "Member who triggered this",
+        "eventMemberDesc": "The sub-org member this event is about",
         "respondentEmails": "Respondent emails (from trigger)",
         "respondentEmailsDesc": "Pre-built email with to/subject/body from the form submission",
         "adminEmails": "Admin emails (from trigger)",

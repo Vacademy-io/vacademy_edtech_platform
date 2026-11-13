@@ -23,6 +23,10 @@
     "email": {
         "sendEmailsTo": "Envoyer les e-mails à",
         "selectDataSource": "Sélectionnez une source de données...",
+        "eventPerson": "Apprenant ayant déclenché ceci",
+        "eventPersonDesc": "La personne concernée par cet événement, par ex. l'apprenant qui vient de s'inscrire",
+        "eventMember": "Membre ayant déclenché ceci",
+        "eventMemberDesc": "Le membre de la sous-organisation concerné par cet événement",
         "respondentEmails": "E-mails des répondants (depuis le déclencheur)",
         "respondentEmailsDesc": "E-mail préconstruit avec destinataire/objet/corps depuis la soumission du formulaire",
         "adminEmails": "E-mails des administrateurs (depuis le déclencheur)",

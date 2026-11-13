@@ -23,6 +23,10 @@
     "email": {
         "sendEmailsTo": "ईमेल किसे भेजें",
         "selectDataSource": "डेटा स्रोत चुनें...",
+        "eventPerson": "यह ट्रिगर करने वाला शिक्षार्थी",
+        "eventPersonDesc": "वह व्यक्ति जिसके बारे में यह इवेंट है, जैसे अभी नामांकित शिक्षार्थी",
+        "eventMember": "यह ट्रिगर करने वाला सदस्य",
+        "eventMemberDesc": "वह सब-ऑर्ग सदस्य जिसके बारे में यह इवेंट है",
         "respondentEmails": "उत्तरदाता ईमेल (ट्रिगर से)",
         "respondentEmailsDesc": "फ़ॉर्म सबमिशन से to/subject/body के साथ पहले से बना ईमेल",
         "adminEmails": "एडमिन ईमेल (ट्रिगर से)",
