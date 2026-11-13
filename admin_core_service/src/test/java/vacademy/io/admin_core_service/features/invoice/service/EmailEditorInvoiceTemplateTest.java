@@ -170,6 +170,17 @@ class EmailEditorInvoiceTemplateTest {
     }
 
     @Test
+    @DisplayName("the sample template's Discount line is dropped when there is no discount")
+    void emptyDiscountLine() {
+        String totals = "Subtotal: {{subtotal}}<br/>Discount: {{discount_amount}}<br/>{{tax_label}}: {{tax_amount}}";
+        assertEquals("Subtotal: {{subtotal}}<br/>{{tax_label}}: {{tax_amount}}",
+                InvoiceService.dropEmptyDiscountLine(totals));
+
+        String cell = "<td>Discount</td><td>{{discount_amount}}</td>";
+        assertEquals(cell, InvoiceService.dropEmptyDiscountLine(cell));
+    }
+
+    @Test
     @DisplayName("the one-row item is the plan line, not a discount or tax line")
     void primaryItem() {
         InvoiceLineItemData discount = InvoiceLineItemData.builder().itemType("DISCOUNT").description("d").build();
