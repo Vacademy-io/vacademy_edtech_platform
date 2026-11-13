@@ -78,6 +78,7 @@ class LeadDeleteRefreshesEnquiryDatesTest {
         verify(responses, times(3)).save(any(AudienceResponse.class));
         verify(responses, times(1)).refreshEnquiryDates("lead-1");
         verify(responses, times(1)).refreshEnquiryDates(any());
+        verify(responses, times(1)).refreshDuplicateOrder("lead-1");
     }
 
     @Test
@@ -88,6 +89,7 @@ class LeadDeleteRefreshesEnquiryDatesTest {
         assertEquals(1, service.deleteLeads(request("lead-2"), admin));
 
         verify(responses, never()).refreshEnquiryDates(any());
+        verify(responses, never()).refreshDuplicateOrder(any());
     }
 
     @Test
@@ -109,6 +111,7 @@ class LeadDeleteRefreshesEnquiryDatesTest {
         assertEquals(1, service.restoreLeads(request("dup-1"), admin));
 
         verify(responses).refreshEnquiryDates("lead-1");
+        verify(responses).refreshDuplicateOrder("lead-1");
     }
 
     @Test

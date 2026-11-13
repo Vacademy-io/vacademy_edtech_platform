@@ -1208,7 +1208,11 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                           AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
                                                           AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
                                                           AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE)
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE
+                                       -- With repeatDates on, a duplicate that came before its lead is the earlier
+                                       -- enquiry, not a repeat. Its lead is listed below instead (V677 precedes_lead).
+                                       AND (COALESCE(:repeatDates, FALSE) = FALSE OR COALESCE(ar.precedes_lead, FALSE) = FALSE))
                                    -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
                                    -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
                                    OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
@@ -1668,7 +1672,11 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                           AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
                                                           AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
                                                           AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE)
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE
+                                       -- With repeatDates on, a duplicate that came before its lead is the earlier
+                                       -- enquiry, not a repeat. Its lead is listed below instead (V677 precedes_lead).
+                                       AND (COALESCE(:repeatDates, FALSE) = FALSE OR COALESCE(ar.precedes_lead, FALSE) = FALSE))
                                    -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
                                    -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
                                    OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
@@ -3595,6 +3603,24 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                              WHERE p.id = :id
                         """, nativeQuery = true)
         int refreshEnquiryDates(@Param("id") String id);
+
+        /**
+         * Marks which of this lead's duplicates came before it (V677 precedes_lead), so a
+         * Duplicate Leads tab on latest-enquiry dates lists the lead, not those earlier enquiries.
+         * Run with {@link #refreshEnquiryDates}. Its own transaction for the same reason.
+         */
+        @Modifying
+        @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+        @Query(value = """
+                            UPDATE audience_response d
+                               SET precedes_lead = CASE WHEN d.submitted_at < p.submitted_at THEN TRUE END
+                              FROM audience_response p
+                             WHERE p.id = :id
+                               AND d.primary_response_id = p.id
+                               AND d.is_duplicate = TRUE
+                               AND d.precedes_lead IS DISTINCT FROM (CASE WHEN d.submitted_at < p.submitted_at THEN TRUE END)
+                        """, nativeQuery = true)
+        int refreshDuplicateOrder(@Param("id") String id);
 
         /**
          * Move one enquiry to {@code toStatusId} only while its status is still
