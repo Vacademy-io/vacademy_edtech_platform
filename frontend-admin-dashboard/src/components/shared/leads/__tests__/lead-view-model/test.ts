@@ -52,3 +52,13 @@ describe('campaign Lead List row', () => {
         expect(mapCampaignRowToStudent(row(null, {})).mobile_number).toBe('');
     });
 });
+
+describe('lastEnquiryIso', () => {
+    it('carries when the lead last enquired again, and nothing when it never did', () => {
+        expect(
+            recentLeadToVM({ response_id: 'r1', last_enquiry_at_local: '2026-11-12T22:45:49' })
+                .lastEnquiryIso
+        ).toBe('2026-11-12T22:45:49');
+        expect(recentLeadToVM({ response_id: 'r2' }).lastEnquiryIso).toBeUndefined();
+    });
+});

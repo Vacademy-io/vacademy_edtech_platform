@@ -71,6 +71,8 @@ public class LeadDetailDTO {
     private String primaryResponseId;
     /** Live duplicate enquiries that repeat this lead; null when there are none. */
     private Integer duplicateCount;
+    /** When this lead last enquired again; set only on tabs with route enquiryDates=latest. */
+    private Timestamp lastEnquiryAtLocal;
 
     // ── Parent Info ──
     private String parentName;

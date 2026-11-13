@@ -431,6 +431,16 @@ export function LeadTable({
                                     {relativeTime(vm.submittedIso)}
                                 </span>
                             )}
+                            {/* The list places this lead at its latest enquiry, so say when it was. */}
+                            {showDuplicateBadge && vm.lastEnquiryIso && (
+                                <span
+                                    className="flex items-center gap-1 text-xs font-medium text-warning-700"
+                                    title={format(new Date(vm.lastEnquiryIso), 'd MMM yyyy, h:mm a')}
+                                >
+                                    <Repeat className="size-3 shrink-0" />
+                                    Enquired again {relativeTime(vm.lastEnquiryIso)}
+                                </span>
+                            )}
                             <LeadConversionBadge conversionStatus={profile?.conversion_status} />
                             <TatStatusBadge
                                 tatOverdue={vm.tatOverdue}

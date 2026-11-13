@@ -182,6 +182,10 @@ class ClosedRepeatTakesOverTest {
         verify(responses, never()).markDuplicateOf(any(), any());
         verify(responses, times(2)).foldLeadUnderRepeat("resp-old", "resp-new");
         verify(followups(), times(2)).moveOpenToResponse("resp-old", "resp-new");
+        // The repeat now carries the earlier enquiry (Duplicate Leads lists it), and the old
+        // lead drops its own dates.
+        verify(responses, times(2)).refreshEnquiryDates("resp-new");
+        verify(responses, times(2)).refreshEnquiryDates("resp-old");
         // The journey still records the reattempt on the person.
         verify(dedup, times(2)).logReattempt(eq(primary), any(AudienceResponse.class), any(), any());
     }
@@ -248,10 +252,27 @@ class ClosedRepeatTakesOverTest {
         submit();
 
         verify(responses).markDuplicateOf("resp-new", "resp-old");
+        // The lead it repeats moves to the repeat's date in lists that hide duplicates.
+        verify(responses).refreshEnquiryDates("resp-old");
+        verify(responses, never()).refreshEnquiryDates("resp-new");
         verify(responses, never()).foldLeadUnderRepeat(any(), any());
         ArgumentCaptor<LeadFollowup> saved = ArgumentCaptor.forClass(LeadFollowup.class);
         verify(followups()).save(saved.capture());
         assertEquals("resp-old", saved.getValue().getAudienceResponseId());
+    }
+
+    /** A failed date refresh only leaves the list order stale; intake still finishes. */
+    @Test
+    void failedDateRefreshNeverStopsIntake() throws Exception {
+        repeatWith(takesOver(true));
+        when(profiles.findByUserIdAndInstituteId("user-new", "inst-1")).thenReturn(Optional.of(ownedBy(OWNER)));
+        when(responses.refreshEnquiryDates(any())).thenThrow(new RuntimeException("db down"));
+        primaryStatus = "CALL_BACK";
+
+        submit();
+
+        verify(responses).markDuplicateOf("resp-new", "resp-old");
+        verify(dedup).logReattempt(eq(primary), any(AudienceResponse.class), any(), any());
     }
 
     /** It needs markDuplicate: with that off nothing is flagged either way. */
@@ -278,6 +299,7 @@ class ClosedRepeatTakesOverTest {
         submit();
 
         verify(followups(), never()).moveOpenToResponse(any(), any());
+        verify(responses, never()).refreshEnquiryDates(any());
         ArgumentCaptor<LeadFollowup> saved = ArgumentCaptor.forClass(LeadFollowup.class);
         verify(followups()).save(saved.capture());
         assertEquals("resp-old", saved.getValue().getAudienceResponseId());
