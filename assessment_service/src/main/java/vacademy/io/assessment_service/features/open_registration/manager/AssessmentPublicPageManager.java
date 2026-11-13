@@ -41,6 +41,9 @@ public class AssessmentPublicPageManager {
     @Autowired
     AssessmentRepository assessmentRepository;
 
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.service.OpenAssessmentLeadPublisher openAssessmentLeadPublisher;
+
     @Autowired
     vacademy.io.assessment_service.features.notification.service.LearnerAssessmentNoticeService learnerAssessmentNoticeService;
 
@@ -229,6 +232,7 @@ public class AssessmentPublicPageManager {
                 // A reactivated soft-deleted row is still a fresh form submission from the
                 // registrant's point of view; only the "already active" case below is a no-op.
                 assessmentWorkflowEventPublisher.publishFormSubmission(reactivated, assessment.get());
+                publishOpenAssessmentLead(reactivated, assessment.get(), registerOpenAssessmentRequestDto);
                 return ResponseEntity.ok("Registered successfully");
             }
             // An active registration already exists — treat a repeat submission as idempotent.
@@ -252,7 +256,15 @@ public class AssessmentPublicPageManager {
         // Emitted outside the try above so a failure in here can never be caught and
         // reported to the registrant as a duplicate-registration conflict.
         assessmentWorkflowEventPublisher.publishFormSubmission(registration, assessment.get());
+        publishOpenAssessmentLead(registration, assessment.get(), registerOpenAssessmentRequestDto);
         return ResponseEntity.ok("Registered successfully");
+    }
+
+    /** The registrant becomes a lead in the test's own "&lt;title&gt; - Open Assessment" list. */
+    private void publishOpenAssessmentLead(AssessmentUserRegistration registration, Assessment assessment,
+                                           RegisterOpenAssessmentRequestDto request) {
+        if (openAssessmentLeadPublisher == null) return;
+        openAssessmentLeadPublisher.registered(registration, assessment, request.getCustomFieldRequestList());
     }
 
     /**

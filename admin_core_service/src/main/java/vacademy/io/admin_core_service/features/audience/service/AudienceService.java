@@ -910,8 +910,15 @@ public class AudienceService {
                 });
     }
 
-    /** Campaign name for the auto-provisioned per-institute live-class / webinar lead audience. */
+    /**
+     * Campaign name of the old single per-institute webinar list. Every session now gets its
+     * own list (see {@link AutoLeadListProvisioner}); this one is only the fallback for a
+     * registration that arrives without a session id.
+     */
     private static final String LIVE_CLASS_AUDIENCE_NAME = "Public Webinar - Live Session";
+
+    @Autowired
+    private AutoLeadListProvisioner autoLeadListProvisioner;
 
     /**
      * Capture a lead from a public live-class (webinar) guest registration.
@@ -919,9 +926,9 @@ public class AudienceService {
      * <p>Live-session guest registration ({@code RegistrationService.saveGuestUserDetails})
      * writes only {@code session_guest_registrations} + EXTERNAL_PARTICIPANT custom field
      * values and never created an {@code audience_response}, so webinar registrants were
-     * invisible in the CRM lead list. This routes them into a single per-institute
-     * "Public Webinar - Live Session" audience so they show up in Audience Manager →
-     * Recent Leads, exactly like {@link #submitCatalogueLead} does for catalogue leads.
+     * invisible in the CRM lead list. This routes them into the session's own list,
+     * "&lt;Session title&gt; - Public Live Session" (campaign type "Public Live Session"),
+     * created on the first registration, so they show up in Audience Manager → Recent Leads.
      *
      * <p>Mirrors submitCatalogueLead deliberately: NOT {@code @Transactional} (its
      * best-effort sub-calls must not mark a surrounding tx rollback-only), and it does
@@ -934,12 +941,39 @@ public class AudienceService {
      */
     public String submitLiveClassLead(String instituteId, String fullName, String email,
                                       String mobileNumber, Map<String, String> extraCustomFieldValues,
-                                      String sourceId) {
+                                      String sourceId, String sessionTitle) {
         if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(email)) {
             return null;
         }
-        return submitLiveClassLeadToAudience(getOrCreateLiveClassAudience(instituteId),
-                fullName, email, mobileNumber, extraCustomFieldValues, sourceId);
+        Audience audience = StringUtils.hasText(sourceId)
+                ? autoLeadListProvisioner.getOrCreate(instituteId, AutoLeadListProvisioner.PUBLIC_LIVE_SESSION,
+                        sourceId, sessionTitle)
+                : getOrCreateLiveClassAudience(instituteId);
+        if (StringUtils.hasText(audience.getStatus()) && !"ACTIVE".equalsIgnoreCase(audience.getStatus())) {
+            logger.info("Live-class lead: list {} is {} — not capturing", audience.getId(), audience.getStatus());
+            return null;
+        }
+        return submitLiveClassLeadToAudience(audience,
+                fullName, email, mobileNumber, extraCustomFieldValues, sourceId, "LIVE_SESSION");
+    }
+
+    /**
+     * Capture a lead into a list the platform created for one source (a public live
+     * session or an open assessment — see {@link AutoLeadListProvisioner}). Same pipeline as
+     * the live-class capture: dedup, auth user, field values, score, counsellor pool.
+     * {@code extraCustomFieldValues} must be keyed by custom_field_id. Does not fire the
+     * AUDIENCE_LEAD_SUBMISSION workflow — the source already sends its own confirmation.
+     *
+     * @return the new lead's id, or null / a "why not" message when no lead was created
+     */
+    public String submitLeadToAutoList(Audience audience, String fullName, String email, String mobileNumber,
+                                       Map<String, String> extraCustomFieldValues,
+                                       String sourceType, String sourceId) {
+        if (audience == null || !StringUtils.hasText(email)) {
+            return null;
+        }
+        return submitLiveClassLeadToAudience(audience, fullName, email, mobileNumber,
+                extraCustomFieldValues, sourceId, sourceType);
     }
 
     /**
@@ -968,13 +1002,13 @@ public class AudienceService {
             return null;
         }
         return submitLiveClassLeadToAudience(audience, fullName, email, mobileNumber,
-                extraCustomFieldValues, sourceId);
+                extraCustomFieldValues, sourceId, "LIVE_SESSION");
     }
 
-    /** Shared body of the live-class lead capture, parameterized by target audience. */
+    /** Shared body of the live-class lead capture, parameterized by target audience and lead source. */
     private String submitLiveClassLeadToAudience(Audience audience, String fullName, String email,
                                                  String mobileNumber, Map<String, String> extraCustomFieldValues,
-                                                 String sourceId) {
+                                                 String sourceId, String sourceType) {
         final String instituteId = audience.getInstituteId();
 
         UserDTO userDTO = UserDTO.builder()
@@ -1025,7 +1059,7 @@ public class AudienceService {
         if (StringUtils.hasText(userId)
                 && audienceResponseRepository.existsByAudienceIdAndUserId(audience.getId(), userId)) {
             if (resolved.joinedByPhone()) {
-                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, "LIVE_SESSION",
+                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, sourceType,
                         email, mobileNumber, null, null, null, createdUser.getFullName());
                 if (repeatedLeadId != null) {
                     return repeatedLeadId;
@@ -1038,7 +1072,7 @@ public class AudienceService {
         // 3. Persist the lead — this is what Audience Manager → Recent Leads reads.
         AudienceResponse savedResponse = audienceResponseRepository.save(AudienceResponse.builder()
                 .audienceId(audience.getId())
-                .sourceType("LIVE_SESSION")
+                .sourceType(sourceType)
                 .sourceId(src)
                 .userId(userId)
                 .parentName(fullName)
@@ -1119,7 +1153,7 @@ public class AudienceService {
                             .id(UUID.randomUUID().toString())
                             .instituteId(instituteId)
                             .campaignName(LIVE_CLASS_AUDIENCE_NAME)
-                            .campaignType("WEBSITE")
+                            .campaignType(AutoLeadListProvisioner.PUBLIC_LIVE_SESSION)
                             .campaignObjective("LEAD_GENERATION")
                             .description("Leads captured from public live-class / webinar registrations")
                             .status("ACTIVE")

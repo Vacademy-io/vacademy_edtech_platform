@@ -122,6 +122,14 @@ public interface AudienceRepository extends JpaRepository<Audience, String> {
             String instituteId, String campaignType, String status);
 
     /**
+     * Candidate lists whose setting_json mentions the given text. Used to find the list
+     * auto-created for one public live session or open assessment by its id; the caller
+     * parses each candidate's setting_json to confirm the match.
+     */
+    List<Audience> findByInstituteIdAndSettingJsonContainingOrderByCreatedAtAsc(
+            String instituteId, String fragment);
+
+    /**
      * Find active campaigns for an institute
      */
     @Query("SELECT a FROM Audience a " +
