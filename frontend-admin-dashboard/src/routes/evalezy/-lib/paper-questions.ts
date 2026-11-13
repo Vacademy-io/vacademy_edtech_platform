@@ -4,6 +4,7 @@ import {
 } from '@/components/common/assessment/question-options-list';
 import type { CopyCheckCriteriaQuestion } from '@/services/copy-check-criteria';
 import type { QuestionData, QuestionDataObject } from '@/types/assessments/assessment-steps';
+import { numericNegativeMarkingPercentage } from '@/lib/negative-marking';
 
 export interface PaperSection {
     id?: string;
@@ -111,11 +112,18 @@ export const markingWithMarks = (
     } catch {
         scheme = {};
     }
-    return JSON.stringify({
-        ...scheme,
-        type: scheme.type ?? questionType,
-        data: { negativeMark: '0', ...scheme.data, totalMark: String(marks) },
-    });
+    const type = scheme.type ?? questionType;
+    const data: Record<string, unknown> = {
+        negativeMark: '0',
+        ...scheme.data,
+        totalMark: String(marks),
+    };
+    // NUMERIC is graded as negativeMark * negativeMarkingPercentage / 100, so a stored
+    // penalty only takes full effect at 100 (see lib/negative-marking).
+    if (type === 'NUMERIC') {
+        data.negativeMarkingPercentage = numericNegativeMarkingPercentage(data.negativeMark);
+    }
+    return JSON.stringify({ ...scheme, type, data });
 };
 
 /**

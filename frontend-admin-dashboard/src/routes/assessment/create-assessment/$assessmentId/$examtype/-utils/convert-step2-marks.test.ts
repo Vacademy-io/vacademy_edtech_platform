@@ -41,3 +41,34 @@ describe('convertStep2Data marks', () => {
         expect(section!.cutoff_marks).toBe(0);
     });
 });
+
+describe('convertStep2Data negative marking', () => {
+    const markingFor = (questionType: string, questionMark: string, questionPenalty: string) => {
+        const [section] = convertStep2Data({
+            ...({} as Step2Data),
+            section: [
+                {
+                    ...sectionWith('4', { checked: false, value: '' }),
+                    adaptive_marking_for_each_question: [
+                        { questionId: 'q1', questionType, questionMark, questionPenalty },
+                    ],
+                } as unknown as Step2Section,
+            ],
+        });
+        return JSON.parse(section!.question_and_marking[0]!.marking_json).data;
+    };
+
+    // The grader applies a wrong NUMERIC answer as negativeMark * percentage / 100.
+    it('gives a NUMERIC penalty its full value', () => {
+        expect(markingFor('NUMERIC', '4', '1')).toEqual({
+            totalMark: '4',
+            negativeMark: '1',
+            negativeMarkingPercentage: 100,
+        });
+        expect(markingFor('NUMERIC', '4', '').negativeMarkingPercentage).toBe(0);
+    });
+
+    it('leaves MCQS unchanged', () => {
+        expect(markingFor('MCQS', '4', '1').negativeMarkingPercentage).toBe(25);
+    });
+});

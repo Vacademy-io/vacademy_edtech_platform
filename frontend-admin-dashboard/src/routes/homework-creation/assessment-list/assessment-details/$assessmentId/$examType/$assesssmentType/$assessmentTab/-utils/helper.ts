@@ -42,6 +42,7 @@ import {
     Step3ParticipantsListInterface,
     StudentResponseQuestionwiseInterface,
 } from '@/types/assessments/student-questionwise-status';
+import { negativeMarkingPercentageFor } from '@/lib/negative-marking';
 
 /** This file's own i18n namespace — passed explicitly via `{ ns: NAMESPACE }`
  *  so callers whose bound `t` defaults to a different namespace (e.g. the
@@ -746,12 +747,11 @@ export function mergeSectionData(
                         data: {
                             totalMark: question.questionMark || '',
                             negativeMark: question.questionPenalty || '',
-                            negativeMarkingPercentage:
-                                question.questionMark && question.questionPenalty
-                                    ? (Number(question.questionPenalty) /
-                                          Number(question.questionMark)) *
-                                      100
-                                    : '',
+                            negativeMarkingPercentage: negativeMarkingPercentageFor(
+                                question.questionType,
+                                question.questionMark,
+                                question.questionPenalty
+                            ),
                             ...(question.questionType === 'MCQM' && {
                                 partialMarking: correctOptionIdsCnt ? 1 / correctOptionIdsCnt : 0,
                                 partialMarkingPercentage: correctOptionIdsCnt

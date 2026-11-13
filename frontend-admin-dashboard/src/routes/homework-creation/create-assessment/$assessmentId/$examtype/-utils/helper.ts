@@ -26,6 +26,7 @@ import { convertCustomFields } from '../-services/assessment-services';
 import type { TestAccessFormValues } from './add-participants-schema';
 import { CourseWithSessionsType } from '@/stores/study-library/use-study-library-store';
 import { BatchData } from '@/types/assessments/batch-details';
+import { negativeMarkingPercentageFor } from '@/lib/negative-marking';
 
 interface Role {
     roleId: string;
@@ -419,12 +420,11 @@ export const convertStep2Data = (data: z.infer<typeof sectionDetailsSchema>) => 
                     data: {
                         totalMark: question.questionMark || '',
                         negativeMark: question.questionPenalty || '',
-                        negativeMarkingPercentage:
-                            question.questionMark && question.questionPenalty
-                                ? (Number(question.questionPenalty) /
-                                      Number(question.questionMark)) *
-                                  100
-                                : '',
+                        negativeMarkingPercentage: negativeMarkingPercentageFor(
+                            question.questionType,
+                            question.questionMark,
+                            question.questionPenalty
+                        ),
                         ...(question.questionType === 'MCQM' && {
                             partialMarking: question.correctOptionIdsCnt
                                 ? 1 / question.correctOptionIdsCnt

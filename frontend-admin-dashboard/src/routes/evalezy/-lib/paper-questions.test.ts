@@ -98,6 +98,23 @@ describe('markingWithMarks', () => {
         expect(out).toEqual({ type: 'MCQS', data: { totalMark: '7.5', negativeMark: '1' } });
     });
 
+    it('gives a NUMERIC penalty its full value', () => {
+        const stored = JSON.stringify({
+            type: 'NUMERIC',
+            data: { totalMark: '4', negativeMark: '1', negativeMarkingPercentage: 25 },
+        });
+        expect(JSON.parse(markingWithMarks(stored, 'NUMERIC', 5))).toEqual({
+            type: 'NUMERIC',
+            data: { totalMark: '5', negativeMark: '1', negativeMarkingPercentage: 100 },
+        });
+        const free = JSON.stringify({
+            type: 'NUMERIC',
+            data: { totalMark: '4', negativeMark: '0' },
+        });
+        const freeData = JSON.parse(markingWithMarks(free, 'NUMERIC', 4)).data;
+        expect(freeData.negativeMarkingPercentage).toBe(0);
+    });
+
     it('builds a scheme when there is none or it is broken', () => {
         for (const stored of [null, '{not json']) {
             expect(JSON.parse(markingWithMarks(stored, 'LONG_ANSWER', 4))).toEqual({
