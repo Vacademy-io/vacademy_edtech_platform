@@ -453,6 +453,18 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             nativeQuery = true)
     long countTouches(@Param("memberId") String memberId);
 
+    /**
+     * Replies from this member still waiting for a person, raised since {@code since}. The email reply
+     * path alerts the team only when this is zero, so a second message in the same conversation lands
+     * in the inbox without another alert.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind = 'REPLY' AND status IN ('OPEN', 'ACKED')
+               AND created_at >= :since
+            """, nativeQuery = true)
+    long countOpenRepliesSince(@Param("memberId") String memberId, @Param("since") Instant since);
+
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
     long countByMemberIdAndStatus(String memberId, String status);
 
