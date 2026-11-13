@@ -69,6 +69,11 @@
             "all": "المكررة: الكل",
             "only": "المكررة فقط",
             "exclude": "إخفاء المكررة"
+        },
+        "statusMarked": {
+            "label": "تم تعيينه كـ",
+            "placeholder": "تم التعيين خلال",
+            "any": "التعيين: أي وقت"
         }
     },
     "toolbar": {
@@ -110,7 +115,10 @@
         "pinnedTitle": "مثبَّت بواسطة هذا التبويب — لا يمكن إزالته من هنا",
         "statusExcluded": "الحالة ليست: {{statuses}}",
         "duplicatesOnly": "المكررة فقط",
-        "duplicatesExcluded": "المكررة مخفية"
+        "duplicatesExcluded": "المكررة مخفية",
+        "statusMarked": "تم تعيين {{statuses}}: {{window}}",
+        "statusMarkedAnyStatus": "أي حالة",
+        "statusMarkedAnyTime": "أي وقت"
     },
     "search": {
         "placeholder": "البحث عن العملاء المحتملين",
@@ -209,7 +217,8 @@
             "owner": "المسؤول والمصدر",
             "activity": "النشاط",
             "campaign": "روابط الحملات",
-            "custom": "حقول مخصصة"
+            "custom": "حقول مخصصة",
+            "statusMarked": "الحالة المعيّنة"
         }
     }
 }

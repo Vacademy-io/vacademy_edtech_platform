@@ -372,6 +372,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE ar.audience_id = :audienceId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (COALESCE(:sourceType, '') = '' OR ar.source_type = :sourceType)
@@ -758,6 +769,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE ar.audience_id = :audienceId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (COALESCE(:sourceType, '') = '' OR ar.source_type = :sourceType)
@@ -1051,6 +1073,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("calledTo") Timestamp calledTo,
                         @Param("activityFrom") Timestamp activityFrom,
                         @Param("activityTo") Timestamp activityTo,
+                        @Param("statusMarkedKeys") String statusMarkedKeys,
+                        @Param("statusMarkedFrom") Timestamp statusMarkedFrom,
+                        @Param("statusMarkedTo") Timestamp statusMarkedTo,
                         Pageable pageable);
 
         /**
@@ -1159,6 +1184,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
                               -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
@@ -1593,6 +1629,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
                               -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
@@ -1922,6 +1969,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("calledTo") Timestamp calledTo,
                         @Param("activityFrom") Timestamp activityFrom,
                         @Param("activityTo") Timestamp activityTo,
+                        @Param("statusMarkedKeys") String statusMarkedKeys,
+                        @Param("statusMarkedFrom") Timestamp statusMarkedFrom,
+                        @Param("statusMarkedTo") Timestamp statusMarkedTo,
                         Pageable pageable);
 
         /**

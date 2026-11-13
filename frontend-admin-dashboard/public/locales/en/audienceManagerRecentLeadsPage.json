@@ -65,6 +65,11 @@
             "all": "Duplicates: all",
             "only": "Only duplicates",
             "exclude": "Hide duplicates"
+        },
+        "statusMarked": {
+            "label": "Marked as",
+            "placeholder": "Marked within",
+            "any": "Marked: any time"
         }
     },
     "toolbar": {
@@ -106,7 +111,10 @@
         "pinnedTitle": "Pinned by this tab — it cannot be removed here",
         "statusExcluded": "Status is not: {{statuses}}",
         "duplicatesOnly": "Only duplicates",
-        "duplicatesExcluded": "Duplicates hidden"
+        "duplicatesExcluded": "Duplicates hidden",
+        "statusMarked": "Marked {{statuses}}: {{window}}",
+        "statusMarkedAnyStatus": "any status",
+        "statusMarkedAnyTime": "any time"
     },
     "search": {
         "placeholder": "Search leads",
@@ -186,7 +194,8 @@
             "owner": "Owner & source",
             "activity": "Activity",
             "campaign": "Campaign links",
-            "custom": "Custom fields"
+            "custom": "Custom fields",
+            "statusMarked": "Disposition marked"
         }
     }
 }

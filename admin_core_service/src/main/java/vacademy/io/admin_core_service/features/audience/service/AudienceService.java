@@ -4167,6 +4167,9 @@ public class AudienceService {
                     filterDTO.getCalledToLocal(),
                     filterDTO.getActivityFromLocal(),
                     filterDTO.getActivityToLocal(),
+                    filterDTO.getStatusMarkedKeys(),
+                    filterDTO.getStatusMarkedFromLocal(),
+                    filterDTO.getStatusMarkedToLocal(),
                     pageable);
             return mapResponsesToLeadDetails(all, filterDTO.getInstituteId(),
                     !includesDuplicates(filterDTO.getDuplicateFilter()));
@@ -4211,6 +4214,9 @@ public class AudienceService {
                 filterDTO.getCalledToLocal(),
                 filterDTO.getActivityFromLocal(),
                 filterDTO.getActivityToLocal(),
+                filterDTO.getStatusMarkedKeys(),
+                filterDTO.getStatusMarkedFromLocal(),
+                filterDTO.getStatusMarkedToLocal(),
                 pageable);
 
         // Resolve the institute for SLA-deadline computation: the filter usually
