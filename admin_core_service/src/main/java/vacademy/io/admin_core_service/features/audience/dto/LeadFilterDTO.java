@@ -55,6 +55,18 @@ public class LeadFilterDTO {
     private Timestamp activityFromLocal;
     private Timestamp activityToLocal;
 
+    // ── "Disposition marked" window ──
+    // Leads whose status was CHANGED TO one of statusMarkedKeys (comma-separated
+    // lead_status.status_key values) between the two bounds, read from
+    // lead_status_history. Answers "which leads were marked Sales Won in October",
+    // which neither submittedFrom/To (arrival) nor activityFrom/To (latest touch) can.
+    // It matches the transition, not the current status: a lead marked Sales Won in
+    // the window still matches after it moves on - combine with leadStatusId for
+    // "and still in that status". Keys empty + a window = any status change in it.
+    private String statusMarkedKeys;
+    private Timestamp statusMarkedFromLocal;
+    private Timestamp statusMarkedToLocal;
+
     // ── Lead Score Filters ──
     private Integer minLeadScore;           // Filter leads with score >= this
     private Integer maxLeadScore;           // Filter leads with score <= this

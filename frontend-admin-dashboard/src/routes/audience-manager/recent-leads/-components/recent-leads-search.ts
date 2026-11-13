@@ -105,6 +105,14 @@ export const RecentLeadsSearchSchema = z.object({
     calledTo: looseString.optional(),
     workedFrom: looseString.optional(),
     workedTo: looseString.optional(),
+    /** "Disposition marked" — comma-separated status_keys the lead was MOVED TO
+     *  (from its status history), whatever its status is now. */
+    marked: looseString.optional(),
+    /** Window for `marked` — same presets as workedWithin, or 'CUSTOM' with
+     *  markedFrom / markedTo (yyyy-mm-dd, inclusive calendar days). */
+    markedWithin: looseString.optional(),
+    markedFrom: looseString.optional(),
+    markedTo: looseString.optional(),
     /** Campaign (UTM) filters — comma-separated values per dimension. Only
      *  honoured while the institute's UTM setting is on (the controls that
      *  read them render nothing otherwise). The Reports Center's UTM tab

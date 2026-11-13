@@ -144,6 +144,15 @@ export interface RecentLeadsRequest {
     activity_from_local?: string;
     activity_to_local?: string;
     /**
+     * "Disposition marked": leads whose status was MOVED TO one of these status_keys
+     * (comma-separated) between the two bounds, per lead_status_history. Matches the
+     * change, not the current status. Keys without bounds = ever moved there; bounds
+     * without keys = any status change in the window.
+     */
+    status_marked_keys?: string;
+    status_marked_from_local?: string;
+    status_marked_to_local?: string;
+    /**
      * Soft-delete visibility — defaults to EXCLUDE_DELETED on the backend, so deleted leads stay
      * hidden unless explicitly asked for. ONLY_DELETED backs the "Deleted leads" view that restore
      * is driven from.

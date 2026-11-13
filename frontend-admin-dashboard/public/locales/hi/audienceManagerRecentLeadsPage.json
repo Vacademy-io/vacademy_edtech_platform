@@ -65,6 +65,11 @@
             "all": "डुप्लिकेट: सभी",
             "only": "केवल डुप्लिकेट",
             "exclude": "डुप्लिकेट छिपाएँ"
+        },
+        "statusMarked": {
+            "label": "मार्क किया गया",
+            "placeholder": "इस अवधि में मार्क",
+            "any": "मार्क: कभी भी"
         }
     },
     "toolbar": {
@@ -106,7 +111,10 @@
         "pinnedTitle": "यह फ़िल्टर इस टैब का है — इसे यहाँ से हटाया नहीं जा सकता",
         "statusExcluded": "स्टेटस नहीं है: {{statuses}}",
         "duplicatesOnly": "केवल डुप्लिकेट",
-        "duplicatesExcluded": "डुप्लिकेट छिपे हुए"
+        "duplicatesExcluded": "डुप्लिकेट छिपे हुए",
+        "statusMarked": "मार्क {{statuses}}: {{window}}",
+        "statusMarkedAnyStatus": "कोई भी स्टेटस",
+        "statusMarkedAnyTime": "कभी भी"
     },
     "search": {
         "placeholder": "लीड्स खोजें",
@@ -185,7 +193,8 @@
             "owner": "ओनर और सोर्स",
             "activity": "गतिविधि",
             "campaign": "कैंपेन लिंक",
-            "custom": "कस्टम फ़ील्ड"
+            "custom": "कस्टम फ़ील्ड",
+            "statusMarked": "डिस्पोज़िशन मार्क"
         }
     }
 }
