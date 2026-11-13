@@ -3,6 +3,10 @@
     "heading": "Forfait IA et facturation",
     "subheadingCatalog": "Un prix mensuel fixe pour l'IA au quotidien. Ce qu'un forfait ne couvre pas continue d'utiliser vos crédits.",
     "subheadingManage": "Votre forfait IA, ses renouvellements, le prélèvement automatique et les factures.",
+    "buyLink": {
+        "current": "Vous avez déjà l’offre {{plan}}.",
+        "notAvailable": "Cette offre ne peut pas encore être achetée en ligne pour votre compte. Écrivez-nous et nous la mettrons en place."
+    },
     "brand": {
         "neutral": "votre équipe plateforme",
         "neutralTitle": "Votre équipe plateforme",

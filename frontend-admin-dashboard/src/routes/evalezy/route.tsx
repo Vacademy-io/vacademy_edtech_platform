@@ -1,9 +1,12 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Prohibit } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
+import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
+import { isIOS } from '@/native';
 import { EvalezyHeader } from './-components/EvalezyHeader';
 import { TrialBanner } from './-components/TrialBanner';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
@@ -22,6 +25,14 @@ function EvalezyLayout() {
     // Also sets the institute store, naming and theme the screens below rely on.
     useQuery(useInstituteQuery());
     const { settings, isLoading } = useEvalezySettings();
+    const navigate = useNavigate();
+
+    // "Buy <plan>" on the website, then sign-up or log-in: go straight to that plan's checkout.
+    useEffect(() => {
+        if (isIOS()) return;
+        const plan = takePlanBuyIntent('evalezy');
+        if (plan) void navigate({ to: '/evalezy/credits', search: { buy: plan } });
+    }, [navigate]);
 
     return (
         // The native body already pads the safe-area insets, so the shell only fills

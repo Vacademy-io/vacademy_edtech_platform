@@ -34,6 +34,16 @@
         "city": "City",
         "state": "State",
         "noCard": "No card needed. You keep your reports after the trial ends.",
+        "buyTitle": "Create your account to buy {{plan}}",
+        "buySubtitle": "You pay on the next screen. The plan's credits are added as soon as the payment goes through.",
+        "buyDetailsSubtitle": "One step left, then you pay for {{plan}}.",
+        "buyStart": "Create account and continue to payment",
+        "buyNote": "Nothing is charged until you pay on the next screen.",
+        "steps": {
+            "plan": "Choose plan",
+            "account": "Create account",
+            "pay": "Pay"
+        },
         "start": "Start {{days}}-day trial",
         "creating": "Setting up your account…",
         "createFailed": "Your account could not be created. Try again.",
@@ -109,7 +119,10 @@
         "tabUsage": "Usage",
         "bills": "Bills",
         "loadError": "The credits could not be loaded.",
-        "retry": "Try again"
+        "retry": "Try again",
+        "plansTitle": "Plans",
+        "plansSubtitle": "Buy a yearly plan with AI credits included. Paying here adds the plan's credits to this account.",
+        "planUnavailable": "Plans can't be bought online for this account yet. Write to us and we'll set it up."
     },
     "header": {
         "backToPortal": "Back to dashboard",

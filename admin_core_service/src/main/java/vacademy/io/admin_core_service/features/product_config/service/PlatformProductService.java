@@ -207,16 +207,68 @@ public class PlatformProductService {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
         ProductSettingsDTO p = get(productKey.toLowerCase(Locale.ROOT));
+        Map<String, SoldPlan> sold = soldPlans(p.getProductKey());
+        Integer months = p.getPlanValidityMonths();
+        List<ProductPlanDTO> plans = p.getPlans();
+        if (plans != null && !sold.isEmpty()) {
+            plans = plans.stream().map(plan -> {
+                SoldPlan s = sold.get(storefrontKey(p.getProductKey(), plan.getKey()));
+                return s == null ? plan : plan.toBuilder().priceInr(s.priceInr()).credits(s.credits()).build();
+            }).toList();
+            months = plans.stream().map(plan -> sold.get(storefrontKey(p.getProductKey(), plan.getKey())))
+                    .filter(java.util.Objects::nonNull).map(SoldPlan::periodMonths).findFirst().orElse(months);
+        }
         return PublicProductOfferDTO.builder()
                 .product(p.getProductKey())
                 .displayName(p.getDisplayName())
                 .trialDays(p.getTrialDays())
                 .demoCredits(p.getDemoCredits())
                 .selfSignupEnabled(Boolean.TRUE.equals(p.getSelfSignupEnabled()))
-                .plans(p.getPlans())
-                .planValidityMonths(p.getPlanValidityMonths())
+                .plans(plans)
+                .planValidityMonths(months)
                 .extraCreditPriceInr(p.getExtraCreditPriceInr())
                 .build();
+    }
+
+    /** A product plan as the storefront sells it: its latest published INR version. */
+    record SoldPlan(int priceInr, int credits, int periodMonths) {
+    }
+
+    /** The storefront plan of a website plan: "&lt;product&gt;_&lt;key&gt;" (see ai_service plans_admin, product plans). */
+    static String storefrontKey(String product, String planKey) {
+        return (product + "_" + (planKey == null ? "" : planKey)).toLowerCase(Locale.ROOT).replace('-', '_');
+    }
+
+    /**
+     * What the storefront charges for the product's plans, so the website always shows the price a buyer
+     * pays. Empty when the storefront tables are missing or the product sells nothing yet (the website
+     * then shows the dashboard's numbers).
+     */
+    Map<String, SoldPlan> soldPlans(String product) {
+        Map<String, SoldPlan> out = new LinkedHashMap<>();
+        if (!StringUtils.hasText(product)) {
+            return out;
+        }
+        String like = product.toLowerCase(Locale.ROOT).replace('-', '_').replace("_", "\\_") + "\\_%";
+        // Only plans offered to the product's segment: another plan may share the key prefix.
+        String segment = "product_" + product.toLowerCase(Locale.ROOT);
+        try {
+            jdbcTemplate.query("SELECT p.plan_key, v.price_minor, v.allowance_credits, v.period_months FROM ai_plan p "
+                            + "JOIN LATERAL (SELECT * FROM ai_plan_version x WHERE x.plan_id = p.id AND x.status = 'PUBLISHED' "
+                            + "AND x.currency = 'INR' ORDER BY x.version_no DESC LIMIT 1) v ON true "
+                            + "WHERE p.is_active AND p.listed AND p.plan_key LIKE ? ESCAPE '\\' "
+                            + "AND EXISTS (SELECT 1 FROM ai_storefront_audience a WHERE a.plan_id = p.id AND a.is_active "
+                            + "AND a.segment_key = ? AND upper(COALESCE(a.rule, 'INCLUDE')) = 'INCLUDE')",
+                    (ResultSet rs) -> {
+                        out.put(rs.getString("plan_key"), new SoldPlan(
+                                (int) (rs.getLong("price_minor") / 100),
+                                rs.getBigDecimal("allowance_credits").intValue(),
+                                rs.getInt("period_months")));
+                    }, like, segment);
+        } catch (Exception e) {
+            return Map.of();
+        }
+        return out;
     }
 
     /** What a new institute of this product opens with; null keeps the platform's default. */

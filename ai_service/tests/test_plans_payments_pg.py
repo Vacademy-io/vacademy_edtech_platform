@@ -348,6 +348,21 @@ def test_checkout_gates(env):
                                                      "reason": "t"}, headers=staff()).status_code == 200
     assert c.get(f"{IN}/storefront/catalog?institute_id={iid2}", headers=H).json()["storefront"]["reason"] == \
         "EXCLUDED"
+    # a product's sign-ups are in the "product_<key>" segment without anyone filling it in
+    evz = _inst(env)
+    _q(env, "ALTER TABLE institutes ADD COLUMN IF NOT EXISTS product VARCHAR(64)")
+    _q(env, "UPDATE institutes SET product = 'Evalezy' WHERE id = :i", i=evz)
+    assert c.get(f"{IN}/storefront/catalog?institute_id={evz}", headers=H).json()["storefront"]["reason"] == \
+        "NOT_IN_ROLLOUT"
+    assert c.put(f"{SA}/storefront/audience", json={"segments": ["coaching", "product_evalezy"],
+                                                     "exclude_institute_ids": [iid2], "reason": "t"},
+                 headers=staff()).status_code == 200
+    assert c.put(f"{SA}/plans/{pid}/audience", json={"segments": ["coaching", "product_evalezy"], "reason": "t"},
+                 headers=staff()).status_code == 200
+    cat = c.get(f"{IN}/storefront/catalog?institute_id={evz}", headers=H).json()
+    assert cat["storefront"]["reason"] == "SEGMENT" and "product_evalezy" in cat["storefront"]["segments"]
+    assert [p["plan_id"] for p in cat["plans"]] == [pid]
+    assert pb.institute_segments(env.Session(), iid2) == ["coaching"]
     # a sub-org never buys (the parent does)
     child = _inst(env)
     _q(env, "INSERT INTO institute_suborg (id, institute_id, suborg_id, status) VALUES (:id, :p, :c, 'ACTIVE')",
@@ -1018,3 +1033,50 @@ def test_new_versions_carry_sac_998315(env):
     iid = _inst(env)
     j = _checkout(env, iid, vid).json()
     assert j["sac_code"] == "998315"
+
+
+def test_product_plans_sync(env):
+    """Products -> Pricing on the dashboard: one PUT makes the storefront sell the website's plans."""
+    c = env.client
+    url = f"{SA}/products/evalezy"
+    # a hand-made plan that only shares the prefix is never shown or unlisted by the product form
+    assert c.post(f"{SA}/plans", json={"plan_key": "evalezy_legacy", "name": "Legacy", "reason": "t"},
+                  headers=staff()).status_code == 200
+    _q(env, "UPDATE ai_plan SET listed = true WHERE plan_key = 'evalezy_legacy'")
+    plans = [{"key": "starter", "name": "Starter", "price_inr": 5000, "credits": 100},
+             {"key": "team", "name": "Team", "price_inr": 20000, "credits": 2000}]
+    # a new plan needs to know what its credits pay for; nothing is half-created
+    r = c.put(url, json={"plans": plans, "period_months": 12, "reason": "t"}, headers=staff())
+    assert r.status_code == 422, r.text
+    assert c.get(url, headers=staff()).json()["plans"] == []
+    r = c.put(url, json={"plans": plans, "period_months": 12, "allowance_features": ["copy_check"], "reason": "t"},
+              headers=staff())
+    assert r.status_code == 200, r.text
+    out = r.json()
+    got = {p["key"]: p for p in out["plans"]}
+    assert got["starter"]["published"]["price_inr"] == 5000 and got["starter"]["published"]["credits"] == 100
+    assert got["team"]["published"]["period_months"] == 12 and got["team"]["published"]["features"] == ["copy_check"]
+    assert all(p["listed"] and p["offered"] and p["audience_mode"] == "SEGMENT" for p in out["plans"])
+    assert out["storefront"]["open_to_segment"] is True and out["segment"] == "product_evalezy"
+    # same form again: nothing to do
+    again = c.put(url, json={"plans": plans, "period_months": 12, "reason": "t"}, headers=staff()).json()
+    assert again["changes"] == []
+    # a price change publishes version 2 and retires version 1
+    plans[0]["price_inr"] = 6000
+    out = c.put(url, json={"plans": plans[:1], "period_months": 12, "reason": "t"}, headers=staff()).json()
+    starter = next(p for p in out["plans"] if p["key"] == "starter")
+    assert starter["published"]["price_inr"] == 6000 and starter["published"]["version_no"] == 2
+    assert {"plan_key": "evalezy_team", "change": "unlisted"} in out["changes"]
+    assert all(ch["plan_key"] != "evalezy_legacy" for ch in out["changes"])
+    assert "legacy" not in [p["key"] for p in out["plans"]]
+    assert _q(env, "SELECT listed FROM ai_plan WHERE plan_key = 'evalezy_legacy'")[0]["listed"] is True
+    assert _q(env, "SELECT v.status FROM ai_plan_version v JOIN ai_plan p ON p.id = v.plan_id "
+                   "WHERE p.plan_key = 'evalezy_starter' AND v.version_no = 1")[0]["status"] == "RETIRED"
+    # an Evalezy sign-up sees the plan at the new price
+    evz = _inst(env)
+    _q(env, "ALTER TABLE institutes ADD COLUMN IF NOT EXISTS product VARCHAR(64)")
+    _q(env, "UPDATE institutes SET product = 'evalezy' WHERE id = :i", i=evz)
+    env.state["mode"] = "SEGMENTS"
+    cat = c.get(f"{IN}/storefront/catalog?institute_id={evz}", headers=H).json()
+    assert cat["storefront"]["allowed"] is True
+    assert [(p["plan_key"], p["price"]["base_minor"]) for p in cat["plans"]] == [("evalezy_starter", 600000)]
