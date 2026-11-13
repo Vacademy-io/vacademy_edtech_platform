@@ -530,7 +530,7 @@ export const initiateReportZipExport = async ({
             assessment_id: assessmentId,
             institute_id: instituteId,
             attempt_ids: attemptIds,
-            filter,
+            filter: filter ? toParticipantsFilterPayload(filter) : undefined,
             regenerate: !!regenerate,
         },
     });
@@ -653,6 +653,23 @@ export const handleGetLeaderboardData = ({
     };
 };
 
+// The submissions filter as the backend's AssessmentUserFilter reads it: the picker
+// options become plain ids. Shared by the list and the report-card ZIP, which resolves
+// its selection with that same filter — sent raw, the option objects fail to bind to
+// List<String> and any batch / evaluation filter broke the export.
+const toParticipantsFilterPayload = (selectedFilter: SelectedSubmissionsFilterInterface) => ({
+    ...selectedFilter,
+    batches: (selectedFilter.batches ?? []).map((batch: { id: string }) => batch.id),
+    // Send raw result_status values; empty array => backend treats as no filter.
+    evaluation_status: (selectedFilter.evaluation_status ?? []).map(
+        (option: { id: string }) => option.id
+    ),
+    // SUBMITTED / NOT_SUBMITTED; empty array => backend treats as no filter.
+    submission_status: (selectedFilter.submission_status ?? []).map(
+        (option: { id: string }) => option.id
+    ),
+});
+
 export const getAdminParticipants = async (
     assessmentId: string,
     instituteId: string | undefined,
@@ -669,18 +686,7 @@ export const getAdminParticipants = async (
             pageNo,
             pageSize,
         },
-        data: {
-            ...selectedFilter,
-            batches: selectedFilter.batches.map((batch: { id: string }) => batch.id),
-            // Send raw result_status values; empty array => backend treats as no filter.
-            evaluation_status: (selectedFilter.evaluation_status ?? []).map(
-                (option: { id: string }) => option.id
-            ),
-            // SUBMITTED / NOT_SUBMITTED; empty array => backend treats as no filter.
-            submission_status: (selectedFilter.submission_status ?? []).map(
-                (option: { id: string }) => option.id
-            ),
-        },
+        data: toParticipantsFilterPayload(selectedFilter),
     });
     return response?.data;
 };
