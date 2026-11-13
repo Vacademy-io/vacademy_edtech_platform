@@ -175,7 +175,8 @@ public class LearnerReportService {
         // release to anyone who calls them directly. AUTO result types are
         // deliberately NOT gated here: the card offers "Show report" for them
         // regardless of release status, and refusing would break that button -
-        // unless the attempt is explicitly held (PENDING) for a teacher.
+        // unless the attempt is explicitly held (PENDING) for a teacher, or the
+        // result type is AUTO_AFTER_ASSESSMENT_END and the end date is still ahead.
         if (isHeldManualResult(registration.get().getAssessment(), attempt.get())) {
             throw new VacademyException(HttpStatus.FORBIDDEN, "Result has not been released yet");
         }
@@ -190,10 +191,31 @@ public class LearnerReportService {
             return true;
         }
         // NO_AUTO_RELEASE is auto-marked but released by hand, so it is held like MANUAL.
-        return assessment != null
+        boolean heldForRelease = assessment != null
                 && (ResultTypeEnum.MANUAL.name().equals(assessment.getResultType())
                         || "NO_AUTO_RELEASE".equals(assessment.getResultType()))
                 && !ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        return heldForRelease || isHeldUntilAssessmentEnd(assessment, attempt, new Date());
+    }
+
+    /**
+     * AUTO_AFTER_ASSESSMENT_END: an attempt submitted before the end date keeps a NULL
+     * release status until the hourly job marks it RELEASED after the end, so the end
+     * date itself is the gate. Without it the report opened the moment the learner
+     * submitted. Mock and practice tests are released on submission (they never end),
+     * and a missing or 9999 end date holds nothing. Same rule as the learner card
+     * (survey-card-state.ts isHeldUntilAssessmentEnd).
+     */
+    static boolean isHeldUntilAssessmentEnd(Assessment assessment, StudentAttempt attempt, Date now) {
+        if (assessment == null || !ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(assessment.getResultType())) {
+            return false;
+        }
+        if (ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) return false;
+        String playMode = assessment.getPlayMode() == null ? "" : assessment.getPlayMode().toUpperCase();
+        if (vacademy.io.assessment_service.features.assessment.service.StudentAttemptService.OPEN_ENDED_PLAY_MODES.contains(playMode)) return false;
+        Date end = assessment.getBoundEndTime();
+        if (end == null || end.toInstant().atZone(java.time.ZoneOffset.UTC).getYear() >= 9000) return false;
+        return !now.after(end);
     }
 
     /**
