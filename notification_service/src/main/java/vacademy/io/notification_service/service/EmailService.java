@@ -680,7 +680,8 @@ public class EmailService {
             String instituteName = brand != null ? brand.name() : "Vacademy";
             String websiteUrl = brand != null ? brand.url()
                     : instituteInfoDTO == null ? "https://dash.vacademy.io" : null;
-            String logoUrl = null;
+            // A branded product's logo comes from its settings (email_logo_url); none keeps the tile.
+            String logoUrl = brand != null ? brand.logo() : null;
             if (instituteInfoDTO != null) {
                 // Preset codes ("primary", "blue", …) and blanks are resolved to the colour the
                 // institute's own portal shows; raw, they left the OTP invisible.
