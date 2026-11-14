@@ -6361,7 +6361,8 @@ def test_build_stt_uses_the_flagging_sarvam_class():
     import inspect
     from app import providers as pv
     src = inspect.getsource(pv.build_stt)
-    assert "final_after_flush(SarvamSTTService) if s.sarvam_final_on_flush" in src
+    # _cls is SarvamSTTService, or with SARVAM_API_KEY_2 its key-failover subclass.
+    assert "final_after_flush(_cls) if s.sarvam_final_on_flush" in src
 
 
 @pytest.mark.asyncio
