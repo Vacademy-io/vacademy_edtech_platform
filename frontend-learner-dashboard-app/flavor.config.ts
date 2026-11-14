@@ -301,4 +301,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "smartaiacademy.co.in",
     subdomain: "student",
   },
+
+  // EDUM3NTOR Android app
+  "app.edum3ntor.com": {
+    appName: "EDUM3NTOR",
+    domain: "vacademy.io",
+    subdomain: "learner-edum3ntor",
+  },
 };

@@ -221,6 +221,16 @@ android {
 			resValue "string", "app_name", "Sreedhar\\'s TTS"
 			manifestPlaceholders.DEEP_LINK_HOST = "learn.ttsedu.co.in"
 		}
+		edum3ntor {
+			dimension "client"
+			applicationId "app.edum3ntor.com"
+			// Play automatic protection rejects bundles below minSdk 24.
+			minSdkVersion 24
+			versionCode 3
+			versionName "1.0.2"
+			resValue "string", "app_name", "EDUM3NTOR"
+			manifestPlaceholders.DEEP_LINK_HOST = "learner-edum3ntor.vacademy.io"
+		}
 	}
 }
 
