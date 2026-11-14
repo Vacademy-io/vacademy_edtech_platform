@@ -19,10 +19,18 @@ public class InternalProductConfigController {
 
     private final PlatformProductService service;
     private final ProductAlertService alerts;
+    private final vacademy.io.admin_core_service.features.product_config.service.ProductPlanAccessService planAccess;
 
     @GetMapping("/{productKey}")
     public ProductSettingsDTO get(@PathVariable String productKey) {
         return service.get(productKey);
+    }
+
+    /** auth_service, before it adds a user to a product workspace: the plan's user limit. */
+    @GetMapping("/institutes/{instituteId}/plan-access")
+    public vacademy.io.admin_core_service.features.product_config.dto.ProductPlanAccessDTO planAccess(
+            @PathVariable String instituteId) {
+        return planAccess.access(instituteId);
     }
 
     /** auth_service, after a self sign-up: tell the team. */
