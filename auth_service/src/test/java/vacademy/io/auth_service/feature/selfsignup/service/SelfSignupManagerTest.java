@@ -306,4 +306,28 @@ class SelfSignupManagerTest {
         assertThrows(VacademyException.class, () -> manager.demoSignup(r, "1.1.1.1"));
         verify(authManager, never()).registerRootUser(any(), any());
     }
+
+    @Test
+    void aBuySignUpGetsNoTrialAndWaitsForPayment() {
+        SelfSignupRequest r = valid();
+        r.setBuy(" Starter ");
+        manager.signup(r, "1.1.1.1");
+        ArgumentCaptor<RegisterRequest> sent = ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(authManager).registerRootUser(sent.capture(), any());
+        assertEquals("LEAD", sent.getValue().getInstitute().getLeadTag());
+        assertNull(sent.getValue().getInstitute().getDemoExpiresAt());
+        assertEquals(List.of(SelfSignupManager.BUY_TAG), sent.getValue().getInstitute().getTags());
+        verify(alertClient).signupCompleted(eq("evalezy"), any());
+    }
+
+    @Test
+    void aTrialSignUpIsUnchangedWithoutBuy() {
+        manager.signup(valid(), "1.1.1.1");
+        ArgumentCaptor<RegisterRequest> sent = ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(authManager).registerRootUser(sent.capture(), any());
+        assertEquals("FREE_TRIAL", sent.getValue().getInstitute().getLeadTag());
+        assertEndsInDays(3, sent.getValue());
+        assertNull(sent.getValue().getInstitute().getTags());
+        assertNull(SelfSignupManager.buyingPlan("bad key!"));
+    }
 }

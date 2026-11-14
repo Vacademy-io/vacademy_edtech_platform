@@ -47,6 +47,11 @@ public class SelfSignupManager {
     private static final String LEAD_TAG_TRIAL = "FREE_TRIAL";
     /** Read by admin-core when it creates the institute: open with the demo-portal credit amount. */
     public static final String DEMO_PORTAL_TAG = "signup:demo_portal";
+    /** Read by admin-core: a "Buy <plan>" account opens with no credits. */
+    public static final String BUY_TAG = "signup:buy";
+    /** A "Buy <plan>" account until it pays: an existing super-admin lead tag, so no new value. */
+    private static final String LEAD_TAG_BUYING = "LEAD";
+    private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9_-]{1,32}$");
     /** The assessment module: everything Evalezy runs on. */
     private static final String ASSESS_MODULE_ID = "1";
     private static final int MIN_PASSWORD_LENGTH = 8;
@@ -153,7 +158,9 @@ public class SelfSignupManager {
         }
         rateLimiter.checkSignup(ip);
 
-        Timestamp trialEnds = Timestamp.from(
+        String buying = buyingPlan(request.getBuy());
+        // A "Buy <plan>" account gets no trial: it pays first (the app shows only the plan screen).
+        Timestamp trialEnds = buying != null ? null : Timestamp.from(
                 Instant.now().plus(product.getTrialDays(), ChronoUnit.DAYS));
 
         InstituteInfoDTO institute = new InstituteInfoDTO();
@@ -166,8 +173,11 @@ public class SelfSignupManager {
         institute.setStaffStrength(request.getTeachers());
         institute.setModuleRequestIds(List.of(ASSESS_MODULE_ID));
         institute.setProduct(product.getProductKey());
-        institute.setLeadTag(LEAD_TAG_TRIAL);
+        institute.setLeadTag(buying != null ? LEAD_TAG_BUYING : LEAD_TAG_TRIAL);
         institute.setDemoExpiresAt(trialEnds);
+        if (buying != null) {
+            institute.setTags(List.of(BUY_TAG));
+        }
 
         RegisterRequest register = new RegisterRequest();
         register.setFullName(fullName);
@@ -181,10 +191,15 @@ public class SelfSignupManager {
 
         JwtResponseDto tokens = authManager.registerRootUser(register, product);
 
-        log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} source={} campaign={}",
-                product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), request.getSource(), request.getCampaign());
-        alertClient.signupCompleted(product.getProductKey(), signupEvent(institute.getId(), instituteName, fullName,
-                email, phone, google, trialEnds, request.getSource()));
+        log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} buy={} source={} campaign={}",
+                product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), buying,
+                request.getSource(), request.getCampaign());
+        java.util.Map<String, Object> event = signupEvent(institute.getId(), instituteName, fullName,
+                email, phone, google, trialEnds, request.getSource());
+        if (buying != null) {
+            event.put("trial_ends", "No trial: buying " + buying);
+        }
+        alertClient.signupCompleted(product.getProductKey(), event);
         return tokens;
     }
 
@@ -262,10 +277,20 @@ public class SelfSignupManager {
         event.put("email", email);
         event.put("phone", phone);
         event.put("method", google ? "Google" : "Email OTP");
-        event.put("trial_ends", java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
-                .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
+        event.put("trial_ends", trialEnds == null ? null
+                : java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+                        .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
         event.put("source", source);
         return event;
+    }
+
+    /** The plan key of a "Buy <plan>" sign-up, or null for a trial. */
+    static String buyingPlan(String buy) {
+        if (!StringUtils.hasText(buy)) {
+            return null;
+        }
+        String key = buy.trim().toLowerCase(Locale.ROOT);
+        return PLAN_KEY.matcher(key).matches() ? key : null;
     }
 
     private ProductConfigDTO requireProduct(String product) {
