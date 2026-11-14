@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Prohibit } from '@phosphor-icons/react';
@@ -10,6 +10,7 @@ import { isIOS } from '@/native';
 import { EvalezyHeader } from './-components/EvalezyHeader';
 import { TrialBanner } from './-components/TrialBanner';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
+import { isPaymentPending, PAYMENT_PENDING_PATHS, usePlanAccess } from './-hooks/usePlanAccess';
 
 export const Route = createFileRoute('/evalezy')({
     component: EvalezyLayout,
@@ -26,6 +27,16 @@ function EvalezyLayout() {
     useQuery(useInstituteQuery());
     const { settings, isLoading } = useEvalezySettings();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const planAccess = usePlanAccess();
+    // Signed up through "Buy <plan>" and not paid yet: only the plan, its checkout and the profile.
+    const lockedOut =
+        isPaymentPending(planAccess.data) &&
+        !PAYMENT_PENDING_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+    useEffect(() => {
+        if (lockedOut) void navigate({ to: '/evalezy/plan', replace: true });
+    }, [lockedOut, navigate]);
 
     // "Buy <plan>" on the website, then sign-up or log-in: go straight to that plan's checkout.
     useEffect(() => {
@@ -42,7 +53,7 @@ function EvalezyLayout() {
             <EvalezyHeader />
             <TrialBanner />
             <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
-                {isLoading ? (
+                {isLoading || lockedOut ? (
                     <DashboardLoader />
                 ) : settings.enabled ? (
                     <Outlet />

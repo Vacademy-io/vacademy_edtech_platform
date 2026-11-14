@@ -69,6 +69,8 @@ const publicRoutes = [
     '/login/forgot-password',
     '/login/oauth/redirect',
     '/signup',
+    // Evalezy one-screen demo: name, email and phone, then straight into the app.
+    '/demo',
     '/landing',
     '/pricing',
     '/content',

@@ -6,6 +6,7 @@ import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { cn } from '@/lib/utils';
+import { isIOS } from '@/native';
 
 interface TrialStatus {
     is_trial: boolean;
@@ -47,8 +48,9 @@ export const TrialBanner = () => {
                         ? t('trial.ended')
                         : t('trial.left', { count: data.days_left ?? 0 })}
                 </span>
-                <Link to="/evalezy/credits" className="shrink-0 font-semibold underline">
-                    {t('trial.upgrade')}
+                <Link to="/evalezy/plan" className="shrink-0 font-semibold underline">
+                    {/* No purchase wording in the iPhone app (App Store rules). */}
+                    {isIOS() ? t('plan.menu') : t('trial.upgrade')}
                 </Link>
             </div>
         </div>

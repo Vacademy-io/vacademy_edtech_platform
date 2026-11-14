@@ -41,7 +41,7 @@ const INSTITUTE_TYPES = ['school', 'coaching', 'college', 'university', 'company
 /** What each answer stores as the teacher count. */
 const TEACHER_BANDS = [1, 5, 15, 16];
 
-const enterApp = async (tokens: SignupTokens, appPath: string) => {
+export const enterApp = async (tokens: SignupTokens, appPath: string) => {
     await handleLoginFlow({
         loginMethod: 'signup',
         accessToken: tokens.accessToken,
@@ -320,6 +320,7 @@ const SignupSteps = ({
                     googleName={google?.name}
                     viaGoogle={viaGoogle}
                     buying={!!buyPlan}
+                    buyPlan={buyPlan}
                     onError={setError}
                 />
             )}
@@ -353,7 +354,7 @@ const BuySteps = () => {
     );
 };
 
-const Shell = ({
+export const Shell = ({
     product,
     title,
     subtitle,
@@ -389,6 +390,7 @@ const DetailsForm = ({
     googleName,
     viaGoogle,
     buying,
+    buyPlan,
     onError,
 }: {
     context: SignupContext;
@@ -398,6 +400,8 @@ const DetailsForm = ({
     googleName?: string;
     viaGoogle: boolean;
     buying: boolean;
+    /** "Buy <plan>": sent so the account gets no free trial and opens on that plan's payment. */
+    buyPlan?: string | null;
     onError: (message: string | null) => void;
 }) => {
     const { t } = useTranslation('evalezy');
@@ -452,6 +456,7 @@ const DetailsForm = ({
                 city: values.city,
                 state: values.state,
                 teachers: Number(values.teachers),
+                ...(buyPlan ? { buy: buyPlan } : {}),
             }),
         onSuccess: (tokens) => enterApp(tokens, product.app_path),
         onError: (error) => onError(signupErrorMessage(error) ?? t('signup.createFailed')),

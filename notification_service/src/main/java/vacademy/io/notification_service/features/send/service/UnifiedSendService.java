@@ -659,7 +659,8 @@ public class UnifiedSendService implements SendChannelRouter {
                     }
                     outcome = emailService.sendAttachmentEmail(email, subject, plainLogSource, body,
                             attachmentMap, request.getInstituteId(), emailType,
-                            finalCopyRecipients, finalCopyMode, billingClass);
+                            finalCopyRecipients, finalCopyMode, billingClass,
+                            opts.getFromEmail(), opts.getFromName());
                 } else if (isEngagementEngineSend(request)) {
                     // Engine sends carry attribution: source → notification_log.source,
                     // sourceId → correlation_id (action id), userId → user attribution

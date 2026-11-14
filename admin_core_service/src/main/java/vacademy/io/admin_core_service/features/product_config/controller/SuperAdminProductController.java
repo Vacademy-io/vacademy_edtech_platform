@@ -30,6 +30,7 @@ public class SuperAdminProductController {
     private final PlatformProductService service;
     private final ProductSignupService signups;
     private final ProductAlertService alerts;
+    private final vacademy.io.admin_core_service.features.product_config.service.ProductDemoLeadService demoLeads;
 
     @GetMapping
     public List<ProductSettingsDTO> list(@RequestAttribute("user") CustomUserDetails user) {
@@ -41,7 +42,10 @@ public class SuperAdminProductController {
     public ProductSettingsDTO update(@RequestAttribute("user") CustomUserDetails user,
             @PathVariable String productKey, @RequestBody ProductSettingsDTO body) {
         SuperAdminAuthUtil.requireSuperAdmin(user);
-        return service.update(productKey, body, user.getUsername());
+        ProductSettingsDTO saved = service.update(productKey, body, user.getUsername());
+        // The instant-demo lead list exists as soon as its institute is set.
+        demoLeads.ensureListQuietly(saved);
+        return saved;
     }
 
     @GetMapping("/{productKey}/institutes")

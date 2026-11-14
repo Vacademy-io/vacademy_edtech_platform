@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupConfigResponse;
+import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupOtpRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupVerifyResponse;
@@ -42,6 +43,12 @@ public class SelfSignupController {
     @PostMapping("/signup")
     public JwtResponseDto signup(@RequestBody SelfSignupRequest request, HttpServletRequest http) {
         return manager.signup(request, clientIp(http));
+    }
+
+    /** The one-screen demo: name, email and phone, no code. Tokens come back at once. */
+    @PostMapping("/demo")
+    public JwtResponseDto demo(@RequestBody SelfSignupDemoRequest request, HttpServletRequest http) {
+        return manager.demoSignup(request, clientIp(http));
     }
 
     /**

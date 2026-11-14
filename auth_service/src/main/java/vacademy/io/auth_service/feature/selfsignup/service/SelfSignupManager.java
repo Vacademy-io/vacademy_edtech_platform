@@ -12,6 +12,7 @@ import vacademy.io.auth_service.feature.auth.manager.AuthManager;
 import vacademy.io.common.notification.dto.EmailOTPRequest;
 import vacademy.io.auth_service.feature.notification.service.NotificationService;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupConfigResponse;
+import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupOtpRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupRequest;
 import vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupVerifyResponse;
@@ -44,6 +45,13 @@ import java.util.regex.Pattern;
 public class SelfSignupManager {
 
     private static final String LEAD_TAG_TRIAL = "FREE_TRIAL";
+    /** Read by admin-core when it creates the institute: open with the demo-portal credit amount. */
+    public static final String DEMO_PORTAL_TAG = "signup:demo_portal";
+    /** Read by admin-core: a "Buy <plan>" account opens with no credits. */
+    public static final String BUY_TAG = "signup:buy";
+    /** A "Buy <plan>" account until it pays: an existing super-admin lead tag, so no new value. */
+    private static final String LEAD_TAG_BUYING = "LEAD";
+    private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9_-]{1,32}$");
     /** The assessment module: everything Evalezy runs on. */
     private static final String ASSESS_MODULE_ID = "1";
     private static final int MIN_PASSWORD_LENGTH = 8;
@@ -150,7 +158,9 @@ public class SelfSignupManager {
         }
         rateLimiter.checkSignup(ip);
 
-        Timestamp trialEnds = Timestamp.from(
+        String buying = buyingPlan(request.getBuy());
+        // A "Buy <plan>" account gets no trial: it pays first (the app shows only the plan screen).
+        Timestamp trialEnds = buying != null ? null : Timestamp.from(
                 Instant.now().plus(product.getTrialDays(), ChronoUnit.DAYS));
 
         InstituteInfoDTO institute = new InstituteInfoDTO();
@@ -163,8 +173,11 @@ public class SelfSignupManager {
         institute.setStaffStrength(request.getTeachers());
         institute.setModuleRequestIds(List.of(ASSESS_MODULE_ID));
         institute.setProduct(product.getProductKey());
-        institute.setLeadTag(LEAD_TAG_TRIAL);
+        institute.setLeadTag(buying != null ? LEAD_TAG_BUYING : LEAD_TAG_TRIAL);
         institute.setDemoExpiresAt(trialEnds);
+        if (buying != null) {
+            institute.setTags(List.of(BUY_TAG));
+        }
 
         RegisterRequest register = new RegisterRequest();
         register.setFullName(fullName);
@@ -178,10 +191,80 @@ public class SelfSignupManager {
 
         JwtResponseDto tokens = authManager.registerRootUser(register, product);
 
-        log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} source={} campaign={}",
-                product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), request.getSource(), request.getCampaign());
-        alertClient.signupCompleted(product.getProductKey(), signupEvent(institute.getId(), instituteName, fullName,
-                email, phone, google, trialEnds, request.getSource()));
+        log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} buy={} source={} campaign={}",
+                product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), buying,
+                request.getSource(), request.getCampaign());
+        java.util.Map<String, Object> event = signupEvent(institute.getId(), instituteName, fullName,
+                email, phone, google, trialEnds, request.getSource());
+        if (buying != null) {
+            event.put("trial_ends", "No trial: buying " + buying);
+        }
+        alertClient.signupCompleted(product.getProductKey(), event);
+        return tokens;
+    }
+
+    /**
+     * The one-screen demo: name, email and phone, no code, and the visitor is signed in. The email is
+     * not proven, so: one account per email (a "+tag" alias is refused, it would make that free),
+     * throwaway inboxes are refused, and admin-core opens the workspace with the product's demo-portal
+     * credit amount (the {@link #DEMO_PORTAL_TAG} tag) instead of the trial amount. The login details
+     * go to the email in the welcome mail, so a wrong address only loses its own way back in.
+     */
+    public JwtResponseDto demoSignup(SelfSignupDemoRequest request, String ip) {
+        ProductConfigDTO product = requireProduct(request.getProduct());
+        rateLimiter.checkDemoAttempt(ip);
+        String fullName = request.getFullName() == null ? "" : request.getFullName().trim();
+        if (fullName.length() < 2 || fullName.length() > 80) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Enter your name");
+        }
+        String email = requireEmail(request.getEmail());
+        String local = email.substring(0, email.indexOf('@'));
+        String domain = email.substring(email.indexOf('@') + 1);
+        if (local.contains("+")) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Use your email address without a + part");
+        }
+        if (DisposableEmailDomains.isDisposable(domain)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Use your work or personal email, not a temporary inbox");
+        }
+        String phone = requirePhone(request.getPhone());
+
+        assertEmailIsFree(email);
+        rateLimiter.checkSignup(ip);
+
+        String username = UsernameGenerator.generateUsername(fullName);
+        for (int i = 0; i < 5 && userRepository.findByUsername(username).isPresent(); i++) {
+            username = UsernameGenerator.generateUsername(fullName);
+        }
+        String password = UsernameGenerator.generatePassword(12);
+        Timestamp trialEnds = Timestamp.from(Instant.now().plus(product.getTrialDays(), ChronoUnit.DAYS));
+
+        InstituteInfoDTO institute = new InstituteInfoDTO();
+        institute.setInstituteName(fullName);
+        institute.setEmail(email);
+        institute.setPhone(phone);
+        institute.setType("other");
+        institute.setModuleRequestIds(List.of(ASSESS_MODULE_ID));
+        institute.setProduct(product.getProductKey());
+        institute.setLeadTag(LEAD_TAG_TRIAL);
+        institute.setDemoExpiresAt(trialEnds);
+        institute.setTags(List.of(DEMO_PORTAL_TAG));
+
+        RegisterRequest register = new RegisterRequest();
+        register.setFullName(fullName);
+        register.setUserName(username);
+        register.setEmail(email);
+        register.setMobileNumber(phone);
+        register.setPassword(password);
+        register.setInstitute(institute);
+
+        JwtResponseDto tokens = authManager.registerRootUser(register, product);
+
+        log.info("[self-signup] signup_completed product={} method=demo institute={} trial_ends={} source={} campaign={}",
+                product.getProductKey(), institute.getId(), trialEnds, request.getSource(), request.getCampaign());
+        java.util.Map<String, Object> event = signupEvent(institute.getId(), fullName, fullName, email, phone, false,
+                trialEnds, request.getSource());
+        event.put("method", "Demo portal");
+        alertClient.signupCompleted(product.getProductKey(), event);
         return tokens;
     }
 
@@ -194,10 +277,20 @@ public class SelfSignupManager {
         event.put("email", email);
         event.put("phone", phone);
         event.put("method", google ? "Google" : "Email OTP");
-        event.put("trial_ends", java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
-                .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
+        event.put("trial_ends", trialEnds == null ? null
+                : java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+                        .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
         event.put("source", source);
         return event;
+    }
+
+    /** The plan key of a "Buy <plan>" sign-up, or null for a trial. */
+    static String buyingPlan(String buy) {
+        if (!StringUtils.hasText(buy)) {
+            return null;
+        }
+        String key = buy.trim().toLowerCase(Locale.ROOT);
+        return PLAN_KEY.matcher(key).matches() ? key : null;
     }
 
     private ProductConfigDTO requireProduct(String product) {

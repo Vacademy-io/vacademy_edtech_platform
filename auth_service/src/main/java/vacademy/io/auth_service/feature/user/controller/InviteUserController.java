@@ -20,6 +20,7 @@ public class InviteUserController {
     private final AdminRoleGrantGuard adminRoleGrantGuard;
     private final UserAccountAccessGuard userAccountAccessGuard;
     private final UserService userService;
+    private final vacademy.io.auth_service.feature.user.service.ProductSeatGuard productSeatGuard;
 
     @PostMapping("/invite")
     public ResponseEntity<UserDTO> inviteUser(@RequestBody UserDTO userDTO,
@@ -28,6 +29,7 @@ public class InviteUserController {
         // Without this anyone could invite themselves into any institute as staff.
         userAccountAccessGuard.requireStaffOf(customUserDetails, instituteId);
         adminRoleGrantGuard.requireAdminToGrantAdmin(customUserDetails, instituteId, userDTO.getRoles());
+        productSeatGuard.requireSeatFor(instituteId, userDTO.getEmail(), userDTO.getRoles());
         UserDTO response = inviteUserService.inviteUser(userDTO, instituteId);
         return ResponseEntity.ok(response);
     }

@@ -46,6 +46,7 @@ public class PlatformProductService {
     private static final Pattern TEMPLATE_NAME = Pattern.compile("^[a-z0-9_]{1,100}$");
     private static final Pattern LANGUAGE = Pattern.compile("^[a-z]{2}(_[A-Z]{2})?$");
     private static final int MAX_DEMO_CREDITS = 100_000;
+    private static final Pattern INSTITUTE_ID = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
     private static final int MAX_ALERT_RECIPIENTS = 20;
     private static final Pattern PATH = Pattern.compile("^/[A-Za-z0-9/_-]*$");
     private static final Pattern PRODUCT_KEY = Pattern.compile("^[A-Za-z0-9_-]{1,40}$");
@@ -88,6 +89,14 @@ public class PlatformProductService {
         // A field left out is kept, so an older dashboard cannot wipe what it does not know about.
         ProductSettingsDTO existing = get(productKey);
         row.put("demo_credits", body.getDemoCredits() != null ? body.getDemoCredits() : existing.getDemoCredits());
+        row.put("demo_portal_credits", body.getDemoPortalCredits() != null
+                ? body.getDemoPortalCredits() : existing.getDemoPortalCredits());
+        row.put("email_logo_url", body.getEmailLogoUrl() != null
+                ? emptyToNull(body.getEmailLogoUrl()) : existing.getEmailLogoUrl());
+        row.put("demo_leads_institute_id", body.getDemoLeadsInstituteId() != null
+                ? emptyToNull(body.getDemoLeadsInstituteId()) : existing.getDemoLeadsInstituteId());
+        row.put("demo_leads_list_name", body.getDemoLeadsListName() != null
+                ? emptyToNull(body.getDemoLeadsListName()) : existing.getDemoLeadsListName());
         row.put("signup_alert_emails", body.getSignupAlertEmails() != null
                 ? emptyToNull(body.getSignupAlertEmails()) : existing.getSignupAlertEmails());
         row.put("signup_alert_whatsapp", body.getSignupAlertWhatsapp() != null
@@ -137,6 +146,17 @@ public class PlatformProductService {
     private static void validateAlerts(ProductSettingsDTO b) {
         require(b.getDemoCredits() == null || (b.getDemoCredits() >= 0 && b.getDemoCredits() <= MAX_DEMO_CREDITS),
                 "Demo credits must be between 0 and " + MAX_DEMO_CREDITS);
+        require(b.getDemoPortalCredits() == null
+                        || (b.getDemoPortalCredits() >= 0 && b.getDemoPortalCredits() <= MAX_DEMO_CREDITS),
+                "Demo page credits must be between 0 and " + MAX_DEMO_CREDITS);
+        require(!StringUtils.hasText(b.getEmailLogoUrl()) || (b.getEmailLogoUrl().trim().startsWith("https://")
+                        && !b.getEmailLogoUrl().trim().toLowerCase(Locale.ROOT).endsWith(".svg")),
+                "Email logo must be an https PNG or JPG link (SVG does not show in mail)");
+        require(!StringUtils.hasText(b.getDemoLeadsInstituteId())
+                        || INSTITUTE_ID.matcher(b.getDemoLeadsInstituteId().trim()).matches(),
+                "Demo leads institute must be an institute id");
+        require(!StringUtils.hasText(b.getDemoLeadsListName()) || b.getDemoLeadsListName().trim().length() <= 255,
+                "Demo leads list name can be at most 255 characters");
         if (StringUtils.hasText(b.getSignupAlertEmails())) {
             String[] emails = b.getSignupAlertEmails().split(",");
             require(emails.length <= MAX_ALERT_RECIPIENTS, "At most " + MAX_ALERT_RECIPIENTS + " alert emails");
@@ -223,6 +243,7 @@ public class PlatformProductService {
                 .displayName(p.getDisplayName())
                 .trialDays(p.getTrialDays())
                 .demoCredits(p.getDemoCredits())
+                .demoPortalCredits(p.getDemoPortalCredits() != null ? p.getDemoPortalCredits() : p.getDemoCredits())
                 .selfSignupEnabled(Boolean.TRUE.equals(p.getSelfSignupEnabled()))
                 .plans(plans)
                 .planValidityMonths(months)
@@ -281,6 +302,58 @@ public class PlatformProductService {
                     .stream().findFirst().map(ProductSettingsDTO::getDemoCredits).orElse(null);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * What a workspace opened from the product's one-screen demo starts with: the demo-page amount,
+     * else the trial amount. Null keeps the platform's default.
+     */
+    public Integer demoPortalCreditsFor(String productKey) {
+        if (!StringUtils.hasText(productKey) || "vacademy".equalsIgnoreCase(productKey)) {
+            return null;
+        }
+        try {
+            return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                    .stream().findFirst()
+                    .map(p -> p.getDemoPortalCredits() != null ? p.getDemoPortalCredits() : p.getDemoCredits())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * The settings of the product an institute belongs to, when that product has its own sender
+     * (Evalezy); empty for a Vacademy institute or when unknown.
+     */
+    public java.util.Optional<ProductSettingsDTO> productOfInstitute(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            String product = jdbcTemplate.query("SELECT product FROM institutes WHERE id = ?",
+                    (rs, n) -> rs.getString(1), instituteId).stream().findFirst().orElse(null);
+            if (!StringUtils.hasText(product) || "vacademy".equalsIgnoreCase(product.trim())) {
+                return java.util.Optional.empty();
+            }
+            return find(product.trim()).filter(p -> StringUtils.hasText(p.getFromEmail())
+                    && StringUtils.hasText(p.getDisplayName()));
+        } catch (Exception e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    /** A product's settings, or empty when it has none (or they cannot be read). */
+    public java.util.Optional<ProductSettingsDTO> find(String productKey) {
+        if (!StringUtils.hasText(productKey)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                    .stream().findFirst();
+        } catch (Exception e) {
+            return java.util.Optional.empty();
         }
     }
 
