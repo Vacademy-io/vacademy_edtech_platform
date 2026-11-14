@@ -241,4 +241,69 @@ class SelfSignupManagerTest {
         assertEquals(3, manager.config("evalezy").getTrialDays());
         assertEquals("/evalezy", manager.config("evalezy").getAppPath());
     }
+
+    private vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest demo(String email) {
+        vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest r =
+                new vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest();
+        r.setProduct("evalezy");
+        r.setFullName("Asha Verma");
+        r.setEmail(email);
+        r.setPhone("+91 98765 43210");
+        r.setSource("demo");
+        return r;
+    }
+
+    @Test
+    void demoOpensATrialWorkspaceTaggedForTheDemoCreditAmount() {
+        JwtResponseDto tokens = manager.demoSignup(demo(" Asha@School.in "), "1.1.1.1");
+        assertEquals("a", tokens.getAccessToken());
+        ArgumentCaptor<RegisterRequest> sent = ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(authManager).registerRootUser(sent.capture(), any());
+        RegisterRequest r = sent.getValue();
+        assertEquals("asha@school.in", r.getEmail());
+        assertEquals("919876543210", r.getMobileNumber());
+        assertEquals("Asha Verma", r.getInstitute().getInstituteName());
+        assertEquals("evalezy", r.getInstitute().getProduct());
+        assertEquals("FREE_TRIAL", r.getInstitute().getLeadTag());
+        assertEquals(List.of(SelfSignupManager.DEMO_PORTAL_TAG), r.getInstitute().getTags());
+        assertTrue(r.getPassword().length() >= 12);
+        assertEndsInDays(3, r);
+        verify(rateLimiter).checkSignup("1.1.1.1");
+        verify(alertClient).signupCompleted(eq("evalezy"), any());
+    }
+
+    @Test
+    void demoRefusesAnEmailThatAlreadyHasAnAccount() {
+        when(userRepository.findFirstByEmailOrderByCreatedAtDesc("asha@school.in")).thenReturn(Optional.of(new User()));
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> manager.demoSignup(demo("asha@school.in"), "1.1.1.1"));
+        assertTrue(e.getMessage().contains("log in"));
+        verify(authManager, never()).registerRootUser(any(), any());
+    }
+
+    @Test
+    void demoRefusesPlusAliasesAndThrowawayInboxes() {
+        assertThrows(VacademyException.class, () -> manager.demoSignup(demo("asha+2@gmail.com"), "1.1.1.1"));
+        assertThrows(VacademyException.class, () -> manager.demoSignup(demo("asha@mailinator.com"), "1.1.1.1"));
+        verify(authManager, never()).registerRootUser(any(), any());
+    }
+
+    @Test
+    void demoNeedsANameAndAPhone() {
+        vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest noName = demo("asha@school.in");
+        noName.setFullName(" ");
+        assertThrows(VacademyException.class, () -> manager.demoSignup(noName, "1.1.1.1"));
+        vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest noPhone = demo("asha@school.in");
+        noPhone.setPhone("123");
+        assertThrows(VacademyException.class, () -> manager.demoSignup(noPhone, "1.1.1.1"));
+        verify(authManager, never()).registerRootUser(any(), any());
+    }
+
+    @Test
+    void demoIsClosedWhenSignUpIsClosed() {
+        vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest r = demo("asha@school.in");
+        r.setProduct("vacademy");
+        assertThrows(VacademyException.class, () -> manager.demoSignup(r, "1.1.1.1"));
+        verify(authManager, never()).registerRootUser(any(), any());
+    }
 }
