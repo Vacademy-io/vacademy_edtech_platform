@@ -32,6 +32,17 @@ const AssessmentParticipantsTab = () => {
         })
     );
 
+    // pre_user_registrations is every registration, open-link ones included, so it labelled an
+    // external learner "Internal" and that list then came up empty. open_user_registrations
+    // (older backends do not send it: treated as 0, the old behaviour) splits it. Counts only:
+    // the lists load when a dialog opens, since the registrations call is heavy on big tests.
+    const totalRegistrations = assessmentDetails[2]?.saved_data?.pre_user_registrations ?? 0;
+    const externalCount = Math.min(
+        assessmentDetails[2]?.saved_data?.open_user_registrations ?? 0,
+        totalRegistrations
+    );
+    const internalCount = totalRegistrations - externalCount;
+
     const assignedBatchDetails = getBatchDetails(
         transformedBatches,
         assessmentDetails[2]?.saved_data.pre_batch_registrations
@@ -54,25 +65,22 @@ const AssessmentParticipantsTab = () => {
                 <div className="flex flex-col gap-2">
                     <h1 className="font-semibold">{t('header.title')}</h1>
                     <div className="flex flex-col gap-4">
-                        {(assessmentDetails[2]?.saved_data?.pre_user_registrations ?? 0) > 0 && (
+                        {internalCount > 0 && (
                             <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
                                 <h1 className="text-sm">
-                                    {t('internalParticipants.count', {
-                                        count:
-                                            assessmentDetails[2]?.saved_data
-                                                ?.pre_user_registrations ?? 0,
-                                    })}
+                                    {t('internalParticipants.count', { count: internalCount })}
                                 </h1>
                                 <AssessmentParticipantsIndividualList type="internal" />
                             </div>
                         )}
-                        {/* <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
-                            <h1 className="text-sm">
-                                {assessmentDetails[2]?.saved_data?.open_user_registrations}{" "}
-                                participants (External)
-                            </h1>
-                            <AssessmentParticipantsIndividualList type="external" />
-                        </div> */}
+                        {externalCount > 0 && (
+                            <div className="flex items-center justify-between rounded-md border border-primary-200 bg-primary-50 px-4 py-2">
+                                <h1 className="text-sm">
+                                    {t('externalParticipants.count', { count: externalCount })}
+                                </h1>
+                                <AssessmentParticipantsIndividualList type="external" />
+                            </div>
+                        )}
                         {assignedBatchDetails?.map((batch, index) => (
                             <div
                                 key={index}
@@ -82,6 +90,11 @@ const AssessmentParticipantsTab = () => {
                                 <AssessmentParticipantsList batchId={batch.id} />
                             </div>
                         ))}
+                        {totalRegistrations === 0 && (assignedBatchDetails?.length ?? 0) === 0 && (
+                            <p className="rounded-md border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-500">
+                                {t('empty')}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <Separator />

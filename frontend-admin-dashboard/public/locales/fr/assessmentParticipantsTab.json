@@ -23,5 +23,10 @@
         "minutesBeforeLive_other": "{{count}} min",
         "whenLive": "Lorsque l'évaluation est en direct :",
         "whenReportsGenerated": "Lorsque les rapports d'évaluation sont générés :"
-    }
+    },
+    "externalParticipants": {
+        "count_one": "{{count}} participant (externe – inscription ouverte)",
+        "count_other": "{{count}} participants (externes – inscription ouverte)"
+    },
+    "empty": "Aucun participant pour le moment. Les apprenants inscrits via le lien ci-dessous apparaîtront ici."
 }

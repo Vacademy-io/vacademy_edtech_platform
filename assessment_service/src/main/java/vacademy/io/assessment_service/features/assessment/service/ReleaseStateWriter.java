@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.enums.ReleaseResultStatusEnum;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
@@ -74,8 +76,42 @@ public class ReleaseStateWriter {
             attempt.setReportLastReleaseDate(now);
             studentAttemptRepository.save(attempt);
         }
+        clearResultNotice(attempts);
         clearComparisonCache();
         touchFeed(attempts);
+    }
+
+    /**
+     * This release is the one that emails (or deliberately does not), so an email still
+     * queued from the submit-time auto release must not go out as well.
+     *
+     * <p>After the caller's commit, in its own transaction: inside the caller's transaction a
+     * failure would roll back the release itself (finalize runs in one), and a separate
+     * transaction before the commit would wait forever on the row locks the caller holds.
+     */
+    private void clearResultNotice(Collection<StudentAttempt> attempts) {
+        List<String> ids = attempts.stream().filter(a -> a != null && a.getId() != null)
+                .map(StudentAttempt::getId).toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        Runnable clear = () -> {
+            try {
+                studentAttemptRepository.clearResultNoticePending(ids);
+            } catch (Exception e) {
+                log.warn("Failed to clear the queued result email after release: {}", e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    clear.run();
+                }
+            });
+        } else {
+            clear.run();
+        }
     }
 
     /**

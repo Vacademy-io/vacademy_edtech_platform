@@ -2,10 +2,13 @@ package vacademy.io.assessment_service.features.assessment.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.assessment_service.features.assessment.dto.LeaderBoardDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.AssessmentOverviewDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.MarksRankDto;
@@ -17,6 +20,7 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.resp
 import vacademy.io.assessment_service.features.assessment.dto.manual_evaluation.ManualAttemptResponseDto;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
 
@@ -996,18 +1000,24 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             @Param("endDate") Date endDate,
             @Param("maxRows") int maxRows);
 
-    @Query(value = """
-            SELECT sa.* FROM student_attempt sa
-            JOIN assessment_user_registration aur ON aur.id = sa.registration_id
-            JOIN assessment a ON a.id = aur.assessment_id
-            WHERE a.result_type = 'AUTO_AFTER_ASSESSMENT_END'
-            AND COALESCE(a.omr_mode, false) = false
-            AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time
-            AND sa.status = 'ENDED'
-            AND sa.result_status = 'COMPLETED'
-            AND (sa.report_release_status IS NULL OR sa.report_release_status = 'PENDING')
-            """, nativeQuery = true)
-    List<StudentAttempt> findUnreleasedAttemptsForEndedAutoReleaseAssessments();
+    /**
+     * Queues the result email of an attempt released on submit (AutoResultReleaseJob sends it).
+     * REQUIRES_NEW: called from an afterCommit hook, where joining the finished transaction
+     * would never commit.
+     */
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = TRUE WHERE id = :attemptId", nativeQuery = true)
+    int markResultNoticePending(@Param("attemptId") String attemptId);
+
+    /**
+     * A release that sent (or deliberately skipped) its own email: nothing left for the job.
+     * REQUIRES_NEW for the same reason as markResultNoticePending (afterCommit hook).
+     */
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = NULL WHERE id IN (:attemptIds) AND result_notice_pending IS NOT NULL", nativeQuery = true)
+    int clearResultNoticePending(@Param("attemptIds") Collection<String> attemptIds);
 }
 
 
