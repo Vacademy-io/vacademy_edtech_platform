@@ -210,6 +210,16 @@ android {
 			resValue "string", "app_name", "Smart AI Academy"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.smartaiacademy.co.in"
 		}
+		mecademy {
+			dimension "client"
+			applicationId "com.mecademy.app"
+			// Play automatic protection rejects bundles below minSdk 24.
+			minSdkVersion 24
+			versionCode 2
+			versionName "1.0.1"
+			resValue "string", "app_name", "Mecademy"
+			manifestPlaceholders.DEEP_LINK_HOST = "student.mecademy.in"
+		}
 		sreedhar {
 			dimension "client"
 			applicationId "com.sreedhar.app"
@@ -220,6 +230,16 @@ android {
 			// Apostrophe must stay escaped or AAPT rejects the generated string resource.
 			resValue "string", "app_name", "Sreedhar\\'s TTS"
 			manifestPlaceholders.DEEP_LINK_HOST = "learn.ttsedu.co.in"
+		}
+		edum3ntor {
+			dimension "client"
+			applicationId "app.edum3ntor.com"
+			// Play automatic protection rejects bundles below minSdk 24.
+			minSdkVersion 24
+			versionCode 3
+			versionName "1.0.2"
+			resValue "string", "app_name", "EDUM3NTOR"
+			manifestPlaceholders.DEEP_LINK_HOST = "learner-edum3ntor.vacademy.io"
 		}
 	}
 }
