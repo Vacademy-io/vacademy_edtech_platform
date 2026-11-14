@@ -11,5 +11,10 @@
     "filterButtons": {
         "filter": "Filtrer",
         "reset": "Réinitialiser"
+    },
+    "empty": {
+        "title": "Aucun apprenant dans ce groupe pour le moment",
+        "noMatch": "Aucun apprenant ne correspond à cette recherche ou ce filtre",
+        "openTestHint": "Les apprenants inscrits via le lien du test ouvert ne sont ajoutés à aucun groupe. Ils figurent parmi les participants externes de l'onglet Participants."
     }
 }
