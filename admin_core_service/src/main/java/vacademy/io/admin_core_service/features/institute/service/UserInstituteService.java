@@ -63,6 +63,9 @@ public class UserInstituteService {
     @Autowired
     private vacademy.io.admin_core_service.features.audience.service.LeadStatusService leadStatusService;
 
+    /** Set by auth-service on an institute created from a product's one-screen demo. */
+    static final String DEMO_PORTAL_TAG = "signup:demo_portal";
+
     public static InstituteInfoDTO getInstituteDetails(Institute institute) {
         InstituteInfoDTO instituteInfoDTO = new InstituteInfoDTO();
         instituteInfoDTO.setId(institute.getId());
@@ -147,7 +150,12 @@ public class UserInstituteService {
 
                 // Opening credits. A product can set its own; then this waits, because the first
                 // balance read would otherwise create the wallet at the default amount.
-                Integer demoCredits = platformProductService.demoCreditsFor(savedInstitute.getProduct());
+                // The one-screen demo (auth-service tags it) opens with the product's demo-page amount.
+                boolean demoPortal = instituteDto.getTags() != null
+                        && instituteDto.getTags().contains(DEMO_PORTAL_TAG);
+                Integer demoCredits = demoPortal
+                        ? platformProductService.demoPortalCreditsFor(savedInstitute.getProduct())
+                        : platformProductService.demoCreditsFor(savedInstitute.getProduct());
                 if (demoCredits != null) {
                     creditClient.initializeCredits(savedInstitute.getId(), demoCredits);
                 } else {

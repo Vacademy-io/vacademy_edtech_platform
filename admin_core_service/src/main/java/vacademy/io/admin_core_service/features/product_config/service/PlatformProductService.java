@@ -88,6 +88,8 @@ public class PlatformProductService {
         // A field left out is kept, so an older dashboard cannot wipe what it does not know about.
         ProductSettingsDTO existing = get(productKey);
         row.put("demo_credits", body.getDemoCredits() != null ? body.getDemoCredits() : existing.getDemoCredits());
+        row.put("demo_portal_credits", body.getDemoPortalCredits() != null
+                ? body.getDemoPortalCredits() : existing.getDemoPortalCredits());
         row.put("signup_alert_emails", body.getSignupAlertEmails() != null
                 ? emptyToNull(body.getSignupAlertEmails()) : existing.getSignupAlertEmails());
         row.put("signup_alert_whatsapp", body.getSignupAlertWhatsapp() != null
@@ -137,6 +139,9 @@ public class PlatformProductService {
     private static void validateAlerts(ProductSettingsDTO b) {
         require(b.getDemoCredits() == null || (b.getDemoCredits() >= 0 && b.getDemoCredits() <= MAX_DEMO_CREDITS),
                 "Demo credits must be between 0 and " + MAX_DEMO_CREDITS);
+        require(b.getDemoPortalCredits() == null
+                        || (b.getDemoPortalCredits() >= 0 && b.getDemoPortalCredits() <= MAX_DEMO_CREDITS),
+                "Demo page credits must be between 0 and " + MAX_DEMO_CREDITS);
         if (StringUtils.hasText(b.getSignupAlertEmails())) {
             String[] emails = b.getSignupAlertEmails().split(",");
             require(emails.length <= MAX_ALERT_RECIPIENTS, "At most " + MAX_ALERT_RECIPIENTS + " alert emails");
@@ -223,6 +228,7 @@ public class PlatformProductService {
                 .displayName(p.getDisplayName())
                 .trialDays(p.getTrialDays())
                 .demoCredits(p.getDemoCredits())
+                .demoPortalCredits(p.getDemoPortalCredits() != null ? p.getDemoPortalCredits() : p.getDemoCredits())
                 .selfSignupEnabled(Boolean.TRUE.equals(p.getSelfSignupEnabled()))
                 .plans(plans)
                 .planValidityMonths(months)
@@ -281,6 +287,37 @@ public class PlatformProductService {
                     .stream().findFirst().map(ProductSettingsDTO::getDemoCredits).orElse(null);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * What a workspace opened from the product's one-screen demo starts with: the demo-page amount,
+     * else the trial amount. Null keeps the platform's default.
+     */
+    public Integer demoPortalCreditsFor(String productKey) {
+        if (!StringUtils.hasText(productKey) || "vacademy".equalsIgnoreCase(productKey)) {
+            return null;
+        }
+        try {
+            return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                    .stream().findFirst()
+                    .map(p -> p.getDemoPortalCredits() != null ? p.getDemoPortalCredits() : p.getDemoCredits())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** A product's settings, or empty when it has none (or they cannot be read). */
+    public java.util.Optional<ProductSettingsDTO> find(String productKey) {
+        if (!StringUtils.hasText(productKey)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return jdbcTemplate.query(SELECT + "WHERE setting_key = ?", (rs, n) -> toDto(rs), keyOf(productKey))
+                    .stream().findFirst();
+        } catch (Exception e) {
+            return java.util.Optional.empty();
         }
     }
 

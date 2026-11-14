@@ -36,6 +36,8 @@ public class ProductSettingsDTO {
 
     /** Credits a new institute of this product opens with. None keeps the platform's default. */
     private Integer demoCredits;
+    /** Credits the one-screen demo (name, email, phone, no code) opens with. None uses demoCredits. */
+    private Integer demoPortalCredits;
     /** Comma-separated: who gets the new sign-up mail. */
     private String signupAlertEmails;
     /** Comma-separated, digits with the country code: who gets the new sign-up WhatsApp. */

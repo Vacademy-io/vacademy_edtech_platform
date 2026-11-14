@@ -18,6 +18,8 @@ public class PublicProductOfferDTO {
     private Integer trialDays;
     /** AI credits a new sign-up opens with; null = the platform's default. */
     private Integer demoCredits;
+    /** What the one-screen demo opens with (falls back to demoCredits). */
+    private Integer demoPortalCredits;
     private Boolean selfSignupEnabled;
     private java.util.List<ProductPlanDTO> plans;
     private Integer planValidityMonths;
