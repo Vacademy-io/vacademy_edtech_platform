@@ -53,6 +53,8 @@ export interface SelfSignupDetails {
     city: string;
     state: string;
     teachers: number;
+    /** "Buy <plan>" sign-up: no free trial, the app opens on that plan's payment. */
+    buy?: string;
 }
 
 export interface SignupTokens {
