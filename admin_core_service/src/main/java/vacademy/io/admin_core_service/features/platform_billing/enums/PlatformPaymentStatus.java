@@ -7,5 +7,7 @@ package vacademy.io.admin_core_service.features.platform_billing.enums;
 public enum PlatformPaymentStatus {
     INITIATED,
     SUCCESS,
-    FAILED
+    FAILED,
+    /** V590: the order's Payment Link expired unpaid (set by the reconcile job). */
+    EXPIRED
 }

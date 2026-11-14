@@ -25,9 +25,18 @@ import { useMediaRefsStore } from "@/stores/mediaRefsStore";
 interface PDFViewerProps {
   documentId?: string;
   pdfUrl: string;
+  /**
+   * Open at this page (1-based, as cited by the chat) instead of the saved
+   * progress. Clamped to the page count once the document has loaded.
+   */
+  startPage?: number;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
+const PDFViewer: React.FC<PDFViewerProps> = ({
+  documentId,
+  pdfUrl,
+  startPage,
+}) => {
   const { t } = useTranslation("studyContent");
   const { addActivity } = useTrackingStore();
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -107,30 +116,24 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
   const inactivityThreshold = trackingSettings.focus.idlePopupDelaySeconds * 1000;
   const {setCurrentPdfPage, navigationTrigger} = useMediaRefsStore();
 
+  // Zero-based cited page, captured once per mount so a later prop change
+  // cannot move the reader. Without one the viewer opens at the saved
+  // progress marker exactly as before.
+  const startPageIndexRef = useRef<number | null>(
+    startPage !== undefined && startPage >= 1 ? Math.floor(startPage) - 1 : null
+  );
+  const openAtPageIndex =
+    startPageIndexRef.current ?? activeItem?.progress_marker;
+
+  // The store's page belongs to whichever PDF was open before this one until the
+  // first page change, and notes and doubts read it for "where the learner is".
+  useEffect(() => {
+    setCurrentPdfPage(openAtPageIndex ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per slide; the viewer is keyed by it
+  }, []);
+
   // Add ref for PDF viewer component
   const pdfViewerRef = useRef<PdfViewerComponentRef>(null);
-
-  // Tap-to-activate PDF on mobile/tablet so the outer page stays scrollable
-  // until the user explicitly opts into interacting with the PDF viewer.
-  const [isTouchViewport, setIsTouchViewport] = useState(false);
-  const [pdfActive, setPdfActive] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !("matchMedia" in window)) return;
-    // Phone + tablet screens â Tailwind's `lg` breakpoint is 1024px.
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const update = () => {
-      setIsTouchViewport(mq.matches);
-      if (!mq.matches) setPdfActive(false);
-    };
-    update();
-    if (typeof mq.addEventListener === "function") {
-      mq.addEventListener("change", update);
-      return () => mq.removeEventListener("change", update);
-    }
-    mq.addListener(update);
-    return () => mq.removeListener(update);
-  }, []);
 
   // Prevent page scroll bounce on mobile (but allow PDF container to scroll)
   useEffect(() => {
@@ -456,6 +459,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
         // Tab switched away
         setTabSwitchCount((prev) => prev + 1);
         setIsPaused(true);
+      } else if (!trackingSettings.focus.idlePopupEnabled) {
+        // No overlay to press in this mode: coming back resumes the count.
+        setIsPaused(false);
       }
     };
 
@@ -531,6 +537,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
     const { setCurrentPdfLength } = useMediaRefsStore.getState();
     setCurrentPdfLength(e.doc.numPages);
 
+    // A cited page past the end (stale citation, replaced file) lands on the
+    // last page rather than leaving the viewer at the top.
+    const startPageIndex = startPageIndexRef.current;
+    if (
+      startPageIndex !== null &&
+      e.doc.numPages > 0 &&
+      startPageIndex > e.doc.numPages - 1
+    ) {
+      const lastPageIndex = e.doc.numPages - 1;
+      // Deferred a beat: the page layer is still being laid out on load.
+      setTimeout(() => pdfViewerRef.current?.jumpToPage(lastPageIndex), 250);
+    }
+
     if (isFirstView) {
       console.log("integrate add document activity api now");
       syncPDFTrackingData();
@@ -549,6 +568,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
   };
 
   useEffect(() => {
+    // Opened from a citation: the viewer starts at the cited page, so page
+    // views are attributed to it rather than to the saved marker.
+    if (startPageIndexRef.current !== null) {
+      setCurrentPage(startPageIndexRef.current);
+      return;
+    }
     setCurrentPage(activeItem?.progress_marker || 0);
   }, [activeItem?.progress_marker]);
 
@@ -650,8 +675,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
         </div>
       )}
 
-      {/* Pause overlay */}
-      {isPaused && (
+      {/* Pause overlay. Only for institutes that switched the focus check on;
+          otherwise time simply stops counting until the learner is back, and
+          someone writing on paper is never blocked. */}
+      {isPaused && trackingSettings.focus.idlePopupEnabled && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg shadow-lg text-center max-w-md">
             <h3 className="text-lg font-semibold mb-2">{t("pdfViewer.readingPaused")}</h3>
@@ -696,53 +723,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
         pdfUrl={pdfUrl}
         handlePageChange={handlePageChange}
         handleDocumentLoad={handleDocumentLoad}
-        initialPage={activeItem?.progress_marker}
+        initialPage={openAtPageIndex}
       />
-
-      {/* Tap-to-interact overlay â keeps the outer page scrollable on phones
-          and tablets until the user explicitly taps to engage with the PDF. */}
-      {isTouchViewport && !pdfActive && (
-        <div
-          className="absolute inset-0 z-20 flex cursor-pointer items-end justify-center pb-6"
-          style={{ touchAction: "pan-y" }}
-          onClick={() => setPdfActive(true)}
-          role="button"
-          tabIndex={0}
-          aria-label={t("pdfViewer.tapToEnableScroll")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setPdfActive(true);
-          }}
-        >
-          <div className="pointer-events-none rounded-full bg-black/75 px-4 py-2 text-xs font-medium text-white shadow-lg">
-            {t("pdfViewer.tapToEnableScroll")}
-          </div>
-        </div>
-      )}
-
-      {/* Floating exit chip at the viewport's bottom-left â always in view
-          regardless of where the user has scrolled. */}
-      {isTouchViewport && pdfActive && (
-        <button
-          type="button"
-          onClick={() => setPdfActive(false)}
-          className="fixed bottom-24 start-2 z-50 flex items-center gap-1 rounded-md bg-red-500 px-2.5 py-1.5 text-2xs font-semibold text-white shadow-lg active:scale-95"
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M6 6l12 12M6 18L18 6" />
-          </svg>
-          {t("pdfViewer.exitScroll")}
-        </button>
-      )}
     </div>
   );
 };

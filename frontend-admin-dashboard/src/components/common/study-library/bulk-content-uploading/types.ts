@@ -9,6 +9,7 @@ export type BulkItemKind =
     | 'PPT'
     | 'IMAGE'
     | 'VIDEO_FILE'
+    | 'SCORM'
     | 'YOUTUBE'
     | 'EXTERNAL_LINK';
 
@@ -137,6 +138,8 @@ export interface BulkUploadOptions {
     publish: boolean;
     notify: boolean;
     skipDuplicateTitles: boolean;
+    /** Create subjects/modules/chapters the zip references but the course lacks. */
+    createMissing: boolean;
 }
 
 export interface ParseResult {

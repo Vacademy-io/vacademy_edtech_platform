@@ -1,0 +1,31 @@
+{
+    "toast": {
+        "saveSettingsFailed": "सेटिंग्स सहेजने में विफल। कृपया पुनः प्रयास करें।",
+        "settingsSaved": "क्विज़ सेटिंग्स सहेजी गईं!",
+        "questionsAddedSuccess_one": "{{count}} प्रश्न सफलतापूर्वक जोड़ा गया!",
+        "questionsAddedSuccess_other": "{{count}} प्रश्न सफलतापूर्वक जोड़े गए!",
+        "addQuestionsFailed": "प्रश्न जोड़ने में विफल। कृपया पुनः प्रयास करें।",
+        "questionUpdated": "प्रश्न सफलतापूर्वक अपडेट किया गया!",
+        "updateQuestionFailed": "प्रश्न अपडेट करने में विफल। कृपया पुनः प्रयास करें।",
+        "enterQuestionName": "कृपया प्रश्न का नाम दर्ज करें",
+        "questionAdded": "प्रश्न सफलतापूर्वक जोड़ा गया!",
+        "addQuestionFailed": "प्रश्न जोड़ने में विफल। कृपया पुनः प्रयास करें।",
+        "questionDeleted": "प्रश्न सफलतापूर्वक हटाया गया!",
+        "deleteQuestionFailed": "प्रश्न हटाने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "header": "क्विज़ प्रश्न",
+    "deletedBadge": "हटाया गया",
+    "quizDeletedTitle": "यह क्विज़ हटा दी गई है",
+    "quizDeletedSubtitle": "क्विज़ सामग्री अब उपलब्ध नहीं है",
+    "unableToLoadTitle": "क्विज़ लोड नहीं हो सकी",
+    "unableToLoadSubtitle": "रूट पैरामीटर उपलब्ध नहीं हैं। कृपया पेज को रीफ़्रेश करें।",
+    "noQuestionsTitle": "अभी तक कोई प्रश्न नहीं",
+    "noQuestionsSubtitle": "शुरू करने के लिए अपना पहला प्रश्न जोड़ें",
+    "addNewQuestionTitle": "नया प्रश्न जोड़ें",
+    "editQuestionTitle": "प्रश्न {{number}} संपादित करें",
+    "cancel": "रद्द करें",
+    "addQuestion": "प्रश्न जोड़ें",
+    "adding": "जोड़ा जा रहा है...",
+    "saveChanges": "परिवर्तन सहेजें",
+    "saving": "सहेजा जा रहा है..."
+}

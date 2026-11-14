@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Heart } from 'lucide-react';
+import { Heart } from '@phosphor-icons/react';
 import { getCurrencySymbol } from './utils/utils';
 
 interface DonationPlanPreviewProps {
@@ -21,6 +22,7 @@ export const DonationPlanPreview: React.FC<DonationPlanPreviewProps> = ({
     allowCustomAmount,
     onSelectAmount,
 }) => {
+    const { t } = useTranslation('settingsDonationPlanPreview');
     const [selectedAmount, setSelectedAmount] = useState<string>('');
     const [customAmount, setCustomAmount] = useState<string>('');
 
@@ -50,12 +52,12 @@ export const DonationPlanPreview: React.FC<DonationPlanPreviewProps> = ({
             <CardHeader className="pb-4 text-center">
                 <CardTitle className="flex items-center justify-center gap-2 text-xl">
                     <Heart className="size-6 text-red-500" />
-                    Support free education
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="text-center">
-                    <Label className="text-sm text-gray-600">Choose an amount to donate</Label>
+                    <Label className="text-sm text-gray-600">{t('chooseAmount')}</Label>
                 </div>
 
                 {/* Suggested amounts grid */}
@@ -83,12 +85,15 @@ export const DonationPlanPreview: React.FC<DonationPlanPreviewProps> = ({
                 {allowCustomAmount && (
                     <div className="space-y-2">
                         <Label className="text-sm text-gray-600">
-                            {currency} {getCurrencySymbol(currency)} Other
+                            {t('customAmount.label', {
+                                currency,
+                                symbol: getCurrencySymbol(currency),
+                            })}
                         </Label>
                         <Input
                             type="number"
                             min={minAmount}
-                            placeholder="Enter custom amount"
+                            placeholder={t('customAmount.placeholder')}
                             value={customAmount}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             className={`h-12 text-center text-lg font-medium ${
@@ -97,8 +102,10 @@ export const DonationPlanPreview: React.FC<DonationPlanPreviewProps> = ({
                         />
                         {minAmount > 0 && (
                             <p className="text-center text-xs text-red-500">
-                                Minimum amount: {getCurrencySymbol(currency)}
-                                {minAmount}
+                                {t('customAmount.minimumAmount', {
+                                    symbol: getCurrencySymbol(currency),
+                                    amount: minAmount,
+                                })}
                             </p>
                         )}
                     </div>
@@ -109,7 +116,7 @@ export const DonationPlanPreview: React.FC<DonationPlanPreviewProps> = ({
                     className="h-12 w-full bg-primary-400 font-medium text-white hover:bg-primary-500"
                     disabled={!selectedAmount && !customAmount}
                 >
-                    Continue
+                    {t('continueButton')}
                 </Button>
             </CardContent>
         </Card>

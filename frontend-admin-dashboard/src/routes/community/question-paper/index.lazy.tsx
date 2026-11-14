@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { InternalSidebar } from './-components/InternalSidebar';
 import { QuestionDisplay } from './-components/QuestionDisplay';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createLazyFileRoute('/community/question-paper/')({
   component: QuestionPaperLayout,
@@ -11,11 +12,12 @@ export const Route = createLazyFileRoute('/community/question-paper/')({
 
 function QuestionPaperLayout() {
   const { id } = Route.useSearch();
+  const { t } = useTranslation('communityQuestionPaperIndex');
 
   const { setNavHeading } = useNavHeadingStore();
   useEffect(() => {
-    setNavHeading(<h1 className="text-lg">Community</h1>);
-  }, []);
+    setNavHeading(<h1 className="text-lg">{t('community')}</h1>);
+  }, [t]);
 
   return (
     <LayoutContainer intrnalMargin={false} className="flex-1">

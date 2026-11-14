@@ -1,0 +1,8 @@
+{
+    "anonymous": "Anonyme",
+    "backToList": "Retour à la liste",
+    "guest": "Invité",
+    "assigned": "Assigné",
+    "nameAsked": "{{name}} · a demandé",
+    "noPermissionToReply": "Vous n'êtes pas autorisé(e) à répondre à cette question."
+}

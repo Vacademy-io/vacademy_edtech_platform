@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "title": "Paramètres de rendu",
+        "description": "Configurez la sortie vidéo avant de lancer le rendu."
+    },
+    "resolution": {
+        "label": "Résolution",
+        "optionLabel": "{{resolution}} ({{dimensions}})"
+    },
+    "fps": {
+        "label": "Fréquence d'images",
+        "optionLabel": "{{fps}} im/s"
+    },
+    "captions": {
+        "label": "Sous-titres"
+    },
+    "captionPreview": {
+        "ariaLabel": "Aperçu des sous-titres",
+        "sampleText": "Voici à quoi ressembleront vos sous-titres à cette taille."
+    },
+    "stylePreset": {
+        "label": "Préréglage de style",
+        "customBadge": "Personnalisé",
+        "customTooltip": "Les réglages ont été modifiés au-delà de tout préréglage nommé"
+    },
+    "position": {
+        "label": "Position",
+        "top": "Haut",
+        "bottom": "Bas"
+    },
+    "size": {
+        "label": "Taille",
+        "small": "Petit",
+        "medium": "Moyen",
+        "large": "Grand"
+    },
+    "textColor": {
+        "label": "Couleur du texte"
+    },
+    "background": {
+        "label": "Arrière-plan",
+        "opacityLabel": "Opacité de l'arrière-plan : {{value}}%"
+    },
+    "displayMode": {
+        "label": "Mode d'affichage",
+        "phrase": "Phrase",
+        "karaoke": "Karaoké"
+    },
+    "font": {
+        "label": "Police",
+        "system": "Système"
+    },
+    "weight": {
+        "label": "Graisse"
+    },
+    "textOutline": {
+        "label": "Contour du texte : {{width}}px",
+        "colorTitle": "Couleur du contour"
+    },
+    "highlightColor": {
+        "label": "Couleur de surbrillance (mot actif du karaoké)"
+    },
+    "watermark": {
+        "label": "Filigrane"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "startRender": "Démarrer le rendu"
+    }
+}

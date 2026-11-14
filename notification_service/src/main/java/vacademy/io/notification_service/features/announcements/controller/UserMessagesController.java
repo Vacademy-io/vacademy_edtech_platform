@@ -231,6 +231,7 @@ public class UserMessagesController {
         }
     }
 
+
     /**
      * Get system alerts with priority filtering
      */

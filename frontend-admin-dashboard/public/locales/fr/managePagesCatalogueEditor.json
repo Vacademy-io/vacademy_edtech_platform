@@ -1,0 +1,30 @@
+{
+    "draft": {
+        "staleStarted": "Ce brouillon a été commencé le {{date}}.",
+        "staleLiveChangedAt": "Le site en ligne a changé depuis ({{when}}).",
+        "staleLiveChanged": "Le site en ligne a changé depuis.",
+        "staleUndoWarning": "Le publier annulerait ces modifications.",
+        "staleSinceOpenedAt": "Le site en ligne a changé après l’ouverture de l’éditeur ({{when}}).",
+        "staleSinceOpened": "Le site en ligne a changé après l’ouverture de l’éditeur.",
+        "version": "v{{n}}",
+        "useLive": "Utiliser le site en ligne (supprimer ce brouillon)",
+        "keepDraft": "Garder mon brouillon",
+        "discard": "Supprimer le brouillon",
+        "discardHint": "Abandonner les modifications non publiées et revenir au site en ligne",
+        "discardTitle": "Supprimer ce brouillon ?",
+        "discardBody": "Vos modifications non publiées seront supprimées et l’éditeur affichera de nouveau le site en ligne. Cette action est irréversible.",
+        "discardedTitle": "Brouillon supprimé",
+        "discardedBody": "L’éditeur affiche maintenant le site en ligne.",
+        "discardedReloadBody": "Le brouillon a été supprimé, mais la dernière version du site en ligne n’a pas pu être chargée. Rechargez la page pour la voir.",
+        "discardFailedTitle": "Impossible de supprimer le brouillon",
+        "tryAgain": "Veuillez réessayer.",
+        "stalePublishTitle": "Publier un brouillon plus ancien ?",
+        "stalePublishBody": "Le site en ligne a changé après le début de ce brouillon. Le publier remplacera ces modifications plus récentes par ce brouillon.",
+        "stalePublishConfirm": "Publier quand même",
+        "cancel": "Annuler"
+    },
+    "history": {
+        "liveNow": "En ligne",
+        "draftStarted": "Commencé le {{date}}"
+    }
+}

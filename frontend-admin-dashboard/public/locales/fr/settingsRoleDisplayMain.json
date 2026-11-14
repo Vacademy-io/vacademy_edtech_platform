@@ -1,0 +1,64 @@
+{
+    "roleTabs": {
+        "admin": "Administrateur",
+        "teacher": "Enseignant",
+        "custom": "Rôle personnalisé"
+    },
+    "tabs": {
+        "ariaLabel": "Sélectionner le rôle à configurer"
+    },
+    "title": {
+        "admin": "Paramètres d'affichage Administrateur",
+        "teacher": "Paramètres d'affichage Enseignant",
+        "customNamed": "Paramètres d'affichage {{name}}",
+        "customDefault": "Paramètres d'affichage du rôle personnalisé"
+    },
+    "description": "Contrôlez ce que ce rôle peut voir et faire — cours, barre latérale, tableau de bord, autorisations et plus encore.",
+    "customRole": {
+        "label": "Rôle personnalisé à configurer",
+        "newRoleInput": {
+            "placeholder": "Saisir le nom du rôle",
+            "create": "Créer",
+            "cancel": "Annuler"
+        },
+        "select": {
+            "placeholder": "Choisir un rôle personnalisé…",
+            "empty": "Aucun rôle personnalisé pour l'instant. Créez-en un avec le bouton +.",
+            "addAriaLabel": "Ajouter un nouveau rôle"
+        },
+        "emptyState": "Sélectionnez un rôle personnalisé ci-dessus pour afficher ou modifier ses paramètres d'affichage."
+    },
+    "toasts": {
+        "roleCreated": "Rôle créé avec succès",
+        "roleCreateFailed": "Échec de la création du rôle",
+        "roleNameRequired": "Le nom du rôle est requis"
+    },
+    "copyToRoles": {
+        "button": "Copier vers d'autres rôles",
+        "disabled": {
+            "noRoleSelected": "Sélectionnez d'abord un rôle personnalisé",
+            "unsavedChanges": "Enregistrez vos modifications avant de copier"
+        },
+        "dialog": {
+            "title": "Copier les paramètres d'affichage",
+            "description": "Appliquer les paramètres d'affichage de {{role}} aux rôles sélectionnés ci-dessous.",
+            "allRoles": "Tous les rôles",
+            "roleCount": "{{count}} rôle",
+            "roleCount_other": "{{count}} rôles",
+            "noTargets": "Il n'y a pas encore d'autres rôles vers lesquels copier.",
+            "overwriteWarning": "Cela remplace les paramètres d'affichage de {{count}} rôle. Sa configuration actuelle sera perdue.",
+            "overwriteWarning_other": "Cela remplace les paramètres d'affichage de {{count}} rôles. Leur configuration actuelle sera perdue.",
+            "cancel": "Annuler",
+            "copying": "Copie en cours…",
+            "confirm": "Copier vers {{count}} rôle",
+            "confirm_other": "Copier vers {{count}} rôles"
+        },
+        "toast": {
+            "success": "Paramètres d'affichage copiés vers {{count}} rôle",
+            "success_other": "Paramètres d'affichage copiés vers {{count}} rôles",
+            "partial": "Copié vers {{succeeded}} rôle(s). Échec : {{failedRoles}}",
+            "allFailed": "Impossible de copier les paramètres d'affichage. {{message}}",
+            "readFailed": "Impossible de lire les paramètres d'affichage actuels. {{message}}"
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "serialNumber": "S.No",
+        "details": "Details",
+        "status": "Status",
+        "reachOutIn": "Reach out in",
+        "followUpAt": "Follow up at",
+        "counsellor": "Counsellor",
+        "activityNotes": "Activity & Notes",
+        "submittedOn": "Submitted On"
+    },
+    "actions": {
+        "reassign": "Reassign",
+        "assign": "Assign",
+        "deleteLead": "Delete lead"
+    }
+}

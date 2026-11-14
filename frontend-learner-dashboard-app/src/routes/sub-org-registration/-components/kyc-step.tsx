@@ -11,9 +11,14 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import { MyButton } from "@/components/design-system/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  getTerminology,
+} from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import type {
   KycStatus,
   KycSummary,
@@ -27,22 +32,7 @@ import { renderSafeLinkText } from "../-utils/safe-link-text";
 
 const POLL_INTERVAL_MS = 4000;
 
-/**
- * DigiLocker asks for per-document consent; a missed PAN checkbox is the top
- * failure cause when both documents are required.
- */
-const DEFAULT_PAN_INSTRUCTIONS =
-  "In DigiLocker, tick the checkboxes for BOTH Aadhaar and PAN when asked for consent — verification cannot complete if either is left unselected.";
-
 type KycUiState = "CHECKING" | "INTRO" | "WAITING" | "VERIFIED" | "FAILED";
-
-const FAILURE_MESSAGES: Record<string, string> = {
-  CONSENT_DENIED:
-    "DigiLocker consent was denied. To verify your identity, please try again and approve access to your documents.",
-  EXPIRED:
-    "The verification link expired before it was completed. Start a new verification to continue.",
-  FAILED: "We couldn't verify your identity. Please try again.",
-};
 
 const isTerminalFailure = (
   status: KycStatus
@@ -81,6 +71,16 @@ const KycStep = ({
   onSessionMissing,
   onBack,
 }: KycStepProps) => {
+  const { t } = useTranslation("registrationB");
+  const admin = getTerminology(
+    RoleTerms.Admin,
+    SystemTerms.Admin
+  ).toLocaleLowerCase();
+  const failureMessages: Record<string, string> = {
+    CONSENT_DENIED: t("subOrgRegistration.kyc.failure.consentDenied"),
+    EXPIRED: t("subOrgRegistration.kyc.failure.expired"),
+    FAILED: t("subOrgRegistration.kyc.failure.failed"),
+  };
   const [uiState, setUiState] = useState<KycUiState>("CHECKING");
   const [summary, setSummary] = useState<KycSummary | null>(null);
   const [failureStatus, setFailureStatus] = useState<string | null>(null);
@@ -96,7 +96,8 @@ const KycStep = ({
   // Institute-authored instructions win; otherwise the default PAN+Aadhaar
   // consent note (only relevant when PAN is among the required documents).
   const instructionText =
-    kycInstructions?.trim() || (requiresPan ? DEFAULT_PAN_INSTRUCTIONS : null);
+    kycInstructions?.trim() ||
+    (requiresPan ? t("subOrgRegistration.kyc.defaultPanInstructions") : null);
 
   const instructionsCallout = instructionText ? (
     <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
@@ -120,7 +121,7 @@ const KycStep = ({
       className="w-full sm:w-auto"
     >
       <ArrowLeft className="me-2 size-4" />
-      Back
+      {t("common.back")}
     </MyButton>
   ) : (
     <span className="hidden sm:block" />
@@ -134,7 +135,7 @@ const KycStep = ({
     didInitialCheckRef.current = true;
 
     if (!registrationId) {
-      toast.error("Registration session missing. Please start again");
+      toast.error(t("common.sessionMissing"));
       onSessionMissing();
       return;
     }
@@ -198,7 +199,7 @@ const KycStep = ({
 
   const handleStartVerification = async () => {
     if (!registrationId) {
-      toast.error("Registration session missing. Please start again");
+      toast.error(t("common.sessionMissing"));
       onSessionMissing();
       return;
     }
@@ -221,7 +222,7 @@ const KycStep = ({
       toast.error(
         getSubOrgApiErrorMessage(
           error,
-          "Failed to start identity verification. Please try again"
+          t("subOrgRegistration.kyc.startVerificationFailed")
         )
       );
     } finally {
@@ -233,12 +234,12 @@ const KycStep = ({
     <div className="flex flex-wrap items-center gap-2">
       <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-caption font-medium text-primary-500">
         <IdentificationCard className="size-3.5" />
-        Aadhaar
+        {t("subOrgRegistration.kyc.aadhaar")}
       </span>
       {requiresPan && (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-caption font-medium text-primary-500">
           <IdentificationCard className="size-3.5" />
-          PAN
+          {t("subOrgRegistration.kyc.pan")}
         </span>
       )}
     </div>
@@ -247,12 +248,12 @@ const KycStep = ({
   const startButtonContent = isStartingKyc ? (
     <>
       <SpinnerGap className="me-2 size-4 animate-spin" />
-      Preparing verification...
+      {t("subOrgRegistration.kyc.preparingVerification")}
     </>
   ) : (
     <>
       <ShieldCheck className="me-2 size-5" />
-      Verify with DigiLocker
+      {t("subOrgRegistration.kyc.verifyWithDigiLocker")}
     </>
   );
 
@@ -270,11 +271,10 @@ const KycStep = ({
         </div>
         <div>
           <h2 className="text-lg font-semibold leading-tight text-neutral-700">
-            Identity Verification
+            {t("subOrgRegistration.kyc.title")}
           </h2>
           <p className="mt-0.5 text-sm text-neutral-500">
-            Verify the organization admin&apos;s identity securely via
-            DigiLocker
+            {t("subOrgRegistration.kyc.subtitle", { admin })}
           </p>
         </div>
       </div>
@@ -286,7 +286,7 @@ const KycStep = ({
         <div className="flex h-40 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
           <SpinnerGap className="size-6 animate-spin text-neutral-400" />
           <span className="ms-2 text-sm text-neutral-500">
-            Checking verification status...
+            {t("subOrgRegistration.kyc.checkingStatus")}
           </span>
         </div>
       )}
@@ -295,22 +295,19 @@ const KycStep = ({
       {uiState === "INTRO" && (
         <div className="space-y-5">
           <p className="text-sm text-neutral-600">
-            As the organization admin, your identity needs to be verified
-            before registration can be completed. You&apos;ll be taken to
-            DigiLocker (Government of India) to share the following documents
-            securely — no copies are uploaded here.
+            {t("subOrgRegistration.kyc.intro", { admin })}
           </p>
 
           <div className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
             <p className="text-caption font-semibold uppercase tracking-wide text-neutral-500">
-              Required documents
+              {t("subOrgRegistration.kyc.requiredDocuments")}
             </p>
             {documentChips}
           </div>
 
           {instructionsCallout}
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
             {backButton}
             <MyButton
               type="button"
@@ -330,15 +327,14 @@ const KycStep = ({
       {/* Waiting — user is completing consent in the DigiLocker tab */}
       {uiState === "WAITING" && (
         <div className="space-y-5">
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-primary-200 bg-primary-50 px-4 py-8 text-center">
+          <div className="flex flex-col items-center gap-stack rounded-lg border border-primary-200 bg-primary-50 px-4 py-8 text-center">
             <SpinnerGap className="size-8 animate-spin text-primary-500" />
             <div>
               <p className="text-sm font-medium text-neutral-700">
-                Complete the verification in the DigiLocker tab
+                {t("subOrgRegistration.kyc.completeInTab")}
               </p>
               <p className="mt-1 text-sm text-neutral-500">
-                This page updates automatically once you&apos;re done — keep it
-                open.
+                {t("subOrgRegistration.kyc.autoUpdateHint")}
               </p>
             </div>
           </div>
@@ -347,9 +343,9 @@ const KycStep = ({
             <div className="rounded-lg border border-warning-200 bg-warning-50 p-4">
               <div className="flex gap-3">
                 <WarningCircle className="mt-0.5 size-5 flex-shrink-0 text-warning-600" />
-                <div className="text-sm text-warning-700">
-                  <p className="mb-1 font-medium">
-                    The DigiLocker tab was blocked by your browser.
+                <div className="text-sm text-warning-700 space-y-1">
+                  <p className="font-medium">
+                    {t("subOrgRegistration.kyc.tabBlocked")}
                   </p>
                   <a
                     href={fallbackUrl}
@@ -357,7 +353,7 @@ const KycStep = ({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-medium text-primary-500 underline hover:text-primary-400"
                   >
-                    Open DigiLocker verification
+                    {t("subOrgRegistration.kyc.openVerification")}
                     <ArrowSquareOut className="size-4" />
                   </a>
                 </div>
@@ -374,8 +370,8 @@ const KycStep = ({
             >
               <ArrowClockwise className="size-4" />
               {isStartingKyc
-                ? "Preparing a new link..."
-                : "Trouble with the tab? Restart verification"}
+                ? t("subOrgRegistration.kyc.preparingNewLink")
+                : t("subOrgRegistration.kyc.restartVerification")}
             </button>
           </div>
         </div>
@@ -384,10 +380,10 @@ const KycStep = ({
       {/* Verified — show extracted details + gated Continue */}
       {uiState === "VERIFIED" && (
         <div className="space-y-5">
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-success-200 bg-success-50 px-4 py-6 text-center">
+          <div className="flex flex-col items-center gap-stack rounded-lg border border-success-200 bg-success-50 px-4 py-6 text-center">
             <CheckCircle weight="fill" className="size-10 text-success-600" />
             <p className="text-base font-semibold text-neutral-700">
-              Identity verified successfully
+              {t("subOrgRegistration.kyc.verifiedSuccess")}
             </p>
           </div>
 
@@ -397,7 +393,9 @@ const KycStep = ({
             <dl className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
               {summary?.name && (
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <dt className="text-sm text-neutral-500">Verified name</dt>
+                  <dt className="text-sm text-neutral-500">
+                    {t("subOrgRegistration.kyc.verifiedName")}
+                  </dt>
                   <dd className="text-sm font-medium text-neutral-700">
                     {summary.name}
                   </dd>
@@ -405,7 +403,9 @@ const KycStep = ({
               )}
               {summary?.masked_aadhaar && (
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <dt className="text-sm text-neutral-500">Aadhaar</dt>
+                  <dt className="text-sm text-neutral-500">
+                    {t("subOrgRegistration.kyc.aadhaar")}
+                  </dt>
                   <dd className="font-mono text-sm font-medium text-neutral-700">
                     {summary.masked_aadhaar}
                   </dd>
@@ -413,7 +413,9 @@ const KycStep = ({
               )}
               {summary?.pan_number && (
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <dt className="text-sm text-neutral-500">PAN</dt>
+                  <dt className="text-sm text-neutral-500">
+                    {t("subOrgRegistration.kyc.pan")}
+                  </dt>
                   <dd className="font-mono text-sm font-medium text-neutral-700">
                     {summary.pan_number}
                   </dd>
@@ -422,7 +424,7 @@ const KycStep = ({
             </dl>
           )}
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
             {backButton}
             <MyButton
               type="button"
@@ -436,12 +438,12 @@ const KycStep = ({
               {isSubmitting ? (
                 <>
                   <SpinnerGap className="me-2 size-4 animate-spin" />
-                  Submitting...
+                  {t("common.submitting")}
                 </>
               ) : isFinalStep ? (
-                "Submit Registration"
+                t("common.submitRegistration")
               ) : (
-                "Continue"
+                t("common.continue")
               )}
             </MyButton>
           </div>
@@ -454,11 +456,13 @@ const KycStep = ({
           <div className="rounded-lg border border-warning-200 bg-warning-50 p-4">
             <div className="flex gap-3">
               <WarningCircle className="mt-0.5 size-5 flex-shrink-0 text-warning-600" />
-              <div className="text-sm text-warning-700">
-                <p className="mb-1 font-medium">Verification not completed</p>
+              <div className="text-sm text-warning-700 space-y-1">
+                <p className="font-medium">
+                  {t("subOrgRegistration.kyc.verificationNotCompleted")}
+                </p>
                 <p>
-                  {FAILURE_MESSAGES[failureStatus ?? "FAILED"] ??
-                    FAILURE_MESSAGES.FAILED}
+                  {failureMessages[failureStatus ?? "FAILED"] ??
+                    failureMessages.FAILED}
                 </p>
               </div>
             </div>
@@ -466,7 +470,7 @@ const KycStep = ({
 
           {instructionsCallout}
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
             {backButton}
             <MyButton
               type="button"
@@ -480,12 +484,12 @@ const KycStep = ({
               {isStartingKyc ? (
                 <>
                   <SpinnerGap className="me-2 size-4 animate-spin" />
-                  Preparing verification...
+                  {t("subOrgRegistration.kyc.preparingVerification")}
                 </>
               ) : (
                 <>
                   <ArrowClockwise className="me-2 size-5" />
-                  Try Again
+                  {t("subOrgRegistration.kyc.tryAgain")}
                 </>
               )}
             </MyButton>

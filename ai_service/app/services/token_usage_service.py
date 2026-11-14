@@ -41,6 +41,29 @@ class TokenUsageService:
         total_price: Optional[float] = None,
         tts_provider: Optional[str] = None,
         character_count: Optional[int] = None,
+        *,
+        use_case: Optional[str] = None,
+        actor_kind: Optional[str] = None,
+        actor_user_id: Optional[str] = None,
+        actor_role_class: Optional[str] = None,
+        actor_roles_raw: Optional[List[Any]] = None,
+        role_source: Optional[str] = None,
+        actor_display_name: Optional[str] = None,
+        subject_user_id: Optional[str] = None,
+        subject_display_name: Optional[str] = None,
+        surface: Optional[str] = None,
+        source_service: Optional[str] = None,
+        usage_context: Optional[Dict[str, Any]] = None,
+        router: Optional[str] = None,
+        provider: Optional[str] = None,
+        gateway_key_id: Optional[str] = None,
+        byo_key: Optional[bool] = None,
+        parent_event_id: Optional[str] = None,
+        usage_event_id: Optional[str] = None,
+        tool_key: Optional[str] = None,
+        free_reason: Optional[str] = None,
+        seconds: Optional[int] = None,
+        meter_event: bool = True,
     ) -> AiTokenUsage:
         """
         Record token usage for an API call.
@@ -104,7 +127,7 @@ class TokenUsageService:
         if calculated_total_price is None and final_input_price is not None and final_output_price is not None:
             calculated_total_price = (final_input_price * prompt_tokens) + (final_output_price * completion_tokens)
         
-        return self._repository.create_usage_record(
+        usage = self._repository.create_usage_record(
             api_provider=api_provider,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
@@ -121,6 +144,43 @@ class TokenUsageService:
             tts_provider=tts_provider,
             character_count=character_count,
         )
+
+        # Record-only usage (no deduction follows here): a FREE usage event,
+        # written on a background session so this call never waits for it. A
+        # later deduct_credits(usage_log_id=...) upgrades that event to CHARGED.
+        if meter_event:
+            try:
+                from .metering import service as _metering
+
+                _metering.queue_free_event(
+                    self._session,
+                    _metering.input_from(
+                        None,
+                        institute_id=institute_id,
+                        request_type=request_type.value if hasattr(request_type, "value") else request_type,
+                        model=model,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        character_count=character_count or 0,
+                        seconds=seconds or 0,
+                        user_id=user_id,
+                        subject_user_id=subject_user_id,
+                        metadata=metadata if isinstance(metadata, dict) else None,
+                        real_cost_usd=calculated_total_price,
+                        use_case=use_case, actor_kind=actor_kind, actor_user_id=actor_user_id,
+                        actor_role_class=actor_role_class, actor_roles_raw=actor_roles_raw,
+                        role_source=role_source, actor_display_name=actor_display_name,
+                        subject_display_name=subject_display_name, surface=surface,
+                        source_service=source_service, usage_context=usage_context, router=router,
+                        provider=provider, gateway_key_id=gateway_key_id, byo_key=byo_key,
+                        parent_event_id=parent_event_id, usage_event_id=usage_event_id, tool_key=tool_key,
+                    ),
+                    usage_log_id=str(usage.id) if usage is not None and getattr(usage, "id", None) else None,
+                    free_reason=free_reason,
+                )
+            except Exception:  # noqa: BLE001 - metering never affects usage recording
+                pass
+        return usage
     
     def record_usage_and_deduct_credits(
         self,
@@ -146,9 +206,32 @@ class TokenUsageService:
         user_role: Optional[str] = None,
         subject_user_id: Optional[str] = None,
         allow_negative: bool = False,
+        description: Optional[str] = None,
+        *,
+        use_case: Optional[str] = None,
+        actor_kind: Optional[str] = None,
+        actor_user_id: Optional[str] = None,
+        actor_role_class: Optional[str] = None,
+        actor_roles_raw: Optional[List[Any]] = None,
+        role_source: Optional[str] = None,
+        actor_display_name: Optional[str] = None,
+        subject_display_name: Optional[str] = None,
+        surface: Optional[str] = None,
+        source_service: Optional[str] = None,
+        usage_context: Optional[Dict[str, Any]] = None,
+        router: Optional[str] = None,
+        provider: Optional[str] = None,
+        gateway_key_id: Optional[str] = None,
+        byo_key: Optional[bool] = None,
+        parent_event_id: Optional[str] = None,
+        usage_event_id: Optional[str] = None,
+        tool_key: Optional[str] = None,
     ) -> AiTokenUsage:
         """
         Record token usage AND deduct credits from institute balance.
+
+        description: optional credit_transactions.description (defaults to
+            "{request_type} using {model}"); tool charges add the price source.
 
         precomputed_credits: when set, the exact amount to deduct (bypasses
             token-based calculation). Used by the academy-credits parametric
@@ -169,7 +252,21 @@ class TokenUsageService:
         import logging
         logger = logging.getLogger(__name__)
         
-        # First, record the usage
+        # Usage-event attribution (optional; never changes the charge or the ledger row).
+        meter = {
+            k: v for k, v in dict(
+                use_case=use_case, actor_kind=actor_kind, actor_user_id=actor_user_id,
+                actor_role_class=actor_role_class, actor_roles_raw=actor_roles_raw, role_source=role_source,
+                actor_display_name=actor_display_name, subject_display_name=subject_display_name,
+                surface=surface, source_service=source_service, usage_context=usage_context, router=router,
+                provider=provider, gateway_key_id=gateway_key_id, byo_key=byo_key,
+                parent_event_id=parent_event_id, usage_event_id=usage_event_id, tool_key=tool_key,
+            ).items() if v is not None
+        }
+
+        # First, record the usage. With an institute the deduction below writes
+        # the (CHARGED) usage event; without one this row is record-only, so
+        # record_usage writes a FREE / NO_INSTITUTE event instead.
         usage_record = self.record_usage(
             api_provider=api_provider,
             prompt_tokens=prompt_tokens,
@@ -186,6 +283,10 @@ class TokenUsageService:
             total_price=total_price,
             tts_provider=tts_provider,
             character_count=character_count,
+            subject_user_id=subject_user_id,
+            seconds=seconds,
+            meter_event=not institute_id,
+            **meter,
         )
         
         # Then, deduct credits if institute_id is provided
@@ -213,7 +314,24 @@ class TokenUsageService:
                     user_role=user_role,
                     subject_user_id=subject_user_id,
                     allow_negative=allow_negative,
+                    description=description,
                 )
+                if meter:
+                    try:
+                        deduct_request = CreditDeductRequest(**{**deduct_request.model_dump(), **meter})
+                    except Exception as meter_error:  # noqa: BLE001 - attribution never costs a charge
+                        logger.warning(f"[TokenUsageService] metering fields ignored: {meter_error}")
+                try:
+                    # Hints for the usage-event writer (private; never serialized).
+                    deduct_request._meter_fresh_usage_row = True
+                    deduct_request._meter_real_cost_usd = (
+                        float(usage_record.total_price)
+                        if usage_record is not None and getattr(usage_record, "total_price", None) is not None
+                        else None
+                    )
+                    deduct_request._meter_metadata = metadata if isinstance(metadata, dict) else None
+                except Exception:  # noqa: BLE001
+                    pass
                 logger.info(f"[TokenUsageService] CreditDeductRequest created: {deduct_request}")
                 
                 deduct_result = credit_service.deduct_credits(deduct_request)
@@ -261,6 +379,12 @@ class TokenUsageService:
             })
             row = result.fetchone()
             total_deducted = Decimal(str(row.total_deducted)) if row else Decimal("0")
+
+            # AI plans: shots paid from a plan allowance have no ledger row, so
+            # the sum above never sees them; give that allowance back. No-op
+            # (no I/O) unless the institute has a live AI subscription.
+            from .credit_service import CreditService as _PlanCS
+            _PlanCS(self._session).restore_plan_allowance(institute_id, video_id)
 
             if total_deducted <= Decimal("0"):
                 logger.info(f"[RefundVideo] No credits to refund for video {video_id}")

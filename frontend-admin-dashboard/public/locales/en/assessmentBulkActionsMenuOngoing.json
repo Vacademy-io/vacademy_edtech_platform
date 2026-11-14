@@ -1,0 +1,10 @@
+{
+    "menu": {
+        "increaseAssessmentTime": "Increase Assessment Time",
+        "closeSubmission": "Close Submission"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} student",
+        "selectedStudents_other": "{{count}} students"
+    }
+}

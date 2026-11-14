@@ -44,4 +44,19 @@ public class ComplexPaymentOption {
 
     @Column(name = "metadata_json", columnDefinition = "TEXT")
     private String metadataJson;
+
+    /**
+     * FIXED (default): bills are generated from the aft_installments template.
+     * FLEXIBLE: no fixed dates; the schedule (count, gap, first due date) is chosen per
+     * learner at enrollment. See {@code CpoScheduleMode} and docs/CPO_FLEXIBLE_INSTALLMENTS.md.
+     */
+    @Column(name = "schedule_mode", nullable = false)
+    private String scheduleMode = "FIXED";
+
+    /**
+     * Set only on system-built FLEXIBLE plans that back a one-time course price
+     * (V575). Such plans are hidden from fee-plan and payment-option listings.
+     */
+    @Column(name = "source_payment_plan_id")
+    private String sourcePaymentPlanId;
 }

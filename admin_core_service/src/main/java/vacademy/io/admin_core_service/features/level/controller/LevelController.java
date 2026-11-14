@@ -38,7 +38,10 @@ public class LevelController {
     }
 
     @DeleteMapping("/delete-level")
-    public ResponseEntity<String> deleteLevels(@RequestBody List<String> levelIds, @RequestAttribute("user") CustomUserDetails user) {
-        return ResponseEntity.ok(levelService.deleteLevels(levelIds, user));
+    public ResponseEntity<String> deleteLevels(@RequestBody List<String> levelIds,
+                                               @RequestHeader(value = "clientId", required = false) String instituteId,
+                                               @RequestAttribute("user") CustomUserDetails user) {
+        // The institute is the clientId header: the principal's roles are loaded for exactly it.
+        return ResponseEntity.ok(levelService.deleteLevels(levelIds, instituteId, user));
     }
 }

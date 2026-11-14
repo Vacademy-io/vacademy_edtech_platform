@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "Évaluations par IA",
+        "subtitle": "Chaque évaluation par IA pour cet examen. Ouvrez une évaluation pour vérifier et ajuster les notes avant de publier le résultat."
+    },
+    "emptyStates": {
+        "noAssessment": "Aucun examen sélectionné. Ouvrez cette page depuis l'onglet Soumissions d'un examen.",
+        "error": "Échec du chargement des évaluations. Veuillez réessayer.",
+        "noEvaluations": "Aucune évaluation par IA n'a encore été lancée pour cet examen."
+    },
+    "table": {
+        "columns": {
+            "participant": "Participant",
+            "status": "Statut",
+            "progress": "Progression",
+            "started": "Démarré",
+            "actions": "Actions"
+        },
+        "unknownParticipant": "Inconnu",
+        "notAvailable": "—"
+    },
+    "status": {
+        "completed": "Terminé",
+        "needsReview_one": "Relecture nécessaire ({{count}})",
+        "needsReview_many": "Relecture nécessaire ({{count}})",
+        "needsReview_other": "Relecture nécessaire ({{count}})",
+        "failed": "Échoué",
+        "cancelled": "Annulé",
+        "inProgress": "En cours"
+    },
+    "actions": {
+        "open": "Ouvrir",
+        "retry": "Réessayer"
+    },
+    "toasts": {
+        "restartSuccess": "Évaluation par IA relancée",
+        "restartError": "Échec de la relance de l'évaluation. Veuillez réessayer."
+    }
+}

@@ -21,11 +21,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Check } from 'lucide-react';
+import { CircleNotch, Check } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 // Auto-save debounce — long enough that toggling several checkboxes in the
@@ -52,24 +54,23 @@ interface AudienceAccessCardProps {
 // admin configuring this is not the future user, so a role-named label is
 // less confusing.
 const buildModeOptions = (
+    t: TFunction,
     roleDisplayName: string
 ): Array<{ value: AudienceAccessMode; title: string; description: string }> => [
     {
         value: 'DEFAULT',
-        title: 'Default — see everything',
-        description:
-            'All audience lists and responses are visible. This is the default for any role.',
+        title: t('modes.default.title'),
+        description: t('modes.default.description'),
     },
     {
         value: 'COUNSELOR',
-        title: `Only leads assigned to ${roleDisplayName}`,
-        description: `Recent Leads and per-campaign Lead List only show responses where a user with the ${roleDisplayName} role has been assigned as the counselor (via the lead's profile). The list of audience-list cards is unaffected.`,
+        title: t('modes.counselor.title', { role: roleDisplayName }),
+        description: t('modes.counselor.description', { role: roleDisplayName }),
     },
     {
         value: 'AUDIENCE_LIST',
-        title: 'Specific audience lists',
-        description:
-            'Restrict this role to specific audience lists. Recent Leads only includes responses from those lists; the audience-list cards page only shows the granted lists.',
+        title: t('modes.audienceList.title'),
+        description: t('modes.audienceList.description'),
     },
 ];
 
@@ -77,10 +78,11 @@ const buildModeOptions = (
 // because both halves surprise admins otherwise: the visibility narrowing is
 // what they asked for, the auto-assign is what keeps a counsellor from losing
 // sight of a lead the moment they save it.
-const buildAssignedOnlyDescription = (roleDisplayName: string) =>
-    `Inside the granted lists, a user with the ${roleDisplayName} role only sees leads they are the assigned counsellor of — unassigned leads and other counsellors' leads are hidden. Any lead they add by hand is automatically assigned to them, so it stays visible. This only applies while the institute has no counsellor pool configured under Leads → Settings → Pools; create a pool and this option goes inert (the role sees every lead in its granted lists again).`;
+const buildAssignedOnlyDescription = (t: TFunction, roleDisplayName: string) =>
+    t('assignedOnly.description', { role: roleDisplayName });
 
 export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardProps) => {
+    const { t } = useTranslation('settingsAudienceAccessCard');
     const normalizedRole = roleName.toUpperCase();
     const { config, isLoading, saving, save } = useAudienceRoleAccess();
     const { instituteDetails } = useInstituteDetailsStore();
@@ -120,10 +122,10 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
             (audiencesQuery.data?.content ?? [])
                 .map((c) => ({
                     id: c.id || c.campaign_id || c.audience_id || '',
-                    name: c.campaign_name || 'Untitled audience',
+                    name: c.campaign_name || t('grantedLists.untitledFallback'),
                 }))
                 .filter((opt) => opt.id !== ''),
-        [audiencesQuery.data]
+        [audiencesQuery.data, t]
     );
 
     // Counsellor pools decide whether the assigned-only option does anything.
@@ -189,7 +191,7 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
                 window.setTimeout(() => setShowJustSaved(false), 1500);
             } catch (err) {
                 console.error('Failed to save audience access', err);
-                toast.error('Failed to save audience access');
+                toast.error(t('toasts.saveFailed'));
             }
         }, AUTOSAVE_DEBOUNCE_MS);
         return () => window.clearTimeout(timer);
@@ -210,12 +212,12 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
         <Card>
             <CardHeader>
                 <CardTitle className="text-base">
-                    Audience access — {roleLabel ?? normalizedRole}
+                    {t('title', { role: roleLabel ?? normalizedRole })}
                 </CardTitle>
                 <CardDescription>
-                    Controls which audience lists and responses a user with the{' '}
-                    <span className="font-medium">{normalizedRole}</span> role can see across the
-                    Recent Leads page, the per-campaign Lead List, and the audience-list cards.
+                    {t('description.part1')}{' '}
+                    <span className="font-medium">{normalizedRole}</span>{' '}
+                    {t('description.part2')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -223,9 +225,9 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
                     value={mode}
                     onValueChange={handleModeChange}
                     className="flex flex-col gap-3"
-                    aria-label="Audience access mode"
+                    aria-label={t('ariaLabel')}
                 >
-                    {buildModeOptions(roleLabel ?? normalizedRole).map((opt) => (
+                    {buildModeOptions(t, roleLabel ?? normalizedRole).map((opt) => (
                         <label
                             key={opt.value}
                             htmlFor={`audience-access-${normalizedRole}-${opt.value}`}
@@ -251,14 +253,15 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
                 {showAudienceMultiSelect && (
                     <div className="flex flex-col gap-2 rounded-md border border-neutral-200 bg-neutral-50/40 p-3">
                         <Label className="text-sm font-medium text-neutral-800">
-                            Granted audience lists
+                            {t('grantedLists.label')}
                         </Label>
                         {audiencesQuery.isLoading ? (
-                            <p className="text-xs text-neutral-500">Loading audience lists…</p>
+                            <p className="text-xs text-neutral-500">
+                                {t('grantedLists.loading')}
+                            </p>
                         ) : audienceListEmpty ? (
                             <p className="text-xs text-neutral-500">
-                                No audience lists exist yet. Create one first under Leads → Lead
-                                List.
+                                {t('grantedLists.empty')}
                             </p>
                         ) : (
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -286,8 +289,7 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
                         )}
                         {showAudienceMultiSelect && selectedAudienceIds.length === 0 && (
                             <p className="text-xs text-warning-600">
-                                Saving with zero lists selected will hide all leads from this
-                                role.
+                                {t('grantedLists.zeroSelectedWarning')}
                             </p>
                         )}
                     </div>
@@ -307,21 +309,20 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
                             />
                             <div className="flex flex-col gap-1">
                                 <span className="text-sm font-medium text-neutral-900">
-                                    Only leads assigned to {roleLabel ?? normalizedRole} within
-                                    these lists
+                                    {t('assignedOnly.title', {
+                                        role: roleLabel ?? normalizedRole,
+                                    })}
                                 </span>
                                 <span className="text-xs text-neutral-600">
-                                    {buildAssignedOnlyDescription(roleLabel ?? normalizedRole)}
+                                    {buildAssignedOnlyDescription(t, roleLabel ?? normalizedRole)}
                                 </span>
                             </div>
                         </label>
                         {assignedOnly && hasCounsellorPool && (
                             <p className="text-xs text-warning-600">
-                                This institute has {poolsQuery.data?.length} counsellor{' '}
-                                {poolsQuery.data?.length === 1 ? 'pool' : 'pools'} configured, so
-                                this option is currently inert — the role still sees every lead in
-                                its granted lists. Remove the pools under Leads → Settings → Pools
-                                to activate it.
+                                {t('assignedOnly.inertWarning', {
+                                    count: poolsQuery.data?.length ?? 0,
+                                })}
                             </p>
                         )}
                     </div>
@@ -329,19 +330,19 @@ export const AudienceAccessCard = ({ roleName, roleLabel }: AudienceAccessCardPr
 
                 <div className="flex h-5 items-center justify-end gap-1.5 text-xs text-neutral-500">
                     {isLoading ? (
-                        <span>Loading current setting…</span>
+                        <span>{t('status.loading')}</span>
                     ) : saving ? (
                         <>
-                            <Loader2 className="size-3.5 animate-spin" />
-                            <span>Saving…</span>
+                            <CircleNotch className="size-3.5 animate-spin" />
+                            <span>{t('status.saving')}</span>
                         </>
                     ) : showJustSaved ? (
                         <>
                             <Check className="size-3.5 text-success-600" />
-                            <span className="text-success-700">Saved</span>
+                            <span className="text-success-700">{t('status.saved')}</span>
                         </>
                     ) : dirty ? (
-                        <span>Unsaved changes…</span>
+                        <span>{t('status.unsaved')}</span>
                     ) : null}
                 </div>
             </CardContent>

@@ -16,7 +16,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
+import { BASE_URL, GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 
 // ── Telephony call statuses ──────────────────────────────────────────────────
@@ -53,6 +53,10 @@ export interface LeadReportSettingsSubtree {
     timezone?: string;
     connected_call_statuses?: string[];
     interested_status_keys?: string[];
+    /** Course tags in priority order (Admissions report main course). */
+    course_group_order?: string[];
+    /** Custom field the Admissions report breaks admissions down by. */
+    admission_field_id?: string | null;
 }
 
 export interface LeadReportSettings {
@@ -62,12 +66,21 @@ export interface LeadReportSettings {
     connectedCallStatuses: string[];
     /** Lead-status keys that count as "interested" in funnel/source reports. */
     interestedStatusKeys: string[];
+    /**
+     * Course tags in priority order. A student who joined courses from several groups at once
+     * is counted once in the Admissions report, under the group that comes first.
+     */
+    courseGroupOrder: string[];
+    /** Custom field (e.g. Branch) the Admissions report breaks admissions down by. */
+    admissionFieldId: string | null;
 }
 
 export const LEAD_REPORT_SETTINGS_DEFAULTS: LeadReportSettings = {
     timezone: 'Asia/Kolkata',
     connectedCallStatuses: ['COMPLETED'],
     interestedStatusKeys: ['INTERESTED'],
+    courseGroupOrder: [],
+    admissionFieldId: null,
 };
 
 // ── Fetchers ─────────────────────────────────────────────────────────────────
@@ -106,6 +119,8 @@ function withDefaults(subtree: LeadReportSettingsSubtree | undefined): LeadRepor
             subtree?.interested_status_keys && subtree.interested_status_keys.length > 0
                 ? subtree.interested_status_keys
                 : LEAD_REPORT_SETTINGS_DEFAULTS.interestedStatusKeys,
+        courseGroupOrder: subtree?.course_group_order ?? [],
+        admissionFieldId: subtree?.admission_field_id || null,
     };
 }
 
@@ -116,6 +131,22 @@ export async function fetchLeadReportSettings(): Promise<LeadReportSettings> {
     } catch {
         return LEAD_REPORT_SETTINGS_DEFAULTS;
     }
+}
+
+/** Course tags and custom fields the Admissions settings can pick from. */
+export interface AdmissionReportOptions {
+    course_tags: string[];
+    fields: { id: string; name: string; type: string }[];
+}
+
+export async function fetchAdmissionReportOptions(): Promise<AdmissionReportOptions> {
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) return { course_tags: [], fields: [] };
+    const { data } = await authenticatedAxiosInstance.get(
+        `${BASE_URL}/admin-core-service/v1/reports/admissions/options`,
+        { params: { instituteId } }
+    );
+    return data;
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────

@@ -23,8 +23,10 @@ const modernCardVariants = {
   padding: {
     none: "p-0",
     sm: "p-3",
-    md: "p-4",
-    lg: "p-6",
+    // md/lg ride the density axis (p-card == p-4, p-card-lg == p-6 at the
+    // default setting). sm/xl stay literal so the ladder keeps its end stops.
+    md: "p-card",
+    lg: "p-card-lg",
     xl: "p-8",
   },
   
@@ -81,9 +83,9 @@ export interface ModernCardHeaderProps extends React.HTMLAttributes<HTMLDivEleme
 const ModernCardHeader = forwardRef<HTMLDivElement, ModernCardHeaderProps>(
   ({ className, variant = "default", children, ...props }, ref) => {
     const variants = {
-      default: "flex flex-col space-y-1.5 p-6",
-      bordered: "flex flex-col space-y-1.5 p-6 border-b border-border",
-      subtle: "flex flex-col space-y-1.5 p-6 bg-accent/20",
+      default: "flex flex-col space-y-1.5 p-card-lg",
+      bordered: "flex flex-col space-y-1.5 p-card-lg border-b border-border",
+      subtle: "flex flex-col space-y-1.5 p-card-lg bg-accent/20",
     };
 
     return (
@@ -150,7 +152,7 @@ const ModernCardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     return (
       <div
         ref={ref}
-        className={cn("p-6 pt-0", className)}
+        className={cn("p-card-lg pt-0", className)}
         {...props}
       >
         {children}
@@ -169,9 +171,9 @@ export interface ModernCardFooterProps extends React.HTMLAttributes<HTMLDivEleme
 const ModernCardFooter = forwardRef<HTMLDivElement, ModernCardFooterProps>(
   ({ className, variant = "default", children, ...props }, ref) => {
     const variants = {
-      default: "flex items-center p-6 pt-0",
-      bordered: "flex items-center p-6 pt-0 border-t border-border",
-      subtle: "flex items-center p-6 pt-0 bg-accent/20",
+      default: "flex items-center p-card-lg pt-0",
+      bordered: "flex items-center p-card-lg pt-0 border-t border-border",
+      subtle: "flex items-center p-card-lg pt-0 bg-accent/20",
     };
 
     return (

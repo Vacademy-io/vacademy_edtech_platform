@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, MapPin, MapTrifold, Buildings, Signpost } from '@phosphor-icons/react';
@@ -32,12 +34,12 @@ const norm = (s: string | null | undefined): string => (s ?? '').trim();
 
 // Registration-date filter for the VLE list (by created_at). 'all' = no filter.
 type GeoRange = 'all' | '24h' | '3d' | '7d' | 'custom';
-const GEO_RANGES: { key: GeoRange; label: string; days: number | null }[] = [
-    { key: 'all', label: 'All', days: null },
-    { key: '24h', label: '24h', days: 1 },
-    { key: '3d', label: '3d', days: 3 },
-    { key: '7d', label: '7d', days: 7 },
-    { key: 'custom', label: 'Custom', days: null },
+const buildGeoRanges = (t: TFunction): { key: GeoRange; label: string; days: number | null }[] => [
+    { key: 'all', label: t('dateRange.all'), days: null },
+    { key: '24h', label: t('dateRange.last24h'), days: 1 },
+    { key: '3d', label: t('dateRange.last3d'), days: 3 },
+    { key: '7d', label: t('dateRange.last7d'), days: 7 },
+    { key: 'custom', label: t('dateRange.custom'), days: null },
 ];
 
 /** Parse a created_at that may be an ISO string or an epoch (s or ms) → millis. */
@@ -48,23 +50,23 @@ const toTime = (v: string | number | null | undefined): number | null => {
     return Number.isNaN(t) ? null : t;
 };
 
-const DIMS: { key: GeoDim; label: string }[] = [
-    { key: 'state', label: 'State' },
-    { key: 'city', label: 'City' },
-    { key: 'pincode', label: 'Pincode' },
+const buildDims = (t: TFunction): { key: GeoDim; label: string }[] => [
+    { key: 'state', label: t('dims.state') },
+    { key: 'city', label: t('dims.city') },
+    { key: 'pincode', label: t('dims.pincode') },
 ];
 
 const pick = (it: SubOrgListItem, dim: GeoDim): string =>
     dim === 'state' ? norm(it.state) : dim === 'city' ? norm(it.city) : norm(it.pincode);
 
-function aggregate(items: SubOrgListItem[], dim: GeoDim): GeoGroup[] {
+function aggregate(items: SubOrgListItem[], dim: GeoDim, t: TFunction): GeoGroup[] {
     const map = new Map<string, GeoGroup>();
     for (const it of items) {
         const raw = pick(it, dim);
         const key = raw.length ? raw : NONE_KEY;
         const g =
             map.get(key) ??
-            { key, label: key === NONE_KEY ? 'Not specified' : raw, count: 0, active: 0, usedSeats: 0, totalSeats: 0 };
+            { key, label: key === NONE_KEY ? t('notSpecified') : raw, count: 0, active: 0, usedSeats: 0, totalSeats: 0 };
         g.count += 1;
         if (norm(it.status).toUpperCase() === 'ACTIVE') g.active += 1;
         g.usedSeats += it.used_seats ?? 0;
@@ -108,12 +110,24 @@ interface MiniStat {
  * "Not specified" bucket. Hides when the institute has no sub-orgs.
  */
 export default function SubOrgGeographyWidget() {
+    const { t } = useTranslation('dashboardSubOrgGeographyWidget');
     const navigate = useNavigate();
     const instituteId = getCurrentInstituteId();
     const [dim, setDim] = useState<GeoDim>('state');
     const [range, setRange] = useState<GeoRange>('all');
     const [customFrom, setCustomFrom] = useState('');
     const [customTo, setCustomTo] = useState('');
+
+    const DIMS = useMemo(() => buildDims(t), [t]);
+    const GEO_RANGES = useMemo(() => buildGeoRanges(t), [t]);
+    const topLocationsLabels: Record<GeoDim, string> = useMemo(
+        () => ({
+            state: t('topLocations.state'),
+            city: t('topLocations.city'),
+            pincode: t('topLocations.pincode'),
+        }),
+        [t]
+    );
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['sub-orgs-with-details', instituteId],
@@ -138,12 +152,12 @@ export default function SubOrgGeographyWidget() {
             start = Date.now() - days * 86_400_000;
         }
         return items.filter((it) => {
-            const t = toTime(it.created_at);
-            return t != null && t >= start && t <= end;
+            const ts = toTime(it.created_at);
+            return ts != null && ts >= start && ts <= end;
         });
-    }, [items, range, customFrom, customTo]);
+    }, [items, range, customFrom, customTo, GEO_RANGES]);
 
-    const groups = useMemo(() => aggregate(filteredItems, dim), [filteredItems, dim]);
+    const groups = useMemo(() => aggregate(filteredItems, dim, t), [filteredItems, dim, t]);
     // Sub-org count per (normalized) state — drives the India choropleth.
     const stateCounts = useMemo(() => {
         const m = new Map<string, number>();
@@ -161,12 +175,12 @@ export default function SubOrgGeographyWidget() {
             (i) => pick(i, 'state') || pick(i, 'city') || pick(i, 'pincode')
         ).length;
         return [
-            { label: 'States', value: nfmt(distinct('state')), Icon: MapTrifold, iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600' },
-            { label: 'Cities', value: nfmt(distinct('city')), Icon: Buildings, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-            { label: 'Pincodes', value: nfmt(distinct('pincode')), Icon: Signpost, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
-            { label: 'Located', value: `${nfmt(located)}/${nfmt(filteredItems.length)}`, Icon: MapPin, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+            { label: t('stats.states'), value: nfmt(distinct('state')), Icon: MapTrifold, iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600' },
+            { label: t('stats.cities'), value: nfmt(distinct('city')), Icon: Buildings, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+            { label: t('stats.pincodes'), value: nfmt(distinct('pincode')), Icon: Signpost, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+            { label: t('stats.located'), value: `${nfmt(located)}/${nfmt(filteredItems.length)}`, Icon: MapPin, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
         ];
-    }, [filteredItems]);
+    }, [filteredItems, t]);
 
     const subOrgPlural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
 
@@ -185,17 +199,17 @@ export default function SubOrgGeographyWidget() {
                     </span>
                     <div className="min-w-0">
                         <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900">
-                            {subOrgPlural} by location
+                            {t('header.title', { term: subOrgPlural })}
                         </h3>
                         <p className="line-clamp-1 text-xs text-neutral-500">
-                            Where your {subOrgPlural} are based
+                            {t('header.subtitle', { term: subOrgPlural })}
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <div
                         role="group"
-                        aria-label="Group by"
+                        aria-label={t('groupBy.ariaLabel')}
                         className="flex shrink-0 items-center gap-0.5 rounded-lg border border-neutral-200 bg-neutral-50 p-0.5"
                     >
                         {DIMS.map((d) => (
@@ -220,7 +234,7 @@ export default function SubOrgGeographyWidget() {
                         onClick={() => navigate({ to: '/manage-custom-teams' })}
                         className="hidden shrink-0 items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 sm:flex"
                     >
-                        Manage
+                        {t('manage')}
                         <ArrowRight size={12} weight="bold" />
                     </button>
                 </div>
@@ -228,10 +242,10 @@ export default function SubOrgGeographyWidget() {
 
             {/* Registration-date filter */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-neutral-500">Registered</span>
+                <span className="text-xs font-medium text-neutral-500">{t('registered')}</span>
                 <div
                     role="group"
-                    aria-label="Registration date range"
+                    aria-label={t('dateRange.ariaLabel')}
                     className="flex shrink-0 items-center gap-0.5 rounded-lg border border-neutral-200 bg-neutral-50 p-0.5"
                 >
                     {GEO_RANGES.map((r) => (
@@ -258,16 +272,16 @@ export default function SubOrgGeographyWidget() {
                             value={customFrom}
                             max={customTo || undefined}
                             onChange={(e) => setCustomFrom(e.target.value)}
-                            aria-label="From date"
+                            aria-label={t('dateRange.fromDate')}
                             className="rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700 focus:border-primary-400 focus:outline-none"
                         />
-                        <span className="text-xs text-neutral-400">to</span>
+                        <span className="text-xs text-neutral-400">{t('dateRange.to')}</span>
                         <input
                             type="date"
                             value={customTo}
                             min={customFrom || undefined}
                             onChange={(e) => setCustomTo(e.target.value)}
-                            aria-label="To date"
+                            aria-label={t('dateRange.toDate')}
                             className="rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700 focus:border-primary-400 focus:outline-none"
                         />
                     </div>
@@ -315,7 +329,7 @@ export default function SubOrgGeographyWidget() {
                         ) : (
                             <>
                         <div className="mb-1 text-xs font-medium text-neutral-500">
-                            Top {DIMS.find((d) => d.key === dim)?.label.toLowerCase()}s
+                            {topLocationsLabels[dim]}
                         </div>
                         <ResponsiveContainer width="100%" height="90%">
                             <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 4 }}>
@@ -354,8 +368,8 @@ export default function SubOrgGeographyWidget() {
                                         {DIMS.find((d) => d.key === dim)?.label}
                                     </th>
                                     <th className="px-3 py-2 text-right font-medium">{subOrgPlural}</th>
-                                    <th className="px-3 py-2 text-right font-medium">Active</th>
-                                    <th className="px-3 py-2 text-right font-medium">Seats</th>
+                                    <th className="px-3 py-2 text-end font-medium">{t('table.active')}</th>
+                                    <th className="px-3 py-2 text-end font-medium">{t('table.seats')}</th>
                                 </tr>
                             </thead>
                             <tbody>

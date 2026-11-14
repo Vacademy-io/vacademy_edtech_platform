@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StatusChip, type StatusType } from "@/components/design-system/status-chips";
 import type {
   OnboardingStepInstanceDTO,
@@ -8,12 +9,12 @@ import { SubmittedFormDialog } from "./submitted-form-dialog";
 
 const STEP_STATUS_META: Record<
   OnboardingStepStatus,
-  { label: string; status: StatusType }
+  { labelKey: string; status: StatusType }
 > = {
-  PENDING: { label: "Pending", status: "INFO" },
-  IN_PROGRESS: { label: "In progress", status: "WARNING" },
-  COMPLETED: { label: "Completed", status: "SUCCESS" },
-  SKIPPED: { label: "Skipped", status: "INFO" },
+  PENDING: { labelKey: "pending", status: "INFO" },
+  IN_PROGRESS: { labelKey: "inProgress", status: "WARNING" },
+  COMPLETED: { labelKey: "completed", status: "SUCCESS" },
+  SKIPPED: { labelKey: "skipped", status: "INFO" },
 };
 
 interface OnboardingProgressListProps {
@@ -30,6 +31,7 @@ interface OnboardingProgressListProps {
 export const OnboardingProgressList = ({
   stepInstances,
 }: OnboardingProgressListProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const [viewingStep, setViewingStep] = useState<OnboardingStepInstanceDTO | null>(null);
 
   if (stepInstances.length === 0) return null;
@@ -56,10 +58,16 @@ export const OnboardingProgressList = ({
                   </span>
                   <span className="font-medium text-neutral-700">{step.step_name}</span>
                   {canView && (
-                    <span className="text-2xs text-primary-500 underline-offset-2">View</span>
+                    <span className="text-2xs text-primary-500 underline-offset-2">
+                      {t("onboardingProgress.view")}
+                    </span>
                   )}
                 </div>
-                <StatusChip text={meta.label} textSize="text-2xs" status={meta.status} />
+                <StatusChip
+                  text={t(`onboardingProgress.status.${meta.labelKey}`)}
+                  textSize="text-2xs"
+                  status={meta.status}
+                />
               </button>
             </li>
           );

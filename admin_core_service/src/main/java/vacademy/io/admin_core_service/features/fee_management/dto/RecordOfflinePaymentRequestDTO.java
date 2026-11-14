@@ -26,4 +26,6 @@ public class RecordOfflinePaymentRequestDTO {
     private String reference;
     private String currency;
     private boolean generateInvoice;
+    /** How it was paid (mode, sub-option, reference, extras); see OfflinePaymentDetailsService. */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails;
 }

@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.institute.service.InstitutePaymen
 import vacademy.io.admin_core_service.features.payments.enums.WebHookStatus;
 import vacademy.io.admin_core_service.features.payments.util.WebHookErrorUtils;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserInstitutePaymentGatewayMappingService;
@@ -39,8 +40,11 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 
@@ -73,6 +77,9 @@ public class RazorpayWebHookService {
     private RenewalPaymentService renewalPaymentService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
+
+    @Autowired
     private FeeLedgerAllocationService feeLedgerAllocationService;
 
     @Autowired
@@ -99,6 +106,14 @@ public class RazorpayWebHookService {
     @Autowired
     private vacademy.io.admin_core_service.features.platform_billing.service.PlatformRazorpayWebHookService platformRazorpayWebHookService;
 
+    /** Present once AI-plan autopay ships; recognises the platform's mandate tokens. */
+    @Autowired
+    private org.springframework.beans.factory.ObjectProvider<vacademy.io.admin_core_service.features.platform_billing.service.SubscriptionPaymentHandler> subscriptionPaymentHandler;
+
+    /** Finds platform orders whose payments carry no notes (autopay registration links). */
+    @Autowired
+    private vacademy.io.admin_core_service.features.platform_billing.repository.PlatformPaymentRepository platformPaymentRepository;
+
     @Autowired
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
 
@@ -118,9 +133,10 @@ public class RazorpayWebHookService {
             // against the institute's secret 100% of the time. Hand them to the
             // platform handler, which verifies against the right secret and grants
             // the credits. Routed before persistence — the platform handler saves its
-            // own web_hook row with vendor='RAZORPAY_PLATFORM'.
+            // own web_hook row with vendor='RAZORPAY_PLATFORM'. AI_SUBSCRIPTION payments and
+            // the platform's autopay token.* events (no notes, matched by token id) go the same way.
             if (isPlatformCreditPackEvent(payload)) {
-                log.info("Razorpay webhook is an AI_CREDIT_PACK event — delegating to platform handler.");
+                log.info("Razorpay webhook is a platform (AI credit pack / AI plan) event — delegating to platform handler.");
                 return platformRazorpayWebHookService.handleWebhook(payload, signature);
             }
 
@@ -285,6 +301,9 @@ public class RazorpayWebHookService {
         } else if (paymentType != null && PaymentType.APPLICATION_FEE.name().equals(paymentType)) {
             log.info("Processing APPLICATION_FEE payment webhook for orderId: {}", orderId);
             handleApplicationFeePayment(eventType, orderId, instituteId, paymentEntity);
+        } else if (paymentType != null && PaymentType.PLAN_CHANGE.name().equals(paymentType)) {
+            log.info("Processing PLAN_CHANGE payment webhook for orderId: {}", orderId);
+            handlePlanChangePayment(eventType, orderId, instituteId);
         } else {
             // Handle initial payment events
             handleRazorpayEvent(eventType, orderId, instituteId, paymentEntity);
@@ -589,7 +608,7 @@ public class RazorpayWebHookService {
      * Never throws: a payload we cannot parse is simply "not a platform event"
      * and falls through to the normal (signature-verified) institute path.
      */
-    private boolean isPlatformCreditPackEvent(String payload) {
+    boolean isPlatformCreditPackEvent(String payload) {
         try {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode entity = extractPaymentEntity(root);
@@ -598,7 +617,31 @@ public class RazorpayWebHookService {
                 JsonNode orderEntity = root.get("payload").get("order").get("entity");
                 paymentType = orderEntity != null ? extractPaymentType(orderEntity) : null;
             }
-            return PaymentType.AI_CREDIT_PACK.name().equals(paymentType);
+            if (PaymentType.AI_CREDIT_PACK.name().equals(paymentType)
+                    || PaymentType.AI_SUBSCRIPTION.name().equals(paymentType)) {
+                return true;
+            }
+            // token.* carries only the token entity: ours when the platform handler knows the id.
+            String event = root.has("event") ? root.get("event").asText() : null;
+            if (event != null && event.startsWith("token.") && subscriptionPaymentHandler != null) {
+                JsonNode token = root.path("payload").path("token").path("entity");
+                String tokenId = token.has("id") ? token.get("id").asText() : null;
+                var handler = subscriptionPaymentHandler.getIfAvailable();
+                return tokenId != null && handler != null && handler.ownsToken(tokenId);
+            }
+            // No payment_type in the notes (a registration-link payment keeps its notes on the
+            // invoice): ours when its order / invoice id is a platform_payment's vendor_order_id.
+            // Razorpay ids are globally unique, so an institute's payment can never match.
+            if (paymentType == null && entity != null && platformPaymentRepository != null) {
+                for (String key : new String[] {"order_id", "invoice_id"}) {
+                    JsonNode ref = entity.get(key);
+                    if (ref != null && !ref.isNull() && !ref.asText().isBlank()
+                            && platformPaymentRepository.findByVendorOrderId(ref.asText()).isPresent()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         } catch (Exception e) {
             log.warn("Could not determine payment_type for webhook routing: {}", e.getMessage());
             return false;
@@ -826,7 +869,7 @@ public class RazorpayWebHookService {
             if (!StringUtils.hasText(razorpayPaymentId)) {
                 return;
             }
-            Optional<PaymentLog> plOpt = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> plOpt = findGatewayLog(orderId);
             if (plOpt.isEmpty() || plOpt.get().getUserPlan() == null) {
                 return;
             }
@@ -859,12 +902,20 @@ public class RazorpayWebHookService {
     private void persistRazorpayMandate(String orderId, String userId, String instituteId,
             String tokenId, String customerId) {
         try {
-            Optional<PaymentLog> plOpt = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> plOpt = findGatewayLog(orderId);
             if (plOpt.isEmpty() || plOpt.get().getUserPlan() == null) {
                 log.debug("No user plan for orderId {} — skipping mandate persist", orderId);
                 return;
             }
             PaymentLog paymentLog = plOpt.get();
+            // A card saved while buying a book is not auto-pay on that book. A mandate row makes
+            // the plan read as "Stop auto-pay" on the learner's screens, and only a plan that can
+            // renew has any use for one. The saved card itself is already stored above.
+            if (!canRenewByMandate(paymentLog.getUserPlan())) {
+                log.info("Plan {} does not renew — keeping the saved card, not recording a mandate",
+                        paymentLog.getUserPlan().getId());
+                return;
+            }
             String userPlanId = paymentLog.getUserPlan().getId();
             // The cap and currency the mandate was registered with live on the originating
             // request. Without them the renewal charge has no local ceiling to enforce.
@@ -901,9 +952,55 @@ public class RazorpayWebHookService {
         }
     }
 
+    private boolean canRenewByMandate(UserPlan userPlan) {
+        return Boolean.TRUE.equals(userPlan.getAutoRenewalEnabled())
+                || (userPlan.getPaymentOption() != null
+                        && PaymentOptionType.SUBSCRIPTION.name().equalsIgnoreCase(userPlan.getPaymentOption().getType()));
+    }
+
+    /**
+     * Every payment log of the order a webhook names. A single checkout's order id is its log id.
+     * A cart's is the shared "MP…" id, which is no log's id: its logs carry it in
+     * payment_specific_data, which is how the PAID update finds them too.
+     */
+    private List<PaymentLog> findOrderLogs(String orderId) {
+        Optional<PaymentLog> byId = paymentLogRepository.findById(orderId);
+        if (byId.isPresent()) {
+            return List.of(byId.get());
+        }
+        List<PaymentLog> logs = paymentLogRepository.findAllByOrderIdInOriginalRequest(orderId);
+        return logs.isEmpty() ? paymentLogRepository.findAllByOrderIdInJson(orderId) : logs;
+    }
+
+    /**
+     * The log the gateway actually charged. Each line of a cart holds a copy of the gateway log's
+     * payment_specific_data, childPaymentLogIds included, so the gateway log is the one no log
+     * lists as a child.
+     */
+    Optional<PaymentLog> findGatewayLog(String orderId) {
+        List<PaymentLog> logs = findOrderLogs(orderId);
+        Set<String> childIds = new HashSet<>();
+        logs.forEach(paymentLog -> childIds.addAll(childLogIds(paymentLog)));
+        return logs.stream().filter(paymentLog -> !childIds.contains(paymentLog.getId())).findFirst();
+    }
+
+    private Set<String> childLogIds(PaymentLog paymentLog) {
+        Set<String> ids = new HashSet<>();
+        if (!StringUtils.hasText(paymentLog.getPaymentSpecificData())) {
+            return ids;
+        }
+        try {
+            objectMapper.readTree(paymentLog.getPaymentSpecificData()).path("childPaymentLogIds")
+                    .forEach(id -> ids.add(id.asText()));
+        } catch (Exception e) {
+            log.debug("Could not read child logs of payment log {}: {}", paymentLog.getId(), e.getMessage());
+        }
+        return ids;
+    }
+
     private String getUserIdFromPaymentLog(String orderId) {
         try {
-            Optional<PaymentLog> paymentLogOptional = paymentLogRepository.findById(orderId);
+            Optional<PaymentLog> paymentLogOptional = findGatewayLog(orderId);
 
             if (paymentLogOptional.isPresent()) {
                 String userId = paymentLogOptional.get().getUserId();
@@ -1127,9 +1224,10 @@ public class RazorpayWebHookService {
         }
 
         try {
-            // Get existing payment log
-            Optional<PaymentLog> paymentLogOptional = paymentLogRepository.findById(orderId);
-            if (!paymentLogOptional.isPresent()) {
+            // Every log of the order, not just the gateway's: the confirmation email reads the link
+            // from whichever log it handles first, and a cart's logs share this data by design.
+            List<PaymentLog> orderLogs = findOrderLogs(orderId);
+            if (orderLogs.isEmpty()) {
                 log.error("Payment log not found for orderId: {}", orderId);
                 SentryLogger.logError(new IllegalStateException("Payment log not found"),
                         "Payment log not found when storing Razorpay invoice URL", Map.of(
@@ -1139,39 +1237,39 @@ public class RazorpayWebHookService {
                 return;
             }
 
-            PaymentLog paymentLog = paymentLogOptional.get();
+            for (PaymentLog paymentLog : orderLogs) {
+                // Parse existing payment_specific_data
+                Map<String, Object> paymentData = JsonUtil.fromJson(
+                        paymentLog.getPaymentSpecificData(),
+                        Map.class);
 
-            // Parse existing payment_specific_data
-            Map<String, Object> paymentData = JsonUtil.fromJson(
-                    paymentLog.getPaymentSpecificData(),
-                    Map.class);
+                if (paymentData == null) {
+                    paymentData = new HashMap<>();
+                }
 
-            if (paymentData == null) {
-                paymentData = new HashMap<>();
+                // Navigate to response.response_data (create if doesn't exist)
+                Map<String, Object> response = (Map<String, Object>) paymentData.get("response");
+                if (response == null) {
+                    response = new HashMap<>();
+                    paymentData.put("response", response);
+                }
+
+                Map<String, Object> responseData = (Map<String, Object>) response.get("response_data");
+                if (responseData == null) {
+                    responseData = new HashMap<>();
+                    response.put("response_data", responseData);
+                }
+
+                // Add invoice URL (same field name as Stripe uses for consistency)
+                responseData.put("receiptUrl", invoiceUrl);
+                responseData.put("invoiceUrl", invoiceUrl); // Keep both for flexibility
+
+                log.debug("Storing invoice URL in payment_specific_data: {}", invoiceUrl);
+
+                // Save back to database
+                paymentLog.setPaymentSpecificData(JsonUtil.toJson(paymentData));
+                paymentLogRepository.save(paymentLog);
             }
-
-            // Navigate to response.response_data (create if doesn't exist)
-            Map<String, Object> response = (Map<String, Object>) paymentData.get("response");
-            if (response == null) {
-                response = new HashMap<>();
-                paymentData.put("response", response);
-            }
-
-            Map<String, Object> responseData = (Map<String, Object>) response.get("response_data");
-            if (responseData == null) {
-                responseData = new HashMap<>();
-                response.put("response_data", responseData);
-            }
-
-            // Add invoice URL (same field name as Stripe uses for consistency)
-            responseData.put("receiptUrl", invoiceUrl);
-            responseData.put("invoiceUrl", invoiceUrl); // Keep both for flexibility
-
-            log.debug("Storing invoice URL in payment_specific_data: {}", invoiceUrl);
-
-            // Save back to database
-            paymentLog.setPaymentSpecificData(JsonUtil.toJson(paymentData));
-            paymentLogRepository.save(paymentLog);
 
             log.info("Invoice URL stored successfully for orderId: {}", orderId);
 
@@ -1213,6 +1311,25 @@ public class RazorpayWebHookService {
 
         } catch (Exception e) {
             log.error("Error processing renewal payment webhook", e);
+        }
+    }
+
+    /**
+     * An upgrade payment settled. Applying the change is idempotent inside
+     * PlanChangeService (it claims the payment log atomically), which matters here because
+     * Razorpay delivers both payment.captured and order.paid for one payment and prod runs
+     * several replicas.
+     */
+    private void handlePlanChangePayment(String eventType, String orderId, String instituteId) {
+        try {
+            PaymentStatusEnum paymentStatus = determinePaymentStatus(eventType);
+            if (paymentStatus == null) {
+                log.info("Event {} is not relevant for plan-change payment status. Skipping.", eventType);
+                return;
+            }
+            planChangeService.handlePlanChangePaymentConfirmation(orderId, instituteId, paymentStatus);
+        } catch (Exception e) {
+            log.error("Error processing plan-change payment webhook for orderId {}", orderId, e);
         }
     }
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import boto3
@@ -62,6 +62,18 @@ class S3Service:
             region_name=region
         )
     
+    def presigned_post(self, s3_key: str, content_type: str, max_bytes: int, expires_in: int = 900) -> Dict[str, Any]:
+        """A browser-style POST that may put exactly ONE object at s3_key, of this type and at most max_bytes."""
+        post = self.s3_client.generate_presigned_post(
+            Bucket=self.public_bucket,
+            Key=s3_key,
+            Fields={"Content-Type": content_type},
+            Conditions=[{"Content-Type": content_type}, ["content-length-range", 1, max_bytes]],
+            ExpiresIn=expires_in,
+        )
+        return {"url": post["url"], "fields": post["fields"],
+                "public_url": f"{public_base_url(self.public_bucket, self.cdn_base_url)}/{s3_key}"}
+
     def upload_file(
         self,
         file_path: Path,
@@ -222,7 +234,9 @@ class S3Service:
         
         # Recursively find all files in directory
         for file_path in directory_path.rglob("*"):
-            if file_path.is_file():
+            # Skip hidden files — incl. the pipeline's atomic-write temps
+            # (.<name>.<uuid>.tmp) that a concurrent writer may leave behind.
+            if file_path.is_file() and not file_path.name.startswith("."):
                 # Preserve relative path structure
                 relative_path = file_path.relative_to(directory_path)
                 # Create S3 key with directory structure

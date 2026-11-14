@@ -1,0 +1,18 @@
+{
+    "errorSavingSlide": "خطأ في حفظ الشريحة",
+    "couldNotReadContent": "تعذّرت قراءة محتوى المحرر. يرجى المحاولة مرة أخرى.",
+    "slidePublished": "تم نشر الشريحة بنجاح!",
+    "confirmForcePublish": "لمنع فقدان البيانات عن طريق الخطأ، يرجى التأكيد.\n\n{{serverMessage}}\n\nهل أنت متأكد من رغبتك في نشر هذا الإصدار؟",
+    "slidePublishedForced": "تم نشر الشريحة (تجاوز إجباري).",
+    "errorPublishingSlide": "خطأ في نشر الشريحة",
+    "videoSlideMissing": "بيانات شريحة الفيديو مفقودة.",
+    "quizPublished": "تم نشر الاختبار بنجاح!",
+    "quizPublishFailed": "فشل نشر الاختبار",
+    "audioSlideMissing": "بيانات شريحة الصوت مفقودة.",
+    "scormSlideMissing": "بيانات شريحة SCORM مفقودة.",
+    "scormSlidePublished": "تم نشر شريحة SCORM بنجاح!",
+    "errorPublishingScormSlide": "خطأ في نشر شريحة SCORM",
+    "assessmentSlideMissing": "بيانات شريحة التقييم مفقودة.",
+    "assessmentSlidePublished": "تم نشر شريحة التقييم بنجاح!",
+    "errorPublishingAssessmentSlide": "خطأ في نشر شريحة التقييم"
+}

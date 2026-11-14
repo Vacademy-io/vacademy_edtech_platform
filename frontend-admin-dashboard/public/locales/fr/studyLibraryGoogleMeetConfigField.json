@@ -1,0 +1,35 @@
+{
+    "loadingGoogleAccounts": "Chargement des comptes Google…",
+    "notSetUpMessage": "L'intégration Google Meet n'est pas configurée pour cet établissement. Connectez un compte Google Workspace sous <strong>Paramètres → Session en direct → Intégration Google Meet</strong>, ou collez un lien de réunion dans le champ Lien du cours en direct ci-dessous.",
+    "googleMeetSettings": "Paramètres Google Meet",
+    "googleAccountOrganizer": "Compte Google (organisateur)",
+    "defaultSuffix": "(par défaut)",
+    "linkCreatedOnAccount": "Un lien Google Meet est créé sur ce compte.",
+    "anyoneWithLinkJoins": "Toute personne disposant du lien peut rejoindre directement (sans frapper) — idéal pour les apprenants.",
+    "guestsMustKnock": "Les invités doivent frapper et l'hôte doit admettre chacun d'eux.",
+    "settingsApplyToNewLinks": "Les paramètres ci-dessous s'appliquent aux liens Meet créés maintenant ; les liens existants gardent leurs paramètres.",
+    "section": {
+        "joinAccess": "Accès",
+        "recordingAndNotes": "Enregistrement et notes",
+        "hostControls": "Contrôles de l'hôte"
+    },
+    "field": {
+        "whoCanJoin": "Qui peut rejoindre sans demander",
+        "autoRecord": "Enregistrer automatiquement ce cours",
+        "autoTranscript": "Générer automatiquement la transcription",
+        "geminiNotes": "Notes Gemini (« Prendre des notes pour moi »)",
+        "attendanceReport": "Rapport de présence Google",
+        "hostManagement": "Activer les contrôles de l'hôte",
+        "chatHostsOnly": "Seuls les hôtes peuvent discuter",
+        "reactionsHostsOnly": "Seuls les hôtes peuvent envoyer des réactions",
+        "presentHostsOnly": "Seuls les hôtes peuvent partager l'écran",
+        "joinAsViewer": "Les apprenants rejoignent en spectateurs (sans micro ni caméra)"
+    },
+    "access": {
+        "open": "Toute personne disposant du lien",
+        "trusted": "Votre organisation uniquement ; les autres demandent",
+        "restricted": "Invités uniquement ; les autres demandent"
+    },
+    "planHint": "L'enregistrement, la transcription et les notes démarrent quand l'organisateur ou un enseignant du Google Workspace de l'établissement rejoint, et sont enregistrés dans le Drive de l'organisateur. L'enregistrement et la transcription nécessitent une offre Workspace avec enregistrement (Business Standard ou supérieure, Education Plus) ; les notes Gemini nécessitent une licence Gemini. Si l'offre n'inclut pas une fonction, le cours est quand même créé sans elle.",
+    "hostControlsWarning": "Seul le compte organisateur ({{email}}) est hôte. Un enseignant qui rejoint avec un autre compte Google est un participant : laissez le partage d'écran ouvert si les enseignants présentent depuis leur propre compte."
+}

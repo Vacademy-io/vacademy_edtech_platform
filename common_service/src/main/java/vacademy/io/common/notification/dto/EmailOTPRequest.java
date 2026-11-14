@@ -14,4 +14,6 @@ public class EmailOTPRequest {
     private String service;
     private String name;
     private String otp;
+    /** A product that mails under its own name (see notification_service's OtpBrand); else null. */
+    private String product;
 }

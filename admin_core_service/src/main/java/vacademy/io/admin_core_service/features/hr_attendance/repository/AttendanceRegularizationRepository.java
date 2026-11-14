@@ -12,4 +12,14 @@ public interface AttendanceRegularizationRepository extends JpaRepository<Attend
     List<AttendanceRegularization> findByEmployeeIdOrderByCreatedAtDesc(String employeeId);
 
     List<AttendanceRegularization> findByApprovalStatusOrderByCreatedAtDesc(String approvalStatus);
+
+    /**
+     * The institute's regularization queue, newest first. Scoped through the
+     * employee: the status-only finder above spans every tenant and must not
+     * back an API.
+     */
+    List<AttendanceRegularization> findByEmployee_InstituteIdOrderByCreatedAtDesc(String instituteId);
+
+    List<AttendanceRegularization> findByEmployee_InstituteIdAndApprovalStatusOrderByCreatedAtDesc(
+            String instituteId, String approvalStatus);
 }

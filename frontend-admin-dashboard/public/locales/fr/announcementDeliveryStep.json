@@ -1,0 +1,51 @@
+{
+    "channels": {
+        "title": "Canaux de diffusion",
+        "description": "Comment cela atteint les personnes en dehors du produit. Choisissez-en autant que nécessaire.",
+        "noneSelectedHint": "Aucun canal sélectionné — l'annonce n'apparaîtra qu'à l'intérieur du produit."
+    },
+    "push": {
+        "title": "Notification push",
+        "description": "Texte court et lisible en un coup d'œil. Envoyé aux applications installées et au push web."
+    },
+    "email": {
+        "title": "E-mail",
+        "description": "Choisissez un modèle enregistré ou envoyez le contenu rédigé à l'étape 1."
+    },
+    "whatsapp": {
+        "title": "WhatsApp",
+        "description": "Meta ne délivre que les modèles approuvés : choisissez-en un et associez ses variables."
+    },
+    "schedule": {
+        "title": "Quand doit-il être envoyé ?",
+        "type": {
+            "immediate": {
+                "label": "Envoyer maintenant",
+                "hint": "Dès votre confirmation"
+            },
+            "oneTime": {
+                "label": "Planifier",
+                "hint": "Une fois, à une heure précise"
+            },
+            "recurring": {
+                "label": "Répéter",
+                "hint": "Selon un planning récurrent"
+            }
+        },
+        "timezone": {
+            "label": "Fuseau horaire",
+            "hint": "Les heures planifiées sont lues dans ce fuseau horaire, pas celui de votre navigateur."
+        },
+        "oneTime": {
+            "sendAt": "Envoyer à"
+        },
+        "quickPick": {
+            "today5pm": "Aujourd'hui, 17 h",
+            "tomorrow9am": "Demain, 9 h",
+            "nextMonday9am": "Lundi prochain, 9 h"
+        },
+        "recurring": {
+            "cronExpression": "Expression cron"
+        }
+    }
+}

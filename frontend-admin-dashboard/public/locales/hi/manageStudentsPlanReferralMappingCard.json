@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "रेफ़रल सेटिंग्स",
+        "description": "अपने इनवाइट लिंक में प्रत्येक भुगतान योजना के लिए रेफ़रल प्रोग्राम कॉन्फ़िगर करें"
+    },
+    "card": {
+        "title": "योजना रेफ़रल कॉन्फ़िगरेशन",
+        "configuredBadge": "{{configured}}/{{total}} कॉन्फ़िगर किए गए",
+        "applyToAll": "सभी पर लागू करें",
+        "configureReferrals": "रेफ़रल कॉन्फ़िगर करें"
+    },
+    "emptyStates": {
+        "noPlanSelected": "कृपया पहले एक भुगतान योजना चुनें",
+        "noPaymentOptions": "कॉन्फ़िगरेशन के लिए कोई भुगतान विकल्प उपलब्ध नहीं है"
+    },
+    "planList": {
+        "heading": "भुगतान योजनाएं:",
+        "referralLabel": "रेफ़रल: {{name}}",
+        "noReferralConfigured": "कोई रेफ़रल कॉन्फ़िगर नहीं किया गया",
+        "unknownReferral": "अज्ञात रेफ़रल"
+    }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { PipelineFlow } from './PipelineFlow';
 import { PipelinePanel } from './PipelinePanel';
 import type { PipelineEventLogEntry, PipelineState } from './-utils/derive-pipeline-state';
@@ -53,21 +54,23 @@ export function PipelineLayout({
     onRetry,
     onEdit,
 }: PipelineLayoutProps) {
+    const { t } = useTranslation('videoApiStudioPipelineLayout');
+
     return (
-        <div className="flex size-full min-h-0 flex-col gap-3 sm:gap-4 xl:min-h-[600px] xl:flex-row">
+        <div className="flex size-full min-h-0 flex-col gap-3 sm:gap-4 xl:min-h-[600px] xl:flex-row">{/* design-lint-ignore: no minHeight token in tailwind.config for this px value; Tailwind's default minHeight scale has no numeric steps */}
             {/* Left: flow diagram (2/3 on desktop) */}
-            <div className="flex min-h-[320px] flex-1 flex-col rounded-xl border bg-card shadow-sm sm:min-h-[400px] xl:min-h-[480px] xl:basis-2/3">
+            <div className="flex min-h-[320px] flex-1 flex-col rounded-xl border bg-card shadow-sm sm:min-h-[400px] xl:min-h-[480px] xl:basis-2/3">{/* design-lint-ignore: no minHeight token in tailwind.config for these px values */}
                 <header className="flex items-start justify-between gap-2 border-b px-4 py-3">
                     <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Production
+                        <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {t('productionLabel')}
                         </p>
                         <h2 className="line-clamp-1 text-sm font-semibold text-foreground">
-                            {state.prompt || 'Untitled production'}
+                            {state.prompt || t('untitledProduction')}
                         </h2>
                     </div>
                 </header>
-                <div className="relative min-h-[320px] flex-1 sm:min-h-[400px] xl:min-h-[480px]">
+                <div className="relative min-h-[320px] flex-1 sm:min-h-[400px] xl:min-h-[480px]">{/* design-lint-ignore: no minHeight token in tailwind.config for these px values */}
                     <PipelineFlow state={state} apiKey={apiKey} />
                 </div>
             </div>

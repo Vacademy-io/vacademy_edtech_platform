@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     BellRinging,
     CalendarBlank,
@@ -81,14 +83,14 @@ const FormSection = ({
     </div>
 );
 
-const WEEKDAYS: Array<{ day: DayOfWeek; label: string }> = [
-    { day: 'MONDAY', label: 'Monday' },
-    { day: 'TUESDAY', label: 'Tuesday' },
-    { day: 'WEDNESDAY', label: 'Wednesday' },
-    { day: 'THURSDAY', label: 'Thursday' },
-    { day: 'FRIDAY', label: 'Friday' },
-    { day: 'SATURDAY', label: 'Saturday' },
-    { day: 'SUNDAY', label: 'Sunday' },
+const buildWeekdays = (t: TFunction): Array<{ day: DayOfWeek; label: string }> => [
+    { day: 'MONDAY', label: t('days.monday') },
+    { day: 'TUESDAY', label: t('days.tuesday') },
+    { day: 'WEDNESDAY', label: t('days.wednesday') },
+    { day: 'THURSDAY', label: t('days.thursday') },
+    { day: 'FRIDAY', label: t('days.friday') },
+    { day: 'SATURDAY', label: t('days.saturday') },
+    { day: 'SUNDAY', label: t('days.sunday') },
 ];
 
 const DEFAULT_ENABLED_DAYS = new Set<DayOfWeek>([
@@ -106,47 +108,55 @@ interface DayRow {
     end: string;
 }
 
-const DURATION_OPTIONS = [15, 30, 45, 60].map((minutes) => ({
-    _id: minutes,
-    value: String(minutes),
-    label: `${minutes} minutes`,
-}));
+const buildDurationOptions = (t: TFunction) =>
+    [15, 30, 45, 60].map((minutes) => ({
+        _id: minutes,
+        value: String(minutes),
+        label: t('durationOption', { count: minutes }),
+    }));
 
-const MIN_NOTICE_OPTIONS = [
-    { _id: 0, value: '0', label: 'No minimum notice' },
-    { _id: 1, value: '1', label: '1 hour' },
-    { _id: 2, value: '2', label: '2 hours' },
-    { _id: 4, value: '4', label: '4 hours' },
-    { _id: 12, value: '12', label: '12 hours' },
-    { _id: 24, value: '24', label: '1 day' },
-    { _id: 48, value: '48', label: '2 days' },
+const buildMinNoticeOptions = (t: TFunction) => [
+    { _id: 0, value: '0', label: t('noMinimumNotice') },
+    { _id: 1, value: '1', label: t('hoursOption', { count: 1 }) },
+    { _id: 2, value: '2', label: t('hoursOption', { count: 2 }) },
+    { _id: 4, value: '4', label: t('hoursOption', { count: 4 }) },
+    { _id: 12, value: '12', label: t('hoursOption', { count: 12 }) },
+    { _id: 24, value: '24', label: t('daysOption', { count: 1 }) },
+    { _id: 48, value: '48', label: t('daysOption', { count: 2 }) },
 ];
 
-const REMINDER_OFFSET_OPTIONS = [
-    { _id: 'none', value: 'none', label: 'No pre-meeting reminder' },
-    { _id: 30, value: '30', label: '30 minutes before' },
-    { _id: 60, value: '60', label: '1 hour before' },
-    { _id: 1440, value: '1440', label: '1 day before' },
+const buildReminderOffsetOptions = (t: TFunction) => [
+    { _id: 'none', value: 'none', label: t('noReminder') },
+    { _id: 30, value: '30', label: t('minutesBeforeOption', { count: 30 }) },
+    { _id: 60, value: '60', label: t('hoursBeforeOption', { count: 1 }) },
+    { _id: 1440, value: '1440', label: t('daysBeforeOption', { count: 1 }) },
 ];
 
 const NO_AUDIENCE_VALUE = '__NONE__';
 
-const bookingPageSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    durationMinutes: z.string().min(1, 'Duration is required'),
-    timezone: z.string().min(1, 'Timezone is required'),
-    minNoticeHours: z.string(),
-    horizonDays: z
-        .string()
-        .refine((v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0), 'Enter a number of days'),
-    reminderOffset: z.string(),
-    audienceId: z.string().optional(),
-});
+const buildBookingPageSchema = (t: TFunction) =>
+    z.object({
+        title: z.string().min(1, t('schema.titleRequired')),
+        durationMinutes: z.string().min(1, t('schema.durationRequired')),
+        timezone: z.string().min(1, t('schema.timezoneRequired')),
+        minNoticeHours: z.string(),
+        horizonDays: z
+            .string()
+            .refine(
+                (v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0),
+                t('schema.horizonDaysInvalid')
+            ),
+        reminderOffset: z.string(),
+        audienceId: z.string().optional(),
+    });
 
-type BookingPageFormValues = z.infer<typeof bookingPageSchema>;
+type BookingPageFormValues = z.infer<ReturnType<typeof buildBookingPageSchema>>;
 
-const buildInitialDays = (windows: WeeklyWindow[] | undefined): DayRow[] =>
-    WEEKDAYS.map(({ day }) => {
+const buildInitialDays = (
+    weekdays: Array<{ day: DayOfWeek; label: string }>,
+    windows: WeeklyWindow[] | undefined
+): DayRow[] =>
+    weekdays.map(({ day }) => {
         const match = windows?.find((w) => w.day_of_week === day);
         return {
             day,
@@ -156,16 +166,16 @@ const buildInitialDays = (windows: WeeklyWindow[] | undefined): DayRow[] =>
         };
     });
 
-export /** Booking values an admin can map a WhatsApp template variable to. */
-const BOOKING_FIELD_OPTIONS: { value: string; label: string }[] = [
-    { value: 'invitee_name', label: "Invitee's name" },
-    { value: 'meeting_datetime', label: 'Meeting date & time' },
-    { value: 'meeting_date', label: 'Meeting date' },
-    { value: 'meeting_time', label: 'Meeting time' },
-    { value: 'meet_link', label: 'Google Meet / join link' },
-    { value: 'host_name', label: "Host's name" },
-    { value: 'meeting_title', label: 'Meeting title' },
-    { value: 'duration_minutes', label: 'Duration (minutes)' },
+/** Booking values an admin can map a WhatsApp template variable to. */
+const buildBookingFieldOptions = (t: TFunction): { value: string; label: string }[] => [
+    { value: 'invitee_name', label: t('fieldOptions.inviteeName') },
+    { value: 'meeting_datetime', label: t('fieldOptions.meetingDatetime') },
+    { value: 'meeting_date', label: t('fieldOptions.meetingDate') },
+    { value: 'meeting_time', label: t('fieldOptions.meetingTime') },
+    { value: 'meet_link', label: t('fieldOptions.meetLink') },
+    { value: 'host_name', label: t('fieldOptions.hostName') },
+    { value: 'meeting_title', label: t('fieldOptions.meetingTitle') },
+    { value: 'duration_minutes', label: t('fieldOptions.durationMinutes') },
 ];
 
 // Template variables: prefer the template's semantic names, else parse {{n}} tokens.
@@ -201,6 +211,7 @@ export const BookingPageForm = ({
     onSaved,
     onCancel,
 }: BookingPageFormProps) => {
+    const { t } = useTranslation('meetingsBookingPageForm');
     const createPage = useCreateBookingPage();
     const updatePage = useUpdateBookingPage();
     const isEdit = !!initialPage?.id;
@@ -209,22 +220,29 @@ export const BookingPageForm = ({
     const currentUserId = getUserId();
     const currentUserName = getUserName();
 
+    const weekdays = useMemo(() => buildWeekdays(t), [t]);
+    const durationOptions = useMemo(() => buildDurationOptions(t), [t]);
+    const minNoticeOptions = useMemo(() => buildMinNoticeOptions(t), [t]);
+    const reminderOffsetOptions = useMemo(() => buildReminderOffsetOptions(t), [t]);
+    const bookingFieldOptions = useMemo(() => buildBookingFieldOptions(t), [t]);
+    const bookingPageSchema = useMemo(() => buildBookingPageSchema(t), [t]);
+
     const [host, setHost] = useState<PickedUser[]>(() => {
         if (initialPage?.host_user_id) {
             return [
                 {
                     id: initialPage.host_user_id,
-                    fullName: initialPage.host_name || 'Selected host',
+                    fullName: initialPage.host_name || t('defaultHostSelected'),
                     email: '',
                 },
             ];
         }
         return currentUserId
-            ? [{ id: currentUserId, fullName: currentUserName || 'Me', email: '' }]
+            ? [{ id: currentUserId, fullName: currentUserName || t('defaultHostMe'), email: '' }]
             : [];
     });
     const [days, setDays] = useState<DayRow[]>(() =>
-        buildInitialDays(initialPage?.availability?.weekly_windows)
+        buildInitialDays(weekdays, initialPage?.availability?.weekly_windows)
     );
     const [allocateGoogleMeet, setAllocateGoogleMeet] = useState(
         initialPage?.allocate_google_meet ?? true
@@ -252,8 +270,8 @@ export const BookingPageForm = ({
         enabled: !!instituteId && remindWhatsapp,
         staleTime: 60_000,
     });
-    const waTemplates = (waTemplatesQuery.data ?? []).filter((t) => t.status === 'APPROVED');
-    const selectedWaTemplate = waTemplates.find((t) => t.name === waTemplateName) ?? null;
+    const waTemplates = (waTemplatesQuery.data ?? []).filter((tpl) => tpl.status === 'APPROVED');
+    const selectedWaTemplate = waTemplates.find((tpl) => tpl.name === waTemplateName) ?? null;
     const waVars = templateVars(selectedWaTemplate);
 
     const timezoneOptions = useMemo(() => {
@@ -303,7 +321,7 @@ export const BookingPageForm = ({
     const onSubmit = (values: BookingPageFormValues) => {
         const enabledDays = days.filter((d) => d.enabled);
         if (enabledDays.length === 0) {
-            toast.error('Enable at least one day of weekly availability');
+            toast.error(t('toast.enableOneDay'));
             return;
         }
 
@@ -373,14 +391,12 @@ export const BookingPageForm = ({
 
         const callbacks = {
             onSuccess: (page: BookingPageDTO) => {
-                toast.success(isEdit ? 'Booking page updated' : 'Booking page created');
+                toast.success(isEdit ? t('toast.updated') : t('toast.created'));
                 onSaved?.(page);
             },
             onError: () => {
                 toast.error(
-                    isEdit
-                        ? 'Failed to update the booking page'
-                        : 'Failed to create the booking page'
+                    isEdit ? t('toast.updateFailed') : t('toast.createFailed')
                 );
             },
         };
@@ -397,8 +413,8 @@ export const BookingPageForm = ({
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
                 <FormSection
                     icon={Info}
-                    title="Basics"
-                    description="The essentials people see when they book time with you."
+                    title={t('basics.title')}
+                    description={t('basics.description')}
                 >
                     <FormField
                         control={form.control}
@@ -407,10 +423,10 @@ export const BookingPageForm = ({
                             <FormItem>
                                 <FormControl>
                                     <MyInput
-                                        label="Title"
+                                        label={t('basics.titleLabel')}
                                         required
                                         inputType="text"
-                                        inputPlaceholder="e.g. Counselling Call"
+                                        inputPlaceholder={t('basics.titlePlaceholder')}
                                         className="w-full sm:w-full"
                                         input={field.value}
                                         onChangeFunction={field.onChange}
@@ -422,9 +438,9 @@ export const BookingPageForm = ({
                     />
 
                     <div className="flex flex-col gap-1">
-                        <Label className="text-subtitle font-regular">Host</Label>
+                        <Label className="text-subtitle font-regular">{t('basics.hostLabel')}</Label>
                         <p className="text-caption text-neutral-500">
-                            Who runs this meeting and appears as the point of contact.
+                            {t('basics.hostDescription')}
                         </p>
                         <UserSearchCombobox
                             instituteId={instituteId}
@@ -436,15 +452,15 @@ export const BookingPageForm = ({
 
                     <div className="flex flex-col gap-4 sm:flex-row">
                         <SelectField
-                            label="Duration"
+                            label={t('basics.durationLabel')}
                             name="durationMinutes"
-                            options={DURATION_OPTIONS}
+                            options={durationOptions}
                             control={form.control}
                             required
                             className="w-full flex-1 sm:w-full"
                         />
                         <SelectField
-                            label="Timezone"
+                            label={t('basics.timezoneLabel')}
                             name="timezone"
                             options={timezoneOptions}
                             control={form.control}
@@ -455,10 +471,14 @@ export const BookingPageForm = ({
 
                     {!fixedAudienceId && audienceOptions && audienceOptions.length > 0 && (
                         <SelectField
-                            label="Audience List (optional)"
+                            label={t('basics.audienceLabel')}
                             name="audienceId"
                             options={[
-                                { _id: NO_AUDIENCE_VALUE, value: NO_AUDIENCE_VALUE, label: 'None' },
+                                {
+                                    _id: NO_AUDIENCE_VALUE,
+                                    value: NO_AUDIENCE_VALUE,
+                                    label: t('basics.audienceNone'),
+                                },
                                 ...audienceOptions.map((option) => ({
                                     _id: option.id,
                                     value: option.id,
@@ -473,22 +493,22 @@ export const BookingPageForm = ({
 
                 <FormSection
                     icon={CalendarBlank}
-                    title="Availability"
-                    description="Choose which days and hours people can book, and how much lead time you need."
+                    title={t('availability.title')}
+                    description={t('availability.description')}
                 >
                     {/* Weekly availability */}
                     <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3">
                         <div>
                             <p className="text-body font-semibold text-neutral-600">
-                                Weekly availability
+                                {t('availability.weeklyAvailability')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                Tick the days you&apos;re free, then set your hours for each day.
+                                {t('availability.weeklyAvailabilityDescription')}
                             </p>
                         </div>
                         <div className="flex flex-col gap-2">
                             {days.map((row) => {
-                                const meta = WEEKDAYS.find((w) => w.day === row.day)!;
+                                const meta = weekdays.find((w) => w.day === row.day)!;
                                 return (
                                     <div
                                         key={row.day}
@@ -518,7 +538,7 @@ export const BookingPageForm = ({
                                                 className="h-9 w-28"
                                             />
                                             <span className="text-caption text-neutral-500">
-                                                to
+                                                {t('availability.to')}
                                             </span>
                                             <Input
                                                 type="time"
@@ -539,9 +559,9 @@ export const BookingPageForm = ({
                     <div className="flex flex-col gap-1">
                         <div className="flex flex-col gap-4 sm:flex-row">
                             <SelectField
-                                label="Minimum notice"
+                                label={t('availability.minNoticeLabel')}
                                 name="minNoticeHours"
-                                options={MIN_NOTICE_OPTIONS}
+                                options={minNoticeOptions}
                                 control={form.control}
                                 className="w-full flex-1 sm:w-full"
                             />
@@ -552,9 +572,9 @@ export const BookingPageForm = ({
                                     <FormItem className="flex-1">
                                         <FormControl>
                                             <MyInput
-                                                label="Booking horizon (days)"
+                                                label={t('availability.horizonLabel')}
                                                 inputType="number"
-                                                inputPlaceholder="30"
+                                                inputPlaceholder={t('availability.horizonPlaceholder')}
                                                 className="w-full sm:w-full"
                                                 input={field.value}
                                                 onChangeFunction={field.onChange}
@@ -565,25 +585,22 @@ export const BookingPageForm = ({
                                 )}
                             />
                         </div>
-                        <p className="text-caption text-neutral-500">
-                            Minimum notice keeps last-minute bookings out; booking horizon caps how
-                            far ahead people can book.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('availability.footnote')}</p>
                     </div>
                 </FormSection>
 
                 <FormSection
                     icon={MapPinLine}
-                    title="Location & Booking Rules"
-                    description="Decide how the meeting happens, and whether you need to approve bookings first."
+                    title={t('location.title')}
+                    description={t('location.description')}
                 >
                     <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
                         <div>
                             <p className="text-body font-semibold text-neutral-600">
-                                Allocate Google Meet
+                                {t('location.meetTitle')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                Attach a Google Meet link to every booked meeting
+                                {t('location.meetDescription')}
                             </p>
                         </div>
                         <Switch
@@ -595,10 +612,10 @@ export const BookingPageForm = ({
                     <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
                         <div>
                             <p className="text-body font-semibold text-neutral-600">
-                                Require approval
+                                {t('location.approvalTitle')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                New bookings stay pending until the host approves them
+                                {t('location.approvalDescription')}
                             </p>
                         </div>
                         <Switch checked={requireApproval} onCheckedChange={setRequireApproval} />
@@ -607,8 +624,8 @@ export const BookingPageForm = ({
 
                 <FormSection
                     icon={BellRinging}
-                    title="Reminders"
-                    description="Notify invitees by email or WhatsApp before their meeting."
+                    title={t('reminders.title')}
+                    description={t('reminders.description')}
                 >
                     <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3">
                         <div className="flex flex-wrap items-center gap-4">
@@ -617,7 +634,7 @@ export const BookingPageForm = ({
                                     checked={remindEmail}
                                     onCheckedChange={(checked) => setRemindEmail(checked === true)}
                                 />
-                                <span className="text-body text-neutral-600">Email</span>
+                                <span className="text-body text-neutral-600">{t('reminders.email')}</span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <Checkbox
@@ -626,35 +643,34 @@ export const BookingPageForm = ({
                                         setRemindWhatsapp(checked === true)
                                     }
                                 />
-                                <span className="text-body text-neutral-600">WhatsApp</span>
+                                <span className="text-body text-neutral-600">{t('reminders.whatsapp')}</span>
                             </label>
                         </div>
 
                         {remindWhatsapp && (
                             <div className="flex flex-col gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3">
                                 <div className="flex flex-col gap-1.5">
-                                    <Label>WhatsApp template</Label>
+                                    <Label>{t('reminders.templateLabel')}</Label>
                                     <TemplateSearchableSelect
                                         options={toTemplateOptions(waTemplates)}
                                         value={waTemplateName || 'NONE'}
                                         onChange={(v) => setWaTemplateName(v === 'NONE' ? '' : v)}
                                         loading={waTemplatesQuery.isLoading}
-                                        placeholder="Choose an approved template"
-                                        emptyText="No approved template matches your search."
+                                        placeholder={t('reminders.templatePlaceholder')}
+                                        emptyText={t('reminders.templateEmptyText')}
                                         noneOption={{
                                             value: 'NONE',
-                                            label: 'No template (won’t send WhatsApp)',
+                                            label: t('reminders.noTemplateOption'),
                                         }}
                                     />
                                     {waTemplatesQuery.isLoading && (
                                         <p className="text-caption text-neutral-500">
-                                            Loading templates…
+                                            {t('reminders.loadingTemplates')}
                                         </p>
                                     )}
                                     {!waTemplatesQuery.isLoading && waTemplates.length === 0 && (
                                         <p className="text-caption text-warning-600">
-                                            No approved WhatsApp templates yet. Create and get one
-                                            approved in Communication → WhatsApp Templates first.
+                                            {t('reminders.noApprovedTemplates')}
                                         </p>
                                     )}
                                 </div>
@@ -668,7 +684,7 @@ export const BookingPageForm = ({
                                         )}
                                         {waVars.length > 0 ? (
                                             <>
-                                                <Label>Fill the template variables</Label>
+                                                <Label>{t('reminders.fillVariables')}</Label>
                                                 {waVars.map((v) => (
                                                     <div
                                                         key={v}
@@ -687,13 +703,13 @@ export const BookingPageForm = ({
                                                             }
                                                         >
                                                             <SelectTrigger className="flex-1">
-                                                                <SelectValue placeholder="Map to…" />
+                                                                <SelectValue placeholder={t('reminders.mapToPlaceholder')} />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="UNSET">
-                                                                    — not set —
+                                                                    {t('reminders.notSet')}
                                                                 </SelectItem>
-                                                                {BOOKING_FIELD_OPTIONS.map((o) => (
+                                                                {bookingFieldOptions.map((o) => (
                                                                     <SelectItem
                                                                         key={o.value}
                                                                         value={o.value}
@@ -708,7 +724,7 @@ export const BookingPageForm = ({
                                             </>
                                         ) : (
                                             <p className="text-caption text-neutral-500">
-                                                This template has no variables — it will send as-is.
+                                                {t('reminders.noVariables')}
                                             </p>
                                         )}
                                     </div>
@@ -717,15 +733,14 @@ export const BookingPageForm = ({
                         )}
                         <div className="flex flex-col gap-1">
                             <SelectField
-                                label="Remind before meeting"
+                                label={t('reminders.remindBeforeLabel')}
                                 name="reminderOffset"
-                                options={REMINDER_OFFSET_OPTIONS}
+                                options={reminderOffsetOptions}
                                 control={form.control}
                                 className="w-full sm:w-full"
                             />
                             <p className="text-caption text-neutral-500">
-                                Sends an extra reminder this long before the meeting starts, on top
-                                of the booking-confirmation message.
+                                {t('reminders.remindBeforeFootnote')}
                             </p>
                         </div>
                     </div>
@@ -733,8 +748,8 @@ export const BookingPageForm = ({
 
                 <FormSection
                     icon={ListChecks}
-                    title="Form Questions"
-                    description="Extra questions the invitee answers when booking, on top of name, email and phone."
+                    title={t('formQuestions.title')}
+                    description={t('formQuestions.description')}
                     action={
                         <MyButton
                             type="button"
@@ -742,14 +757,14 @@ export const BookingPageForm = ({
                             scale="small"
                             onClick={addFormField}
                         >
-                            <Plus size={14} /> Add question
+                            <Plus size={14} /> {t('formQuestions.addQuestion')}
                         </MyButton>
                     }
                 >
                     <div className="rounded-lg border border-neutral-200 p-4">
                         {formFields.length === 0 ? (
                             <p className="text-caption text-neutral-400">
-                                No custom questions yet.
+                                {t('formQuestions.empty')}
                             </p>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -761,7 +776,7 @@ export const BookingPageForm = ({
                                         <div className="flex flex-wrap items-center gap-2">
                                             <Input
                                                 value={f.label}
-                                                placeholder="Question (e.g. What do you want help with?)"
+                                                placeholder={t('formQuestions.questionPlaceholder')}
                                                 onChange={(e) =>
                                                     updateFormField(f.id, { label: e.target.value })
                                                 }
@@ -777,16 +792,16 @@ export const BookingPageForm = ({
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="text">Short text</SelectItem>
+                                                    <SelectItem value="text">{t('formQuestions.fieldTypes.text')}</SelectItem>
                                                     <SelectItem value="textarea">
-                                                        Long text
+                                                        {t('formQuestions.fieldTypes.textarea')}
                                                     </SelectItem>
                                                     <SelectItem value="dropdown">
-                                                        Dropdown
+                                                        {t('formQuestions.fieldTypes.dropdown')}
                                                     </SelectItem>
-                                                    <SelectItem value="number">Number</SelectItem>
-                                                    <SelectItem value="email">Email</SelectItem>
-                                                    <SelectItem value="phone">Phone</SelectItem>
+                                                    <SelectItem value="number">{t('formQuestions.fieldTypes.number')}</SelectItem>
+                                                    <SelectItem value="email">{t('formQuestions.fieldTypes.email')}</SelectItem>
+                                                    <SelectItem value="phone">{t('formQuestions.fieldTypes.phone')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <label className="flex items-center gap-1.5 text-caption text-neutral-600">
@@ -796,7 +811,7 @@ export const BookingPageForm = ({
                                                         updateFormField(f.id, { required: v })
                                                     }
                                                 />
-                                                Required
+                                                {t('formQuestions.required')}
                                             </label>
                                             <MyButton
                                                 type="button"
@@ -810,7 +825,7 @@ export const BookingPageForm = ({
                                         {f.field_type === 'dropdown' && (
                                             <Input
                                                 value={(f.options ?? []).join(', ')}
-                                                placeholder="Options, comma-separated (e.g. Career, Interview, Resume)"
+                                                placeholder={t('formQuestions.optionsPlaceholder')}
                                                 onChange={(e) =>
                                                     updateFormField(f.id, {
                                                         options: e.target.value.split(','),
@@ -834,11 +849,15 @@ export const BookingPageForm = ({
                             onClick={onCancel}
                             disable={isSaving}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                     )}
                     <MyButton type="submit" buttonType="primary" scale="medium" disable={isSaving}>
-                        {isSaving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Booking Page'}
+                        {isSaving
+                            ? t('actions.saving')
+                            : isEdit
+                              ? t('actions.saveChanges')
+                              : t('actions.createBookingPage')}
                     </MyButton>
                 </div>
             </form>

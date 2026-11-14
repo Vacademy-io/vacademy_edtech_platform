@@ -1,0 +1,38 @@
+{
+    "emptyState": "अभी तक कोई ज़ूम खाता पंजीकृत नहीं है। इस संस्थान के लिए ज़ूम मीटिंग सक्षम करने हेतु एक खाता जोड़ें।",
+    "badges": {
+        "default": "डिफ़ॉल्ट",
+        "webhookNotSet": "वेबहुक सेट नहीं है"
+    },
+    "row": {
+        "accountLabel": "खाता",
+        "s2sLabel": "S2S",
+        "sdkLabel": "SDK",
+        "sdkPlatform": "प्लेटफ़ॉर्म",
+        "lastVerified": "अंतिम बार सत्यापित"
+    },
+    "menu": {
+        "ariaLabel": "खाता क्रियाएं",
+        "testConnection": "कनेक्शन जांचें",
+        "setAsDefault": "डिफ़ॉल्ट के रूप में सेट करें",
+        "edit": "संपादित करें",
+        "delete": "हटाएं"
+    },
+    "toasts": {
+        "defaultSet": "\"{{label}}\" अब डिफ़ॉल्ट ज़ूम खाता है",
+        "defaultSetFailed": "डिफ़ॉल्ट सेट नहीं किया जा सका",
+        "connected": "{{email}} के रूप में कनेक्ट हुआ",
+        "connectedWithPlan": "{{email}} ({{planType}}) के रूप में कनेक्ट हुआ",
+        "unknownEmail": "अज्ञात",
+        "connectionFailed": "कनेक्शन विफल रहा",
+        "connectionTestFailed": "कनेक्शन परीक्षण विफल रहा",
+        "removed": "\"{{label}}\" हटा दिया गया",
+        "deleteFailed": "खाता हटाने में विफल"
+    },
+    "dialog": {
+        "title": "क्या यह ज़ूम खाता हटाना है?",
+        "description": "\"{{label}}\" हटा दिया जाएगा। इस खाते से बनाए गए मौजूदा लाइव सत्र प्रभावित नहीं होंगे, लेकिन जब तक आप क्रेडेंशियल फिर से नहीं जोड़ते, तब तक आप इसके विरुद्ध नई मीटिंग नहीं बना पाएंगे।",
+        "cancel": "रद्द करें",
+        "confirmDelete": "हटाएं"
+    }
+}

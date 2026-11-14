@@ -1,0 +1,42 @@
+{
+    "header": {
+        "quizBlock": "Bloc de quiz",
+        "mcq": "QCM",
+        "trueFalse": "Vrai/Faux",
+        "preview": "Aperçu",
+        "edit": "Modifier"
+    },
+    "toolbar": {
+        "bold": "Gras",
+        "italic": "Italique",
+        "underline": "Souligné",
+        "bulletList": "Liste à puces",
+        "numberedList": "Liste numérotée",
+        "insertLink": "Insérer un lien",
+        "insertImage": "Insérer une image"
+    },
+    "prompts": {
+        "linkUrl": "URL du lien :"
+    },
+    "labels": {
+        "question": "Question",
+        "options": "Options (cliquez sur le cercle pour marquer la bonne réponse)",
+        "explanation": "Explication (affichée après la réponse)"
+    },
+    "actions": {
+        "markCorrect": "Marquer comme bonne réponse",
+        "removeOption": "Supprimer l'option",
+        "addOption": "+ Ajouter une option"
+    },
+    "placeholders": {
+        "question": "Saisissez votre question…",
+        "option": "Option {{label}}",
+        "explanation": "Expliquez la bonne réponse…"
+    },
+    "preview": {
+        "noQuestion": "Aucune question définie",
+        "checkAnswer": "Vérifier la réponse",
+        "tryAgain": "Réessayer",
+        "explanationLabel": "Explication :"
+    }
+}

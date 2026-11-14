@@ -1,0 +1,71 @@
+{
+    "dialogHeading": "Transcript",
+    "statusPill": {
+        "transcriptReady": "Transcript ready",
+        "wordCount_one": "{{formattedCount}} word",
+        "wordCount_other": "{{formattedCount}} words"
+    },
+    "languages": {
+        "en": "English",
+        "hi": "Hindi",
+        "bn": "Bengali",
+        "ta": "Tamil",
+        "te": "Telugu",
+        "mr": "Marathi",
+        "gu": "Gujarati",
+        "kn": "Kannada",
+        "ml": "Malayalam",
+        "pa": "Punjabi",
+        "ur": "Urdu",
+        "source": "Source"
+    },
+    "reader": {
+        "transcriptLabel": "{{language}} transcript",
+        "emptyTranscript": "Transcript is empty for this recording.",
+        "loadingTranscript": "Loading transcript…"
+    },
+    "buttons": {
+        "copy": "Copy",
+        "back": "Back",
+        "retry": "Retry"
+    },
+    "actions": {
+        "createAssessment": {
+            "title": "Create Assessment",
+            "description": "Auto-generate an MCQ assessment from this lecture and publish it to your batches.",
+            "cta": "Create Assessment"
+        },
+        "generateNotes": {
+            "title": "Generate Lecture Notes",
+            "description": "Turn this transcript into clean, structured study notes you can share with learners.",
+            "cta": "Generate Notes"
+        }
+    },
+    "loading": {
+        "generatingNotes": "Generating lecture notes…",
+        "usuallyTakes": "Usually takes 5–15 seconds."
+    },
+    "errors": {
+        "couldNotGenerateNotes": "Could not generate notes.",
+        "transcriptTooShort": "Transcript is empty or too short to generate notes",
+        "cachingFailed": "Notes generated, but caching failed — regenerate to retry.",
+        "generateFailed": "Failed to generate notes",
+        "pdfGenerationFailed": "Could not generate PDF",
+        "notesNotReady": "Notes are not ready to export."
+    },
+    "toasts": {
+        "copied": "{{label}} copied",
+        "clipboardError": "Could not access clipboard",
+        "notesGenerated": "Lecture notes generated",
+        "pdfDownloaded": "PDF downloaded"
+    },
+    "loaded": {
+        "backToActions": "← Back to actions",
+        "generated": "Generated {{timeAgo}}",
+        "addToCourse": "Add to course",
+        "lectureNotes": "Lecture notes",
+        "preparing": "Preparing…",
+        "downloadPdf": "Download PDF",
+        "regenerate": "Regenerate"
+    }
+}

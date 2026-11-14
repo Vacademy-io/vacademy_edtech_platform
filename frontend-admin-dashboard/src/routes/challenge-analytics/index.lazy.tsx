@@ -1,4 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -52,6 +53,7 @@ export const Route = createLazyFileRoute('/challenge-analytics/')({
 });
 
 function ChallengeAnalyticsDashboard() {
+    const { t } = useTranslation('challengeAnalyticsIndex');
     const { setNavHeading } = useNavHeadingStore();
     const queryClient = useQueryClient();
 
@@ -89,10 +91,10 @@ function ChallengeAnalyticsDashboard() {
         setNavHeading(
             <div className="flex items-center gap-2">
                 <Sparkle className="text-primary size-5" weight="fill" />
-                <h1 className="text-lg font-semibold">Challenge Analytics Dashboard</h1>
+                <h1 className="text-lg font-semibold">{t('pageHeading')}</h1>
             </div>
         );
-    }, [setNavHeading]);
+    }, [setNavHeading, t]);
 
     // Fetch outgoing templates first
     const { data: templatesData, isLoading: templatesLoading } = useOutgoingTemplates();
@@ -259,10 +261,10 @@ function ChallengeAnalyticsDashboard() {
 
         return [{
             name: detectedKey,
-            label: 'Center',
+            label: t('centerFilterLabel'),
             options: centerNames.map((v) => ({ value: v, label: v })),
         }];
-    }, [heatmapData, leaderboardData]);
+    }, [heatmapData, leaderboardData, t]);
 
     // Auto-select last day's completion templates for cohort
     useEffect(() => {
@@ -281,7 +283,7 @@ function ChallengeAnalyticsDashboard() {
             <div className="flex min-h-96 items-center justify-center">
                 <div className="text-center">
                     <DashboardLoader />
-                    <p className="mt-4 text-sm text-gray-500">Loading analytics templates...</p>
+                    <p className="mt-4 text-sm text-gray-500">{t('loadingTemplates')}</p>
                 </div>
             </div>
         );
@@ -290,11 +292,8 @@ function ChallengeAnalyticsDashboard() {
     return (
         <>
             <Helmet>
-                <title>Challenge Analytics Dashboard | Vacademy</title>
-                <meta
-                    name="description"
-                    content="Track parent engagement across challenge programs with actionable insights"
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('metaDescription')} />
             </Helmet>
 
             <div className="space-y-6 p-4 text-sm">
@@ -341,35 +340,35 @@ function ChallengeAnalyticsDashboard() {
                     <TabsList className="flex w-full justify-start gap-1 overflow-x-auto">
                         <TabsTrigger value="overview" className="shrink-0 gap-2">
                             <ChartLineUp className="size-4" />
-                            <span className="hidden sm:inline">Overview</span>
+                            <span className="hidden sm:inline">{t('tabs.overview')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="centers" className="shrink-0 gap-2">
                             <MapPin className="size-4" />
-                            <span className="hidden sm:inline">Centers</span>
+                            <span className="hidden sm:inline">{t('tabs.centers')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="participation" className="shrink-0 gap-2">
                             <Users className="size-4" />
-                            <span className="hidden sm:inline">Participation</span>
+                            <span className="hidden sm:inline">{t('tabs.participation')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="churn" className="shrink-0 gap-2">
                             <Warning className="size-4" />
-                            <span className="hidden sm:inline">Churn</span>
+                            <span className="hidden sm:inline">{t('tabs.churn')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="referral" className="shrink-0 gap-2">
                             <Share className="size-4" />
-                            <span className="hidden sm:inline">Referrals</span>
+                            <span className="hidden sm:inline">{t('tabs.referrals')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="leaderboard" className="shrink-0 gap-2">
                             <Trophy className="size-4" />
-                            <span className="hidden sm:inline">Leaderboard</span>
+                            <span className="hidden sm:inline">{t('tabs.leaderboard')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="cohort" className="shrink-0 gap-2">
                             <GraduationCap className="size-4" />
-                            <span className="hidden sm:inline">Completions</span>
+                            <span className="hidden sm:inline">{t('tabs.completions')}</span>
                         </TabsTrigger>
                         <TabsTrigger value="templates" className="shrink-0 gap-2">
                             <ChartBar className="size-4" />
-                            <span className="hidden sm:inline">Templates</span>
+                            <span className="hidden sm:inline">{t('tabs.templates')}</span>
                         </TabsTrigger>
                     </TabsList>
 

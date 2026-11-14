@@ -1,0 +1,42 @@
+{
+    "alerts": {
+        "fillRequired": "يرجى تعبئة اسم المشروع ورابط المحتوى",
+        "deploySuccess": "تم نشر الدفتر بنجاح!"
+    },
+    "header": {
+        "configuration": "إعدادات دفتر Jupyter"
+    },
+    "tabs": {
+        "preview": "معاينة",
+        "settings": "الإعدادات"
+    },
+    "form": {
+        "projectName": {
+            "label": "اسم المشروع",
+            "placeholder": "pythoncourse"
+        },
+        "contentUrl": {
+            "label": "رابط المحتوى (رابط مستودع Github الذي يحتوي على الدفتر)",
+            "placeholder": "https://github.com/amirtds/jupyter-notebooks"
+        },
+        "contentBranch": {
+            "label": "فرع المحتوى"
+        },
+        "notebookLocation": {
+            "label": "موقع الدفتر"
+        }
+    },
+    "deploy": {
+        "button": "نشر الدفتر",
+        "deploying": "جارٍ نشر الدفتر..."
+    },
+    "status": {
+        "readyToDeploy": "جاهز للنشر:",
+        "summary": "{{projectName}} من {{contentUrl}} (فرع {{contentBranch}}، موقع {{notebookLocation}})"
+    },
+    "preview": {
+        "iframeTitle": "معاينة دفتر Jupyter",
+        "notConfigured": "لم يتم تكوين أي دفتر",
+        "switchToSettingsHint": "انتقل إلى علامة تبويب الإعدادات لتكوين دفتر Jupyter الخاص بك"
+    }
+}

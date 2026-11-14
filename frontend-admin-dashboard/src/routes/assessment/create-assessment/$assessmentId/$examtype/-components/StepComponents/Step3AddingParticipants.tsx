@@ -1,5 +1,6 @@
 import { StepContentProps } from '@/types/assessments/step-content-props';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { MyButton } from '@/components/design-system/button';
 import { z } from 'zod';
@@ -32,6 +33,7 @@ import {
     copyToClipboard,
     getAllSessions,
     getAssessmentJoinLink,
+    convertToCustomFieldsData,
     getCustomFieldsWhileEditStep3,
     getStepKey,
     handleDownloadQRCode,
@@ -55,6 +57,7 @@ import { reportApiError } from '@/lib/report-api-error';
 import { useSavedAssessmentStore } from '../../-utils/global-states';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTestAccessStore } from '../../-utils/zustand-global-states/step3-adding-participants';
+import { diffBaseForSave } from '../../-utils/step3-registration-fields';
 import { useParams } from '@tanstack/react-router';
 import { convertDateFormat } from './Step1BasicInfo';
 import { handleGetIndividualStudentList } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
@@ -64,6 +67,10 @@ import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sort
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { fetchInstituteDefaultFields } from '@/services/custom-field-mappings';
+import {
+    isBuiltInRegistrationField,
+    withBuiltInRegistrationFields,
+} from '@/components/common/custom-fields/builtin-registration-fields';
 import {
     parseFieldConfig,
     serializeFieldConfig,
@@ -95,6 +102,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation('assessmentStep3AddingParticipants');
     const queryClient = useQueryClient();
     const params = useParams({ strict: false });
     const examType = params.examtype ?? '';
@@ -213,12 +221,14 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
         const loadFields = async () => {
             if (!instituteId || assessmentId !== 'defaultId') return;
             const defaults = await fetchInstituteDefaultFields(instituteId);
-            if (!defaults || defaults.length === 0) return;
             const SEEDED_KEYS = ['full_name', 'email', 'phone_number'];
-            const fields = defaults.map((entry, i) => {
+            const loaded = (defaults ?? []).map((entry, i) => {
                 const cf = entry.custom_field;
                 const key = cf.fieldName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-                const isSeeded = SEEDED_KEYS.includes(key);
+                // Built-in by ROLE, not by a key list — "Name" / "E-mail" count too.
+                const isSeeded =
+                    SEEDED_KEYS.includes(key) ||
+                    isBuiltInRegistrationField({ key, label: cf.fieldName, type: cf.fieldType });
                 const result: any = {
                     id: String(i),
                     type: cf.fieldType === 'dropdown' ? 'dropdown' : 'textfield',
@@ -240,6 +250,21 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                 }
                 return result;
             });
+            // An institute with no DEFAULT set (or one missing a field) still gets Full Name /
+            // Email / Phone Number, required to start with.
+            const fields = withBuiltInRegistrationFields(
+                loaded,
+                (field) => ({ key: field.key, label: field.name, type: field.type }),
+                (builtIn, index) => ({
+                    id: String(index),
+                    type: 'textfield',
+                    name: builtIn.label,
+                    oldKey: true,
+                    isRequired: true,
+                    key: builtIn.key,
+                    order: index,
+                })
+            );
             const currentValues = form.getValues();
             form.reset({
                 ...currentValues,
@@ -269,7 +294,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
             if (assessmentId !== 'defaultId') {
                 useTestAccessStore.getState().reset();
                 window.history.back();
-                toast.success('Step 3 data has been updated successfully!', {
+                toast.success(t('toasts.updateSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -277,7 +302,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_INDIVIDUAL_STUDENT_DETAILS'] });
             } else {
                 syncStep3DataWithStore(form);
-                toast.success('Step 3 data has been saved successfully!', {
+                toast.success(t('toasts.createSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -289,14 +314,20 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                 feature: 'assessment-step3-add-participants',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
-                fallbackMessage: 'Failed to save participants.',
+                fallbackMessage: t('toasts.saveFailed'),
             });
         },
     });
 
     const onSubmit = (data: z.infer<typeof testAccessSchema>) => {
         handleSubmitStep3Form.mutate({
-            oldFormData: oldFormData.current,
+            oldFormData: diffBaseForSave(
+                oldFormData.current,
+                convertToCustomFieldsData(
+                    assessmentDetails[2]?.saved_data?.registration_form_fields
+                ),
+                data.open_test.checked
+            ),
             data: data,
             assessmentId: assessmentId !== 'defaultId' ? assessmentId : savedAssessmentId,
             instituteId: instituteDetails?.id,
@@ -634,10 +665,9 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                             <Users size={22} weight="bold" />
                         </div>
                         <div>
-                            <h1 className="text-h2-semibold tracking-tight">Add Participants</h1>
+                            <h1 className="text-h2-semibold tracking-tight">{t('header.title')}</h1>
                             <p className="mt-1 text-sm text-neutral-500">
-                                Define who can participate in this assessment. Add students from
-                                batches, individually, or via open registration.
+                                {t('header.description')}
                             </p>
                         </div>
                     </div>
@@ -648,7 +678,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                         className="group gap-2 shadow-sm hover:shadow-md"
                         onClick={handleSubmit(onSubmit, onInvalid)}
                     >
-                        {assessmentId !== 'defaultId' ? 'Update' : 'Next'}
+                        {assessmentId !== 'defaultId' ? t('header.updateButton') : t('header.nextButton')}
                         <ArrowRight
                             size={18}
                             weight="bold"
@@ -664,10 +694,10 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                             </div>
                             <div>
                                 <CardTitle className="text-subtitle font-semibold">
-                                    Participant Access Settings
+                                    {t('accessSettings.cardTitle')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Choose how learners gain access to this assessment.
+                                    {t('accessSettings.cardDescription')}
                                 </CardDescription>
                             </div>
                         </CardHeader>
@@ -724,21 +754,21 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                                     className="text-primary-500"
                                                                 />
                                                                 <FormLabel className="cursor-pointer text-sm font-semibold text-neutral-800">
-                                                                    Closed Test
+                                                                    {t('accessSettings.closedTest.label')}
                                                                 </FormLabel>
                                                             </div>
                                                             <p className="mt-1 text-xs text-neutral-500">
-                                                                {examType === 'SURVEY'
-                                                                    ? 'Restrict the survey'
-                                                                    : 'Restrict the assessment'}{' '}
-                                                                to specific participants by
-                                                                assigning it to institute batches
-                                                                or selecting individual{' '}
-                                                                {getTerminology(
-                                                                    RoleTerms.Learner,
-                                                                    SystemTerms.Learner
-                                                                ).toLocaleLowerCase()}
-                                                                s.
+                                                                {t(
+                                                                    examType === 'SURVEY'
+                                                                        ? 'accessSettings.closedTest.descriptionSurvey'
+                                                                        : 'accessSettings.closedTest.descriptionAssessment',
+                                                                    {
+                                                                        term: getTerminology(
+                                                                            RoleTerms.Learner,
+                                                                            SystemTerms.Learner
+                                                                        ).toLocaleLowerCase(),
+                                                                    }
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </label>
@@ -772,20 +802,21 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                                     className="text-primary-500"
                                                                 />
                                                                 <FormLabel className="cursor-pointer text-sm font-semibold text-neutral-800">
-                                                                    Open Test
+                                                                    {t('accessSettings.openTest.label')}
                                                                 </FormLabel>
                                                             </div>
                                                             <p className="mt-1 text-xs text-neutral-500">
-                                                                Allow anyone to register for this{' '}
-                                                                {examType === 'SURVEY'
-                                                                    ? 'survey'
-                                                                    : 'assessment'}{' '}
-                                                                via a shared link. Institute{' '}
-                                                                {getTerminology(
-                                                                    RoleTerms.Learner,
-                                                                    SystemTerms.Learner
-                                                                ).toLocaleLowerCase()}
-                                                                s can also be pre-registered.
+                                                                {t(
+                                                                    examType === 'SURVEY'
+                                                                        ? 'accessSettings.openTest.descriptionSurvey'
+                                                                        : 'accessSettings.openTest.descriptionAssessment',
+                                                                    {
+                                                                        term: getTerminology(
+                                                                            RoleTerms.Learner,
+                                                                            SystemTerms.Learner
+                                                                        ).toLocaleLowerCase(),
+                                                                    }
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </label>
@@ -801,7 +832,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                     {watch('open_test.checked') && (
                         <>
                             <div className="mt-2 flex flex-col gap-4">
-                                <h1>{examType === 'SURVEY' ? 'Survey Registration' : 'Assessment Registration'}</h1>
+                                <h1>{examType === 'SURVEY' ? t('registration.titleSurvey') : t('registration.titleAssessment')}</h1>
                                 <div className="-mt-2 flex items-start gap-4">
                                     {getStepKey({
                                         assessmentDetails,
@@ -824,7 +855,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                             }
                                                             required
                                                             size="large"
-                                                            label="Start Date & Time"
+                                                            label={t('registration.startDateLabel')}
                                                             labelStyle="font-thin"
                                                             {...field}
                                                             className="w-full"
@@ -855,7 +886,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                             }
                                                             required
                                                             size="large"
-                                                            label="End Date & Time"
+                                                            label={t('registration.endDateLabel')}
                                                             labelStyle="font-thin"
                                                             {...field}
                                                             className="w-full"
@@ -868,7 +899,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                 </div>
                             </div>
                             <div className="mt-2 flex flex-col gap-6">
-                                <h1 className="-mb-5">{examType === 'SURVEY' ? 'About Survey Registration' : 'About Assessment Registration'}</h1>
+                                <h1 className="-mb-5">{examType === 'SURVEY' ? t('registration.aboutTitleSurvey') : t('registration.aboutTitleAssessment')}</h1>
                                 <FormField
                                     control={control}
                                     name="open_test.instructions"
@@ -879,7 +910,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     onChange={field.onChange}
                                                     onBlur={field.onBlur}
                                                     value={field.value}
-                                                    placeholder="Registration instructions"
+                                                    placeholder={t('registration.instructionsPlaceholder')}
                                                     minHeight={120}
                                                 />
                                             </FormControl>
@@ -895,9 +926,9 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                 <div className="flex w-full flex-col gap-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div className="flex flex-col">
-                                            <h1>Registration Form Fields</h1>
+                                            <h1>{t('registration.formFieldsTitle')}</h1>
                                             <p className="text-caption text-neutral-500">
-                                                Drag to reorder fields and customize them
+                                                {t('registration.formFieldsSubtitle')}
                                             </p>
                                         </div>
                                     </div>
@@ -926,7 +957,6 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                                     name={field.name}
                                                                     type={field.type}
                                                                     isRequired={field.isRequired}
-                                                                    locked={field.oldKey}
                                                                     isEditing={isEditingField}
                                                                     onToggleRequired={() =>
                                                                         toggleIsRequired(field.id)
@@ -964,7 +994,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                         </Sortable>
                                     </div>
                                     <div className="rounded-lg border border-dashed border-neutral-300 py-4 text-center text-caption text-neutral-500">
-                                        Use the buttons below to add a field
+                                        {t('registration.addFieldHint')}
                                     </div>
                                     <div className="mt-2 flex flex-wrap items-center gap-6">
                                         {!customFields?.some(
@@ -978,7 +1008,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     handleAddGender('dropdown', 'Gender', false)
                                                 }
                                             >
-                                                <Plus size={32} /> Add Gender
+                                                <Plus size={32} /> {t('registration.addGender')}
                                             </MyButton>
                                         )}
                                         {!customFields?.some((field) => field.name === 'State') && (
@@ -994,7 +1024,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     )
                                                 }
                                             >
-                                                <Plus size={32} /> Add State
+                                                <Plus size={32} /> {t('registration.addState')}
                                             </MyButton>
                                         )}
                                         {!customFields?.some((field) => field.name === 'City') && (
@@ -1010,7 +1040,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     )
                                                 }
                                             >
-                                                <Plus size={32} /> Add City
+                                                <Plus size={32} /> {t('registration.addCity')}
                                             </MyButton>
                                         )}
                                         {!customFields?.some(
@@ -1028,7 +1058,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     )
                                                 }
                                             >
-                                                <Plus size={32} /> Add School/College
+                                                <Plus size={32} /> {t('registration.addSchoolCollege')}
                                             </MyButton>
                                         )}
                                         <SharedAddCustomFieldDialog
@@ -1038,7 +1068,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                     scale="medium"
                                                     buttonType="secondary"
                                                 >
-                                                    <Plus size={32} /> Add Custom Field
+                                                    <Plus size={32} /> {t('registration.addCustomField')}
                                                 </MyButton>
                                             }
                                             onAddField={handleAddCustomField}
@@ -1094,21 +1124,21 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 buttonType="secondary"
                                                 className="mt-4 w-fit"
                                             >
-                                                Preview Registration Form
+                                                {t('registration.previewButton')}
                                             </MyButton>
                                         </DialogTrigger>
                                         <DialogContent className="p-0">
                                             <h1 className="rounded-md bg-primary-50 p-4 font-semibold text-primary-500">
-                                                Preview Registration Form
+                                                {t('registration.previewDialogTitle')}
                                             </h1>
-                                            <div className="flex max-h-[80vh] flex-col gap-4 overflow-y-auto px-4 py-2">
+                                            <div className="flex max-h-dialog-tall flex-col gap-4 overflow-y-auto px-4 py-2">
                                                 {customFields?.map((testInputFields, idx) => {
                                                     const fieldConfig = parseFieldConfig(
                                                         testInputFields.config
                                                     );
                                                     return (
                                                         <div
-                                                            className="flex w-full flex-col items-start gap-[0.4rem]"
+                                                            className="flex w-full flex-col items-start gap-1.5"
                                                             key={idx}
                                                         >
                                                             <h1 className="text-sm">
@@ -1150,7 +1180,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                         className="mt-4 w-fit"
                                                         disable
                                                     >
-                                                        Register Now
+                                                        {t('registration.registerNowButton')}
                                                     </MyButton>
                                                 </div>
                                             </div>
@@ -1192,17 +1222,17 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                             </div>
                             <div>
                                 <CardTitle className="text-subtitle font-semibold">
-                                    Share Access
+                                    {t('shareAccess.cardTitle')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Share a join link or QR code with participants.
+                                    {t('shareAccess.cardDescription')}
                                 </CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
                             <div className="flex flex-1 flex-col gap-2">
                                 <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                    Join Link
+                                    {t('shareAccess.joinLinkLabel')}
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <FormField
@@ -1213,7 +1243,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 <FormControl>
                                                     <MyInput
                                                         inputType="text"
-                                                        inputPlaceholder="Join Link"
+                                                        inputPlaceholder={t('shareAccess.joinLinkPlaceholder')}
                                                         input={field.value}
                                                         onChangeFunction={field.onChange}
                                                         error={
@@ -1231,7 +1261,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                         type="button"
                                         onClick={() => copyToClipboard(getValues('join_link'))}
                                         className="flex size-10 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-all hover:border-primary-400 hover:bg-primary-50/30 hover:text-primary-600"
-                                        aria-label="Copy join link"
+                                        aria-label={t('shareAccess.copyJoinLinkAriaLabel')}
                                     >
                                         <Copy size={18} weight="bold" />
                                     </button>
@@ -1241,7 +1271,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
                                         <QrCode size={12} weight="bold" />
-                                        QR Code
+                                        {t('shareAccess.qrCodeLabel')}
                                     </div>
                                     <FormField
                                         control={control}
@@ -1265,7 +1295,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                     type="button"
                                     onClick={() => handleDownloadQRCode('qr-code-svg')}
                                     className="flex size-10 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-all hover:border-primary-400 hover:bg-primary-50/30 hover:text-primary-600"
-                                    aria-label="Download QR code"
+                                    aria-label={t('shareAccess.downloadQrAriaLabel')}
                                 >
                                     <DownloadSimple size={18} weight="bold" />
                                 </button>
@@ -1295,10 +1325,10 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                             </div>
                             <div>
                                 <CardTitle className="text-subtitle font-semibold">
-                                    Email Notifications
+                                    {t('notifications.cardTitle')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Choose which events trigger automatic email alerts.
+                                    {t('notifications.cardDescription')}
                                 </CardDescription>
                             </div>
                         </CardHeader>
@@ -1314,7 +1344,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                         <Student size={15} weight="bold" />
                                     </div>
                                     <h3 className="text-sm font-semibold text-neutral-800">
-                                        Notify Participants
+                                        {t('notifications.participants.sectionTitle')}
                                     </h3>
                                 </div>
                                 <FormField
@@ -1334,7 +1364,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When Survey is created' : 'When Assessment is created'}
+                                                {examType === 'SURVEY' ? t('notifications.items.whenCreatedSurvey') : t('notifications.items.whenCreatedAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1356,14 +1386,14 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'Before Survey goes live' : 'Before Assessment goes live'}
+                                                {examType === 'SURVEY' ? t('notifications.items.beforeLiveSurvey') : t('notifications.items.beforeLiveAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
                                 />
                                 {watch('notify_student.before_assessment_goes_live')?.checked && (
                                     <SelectField
-                                        label="Notify Before"
+                                        label={t('notifications.notifyBeforeLabel')}
                                         labelStyle="font-thin"
                                         name="notify_student.before_assessment_goes_live.value"
                                         options={timeLimit.map((option, index) => ({
@@ -1373,7 +1403,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                         }))}
                                         control={form.control}
                                         required
-                                        className="ml-2 w-full max-w-[220px] font-normal"
+                                        className="ms-2 w-full max-w-56 font-normal"
                                     />
                                 )}
                                 <FormField
@@ -1393,7 +1423,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When Survey goes live' : 'When Assessment goes live'}
+                                                {examType === 'SURVEY' ? t('notifications.items.whenLiveSurvey') : t('notifications.items.whenLiveAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1415,7 +1445,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When survey reports are generated' : 'When assessment reports are generated'}
+                                                {examType === 'SURVEY' ? t('notifications.items.reportGeneratedSurvey') : t('notifications.items.reportGeneratedAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1434,8 +1464,8 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                     </div>
                                     <h3 className="text-sm font-semibold text-neutral-800">
                                         {examType === 'SURVEY'
-                                            ? 'Notify Participants'
-                                            : 'Notify Parents'}
+                                            ? t('notifications.parents.sectionTitleSurvey')
+                                            : t('notifications.parents.sectionTitleAssessment')}
                                     </h3>
                                 </div>
                                 <FormField
@@ -1455,7 +1485,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When Survey is created' : 'When Assessment is created'}
+                                                {examType === 'SURVEY' ? t('notifications.items.whenCreatedSurvey') : t('notifications.items.whenCreatedAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1477,14 +1507,14 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'Before Survey goes live' : 'Before Assessment goes live'}
+                                                {examType === 'SURVEY' ? t('notifications.items.beforeLiveSurvey') : t('notifications.items.beforeLiveAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
                                 />
                                 {watch("notify_parent.before_assessment_goes_live").checked && (
                                     <SelectField
-                                        label="Notify Before"
+                                        label={t('notifications.notifyBeforeLabel')}
                                         labelStyle="font-thin"
                                         name="notify_parent.before_assessment_goes_live.value"
                                         options={timeLimit.map((option, index) => ({
@@ -1494,7 +1524,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                         }))}
                                         control={form.control}
                                         required
-                                        className="ml-2 w-full max-w-[220px] font-normal"
+                                        className="ms-2 w-full max-w-56 font-normal"
                                     />
                                 )}
                                 <FormField
@@ -1514,7 +1544,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When Survey goes live' : 'When Assessment goes live'}
+                                                {examType === 'SURVEY' ? t('notifications.items.whenLiveSurvey') : t('notifications.items.whenLiveAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1536,7 +1566,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When students appears for the Survey' : 'When students appears for the Assessment'}
+                                                {examType === 'SURVEY' ? t('notifications.parents.whenStudentAppearsSurvey') : t('notifications.parents.whenStudentAppearsAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1558,7 +1588,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When students finishes the Survey' : 'When students finishes the Assessment'}
+                                                {examType === 'SURVEY' ? t('notifications.parents.whenStudentFinishesSurvey') : t('notifications.parents.whenStudentFinishesAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}
@@ -1580,7 +1610,7 @@ const Step3AddingParticipants: React.FC<StepContentProps> = ({
                                                 />
                                             </FormControl>
                                             <FormLabel className="!mt-0 cursor-pointer text-sm font-normal text-neutral-700">
-                                                {examType === 'SURVEY' ? 'When survey reports are generated' : 'When assessment reports are generated'}
+                                                {examType === 'SURVEY' ? t('notifications.items.reportGeneratedSurvey') : t('notifications.items.reportGeneratedAssessment')}
                                             </FormLabel>
                                         </FormItem>
                                     )}

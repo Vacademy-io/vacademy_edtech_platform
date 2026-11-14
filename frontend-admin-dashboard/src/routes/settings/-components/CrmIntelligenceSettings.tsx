@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import i18next from 'i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -52,40 +55,43 @@ const DEFAULT_QUALITY_KEYS = [
     'next_step_secured',
 ] as const;
 
+// The set of rubric quality keys that have a built-in, well-known definition
+// (see the settingsCrmIntelligence:qualityDescriptions catalog). Custom
+// qualities an institute adds simply won't match here — that's fine, the term
+// itself still guides the AI. These are internal identifiers (also the literal
+// value sent to the AI as the metric name), not display text, so they stay
+// hardcoded rather than translated.
+const KNOWN_QUALITY_KEYS = new Set<string>([
+    'rapport',
+    'needs_discovery',
+    'objection_handling',
+    'next_step_secured',
+    'value_articulation',
+    'pitch_clarity',
+    'active_listening',
+    'urgency_creation',
+    'closing',
+    'talk_listen_balance',
+    'follow_up_commitment',
+    'tone_confidence',
+]);
+
 /**
- * Plain-English, sales-team definitions for the common rubric qualities — shown
- * under each field so admins know exactly what the AI grades. Keyed by the
- * normalized quality (lowercase, spaces → underscores). Custom qualities an
- * institute adds simply won't have a hint (that's fine — the term itself guides
- * the AI). Add new well-known sales terms here as they come up.
+ * Plain-English, sales-team definition for a rubric quality — shown under each
+ * field so admins know exactly what the AI grades. Looked up by the normalized
+ * quality (lowercase, spaces → underscores) against the known set above.
+ *
+ * Called both from inside the component (JSX) and from plain module-scope
+ * helpers (normalizeQualities, getDefaultRubric) that have no hooks available,
+ * so it goes through the i18next singleton rather than a passed-in `t`.
+ * Resolved lazily on every call (not memoized) so it always reflects the
+ * active language.
  */
-const QUALITY_DESCRIPTIONS: Record<string, string> = {
-    rapport: 'Building trust early — warm opening, using the lead’s name, matching their tone.',
-    needs_discovery:
-        'Asking questions to uncover the lead’s goals, situation and pain before pitching.',
-    objection_handling:
-        'Acknowledging and resolving concerns (price, timing, trust) instead of talking past them.',
-    next_step_secured:
-        'Locking a concrete next action — demo booked, callback time set, payment link sent.',
-    value_articulation: 'Explaining the offering’s value in terms relevant to this lead’s needs.',
-    pitch_clarity: 'Presenting the course/offer clearly and concisely, without rambling.',
-    active_listening:
-        'Letting the lead speak, not interrupting, and reflecting back what they said.',
-    urgency_creation:
-        'Giving a genuine reason to act now (limited seats, deadline, current offer).',
-    closing: 'Asking for the commitment and driving toward a clear decision.',
-    talk_listen_balance: 'A healthy talk-vs-listen ratio — not dominating the call.',
-    follow_up_commitment: 'Getting the lead to agree to a specific follow-up, not a vague “maybe”.',
-    tone_confidence: 'Speaking with confidence, energy and professionalism throughout.',
-};
-
-const qualityDescription = (q: string): string | undefined =>
-    QUALITY_DESCRIPTIONS[q.trim().toLowerCase().replace(/\s+/g, '_')];
-
-const DEFAULT_RUBRIC: RubricSettings = {
-    objectiveHint: null,
-    qualities: DEFAULT_QUALITY_KEYS.map((key) => ({ key, description: QUALITY_DESCRIPTIONS[key] })),
-    weights: null,
+const qualityDescription = (q: string): string | undefined => {
+    const key = q.trim().toLowerCase().replace(/\s+/g, '_');
+    return KNOWN_QUALITY_KEYS.has(key)
+        ? i18next.t(`settingsCrmIntelligence:qualityDescriptions.${key}`)
+        : undefined;
 };
 
 /**
@@ -94,7 +100,7 @@ const DEFAULT_RUBRIC: RubricSettings = {
  * the built-in description for known terms.
  */
 function normalizeQualities(raw: unknown): RubricQuality[] {
-    if (!Array.isArray(raw)) return DEFAULT_RUBRIC.qualities;
+    if (!Array.isArray(raw)) return getDefaultRubric().qualities;
     return raw
         .map((q): RubricQuality | null => {
             if (typeof q === 'string') return { key: q, description: qualityDescription(q) };
@@ -115,33 +121,56 @@ function normalizeQualities(raw: unknown): RubricQuality[] {
         .filter((q): q is RubricQuality => q != null);
 }
 
-const DEFAULT_CALLS: CallsSettings = {
-    enabled: false,
-    sources: { MANUAL: true, TELEPHONY: true, AI: true },
-    minDurationSeconds: 20,
-    analyzeNotConnected: false,
-    ratingScale: 10,
-    rubric: DEFAULT_RUBRIC,
-};
+// Resolved lazily (not memoized) so the rubric description text always
+// reflects the active language — mirrors qualityDescription() above.
+function getDefaultRubric(): RubricSettings {
+    return {
+        objectiveHint: null,
+        qualities: DEFAULT_QUALITY_KEYS.map((key) => ({
+            key,
+            description: qualityDescription(key),
+        })),
+        weights: null,
+    };
+}
 
-const DEFAULT_SETTINGS: CrmIntelligenceSettingsData = {
-    enabled: false,
-    calls: DEFAULT_CALLS,
-};
+function getDefaultCalls(): CallsSettings {
+    return {
+        enabled: false,
+        sources: { MANUAL: true, TELEPHONY: true, AI: true },
+        minDurationSeconds: 20,
+        analyzeNotConnected: false,
+        ratingScale: 10,
+        rubric: getDefaultRubric(),
+    };
+}
 
-const SOURCE_LABELS: { key: CallSource; label: string; help: string }[] = [
-    {
-        key: 'MANUAL',
-        label: 'Manual uploads',
-        help: 'Recordings a counsellor uploads for an off-platform call.',
-    },
-    {
-        key: 'TELEPHONY',
-        label: 'Telephony calls',
-        help: 'Calls placed through Exotel / Airtel etc.',
-    },
-    { key: 'AI', label: 'AI agent calls', help: 'Calls placed by the AI voice agent (Aavtaar).' },
-];
+function getDefaultSettings(): CrmIntelligenceSettingsData {
+    return {
+        enabled: false,
+        calls: getDefaultCalls(),
+    };
+}
+
+function buildSourceLabels(t: TFunction): { key: CallSource; label: string; help: string }[] {
+    return [
+        {
+            key: 'MANUAL',
+            label: t('callAnalysis.sources.manual.label'),
+            help: t('callAnalysis.sources.manual.help'),
+        },
+        {
+            key: 'TELEPHONY',
+            label: t('callAnalysis.sources.telephony.label'),
+            help: t('callAnalysis.sources.telephony.help'),
+        },
+        {
+            key: 'AI',
+            label: t('callAnalysis.sources.ai.label'),
+            help: t('callAnalysis.sources.ai.help'),
+        },
+    ];
+}
 
 const SETTING_KEY = 'CRM_INTELLIGENCE_SETTING';
 const GET_URL = `${BASE_URL}/admin-core-service/institute/setting/v1/get`;
@@ -155,17 +184,20 @@ const fetchSettings = async (): Promise<CrmIntelligenceSettingsData> => {
         params: { instituteId, settingKey: SETTING_KEY },
     });
     const saved = response.data?.data as Partial<CrmIntelligenceSettingsData> | undefined;
-    if (!saved) return DEFAULT_SETTINGS;
+    const defaultSettings = getDefaultSettings();
+    if (!saved) return defaultSettings;
+    const defaultCalls = getDefaultCalls();
+    const defaultRubric = getDefaultRubric();
     // Deep-merge the calls + rubric blocks so a partial saved doc keeps defaults.
     return {
-        ...DEFAULT_SETTINGS,
+        ...defaultSettings,
         ...saved,
         calls: {
-            ...DEFAULT_CALLS,
+            ...defaultCalls,
             ...(saved.calls ?? {}),
-            sources: { ...DEFAULT_CALLS.sources, ...(saved.calls?.sources ?? {}) },
+            sources: { ...defaultCalls.sources, ...(saved.calls?.sources ?? {}) },
             rubric: {
-                ...DEFAULT_RUBRIC,
+                ...defaultRubric,
                 ...(saved.calls?.rubric ?? {}),
                 // Coerce legacy string[] → {key, description}[].
                 qualities: normalizeQualities(saved.calls?.rubric?.qualities),
@@ -184,9 +216,11 @@ const saveSettings = async (data: CrmIntelligenceSettingsData): Promise<void> =>
 };
 
 export default function CrmIntelligenceSettings() {
+    const { t } = useTranslation('settingsCrmIntelligence');
     const queryClient = useQueryClient();
-    const [settings, setSettings] = useState<CrmIntelligenceSettingsData>(DEFAULT_SETTINGS);
+    const [settings, setSettings] = useState<CrmIntelligenceSettingsData>(getDefaultSettings());
     const [hasChanges, setHasChanges] = useState(false);
+    const sourceLabels = buildSourceLabels(t);
 
     const { data, isLoading } = useQuery({
         queryKey: ['crm-intelligence-settings'],
@@ -204,11 +238,11 @@ export default function CrmIntelligenceSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveSettings,
         onSuccess: () => {
-            toast.success('CRM intelligence settings saved');
+            toast.success(t('toasts.saveSuccess'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['crm-intelligence-settings'] });
         },
-        onError: () => toast.error('Failed to save CRM intelligence settings'),
+        onError: () => toast.error(t('toasts.saveFailed')),
     });
 
     const update = (patch: Partial<CrmIntelligenceSettingsData>) => {
@@ -274,13 +308,8 @@ export default function CrmIntelligenceSettings() {
         <div className="space-y-6 p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>CRM Intelligence</CardTitle>
-                    <CardDescription>
-                        When enabled, call recordings are automatically transcribed (Hindi &amp;
-                        English) and analyzed by AI — producing a summary, action items, an outcome
-                        status, and two 0–10 ratings (how well the caller advanced their goal, and
-                        how the call landed for the lead). Each analyzed call deducts AI credits.
-                    </CardDescription>
+                    <CardTitle>{t('header.title')}</CardTitle>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
@@ -290,7 +319,7 @@ export default function CrmIntelligenceSettings() {
                             onCheckedChange={(v) => update({ enabled: v })}
                         />
                         <Label htmlFor="crm-intel-enabled" className="cursor-pointer">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
+                            {settings.enabled ? t('status.enabled') : t('status.disabled')}
                         </Label>
                     </div>
                 </CardContent>
@@ -300,11 +329,8 @@ export default function CrmIntelligenceSettings() {
                 <>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Call Analysis</CardTitle>
-                            <CardDescription>
-                                Choose which call sources are analyzed and the thresholds that gate
-                                it.
-                            </CardDescription>
+                            <CardTitle>{t('callAnalysis.title')}</CardTitle>
+                            <CardDescription>{t('callAnalysis.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-3">
@@ -314,7 +340,7 @@ export default function CrmIntelligenceSettings() {
                                     onCheckedChange={(v) => updateCalls({ enabled: v })}
                                 />
                                 <Label htmlFor="calls-enabled" className="cursor-pointer">
-                                    Analyze call recordings
+                                    {t('callAnalysis.analyzeRecordings')}
                                 </Label>
                             </div>
 
@@ -322,8 +348,8 @@ export default function CrmIntelligenceSettings() {
                                 <>
                                     <Separator />
                                     <div className="space-y-3">
-                                        <Label>Sources</Label>
-                                        {SOURCE_LABELS.map((s) => (
+                                        <Label>{t('callAnalysis.sourcesLabel')}</Label>
+                                        {sourceLabels.map((s) => (
                                             <div key={s.key} className="flex items-start gap-3">
                                                 <Switch
                                                     id={`src-${s.key}`}
@@ -350,7 +376,7 @@ export default function CrmIntelligenceSettings() {
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div className="grid gap-2">
                                             <Label htmlFor="min-duration">
-                                                Minimum call seconds
+                                                {t('callAnalysis.minDuration.label')}
                                             </Label>
                                             <Input
                                                 id="min-duration"
@@ -367,8 +393,7 @@ export default function CrmIntelligenceSettings() {
                                                 className="w-28"
                                             />
                                             <p className="text-caption text-muted-foreground">
-                                                Skip calls shorter than this — usually voicemail
-                                                blips.
+                                                {t('callAnalysis.minDuration.hint')}
                                             </p>
                                         </div>
                                     </div>
@@ -385,7 +410,7 @@ export default function CrmIntelligenceSettings() {
                                             htmlFor="analyze-not-connected"
                                             className="cursor-pointer"
                                         >
-                                            Also analyze calls that didn’t connect
+                                            {t('callAnalysis.analyzeNotConnected')}
                                         </Label>
                                     </div>
                                 </>
@@ -396,25 +421,18 @@ export default function CrmIntelligenceSettings() {
                     {settings.calls.enabled && (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Scoring Rubric</CardTitle>
-                                <CardDescription>
-                                    These are the sales-call skills the AI grades each rep on. The
-                                    call objective is inferred from the conversation (an optional
-                                    hint nudges it); each quality below is scored 0–10 within the
-                                    caller’s rating, and drives the “Skill breakdown” in Coaching.
-                                    Changes apply to calls analyzed after you save — use
-                                    “Re-analyze” on a past call to rescore it against a new rubric.
-                                </CardDescription>
+                                <CardTitle>{t('rubric.title')}</CardTitle>
+                                <CardDescription>{t('rubric.description')}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid max-w-xl gap-2">
                                     <Label htmlFor="objective-hint">
-                                        Objective hint (optional)
+                                        {t('rubric.objectiveHint.label')}
                                     </Label>
                                     <Input
                                         id="objective-hint"
                                         value={settings.calls.rubric.objectiveHint ?? ''}
-                                        placeholder="e.g. book a campus demo"
+                                        placeholder={t('rubric.objectiveHint.placeholder')}
                                         onChange={(e) =>
                                             updateRubric({ objectiveHint: e.target.value })
                                         }
@@ -423,12 +441,9 @@ export default function CrmIntelligenceSettings() {
 
                                 <div className="space-y-4">
                                     <div className="grid gap-0.5">
-                                        <Label>Rated metrics</Label>
+                                        <Label>{t('rubric.ratedMetrics.label')}</Label>
                                         <p className="text-caption text-muted-foreground">
-                                            Add any metric your sales team cares about. The
-                                            <span className="font-medium"> meaning</span> you write
-                                            is sent to the AI so it grades a custom metric exactly
-                                            the way you define it.
+                                            <Trans i18nKey="settingsCrmIntelligence:rubric.ratedMetrics.description"><span className="font-medium">meaning</span></Trans>
                                         </p>
                                     </div>
                                     {settings.calls.rubric.qualities.map((q, i) => (
@@ -439,7 +454,7 @@ export default function CrmIntelligenceSettings() {
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     value={q.key}
-                                                    placeholder="Metric (e.g. objection_handling)"
+                                                    placeholder={t('rubric.metric.keyPlaceholder')}
                                                     onChange={(e) =>
                                                         setQualityKey(i, e.target.value)
                                                     }
@@ -457,7 +472,7 @@ export default function CrmIntelligenceSettings() {
                                                 value={q.description ?? ''}
                                                 placeholder={
                                                     qualityDescription(q.key) ??
-                                                    'What does this metric mean? (used by the AI to grade it)'
+                                                    t('rubric.metric.descriptionFallbackPlaceholder')
                                                 }
                                                 onChange={(e) =>
                                                     setQualityDescription(i, e.target.value)
@@ -471,7 +486,7 @@ export default function CrmIntelligenceSettings() {
                                         scale="medium"
                                         onClick={addQuality}
                                     >
-                                        <Plus className="size-4" /> Add metric
+                                        <Plus className="size-4" /> {t('rubric.addMetric')}
                                     </MyButton>
                                 </div>
                             </CardContent>
@@ -487,7 +502,7 @@ export default function CrmIntelligenceSettings() {
                     onClick={handleSave}
                     disable={saving || !hasChanges || isLoading}
                 >
-                    {saving ? 'Saving…' : 'Save CRM intelligence settings'}
+                    {saving ? t('save.saving') : t('save.button')}
                 </MyButton>
             </div>
         </div>

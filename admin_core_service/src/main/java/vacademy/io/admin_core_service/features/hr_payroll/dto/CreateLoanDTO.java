@@ -22,4 +22,6 @@ public class CreateLoanDTO {
     private BigDecimal interestRate;
     private Integer tenureMonths;
     private String notes;
+    /** Optional ISO-4217 code (e.g. INR, USD); defaults to INR. */
+    private String currency;
 }

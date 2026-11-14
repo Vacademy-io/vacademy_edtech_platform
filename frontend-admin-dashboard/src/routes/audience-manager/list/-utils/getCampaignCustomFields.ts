@@ -1,7 +1,9 @@
+import { isBuiltInRegistrationField } from '@/components/common/custom-fields/builtin-registration-fields';
 import { getCustomFieldSettingsFromCache } from '@/services/custom-field-settings';
 import { fetchInstituteDefaultFields } from '@/services/custom-field-mappings';
 import { getInstituteId } from '@/constants/helper';
 import { isOptionFieldType, parseFieldOptionsForForm } from './parseFieldOptions';
+import { parseSettingsConfig, withUniqueFieldIds } from './campaignFormFields';
 
 /**
  * Interface for campaign form custom field
@@ -15,6 +17,10 @@ export interface CampaignFormCustomField {
     order: number;
     options?: Array<{ id: string; value: string; disabled?: boolean }>;
     _id?: string;
+    /** The master row's real field_key (`key` above is derived from the label). */
+    fieldKey?: string;
+    /** Only set for a dependent dropdown, so saving keeps its parent link. */
+    config?: Record<string, unknown>;
     status?: 'ACTIVE' | 'DELETED';
 }
 
@@ -152,10 +158,17 @@ export const getCampaignCustomFieldsAsync = async (): Promise<CampaignFormCustom
                 id: String(index),
                 type: fieldType,
                 name: cf.fieldName,
-                isRequired: cf.isMandatory || false,
+                // Default ON for the registrant's own name / email / phone, whatever the
+                // institute called them — the same rule every other form builder uses. The
+                // admin can switch any of them off, and that choice is stored per form.
+                isRequired:
+                    isBuiltInRegistrationField({ key, label: cf.fieldName, type: fieldType }) ||
+                    cf.isMandatory ||
+                    false,
                 key,
                 order: entry.individual_order ?? cf.formOrder ?? index,
                 _id: cf.id,
+                fieldKey: cf.fieldKey,
                 status: 'ACTIVE',
             };
 
@@ -163,6 +176,10 @@ export const getCampaignCustomFieldsAsync = async (): Promise<CampaignFormCustom
             // multi-select fields with no options at all.
             if (isOptionFieldType(fieldType) && cf.config) {
                 transformed.options = parseFieldOptionsForForm(cf.config, index);
+                // A dependent dropdown's parent link lives in its config; without it
+                // the save would write the bare option array and drop the link.
+                const settings = parseSettingsConfig(cf.config);
+                if (typeof settings?.parentFieldKey === 'string') transformed.config = settings;
             }
 
             result.push(transformed);
@@ -184,7 +201,8 @@ export const getCampaignCustomFieldsAsync = async (): Promise<CampaignFormCustom
             }
         });
 
-        return result.sort((a, b) => a.order - b.order);
+        // `id: String(index)` above and the seeds' fixed '0'/'1'/'2' can collide.
+        return withUniqueFieldIds(result.sort((a, b) => a.order - b.order));
     } catch (err) {
         console.error('[getCampaignCustomFieldsAsync] API call failed, using fallback defaults:', err);
         return getDefaultCampaignFields();

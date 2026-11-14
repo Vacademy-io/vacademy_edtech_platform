@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_salary.dto.SalaryTemplateComponentDTO;
 import vacademy.io.admin_core_service.features.hr_salary.dto.SalaryTemplateDTO;
 import vacademy.io.admin_core_service.features.hr_salary.entity.SalaryComponent;
@@ -31,17 +32,18 @@ public class SalaryTemplateService {
     @Autowired
     private SalaryComponentRepository salaryComponentRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     @Transactional
-    public String createTemplate(SalaryTemplateDTO dto) {
+    public String createTemplate(SalaryTemplateDTO dto, String instituteId) {
         if (!StringUtils.hasText(dto.getName())) {
             throw new VacademyException("Template name is required");
         }
-        if (!StringUtils.hasText(dto.getInstituteId())) {
-            throw new VacademyException("Institute ID is required");
-        }
 
         SalaryTemplate template = new SalaryTemplate();
-        template.setInstituteId(dto.getInstituteId());
+        // Always the validated query param — never the DTO's instituteId (cross-tenant write hole).
+        template.setInstituteId(instituteId);
         template.setName(dto.getName());
         template.setDescription(dto.getDescription());
         template.setIsDefault(dto.getIsDefault() != null ? dto.getIsDefault() : false);
@@ -51,7 +53,7 @@ public class SalaryTemplateService {
 
         // Save template components
         if (dto.getComponents() != null && !dto.getComponents().isEmpty()) {
-            List<SalaryTemplateComponent> templateComponents = buildTemplateComponents(dto.getComponents(), template);
+            List<SalaryTemplateComponent> templateComponents = buildTemplateComponents(dto.getComponents(), template, instituteId);
             salaryTemplateComponentRepository.saveAll(templateComponents);
             template.setComponents(templateComponents);
         }
@@ -60,9 +62,10 @@ public class SalaryTemplateService {
     }
 
     @Transactional
-    public String updateTemplate(String id, SalaryTemplateDTO dto) {
+    public String updateTemplate(String id, SalaryTemplateDTO dto, String instituteId) {
         SalaryTemplate template = salaryTemplateRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Salary template not found"));
+        hrAccessGuard.requireInstituteMatch(template.getInstituteId(), instituteId, "Salary template");
 
         if (StringUtils.hasText(dto.getName())) {
             template.setName(dto.getName());
@@ -83,7 +86,7 @@ public class SalaryTemplateService {
         if (dto.getComponents() != null) {
             salaryTemplateComponentRepository.deleteByTemplateId(id);
             if (!dto.getComponents().isEmpty()) {
-                List<SalaryTemplateComponent> templateComponents = buildTemplateComponents(dto.getComponents(), template);
+                List<SalaryTemplateComponent> templateComponents = buildTemplateComponents(dto.getComponents(), template, instituteId);
                 salaryTemplateComponentRepository.saveAll(templateComponents);
             }
         }
@@ -102,9 +105,10 @@ public class SalaryTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public SalaryTemplateDTO getTemplateById(String id) {
+    public SalaryTemplateDTO getTemplateById(String id, String instituteId) {
         SalaryTemplate template = salaryTemplateRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Salary template not found"));
+        hrAccessGuard.requireInstituteMatch(template.getInstituteId(), instituteId, "Salary template");
 
         SalaryTemplateDTO dto = toDTO(template);
 
@@ -119,7 +123,7 @@ public class SalaryTemplateService {
     }
 
     private List<SalaryTemplateComponent> buildTemplateComponents(
-            List<SalaryTemplateComponentDTO> componentDTOs, SalaryTemplate template) {
+            List<SalaryTemplateComponentDTO> componentDTOs, SalaryTemplate template, String instituteId) {
 
         List<SalaryTemplateComponent> templateComponents = new ArrayList<>();
 
@@ -131,6 +135,7 @@ public class SalaryTemplateService {
             SalaryComponent salaryComponent = salaryComponentRepository.findById(compDTO.getComponentId())
                     .orElseThrow(() -> new VacademyException(
                             "Salary component not found with id: " + compDTO.getComponentId()));
+            hrAccessGuard.requireInstituteMatch(salaryComponent.getInstituteId(), instituteId, "Salary component");
 
             String calcType = StringUtils.hasText(compDTO.getCalculationType())
                     ? compDTO.getCalculationType() : "FIXED_AMOUNT";

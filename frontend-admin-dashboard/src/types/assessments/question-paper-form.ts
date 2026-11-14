@@ -1,3 +1,5 @@
+import type { CbeConfig } from '@/components/cbe/types';
+import type { CbeSecretStatus } from '@/routes/assessment/question-papers/-utils/cbe-question';
 export interface MyQuestionPaperFormInterface {
     questionPaperId?: string; // Optional string
     isFavourite?: boolean; // Default value: false
@@ -21,6 +23,8 @@ export interface MyQuestion {
     questionType: string; // Default value: "MCQS"
     questionMark: string; // Required string
     questionPenalty: string;
+    /** The paper's section a digitised question was printed under (Vsmart Extract). */
+    sectionName?: string;
     tags?: string[];
     level?: string;
     questionDuration: {
@@ -57,6 +61,10 @@ export interface MyQuestion {
     explanationTextDataId?: string;
     questionText?: string;
     codingConfig?: MyCodingConfig;
+    /** CBE_RESPONSE config (docs/CBE_RESPONSE_QUESTION.md §3), full — secrets included. */
+    cbeConfig?: CbeConfig | null;
+    /** LMS question slides only: whether the form holds the slide's stored secret. */
+    cbeSecretStatus?: CbeSecretStatus;
 }
 
 export interface MyCodingTestCase {

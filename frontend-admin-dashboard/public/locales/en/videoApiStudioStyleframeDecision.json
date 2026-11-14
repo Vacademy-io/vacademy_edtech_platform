@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "Design identity"
+    },
+    "emptyState": {
+        "noIdentity": "No design identity was attached to this decision."
+    },
+    "styleframe": {
+        "altText": "Styleframe — {{name}}",
+        "caption": "Styleframe — the look every shot follows",
+        "notRendered": "No styleframe rendered for this run"
+    },
+    "typography": {
+        "label": "Typography",
+        "lockedByBrand": "Locked by your brand kit: {{display}} / {{body}}",
+        "pairingCaption": "{{display}} for headlines · {{body}} for body"
+    },
+    "motion": {
+        "label": "Motion personality"
+    },
+    "finishing": {
+        "groups": {
+            "grain": "Grain",
+            "vignette": "Vignette",
+            "light": "Light"
+        },
+        "options": {
+            "none": "None",
+            "soft": "Soft",
+            "film": "Film",
+            "medium": "Medium",
+            "glow": "Glow"
+        }
+    },
+    "advanced": {
+        "toggle": "Advanced",
+        "colorArc": "Color arc",
+        "colorArcPlaceholder": "How color evolves across the video",
+        "imageArtDirection": "Image art direction",
+        "imageArtPlaceholder": "How generated images should look"
+    },
+    "actions": {
+        "letAiDecide": "Let AI decide",
+        "saveAndContinue": "Save & continue",
+        "approveAndContinue": "Approve & continue"
+    }
+}

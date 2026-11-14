@@ -6,6 +6,8 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CaretDown, CaretUp, FolderPlus } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MyInput } from '@/components/design-system/input';
@@ -54,8 +56,11 @@ export function AddRecordingToCourseCard({
     onSaveToLibrary,
     showAddAction = true,
 }: Props) {
+    const { t, i18n } = useTranslation('studyLibraryAddRecordingToCourseCard');
     const [open, setOpen] = useState(false);
-    const [title, setTitle] = useState(() => buildDefaultTitle(sessionTitle, recording.date));
+    const [title, setTitle] = useState(() =>
+        buildDefaultTitle(t, i18n.language, sessionTitle, recording.date)
+    );
     const [isSyncing, setIsSyncing] = useState(false);
 
     const linksQuery = useSessionContentLinks(sessionId);
@@ -83,7 +88,9 @@ export function AddRecordingToCourseCard({
                 session_id: sessionId,
                 schedule_id: scheduleId,
                 source: { kind: 'RECORDING', recording_id: recording.recordingId },
-                title: title.trim() || buildDefaultTitle(sessionTitle, recording.date),
+                title:
+                    title.trim() ||
+                    buildDefaultTitle(t, i18n.language, sessionTitle, recording.date),
                 slide_status: payload.slideStatus,
                 notify: payload.notify,
                 position: payload.position,
@@ -95,9 +102,9 @@ export function AddRecordingToCourseCard({
         } catch (err) {
             const message = extractContentLinkErrorMessage(err);
             if (message?.toLowerCase().includes('save recording to library')) {
-                toast.error('Save the recording to the library first, then try again.');
+                toast.error(t('saveRecordingFirst'));
             } else {
-                toast.error(message || 'Could not add this recording to the course.');
+                toast.error(message || t('couldNotAdd'));
             }
         }
     };
@@ -112,7 +119,7 @@ export function AddRecordingToCourseCard({
                             className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border bg-white px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
                         >
                             <FolderPlus className="size-3" />
-                            Add to course
+                            {t('addToCourse')}
                             {open ? (
                                 <CaretUp className="size-3" />
                             ) : (
@@ -141,7 +148,7 @@ export function AddRecordingToCourseCard({
                 <div className={cn('flex flex-col gap-3 rounded-lg border bg-muted/20 p-3')}>
                     <MyInput
                         inputType="text"
-                        label="Title"
+                        label={t('titleLabel')}
                         input={title}
                         onChangeFunction={(e) => setTitle(e.target.value)}
                         size="large"
@@ -156,10 +163,10 @@ export function AddRecordingToCourseCard({
                         submitDisabled={!title.trim()}
                         submitLabel={
                             isSyncing
-                                ? 'Saving…'
+                                ? t('savingEllipsis')
                                 : needsSaveToLibraryFirst
-                                  ? 'Save to library & add'
-                                  : 'Add'
+                                  ? t('saveToLibraryAndAdd')
+                                  : t('add')
                         }
                     />
                 </div>
@@ -168,16 +175,21 @@ export function AddRecordingToCourseCard({
     );
 }
 
-function buildDefaultTitle(sessionTitle: string | undefined, date: string): string {
-    const label = sessionTitle?.trim() || 'Session';
+function buildDefaultTitle(
+    t: TFunction,
+    language: string,
+    sessionTitle: string | undefined,
+    date: string
+): string {
+    const label = sessionTitle?.trim() || t('sessionFallback');
     try {
-        const formatted = new Date(date).toLocaleDateString(undefined, {
+        const formatted = new Date(date).toLocaleDateString(language, {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
         });
-        return `${label} – Recording (${formatted})`;
+        return t('defaultTitle', { label, formatted });
     } catch {
-        return `${label} – Recording`;
+        return t('defaultTitleNoDate', { label });
     }
 }

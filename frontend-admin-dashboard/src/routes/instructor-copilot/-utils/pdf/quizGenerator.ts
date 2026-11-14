@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import type { TFunction } from 'i18next';
 import type { QuizData, QuizPDFOptions } from './types';
 import {
     stripHtmlTags,
@@ -10,7 +11,7 @@ import {
     getContentWidth,
 } from './helpers';
 
-export const generateQuizPDF = (content: string, options: QuizPDFOptions): void => {
+export const generateQuizPDF = (content: string, options: QuizPDFOptions, t: TFunction): void => {
     let data: QuizData | null = null;
 
     try {
@@ -29,9 +30,9 @@ export const generateQuizPDF = (content: string, options: QuizPDFOptions): void 
     const { showAnswers, showExplanations } = options;
 
     // Determine title based on mode
-    let title = data.title || 'Quiz';
+    let title = data.title || t('defaultTitle');
     if (!showAnswers) {
-        title += ' (Assessment Paper)';
+        title = t('assessmentPaperSuffix', { title });
     }
 
     addHeader(doc, title);
@@ -45,14 +46,16 @@ export const generateQuizPDF = (content: string, options: QuizPDFOptions): void 
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.setFont('helvetica', 'normal');
-    const metaInfo = `Total Questions: ${data.questions.length}${data.difficulty ? ` | Difficulty: ${data.difficulty}` : ''}`;
+    const metaInfo =
+        t('totalQuestions', { count: data.questions.length }) +
+        (data.difficulty ? t('difficultySuffix', { difficulty: data.difficulty }) : '');
     doc.text(metaInfo, PDF_CONSTANTS.MARGIN, yPosition);
     yPosition += 10;
 
     if (!showAnswers) {
         doc.setFontSize(9);
         doc.setTextColor(150);
-        doc.text('Instructions: Answer all questions. Write your answers clearly.', PDF_CONSTANTS.MARGIN, yPosition);
+        doc.text(t('assessmentInstructions'), PDF_CONSTANTS.MARGIN, yPosition);
         yPosition += 8;
     }
 
@@ -71,7 +74,7 @@ export const generateQuizPDF = (content: string, options: QuizPDFOptions): void 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(40);
-        const questionHeader = `Question ${qIndex + 1}`;
+        const questionHeader = t('questionNumber', { number: qIndex + 1 });
         doc.text(questionHeader, PDF_CONSTANTS.MARGIN, yPosition);
         yPosition += 7;
 
@@ -171,7 +174,7 @@ export const generateQuizPDF = (content: string, options: QuizPDFOptions): void 
             doc.line(PDF_CONSTANTS.MARGIN, yPosition, pageWidth - PDF_CONSTANTS.MARGIN, yPosition);
             doc.setFontSize(9);
             doc.setTextColor(150);
-            doc.text('Answer:', PDF_CONSTANTS.MARGIN, yPosition + 5);
+            doc.text(t('answerLabel'), PDF_CONSTANTS.MARGIN, yPosition + 5);
             yPosition += 15;
         }
 
@@ -187,7 +190,7 @@ export const generateQuizPDF = (content: string, options: QuizPDFOptions): void 
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(33, 150, 243); // Blue
-            doc.text('Explanation:', PDF_CONSTANTS.MARGIN + 5, yPosition);
+            doc.text(t('explanationLabel'), PDF_CONSTANTS.MARGIN + 5, yPosition);
             yPosition += 6;
 
             doc.setFont('helvetica', 'italic');

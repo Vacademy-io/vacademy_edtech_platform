@@ -1,0 +1,79 @@
+{
+    "pageTitle": "संदेश टेम्पलेट",
+    "subtitleApi": "Meta स्वीकृति के लिए टेम्पलेट बनाएं, प्रबंधित करें और सबमिट करें",
+    "subtitleWati": "सिंक किए गए टेम्पलेट देखें। नए टेम्पलेट WATI डैशबोर्ड में बनाएं।",
+    "whatsappSettings": "WhatsApp सेटिंग्स",
+    "syncing": "सिंक हो रहा है...",
+    "syncTemplates": "टेम्पलेट सिंक करें",
+    "createTemplate": "टेम्पलेट बनाएं",
+    "createInWati": "WATI में बनाएं",
+    "watiBanner": {
+        "title": "WATI प्रदाता सक्रिय है",
+        "beforeLink": "टेम्पलेट",
+        "linkText": "WATI डैशबोर्ड",
+        "afterLink": "में बनाए जाने चाहिए। Meta द्वारा स्वीकृत होने के बाद, इन्हें यहां आयात करने के लिए \"टेम्पलेट सिंक करें\" पर क्लिक करें। फिर आप इन्हें चैटबॉट फ़्लो और WhatsApp इनबॉक्स में उपयोग कर सकते हैं।"
+    },
+    "tabAll": "सभी",
+    "tabWhatsapp": "WhatsApp",
+    "tabEmail": "ईमेल",
+    "searchPlaceholder": "टेम्पलेट खोजें...",
+    "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+    "tryAgain": "फिर कोशिश करें",
+    "noTemplatesYet": "अभी तक कोई टेम्पलेट नहीं है। एक बनाएं या {{provider}} से सिंक करें।",
+    "noTemplatesMatchSearch": "आपकी खोज से कोई टेम्पलेट मेल नहीं खाता।",
+    "vacademyBadge": "Vacademy",
+    "rejectionReason": "अस्वीकृति: {{reason}}",
+    "edit": "संपादित करें",
+    "submitToMeta": "Meta को सबमिट करें",
+    "delete": "हटाएं",
+    "status": {
+        "draft": "ड्राफ़्ट",
+        "pending": "लंबित",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "disabled": "निष्क्रिय",
+        "deleted": "हटाया गया"
+    },
+    "category": {
+        "marketing": "मार्केटिंग",
+        "utility": "यूटिलिटी",
+        "authentication": "प्रमाणीकरण"
+    },
+    "couldNotLoadTemplates": "टेम्पलेट लोड नहीं हो सके।",
+    "syncedCount_one": "{{provider}} से {{count}} टेम्पलेट सिंक किया गया",
+    "syncedCount_other": "{{provider}} से {{count}} टेम्पलेट सिंक किए गए",
+    "noTemplatesForAccount": "{{provider}} के पास इस खाते के लिए अभी कोई टेम्पलेट नहीं है",
+    "couldNotSyncTemplates": "{{provider}} से टेम्पलेट सिंक नहीं हो सके।",
+    "deleteConfirmLive": "\"{{name}}\" हटाएं? इसे {{provider}} से भी हटा दिया जाएगा, और जो कुछ भी इसे अभी भेज रहा है वह काम करना बंद कर देगा।",
+    "deleteConfirmDraft": "ड्राफ़्ट \"{{name}}\" हटाएं?",
+    "templateDeleted": "टेम्पलेट हटाया गया",
+    "couldNotDeleteTemplate": "\"{{name}}\" हटाया नहीं जा सका।",
+    "approvedByMeta": "Meta द्वारा टेम्पलेट स्वीकृत हो गया और उपयोग के लिए तैयार है।",
+    "submittedForApproval": "टेम्पलेट Meta को स्वीकृति के लिए सबमिट किया गया।",
+    "metaRejectedTemplate": "Meta ने टेम्पलेट अस्वीकार कर दिया।",
+    "summary": {
+        "header": "{{type}} हेडर",
+        "headerType": {
+            "text": "टेक्स्ट",
+            "image": "इमेज",
+            "video": "वीडियो",
+            "document": "डॉक्यूमेंट"
+        },
+        "variables_one": "{{count}} वेरिएबल",
+        "variables_other": "{{count}} वेरिएबल",
+        "buttons_one": "{{count}} बटन",
+        "buttons_other": "{{count}} बटन",
+        "footer": "फ़ुटर"
+    },
+    "showFullMessage": "पूरा मैसेज देखें",
+    "showLess": "कम दिखाएँ",
+    "providerChip": "प्रदाता: {{provider}}",
+    "filters": {
+        "allCategories": "सभी श्रेणियाँ",
+        "allLanguages": "सभी भाषाएँ",
+        "clear": "फ़िल्टर हटाएँ"
+    },
+    "resultsCount_one": "{{count}} टेम्पलेट",
+    "resultsCount_other": "{{count}} टेम्पलेट",
+    "actionsNote": "संपादन और Meta को सबमिट करना केवल ड्राफ़्ट और अस्वीकृत टेम्पलेट के लिए उपलब्ध है। स्वीकृत और लंबित टेम्पलेट केवल हटाए जा सकते हैं।"
+}

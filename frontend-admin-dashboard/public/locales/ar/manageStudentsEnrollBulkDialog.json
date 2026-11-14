@@ -1,0 +1,16 @@
+{
+    "placeholders": {
+        "select": "اختر {{term}}"
+    },
+    "buttons": {
+        "enroll": "تسجيل"
+    },
+    "toasts": {
+        "courseCreatedSuccess": "تم إنشاء الدورة بنجاح",
+        "createBatchFailed": "فشل إنشاء الدفعة",
+        "itemAddedSuccess": "تمت إضافة {{term}} بنجاح",
+        "addItemFailed": "فشلت إضافة {{term}}",
+        "levelAddedSuccess": "تمت إضافة المستوى بنجاح",
+        "addLevelFailedFallback": "فشلت إضافة الدورة"
+    }
+}

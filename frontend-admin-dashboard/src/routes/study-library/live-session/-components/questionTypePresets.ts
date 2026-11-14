@@ -8,6 +8,13 @@
  * still produce MCQs. The picker UX is still useful — teachers see what
  * mix is coming, and we have a hook to plug richer generation into.
  */
+import type { TFunction } from 'i18next';
+
+// This module is not a component/hook, so the caller's `t` is threaded in
+// here rather than calling useTranslation() directly. Labels are looked up
+// in the liveSessionQuestionTypePresets namespace via an explicit `ns`
+// override so the caller can keep its own default namespace.
+const NAMESPACE = 'liveSessionQuestionTypePresets';
 
 export type QuestionTypeCode =
     | 'MCQS' // Multiple choice — single correct
@@ -25,35 +32,36 @@ export interface QuestionTypeMeta {
     accent: 'sky' | 'violet' | 'emerald' | 'amber' | 'rose';
 }
 
-export const QUESTION_TYPES: QuestionTypeMeta[] = [
+/** Build the question-type catalogue with translated labels/hints. */
+export const buildQuestionTypes = (t: TFunction): QuestionTypeMeta[] => [
     {
         code: 'MCQS',
-        label: 'MCQ — Single Correct',
-        hint: 'Four options, one right answer. The default question style.',
+        label: t('questionTypes.mcqs.label', { ns: NAMESPACE }),
+        hint: t('questionTypes.mcqs.hint', { ns: NAMESPACE }),
         accent: 'sky',
     },
     {
         code: 'MCQM',
-        label: 'MCQ — Multiple Correct',
-        hint: 'Four options where any combination can be correct.',
+        label: t('questionTypes.mcqm.label', { ns: NAMESPACE }),
+        hint: t('questionTypes.mcqm.hint', { ns: NAMESPACE }),
         accent: 'violet',
     },
     {
         code: 'TRUE_FALSE',
-        label: 'True / False',
-        hint: 'Two-option statements — quick recall checks.',
+        label: t('questionTypes.trueFalse.label', { ns: NAMESPACE }),
+        hint: t('questionTypes.trueFalse.hint', { ns: NAMESPACE }),
         accent: 'emerald',
     },
     {
         code: 'ONE_WORD',
-        label: 'One Word Answer',
-        hint: 'Learners type a short answer. Auto-graded by exact match.',
+        label: t('questionTypes.oneWord.label', { ns: NAMESPACE }),
+        hint: t('questionTypes.oneWord.hint', { ns: NAMESPACE }),
         accent: 'amber',
     },
     {
         code: 'LONG_ANSWER',
-        label: 'Long Answer',
-        hint: 'Open-ended writing prompts — manual evaluation by the teacher.',
+        label: t('questionTypes.longAnswer.label', { ns: NAMESPACE }),
+        hint: t('questionTypes.longAnswer.hint', { ns: NAMESPACE }),
         accent: 'rose',
     },
 ];
@@ -65,44 +73,46 @@ export interface QuestionTypePreset {
     types: QuestionTypeCode[];
 }
 
-export const QUESTION_TYPE_PRESETS: QuestionTypePreset[] = [
+/** Build the preset bundles with translated labels/descriptions. */
+export const buildQuestionTypePresets = (t: TFunction): QuestionTypePreset[] => [
     {
         id: 'mcq-only',
-        label: 'Only MCQs (Single Correct)',
-        description: 'Classic objective set — fastest to grade, easiest for learners.',
+        label: t('presets.mcqOnly.label', { ns: NAMESPACE }),
+        description: t('presets.mcqOnly.description', { ns: NAMESPACE }),
         types: ['MCQS'],
     },
     {
         id: 'mcq-tf',
-        label: 'MCQs + True / False',
-        description: 'Objective mix that adds quick recall checks alongside MCQs.',
+        label: t('presets.mcqTf.label', { ns: NAMESPACE }),
+        description: t('presets.mcqTf.description', { ns: NAMESPACE }),
         types: ['MCQS', 'TRUE_FALSE'],
     },
     {
         id: 'mcq-oneword',
-        label: 'MCQs + One Word',
-        description: 'Recognition + recall — learners pick and also type short answers.',
+        label: t('presets.mcqOneword.label', { ns: NAMESPACE }),
+        description: t('presets.mcqOneword.description', { ns: NAMESPACE }),
         types: ['MCQS', 'ONE_WORD'],
     },
     {
         id: 'mixed-all',
-        label: 'Mixed Assessment (all types)',
-        description: 'A balanced spread of MCQ, True/False, One Word, and Long Answer.',
+        label: t('presets.mixedAll.label', { ns: NAMESPACE }),
+        description: t('presets.mixedAll.description', { ns: NAMESPACE }),
         types: ['MCQS', 'MCQM', 'TRUE_FALSE', 'ONE_WORD', 'LONG_ANSWER'],
     },
     {
         id: 'subjective-objective',
-        label: 'Subjective + Objective Mix',
-        description: 'MCQs for recall, Long Answers for application. Manual grading needed.',
+        label: t('presets.subjectiveObjective.label', { ns: NAMESPACE }),
+        description: t('presets.subjectiveObjective.description', { ns: NAMESPACE }),
         types: ['MCQS', 'LONG_ANSWER'],
     },
 ];
 
 export const presetMatching = (
     selected: QuestionTypeCode[],
+    presets: QuestionTypePreset[],
 ): QuestionTypePreset | undefined => {
     const key = [...selected].sort().join(',');
-    return QUESTION_TYPE_PRESETS.find(
+    return presets.find(
         (p) => [...p.types].sort().join(',') === key,
     );
 };

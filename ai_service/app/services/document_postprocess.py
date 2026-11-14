@@ -11,10 +11,16 @@ Two concerns, both best-effort (any failure returns the input unchanged):
 
 2. illustrate_document — finds <img data-img-prompt="..."> placeholders the
    LLM emitted (same contract as the assessment/video pipelines), generates
-   real images via OpenRouter's image API (the same billed path the video
-   pipeline uses — the direct Gemini image key is free-tier with a zero image
-   quota and 429s every call), uploads them to S3 and swaps the src.
-   Failed/over-cap placeholders are stripped so no broken images reach the editor.
+   real images via OpenRouter (routed through ImageGenerationService, which
+   knows that dedicated image models like Qwen answer on /api/v1/images while
+   Gemini/GPT image models answer on chat/completions — calling the wrong one
+   is a 404 that reads like "model missing"), uploads them to S3 and swaps the
+   src. Failed/over-cap placeholders are stripped so no broken images reach the
+   editor.
+
+   Both the course copilot's DOCUMENT slides and the manual HTML Document slide
+   author use this one contract, so there is a single way to say "draw a picture
+   here" across the platform.
 """
 from __future__ import annotations
 
@@ -22,29 +28,51 @@ import asyncio
 import base64
 import html as html_lib
 import logging
+import os
 import re
-from typing import Optional, Tuple
+from typing import Awaitable, Callable, Optional, Tuple
 from uuid import uuid4
 
-import httpx
-
 from ..config import get_settings
+from .image_model_resolver import DOCUMENT_IMAGE, image_model_for
 from .s3_service import S3Service
 
 logger = logging.getLogger(__name__)
 
-# Max AI illustrations generated per document slide (flat-rate credits apply per image).
-MAX_DOC_IMAGES = 2
+# Max AI illustrations generated per document slide (flat-rate credits apply per
+# image). Raised from 2 after institute feedback that AI pages were walls of
+# text: students learn visually, and two pictures cannot carry a whole lesson.
+MAX_DOC_IMAGES = 6
 # Bound concurrent image calls across parallel document todos.
 _IMAGE_SEMAPHORE = asyncio.Semaphore(4)
 _IMAGE_TIMEOUT_SECONDS = 90.0
-# Image model via OpenRouter (Google's image model through the billed account).
-DOC_IMAGE_MODEL = "google/gemini-3.1-flash-image"
-_OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Image model via OpenRouter. DOC_IMAGE_MODEL (env) wins, else the
+# 'document_image' use case (super-admin portal), else this literal. The
+# constant is today's static value, kept for importers; the generation path
+# resolves through doc_image_model().
+_DOC_IMAGE_MODEL_ENV = os.getenv("DOC_IMAGE_MODEL")
+_DOC_IMAGE_MODEL_DEFAULT = "qwen/qwen-image-3"
+DOC_IMAGE_MODEL = _DOC_IMAGE_MODEL_ENV or _DOC_IMAGE_MODEL_DEFAULT
+
+
+def doc_image_model() -> str:
+    """The document-illustration image model right now (cached 30 s)."""
+    return _DOC_IMAGE_MODEL_ENV or image_model_for(DOCUMENT_IMAGE, _DOC_IMAGE_MODEL_DEFAULT)
+# Pixel dims per aspect, handed to the image service (it maps them to the
+# provider's aspect ratio); the page CSS decides the displayed size.
+_ASPECT_DIMS = {
+    "16:9": (1280, 720),
+    "4:3": (1024, 768),
+    "1:1": (1024, 1024),
+    "3:4": (768, 1024),
+    "9:16": (720, 1280),
+}
+_DEFAULT_ASPECT = "16:9"
 
 # Same tag contract as automation_pipeline._process_generated_images.
 _IMG_PROMPT_RE = re.compile(r'<img[^>]+data-img-prompt=(["\'])(.*?)\1[^>]*>', re.IGNORECASE)
 _ALT_RE = re.compile(r'alt=(["\'])(.*?)\1', re.IGNORECASE)
+_ASPECT_RE = re.compile(r'data-img-aspect=(["\'])(.*?)\1', re.IGNORECASE)
 
 _PRE_CODE_RE = re.compile(
     r'<pre([^>]*)>\s*<code([^>]*)>([\s\S]*?)</code>\s*</pre>', re.IGNORECASE
@@ -102,64 +130,131 @@ def normalize_code_blocks(html: str) -> str:
         return html
 
 
-async def _generate_one_image(prompt: str) -> Optional[str]:
+async def _generate_one_image(
+    prompt: str, aspect: str = _DEFAULT_ASPECT, model: Optional[str] = None
+) -> Optional[str]:
+    """Generate one illustration and return its public S3 URL (None on failure)."""
     settings = get_settings()
     key = getattr(settings, "openrouter_api_key", None)
     if not key:
         logger.info("OPENROUTER_API_KEY not configured; skipping document illustration")
         return None
     styled = (
-        f"A clean, modern educational illustration for study notes: {prompt}. "
-        "Clear, simple, and informative; flat vector style; labelled where it helps; "
-        "no watermark and no gibberish text."
+        f"A clean, modern educational textbook illustration for study notes: {prompt}. "
+        "Clear, simple, and informative; flat vector style; generous light background; "
+        "labelled where it helps; no watermark and no gibberish text."
     )
-    payload = {
-        "model": DOC_IMAGE_MODEL,
-        "messages": [{"role": "user", "content": styled}],
-        "modalities": ["image"],
-        "image_config": {"aspect_ratio": "16:9"},
-    }
+    width, height = _ASPECT_DIMS.get(aspect, _ASPECT_DIMS[_DEFAULT_ASPECT])
+    # Routed through ImageGenerationService so the call lands on whichever of
+    # OpenRouter's two image APIs serves this model (see module docstring).
+    from .image_service import ImageGenerationService
+
+    svc = ImageGenerationService(openrouter_api_key=key)
     try:
         async with _IMAGE_SEMAPHORE:
-            async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT_SECONDS) as client:
-                resp = await client.post(
-                    _OPENROUTER_IMAGE_URL,
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                    json=payload,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-        image_bytes: Optional[bytes] = None
-        for choice in data.get("choices") or []:
-            for image in (choice.get("message") or {}).get("images", []) or []:
-                url = (image.get("image_url") or {}).get("url", "")
-                if url:
-                    b64 = url.split(",", 1)[1] if "," in url else url
-                    image_bytes = base64.b64decode(b64)
-                    break
-            if image_bytes:
-                break
+            image_bytes, _usage = await asyncio.wait_for(
+                svc._call_image_generation_llm(
+                    styled, width, height, model=model or doc_image_model()
+                ),
+                timeout=_IMAGE_TIMEOUT_SECONDS,
+            )
         if not image_bytes:
             logger.warning("Document illustration returned no image for prompt %r", prompt[:60])
             return None
+        is_png = image_bytes[:8] == b"\x89PNG\r\n\x1a\n"
+        ext, ctype = ("png", "image/png") if is_png else ("jpg", "image/jpeg")
         return await asyncio.to_thread(
             S3Service().upload_file_content,
             image_bytes,
-            "illustration.png",
-            f"ai-course-docs/{uuid4()}.png",
-            "image/png",
+            f"illustration.{ext}",
+            f"ai-course-docs/{uuid4()}.{ext}",
+            ctype,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Document illustration failed for prompt %r: %s", prompt[:60], exc)
         return None
+    finally:
+        try:
+            await svc._http_client.aclose()
+        except Exception:  # noqa: BLE001
+            pass
 
 
-async def illustrate_document(html: str, slide_path: str = "") -> Tuple[str, int]:
+_ANY_IMG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+_SRC_RE = re.compile(r'\ssrc=(["\'])(.*?)\1', re.IGNORECASE)
+# An alt this short ("image", "photo") is not a usable drawing prompt.
+_MIN_ALT_PROMPT_CHARS = 12
+
+
+def adopt_foreign_images(html: str, allowed_urls: Optional[set] = None) -> Tuple[str, int]:
+    """Turn images the model INVENTED into proper illustration placeholders.
+
+    Despite the prompt, models sometimes emit `<img src="https://…/rocket.png">`
+    (a guessed/hallucinated URL) instead of the `data-img-prompt` contract —
+    nothing generates those, so they reach the learner as a broken-image icon
+    with the alt text showing. Any <img> whose src is not one we handed the
+    model (uploads, PDF figures, logo, images already in an edited page) or an
+    inline data: URI is rewritten into a placeholder drawn from its alt text;
+    with no usable alt it is dropped. Returns (html, adopted_count)."""
+    if not html or "<img" not in html.lower():
+        return html, 0
+    allowed = {u.strip() for u in (allowed_urls or set()) if u and u.strip()}
+    adopted = 0
+
+    def _fix(m: "re.Match[str]") -> str:
+        nonlocal adopted
+        tag = m.group(0)
+        if "data-img-prompt" in tag.lower():
+            return tag
+        src_m = _SRC_RE.search(tag)
+        src = (src_m.group(2) if src_m else "").strip()
+        if src == "placeholder.png" or src.startswith("data:") or src in allowed:
+            return tag
+        alt_m = _ALT_RE.search(tag)
+        alt = (alt_m.group(2) if alt_m else "").strip()
+        if len(alt) < _MIN_ALT_PROMPT_CHARS:
+            logger.info("Dropping invented image with no usable alt: %s", src[:80])
+            return ""
+        adopted += 1
+        safe = html_lib.escape(html_lib.unescape(alt), quote=True)
+        return (
+            f'<img src="placeholder.png" data-img-prompt="{safe}" '
+            f'data-img-aspect="{_aspect_of(tag)}" alt="{safe}">'
+        )
+
+    out = _ANY_IMG_RE.sub(_fix, html)
+    if adopted:
+        logger.info("Adopted %d invented image URL(s) as illustration placeholders", adopted)
+    return out, adopted
+
+
+def count_image_placeholders(html: str) -> int:
+    """How many illustrations this document asks for (before the cap) — so a
+    caller can tell the user a picture pass is about to add real seconds."""
+    if not html or "data-img-prompt" not in html:
+        return 0
+    return len(_IMG_PROMPT_RE.findall(html))
+
+
+def _aspect_of(tag: str) -> str:
+    match = _ASPECT_RE.search(tag)
+    aspect = (match.group(2) if match else "").strip()
+    return aspect if aspect in _ASPECT_DIMS else _DEFAULT_ASPECT
+
+
+async def illustrate_document(
+    html: str,
+    slide_path: str = "",
+    model: Optional[str] = None,
+    max_images: int = MAX_DOC_IMAGES,
+    on_progress: Optional[Callable[[int, int], Awaitable[None]]] = None,
+) -> Tuple[str, int]:
     """Generate images for data-img-prompt placeholders.
 
     Returns (processed_html, generated_image_count). Placeholders past the
-    MAX_DOC_IMAGES cap, or whose generation fails, are removed entirely —
-    never leave a placeholder.png in the output.
+    `max_images` cap, or whose generation fails, are removed entirely — never
+    leave a placeholder.png in the output. `on_progress(completed, total)` is
+    awaited as pictures land, for callers that show a progress indicator.
     """
     if not html:
         return html, 0
@@ -177,15 +272,37 @@ async def illustrate_document(html: str, slide_path: str = "") -> Tuple[str, int
     # gemini_api_key here would strip every illustration once that key is
     # retired, even though OpenRouter can still generate them.
     if settings.openrouter_api_key:
-        capped = matches[:MAX_DOC_IMAGES]
-        if len(matches) > MAX_DOC_IMAGES:
+        # One model for every picture in this document.
+        model = model or doc_image_model()
+        capped = matches[:max_images]
+        if len(matches) > max_images:
             logger.info(
                 "Document %s requested %d illustrations; capping at %d",
-                slide_path, len(matches), MAX_DOC_IMAGES,
+                slide_path, len(matches), max_images,
             )
-        generated = await asyncio.gather(
-            *[_generate_one_image(m.group(2)) for m in capped]
-        )
+        total = len(capped)
+        done = 0
+        lock = asyncio.Lock()
+
+        async def one(index: int, match: "re.Match[str]") -> Optional[str]:
+            nonlocal done
+            url = await _generate_one_image(match.group(2), _aspect_of(match.group(0)), model)
+            async with lock:
+                done += 1
+                completed = done
+            if on_progress:
+                try:
+                    await on_progress(completed, total)
+                except Exception:  # noqa: BLE001
+                    logger.debug("illustration progress callback failed", exc_info=True)
+            return url
+
+        if on_progress and total:
+            try:
+                await on_progress(0, total)
+            except Exception:  # noqa: BLE001
+                logger.debug("illustration progress callback failed", exc_info=True)
+        generated = await asyncio.gather(*[one(i, m) for i, m in enumerate(capped)])
         urls[: len(generated)] = list(generated)
     else:
         logger.info("OPENROUTER_API_KEY not configured; stripping document image placeholders")
@@ -198,7 +315,7 @@ async def illustrate_document(html: str, slide_path: str = "") -> Tuple[str, int
             alt = html_lib.escape(alt_match.group(2) if alt_match else "Illustration", quote=True)
             replacement = (
                 f'<img src="{html_lib.escape(url, quote=True)}" alt="{alt}" '
-                f'style="max-width:100%;border-radius:8px;margin:12px 0;">'
+                f'style="max-width:100%;height:auto;border-radius:8px;margin:12px 0;">'
             )
             generated_count += 1
         else:
@@ -213,7 +330,10 @@ async def illustrate_document(html: str, slide_path: str = "") -> Tuple[str, int
 __all__ = [
     "normalize_code_blocks",
     "illustrate_document",
+    "adopt_foreign_images",
+    "count_image_placeholders",
     "strip_wrapping_fence",
     "MAX_DOC_IMAGES",
     "DOC_IMAGE_MODEL",
+    "doc_image_model",
 ]

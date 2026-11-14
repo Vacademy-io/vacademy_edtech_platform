@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BATCH_SESSION_ATTENDANCE_REPORT } from '@/constants/urls';
 
@@ -65,4 +65,23 @@ export const useLiveBatchReport = (
         queryKey: ['liveBatchReport', packageSessionId, startDate, endDate],
         queryFn: () => fetchLiveBatchReport(packageSessionId, startDate, endDate),
         enabled: enabled && !!packageSessionId && !!startDate && !!endDate,
+    });
+
+/**
+ * One report query per selected batch (the endpoint is single-batch).
+ */
+export const useLiveBatchReports = (
+    packageSessionIds: string[],
+    startDate: string,
+    endDate: string,
+    enabled: boolean,
+    /** Per-"Generate" stamp so re-running the same filters refetches. */
+    runId?: number
+) =>
+    useQueries({
+        queries: packageSessionIds.map((packageSessionId) => ({
+            queryKey: ['liveBatchReport', packageSessionId, startDate, endDate, runId],
+            queryFn: () => fetchLiveBatchReport(packageSessionId, startDate, endDate),
+            enabled: enabled && !!packageSessionId && !!startDate && !!endDate,
+        })),
     });

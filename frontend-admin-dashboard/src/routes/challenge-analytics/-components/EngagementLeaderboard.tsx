@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +82,7 @@ export function EngagementLeaderboard({
     selectedFieldValue = '',
     onFilterChange,
 }: EngagementLeaderboardProps) {
+    const { t } = useTranslation('challengeAnalyticsEngagementLeaderboard');
     // filterFields[0] is the center field built from connector defaultValuesJson.
     const centerField = filterFields[0] ?? null;
 
@@ -97,10 +99,10 @@ export function EngagementLeaderboard({
             }}
         >
             <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All centers" />
+                <SelectValue placeholder={t('allCenters')} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value={NO_FIELD_VALUE}>All centers</SelectItem>
+                <SelectItem value={NO_FIELD_VALUE}>{t('allCenters')}</SelectItem>
                 {centerField.options.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
@@ -134,7 +136,7 @@ export function EngagementLeaderboard({
                     <div className="flex items-center gap-2">
                         <Trophy className="size-5 text-amber-500" weight="fill" />
                         <CardTitle className="text-base font-semibold">
-                            Engagement Leaderboard
+                            {t('title')}
                         </CardTitle>
                     </div>
                     {filterControls}
@@ -142,8 +144,8 @@ export function EngagementLeaderboard({
                 <CardContent>
                     <div className="flex h-[200px] items-center justify-center text-gray-500">
                         {selectedFieldValue
-                            ? `No leaderboard data for center "${selectedFieldValue}"`
-                            : 'No leaderboard data available'}
+                            ? t('emptyStateFiltered', { center: selectedFieldValue })
+                            : t('emptyStateDefault')}
                     </div>
                 </CardContent>
             </Card>
@@ -154,26 +156,26 @@ export function EngagementLeaderboard({
 
     const exportToCSV = () => {
         const headers = [
-            'Rank',
-            'Name',
-            'Email',
-            'Phone',
-            'Center',
-            'Total Messages',
-            'Engagement Score',
+            t('csv.rank'),
+            t('csv.name'),
+            t('csv.email'),
+            t('csv.phone'),
+            t('csv.center'),
+            t('csv.totalMessages'),
+            t('csv.engagementScore'),
         ];
         const rows = leaderboard.map((entry) => {
             const cf = entry.user_details?.custom_fields || {};
             const name =
                 cf['first name'] && cf['last name']
                     ? `${cf['first name']} ${cf['last name']}`
-                    : cf['parent name'] || 'N/A';
+                    : cf['parent name'] || t('csv.notAvailable');
             return [
                 entry.rank,
                 name,
-                cf['Email'] || cf['alternate email'] || 'N/A',
+                cf['Email'] || cf['alternate email'] || t('csv.notAvailable'),
                 entry.phone_number,
-                cf['center name'] || 'N/A',
+                cf['center name'] || t('csv.notAvailable'),
                 entry.engagement_metrics.total_messages,
                 entry.engagement_metrics.engagement_score,
             ];
@@ -198,19 +200,19 @@ export function EngagementLeaderboard({
                         </div>
                         <div>
                             <CardTitle className="text-base font-semibold">
-                                Engagement Leaderboard 
+                                {t('title')}
                             </CardTitle>
-                            <p className="text-xs text-gray-500">Top power users by engagement</p>
+                            <p className="text-xs text-gray-500">{t('subtitle')}</p>
                         </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         {filterControls}
                         <span className="text-sm text-gray-500">
-                            {pagination.total_users} total users
+                            {t('totalUsers', { count: pagination.total_users })}
                         </span>
                         <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
                             <Download className="size-4" />
-                            Export CSV
+                            {t('exportCsv')}
                         </Button>
                     </div>
                 </div>
@@ -222,25 +224,25 @@ export function EngagementLeaderboard({
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                    Rank
+                                    {t('table.rank')}
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                    User
+                                    {t('table.user')}
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                    Contact
+                                    {t('table.contact')}
                                 </th>
                                 <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                    Outgoing
+                                    {t('table.outgoing')}
                                 </th>
                                 <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                    Incoming
+                                    {t('table.incoming')}
                                 </th>
                                 <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                    Total
+                                    {t('table.total')}
                                 </th>
                                 <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                    Score
+                                    {t('table.score')}
                                 </th>
                             </tr>
                         </thead>
@@ -262,14 +264,14 @@ export function EngagementLeaderboard({
                                                     ? `${entry.user_details.custom_fields['first name']} ${entry.user_details.custom_fields['last name']}`
                                                     : entry.user_details?.custom_fields?.[
                                                           'parent name'
-                                                      ] || 'Anonymous'}
+                                                      ] || t('table.anonymous')}
                                             </p>
                                             {entry.user_details?.custom_fields && (
                                                 <p className="text-xs text-gray-500">
                                                     {entry.user_details.custom_fields[
                                                         'children name'
                                                     ] &&
-                                                        `Child: ${entry.user_details.custom_fields['children name']}`}
+                                                        t('table.childLabel', { name: entry.user_details.custom_fields['children name'] })}
                                                     {entry.user_details.custom_fields[
                                                         'center name'
                                                     ] &&
@@ -325,7 +327,7 @@ export function EngagementLeaderboard({
                 {pagination.total_pages > 1 && (
                     <div className="mt-4 flex items-center justify-between">
                         <span className="text-sm text-gray-500">
-                            Page {pagination.current_page} of {pagination.total_pages}
+                            {t('pagination.pageOf', { current: pagination.current_page, total: pagination.total_pages })}
                         </span>
                         <div className="flex gap-2">
                             <Button
@@ -335,7 +337,7 @@ export function EngagementLeaderboard({
                                 disabled={page <= 1}
                             >
                                 <CaretLeft className="size-4" />
-                                Previous
+                                {t('pagination.previous')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -343,7 +345,7 @@ export function EngagementLeaderboard({
                                 onClick={() => onPageChange(page + 1)}
                                 disabled={page >= pagination.total_pages}
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight className="size-4" />
                             </Button>
                         </div>

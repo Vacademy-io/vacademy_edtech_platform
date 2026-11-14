@@ -1,0 +1,20 @@
+{
+    "header": {
+        "logoAlt": "logo"
+    },
+    "generateMore": {
+        "triggerButton": "Generate More",
+        "dialogTitle": "Generate more questions",
+        "topicsPlaceholder": "Enter topics to generate questions",
+        "numQuestionsPlaceholder": "Number of questions (e.g. 5)",
+        "difficultyPlaceholder": "Difficulty (Easy, Medium, Hard)",
+        "languagePlaceholder": "Language (English, Hindi, etc.)",
+        "submitButton": "Generate Questions"
+    },
+    "closeButton": "Close",
+    "questionCard": {
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+    },
+    "noQuestions": "No Question Exists."
+}

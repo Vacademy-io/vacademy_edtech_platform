@@ -1,0 +1,40 @@
+{
+    "dialogTitle": "Send WhatsApp Message",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "sendButton": "Send Message",
+    "sendMessageNotice": "Send a message to",
+    "templateLabel": "Message Template",
+    "selectTemplatePlaceholder": "Select a template",
+    "previewLabel": "Preview:",
+    "sendingNotice": "Sending message to {{name}}...",
+    "sentNotice": "✓ Message sent successfully to {{name}}",
+    "failedNotice": "✗ Failed to send message to {{name}}",
+    "defaultCustomMessage": "Please check your dashboard for updates.",
+    "toasts": {
+        "noTemplateOrStudent": "No template selected or student not available.",
+        "templateNotFound": "Selected template not found.",
+        "sending": "Sending message...",
+        "sent": "Message sent successfully!",
+        "failed": "Failed to send message: {{error}}",
+        "unknownError": "Unknown error occurred"
+    },
+    "templates": {
+        "welcome": {
+            "name": "Welcome Message",
+            "content": "Hello {{name}}! Welcome to our learning platform."
+        },
+        "sessionReminder": {
+            "name": "Session Reminder",
+            "content": "Hi {{name}}, this is a reminder about your upcoming session."
+        },
+        "assignmentDue": {
+            "name": "Assignment Due",
+            "content": "Hey {{name}}, your assignment is due soon. Please complete it on time."
+        },
+        "custom": {
+            "name": "Custom Message",
+            "content": "Hi {{name}}, {{custom_message_text}}"
+        }
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "title": {
+        "generated": "API कुंजी जनरेट हो गई",
+        "create": "नई API कुंजी बनाएं"
+    },
+    "description": {
+        "generated": "अभी अपनी API कुंजी कॉपी कर लें। आप इसे दोबारा नहीं देख पाएंगे!",
+        "create": "अपनी API कुंजी को बाद में पहचानने में मदद के लिए उसे एक नाम दें।"
+    },
+    "keyNameLabel": "कुंजी का नाम",
+    "keyNamePlaceholder": "उदाहरण: प्रोडक्शन कुंजी, डेव कुंजी",
+    "cancelButton": "रद्द करें",
+    "generatingButton": "जनरेट हो रहा है...",
+    "generateButton": "कुंजी जनरेट करें",
+    "saveKeyWarningTitle": "⚠️ यह कुंजी अभी सहेजें!",
+    "saveKeyWarningDescription": "यह एकमात्र मौका है जब आप पूरी कुंजी देख पाएंगे। इसे सुरक्षित रूप से सहेजें।",
+    "yourApiKeyLabel": "आपकी API कुंजी",
+    "doneButton": "हो गया"
+}

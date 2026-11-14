@@ -1,0 +1,10 @@
+{
+    "provideReattempt": "Autoriser une nouvelle tentative",
+    "revaluate": "Réévaluer",
+    "questionWise": "Par question",
+    "entireAssessment": "Évaluation entière",
+    "releaseResult": "Publier le résultat",
+    "studentsCount_one": "{{count}} étudiant",
+    "studentsCount_many": "{{count}} d'étudiants",
+    "studentsCount_other": "{{count}} étudiants"
+}

@@ -1,0 +1,9 @@
+{
+    "select": "تحديد",
+    "srNo": "الرقم التسلسلي",
+    "membersName": "اسم الأعضاء",
+    "attendanceStatus": "حالة الحضور",
+    "present": "حاضر",
+    "absent": "غائب",
+    "unmarked": "غير محدد"
+}

@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "Paramètres des onglets",
+        "subtitle": "Configurez les onglets visibles dans votre tableau de bord",
+        "reset": "Réinitialiser",
+        "save": "Enregistrer les paramètres"
+    },
+    "footer": {
+        "reset": "Réinitialiser",
+        "save": "Enregistrer"
+    },
+    "errors": {
+        "parentMustBeVisible": "L'onglet parent doit être visible pour basculer les sous-éléments",
+        "atLeastOneSubItemVisible": "Au moins un sous-élément doit rester visible",
+        "saveFailed": "Échec de l'enregistrement des paramètres des onglets"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres des onglets enregistrés avec succès !",
+        "resetSuccess": "Paramètres réinitialisés par défaut"
+    },
+    "status": {
+        "visible": "Visible",
+        "hidden": "Masqué",
+        "disabled": "Désactivé"
+    },
+    "subItems": {
+        "label": "Sous-éléments :",
+        "hintVisible": "Au moins un sous-élément doit rester visible",
+        "hintHidden": "Les sous-éléments sont désactivés lorsque l'onglet parent est masqué"
+    },
+    "tabs": {
+        "institutePulse": "Pouls de l'institut",
+        "reports": "Rapports",
+        "doubtManagement": "Gestion des questions",
+        "evaluationCentre": "Centre d'évaluation",
+        "evaluations": "Évaluations",
+        "evaluationTool": "Outil d'évaluation",
+        "communityCentre": "Centre communautaire"
+    }
+}

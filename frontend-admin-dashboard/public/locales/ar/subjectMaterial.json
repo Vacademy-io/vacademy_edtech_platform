@@ -1,0 +1,17 @@
+{
+    "selectTerm": "اختر {{term}}",
+    "expandAll": "توسيع الكل",
+    "collapseAll": "طي الكل",
+    "addSlide": "إضافة شريحة",
+    "noSlidesInChapter": "لا توجد شرائح في هذا الفصل.",
+    "noSubjectsAvailable": "لا توجد مواد متاحة. ابدأ بإضافة مادة جديدة.",
+    "manageTeachers": "إدارة المعلمين",
+    "viewAndManageTeachers": "عرض وإدارة المعلمين المعيّنين لهذه الدفعة.",
+    "selectBatchLiveSessions": "اختر دفعة لعرض جلساتها المباشرة.",
+    "selectBatchReports": "اختر دفعة لعرض تقاريرها.",
+    "contentStructureHeading": "هيكل المحتوى",
+    "navigateContentStructure": "تصفّح هيكل محتوى دورتك",
+    "contentStructureAvailableElsewhere": "عرض هيكل المحتوى متاح في صفحة تفاصيل الدورة الرئيسية.",
+    "missingInformation": "معلومات مفقودة",
+    "missingIdsBody": "معرّف الـ {{course}} أو معرّف الـ {{level}} مفقود. يرجى التأكد من توفيرهما للمتابعة."
+}

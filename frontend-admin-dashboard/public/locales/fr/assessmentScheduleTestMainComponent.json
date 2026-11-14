@@ -1,0 +1,50 @@
+{
+    "meta": {
+        "helmetTitle": "Planifier des tests",
+        "helmetDescription": "Cette page affiche la liste de tous les tests planifiés et permet également de planifier une évaluation."
+    },
+    "header": {
+        "navHeading": "Liste des évaluations"
+    },
+    "tabs": {
+        "liveTests": {
+            "emptyMessage": "Aucun test n'est actuellement en direct."
+        },
+        "upcomingTests": {
+            "emptyMessage": "Aucun test à venir n'est planifié."
+        },
+        "previousTests": {
+            "emptyMessage": "Aucun test précédent disponible."
+        },
+        "draftTests": {
+            "emptyMessage": "Aucun brouillon de test disponible."
+        }
+    },
+    "filters": {
+        "filterBy": "Filtrer par",
+        "mode": "Mode",
+        "type": "Type",
+        "evaluation": "Évaluation",
+        "unapplied": {
+            "countLabel_one": "{{count}} filtre sélectionné",
+            "countLabel_many": "{{count}} filtres sélectionnés",
+            "countLabel_other": "{{count}} filtres sélectionnés",
+            "instructionPrefix": "— appuyez sur",
+            "applyLabel": "Appliquer",
+            "instructionSuffix": "pour mettre à jour la liste."
+        },
+        "source": {
+            "label": "Source",
+            "options": {
+                "DASHBOARD": "Tableau de bord",
+                "API": "API"
+            },
+            "emptyOnPage": "Aucune évaluation de cette source sur cette page. Essayez une autre page ou effacez le filtre Source."
+        }
+    },
+    "dialogs": {
+        "noCourse": {
+            "type": "créer une évaluation"
+        }
+    }
+}

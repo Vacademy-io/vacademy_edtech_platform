@@ -1,0 +1,45 @@
+{
+    "header": {
+        "shotPlan_one": "{{count}}-शॉट योजना",
+        "shotPlan_other": "{{count}}-शॉट योजना",
+        "actedScenes_one": "{{count}} अभिनीत दृश्य",
+        "actedScenes_other": "{{count}} अभिनीत दृश्य"
+    },
+    "row": {
+        "shotTypePlaceholder": "शॉट प्रकार",
+        "secondsPlaceholder": "सेकंड",
+        "narrationBriefPlaceholder": "यह हिस्सा किस बारे में है",
+        "transitionInAriaLabel": "ट्रांज़िशन इन",
+        "transitionPlaceholder": "ट्रांज़िशन…",
+        "backgroundTreatmentAriaLabel": "बैकग्राउंड ट्रीटमेंट",
+        "backgroundPlaceholder": "बैकग्राउंड…",
+        "actedScene": "अभिनीत दृश्य",
+        "dialogueLineAriaLabel": "{{character}} की पंक्ति",
+        "continuesPreviousScene": "पिछले दृश्य से जारी",
+        "newScene": "नया दृश्य"
+    },
+    "transitions": {
+        "cut": "कट",
+        "fade": "फ़ेड",
+        "crossfade": "क्रॉसफ़ेड",
+        "slide_left": "बाएं स्लाइड",
+        "slide_up": "ऊपर स्लाइड",
+        "zoom_in": "ज़ूम इन",
+        "whip_pan": "व्हिप पैन",
+        "circle_iris": "सर्कल आइरिस",
+        "smash_cut": "स्मैश कट",
+        "dip_to_black": "काले में डिप",
+        "dissolve_up": "डिज़ॉल्व अप"
+    },
+    "backgrounds": {
+        "brand_solid": "ब्रांड सॉलिड",
+        "brand_textured": "ब्रांड टेक्सचर्ड",
+        "brand_gradient": "ब्रांड ग्रेडिएंट",
+        "media_hero": "मीडिया हीरो"
+    },
+    "footer": {
+        "letAiDecide": "AI को तय करने दें",
+        "saveAndContinue": "सेव करें और जारी रखें",
+        "approvePlan": "योजना स्वीकृत करें"
+    }
+}

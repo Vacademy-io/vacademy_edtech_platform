@@ -163,6 +163,12 @@ public class OfflineSyncEventProcessor {
 
     private void dispatchQuiz(OfflineSyncEventRequestDTO event, ActivityLogDTO dto, String userId,
             CustomUserDetails user) {
+        // A device only ever queues an attempt with answers in it, so an empty one records nothing.
+        if (dto.getQuizSides() == null || dto.getQuizSides().isEmpty()) {
+            log.info("offline-sync: nothing recorded for empty quiz event {}", event.getClientEventId());
+            return;
+        }
+        quizSlideActivityLogService.requireLegacySubmitAllowed(dto, event.getSlideId(), user, null);
         List<OfflineQuizRescoringService.OfflineDiscrepancyRecord> discrepancies = offlineQuizRescoringService
                 .rescoreQuiz(dto.getQuizSides());
         String activityId = quizSlideActivityLogService.addOrUpdateQuizSlideActivityLog(dto, event.getSlideId(),

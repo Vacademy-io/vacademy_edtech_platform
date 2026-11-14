@@ -1,0 +1,17 @@
+{
+    "types": {
+        "document": "مستند",
+        "presentation": "عرض تقديمي",
+        "jupyterNotebook": "دفتر Jupyter",
+        "scratchProject": "مشروع Scratch",
+        "discussion": "نقاش",
+        "codeEditor": "محرر الأكواد",
+        "video": "فيديو",
+        "audio": "صوت",
+        "question": "سؤال",
+        "assignment": "واجب",
+        "pdfDocument": "مستند PDF",
+        "slide": "شريحة",
+        "quiz": "اختبار قصير"
+    }
+}

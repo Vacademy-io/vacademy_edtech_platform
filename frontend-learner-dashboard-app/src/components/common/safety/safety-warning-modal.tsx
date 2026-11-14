@@ -9,6 +9,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -19,6 +20,7 @@ interface SafetyWarningModalProps {
 }
 
 export function SafetyWarningModal({ open, onAccept, onReject }: SafetyWarningModalProps) {
+    const { t } = useTranslation("layoutCommonB");
     const [parentalAnswer, setParentalAnswer] = useState("");
     const [error, setError] = useState("");
 
@@ -28,7 +30,7 @@ export function SafetyWarningModal({ open, onAccept, onReject }: SafetyWarningMo
         if (parentalAnswer.trim() === "19") {
             onAccept();
         } else {
-            setError("Incorrect answer. Please try again.");
+            setError(t("safetyWarningModal.incorrectAnswer"));
         }
     };
 
@@ -36,29 +38,29 @@ export function SafetyWarningModal({ open, onAccept, onReject }: SafetyWarningMo
         <AlertDialog open={open}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Safety First</AlertDialogTitle>
+                    <AlertDialogTitle>{t("safetyWarningModal.title")}</AlertDialogTitle>
                     <AlertDialogDescription className="space-y-4 text-start">
                         <p className="font-semibold text-red-600">
-                            Please read carefully before proceeding:
+                            {t("safetyWarningModal.readCarefully")}
                         </p>
                         <ul className="list-disc ps-5 space-y-2">
                             <li>
-                                <strong>Be Safe Online:</strong> Never share personal information (like your phone number, address, or school) with strangers.
+                                <strong>{t("safetyWarningModal.rules.beSafeOnline.title")}</strong> {t("safetyWarningModal.rules.beSafeOnline.body")}
                             </li>
                             <li>
-                                <strong>Chat with Caution:</strong> Only interact with people you know and trust.
+                                <strong>{t("safetyWarningModal.rules.chatWithCaution.title")}</strong> {t("safetyWarningModal.rules.chatWithCaution.body")}
                             </li>
                             <li>
-                                <strong>Respect Others:</strong> Be kind and respectful in all online interactions.
+                                <strong>{t("safetyWarningModal.rules.respectOthers.title")}</strong> {t("safetyWarningModal.rules.respectOthers.body")}
                             </li>
                         </ul>
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                            <p className="mb-2 font-medium text-gray-900">Adult Verification Required</p>
+                            <p className="mb-2 font-medium text-gray-900">{t("safetyWarningModal.adultVerification.title")}</p>
                             <p className="text-sm text-gray-500 mb-4">
-                                To access social features (like chat or live sessions), an adult must verify this action.
+                                {t("safetyWarningModal.adultVerification.body")}
                             </p>
                             <div className="space-y-2">
-                                <Label htmlFor="challenge">What is 12 + 7?</Label>
+                                <Label htmlFor="challenge">{t("safetyWarningModal.adultVerification.challengeLabel")}</Label>
                                 <Input
                                     id="challenge"
                                     value={parentalAnswer}
@@ -66,7 +68,7 @@ export function SafetyWarningModal({ open, onAccept, onReject }: SafetyWarningMo
                                         setParentalAnswer(e.target.value);
                                         setError("");
                                     }}
-                                    placeholder="Enter the number"
+                                    placeholder={t("safetyWarningModal.adultVerification.placeholder")}
                                 />
                                 {error && <p className="text-red-500 text-sm">{error}</p>}
                             </div>
@@ -75,13 +77,13 @@ export function SafetyWarningModal({ open, onAccept, onReject }: SafetyWarningMo
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     {onReject && (
-                        <AlertDialogCancel onClick={onReject}>Go Back</AlertDialogCancel>
+                        <AlertDialogCancel onClick={onReject}>{t("safetyWarningModal.goBack")}</AlertDialogCancel>
                     )}
                     <AlertDialogAction onClick={(e) => {
                         e.preventDefault(); // Prevent auto-close
                         validateParentalGate();
                     }}>
-                        I Agree & Proceed
+                        {t("safetyWarningModal.agreeAndProceed")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

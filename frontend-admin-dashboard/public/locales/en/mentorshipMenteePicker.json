@@ -1,0 +1,50 @@
+{
+    "toast": {
+        "allAlreadySelected": "Everyone matching this filter was already selected",
+        "selectedMore_one": "Selected {{count}} more student",
+        "selectedMore_other": "Selected {{count}} more students",
+        "selectAllFailed": "Couldn't load every matching student"
+    },
+    "searchPlaceholder": "Search by name",
+    "batchFilter": {
+        "label": "Batch",
+        "placeholder": "Search batches…"
+    },
+    "selectedSummary": {
+        "count_one": "{{count}} student selected",
+        "count_other": "{{count}} students selected",
+        "clearAll": "Clear all",
+        "removeAria": "Remove {{name}}",
+        "more_one": "+{{count}} more",
+        "more_other": "+{{count}} more"
+    },
+    "pageSelection": {
+        "selectAllAria": "Select every student on this page",
+        "selectAll": "Select all on this page",
+        "deselectAll": "Deselect all on this page",
+        "selectAllCount": "Select all on this page ({{count}})",
+        "deselectAllCount": "Deselect all on this page ({{count}})"
+    },
+    "selectAllMatching": {
+        "selecting": "Selecting…",
+        "button_one": "Select all {{count}} matching",
+        "button_other": "Select all {{count}} matching",
+        "blocked_one": "{{count}} match — filter by batch to select them all at once (max {{max}})",
+        "blocked_other": "{{count}} matches — filter by batch to select them all at once (max {{max}})"
+    },
+    "results": {
+        "loading": "Loading students…",
+        "loadError": "Couldn't load students.",
+        "retry": "Retry",
+        "emptyFiltered": "No enrolled students match this filter",
+        "emptyAll": "No enrolled students yet",
+        "selectRowAria": "Select {{name}}"
+    },
+    "pagination": {
+        "range": "{{start}}–{{end}} of {{total}}",
+        "updating": "updating…",
+        "previousAria": "Previous page",
+        "nextAria": "Next page",
+        "pageOf": "{{page}} / {{total}}"
+    }
+}

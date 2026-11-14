@@ -1,0 +1,19 @@
+{
+    "dialogTitle": "Add Activity Log",
+    "dialogDescription": "Log an activity or note for this enquiry",
+    "actionTypes": {
+        "note": "Note",
+        "phoneCall": "Phone Call",
+        "emailSent": "Email Sent",
+        "campusVisit": "Campus Visit"
+    },
+    "notePlaceholder": "Type your note here…",
+    "cancel": "Cancel",
+    "submit": "Add Activity",
+    "submitting": "Saving…",
+    "toast": {
+        "success": "Activity logged successfully",
+        "error": "Failed to add activity. Please try again.",
+        "emptyWarning": "Please enter a note"
+    }
+}

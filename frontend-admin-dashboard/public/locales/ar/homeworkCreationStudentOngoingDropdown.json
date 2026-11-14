@@ -1,0 +1,22 @@
+{
+    "dropdown": {
+        "increaseSubmissionTime": "زيادة وقت التسليم",
+        "closeSubmission": "إغلاق التسليم"
+    },
+    "dialogs": {
+        "attentionLabel": "انتباه",
+        "closeButton": "إغلاق",
+        "closeSubmission": {
+            "title": "إغلاق التسليم",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إغلاق تسليم التقييم الخاص بـ"
+        },
+        "increaseAssessmentTime": {
+            "title": "زيادة وقت التقييم",
+            "entireAssessment": "التقييم بالكامل",
+            "increaseBy": "زيادة بمقدار",
+            "selectSectionPlaceholder": "اختر القسم",
+            "sectionNumber": "القسم {{number}}",
+            "questionNumber": "السؤال {{number}}"
+        }
+    }
+}

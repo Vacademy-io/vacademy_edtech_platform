@@ -23,6 +23,12 @@ LocalSmartTurnAnalyzerV3(params=SmartTurnParams(stop_secs=1.5)); \
 print('smart turn v3 baked')"
 
 COPY app ./app
+# Conversation simulator (sim/run.py) — ships in the image so it can be run
+# against the box's own credentials: docker compose exec voice-bot python -m sim.run
+COPY sim ./sim
+# Room-tone loop mixed under every call (app/ambience.py). Resolved relative
+# to the package, so it must sit beside app/ in the image exactly as in the repo.
+COPY assets ./assets
 
 EXPOSE 8090
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { getLearnerTrackingSettings } from "@/services/learner-tracking-settings";
 import { GameController, ArrowSquareOut } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
   published_data,
   documentId,
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const [projectData, setProjectData] = useState<ScratchProjectData | null>(
     null
   );
@@ -459,7 +461,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
       handleDocumentLoad();
     } catch (err) {
       console.error("Failed to parse Scratch project data:", err);
-      setError("Failed to load project configuration");
+      setError(t("scratchSlide.errors.loadConfigFailed"));
       setIsLoading(false);
     }
   }, [published_data]);
@@ -487,9 +489,9 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-stack">
           <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
-          <div className="text-neutral-500">Loading Scratch Project...</div>
+          <div className="text-neutral-500">{t("scratchSlide.loadingProject")}</div>
         </div>
       </div>
     );
@@ -498,12 +500,12 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
   if (error || !projectData) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-stack">
           <div className="bg-red-50 rounded-full p-4">
             <GameController size={32} className="text-red-500" />
           </div>
           <div className="text-red-500">
-            {error || "Failed to load project"}
+            {error || t("scratchSlide.errors.loadFailed")}
           </div>
         </div>
       </div>
@@ -524,23 +526,25 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
             <div className="p-2">
               <div className="mt-1">
                 <p className="text-xs text-neutral-600">
-                  Just ensuring that you are actively learning, please click the
-                  number{" "}
-                  <span className="text-primary-500">
-                    {Math.max(
-                      ...verificationNumbers.filter(
-                        (n) =>
-                          n !== verificationNumbers[0] ||
-                          (verificationNumbers[0] !== verificationNumbers[1] &&
-                            verificationNumbers[0] !== verificationNumbers[2])
-                      )
-                    )}
-                  </span>{" "}
-                  within{" "}
-                  <span className="text-primary-500">
-                    {verificationCountdown}{" "}
-                  </span>
-                  seconds.
+                  <Trans
+                    i18nKey="scratchSlide.verification.prompt"
+                    t={t}
+                    values={{
+                      number: Math.max(
+                        ...verificationNumbers.filter(
+                          (n) =>
+                            n !== verificationNumbers[0] ||
+                            (verificationNumbers[0] !== verificationNumbers[1] &&
+                              verificationNumbers[0] !== verificationNumbers[2])
+                        )
+                      ),
+                      countdown: verificationCountdown,
+                    }}
+                    components={{
+                      num: <span className="text-primary-500" />,
+                      cnt: <span className="text-primary-500" />,
+                    }}
+                  />
                 </p>
               </div>
               <div className="mt-2 flex justify-center space-x-2">
@@ -562,19 +566,18 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
       {/* Pause overlay */}
       {isPaused && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-6 text-center">
-            <h3 className="mb-4 text-lg font-semibold">
-              Scratch Project Paused
+          <div className="rounded-lg bg-white p-6 text-center space-y-4">
+            <h3 className="text-lg font-semibold">
+              {t("scratchSlide.paused.title")}
             </h3>
-            <p className="mb-4 text-sm text-gray-600">
-              You've switched tabs {tabSwitchCount} times. Please click below to
-              resume your Scratch project.
+            <p className="text-sm text-gray-600">
+              {t("scratchSlide.paused.body", { count: tabSwitchCount })}
             </p>
             <button
               onClick={handleResumeActivity}
               className="rounded bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
             >
-              Resume Project
+              {t("scratchSlide.paused.resume")}
             </button>
           </div>
         </div>
@@ -592,7 +595,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                   {projectData.projectName}
                 </h3>
                 <p className="text-xs text-neutral-500">
-                  Project ID: {projectData.projectId}
+                  {t("scratchSlide.header.projectId", { id: projectData.projectId })}
                 </p>
               </div>
             </div>
@@ -608,7 +611,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                 className="flex items-center gap-1.5"
               >
                 <ArrowSquareOut size={14} />
-                Open in Scratch
+                {t("scratchSlide.openInScratch")}
               </Button>
               <Button
                 variant="outline"
@@ -620,7 +623,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                 className="flex items-center gap-1.5"
               >
                 <ArrowSquareOut size={14} />
-                Edit in Scratch
+                {t("scratchSlide.editInScratch")}
               </Button>
             </div>
           </div>
@@ -639,16 +642,16 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
               handleUserActivity(); // Track iframe load
               handleActionChange(2); // Action type 2 for project interaction
             }}
-            onError={() => setError("Failed to load Scratch project")}
+            onError={() => setError(t("scratchSlide.errors.loadFailed"))}
           />
 
           {/* Loading overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-b-lg">
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-stack">
                 <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
                 <div className="text-neutral-500">
-                  Loading Scratch interface...
+                  {t("scratchSlide.loadingInterface")}
                 </div>
               </div>
             </div>
@@ -657,17 +660,17 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
           {/* Footer overlay */}
           <div className="absolute bottom-0 start-0 end-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-2 flex items-center justify-between text-xs text-neutral-500">
             <div className="flex items-center gap-4">
-              <span>Type: Scratch Project</span>
-              <span>Embed Type: {projectData.embedType}</span>
+              <span>{t("scratchSlide.footer.type")}</span>
+              <span>{t("scratchSlide.footer.embedType", { type: projectData.embedType })}</span>
             </div>
             <div className="flex items-center gap-2">
               {projectData.autoStart && (
                 <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                  Auto Start
+                  {t("scratchSlide.footer.autoStart")}
                 </span>
               )}
               <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs">
-                Interactive
+                {t("scratchSlide.footer.interactive")}
               </span>
             </div>
           </div>

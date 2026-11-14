@@ -1,0 +1,222 @@
+{
+    "toast": {
+        "draftRestored": "ड्राफ्ट पुनर्स्थापित किया गया",
+        "courseConfigMissing": "कोर्स कॉन्फ़िगरेशन नहीं मिला। कृपया फिर से शुरू करें।",
+        "instituteIdMissing": "इंस्टिट्यूट आईडी नहीं मिली। कृपया दोबारा लॉगिन करें।",
+        "courseDraftSaved": "कोर्स ड्राफ्ट सहेजा गया",
+        "insufficientCredits": "कोर्स आउटलाइन बनाने के लिए आपके इंस्टिट्यूट के AI क्रेडिट अपर्याप्त हैं। जारी रखने के लिए कृपया क्रेडिट टॉप-अप करें।",
+        "generateOutlineFailed": "कोर्स आउटलाइन बनाना विफल रहा: {{message}}"
+    },
+    "progress": {
+        "buildingPrompt": "कॉन्फ़िगरेशन से प्रॉम्प्ट तैयार किया जा रहा है...",
+        "connecting": "AI सेवा से कनेक्ट हो रहा है...",
+        "generatingOutline": "कोर्स आउटलाइन बनाई जा रही है...",
+        "complete": "पूर्ण!",
+        "completedOfTotal": "{{total}} में से {{completed}}"
+    },
+    "defaultContent": {
+        "homeworkQuestion": "इस सत्र में शामिल मुख्य अवधारणा क्या है?",
+        "learningObjectivesTitle": "सीखने के उद्देश्य",
+        "learningObjectiveItem1": "इस सत्र में शामिल मुख्य अवधारणाओं और सिद्धांतों को समझें",
+        "learningObjectiveItem2": "सीखी गई तकनीकों को व्यावहारिक समस्याओं को हल करने में लागू करें",
+        "learningObjectiveItem3": "चर्चा किए गए मुख्य विषयों में दक्षता प्रदर्शित करें",
+        "learningObjectivesFooter": "ये उद्देश्य आपकी सीखने की यात्रा को मार्गदर्शन देने और विषय-वस्तु में महारत हासिल करने में आपकी मदद करने के लिए बनाए गए हैं।",
+        "noPromptAvailable": "कोई प्रॉम्प्ट उपलब्ध नहीं है",
+        "contentFor": "{{title}} के लिए सामग्री"
+    },
+    "common": {
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "edit": "संपादित करें",
+        "upload": "अपलोड करें",
+        "unknownError": "अज्ञात त्रुटि"
+    },
+    "regeneratePrompt": {
+        "base": "{{chapter}} \"{{title}}\" को फिर से बनाएँ",
+        "withSlides": " निम्नलिखित {{slides}} के साथ: {{titles}}।",
+        "noSlides": "।"
+    },
+    "page": {
+        "generatingOutlineTitle": "{{course}} आउटलाइन बनाई जा रही है...",
+        "generatingContentTitle": "सामग्री बनाई जा रही है...",
+        "editCourseContentTitle": "कोर्स सामग्री संपादित करें",
+        "editContentMeta": "अपनी AI-जनित कोर्स सामग्री की समीक्षा करें और संपादित करें।",
+        "reviewOutlineTitle": "{{course}} आउटलाइन की समीक्षा करें",
+        "reviewOutlineMeta": "अपनी AI-जनित कोर्स आउटलाइन की समीक्षा करें और परिष्कृत करें।",
+        "backToCreate": "{{course}} बनाने पर वापस जाएँ",
+        "back": "वापस",
+        "generatingButton": "बनाया जा रहा है...",
+        "createCourse": "{{course}} बनाएँ",
+        "createDraftCourse": "ड्राफ्ट {{course}} बनाएँ",
+        "generatePageContent": "पेज सामग्री बनाएँ",
+        "stepReviewHeading": "चरण 1: अपनी {{course}} आउटलाइन की समीक्षा करें",
+        "stepReviewSubtitle": "अपने कोर्स के लिए बनाई गई कोर्स आउटलाइन, विषयों और उद्देश्यों की समीक्षा करें। सब कुछ सही लगने पर, अपनी कोर्स सामग्री बनाना शुरू करने के लिए जनरेट पर क्लिक करें।",
+        "contentHeading": "{{course}} सामग्री",
+        "outlineHeading": "{{course}} आउटलाइन",
+        "collapseAll": "सभी संक्षिप्त करें",
+        "expandAll": "सभी विस्तृत करें",
+        "noSessions": "कोई सत्र उपलब्ध नहीं है। कृपया पेज को रीफ़्रेश करने का प्रयास करें।",
+        "addPage": "पेज जोड़ें",
+        "addChapter": "{{chapter}} जोड़ें"
+    },
+    "metadata": {
+        "courseName": "कोर्स का नाम",
+        "description": "विवरण",
+        "level": "स्तर",
+        "selectLevel": "स्तर चुनें",
+        "levelBeginner": "शुरुआती",
+        "levelBasic": "बुनियादी",
+        "levelIntermediate": "मध्यम",
+        "levelAdvanced": "उन्नत",
+        "courseTags": "कोर्स टैग",
+        "tagsPlaceholder": "अल्पविराम से अलग किए गए टैग दर्ज करें",
+        "coursePreviewImage": "कोर्स प्रीव्यू इमेज",
+        "coursePreviewImageHint": "कोर्स कार्ड पर दिखाया गया थंबनेल",
+        "coursePreviewAlt": "कोर्स प्रीव्यू",
+        "removeImage": "इमेज हटाएँ",
+        "clickToUploadPreview": "प्रीव्यू इमेज अपलोड करने के लिए क्लिक करें",
+        "thumbnailForCard": "कोर्स कार्ड के लिए थंबनेल",
+        "courseBannerImage": "कोर्स बैनर इमेज",
+        "courseBannerHint": "कोर्स विवरण पेज पर चौड़ी हेडर इमेज",
+        "courseBannerAlt": "कोर्स बैनर",
+        "clickToUploadBanner": "बैनर इमेज अपलोड करने के लिए क्लिक करें",
+        "wideHeaderHint": "कोर्स विवरण पेज के लिए चौड़ा हेडर",
+        "courseMedia": "कोर्स मीडिया",
+        "courseMediaHint": "कोर्स पेज के लिए फ़ीचर्ड इमेज या वीडियो",
+        "usingFallbackImage": " - फ़ॉलबैक इमेज का उपयोग किया जा रहा है",
+        "courseMediaAlt": "कोर्स मीडिया",
+        "removeMedia": "मीडिया हटाएँ",
+        "youtubeLink": "YouTube लिंक",
+        "pasteYoutubeUrl": "यहाँ YouTube URL पेस्ट करें",
+        "uploadImageOrVideo": "इमेज या वीडियो अपलोड करें",
+        "addYoutubeLink": "YouTube लिंक जोड़ें",
+        "whatLearnersGain": "शिक्षार्थियों को क्या मिलेगा",
+        "whoShouldJoin": "किसे शामिल होना चाहिए",
+        "aboutCourse": "कोर्स के बारे में"
+    },
+    "slideDialog": {
+        "enterDocumentContent": "दस्तावेज़ सामग्री दर्ज करें...",
+        "codeEditor": "कोड एडिटर",
+        "editMode": "संपादन मोड",
+        "viewMode": "देखने का मोड",
+        "run": "चलाएँ",
+        "settings": "सेटिंग्स",
+        "viewEditMode": "देखें/संपादित करें मोड",
+        "switchToLightTheme": "लाइट थीम पर स्विच करें",
+        "switchToDarkTheme": "डार्क थीम पर स्विच करें",
+        "copyCode": "कोड कॉपी करें",
+        "downloadCode": "कोड डाउनलोड करें",
+        "videoPlayer": "वीडियो प्लेयर",
+        "videoWillDisplay": "वीडियो यहाँ दिखाया जाएगा",
+        "question": "प्रश्न:",
+        "noQuestionAvailable": "कोई प्रश्न उपलब्ध नहीं है",
+        "previousQuestion": "पिछला प्रश्न",
+        "nextQuestion": "अगला प्रश्न",
+        "noQuestionsYet": "इस क्विज़ के लिए अभी कोई प्रश्न उपलब्ध नहीं है।",
+        "answer": "उत्तर:",
+        "enterAssignmentQuestion": "असाइनमेंट प्रश्न दर्ज करें...",
+        "text": "टेक्स्ट",
+        "solutionCode": "समाधान कोड"
+    },
+    "courseCreation": {
+        "errors": {
+            "accessTokenNotFound": "एक्सेस टोकन नहीं मिला। कृपया दोबारा लॉगिन करें।",
+            "tokenDecodeFailed": "टोकन डेटा डिकोड करने में विफल। कृपया दोबारा लॉगिन करें।",
+            "instituteIdNotFound": "इंस्टिट्यूट आईडी नहीं मिली। कृपया सुनिश्चित करें कि आप लॉगिन हैं और इंस्टिट्यूट चुना गया है।",
+            "backendError": "बैकएंड त्रुटि: {{message}}",
+            "invalidInstituteId": "अमान्य इंस्टिट्यूट आईडी: {{instituteId}}। कृपया सुनिश्चित करें कि आप लॉगिन हैं और इंस्टिट्यूट चुना गया है।",
+            "networkAuthRequired": "नेटवर्क प्रमाणीकरण आवश्यक है। कृपया अपना कनेक्शन जांचें या सहायता से संपर्क करें। इंस्टिट्यूट आईडी: {{instituteId}}",
+            "unknownError": "अज्ञात त्रुटि",
+            "createCourseFailed": "कोर्स बनाना विफल रहा: {{message}}",
+            "noCourseIdReturned": "कोर्स बनाना विफल रहा: कोई कोर्स आईडी नहीं मिली",
+            "instituteDetailsNotLoaded": "इंस्टिट्यूट विवरण लोड नहीं हुए। कृपया पेज रीफ़्रेश करें और फिर से प्रयास करें।",
+            "packageSessionIdsNotFound": "बनाए गए कोर्स के लिए पैकेज सेशन आईडी नहीं मिलीं। कोर्स को पूरी तरह बनने में कुछ समय लग सकता है। कृपया कुछ सेकंड बाद फिर से प्रयास करें।",
+            "noSubjectIdReturned": "सब्जेक्ट बनाना विफल रहा: कोई सब्जेक्ट आईडी नहीं मिली",
+            "noModuleIdReturned": "मॉड्यूल बनाना विफल रहा: कोई मॉड्यूल आईडी नहीं मिली"
+        },
+        "progress": {
+            "creatingCourse": "कोर्स बनाया जा रहा है...",
+            "fetchingCourseDetails": "कोर्स विवरण प्राप्त किए जा रहे हैं...",
+            "waitingForCourse": "कोर्स के पूरी तरह बनने की प्रतीक्षा की जा रही है...",
+            "creatingSubject": "सब्जेक्ट बनाया जा रहा है...",
+            "creatingModule": "मॉड्यूल बनाया जा रहा है...",
+            "creatingChaptersAndSlides": "चैप्टर और स्लाइड बनाई जा रही हैं...",
+            "creatingSlidesInChapter_one": "\"{{chapter}}\" में {{count}} स्लाइड बनाई जा रही है...",
+            "creatingSlidesInChapter_other": "\"{{chapter}}\" में {{count}} स्लाइड बनाई जा रही हैं..."
+        },
+        "slideKind": {
+            "quiz": "क्विज़",
+            "video": "वीडियो",
+            "aiVideo": "AI वीडियो",
+            "aiSlides": "AI स्लाइड्स",
+            "storybook": "स्टोरीबुक",
+            "notes": "नोट्स"
+        }
+    },
+    "contentGeneration": {
+        "toast": {
+            "noTodosFound": "कोई टूडू नहीं मिला। कृपया कोर्स आउटलाइन फिर से बनाएँ।",
+            "noContentTodosFound": "बनाने के लिए कोई कंटेंट टूडू नहीं मिला। कृपया अपनी कोर्स आउटलाइन जांचें।",
+            "largePayloadConfirm": "कंटेंट जनरेशन पेलोड काफी बड़ा है। इससे सर्वर में समस्या हो सकती है। क्या फिर भी जारी रखें?",
+            "reducingRepetition_one": "पुनरावृत्ति घटाई जा रही है — {{count}} स्लाइड फिर से लिखी जा रही है...",
+            "reducingRepetition_other": "पुनरावृत्ति घटाई जा रही है — {{count}} स्लाइड फिर से लिखी जा रही हैं..."
+        },
+        "startingContentGeneration": "कंटेंट जनरेशन शुरू हो रहा है...",
+        "defaultVideoTitle": "वीडियो",
+        "youtubeUrlLabel": "YouTube URL:",
+        "noVideoUrlProvided": "कोई वीडियो URL उपलब्ध नहीं है",
+        "errors": {
+            "prefix": "कंटेंट जनरेशन विफल रहा: {{message}}",
+            "serverError500": "कंटेंट जनरेशन में सर्वर त्रुटि (500) आई। कम स्लाइड के साथ जनरेट करने का प्रयास करें या सहायता से संपर्क करें।",
+            "interrupted": "कंटेंट जनरेशन बाधित हो गया। फिर से प्रयास करें।",
+            "bufferIssue": "स्ट्रीम बफर समस्याओं के कारण कंटेंट जनरेशन विफल रहा। एक बार में कम स्लाइड जनरेट करने का प्रयास करें।",
+            "timeout": "कंटेंट जनरेशन का समय समाप्त हो गया। बाद में फिर से प्रयास करें।",
+            "networkError": "कंटेंट जनरेशन के दौरान नेटवर्क त्रुटि हुई। अपना कनेक्शन जांचें और फिर से प्रयास करें।",
+            "unknownError": "अज्ञात त्रुटि",
+            "failedToGenerate": "कंटेंट जनरेट करना विफल रहा: {{message}}"
+        },
+        "service": {
+            "connecting": "कंटेंट जनरेशन सेवा से कनेक्ट हो रहा है...",
+            "generatingContent": "कंटेंट जनरेट हो रहा है...",
+            "reducingRepetition_one": "पुनरावृत्ति घटाई जा रही है — {{count}} स्लाइड फिर से लिखी जा रही है...",
+            "reducingRepetition_other": "पुनरावृत्ति घटाई जा रही है — {{count}} स्लाइड फिर से लिखी जा रही हैं...",
+            "generatedSlide": "{{path}} के लिए {{slideType}} जनरेट किया गया",
+            "processingUpdates": "कंटेंट अपडेट प्रोसेस हो रहे हैं... ({{count}} पूर्ण)",
+            "complete": "कंटेंट जनरेशन पूर्ण हुआ!",
+            "retrying": "कनेक्शन बाधित हुआ, {{seconds}} सेकंड में फिर से प्रयास कर रहे हैं...",
+            "errors": {
+                "abortedTimeout": "टाइमआउट के कारण अनुरोध रद्द कर दिया गया",
+                "insufficientCredits": "आपके संस्थान के AI क्रेडिट इस जनरेशन के लिए अपर्याप्त हैं। जारी रखने के लिए कृपया क्रेडिट टॉप-अप करें।",
+                "noResponseBody": "कोई रिस्पॉन्स बॉडी नहीं मिली",
+                "inactivityTimeout": "{{seconds}} सेकंड की निष्क्रियता के बाद स्ट्रीम का समय समाप्त हो गया",
+                "serverErrorWithCode": "सर्वर त्रुटि (कोड: {{code}})",
+                "unknownCode": "अज्ञात",
+                "unknownStreamError": "अज्ञात स्ट्रीम त्रुटि",
+                "streamAborted": "कनेक्शन रद्द कर दिया गया - यह नेटवर्क समस्याओं या सर्वर टाइमआउट के कारण हो सकता है",
+                "streamBufferOverflow": "स्ट्रीम बफर ओवरफ्लो हुआ - कंटेंट बहुत बड़ा हो सकता है",
+                "streamTimeout": "स्ट्रीम प्रोसेसिंग का समय समाप्त हो गया - सर्वर पर अधिक लोड हो सकता है",
+                "streamNetworkError": "कंटेंट जनरेशन के दौरान नेटवर्क त्रुटि हुई",
+                "streamCancelled": "अनुरोध रद्द कर दिया गया",
+                "streamProcessingFailedPrefix": "स्ट्रीम प्रोसेसिंग विफल रही: {{message}}",
+                "unknownError": "अज्ञात त्रुटि हुई"
+            }
+        }
+    },
+    "sessionUtils": {
+        "untitledSession": "शीर्षकहीन सत्र"
+    },
+    "courseOutline": {
+        "connecting": "AI सेवा से जुड़ रहे हैं...",
+        "generating": "कोर्स आउटलाइन तैयार की जा रही है...",
+        "errors": {
+            "insufficientCredits": "आपके इंस्टिट्यूट के AI क्रेडिट अपर्याप्त हैं। जारी रखने के लिए कृपया क्रेडिट टॉप-अप करें।",
+            "httpError": "HTTP {{status}}: {{statusText}}। {{errorText}}",
+            "noResponseBody": "कोई प्रतिक्रिया बॉडी नहीं मिली",
+            "serverErrorWithCode": "सर्वर त्रुटि (कोड: {{code}})",
+            "unknownCode": "अज्ञात",
+            "invalidResponseStructure": "अमान्य प्रतिक्रिया संरचना: ट्री गुम या अमान्य है",
+            "unknownError": "अज्ञात त्रुटि",
+            "noResponseData": "API से कोई प्रतिक्रिया डेटा नहीं मिला"
+        }
+    }
+}

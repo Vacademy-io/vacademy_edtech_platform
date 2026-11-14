@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/select';
 import { CalendarBlank, ArrowsClockwise, FacebookLogo, MapPin } from '@phosphor-icons/react';
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { DayTemplates } from '@/types/challenge-analytics';
 
 type LeadSource = 'zoho' | 'facebook';
@@ -31,11 +33,11 @@ interface AnalyticsFiltersProps {
     onSourceChange?: (source: LeadSource) => void;
 }
 
-const quickFilterOptions = [
-    { label: 'Last 7 Days', days: 7 },
-    { label: 'Last 14 Days', days: 14 },
-    { label: 'Last 30 Days', days: 30 },
-    { label: 'Last 90 Days', days: 90 },
+const buildQuickFilterOptions = (t: TFunction) => [
+    { label: t('last7Days'), days: 7 },
+    { label: t('last14Days'), days: 14 },
+    { label: t('last30Days'), days: 30 },
+    { label: t('last90Days'), days: 90 },
 ];
 
 export function AnalyticsFilters({
@@ -48,8 +50,10 @@ export function AnalyticsFilters({
     source,
     onSourceChange,
 }: AnalyticsFiltersProps) {
+    const { t } = useTranslation('challengeAnalyticsAnalyticsFilters');
     const [startOpen, setStartOpen] = useState(false);
     const [endOpen, setEndOpen] = useState(false);
+    const quickFilterOptions = buildQuickFilterOptions(t);
 
     const handleQuickFilter = (days: number) => {
         const end = new Date();
@@ -78,25 +82,25 @@ export function AnalyticsFilters({
                     {/* Lead source switch */}
                     {onSourceChange && (
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Lead source:</span>
+                            <span className="text-xs font-medium text-gray-500">{t('leadSourceLabel')}</span>
                             <Select
                                 value={source}
                                 onValueChange={(v) => onSourceChange(v as LeadSource)}
                             >
                                 <SelectTrigger className="w-44">
-                                    <SelectValue placeholder="Select source" />
+                                    <SelectValue placeholder={t('selectSourcePlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="zoho">
                                         <span className="flex items-center gap-2">
                                             <MapPin className="size-4" />
-                                            Zoho Forms
+                                            {t('zohoForms')}
                                         </span>
                                     </SelectItem>
                                     <SelectItem value="facebook">
                                         <span className="flex items-center gap-2">
                                             <FacebookLogo className="size-4" />
-                                            Facebook Leads
+                                            {t('facebookLeads')}
                                         </span>
                                     </SelectItem>
                                 </SelectContent>
@@ -112,7 +116,7 @@ export function AnalyticsFilters({
                                     <CalendarBlank className="size-4" />
                                     {startDate
                                         ? format(new Date(startDate), 'MMM dd, yyyy')
-                                        : 'Start Date'}
+                                        : t('startDate')}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -132,7 +136,7 @@ export function AnalyticsFilters({
                             </PopoverContent>
                         </Popover>
 
-                        <span className="text-gray-400">to</span>
+                        <span className="text-gray-400">{t('to')}</span>
 
                         <Popover open={endOpen} onOpenChange={setEndOpen}>
                             <PopoverTrigger asChild>
@@ -140,7 +144,7 @@ export function AnalyticsFilters({
                                     <CalendarBlank className="size-4" />
                                     {endDate
                                         ? format(new Date(endDate), 'MMM dd, yyyy')
-                                        : 'End Date'}
+                                        : t('endDate')}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -161,7 +165,7 @@ export function AnalyticsFilters({
 
                     {/* Quick Filter Buttons */}
                     <div className="hidden items-center gap-2 lg:flex">
-                        <span className="text-xs text-gray-500">Quick:</span>
+                        <span className="text-xs text-gray-500">{t('quick')}</span>
                         {quickFilterOptions.map((option) => (
                             <Button
                                 key={option.days}
@@ -179,7 +183,7 @@ export function AnalyticsFilters({
                             className="h-7 px-2 text-xs"
                             onClick={handleThisMonth}
                         >
-                            This Month
+                            {t('thisMonth')}
                         </Button>
                         <Button
                             variant="ghost"
@@ -187,7 +191,7 @@ export function AnalyticsFilters({
                             className="h-7 px-2 text-xs"
                             onClick={handleLastMonth}
                         >
-                            Last Month
+                            {t('lastMonth')}
                         </Button>
                     </div>
 
@@ -200,7 +204,7 @@ export function AnalyticsFilters({
                         className="ml-auto gap-2"
                     >
                         <ArrowsClockwise className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        {t('refresh')}
                     </Button>
                 </div>
             </div>

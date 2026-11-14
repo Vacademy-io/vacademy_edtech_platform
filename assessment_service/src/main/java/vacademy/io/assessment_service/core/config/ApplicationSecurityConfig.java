@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,7 +20,18 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfigurationSource;
 import vacademy.io.assessment_service.core.filter.AssessmentJwtAuthFilter;
+import vacademy.io.assessment_service.features.open_evaluation.OpenApiPaths;
+import vacademy.io.assessment_service.features.open_evaluation.auth.AssessmentApiKeyVerifier;
+import vacademy.io.assessment_service.features.open_evaluation.config.OpenApiGateFilter;
+import vacademy.io.assessment_service.features.open_evaluation.config.OpenApiProperties;
+import vacademy.io.assessment_service.features.open_evaluation.error.OpenApiAuthEntryPoint;
+import vacademy.io.common.auth.apikey.ApiKeyAuthFilter;
+import vacademy.io.common.auth.apikey.ApiKeyAuthentication;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 import vacademy.io.common.auth.filter.InternalAuthFilter;
+
+import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableMethodSecurity
@@ -37,7 +49,7 @@ public class ApplicationSecurityConfig {
 
             "/assessment-service/webjars/swagger-ui/**", "/assessment-service/api-docs/**",
 
-            "/assessment-service/open-registrations/v1/assessment-page", "/assessment-service/evaluation-tool/**",
+            "/assessment-service/open-registrations/v1/assessment-page",
 
             "/assessment-service/scheduler/test/**", "/assessment-service/health/**",
             // NOTE: /assessment/evaluation-ai/** and /assessment/evaluation-criteria/**
@@ -55,8 +67,18 @@ public class ApplicationSecurityConfig {
             // reach and rely on CopyCheckCallbackController.verify() for auth.
             "/assessment-service/copy-check/callback/**" };
 
+    // The logged-out "Evaluator AI" free tool (admin dashboard /evaluator-ai) is
+    // retired (founder, 2026-10-01). Its public /evaluation-tool/assessment/{create,
+    // sections,{id}} endpoints are deleted, so nothing under /evaluation-tool/** is
+    // anonymous any more. ai-publish lives under /internal/ (HMAC-only).
+
     @Autowired
     AssessmentJwtAuthFilter jwtAuthFilter;
+
+    // Replaces the default bodyless 403 (re-dispatched to a secured /error and
+    // returned empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     UserDetailsService userDetailsService;
 
@@ -66,8 +88,27 @@ public class ApplicationSecurityConfig {
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
 
+    // AI Evaluation partner API (docs/AI_EVALUATION_PUBLIC_API.md 6.4-6.5).
+    @Autowired
+    private AssessmentApiKeyVerifier apiKeyVerifier;
+
+    @Autowired
+    private OpenApiProperties openApiProperties;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Partner API filters are built here and added to the chain only. They are NOT
+        // beans: Spring Boot registers every Filter bean on the servlet container for all
+        // paths, outside the security chain.
+        ApiKeyAuthFilter apiKeyAuthFilter = new ApiKeyAuthFilter(apiKeyVerifier, ApiKeyAuthFilter.Settings.builder()
+                .pathPrefixes(List.of(OpenApiPaths.OPEN_PREFIX))
+                .requiredKeyPathPrefixes(List.of(OpenApiPaths.PREFIX))
+                .exemptPaths(Set.of(OpenApiPaths.OPENAPI_JSON))
+                .requiredProduct(OpenApiPaths.PRODUCT)
+                .build());
+        OpenApiGateFilter openApiGateFilter = new OpenApiGateFilter(openApiProperties::isEnabled);
+        OpenApiAuthEntryPoint entryPoint = new OpenApiAuthEntryPoint(jsonAuthEntryPoint, jsonAuthEntryPoint);
+
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -80,13 +121,26 @@ public class ApplicationSecurityConfig {
                     for (String path : INTERNAL_PATHS) {
                         authz.requestMatchers(AntPathRequestMatcher.antMatcher(path)).authenticated();
                     }
+                    // Partner API: the OpenAPI document is public; everything else needs an
+                    // API key. Tested by type, never by authority string, so a dashboard JWT
+                    // (whatever roles or custom permissions it carries) is refused here.
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher(OpenApiPaths.OPENAPI_JSON)).permitAll();
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher(OpenApiPaths.ANT_PATTERN))
+                            .access((authentication, context) -> new AuthorizationDecision(
+                                    authentication.get() instanceof ApiKeyAuthentication));
                     authz.anyRequest().authenticated();
                 })
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                // Key auth runs before the JWT filter (spec 6.5); the kill switch before both.
+                .addFilterBefore(apiKeyAuthFilter, AssessmentJwtAuthFilter.class)
+                .addFilterBefore(openApiGateFilter, ApiKeyAuthFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(entryPoint)
+                        .accessDeniedHandler(entryPoint));
         return http.build();
     }
 

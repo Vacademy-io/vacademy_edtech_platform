@@ -1,0 +1,84 @@
+{
+    "dialog": {
+        "title": "निर्यात सेटिंग्स"
+    },
+    "sections": {
+        "layout": {
+            "title": "लेआउट सेटिंग्स",
+            "columnsPerPage": "प्रति पृष्ठ कॉलम",
+            "roughWork": {
+                "label": "रफ कार्य के लिए स्थान",
+                "none": "कोई नहीं",
+                "bottom": "नीचे"
+            },
+            "roughWorkSize": {
+                "label": "रफ कार्य स्थान का आकार",
+                "small": "छोटा (50mm)",
+                "medium": "मध्यम (100mm)",
+                "large": "बड़ा (150mm)"
+            },
+            "pagePadding": {
+                "label": "पृष्ठ पैडिंग",
+                "low": "कम (10mm)",
+                "medium": "मध्यम (20mm)",
+                "high": "अधिक (30mm)"
+            },
+            "fontSize": {
+                "label": "फ़ॉन्ट आकार",
+                "small": "छोटा (10pt)",
+                "medium": "मध्यम (12pt)",
+                "large": "बड़ा (14pt)"
+            },
+            "imageSize": {
+                "label": "छवि आकार",
+                "maintainAspectRatio": "छवि पहलू अनुपात बनाए रखें"
+            }
+        },
+        "display": {
+            "title": "प्रदर्शन सेटिंग्स",
+            "options": {
+                "showInstitutionLetterhead": "संस्थान लेटरहेड दिखाएं",
+                "showFirstPageInstructions": "पहले पृष्ठ पर निर्देश दिखाएं",
+                "showAdaptiveMarkingRules": "अनुकूली अंकन नियम दिखाएं - संपूर्ण मूल्यांकन",
+                "showSectionInstructions": "अनुभाग-वार निर्देश दिखाएं",
+                "showSectionDuration": "अनुभाग-वार अवधि दिखाएं",
+                "showMarksPerQuestion": "प्रति प्रश्न अंक दिखाएं",
+                "showAdaptiveMarkingRulesSection": "अनुकूली अंकन नियम दिखाएं - अनुभाग-वार",
+                "showCheckboxesBeforeOptions": "विकल्पों से पहले चेकबॉक्स दिखाएं",
+                "showPageNumbers": "पृष्ठ संख्या दिखाएं"
+            }
+        },
+        "paper": {
+            "title": "प्रश्न पत्र सेटिंग्स",
+            "questionPaperSets": "प्रश्न पत्र सेट बनाएं",
+            "includeQuestionSetCode": "प्रश्न सेट कोड शामिल करें",
+            "randomizeQuestions": "प्रश्नों को यादृच्छिक करें",
+            "randomizeOptions": "विकल्पों को यादृच्छिक करें"
+        },
+        "customFields": {
+            "title": "कस्टम फ़ील्ड सेटिंग्स",
+            "includeCustomInputFields": "कस्टम इनपुट फ़ील्ड शामिल करें",
+            "fieldTypePlaceholder": "फ़ील्ड प्रकार चुनें",
+            "fieldTypes": {
+                "blank": "खाली (डिफ़ॉल्ट)",
+                "blocks": "ब्लॉक",
+                "input": "इनपुट बॉक्स",
+                "checkbox": "चेकबॉक्स"
+            },
+            "newFieldPlaceholder": "नया फ़ील्ड लेबल दर्ज करें",
+            "addButton": "जोड़ें"
+        },
+        "advanced": {
+            "title": "उन्नत सेटिंग्स",
+            "answerSpacing": {
+                "label": "उत्तर स्थान",
+                "customSpacingButton": "कस्टम स्पेसिंग",
+                "description": "उत्तरों के लिए कस्टम स्थान कॉन्फ़िगर करें।"
+            }
+        }
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "save": "सहेजें"
+    }
+}

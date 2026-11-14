@@ -2,6 +2,9 @@ package vacademy.io.admin_core_service.features.level.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.group.service.GroupService;
@@ -17,6 +20,7 @@ import vacademy.io.admin_core_service.features.packages.repository.PackageSessio
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
 import vacademy.io.admin_core_service.features.session.repository.SessionRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.dto.LevelDTO;
 import vacademy.io.common.institute.entity.Group;
@@ -26,10 +30,15 @@ import vacademy.io.common.institute.entity.session.PackageSession;
 import vacademy.io.common.institute.entity.session.Session;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LevelService {
@@ -115,24 +124,130 @@ public class LevelService {
         return new LevelDTO(level);
     }
 
-    public String deleteLevels(List<String> levelIds, CustomUserDetails user) {
-        List<Level> levels = levelRepository.findAllById(levelIds);
+    /** Largest id list one delete request may carry. */
+    public static final int MAX_DELETE_IDS = 500;
 
-        for (Level level : levels) {
-            level.setStatus(LevelStatusEnum.DELETED.name());
+    /** Level and session rows every institute shares; nobody may delete them. */
+    private static final Set<String> SHARED_ROW_IDS = Set.of("DEFAULT", "INVITED");
+
+    /** Role names of a learner-side login; holding only these does not allow a delete. */
+    private static final Set<String> LEARNER_ROLE_NAMES = Set.of("STUDENT", "LEARNER", "PARENT", "GUARDIAN");
+
+    /**
+     * Marks DELETED the batches of the caller's institute that sit on the given levels, and the
+     * level row itself only when no other institute still uses it. The institute is the clientId
+     * header, and a batch is the institute's only when its course was linked to that institute
+     * first (a later link, which any institute can add, owns nothing). Every refusal is thrown
+     * before the first write.
+     */
+    @Transactional
+    public String deleteLevels(List<String> levelIds, String instituteId, CustomUserDetails user) {
+        String institute = requireDeleteCaller(instituteId, user, "Level");
+        List<String> ids = cleanDeleteIds(levelIds, "level");
+
+        List<PackageSession> packageSessions = packageSessionRepository.findByLevelIdsAndInstituteId(ids, institute);
+        Set<String> ownedLevelIds = new HashSet<>();
+        for (PackageSession packageSession : packageSessions) {
+            if (packageSession.getLevel() != null) {
+                ownedLevelIds.add(packageSession.getLevel().getId());
+            }
         }
+        requireAllOwned(ids, ownedLevelIds, institute, user, "Level");
+        List<String> usedElsewhere = packageSessionRepository.findLevelIdsUsedOutsideInstitute(ids, institute);
 
-        levelRepository.saveAll(levels); // Batch update
-        List<PackageSession>packageSessions = packageSessionRepository.findByLevelIds(levelIds);
-        List<String>packageSessionIds = new ArrayList<>();
+        List<String> packageSessionIds = new ArrayList<>();
         for (PackageSession packageSession : packageSessions) {
             packageSession.setStatus(PackageSessionStatusEnum.DELETED.name());
             packageSessionIds.add(packageSession.getId());
         }
         packageSessionRepository.saveAll(packageSessions);
+
+        List<String> retiredLevelIds = new ArrayList<>(ids);
+        if (usedElsewhere != null) {
+            retiredLevelIds.removeAll(usedElsewhere);
+        }
+        if (!retiredLevelIds.isEmpty()) {
+            List<Level> levels = levelRepository.findAllById(retiredLevelIds);
+            for (Level level : levels) {
+                level.setStatus(LevelStatusEnum.DELETED.name());
+            }
+            levelRepository.saveAll(levels);
+        }
+        log.info("Level delete: user={} institute={} levels={} batches={} levelRowsRetired={}",
+                user.getUserId(), institute, ids.size(), packageSessionIds.size(), retiredLevelIds.size());
+        // Last on purpose: this call is asynchronous and does not roll back with this method.
         learnerInvitationService.deleteLearnerInvitationBySourceAndSourceId(LearnerInvitationSourceTypeEnum.PACKAGE_SESSION.name(), packageSessionIds);
-        packageSessionRepository.updateStatusByLevelIds(LevelStatusEnum.DELETED.name(), levelIds);
         return "Levels deleted successfully";
+    }
+
+    /**
+     * Who may delete levels or sessions: a caller that sent the clientId header and holds, in that
+     * institute, at least one role other than the learner ones. The authorities on the principal
+     * are loaded for the clientId institute only, so a role (or the root flag) the caller has in
+     * another institute counts for nothing here. Returns the trimmed institute id.
+     */
+    public static String requireDeleteCaller(String instituteId, CustomUserDetails user, String what) {
+        if (user == null) {
+            throw new ForbiddenException("Access denied: sign in required");
+        }
+        if (!StringUtils.hasText(instituteId) || "null".equalsIgnoreCase(instituteId.trim())) {
+            log.warn("{} delete refused: no clientId header, user={}", what, user.getUserId());
+            throw new ForbiddenException("Access denied: clientId header required");
+        }
+        boolean staffRole = false;
+        Collection<? extends GrantedAuthority> authorities = user.getAuthorities();
+        if (authorities != null) {
+            for (GrantedAuthority authority : authorities) {
+                if (authority == null || !StringUtils.hasText(authority.getAuthority())) {
+                    continue;
+                }
+                if (!LEARNER_ROLE_NAMES.contains(authority.getAuthority().trim().toUpperCase())) {
+                    staffRole = true;
+                    break;
+                }
+            }
+        }
+        if (!staffRole) {
+            log.warn("{} delete refused: no staff role, user={} institute={}", what, user.getUserId(), instituteId.trim());
+            throw new ForbiddenException("Access denied: a staff role in this institute is required");
+        }
+        return instituteId.trim();
+    }
+
+    /** Trims and de-duplicates the ids; 400 for an empty or oversized list and for a shared row. */
+    public static List<String> cleanDeleteIds(List<String> rawIds, String what) {
+        if (rawIds == null || rawIds.isEmpty()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "At least one " + what + " id is required");
+        }
+        if (rawIds.size() > MAX_DELETE_IDS) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST,
+                    "Too many " + what + " ids in one request (maximum " + MAX_DELETE_IDS + ")");
+        }
+        LinkedHashSet<String> ids = new LinkedHashSet<>();
+        for (String rawId : rawIds) {
+            if (!StringUtils.hasText(rawId)) {
+                throw new VacademyException(HttpStatus.BAD_REQUEST, "A " + what + " id is empty");
+            }
+            String id = rawId.trim();
+            if (SHARED_ROW_IDS.contains(id.toUpperCase())) {
+                throw new VacademyException(HttpStatus.BAD_REQUEST,
+                        "The " + what + " " + id.toUpperCase() + " is shared by every institute and cannot be deleted");
+            }
+            ids.add(id);
+        }
+        return new ArrayList<>(ids);
+    }
+
+    /** 403 unless every requested id has at least one batch on a course that belongs to the institute. */
+    public static void requireAllOwned(List<String> ids, Set<String> ownedIds, String instituteId,
+                                       CustomUserDetails user, String what) {
+        for (String id : ids) {
+            if (!ownedIds.contains(id)) {
+                log.warn("{} delete refused: id not used by the institute, user={} institute={} requested={}",
+                        what, user.getUserId(), instituteId, ids.size());
+                throw new ForbiddenException("Access denied: " + what.toLowerCase() + " does not belong to this institute");
+            }
+        }
     }
 
     public List<LevelDTO> getLevelsByInstituteId(String instituteId) {

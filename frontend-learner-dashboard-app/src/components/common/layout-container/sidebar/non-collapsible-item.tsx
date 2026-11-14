@@ -3,11 +3,12 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { SidebarItemProps } from "../../../../types/layout-container-types";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { isNavRouteActive } from "./active-route";
 
-export const NonCollapsibleItem = ({ icon, title, to, onClick }: SidebarItemProps) => {
+export const NonCollapsibleItem = ({ icon, title, to, onClick, badgeCount, navRoutes = [] }: SidebarItemProps) => {
     const router = useRouter();
     const currentRoute = router.state.location.pathname;
-    const isActive = to ? currentRoute.includes(to) : false;
+    const isActive = isNavRouteActive(currentRoute, to, navRoutes);
 
     return (
         <SidebarMenuItem>
@@ -38,6 +39,17 @@ export const NonCollapsibleItem = ({ icon, title, to, onClick }: SidebarItemProp
                         className: "size-5 shrink-0"
                     })}
                     <span className="truncate">{title}</span>
+                    {!!badgeCount && badgeCount > 0 && (
+                        <span
+                            className={cn(
+                                "ms-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary-500 px-1.5 text-caption font-semibold tabular-nums text-white",
+                                // Collapsed icon rail: pin the count to the icon's corner.
+                                "group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:end-0 group-data-[collapsible=icon]:top-0"
+                            )}
+                        >
+                            {badgeCount > 99 ? "99+" : badgeCount}
+                        </span>
+                    )}
                 </Link>
             </SidebarMenuButton>
         </SidebarMenuItem>

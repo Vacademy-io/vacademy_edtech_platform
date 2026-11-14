@@ -17,8 +17,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from unittest.mock import MagicMock, patch
 
-# Make the AI-service modules importable.
-AI_SERVICE = Path("/Volumes/shreyash_ex/Vacademy/vacademy_platform/ai_service")
+# Make the AI-service modules importable — from THIS checkout. (A hard-coded
+# path to one machine's main checkout tested that copy, not the code under
+# review, whenever the suite ran from a worktree.)
+AI_SERVICE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(AI_SERVICE / "app/ai-video-gen-main"))
 sys.path.insert(0, str(AI_SERVICE))
 
@@ -314,11 +316,13 @@ def test_review_shot_flow():
     ok &= assert_eq(len(record["issues"]), 1, "1 issue")
     ok &= assert_eq(record["issues"][0]["code"], "TEXT_WRAP_BREAK", "code is TEXT_WRAP_BREAK")
     ok &= assert_eq(record["prompt_version"], PROMPT_VERSION, f"prompt_version is {PROMPT_VERSION}")
-    ok &= assert_eq(record["model"], "google/gemini-2.5-pro", "model is gemini-2.5-pro")
+    # No model passed → None: the client resolves the registry's video
+    # default (the GLM chain). There is no Gemini 2.5 Pro safety net any more.
+    ok &= assert_eq(record["model"], None, "model is None (registry default)")
     ok &= assert_true(record["cost_usd"] > 0, "cost_usd > 0")
     ok &= assert_true(record["error"] is None, "no error")
     ok &= assert_eq(len(captured["calls"]), 1, "1 LLM call (no auto-regen inside review_shot)")
-    ok &= assert_eq(captured["calls"][0]["model"], "google/gemini-2.5-pro", "Pro requested")
+    ok &= assert_eq(captured["calls"][0]["model"], None, "registry default requested")
     ok &= assert_true(
         "image_url" in captured["calls"][0]["user_content_types"],
         "user content has image_url parts (multimodal)",
@@ -352,6 +356,7 @@ def test_review_shot_flow():
     ok &= assert_true("unparseable" in record_junk["error"].lower(), "unparseable error message")
     ok &= assert_true(record_junk["raw"] == "lol the screenshots look fine to me", "raw preserved for debugging")
 
+    assert ok, "review_shot flow checks failed (see ✗ lines above)"
     return ok
 
 
@@ -453,9 +458,13 @@ def test_banner_messages():
                             f"RENDER_SERVER_URL is UNSET — every shot will skip silently."
                         )
                     else:
+                        # The banner names the model the reviewer will call
+                        # (stage row, else the registry default) — never a
+                        # hard-coded one.
+                        vr_model = "z-ai/glm-5.3-flash"
                         print(
                             f"   🔍 Vision review: ENABLED (tier={tier}, "
-                            f"model=google/gemini-2.5-pro, cap=${cap:.2f}/run, "
+                            f"model={vr_model}, cap=${cap:.2f}/run, "
                             f"target={url}, key={'set' if key_set else 'UNSET'})"
                         )
             output = buf.getvalue()
@@ -466,6 +475,7 @@ def test_banner_messages():
                     os.environ.pop(k, None)
                 else:
                     os.environ[k] = v
+    assert ok, "banner checks failed (see ✗ lines above)"
     return ok
 
 

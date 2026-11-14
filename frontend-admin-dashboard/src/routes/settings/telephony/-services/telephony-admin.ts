@@ -4,6 +4,7 @@ import {
     TELEPHONY_PROVIDERS,
     TELEPHONY_COUNSELLOR_ENDPOINTS,
     TELEPHONY_COUNSELLOR_ENDPOINT_BY_ID,
+    TELEPHONY_ENDPOINT_ELIGIBLE_USERS,
     TELEPHONY_NUMBERS,
     TELEPHONY_NUMBER_BY_ID,
     TELEPHONY_NUMBER_ATTACH,
@@ -39,6 +40,15 @@ export interface TelephonyCounsellorEndpoint {
     providerUserId?: string | null;
     did?: string | null;
     enabled?: boolean | null;
+}
+
+/** A person eligible to hold a provider extension (counsellor or admin). */
+export interface TelephonyEndpointUser {
+    id: string;
+    fullName: string;
+    email?: string | null;
+    /** Institute roles, uppercased — e.g. ["ADMIN"], ["COUNSELLOR"]. */
+    roles?: string[] | null;
 }
 
 export interface TelephonyConfigView {
@@ -163,6 +173,21 @@ export const upsertCounsellorEndpoint = async (
         input
     );
     return data;
+};
+
+/**
+ * The people an admin may map an extension to: the institute's counsellors AND
+ * its admins. Replaces the lead-counsellor picker on this card — that list is
+ * COUNSELLOR-role only and hierarchy-scoped, so an admin could never be given an
+ * extension even though they need one to call a learner from the LMS side-view.
+ */
+export const fetchEndpointEligibleUsers = async (
+    instituteId: string
+): Promise<TelephonyEndpointUser[]> => {
+    const { data } = await authenticatedAxiosInstance.get<TelephonyEndpointUser[]>(
+        TELEPHONY_ENDPOINT_ELIGIBLE_USERS(instituteId)
+    );
+    return data ?? [];
 };
 
 export const deleteCounsellorEndpoint = async (id: string): Promise<void> => {

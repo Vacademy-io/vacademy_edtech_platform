@@ -36,6 +36,9 @@ public class SuperAdminCallController {
     @Autowired
     private TtsCacheAnalyticsService ttsCache;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.telephony.core.AiAgentService aiAgentService;
+
     @GetMapping
     public ResponseEntity<SuperAdminPageResponse<SuperAdminCallDTO>> list(
             @RequestAttribute("user") CustomUserDetails user,
@@ -127,10 +130,31 @@ public class SuperAdminCallController {
             @RequestAttribute("user") CustomUserDetails user,
             @PathVariable String agentId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) Integer days) {
         SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(ttsCache.misses(agentId, Math.max(page, 0),
-                Math.min(Math.max(size, 1), 200)));
+                Math.min(Math.max(size, 1), 200), days == null ? null : Math.min(Math.max(days, 1), 90)));
+    }
+
+    /** Per-day hit rate and rupees saved for one agent, from its calls' diagnostics. */
+    @GetMapping("/tts-cache/agents/{agentId}/trend")
+    public ResponseEntity<List<TtsCacheDTOs.TrendDay>> ttsCacheTrend(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable String agentId,
+            @RequestParam(defaultValue = "14") int days) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return ResponseEntity.ok(ttsCache.trend(agentId, Math.min(Math.max(days, 1), 90)));
+    }
+
+    /** One spoken line split across several cache entries by punctuation or address words. */
+    @GetMapping("/tts-cache/agents/{agentId}/variants")
+    public ResponseEntity<List<TtsCacheDTOs.VariantGroup>> ttsCacheVariants(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable String agentId,
+            @RequestParam(defaultValue = "7") int days) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return ResponseEntity.ok(ttsCache.variants(agentId, Math.min(Math.max(days, 1), 90)));
     }
 
     /**
@@ -158,6 +182,36 @@ public class SuperAdminCallController {
         SuperAdminAuthUtil.requireSuperAdmin(user);
         return ResponseEntity.ok(ttsCache.queueFlush("FLUSH_AGENT", agentId, null,
                 dryRun, user.getUserId()));
+    }
+
+    /** Every AI agent and its speech-cache tier (OFF | FIXED | FULL), for the switch. */
+    @GetMapping("/tts-cache/agent-modes")
+    public ResponseEntity<List<TtsCacheDTOs.AgentMode>> ttsCacheAgentModes(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(required = false) String instituteId) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        return ResponseEntity.ok(ttsCache.agentModes(instituteId));
+    }
+
+    /** Set one agent's speech-cache tier; effective from its next call. */
+    @PutMapping("/tts-cache/agents/{agentId}/mode")
+    public ResponseEntity<?> ttsCacheSetMode(
+            @RequestAttribute("user") CustomUserDetails user,
+            @PathVariable String agentId,
+            @RequestBody TtsCacheDTOs.ModeRequest body) {
+        SuperAdminAuthUtil.requireSuperAdmin(user);
+        try {
+            TtsCacheDTOs.ModeChange change = ttsCache.setMode(agentId,
+                    body == null ? null : body.getMode(), user.getUserId());
+            // Switching a tier on should not mean waiting for the cache to learn:
+            // pre-render the opening (and, on FULL, the script's quoted lines) now.
+            if (!"OFF".equals(change.getSpeechCacheMode())) {
+                aiAgentService.warmSpeechCache(agentId);
+            }
+            return ResponseEntity.ok(change);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /** Every flush ever queued, and what it did. */

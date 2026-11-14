@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "createFailed": "बनाना विफल हुआ ({{status}}): {{detail}}",
+        "deleteFailed": "हटाना विफल हुआ ({{status}})"
+    }
+}

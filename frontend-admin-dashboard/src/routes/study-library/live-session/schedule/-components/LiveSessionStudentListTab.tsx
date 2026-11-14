@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { GetFilterData } from '@/routes/manage-students/students-list/-constants/all-filters';
 import { MyTable, TableData } from '@/components/design-system/table';
@@ -18,7 +19,7 @@ import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { StudentListHeader } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-list-header';
 import { StudentFilters } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-filters';
 import { BulkActions } from '@/routes/manage-students/students-list/-components/students-list/bulk-actions';
-import { myAssessmentColumns } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/assessment-columns';
+import { buildAssessmentColumns } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/assessment-columns';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { addParticipantsSchema } from '../-schema/schema';
@@ -34,6 +35,8 @@ export const getCurrentSession = (): string => {
 };
 
 export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormData> }) => {
+    const { t } = useTranslation('assessmentColumns');
+    const assessmentColumns = useMemo(() => buildAssessmentColumns(t), [t]);
     const { isError, isLoading } = useSuspenseQuery(useInstituteQuery());
     const { instituteDetails } = useInstituteDetailsStore();
     const sessions =
@@ -41,7 +44,8 @@ export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormDa
             id: session.id,
             name: session.session_name,
         })) || [];
-    const filters: FilterConfig[] = GetFilterData(instituteDetails, getCurrentSession());
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
+    const filters: FilterConfig[] = GetFilterData(tAllFilters, instituteDetails, getCurrentSession());
     const [isAssessment] = useState(true);
     const { setValue } = form;
 
@@ -239,7 +243,7 @@ export const LiveSessionStudentListTab = ({ form }: { form: UseFormReturn<FormDa
                 <div className="max-w-full">
                     <MyTable<StudentTable>
                         data={studentTableFilteredData as TableData<StudentTable>}
-                        columns={isAssessment ? myAssessmentColumns : myColumns}
+                        columns={isAssessment ? assessmentColumns : myColumns}
                         isLoading={loadingData}
                         error={loadingError}
                         onSort={handleSort}

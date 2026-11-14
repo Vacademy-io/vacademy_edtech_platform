@@ -1,0 +1,10 @@
+{
+    "conversionFailed": "(रूपांतरण विफल — दस्तावेज़ पार्स नहीं किया जा सका)",
+    "formatting": {
+        "textColour": "टेक्स्ट रंग",
+        "backgroundColour": "बैकग्राउंड / हाइलाइट रंग",
+        "textAlignment": "टेक्स्ट अलाइनमेंट",
+        "customFontSizes": "कस्टम फ़ॉन्ट साइज़",
+        "highlightUnderlineStrikethrough": "हाइलाइट / अंडरलाइन / स्ट्राइकथ्रू"
+    }
+}

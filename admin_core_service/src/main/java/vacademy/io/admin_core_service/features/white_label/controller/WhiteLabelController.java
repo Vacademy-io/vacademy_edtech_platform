@@ -57,4 +57,34 @@ public class WhiteLabelController {
         WhiteLabelStatusResponse response = whiteLabelService.getStatus(user, instituteId);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Returns the institute's custom live-class host, or null when it serves live
+     * classes from the platform default domain.
+     */
+    @GetMapping("/live-session-domain")
+    public ResponseEntity<java.util.Map<String, String>> getLiveSessionDomain(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("instituteId") String instituteId) {
+
+        return ResponseEntity.ok(whiteLabelService.getLiveSessionDomain(user, instituteId));
+    }
+
+    /**
+     * Sets the institute's custom live-class host, e.g.
+     * {@code {"domain": "meet.zoeedtech.com"}}. Pass null or an empty string to
+     * clear it and fall back to the platform default.
+     *
+     * The host must also resolve to the primary BBB pool server and be covered by
+     * that server's certificate — this endpoint only records the intent.
+     */
+    @PutMapping("/live-session-domain")
+    public ResponseEntity<java.util.Map<String, String>> setLiveSessionDomain(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody java.util.Map<String, String> body) {
+
+        String domain = body == null ? null : body.get("domain");
+        return ResponseEntity.ok(whiteLabelService.setLiveSessionDomain(user, instituteId, domain));
+    }
 }

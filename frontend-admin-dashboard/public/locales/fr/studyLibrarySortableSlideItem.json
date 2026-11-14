@@ -1,0 +1,64 @@
+{
+    "labels": {
+        "videoScript": "Script vidéo",
+        "mermaidDiagramCode": "Code du diagramme Mermaid",
+        "codeSnippet": "Extrait de code",
+        "diagramPreview": "Aperçu du diagramme",
+        "mermaidCode": "Code Mermaid",
+        "video": "Vidéo",
+        "code": "Code",
+        "output": "Sortie",
+        "aiVideo": "Vidéo IA",
+        "aiGeneratedVideo": "Vidéo générée par IA",
+        "quizContent": "Contenu du quiz",
+        "content": "Contenu",
+        "assignment": "Devoir",
+        "aiPrompt": "Invite IA"
+    },
+    "actions": {
+        "regenerate": "Régénérer",
+        "regenerateVideoScript": "Régénérer le script vidéo",
+        "regenerateDiagram": "Régénérer le diagramme",
+        "regenerateCode": "Régénérer le code",
+        "regenerateContent": "Régénérer le contenu",
+        "regenerateQuiz": "Régénérer le quiz",
+        "regenerateAssignment": "Régénérer le devoir",
+        "regenerateSection": "Régénérer {{label}}",
+        "runCode": "Exécuter le code",
+        "running": "Exécution en cours...",
+        "showOutput": "Afficher la sortie",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "watchOnYoutube": "▶ Regarder sur YouTube",
+        "hideAiPrompt": "Masquer l'invite IA",
+        "viewAiPrompt": "Voir l'invite IA",
+        "hideContent": "Masquer le contenu",
+        "viewContent": "Voir le contenu"
+    },
+    "status": {
+        "generatingDocument": "Génération du document...",
+        "generatingQuiz": "Génération du quiz...",
+        "generatingVideo": "Génération de la vidéo...",
+        "generatingContent": "Génération du contenu...",
+        "generatingVideoProgress": "Génération de la vidéo... {{progress}} %",
+        "noContentAvailable": "Aucun contenu disponible pour le moment",
+        "noVideoAvailable": "Aucune vidéo disponible",
+        "videoNotAvailableYet": "Vidéo pas encore disponible",
+        "loadingPythonEnv": "Chargement de l'environnement Python (cela peut prendre quelques secondes lors du premier lancement)...",
+        "noOutputYet": "Aucune sortie pour le moment. Cliquez sur « Exécuter le code » pour lancer l'exécution.",
+        "failedToLoadScript": "Échec du chargement du script",
+        "mermaidSectionEmpty": "⚠️ La section Mermaid ne contient aucun contenu",
+        "youtubeVideoAvailable": "Vidéo YouTube disponible",
+        "noVideoUrlFound": "Aucune URL vidéo trouvée",
+        "checkContentForYoutubeLinks": "Veuillez vérifier les liens YouTube dans le contenu"
+    },
+    "alt": {
+        "videoThumbnail": "Miniature de la vidéo"
+    },
+    "quizNote": {
+        "label": "Remarque :",
+        "body": "Formatez les questions sous la forme « Question 1 », « Question 2 », etc. avec des listes numérotées pour les options. Indiquez la bonne réponse sous la liste des options sous la forme « Bonne réponse : [texte de l'option] »."
+    }
+}

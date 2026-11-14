@@ -1,0 +1,108 @@
+{
+    "pageTitle": "إنشاء ورقة أسئلة",
+    "fallbackKnowledgeBase": "قاعدة المعرفة",
+    "steps": {
+        "chooseMaterial": "اختيار المادة",
+        "planPaper": "تخطيط الورقة",
+        "reviewQuestions": "مراجعة الأسئلة"
+    },
+    "errors": {
+        "notEnoughCredits": "الرصيد غير كافٍ.",
+        "reopenFailed": "تعذّر إعادة فتح هذه الورقة",
+        "rebuildTopicMapFailed": "تعذّر إعادة بناء خريطة الموضوعات",
+        "planFailed": "تعذّر تخطيط الورقة",
+        "startGenerationFailed": "تعذّر بدء التوليد",
+        "generationFailed": "فشل التوليد",
+        "sectionMissing": "قسم هذا السؤال لم يعد موجودًا في الخطة.",
+        "rewriteFailed": "تعذّر إعادة كتابة هذا السؤال",
+        "saveFailed": "تعذّر حفظ الورقة"
+    },
+    "toasts": {
+        "topicMapRebuilt": "تم إعادة بناء خريطة الموضوعات",
+        "questionRewritten": "تمت إعادة كتابة السؤال",
+        "savedToQuestionBank": "تم الحفظ في بنك الأسئلة"
+    },
+    "resumingMessage": "جارٍ إعادة فتح ورقتك…",
+    "scope": {
+        "materialHeading": "بم يجب أن تُغطّى الورقة؟",
+        "materialDescription": "الموضوعات الموجودة في كل ما تحتويه قاعدة المعرفة هذه. اختر موضوعًا لتضمينه بالكامل، أو افتحه لاختيار الموضوعات الفرعية. اترك كل شيء غير محدد للاستفادة من قاعدة المعرفة بأكملها.",
+        "rebuildButton": "إعادة البناء",
+        "rebuildingButton": "جارٍ إعادة البناء…",
+        "noTopicMap": "لا توجد خريطة موضوعات بعد. يتم بناؤها تلقائيًا بمجرد الانتهاء من معالجة أحد المستندات.",
+        "buildTopicMapButton": "بناء خريطة الموضوعات",
+        "buildingButton": "جارٍ البناء…",
+        "paperKindHeading": "ما نوع الورقة؟",
+        "numQuestionsLabel": "عدد الأسئلة",
+        "numQuestionsPlaceholder": "20",
+        "durationLabel": "المدة (بالدقائق)",
+        "durationPlaceholder": "90",
+        "difficultyLabel": "المستوى العام للصعوبة",
+        "difficulty": {
+            "easy": "سهل",
+            "medium": "متوسط",
+            "hard": "صعب",
+            "mixed": "متنوع"
+        },
+        "gradeLabel": "الصف أو المستوى",
+        "gradePlaceholder": "مثال: الصف التاسع",
+        "examStyleLabel": "اتباع نمط معيّن (اختياري)",
+        "examStylePlaceholder": "مثال: نمط مجلس CBSE",
+        "planPaperButton": "تخطيط الورقة",
+        "planningButton": "جارٍ التخطيط…",
+        "planHint": "سترى الخطة كاملة ويمكنك تعديلها قبل كتابة أي سؤال."
+    },
+    "blueprint": {
+        "questionsCount_zero": "{{count}} سؤال",
+        "questionsCount_one": "سؤال واحد",
+        "questionsCount_two": "سؤالان",
+        "questionsCount_few": "{{count}} أسئلة",
+        "questionsCount_many": "{{count}} سؤالاً",
+        "questionsCount_other": "{{count}} سؤال",
+        "marksCount_zero": "{{formatted}} درجة",
+        "marksCount_one": "درجة واحدة",
+        "marksCount_two": "درجتان",
+        "marksCount_few": "{{formatted}} درجات",
+        "marksCount_many": "{{formatted}} درجة",
+        "marksCount_other": "{{formatted}} درجة",
+        "durationSuffix": " · {{minutes}} دقيقة",
+        "changeMaterialButton": "تغيير المادة",
+        "generateButton_zero": "توليد {{count}} سؤال",
+        "generateButton_one": "توليد سؤال واحد",
+        "generateButton_two": "توليد سؤالين",
+        "generateButton_few": "توليد {{count}} أسئلة",
+        "generateButton_many": "توليد {{count}} سؤالاً",
+        "generateButton_other": "توليد {{count}} سؤال",
+        "generateCreditsSuffix": " · ≈{{credits}} نقطة رصيد",
+        "insufficientCredits": "يتطلب هذا نحو {{needed}} نقطة رصيد، لكن المتوفر فقط {{available}}.",
+        "askForChangeHeading": "طلب تعديل",
+        "suggestions": {
+            "numericals": "أضِف قسمًا من المسائل الحسابية",
+            "harderSectionB": "اجعل القسم ب أصعب",
+            "moreApplicationBased": "المزيد من الأسئلة التطبيقية"
+        },
+        "refinePlaceholder": "مثال: احذف الأسئلة المقالية الطويلة وأضِف 5 أسئلة اختيار من متعدد من الفصل 2",
+        "updatePlanButton": "تحديث الخطة",
+        "updatingButton": "جارٍ التحديث…"
+    },
+    "generating": {
+        "writingHeading_zero": "كتابة {{count}} سؤال من مادتك",
+        "writingHeading_one": "كتابة سؤال واحد من مادتك",
+        "writingHeading_two": "كتابة سؤالين من مادتك",
+        "writingHeading_few": "كتابة {{count}} أسئلة من مادتك",
+        "writingHeading_many": "كتابة {{count}} سؤالاً من مادتك",
+        "writingHeading_other": "كتابة {{count}} سؤال من مادتك",
+        "hint": "يستغرق هذا عادةً بضع دقائق. يمكنك مغادرة هذه الصفحة — ستستمر الورقة في التوليد وستكون بانتظارك في مسودات بنك الأسئلة."
+    },
+    "review": {
+        "deliveredCount": "تمت كتابة {{delivered}} من أصل {{planned}} سؤالًا",
+        "needFixing_zero": "{{count}} بحاجة إلى إصلاح",
+        "needFixing_one": "سؤال واحد بحاجة إلى إصلاح",
+        "needFixing_two": "سؤالان بحاجة إلى إصلاح",
+        "needFixing_few": "{{count}} أسئلة بحاجة إلى إصلاح",
+        "needFixing_many": "{{count}} سؤالاً بحاجة إلى إصلاح",
+        "needFixing_other": "{{count}} بحاجة إلى إصلاح",
+        "allChecksPassed": "اجتازت جميع الفحوصات",
+        "saveButton": "حفظ في بنك الأسئلة",
+        "savingButton": "جارٍ الحفظ…"
+    }
+}

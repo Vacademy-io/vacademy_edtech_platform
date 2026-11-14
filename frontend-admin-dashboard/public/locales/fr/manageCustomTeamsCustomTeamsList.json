@@ -1,0 +1,48 @@
+{
+    "tabs": {
+        "active": "Actifs",
+        "invited": "Invités"
+    },
+    "addMember": "Ajouter un membre",
+    "search": {
+        "ariaLabel": "Rechercher des membres",
+        "placeholder": "Rechercher par nom, e-mail ou téléphone",
+        "clearAriaLabel": "Effacer la recherche"
+    },
+    "filters": {
+        "roleLabel": "Rôle",
+        "rolePlaceholder": "Rechercher un rôle…",
+        "summary_one": "{{filtered}} sur {{count}} membre",
+        "summary_many": "{{filtered}} sur {{count}} membre",
+        "summary_other": "{{filtered}} sur {{count}} membres",
+        "chipSearchLabel": "Recherche",
+        "chipRoleLabel": "Rôle",
+        "clearAll": "Tout effacer"
+    },
+    "table": {
+        "member": "Membre",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "roles": "Rôles",
+        "status": "Statut",
+        "pendingDues": "Soldes dus",
+        "actions": "Actions"
+    },
+    "empty": {
+        "noMatch": "Aucun membre ne correspond à vos filtres.",
+        "none": "Aucun membre trouvé."
+    },
+    "dues": {
+        "pendingCount_one": "{{count}} en attente",
+        "pendingCount_many": "{{count}} en attente",
+        "pendingCount_other": "{{count}} en attente"
+    },
+    "actions": {
+        "removeFrom": "Retirer de {{org}}"
+    },
+    "toast": {
+        "removeScheduled": "Membre programmé pour être retiré — l'accès continue jusqu'à la date choisie",
+        "removed": "Membre retiré de {{org}}",
+        "removeFailed": "Échec du retrait du membre"
+    }
+}

@@ -11,7 +11,14 @@ export const useStudentTable = (
     onFiltersUpdate: (newFilters: StudentFilterRequest) => void,
     package_session_id?: string[] | null
 ) => {
-    const [page, setPage] = useState(0);
+    // The page is remembered together with the filters it was picked for. When a search,
+    // filter, sort or session change produces a different filter set, the page falls back
+    // to 0 in the same render -- otherwise searching from page 3 asked the backend for
+    // page 3 of the search results, which is usually empty.
+    const [pageState, setPageState] = useState<{ filtersKey: string; page: number }>({
+        filtersKey: '',
+        page: 0,
+    });
     const pageSize = 10;
     const [sortColumns, setSortColumns] = useState<Record<string, string>>({});
     const { selectedStudent, setSelectedStudent, setLearnerList } = useStudentSidebar();
@@ -32,6 +39,9 @@ export const useStudentTable = (
             package_session_ids: package_session_id,
         };
     }
+
+    const filtersKey = JSON.stringify(localAppliedFilters);
+    const page = pageState.filtersKey === filtersKey ? pageState.page : 0;
 
     const {
         data: studentTableData,
@@ -75,7 +85,7 @@ export const useStudentTable = (
     };
 
     const handlePageChange = async (newPage: number) => {
-        setPage(newPage);
+        setPageState({ filtersKey, page: newPage });
         // No need to call refetch() - changing page will change the queryKey
         // which automatically triggers a new fetch
     };
@@ -98,7 +108,7 @@ export const useStudentTable = (
         // localAppliedFilters is derived from appliedFilters each render; depending on the
         // serialised form keeps this stable without re-creating on every unrelated render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [totalElements, JSON.stringify(localAppliedFilters)]);
+    }, [totalElements, filtersKey]);
 
     return {
         studentTableData,

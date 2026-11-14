@@ -1,0 +1,270 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveCard": "Save Card"
+  },
+  "changePassword": {
+    "checkingPermissions": "Checking permissions..."
+  },
+  "progressStats": {
+    "title": "Progress Stats",
+    "loading": "Loading...",
+    "empty": "No stats available.",
+    "strengths": "Strengths",
+    "weaknesses": "Weaknesses",
+    "showLess": "Show Less",
+    "viewMore": "View More ({{count}})"
+  },
+  "badgesRank": {
+    "title": "Badges & Rank",
+    "viewAll": "View all",
+    "badgesEarned_one": "{{count}} badge earned",
+    "badgesEarned_other": "{{count}} badges earned",
+    "bestRank": "best rank",
+    "instituteRank": "institute rank"
+  },
+  "accountDetails": {
+    "validation": {
+      "usernameMin": "Username must be at least 3 characters",
+      "usernameMax": "Username must be less than 50 characters",
+      "usernameNoSpaces": "Username cannot contain spaces",
+      "passwordMin": "New password must be at least 6 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsDontMatch": "Passwords don't match"
+    },
+    "toast": {
+      "loadUserError": "Failed to load user details",
+      "userIdMissing": "User ID not found. Please try again.",
+      "updateSuccess": "Account details updated successfully!",
+      "usernameExists": "Username already exists. Please choose a different username.",
+      "updateError": "Failed to update account details. Please try again."
+    },
+    "header": "Account Details",
+    "usernameSection": "Username",
+    "usernameLabel": "Username*",
+    "usernamePlaceholder": "Enter your username",
+    "currentUsername": "Current: {{username}}",
+    "passwordSection": "Change Password",
+    "newPasswordLabel": "New Password*",
+    "newPasswordPlaceholder": "Enter your new password",
+    "confirmPasswordLabel": "Confirm New Password*",
+    "confirmPasswordPlaceholder": "Confirm your new password",
+    "passwordMinCharacters": "At least 6 characters",
+    "passwordsMatch": "Passwords match",
+    "updating": "Updating...",
+    "updateDetails": "Update Details"
+  },
+  "sessionExpiry": {
+    "accessDays": "Access Days ({{count}})"
+  },
+  "profileEdit": {
+    "header": "Edit Profile",
+    "profileImageAlt": "Profile",
+    "allowedFileTypes": "Allowed *.jpeg, *.jpg, *.png, *.gif",
+    "uploadNew": "Upload New",
+    "removePhoto": "Remove Photo",
+    "sections": {
+      "generalDetails": "General Details",
+      "contactInformation": "Contact Information",
+      "locationDetails": "Location Details",
+      "guardianDetails": "Guardian Details"
+    },
+    "fields": {
+      "fullName": "Full Name*",
+      "fullNamePlaceholder": "Enter your full name",
+      "gender": "Gender*",
+      "genderPlaceholder": "Select gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
+      "instituteName": "College/School Name",
+      "instituteNamePlaceholder": "Enter institute name",
+      "mobileNumber": "Mobile Number*",
+      "mobileNumberPlaceholder": "Enter mobile number",
+      "email": "Email*",
+      "emailPlaceholder": "Enter email address",
+      "country": "Country",
+      "countryPlaceholder": "Enter country",
+      "addressLine": "Address Line 1",
+      "addressLinePlaceholder": "Enter address",
+      "city": "City/Village",
+      "state": "State",
+      "pincode": "Pincode",
+      "fatherName": "Father's Name",
+      "motherName": "Mother's Name",
+      "guardianEmail": "Guardian's Email",
+      "guardianMobile": "Guardian's Mobile"
+    },
+    "saveChanges": "Save Changes"
+  },
+  "enrollmentExpiry": {
+    "loading": "Loading your enrollments...",
+    "error": "Could not load enrollment expiry details.",
+    "empty": "You are not enrolled in any {{courses}} yet.",
+    "enrolledFallbackTitle": "Enrolled {{course}}",
+    "expired": "Expired",
+    "expiresToday": "Expires today",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "noExpiry": "No expiry"
+  },
+  "billingDetailsForm": {
+    "validation": {
+      "nameRequired": "Name is required",
+      "invalidEmail": "Enter a valid email"
+    },
+    "labels": {
+      "billingName": "Billing Name",
+      "billingEmail": "Billing Email",
+      "address": "Address",
+      "city": "City",
+      "state": "State",
+      "postalCode": "Postal Code",
+      "country": "Country"
+    },
+    "placeholders": {
+      "billingName": "Name on account",
+      "billingEmail": "billing@email.com",
+      "address": "Street address",
+      "country": "e.g. AU"
+    },
+    "toast": {
+      "success": "Billing details updated",
+      "error": "Failed to update billing details. Please try again."
+    },
+    "saveBillingDetails": "Save Billing Details"
+  },
+  "paymentBillingSection": {
+    "title": "Payment & Billing",
+    "subscriptionsTitle": "Subscriptions & Autopay",
+    "membershipTitle": "Membership & Access",
+    "loadingPayment": "Loading payment details...",
+    "unavailable": "Payment details are unavailable right now. Please try again later.",
+    "reason": {
+      "noCustomer": "No saved payment method on file yet. It will appear here after your first card payment.",
+      "gatewayNotConfigured": "Online payments are not configured for your institute.",
+      "managedAtCheckout": "Your payment method is managed at checkout and cannot be changed here."
+    },
+    "noCardOnFile": "No card on file",
+    "defaultCardBrand": "Card",
+    "expires": "Expires {{month}}/{{year}}",
+    "usedForRenewals": "Used for subscription renewals",
+    "updateCard": "Update Card",
+    "addCard": "Add Card",
+    "billingDetailsLabel": "Billing Details"
+  },
+  "subscriptionMandate": {
+    "loading": "Loading subscriptions...",
+    "error": "Subscriptions are unavailable right now. Please try again later.",
+    "empty": "You have no active auto-renewing subscriptions.",
+    "defaultPlanName": "Subscription",
+    "trial": "Trial",
+    "autopayOff": "Autopay off",
+    "autoRenewsOn": "Auto-renews on {{date}}",
+    "accessUntil": "Access until {{date}}",
+    "recurringSubscription": "Recurring subscription",
+    "cancelAutopay": "Cancel autopay",
+    "toast": {
+      "cancelSuccessTitle": "Autopay cancelled",
+      "cancelSuccessDescription": "You keep access until the end of your current period.",
+      "cancelErrorTitle": "Couldn't cancel autopay",
+      "cancelErrorDescription": "Please try again in a moment.",
+      "planChangeOrderFailed": "We couldn't create the payment order.",
+      "planChangeFailedTitle": "Couldn't change the plan",
+      "planChangeFailedDescription": "Please try again in a moment.",
+      "planChangePaidTitle": "Payment received",
+      "planChangePaidDescription": "Your new plan will be active shortly."
+    },
+    "dialog": {
+      "title": "Cancel autopay?",
+      "descriptionPrefix": "Auto-renewal for",
+      "descriptionSuffix": "will stop. You'll keep access until {{endDate}}, and won't be charged again.",
+      "defaultPlanName": "this subscription",
+      "defaultEndDate": "the end of your current period",
+      "keepAutopay": "Keep autopay",
+      "cancelling": "Cancelling..."
+    },
+    "changePlan": "Change plan",
+    "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+    "planChangeCancelScheduled": "Cancel this change",
+    "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+    "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+    "planChangeCompletePayment": "Complete payment",
+    "planChangeDiscard": "Discard this change"
+  },
+  "cardUpdate": {
+    "success": "Your card has been updated",
+    "genericError": "Failed to update card. Please try again.",
+    "stripe": {
+      "formNotReady": "Payment form is not ready. Please refresh the page.",
+      "cardFormNotFound": "Card form not found. Please refresh the page.",
+      "verificationFailed": "Card verification failed",
+      "verificationRetry": "Card could not be verified. Please try again.",
+      "note": "Your new card replaces the one used for subscription renewals. You will not be charged now."
+    },
+    "eway": {
+      "incomplete": "Please complete the card details first"
+    }
+  },
+  "onboarding": {
+    "title": "Onboarding",
+    "subtitle": "Complete the steps below to finish your onboarding.",
+    "loadingStatus": "Loading your onboarding status...",
+    "loadError": "We couldn't load your onboarding status. Please try again.",
+    "retry": "Retry",
+    "empty": "Nothing to complete right now.",
+    "onboardingFor": "Onboarding for {{name}}",
+    "flowComplete": "This onboarding flow is complete. Nothing else to do here.",
+    "handledByAdmin": "“{{stepName}}” is being handled by your school {{admin}}",
+    "handledByAdminHint": "You don't need to do anything here — you'll be notified once it's done.",
+    "noActionNeeded": "No action needed from you right now for this step.",
+    "progress": "Progress"
+  },
+  "onboardingProgress": {
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "skipped": "Skipped"
+    },
+    "view": "View"
+  },
+  "onboardingStepForm": {
+    "subtitle": "Please fill in the details below to continue.",
+    "loadingForm": "Loading form...",
+    "loadError": "Couldn't load this step's form. Please try again later.",
+    "noFieldsConfigured": "No fields are configured for this step.",
+    "markAsComplete": "Mark as complete",
+    "submitting": "Submitting...",
+    "submit": "Submit",
+    "toast": {
+      "submittedTitle": "Step submitted",
+      "submittedDescription": "{{stepName}} has been recorded.",
+      "errorTitle": "Couldn't submit",
+      "errorFallback": "Something went wrong while submitting this step. Please try again."
+    },
+    "defaultFieldLabel": "Field",
+    "defaultFieldPlaceholder": "value",
+    "notFilledIn": "Not filled in",
+    "enterPlaceholder": "Enter {{field}}",
+    "validation": {
+      "fieldRequired": "{{field}} is required",
+      "fieldRequiredDefaultField": "This field"
+    }
+  },
+  "submittedFormDialog": {
+    "loading": "Loading submitted details...",
+    "error": "Couldn't load what was submitted for this step. Please try again later.",
+    "empty": "This step had no fields to fill in — it was just marked as complete.",
+    "emptyValue": "—"
+  },
+  "onboardingDetails": {
+    "title": "Details you provided",
+    "loading": "Loading your details..."
+  },
+  "fieldValue": {
+    "yes": "Yes",
+    "no": "No"
+  }
+}

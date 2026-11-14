@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { fetchInstituteDashboardUsers } from '../-services/dashboard-services';
 
 interface InstituteUserContent {
@@ -16,6 +17,8 @@ interface InstituteUserContent {
  * have batch/subject FSPSSM rows yet.
  */
 export const useInstituteTeachers = (instituteId: string | undefined) => {
+    const { t } = useTranslation('dashboardUseInstituteTeachers');
+
     const query = useQuery({
         queryKey: ['INSTITUTE_TEACHERS', instituteId],
         queryFn: () =>
@@ -36,9 +39,9 @@ export const useInstituteTeachers = (instituteId: string | undefined) => {
         const content = (query.data?.content ?? []) as InstituteUserContent[];
         return content.map((user) => ({
             id: user.id,
-            name: user.full_name || user.username || user.email || 'Unnamed',
+            name: user.full_name || user.username || user.email || t('unnamed'),
         }));
-    }, [query.data?.content]);
+    }, [query.data?.content, t]);
 
     return { teachers, ...query };
 };

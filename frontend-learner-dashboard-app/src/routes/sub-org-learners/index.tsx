@@ -8,6 +8,9 @@ import { urlInstituteDetails } from '@/constants/urls';
 import { checkAdminAccess, AdminMappings } from '@/services/sub-organization-learner-management';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { RoleTerms, SystemTerms } from '@/types/naming-settings';
 import { SubOrgLearnersComponent } from './-components/SubOrgLearnersComponent';
 
 export const Route = createFileRoute('/sub-org-learners/')({
@@ -19,6 +22,8 @@ export const Route = createFileRoute('/sub-org-learners/')({
 });
 
 function SubOrgLearnersPage() {
+  const { t } = useTranslation('registrationB');
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
   const { setNavHeading } = useNavHeadingStore();
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [adminMappings, setAdminMappings] = useState<AdminMappings[]>([]);
@@ -27,8 +32,8 @@ function SubOrgLearnersPage() {
   const hasCheckedAccess = useRef(false);
 
   useEffect(() => {
-    setNavHeading('Practise Member Management');
-  }, [setNavHeading]);
+    setNavHeading(t('subOrgLearners.page.navHeading'));
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -39,7 +44,7 @@ function SubOrgLearnersPage() {
         const userId = await getUserId();
 
         if (!userId) {
-          toast.error('User not authenticated');
+          toast.error(t('subOrgLearners.page.toast.notAuthenticated'));
           setHasAccess(false);
           setIsLoading(false);
           return;
@@ -48,7 +53,7 @@ function SubOrgLearnersPage() {
         // Get current user's institute ID
         const currentInstituteId = await getInstituteId();
         if (!currentInstituteId) {
-          toast.error('Institute ID not found');
+          toast.error(t('subOrgLearners.page.toast.instituteNotFound'));
           setHasAccess(false);
           setIsLoading(false);
           return;
@@ -82,7 +87,7 @@ function SubOrgLearnersPage() {
         setHasAccess(true);
       } catch (error) {
         console.error('Error checking admin access:', error);
-        toast.error('Failed to check access permissions');
+        toast.error(t('subOrgLearners.page.toast.accessCheckFailed'));
         setHasAccess(false);
       } finally {
         setIsLoading(false);
@@ -95,9 +100,11 @@ function SubOrgLearnersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking permissions...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="text-gray-600">
+            {t('subOrgLearners.page.checkingPermissions')}
+          </p>
         </div>
       </div>
     );
@@ -112,9 +119,11 @@ function SubOrgLearnersPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t('subOrgLearners.page.accessDeniedTitle')}
+          </h2>
           <p className="text-gray-600">
-            You don't have the required permissions to access this page. Please contact your administrator.
+            {t('subOrgLearners.page.accessDeniedDescription', { admin })}
           </p>
         </div>
       </div>

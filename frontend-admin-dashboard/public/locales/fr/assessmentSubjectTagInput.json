@@ -1,0 +1,7 @@
+{
+    "placeholder": "Ajouter une étiquette de sujet/thème",
+    "removeTag": "Supprimer {{tag}}",
+    "noTagsFound": "Aucune étiquette trouvée.",
+    "createTag": "Créer « {{value}} »",
+    "existingTags": "Étiquettes existantes"
+}

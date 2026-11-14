@@ -14,6 +14,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     CheckCircle,
     Circle,
@@ -49,7 +51,7 @@ import {
     fetchOnboardingSideView,
     fetchOnboardingSteps,
     fetchOnboardingFlows,
-    fetchStepFields,
+    fetchStepInstanceFields,
     fetchSubmittedFieldValues,
     completeStepInstance,
     saveStepInstanceProgress,
@@ -60,10 +62,20 @@ import {
     onboardingSideViewKey,
     onboardingStepsKey,
     onboardingFlowsKey,
+    onboardingStepInstanceFieldsKey,
     type OnboardingInstanceDTO,
     type OnboardingStepInstanceDTO,
     type OnboardingStepDTO,
 } from '@/routes/audience-manager/onboarding/-services/onboarding-service';
+import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
+import { CustomFieldValueDisplay } from '@/components/common/custom-fields/CustomFieldValueDisplay';
+import { parseFieldOptions } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
+import { configJsonToFullConfig } from '@/services/custom-field-settings';
+
+/** True for an HTTP 403 — "your role has no onboarding access", distinct from a real failure. */
+function isForbidden(error: unknown): boolean {
+    return (error as { response?: { status?: number } } | null)?.response?.status === 403;
+}
 
 interface StudentOnboardingProfileProps {
     userId: string;
@@ -75,12 +87,25 @@ interface StudentOnboardingProfileProps {
     subjectMobileNumber?: string | null;
 }
 
+/** Translated display labels for the shared instance/step status enum (PENDING,
+ *  IN_PROGRESS, COMPLETED, SKIPPED). Falls back to the raw value for anything
+ *  unrecognized rather than hiding it. */
+function buildStatusLabels(t: TFunction): Record<string, string> {
+    return {
+        PENDING: t('status.pending'),
+        IN_PROGRESS: t('status.inProgress'),
+        COMPLETED: t('status.completed'),
+        SKIPPED: t('status.skipped'),
+    };
+}
+
 export function StudentOnboardingProfile({
     userId,
     subjectFullName,
     subjectEmail,
     subjectMobileNumber,
 }: StudentOnboardingProfileProps) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
     const instituteId = getCurrentInstituteId() ?? '';
     const queryClient = useQueryClient();
     const [startDialogOpen, setStartDialogOpen] = useState(false);
@@ -90,11 +115,16 @@ export function StudentOnboardingProfile({
         queryFn: () => fetchOnboardingSideView(userId, instituteId),
         enabled: !!userId && !!instituteId,
         staleTime: 30 * 1000,
+        // A 403 here isn't a failure to retry — onboarding is enabled for the institute but no
+        // step's role-access grid names any of this staff member's roles, so there is genuinely
+        // nothing for them here. Retrying would 403 forever.
+        retry: (failureCount, error) => !isForbidden(error) && failureCount < 2,
     });
+    const forbidden = isForbidden(instancesQuery.error);
 
     const startButton = (
         <MyButton buttonType="primary" scale="small" onClick={() => setStartDialogOpen(true)}>
-            <PlayCircle size={14} /> Start Onboarding
+            <PlayCircle size={14} /> {t('startOnboarding.button')}
         </MyButton>
     );
 
@@ -112,10 +142,16 @@ export function StudentOnboardingProfile({
 
     if (instancesQuery.isLoading) return <ProfileSkeleton blocks={2} />;
 
+    // No grant anywhere: show the same "nothing here" state a subject with no instances gets,
+    // minus the Start button they couldn't use — not a scary error about a load that worked.
+    if (forbidden) {
+        return <ProfileEmpty icon={Path} title={t('empty.title')} hint={t('noAccess.hint')} />;
+    }
+
     if (instancesQuery.isError) {
         return (
             <ProfileError
-                title="Couldn't load onboarding progress"
+                title={t('loadError.title')}
                 onRetry={() => instancesQuery.refetch()}
             />
         );
@@ -128,8 +164,8 @@ export function StudentOnboardingProfile({
             <div className="flex flex-col gap-3">
                 <ProfileEmpty
                     icon={Path}
-                    title="No onboarding flows started"
-                    hint="This person hasn't been placed into an onboarding flow yet."
+                    title={t('empty.title')}
+                    hint={t('empty.hint')}
                 />
                 <div className="flex justify-center">{startButton}</div>
                 {startDialog}
@@ -170,6 +206,7 @@ function StartOnboardingDialog({
     subjectUserId: string;
     onStarted: () => void;
 }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
     const [flowId, setFlowId] = useState('');
 
     const flowsQuery = useQuery({
@@ -182,12 +219,12 @@ function StartOnboardingDialog({
     const { mutate: start, isPending } = useMutation({
         mutationFn: () => startOnboardingInstance(instituteId, flowId, subjectUserId),
         onSuccess: () => {
-            toast.success('Onboarding started');
+            toast.success(t('startOnboarding.started'));
             setFlowId('');
             onOpenChange(false);
             onStarted();
         },
-        onError: () => toast.error('Could not start onboarding for this person.'),
+        onError: () => toast.error(t('startOnboarding.startFailed')),
     });
 
     const flows = flowsQuery.data ?? [];
@@ -196,12 +233,12 @@ function StartOnboardingDialog({
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading="Start Onboarding"
+            heading={t('startOnboarding.dialogHeading')}
             dialogWidth="max-w-md"
             footer={
                 <div className="flex w-full items-center justify-end gap-2">
                     <MyButton buttonType="secondary" scale="medium" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('startOnboarding.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -209,24 +246,24 @@ function StartOnboardingDialog({
                         disable={!flowId || isPending}
                         onClick={() => start()}
                     >
-                        {isPending ? 'Starting…' : 'Start'}
+                        {isPending ? t('startOnboarding.starting') : t('startOnboarding.start')}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-3 px-6 py-6">
                 {flowsQuery.isLoading ? (
-                    <p className="text-body text-neutral-500">Loading flows…</p>
+                    <p className="text-body text-neutral-500">{t('startOnboarding.loadingFlows')}</p>
                 ) : flows.length === 0 ? (
                     <p className="text-body text-neutral-500">
-                        No active onboarding flows yet — activate one from the Onboarding tab first.
+                        {t('startOnboarding.noActiveFlows')}
                     </p>
                 ) : (
                     <>
-                        <Label>Onboarding flow</Label>
+                        <Label>{t('startOnboarding.flowLabel')}</Label>
                         <Select value={flowId} onValueChange={setFlowId}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Pick a flow…" />
+                                <SelectValue placeholder={t('startOnboarding.pickFlowPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {flows.map((f) => (
@@ -252,6 +289,7 @@ function StartOnboardingDialog({
  * same institute-level allowViewPassword display setting.
  */
 function ResolvedSubjectCredentials({ userId }: { userId: string }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
     const [allowViewPassword, setAllowViewPassword] = useState<boolean | null>(null);
 
     useEffect(() => {
@@ -273,34 +311,33 @@ function ResolvedSubjectCredentials({ userId }: { userId: string }) {
     const handleCopy = async (text: string, label: string) => {
         try {
             await navigator.clipboard.writeText(text);
-            toast.success(`${label} copied to clipboard`);
+            toast.success(t('credentials.copiedToClipboard', { label }));
         } catch {
-            toast.error(`Could not copy ${label}`);
+            toast.error(t('credentials.copyFailed', { label }));
         }
     };
 
     if (allowViewPassword === false) {
         return (
             <p className="mt-1.5 text-2xs text-success-600">
-                Password visibility is off for this institute — enable it under Settings → Role
-                Display to view this student&apos;s login here.
+                {t('credentials.passwordVisibilityOff')}
             </p>
         );
     }
     if (allowViewPassword === null || isLoading) {
-        return <p className="mt-1.5 text-2xs text-success-600">Loading credentials…</p>;
+        return <p className="mt-1.5 text-2xs text-success-600">{t('credentials.loading')}</p>;
     }
 
     return (
         <div className="mt-2 flex flex-col gap-1 rounded-md border border-success-200 bg-white/60 px-2.5 py-2">
             <div className="flex items-center gap-1.5 text-2xs text-neutral-700">
                 <Key size={12} className="text-success-600" />
-                <span className="font-medium">Username:</span>
-                <span>{credentials?.username || 'N/A'}</span>
+                <span className="font-medium">{t('credentials.usernameLabel')}</span>
+                <span>{credentials?.username || t('credentials.notAvailable')}</span>
                 {credentials?.username && (
                     <button
                         type="button"
-                        onClick={() => handleCopy(credentials.username, 'Username')}
+                        onClick={() => handleCopy(credentials.username, t('credentials.usernameFieldName'))}
                         className="rounded p-0.5 hover:bg-neutral-100"
                     >
                         <Copy size={11} />
@@ -309,12 +346,12 @@ function ResolvedSubjectCredentials({ userId }: { userId: string }) {
             </div>
             <div className="flex items-center gap-1.5 text-2xs text-neutral-700">
                 <Key size={12} className="text-success-600" />
-                <span className="font-medium">Password:</span>
-                <span>{credentials?.password || 'Not found'}</span>
+                <span className="font-medium">{t('credentials.passwordLabel')}</span>
+                <span>{credentials?.password || t('credentials.notFound')}</span>
                 {credentials?.password && (
                     <button
                         type="button"
-                        onClick={() => handleCopy(credentials.password, 'Password')}
+                        onClick={() => handleCopy(credentials.password, t('credentials.passwordFieldName'))}
                         className="rounded p-0.5 hover:bg-neutral-100"
                     >
                         <Copy size={11} />
@@ -340,6 +377,8 @@ function OnboardingInstanceCard({
     subjectEmail?: string | null;
     subjectMobileNumber?: string | null;
 }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
+    const statusLabels = useMemo(() => buildStatusLabels(t), [t]);
     const queryClient = useQueryClient();
 
     // Step definitions (is_optional, order, name) — needed so the skip
@@ -369,11 +408,11 @@ function OnboardingInstanceCard({
         mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
             completeStepInstance(id, payload),
         onSuccess: () => {
-            toast.success('Step marked complete');
+            toast.success(t('instance.stepCompleted'));
             setCompleteTarget(null);
             invalidate();
         },
-        onError: () => toast.error('Could not complete this step.'),
+        onError: () => toast.error(t('instance.completeFailed')),
     });
     const [completeTarget, setCompleteTarget] = useState<OnboardingStepInstanceDTO | null>(null);
 
@@ -384,22 +423,22 @@ function OnboardingInstanceCard({
         mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
             saveStepInstanceProgress(id, payload),
         onSuccess: () => {
-            toast.success('Progress saved');
+            toast.success(t('instance.progressSaved'));
             setCompleteTarget(null);
             invalidate();
         },
-        onError: () => toast.error('Could not save this step.'),
+        onError: () => toast.error(t('instance.saveFailed')),
     });
 
     const { mutate: skip, isPending: skipping } = useMutation({
         mutationFn: ({ id, reason }: { id: string; reason: string }) => skipStepInstance(id, reason),
         onSuccess: () => {
-            toast.success('Step skipped');
+            toast.success(t('instance.stepSkipped'));
             setSkipTarget(null);
             setSkipReason('');
             invalidate();
         },
-        onError: () => toast.error('Could not skip this step.'),
+        onError: () => toast.error(t('instance.skipFailed')),
     });
 
     const steps = instance.step_instances ?? [];
@@ -407,21 +446,23 @@ function OnboardingInstanceCard({
     return (
         <ProfileSectionCard
             icon={Path}
-            heading={`Onboarding — ${instance.status}`}
+            heading={t('instance.heading', { status: statusLabels[instance.status] ?? instance.status })}
             action={<InstanceStatusBadge status={instance.status} />}
         >
             {instance.resolved_subject_user_id && (
                 <div className="mb-3 flex items-start gap-2 rounded-lg border border-success-200 bg-success-50 p-3">
                     <UserCircle size={18} className="mt-0.5 shrink-0 text-success-600" weight="fill" />
                     <div className="text-caption text-success-700">
-                        A parent filled this on behalf of a student. The actual student is{' '}
+                        {t('instance.resolvedSubjectPrefix')}{' '}
                         <span className="font-medium">
-                            {instance.resolved_subject_name || instance.resolved_subject_email || 'created'}
+                            {instance.resolved_subject_name ||
+                                instance.resolved_subject_email ||
+                                t('instance.resolvedSubjectFallback')}
                         </span>
                         {instance.resolved_subject_email && instance.resolved_subject_name
                             ? ` (${instance.resolved_subject_email})`
                             : ''}{' '}
-                        — this onboarding stays visible here, on the original lead/contact.
+                        {t('instance.resolvedSubjectSuffix')}
                         <ResolvedSubjectCredentials userId={instance.resolved_subject_user_id} />
                     </div>
                 </div>
@@ -440,8 +481,12 @@ function OnboardingInstanceCard({
                                     {index + 1}. {si.step_name}
                                 </div>
                                 <div className="text-2xs text-muted-foreground">
-                                    {si.status}
-                                    {si.skip_reason ? ` — ${si.skip_reason}` : ''}
+                                    {si.skip_reason
+                                        ? t('instance.stepStatusWithReason', {
+                                              status: statusLabels[si.status] ?? si.status,
+                                              reason: si.skip_reason,
+                                          })
+                                        : (statusLabels[si.status] ?? si.status)}
                                 </div>
                             </div>
                             {si.status === 'COMPLETED' && si.step_type === 'FORM' && (
@@ -450,7 +495,7 @@ function OnboardingInstanceCard({
                                     scale="small"
                                     onClick={() => setViewingFormFor(si)}
                                 >
-                                    View form
+                                    {t('instance.viewForm')}
                                 </MyButton>
                             )}
                             {canAct && (
@@ -465,7 +510,7 @@ function OnboardingInstanceCard({
                                         }
                                         disable={completing}
                                     >
-                                        Complete
+                                        {t('instance.complete')}
                                     </MyButton>
                                     {canSkip && (
                                         <MyButton
@@ -474,7 +519,7 @@ function OnboardingInstanceCard({
                                             onClick={() => setSkipTarget(si)}
                                             disable={skipping}
                                         >
-                                            <SkipForward size={14} /> Skip
+                                            <SkipForward size={14} /> {t('instance.skip')}
                                         </MyButton>
                                     )}
                                 </>
@@ -483,7 +528,7 @@ function OnboardingInstanceCard({
                     );
                 })}
                 {steps.length === 0 && (
-                    <div className="py-3 text-caption text-muted-foreground">No steps recorded yet.</div>
+                    <div className="py-3 text-caption text-muted-foreground">{t('instance.noSteps')}</div>
                 )}
             </div>
 
@@ -513,34 +558,34 @@ function OnboardingInstanceCard({
             <MyDialog
                 open={!!skipTarget}
                 onOpenChange={(o) => !o && setSkipTarget(null)}
-                heading="Skip this step?"
+                heading={t('skipDialog.heading')}
                 dialogWidth="max-w-md"
                 footer={
                     <div className="flex w-full items-center justify-end gap-2">
                         <MyButton buttonType="secondary" scale="medium" onClick={() => setSkipTarget(null)}>
-                            Cancel
+                            {t('skipDialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             scale="medium"
                             disable={skipping}
                             onClick={() =>
-                                skipTarget && skip({ id: skipTarget.id, reason: skipReason || 'Skipped by admin' })
+                                skipTarget &&
+                                skip({ id: skipTarget.id, reason: skipReason || t('skipDialog.defaultReason') })
                             }
                         >
-                            {skipping ? 'Skipping…' : 'Skip Step'}
+                            {skipping ? t('skipDialog.skipping') : t('skipDialog.skipStep')}
                         </MyButton>
                     </div>
                 }
             >
                 <div className="flex flex-col gap-3 px-6 py-6">
                     <p className="text-body text-neutral-600">
-                        &quot;{skipTarget?.step_name}&quot; is optional and can be skipped. Add a reason
-                        (optional).
+                        {t('skipDialog.description', { stepName: skipTarget?.step_name ?? '' })}
                     </p>
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Reason (optional)"
+                        inputPlaceholder={t('skipDialog.reasonPlaceholder')}
                         input={skipReason}
                         onChangeFunction={(e) => setSkipReason(e.target.value)}
                     />
@@ -551,6 +596,8 @@ function OnboardingInstanceCard({
 }
 
 function InstanceStatusBadge({ status }: { status: string }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
+    const statusLabels = useMemo(() => buildStatusLabels(t), [t]);
     const toneClass =
         status === 'COMPLETED'
             ? 'bg-success-50 text-success-700'
@@ -559,7 +606,7 @@ function InstanceStatusBadge({ status }: { status: string }) {
               : 'bg-info-50 text-info-600';
     return (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${toneClass}`}>
-            {status}
+            {statusLabels[status] ?? status}
         </span>
     );
 }
@@ -602,31 +649,34 @@ function CompleteFormStepDialog({
      *  fill in later. */
     onSave: (payload: Record<string, unknown>) => void;
 }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
+    // Step-INSTANCE-scoped (not step-scoped) so each field arrives with its own already-saved
+    // value, in the step builder's order, carrying the field type/config needed to render it as
+    // itself. The generic feature-fields catalog lookup this replaced had none of that: it
+    // ordered by the institute catalog, always reported is_mandatory as null, and left every
+    // field -- dropdown, date, file -- rendering as a plain text box.
     const fieldsQuery = useQuery({
-        queryKey: ['onboarding-step-fields', instituteId, stepInstance.step_id],
-        queryFn: () => fetchStepFields(instituteId, stepInstance.step_id),
-        staleTime: 60 * 1000,
-    });
-    // Whatever's already been saved for this step instance -- e.g. a PRIOR "Save" call by this
-    // same admin, or a field the student already filled in -- so reopening this dialog shows
-    // it instead of risking an overwrite with a blank input.
-    const submittedQuery = useQuery({
-        queryKey: ['onboarding-step-submitted-values', stepInstance.id],
-        queryFn: () => fetchSubmittedFieldValues(stepInstance.id),
+        queryKey: onboardingStepInstanceFieldsKey(stepInstance.id),
+        queryFn: () => fetchStepInstanceFields(stepInstance.id),
         staleTime: 10 * 1000,
     });
     const [values, setValues] = useState<Record<string, string>>({});
     const fields = fieldsQuery.data ?? [];
 
+    // Whatever's already been saved for this step instance -- e.g. a PRIOR "Save" call by this
+    // same admin, or a field the student already filled in -- so reopening this dialog shows
+    // it instead of risking an overwrite with a blank input. A never-answered field falls back
+    // to its configured default.
     useEffect(() => {
-        if (!submittedQuery.data) return;
+        if (!fieldsQuery.data) return;
         const seeded: Record<string, string> = {};
-        submittedQuery.data.forEach((f) => {
-            if (f.value) seeded[f.institute_custom_field_id] = f.value;
+        fieldsQuery.data.forEach((f) => {
+            const seed = f.value ?? f.default_value;
+            if (seed) seeded[f.institute_custom_field_id] = seed;
         });
         setValues((prev) => ({ ...seeded, ...prev }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [submittedQuery.data]);
+    }, [fieldsQuery.data]);
 
     // "Create a student from this step" config: empty pool → search ANY course;
     // non-empty pool → pick only from the courses the flow builder allowed.
@@ -677,12 +727,12 @@ function CompleteFormStepDialog({
         <MyDialog
             open
             onOpenChange={(o) => !o && onClose()}
-            heading={`Complete — ${stepInstance.step_name}`}
+            heading={t('completeStepDialog.heading', { stepName: stepInstance.step_name })}
             dialogWidth="max-w-lg"
             footer={
                 <div className="flex w-full items-center justify-end gap-2">
                     <MyButton buttonType="secondary" scale="medium" onClick={onClose} disable={submitting || saving}>
-                        Cancel
+                        {t('completeStepDialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -690,7 +740,7 @@ function CompleteFormStepDialog({
                         disable={submitting || saving || fieldsQuery.isLoading}
                         onClick={() => onSave(values)}
                     >
-                        {saving ? 'Saving…' : 'Save'}
+                        {saving ? t('completeStepDialog.saving') : t('completeStepDialog.save')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -711,7 +761,7 @@ function CompleteFormStepDialog({
                             })
                         }
                     >
-                        {submitting ? 'Completing…' : 'Complete Step'}
+                        {submitting ? t('completeStepDialog.completing') : t('completeStepDialog.completeStep')}
                     </MyButton>
                 </div>
             }
@@ -724,7 +774,7 @@ function CompleteFormStepDialog({
                                 <Users size={16} weight="fill" />
                             </span>
                             <Label htmlFor="complete-step-is-parent" className="cursor-pointer text-body text-neutral-700">
-                                This form was filled by a parent, on behalf of a student
+                                {t('completeStepDialog.parentToggleLabel')}
                             </Label>
                         </div>
                         <Switch id="complete-step-is-parent" checked={isParent} onCheckedChange={setIsParent} />
@@ -737,14 +787,14 @@ function CompleteFormStepDialog({
                         </span>
                         <div className="flex flex-col gap-0.5">
                             <p className="text-caption text-neutral-500">
-                                The student will be created using this person&apos;s existing details:
+                                {t('completeStepDialog.existingDetailsHint')}
                             </p>
                             <p className="text-body font-medium text-neutral-800">
-                                {subjectFullName || 'No name on file'}
+                                {subjectFullName || t('completeStepDialog.noNameOnFile')}
                             </p>
                             <p className="text-caption text-neutral-600">
                                 {[subjectEmail, subjectMobileNumber].filter(Boolean).join(' · ') ||
-                                    'No email or mobile number on file'}
+                                    t('completeStepDialog.noContactOnFile')}
                             </p>
                         </div>
                     </div>
@@ -756,30 +806,29 @@ function CompleteFormStepDialog({
                                 <UserCircle size={16} weight="fill" />
                             </span>
                             <p className="text-caption text-neutral-500">
-                                Enter the student&apos;s own details — they&apos;ll be the one enrolled
-                                and granted access, not the parent.
+                                {t('completeStepDialog.studentDetailsHint')}
                             </p>
                         </div>
                         <div className="flex flex-col gap-2.5 ps-10">
                             <MyInput
                                 inputType="text"
-                                label="Student's full name"
+                                label={t('completeStepDialog.studentFullNameLabel')}
                                 required
-                                inputPlaceholder="e.g. Aarav Sharma"
+                                inputPlaceholder={t('completeStepDialog.studentFullNamePlaceholder')}
                                 input={studentFullName}
                                 onChangeFunction={(e) => setStudentFullName(e.target.value)}
                             />
                             <MyInput
                                 inputType="text"
-                                label="Student's email"
-                                inputPlaceholder="student@example.com"
+                                label={t('completeStepDialog.studentEmailLabel')}
+                                inputPlaceholder={t('completeStepDialog.studentEmailPlaceholder')}
                                 input={studentEmail}
                                 onChangeFunction={(e) => setStudentEmail(e.target.value)}
                             />
                             <PhoneNumberInput
                                 name="student_mobile_number"
-                                label="Student's mobile number"
-                                placeholder="Optional if email is provided"
+                                label={t('completeStepDialog.studentMobileLabel')}
+                                placeholder={t('completeStepDialog.studentMobilePlaceholder')}
                                 value={studentMobileNumber}
                                 onChange={(_, value) => setStudentMobileNumber(value)}
                                 validate={false}
@@ -794,10 +843,10 @@ function CompleteFormStepDialog({
                                 <GraduationCap size={16} weight="fill" />
                             </span>
                             <Label className="text-neutral-700">
-                                Enroll into (course / batch){' '}
+                                {t('completeStepDialog.enrollLabel')}{' '}
                                 {skipCourseIfEnrolled ? (
                                     <span className="text-caption font-normal text-neutral-500">
-                                        (optional if already enrolled)
+                                        {t('completeStepDialog.optionalIfEnrolled')}
                                     </span>
                                 ) : (
                                     <span className="text-danger-600">*</span>
@@ -806,14 +855,13 @@ function CompleteFormStepDialog({
                         </div>
                         {skipCourseIfEnrolled && (
                             <p className="text-caption text-neutral-500">
-                                This step allows completing without picking a course if the
-                                student already has an active enrollment.
+                                {t('completeStepDialog.skipCourseHint')}
                             </p>
                         )}
                         {hasPool ? (
                             <Select value={packageSessionId} onValueChange={setPackageSessionId}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Pick a course…" />
+                                    <SelectValue placeholder={t('completeStepDialog.pickCoursePlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {poolChoices.map((o) => (
@@ -841,8 +889,8 @@ function CompleteFormStepDialog({
                                         hasMore,
                                     };
                                 }}
-                                placeholder="Search course / batch…"
-                                searchPlaceholder="Search…"
+                                placeholder={t('completeStepDialog.searchCoursePlaceholder')}
+                                searchPlaceholder={t('completeStepDialog.searchPlaceholder')}
                             />
                         )}
                     </div>
@@ -852,7 +900,7 @@ function CompleteFormStepDialog({
                 ) : fields.length === 0 ? (
                     !touchesIdentity && (
                         <p className="text-body text-neutral-500">
-                            This step has no attached fields — marking it complete needs no input.
+                            {t('completeStepDialog.noFieldsHint')}
                         </p>
                     )
                 ) : (
@@ -861,22 +909,47 @@ function CompleteFormStepDialog({
                             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-info-50 text-info-600">
                                 <ListChecks size={16} weight="fill" />
                             </span>
-                            <Label className="text-neutral-700">Form fields</Label>
+                            <Label className="text-neutral-700">{t('completeStepDialog.formFieldsLabel')}</Label>
                         </div>
-                        <div className="flex flex-col gap-2.5 ps-10">
-                            {fields.map((f) => (
-                                <MyInput
-                                    key={f.id}
-                                    label={f.custom_field?.fieldName ?? 'Field'}
-                                    required={f.is_mandatory ?? false}
-                                    inputType="text"
-                                    inputPlaceholder={f.custom_field?.fieldName ?? ''}
-                                    input={values[f.id] ?? ''}
-                                    onChangeFunction={(e) =>
-                                        setValues((prev) => ({ ...prev, [f.id]: e.target.value }))
-                                    }
-                                />
-                            ))}
+                        <div className="flex flex-col gap-3.5 ps-10">
+                            {fields.map((f) => {
+                                const label =
+                                    f.field_name ?? t('completeStepDialog.defaultFieldLabel');
+                                return (
+                                    <div
+                                        key={f.institute_custom_field_id}
+                                        className="flex flex-col gap-1.5"
+                                    >
+                                        <Label className="text-body text-neutral-700">
+                                            {label}
+                                            {f.is_mandatory && (
+                                                <span className="text-danger-600"> *</span>
+                                            )}
+                                        </Label>
+                                        <CustomFieldRenderer
+                                            // `type` is what makes a dropdown a dropdown and a
+                                            // date a date picker -- every field used to render
+                                            // through a single hardcoded text input.
+                                            type={f.field_type ?? 'text'}
+                                            name={label}
+                                            value={values[f.institute_custom_field_id] ?? ''}
+                                            onChange={(value) =>
+                                                setValues((prev) => ({
+                                                    ...prev,
+                                                    [f.institute_custom_field_id]: value,
+                                                }))
+                                            }
+                                            options={parseFieldOptions(f.config)}
+                                            config={configJsonToFullConfig(f.config ?? undefined)}
+                                            required={f.is_mandatory ?? false}
+                                            // A field this step assigns to the student/parent
+                                            // only: shown pre-filled but not editable here,
+                                            // matching what the server would accept anyway.
+                                            disabled={f.can_edit === false}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -894,6 +967,7 @@ function SubmittedFormDialog({
     stepInstance: OnboardingStepInstanceDTO;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('manageStudentsOnboardingProfile');
     const valuesQuery = useQuery({
         queryKey: ['onboarding-submitted-values', stepInstance.id],
         queryFn: () => fetchSubmittedFieldValues(stepInstance.id),
@@ -904,12 +978,12 @@ function SubmittedFormDialog({
         <MyDialog
             open
             onOpenChange={(o) => !o && onClose()}
-            heading={`Form — ${stepInstance.step_name}`}
+            heading={t('submittedFormDialog.heading', { stepName: stepInstance.step_name })}
             dialogWidth="max-w-md"
             footer={
                 <div className="flex w-full justify-end">
                     <MyButton buttonType="secondary" scale="medium" onClick={onClose}>
-                        Close
+                        {t('submittedFormDialog.close')}
                     </MyButton>
                 </div>
             }
@@ -918,18 +992,22 @@ function SubmittedFormDialog({
                 {valuesQuery.isLoading ? (
                     <ProfileSkeleton blocks={1} />
                 ) : (valuesQuery.data ?? []).length === 0 ? (
-                    <p className="text-body text-neutral-500">This step has no attached fields.</p>
+                    <p className="text-body text-neutral-500">{t('submittedFormDialog.noFields')}</p>
                 ) : (
                     <ul className="flex flex-col divide-y divide-border">
                         {(valuesQuery.data ?? []).map((f) => (
                             <li key={f.institute_custom_field_id} className="py-1.5">
                                 <div className="text-caption text-neutral-500">
-                                    {f.field_name ?? 'Untitled field'}
+                                    {f.field_name ?? t('submittedFormDialog.untitledField')}
                                 </div>
                                 <div className="text-body text-neutral-800">
-                                    {f.value?.trim() ? f.value : (
-                                        <span className="text-neutral-400">Not answered</span>
-                                    )}
+                                    {/* By type, not as a string: a file field's value is the
+                                        uploaded object's URL, which is useless as raw text. */}
+                                    <CustomFieldValueDisplay
+                                        value={f.value}
+                                        fieldType={f.field_type}
+                                        emptyLabel={t('submittedFormDialog.notAnswered')}
+                                    />
                                 </div>
                             </li>
                         ))}

@@ -59,11 +59,28 @@ public class SuperAdminCallDTO {
 
     private Double costInr;
     private Double billedInr;
+    /**
+     * true = billedInr is final: every billable leg is in the ledger or was stamped
+     * billed at 0 (0-rate override), or nothing was billable (not connected).
+     * false = at least one leg is still to be charged and its share is an estimate
+     * (billedInr = ledger of the charged leg + estimate of the pending one).
+     */
+    private Boolean billedFromLedger;
     private Double marginInr;
     private Double marginPct;
     /** Per-component rupee breakdown: plivo / stt / tts / llm. */
     private java.util.Map<String, Double> costBreakdown;
     private Boolean costIsModelled;
+
+    /**
+     * Characters the bot actually synthesised on this call (diagnostics.tts.chars).
+     *
+     * <p>Non-null means the {@code tts} cost line is the vendor's METERED quantity
+     * rather than duration x the 779 chars/call-min fleet average. Null means the blob
+     * was absent and the average was used — a distinction worth showing, because the
+     * average is a mean and a monologue-heavy agent sits well above it.
+     */
+    private Integer ttsCharsMeasured;
 
     /** Sentences served from the TTS speech cache instead of the vendor, and the
      *  characters they represent. NULL (never 0) when the bot did not measure —

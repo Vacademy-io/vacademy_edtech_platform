@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Registration } from '../../../-types/registration-types';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
     applicantId,
     paymentOptionDetails,
 }) => {
+    const { t } = useTranslation('admissionsPaymentSection');
     const isPaid = formData.feeStatus === 'PAID';
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | ''>('');
     const [qrImageUrl, setQrImageUrl] = useState<string>('');
@@ -74,10 +76,27 @@ export const PaymentSection: React.FC<SectionProps> = ({
     }, [paymentOptionDetails?.qrCodeFileId]);
 
     const registrationFee = paymentOptionDetails?.amount ?? 0;
-    const registrationFeeName = paymentOptionDetails?.name ?? 'Application / Registration Fee';
+    const registrationFeeName = paymentOptionDetails?.name ?? t('defaults.feeName');
     const registrationFeeCurrency = paymentOptionDetails?.currency ?? 'INR';
     const currencySymbol = registrationFeeCurrency === 'INR' ? '₹' : registrationFeeCurrency;
     const paymentOptionId = paymentOptionDetails?.id ?? '';
+
+    // Raw backend payment-mode enum (UPI/CASH/CARD/CHEQUE/ONLINE/SEND_LINK/MANUAL) →
+    // translated display label. Falls back to the raw value for anything unrecognized
+    // so unexpected/legacy values still render instead of disappearing.
+    const paymentModeLabel = (mode?: string | null): string => {
+        if (!mode) return t('common.notAvailable');
+        const labels: Record<string, string> = {
+            UPI: t('paymentModeLabels.upi'),
+            CASH: t('paymentModeLabels.cash'),
+            CARD: t('paymentModeLabels.card'),
+            CHEQUE: t('paymentModeLabels.cheque'),
+            ONLINE: t('paymentModeLabels.online'),
+            SEND_LINK: t('paymentModeLabels.sendLink'),
+            MANUAL: t('paymentModeLabels.manual'),
+        };
+        return labels[mode] ?? mode;
+    };
 
     const buildUpiDeepLink = () => {
         const upiVpa = paymentOptionDetails?.upiVpa;
@@ -88,7 +107,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
         if (paymentOptionDetails?.upiPayeeName) params.set('pn', paymentOptionDetails.upiPayeeName);
         if (registrationFee) params.set('am', registrationFee.toFixed(2));
         params.set('cu', registrationFeeCurrency);
-        params.set('tn', `${registrationFeeName} payment`);
+        params.set('tn', t('upiDeepLink.paymentNote', { feeName: registrationFeeName }));
 
         return `upi://pay?${params.toString()}`;
     };
@@ -97,11 +116,11 @@ export const PaymentSection: React.FC<SectionProps> = ({
 
     const handleGenerateParentLink = (method: PaymentLinkMethod) => {
         if (!applicantId) {
-            toast.error('Please submit the application first to generate a payment link.');
+            toast.error(t('toast.linkRequiresApplication'));
             return;
         }
         if (!paymentOptionId) {
-            toast.error('Payment option not configured.');
+            toast.error(t('toast.paymentOptionNotConfigured'));
             return;
         }
 
@@ -120,14 +139,19 @@ export const PaymentSection: React.FC<SectionProps> = ({
         setShowEmailInput(false);
         navigator.clipboard.writeText(link);
         toast.success(
-            `${method === 'ONLINE' ? 'Online payment' : 'UPI payment'} link copied to clipboard!`
+            t('toast.linkCopied', {
+                method:
+                    method === 'ONLINE'
+                        ? t('paymentMethodLabel.online')
+                        : t('paymentMethodLabel.upi'),
+            })
         );
     };
 
     const handleGenerateUpiDeepLink = () => {
         const deepLink = generatedUpiDeepLink;
         if (!deepLink) {
-            toast.error('UPI ID not configured for this payment stage.');
+            toast.error(t('toast.upiNotConfigured'));
             return;
         }
         setGeneratedParentLink(deepLink);
@@ -136,7 +160,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
         );
         setShowEmailInput(false);
         navigator.clipboard.writeText(deepLink);
-        toast.success('UPI deep link copied! Send to parent to open in any UPI app.');
+        toast.success(t('toast.upiLinkCopied'));
     };
 
     const handleSendLinkEmail = async () => {
@@ -144,7 +168,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
         setIsSendingLinkEmail(true);
         try {
             const recipientName =
-                formData.fatherInfo?.name || formData.motherInfo?.name || formData.guardianInfo?.name || 'Parent';
+                formData.fatherInfo?.name ||
+                formData.motherInfo?.name ||
+                formData.guardianInfo?.name ||
+                t('defaults.recipientName');
             await sendPaymentLinkEmail(
                 linkEmail.trim(),
                 recipientName,
@@ -154,10 +181,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
                 registrationFeeCurrency,
                 getPrimaryColorCode()
             );
-            toast.success('Payment link sent to email successfully');
+            toast.success(t('toast.linkEmailSent'));
             setShowEmailInput(false);
         } catch {
-            toast.error('Failed to send email. Please try again.');
+            toast.error(t('toast.linkEmailFailed'));
         } finally {
             setIsSendingLinkEmail(false);
         }
@@ -181,24 +208,24 @@ export const PaymentSection: React.FC<SectionProps> = ({
         );
         if (fileId) {
             setProofFileId(fileId);
-            toast.success('Proof uploaded');
+            toast.success(t('toast.proofUploaded'));
         } else {
-            toast.error('Failed to upload proof');
+            toast.error(t('toast.proofUploadFailed'));
             setProofPreviewUrl('');
         }
     };
 
     const handleConfirmPayment = async () => {
         if (!applicantId) {
-            toast.error('Application not submitted yet. Please submit the form first.');
+            toast.error(t('toast.applicationNotSubmitted'));
             return;
         }
         if (!manualTxnId.trim()) {
-            toast.warning('Please enter or generate a transaction ID');
+            toast.warning(t('toast.enterTransactionId'));
             return;
         }
         if (!paymentOptionId) {
-            toast.error('Payment option not configured.');
+            toast.error(t('toast.paymentOptionNotConfigured'));
             return;
         }
         setIsSubmitting(true);
@@ -224,9 +251,9 @@ export const PaymentSection: React.FC<SectionProps> = ({
                 transactionId: manualTxnId.trim(),
                 paymentDate: new Date().toISOString().split('T')[0],
             });
-            toast.success('Payment recorded successfully!');
+            toast.success(t('toast.paymentRecorded'));
         } catch {
-            toast.error('Failed to record payment. Please try again.');
+            toast.error(t('toast.paymentRecordFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -254,16 +281,18 @@ export const PaymentSection: React.FC<SectionProps> = ({
                         </div>
                         <div>
                             <h4 className="text-base font-semibold text-green-800">
-                                Payment Received
+                                {t('paid.title')}
                             </h4>
                             <p className="text-sm text-green-600">
-                                {currencySymbol}
-                                {registrationFee} • Mode: {formData.paymentMode || 'N/A'} • Date:{' '}
-                                {formData.paymentDate || 'Today'}
+                                {t('paid.summaryLine', {
+                                    amount: `${currencySymbol}${registrationFee}`,
+                                    mode: paymentModeLabel(formData.paymentMode),
+                                    date: formData.paymentDate || t('paid.todayFallback'),
+                                })}
                             </p>
                             {formData.transactionId && (
                                 <p className="mt-0.5 font-mono text-xs text-green-500">
-                                    Ref: {formData.transactionId}
+                                    {t('paid.refLabel', { transactionId: formData.transactionId })}
                                 </p>
                             )}
                         </div>
@@ -276,7 +305,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             }}
                             className="text-xs text-green-600 underline underline-offset-2 hover:text-green-700"
                         >
-                            ↩ Undo — Mark as Unpaid
+                            {t('paid.undoButton')}
                         </button>
                     </div>
                 </div>
@@ -286,19 +315,19 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     {/* Receipt header */}
                     <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/60 px-6 py-4">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                                Receipt No.
+                            <p className="text-caption font-semibold uppercase tracking-wider text-gray-500">
+                                {t('receipt.receiptNoLabel')}
                             </p>
                             <p className="text-sm text-gray-800">
-                                {receiptData?.receipt_number ?? 'N/A'}
+                                {receiptData?.receipt_number ?? t('common.notAvailable')}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                                Date
+                            <p className="text-caption font-semibold uppercase tracking-wider text-gray-500">
+                                {t('receipt.dateLabel')}
                             </p>
                             <p className="text-sm text-gray-800">
-                                {receiptData?.receipt_date ?? formData.paymentDate ?? 'N/A'}
+                                {receiptData?.receipt_date ?? formData.paymentDate ?? t('common.notAvailable')}
                             </p>
                         </div>
                     </div>
@@ -306,34 +335,34 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     {/* Receipt details */}
                     <div className="px-6 py-4 space-y-3">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Student</span>
+                            <span className="text-gray-500">{t('receipt.studentLabel')}</span>
                             <span className="font-extrabold text-lg text-gray-800">
-                                {formData.studentName || 'N/A'}
+                                {formData.studentName || t('common.notAvailable')}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Fee Description</span>
+                            <span className="text-gray-500">{t('receipt.feeDescriptionLabel')}</span>
                             <span className="font-medium text-gray-800">
                                 {receiptData?.fee_description ?? registrationFeeName}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Payment Mode</span>
+                            <span className="text-gray-500">{t('receipt.paymentModeLabel')}</span>
                             <span className="font-medium text-gray-800">
-                                {receiptData?.payment_mode ?? formData.paymentMode ?? 'N/A'}
+                                {paymentModeLabel(receiptData?.payment_mode ?? formData.paymentMode)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Transaction ID</span>
+                            <span className="text-gray-500">{t('receipt.transactionIdLabel')}</span>
                             <span className="font-mono text-gray-800">
-                                {receiptData?.transaction_id ?? formData.transactionId ?? 'N/A'}
+                                {receiptData?.transaction_id ?? formData.transactionId ?? t('common.notAvailable')}
                             </span>
                         </div>
                     </div>
 
                     {/* Amount */}
                     <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50/60 px-6 py-4">
-                        <span className="text-sm font-semibold text-gray-700">Amount Paid</span>
+                        <span className="text-sm font-semibold text-gray-700">{t('receipt.amountPaidLabel')}</span>
                         <span className="text-xl font-extrabold text-emerald-700">
                             {currencySymbol}{' '}
                             {receiptData?.amount_paid != null
@@ -354,7 +383,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                 className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
                             >
                                 <DownloadSimple size={16} weight="bold" />
-                                Download Receipt
+                                {t('receipt.downloadButton')}
                             </a>
                         </div>
                     )}
@@ -369,9 +398,9 @@ export const PaymentSection: React.FC<SectionProps> = ({
             {/* ── Page Header ───────────────────────────────────────── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-neutral-900">Complete Your Payment</h2>
+                    <h2 className="text-xl font-bold text-neutral-900">{t('header.title')}</h2>
                     <p className="mt-1 text-sm text-neutral-500">
-                        One-time fee to submit application
+                        {t('header.subtitle')}
                     </p>
                 </div>
             </div>
@@ -384,7 +413,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                         <CardholderIcon className="text-white" weight="bold" />
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-semibold text-neutral-900">Fee Payment</h3>
+                        <h3 className="text-subtitle font-semibold text-neutral-900">{t('invoice.title')}</h3>
                     </div>
                 </div>
 
@@ -397,18 +426,18 @@ export const PaymentSection: React.FC<SectionProps> = ({
                         </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-neutral-100 py-2.5 text-sm">
-                        <span className="text-neutral-500">GST / Taxes</span>
+                        <span className="text-neutral-500">{t('invoice.gstLabel')}</span>
                         <span className="font-medium text-neutral-900">₹ 0.00</span>
                     </div>
                     <div className="flex items-center justify-between py-2.5 text-sm">
-                        <span className="text-neutral-500">Processing Charge</span>
-                        <span className="font-medium text-green-600">Waived</span>
+                        <span className="text-neutral-500">{t('invoice.processingChargeLabel')}</span>
+                        <span className="font-medium text-green-600">{t('invoice.waivedLabel')}</span>
                     </div>
                 </div>
 
                 {/* Total row */}
                 <div className="flex items-center justify-between border-t border-dashed border-primary-200 bg-primary-50/60 px-6 py-4">
-                    <span className="text-sm font-semibold text-primary-700">Total Amount Due</span>
+                    <span className="text-sm font-semibold text-primary-700">{t('invoice.totalDueLabel')}</span>
                     <span className="text-2xl font-bold tracking-tight text-primary-700">
                         {currencySymbol} {registrationFee}
                     </span>
@@ -426,7 +455,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             : 'text-primary-400 hover:text-primary-600'
                     }`}
                 >
-                    Pay Now
+                    {t('tabs.payNow')}
                 </button>
                 <button
                     type="button"
@@ -437,7 +466,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             : 'text-primary-400 hover:text-primary-600'
                     }`}
                 >
-                    Generate Link
+                    {t('tabs.generateLink')}
                 </button>
             </div>
 
@@ -446,7 +475,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     {/* ── Payment Methods ───────────────────────────────────── */}
                     <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
                         <h4 className="mb-3 text-xs font-semibold uppercase tracking-widest text-neutral-500">
-                            Pay Now
+                            {t('methods.sectionTitle')}
                         </h4>
 
                         {/* Secondary grid */}
@@ -454,13 +483,13 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             {[
                                 {
                                     value: 'UPI' as PaymentMethod,
-                                    label: 'UPI / QR Code',
-                                    desc: 'Scan & pay instantly',
+                                    label: t('methods.upi.label'),
+                                    desc: t('methods.upi.desc'),
                                 },
                                 {
                                     value: 'CASH' as PaymentMethod,
-                                    label: 'Cash Received',
-                                    desc: 'Record cash payment',
+                                    label: t('methods.cash.label'),
+                                    desc: t('methods.cash.desc'),
                                 },
                             ].map(({ value, label, desc }) => (
                                 <button
@@ -482,7 +511,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                     >
                                         {label}
                                     </span>
-                                    <span className="text-[10px] text-neutral-500">{desc}</span>
+                                    <span className="text-caption text-neutral-500">{desc}</span>
                                 </button>
                             ))}
                         </div>
@@ -493,11 +522,11 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     ) && (
                         <div className="rounded-xl border border-neutral-200 p-5 shadow-sm">
                             <h4 className="mb-4 text-sm font-semibold">
-                                {selectedPaymentMethod === 'CASH' && 'Cash Payment'}
+                                {selectedPaymentMethod === 'CASH' && t('cashPanel.title')}
                             </h4>
                             <div className="mb-4 flex items-center justify-between rounded-lg border bg-white p-2">
                                 <span className="text-sm font-medium text-neutral-700">
-                                    Amount to Receive
+                                    {t('cashPanel.amountToReceiveLabel')}
                                 </span>
                                 <span className="text-xl font-bold text-green-700">
                                     {currencySymbol} {registrationFee.toLocaleString('en-IN')}
@@ -508,12 +537,12 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                 {/* Proof upload */}
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-neutral-600">
-                                        Payment Proof{' '}
+                                        {t('cashPanel.proofLabel')}{' '}
                                         <span className="text-neutral-400">
                                             (
                                             {selectedPaymentMethod === 'CHEQUE'
-                                                ? 'cheque image'
-                                                : 'receipt / screenshot'}
+                                                ? t('cashPanel.proofHintCheque')
+                                                : t('cashPanel.proofHintReceipt')}
                                             )
                                         </span>
                                     </label>
@@ -547,7 +576,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                 }}
                                                 className="ml-1 text-xs text-red-500 hover:underline"
                                             >
-                                                Remove
+                                                {t('common.remove')}
                                             </button>
                                         </div>
                                     ) : (
@@ -556,7 +585,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             onClick={() => proofInputRef.current?.click()}
                                             className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-500 transition hover:border-neutral-400 hover:bg-neutral-100"
                                         >
-                                            📎 Upload receipt / screenshot
+                                            {t('cashPanel.uploadProofButton')}
                                         </button>
                                     )}
                                 </div>
@@ -565,8 +594,8 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-neutral-600">
                                         {selectedPaymentMethod === 'CHEQUE'
-                                            ? 'Cheque / DD Number'
-                                            : 'Transaction / Receipt ID'}{' '}
+                                            ? t('cashPanel.txnLabelCheque')
+                                            : t('cashPanel.txnLabelReceipt')}{' '}
                                         <span className="text-red-500">*</span>
                                     </label>
                                     <div className="flex gap-2">
@@ -575,10 +604,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
                                             placeholder={
                                                 selectedPaymentMethod === 'CHEQUE'
-                                                    ? 'Cheque / DD number'
+                                                    ? t('cashPanel.placeholderCheque')
                                                     : selectedPaymentMethod === 'CASH'
-                                                      ? 'Auto-generate or enter a receipt ID'
-                                                      : 'Enter transaction ID'
+                                                      ? t('cashPanel.placeholderCash')
+                                                      : t('cashPanel.placeholderDefault')
                                             }
                                             value={manualTxnId}
                                             onChange={(e) => setManualTxnId(e.target.value)}
@@ -589,7 +618,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                 onClick={generateTxnId}
                                                 className="shrink-0 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition hover:border-neutral-400 hover:bg-neutral-50"
                                             >
-                                                Generate
+                                                {t('common.generateButton')}
                                             </button>
                                         )}
                                     </div>
@@ -603,10 +632,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                         {isSubmitting ? (
                                             <span className="flex items-center gap-2">
                                                 <span className="size-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                Recording…
+                                                {t('common.recordingEllipsis')}
                                             </span>
                                         ) : (
-                                            `Confirm Payment`
+                                            t('common.confirmPaymentButton')
                                         )}
                                     </MyButton>
                                 </div>
@@ -617,7 +646,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     {/* ── UPI / QR Code Detail ──────────────────────────────── */}
                     {selectedPaymentMethod === 'UPI' && (
                         <div className="rounded-xl border p-5 shadow-sm">
-                            <h4 className="mb-3 text-sm font-semibold">UPI Payment</h4>
+                            <h4 className="mb-3 text-sm font-semibold">{t('upiPanel.title')}</h4>
                             <div className="flex gap-6">
                                 {/* QR Code image */}
                                 {qrImageUrl ? (
@@ -625,7 +654,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                         type="button"
                                         onClick={() => setShowQrOverlay(true)}
                                         className="group relative flex size-36 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-purple-300 bg-white shadow-sm transition hover:border-purple-400"
-                                        title="Click to enlarge"
+                                        title={t('upiPanel.clickToEnlargeTitle')}
                                     >
                                         <img
                                             src={qrImageUrl}
@@ -633,7 +662,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             className="size-full object-contain p-1"
                                         />
                                         <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-medium text-white opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100">
-                                            Open
+                                            {t('upiPanel.openHoverLabel')}
                                         </span>
                                     </button>
                                 ) : (
@@ -645,7 +674,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                         type="button"
                                                         onClick={() => setShowQrOverlay(true)}
                                                         className="mt-1 rounded-md border border-purple-100 bg-white p-1 transition hover:border-purple-300"
-                                                        title="Open large QR"
+                                                        title={t('upiPanel.openLargeQrTitle')}
                                                     >
                                                         <QRCodeSVG
                                                             value={generatedUpiDeepLink}
@@ -658,11 +687,11 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             </>
                                         ) : (
                                             <>
-                                                <p className="mt-1 text-[10px] font-medium text-purple-500">
-                                                    QR Code
+                                                <p className="mt-1 text-caption font-medium text-purple-500">
+                                                    {t('upiPanel.qrCodeLabel')}
                                                 </p>
-                                                <p className="text-[10px] text-purple-400">
-                                                    Not configured
+                                                <p className="text-caption text-purple-400">
+                                                    {t('upiPanel.notConfiguredLabel')}
                                                 </p>
                                             </>
                                         )}
@@ -672,8 +701,8 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                     {/* Proof upload */}
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-neutral-600">
-                                            Payment Image{' '}
-                                            <span className="text-neutral-400">(optional)</span>
+                                            {t('upiPanel.proofLabel')}{' '}
+                                            <span className="text-neutral-400">{t('common.optionalLabel')}</span>
                                         </label>
                                         <input
                                             ref={proofInputRef}
@@ -705,7 +734,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                     }}
                                                     className="ml-1 text-xs text-red-500 hover:underline"
                                                 >
-                                                    Remove
+                                                    {t('common.remove')}
                                                 </button>
                                             </div>
                                         ) : (
@@ -714,21 +743,21 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                 onClick={() => proofInputRef.current?.click()}
                                                 className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-500 transition hover:border-neutral-400 hover:bg-neutral-100"
                                             >
-                                                Upload image
+                                                {t('upiPanel.uploadImageButton')}
                                             </button>
                                         )}
                                     </div>
 
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-neutral-600">
-                                            Transaction ID
+                                            {t('upiPanel.transactionIdLabel')}
                                             <span className="text-red-500">*</span>
                                         </label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
                                                 className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
-                                                placeholder="e.g. 312345678901"
+                                                placeholder={t('upiPanel.transactionIdPlaceholder')}
                                                 value={manualTxnId}
                                                 onChange={(e) => setManualTxnId(e.target.value)}
                                             />
@@ -737,7 +766,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                                 onClick={generateTxnId}
                                                 className="shrink-0 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition hover:border-neutral-400 hover:bg-neutral-50"
                                             >
-                                                Generate
+                                                {t('common.generateButton')}
                                             </button>
                                         </div>
                                     </div>
@@ -749,10 +778,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                         {isSubmitting ? (
                                             <span className="flex items-center gap-2">
                                                 <span className="size-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                                Recording…
+                                                {t('common.recordingEllipsis')}
                                             </span>
                                         ) : (
-                                            <>Confirm Payment</>
+                                            <>{t('common.confirmPaymentButton')}</>
                                         )}
                                     </MyButton>
                                 </div>
@@ -768,10 +797,10 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     <div className="mb-4 flex items-center gap-3">
                         <div>
                             <h4 className="text-sm font-semibold">
-                                Generate Payment Link for Payment
+                                {t('linkTab.title')}
                             </h4>
                             <p className="text-xs text-muted-foreground">
-                                Share a link with parents to complete payment on their device
+                                {t('linkTab.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -783,7 +812,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             className="flex items-center gap-2 rounded-lg border border-primary-300 bg-primary-50 px-4 py-2 text-sm font-medium  transition hover:bg-primary-100"
                         >
                             <GlobeIcon className="size-4" weight="bold" />
-                            Online Link
+                            {t('linkTab.onlineLinkButton')}
                         </button>
 
                         <button
@@ -792,20 +821,20 @@ export const PaymentSection: React.FC<SectionProps> = ({
                             disabled={!paymentOptionDetails?.upiVpa}
                             title={
                                 !paymentOptionDetails?.upiVpa
-                                    ? 'Configure UPI ID in stage settings'
+                                    ? t('linkTab.configureUpiTitle')
                                     : undefined
                             }
                             className="flex items-center gap-2 rounded-lg border border-primary-300 bg-primary-50 px-4 py-2 text-sm font-medium transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <ArrowSquareOut className="size-4" weight="bold" />
-                            UPI App Link
+                            {t('linkTab.upiAppLinkButton')}
                         </button>
                     </div>
 
                     {generatedParentLink && (
                         <div className="mt-5 rounded-xl border border-primary-200 bg-primary-50/40 p-4">
                             <p className="flex items-center justify-center text-xs font-semibold uppercase tracking-wide text-primary-700">
-                                Scan QR to open payment link
+                                {t('linkTab.scanQrLabel')}
                             </p>
                             <div className="mt-3 flex flex-col items-center justify-center gap-3 sm:flex-row sm:items-start sm:gap-4">
                                 <div className="rounded-lg border border-primary-100 bg-white p-2">
@@ -827,7 +856,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                         className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 transition"
                                     >
                                         <EnvelopeSimple size={16} weight="bold" />
-                                        Send link via Email
+                                        {t('linkTab.sendViaEmailButton')}
                                     </button>
                                 ) : (
                                     <div className="flex items-center gap-2">
@@ -835,7 +864,7 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             type="email"
                                             value={linkEmail}
                                             onChange={(e) => setLinkEmail(e.target.value)}
-                                            placeholder="parent@example.com"
+                                            placeholder={t('linkTab.emailPlaceholder')}
                                             className="h-9 text-sm flex-1"
                                             disabled={isSendingLinkEmail}
                                         />
@@ -848,12 +877,12 @@ export const PaymentSection: React.FC<SectionProps> = ({
                                             {isSendingLinkEmail ? (
                                                 <>
                                                     <SpinnerGap size={14} className="animate-spin" />
-                                                    Sending...
+                                                    {t('linkTab.sendingEllipsis')}
                                                 </>
                                             ) : (
                                                 <>
                                                     <EnvelopeSimple size={14} weight="bold" />
-                                                    Send
+                                                    {t('linkTab.sendButton')}
                                                 </>
                                             )}
                                         </button>
@@ -869,8 +898,9 @@ export const PaymentSection: React.FC<SectionProps> = ({
             <Dialog open={showQrOverlay} onOpenChange={setShowQrOverlay}>
                 <DialogContent className="w-full max-w-sm rounded-2xl p-6">
                     <p className="mb-4 text-center text-sm font-semibold text-neutral-700">
-                        Scan to Pay — {currencySymbol}
-                        {registrationFee}
+                        {t('qrDialog.scanToPayLabel', {
+                            amount: `${currencySymbol}${registrationFee}`,
+                        })}
                     </p>
                     {qrImageUrl && (
                         <img
@@ -891,11 +921,11 @@ export const PaymentSection: React.FC<SectionProps> = ({
                     )}
                     {!qrImageUrl && paymentOptionDetails?.upiVpa && (
                         <p className="mt-3 text-center text-xs font-medium text-neutral-600">
-                            UPI ID: {paymentOptionDetails.upiVpa}
+                            {t('qrDialog.upiIdLabel', { upiId: paymentOptionDetails.upiVpa })}
                         </p>
                     )}
                     <p className="mt-3 text-center text-xs text-neutral-400">
-                        Click outside or press Escape to close
+                        {t('qrDialog.closeHint')}
                     </p>
                 </DialogContent>
             </Dialog>

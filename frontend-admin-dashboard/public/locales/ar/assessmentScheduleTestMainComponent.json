@@ -1,0 +1,53 @@
+{
+    "meta": {
+        "helmetTitle": "جدولة الاختبارات",
+        "helmetDescription": "تعرض هذه الصفحة قائمة بجميع الاختبارات المجدولة، كما يمكن جدولة تقييم من هنا."
+    },
+    "header": {
+        "navHeading": "قائمة التقييمات"
+    },
+    "tabs": {
+        "liveTests": {
+            "emptyMessage": "لا توجد اختبارات مباشرة حاليًا."
+        },
+        "upcomingTests": {
+            "emptyMessage": "لا توجد اختبارات قادمة مجدولة."
+        },
+        "previousTests": {
+            "emptyMessage": "لا توجد اختبارات سابقة متاحة."
+        },
+        "draftTests": {
+            "emptyMessage": "لا توجد اختبارات مسودة متاحة."
+        }
+    },
+    "filters": {
+        "filterBy": "تصفية حسب",
+        "mode": "الوضع",
+        "type": "النوع",
+        "evaluation": "التقييم",
+        "unapplied": {
+            "countLabel_zero": "تم تحديد {{count}} عامل تصفية",
+            "countLabel_one": "تم تحديد {{count}} عامل تصفية",
+            "countLabel_two": "تم تحديد {{count}} عامل تصفية",
+            "countLabel_few": "تم تحديد {{count}} عوامل تصفية",
+            "countLabel_many": "تم تحديد {{count}} عامل تصفية",
+            "countLabel_other": "تم تحديد {{count}} عامل تصفية",
+            "instructionPrefix": "— اضغط",
+            "applyLabel": "تطبيق",
+            "instructionSuffix": "لتحديث القائمة."
+        },
+        "source": {
+            "label": "المصدر",
+            "options": {
+                "DASHBOARD": "لوحة التحكم",
+                "API": "API"
+            },
+            "emptyOnPage": "لا توجد تقييمات من هذا المصدر في هذه الصفحة. جرّب صفحة أخرى أو امسح عامل تصفية المصدر."
+        }
+    },
+    "dialogs": {
+        "noCourse": {
+            "type": "إنشاء تقييم"
+        }
+    }
+}

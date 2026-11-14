@@ -1,0 +1,7 @@
+{
+    "defaultFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "phoneNumber": "Numéro de téléphone"
+    }
+}

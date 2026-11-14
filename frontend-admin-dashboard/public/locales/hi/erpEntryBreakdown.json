@@ -1,0 +1,14 @@
+{
+    "groups": {
+        "earnings": "आय",
+        "deductions": "कटौतियाँ",
+        "employerContributions": "नियोक्ता योगदान"
+    },
+    "component": "घटक",
+    "tax": "कर",
+    "onHold": "रोका गया:",
+    "noBreakdown": "इस प्रविष्टि के लिए कोई घटक विवरण संग्रहीत नहीं था।",
+    "none": "कोई नहीं",
+    "subtotal": "उप-योग",
+    "netPay": "शुद्ध वेतन"
+}

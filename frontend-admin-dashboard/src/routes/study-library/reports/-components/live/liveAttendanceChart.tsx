@@ -9,16 +9,19 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { AttendancePoint } from './-utils/liveCompute';
 
-const chartConfig = {
-    attendancePct: {
-        label: 'Attendance %',
-        color: 'hsl(var(--chart-1))',
-    },
-} satisfies ChartConfig;
-
 export function LiveAttendanceChart({ data }: { data: AttendancePoint[] }) {
+    const { t } = useTranslation('studyLibraryLiveAttendanceChart');
+
+    const chartConfig = {
+        attendancePct: {
+            label: t('attendancePercent'),
+            color: 'hsl(var(--chart-1))',
+        },
+    } satisfies ChartConfig;
+
     const chartData = data.map((d) => ({
         date: d.date,
         attendancePct: Math.round(d.attendancePct),

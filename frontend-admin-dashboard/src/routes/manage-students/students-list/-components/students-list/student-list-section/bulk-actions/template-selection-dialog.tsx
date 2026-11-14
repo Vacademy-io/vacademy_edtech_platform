@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -7,8 +8,16 @@ import { getMessageTemplates, getMessageTemplate } from '@/services/message-temp
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { getInstituteId } from '@/constants/helper';
-import { Plus, FileText, Eye, CircleNotch, Spinner, MagnifyingGlass } from '@phosphor-icons/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+    Plus,
+    FileText,
+    Eye,
+    CircleNotch,
+    Spinner,
+    MagnifyingGlass,
+    CaretLeft,
+    CaretRight,
+} from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -39,6 +48,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
     isBulkEmailSending,
     onSendEmail,
 }) => {
+    const { t } = useTranslation('manageStudentsTemplateSelectionDialog');
     const navigate = useNavigate();
     const [templates, setTemplates] = useState<MessageTemplate[]>([]);
     const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
@@ -66,7 +76,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
             setCurrentPage(response.page);
         } catch (error) {
             console.error('Error loading templates:', error);
-            toast.error('Failed to load email templates');
+            toast.error(t('errors.loadTemplatesFailed'));
         } finally {
             setIsLoadingTemplates(false);
         }
@@ -119,7 +129,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                 // Don't close immediately - let parent handle preview dialog
             } catch (error) {
                 console.error('Error loading template:', error);
-                toast.error('Failed to load template content. Using cached version.');
+                toast.error(t('errors.loadTemplateContentFailed'));
                 // Fallback to cached template if API fails
                 onSelectTemplate(template);
             }
@@ -142,10 +152,10 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
 
     return (
         <MyDialog
-            heading="Choose an existing template or create a new one for your email"
+            heading={t('dialog.heading')}
             open={isOpen}
             onOpenChange={onClose}
-            dialogWidth="w-[90vw] max-w-4xl"
+            dialogWidth="w-dialog-xl"
             footer={
                 <div className="flex items-center justify-end">
                     <MyButton
@@ -154,7 +164,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                         onClick={onClose}
                         disabled={isBulkEmailSending}
                     >
-                        Cancel
+                        {t('dialog.cancel')}
                     </MyButton>
                 </div>
             }
@@ -167,7 +177,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                             inputType="text"
                             input={searchQuery}
                             onChangeFunction={(e) => setSearchQuery(e.target.value)}
-                            inputPlaceholder="Search templates..."
+                            inputPlaceholder={t('search.placeholder')}
                             className="w-full"
                         />
                     </div>
@@ -178,22 +188,22 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                         disabled={isBulkEmailSending}
                     >
                         <Plus className="mr-2 size-4" />
-                        Create New Template
+                        {t('actions.createNewTemplate')}
                     </MyButton>
                 </div>
 
                 {isLoadingTemplates ? (
                     <div className="flex items-center justify-center py-8">
                         <CircleNotch className="size-6 animate-spin text-blue-600" />
-                        <span className="ml-2 text-sm text-neutral-600">Loading templates...</span>
+                        <span className="ms-2 text-sm text-neutral-600">{t('loading.templates')}</span>
                     </div>
                 ) : filteredTemplates.length === 0 ? (
                     <div className="text-center py-8">
                         <FileText className="mx-auto size-12 text-neutral-400 mb-4" />
                         <p className="text-neutral-600 mb-4">
-                            {searchQuery ? 'No templates found matching your search.' : 'No email templates found.'}
+                            {searchQuery ? t('empty.noSearchResults') : t('empty.noTemplates')}
                         </p>
-                        <p className="text-sm text-neutral-500">Create your first template to get started.</p>
+                        <p className="text-sm text-neutral-500">{t('empty.getStarted')}</p>
                     </div>
                 ) : (
                     <>
@@ -201,9 +211,9 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                             <table className="w-full">
                                 <thead className="bg-neutral-50 border-b border-neutral-200">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700">Template Name</th>
-                                            <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700">Subject</th>
-                                            <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700">Content Preview</th>
+                                            <th className="px-4 py-3 text-start text-sm font-medium text-neutral-700">{t('table.templateName')}</th>
+                                            <th className="px-4 py-3 text-start text-sm font-medium text-neutral-700">{t('table.subject')}</th>
+                                            <th className="px-4 py-3 text-start text-sm font-medium text-neutral-700">{t('table.contentPreview')}</th>
                                         </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-200">
@@ -223,14 +233,14 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="text-sm text-neutral-700 max-w-xs truncate">
-                                                    {template.subject || 'No subject'}
+                                                    {template.subject || t('table.noSubject')}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div
                                                     className="text-sm text-neutral-600 max-w-xs truncate"
                                                     dangerouslySetInnerHTML={{
-                                                        __html: template.content?.substring(0, 80) + (template.content?.length > 80 ? '...' : '') || 'No content'
+                                                        __html: template.content?.substring(0, 80) + (template.content?.length > 80 ? '...' : '') || t('table.noContent')
                                                     }}
                                                 />
                                             </td>
@@ -245,14 +255,18 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-t border-neutral-200">
                                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                                     <span>
-                                        Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} templates
+                                        {t('pagination.showingRange', {
+                                            start: currentPage * pageSize + 1,
+                                            end: Math.min((currentPage + 1) * pageSize, totalElements),
+                                            total: totalElements,
+                                        })}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-neutral-600">Rows per page:</span>
+                                        <span className="text-sm text-neutral-600">{t('pagination.rowsPerPage')}</span>
                                         <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(Number(value))}>
-                                            <SelectTrigger className="w-[70px] h-8">
+                                            <SelectTrigger className="w-16 h-8">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -269,11 +283,11 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                                             disabled={isFirst || currentPage === 0}
                                             className="h-8 w-8 flex items-center justify-center rounded border border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
                                         >
-                                            <ChevronLeft className="size-4" />
+                                            <CaretLeft className="size-4" />
                                         </button>
                                         <div className="flex items-center gap-1 px-2">
                                             <span className="text-sm text-neutral-600">
-                                                Page {currentPage + 1} of {totalPages}
+                                                {t('pagination.pageOf', { current: currentPage + 1, total: totalPages })}
                                             </span>
                                         </div>
                                         <button
@@ -281,7 +295,7 @@ export const TemplateSelectionDialog: React.FC<TemplateSelectionDialogProps> = (
                                             disabled={isLast || currentPage >= totalPages - 1}
                                             className="h-8 w-8 flex items-center justify-center rounded border border-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50"
                                         >
-                                            <ChevronRight className="size-4" />
+                                            <CaretRight className="size-4" />
                                         </button>
                                     </div>
                                 </div>

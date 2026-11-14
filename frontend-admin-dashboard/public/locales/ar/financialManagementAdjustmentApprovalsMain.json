@@ -1,0 +1,8 @@
+{
+    "tabs": {
+        "pending": "قيد الانتظار",
+        "approved": "مُعتمَد",
+        "rejected": "مرفوض",
+        "allHistory": "كل السجل"
+    }
+}

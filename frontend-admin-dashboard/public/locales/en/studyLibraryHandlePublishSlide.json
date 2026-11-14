@@ -1,0 +1,18 @@
+{
+    "errorSavingSlide": "Error saving slide",
+    "couldNotReadContent": "Could not read editor content. Please try again.",
+    "slidePublished": "Slide published successfully!",
+    "confirmForcePublish": "To prevent accidental data loss, please confirm.\n\n{{serverMessage}}\n\nAre you sure you want to publish this version?",
+    "slidePublishedForced": "Slide published (forced override).",
+    "errorPublishingSlide": "Error in publishing the slide",
+    "videoSlideMissing": "Video slide data is missing.",
+    "quizPublished": "Quiz published successfully!",
+    "quizPublishFailed": "Failed to publish quiz",
+    "audioSlideMissing": "Audio slide data is missing.",
+    "scormSlideMissing": "SCORM slide data is missing.",
+    "scormSlidePublished": "SCORM slide published successfully!",
+    "errorPublishingScormSlide": "Error in publishing the SCORM slide",
+    "assessmentSlideMissing": "Assessment slide data is missing.",
+    "assessmentSlidePublished": "Assessment slide published successfully!",
+    "errorPublishingAssessmentSlide": "Error in publishing the assessment slide"
+}

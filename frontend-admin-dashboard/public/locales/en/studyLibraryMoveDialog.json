@@ -1,0 +1,13 @@
+{
+    "moveTo": "Move to",
+    "move": "Move",
+    "moving": "Moving…",
+    "movedSuccessfully": "Chapter moved successfully",
+    "movedWithCopies_one": "Chapter moved, with copies in {{count}} more location",
+    "movedWithCopies_other": "Chapter moved, with copies in {{count}} more locations",
+    "movedWithFailedCopies_one": "Chapter moved, but {{count}} copy failed: {{locations}}",
+    "movedWithFailedCopies_other": "Chapter moved, but {{count}} copies failed: {{locations}}",
+    "moveFailed": "Failed to move chapter",
+    "partialMoveSummary": "{{done}} of {{total}} locations done. Retry the rest below.",
+    "multiHint": "A chapter lives in one place: the extra locations get a copy, and the chapter is removed from its current one."
+}

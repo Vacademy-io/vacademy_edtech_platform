@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,6 +38,7 @@ const COLORS = {
 };
 
 export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
+    const { t } = useTranslation('challengeAnalyticsTemplateAnalytics');
     const [expandedDays, setExpandedDays] = useState<number[]>([]);
     const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
@@ -50,7 +52,7 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
     const chartData = useMemo(() => {
         if (!data?.daily_participation?.days) return [];
         return data.daily_participation.days.map((day) => ({
-            name: `Day ${day.day_number}`,
+            name: t('dayLabel', { number: day.day_number }),
             day_label: day.day_label,
             outgoing_users: day.outgoing.unique_users,
             outgoing_messages: day.outgoing.total_messages,
@@ -59,7 +61,7 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
             response_rate: day.response_rate,
             templates_count: day.outgoing.templates.length + day.incoming.templates.length,
         }));
-    }, [data]);
+    }, [data, t]);
 
     // Flatten all templates for detailed view
     const allTemplates = useMemo(() => {
@@ -98,11 +100,13 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-2">
                     <ChartBar className="h-5 w-5 text-blue-500" weight="fill" />
-                    <CardTitle className="text-base font-semibold">Template Analytics</CardTitle>
+                    <CardTitle className="text-base font-semibold">
+                        {t('emptyState.title')}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex h-[200px] items-center justify-center text-gray-500">
-                        No template data available
+                        {t('emptyState.message')}
                     </div>
                 </CardContent>
             </Card>
@@ -122,11 +126,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                         </div>
                         <div>
                             <CardTitle className="text-base font-semibold">
-                                Day-wise Template Analytics
+                                {t('header.title')}
                             </CardTitle>
-                            <p className="text-xs text-gray-500">
-                                Messages and engagement by day and template
-                            </p>
+                            <p className="text-xs text-gray-500">{t('header.subtitle')}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -135,14 +137,14 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                             size="sm"
                             onClick={() => setViewMode('chart')}
                         >
-                            Chart View
+                            {t('viewToggle.chart')}
                         </Button>
                         <Button
                             variant={viewMode === 'table' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setViewMode('table')}
                         >
-                            Table View
+                            {t('viewToggle.table')}
                         </Button>
                     </div>
                 </div>
@@ -152,7 +154,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                 <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
                     <div className="rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Total Days</span>
+                            <span className="text-xs font-medium text-gray-500">
+                                {t('summary.totalDays')}
+                            </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-blue-700">
                             {daily_participation.total_days}
@@ -161,7 +165,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                     <div className="rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
                         <div className="flex items-center gap-2">
                             <PaperPlaneTilt className="h-4 w-4 text-indigo-600" weight="fill" />
-                            <span className="text-xs font-medium text-gray-500">Messages Sent</span>
+                            <span className="text-xs font-medium text-gray-500">
+                                {t('summary.messagesSent')}
+                            </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-indigo-700">
                             {daily_participation.total_messages_sent}
@@ -170,7 +176,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                     <div className="rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 p-4">
                         <div className="flex items-center gap-2">
                             <ChatCircle className="h-4 w-4 text-emerald-600" weight="fill" />
-                            <span className="text-xs font-medium text-gray-500">Responses</span>
+                            <span className="text-xs font-medium text-gray-500">
+                                {t('summary.responses')}
+                            </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-emerald-700">
                             {daily_participation.total_messages_received}
@@ -179,7 +187,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                     <div className="rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 p-4">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-purple-600" weight="fill" />
-                            <span className="text-xs font-medium text-gray-500">Users Reached</span>
+                            <span className="text-xs font-medium text-gray-500">
+                                {t('summary.usersReached')}
+                            </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-purple-700">
                             {summary.total_unique_users_reached}
@@ -187,7 +197,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                     </div>
                     <div className="rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 p-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Response Rate</span>
+                            <span className="text-xs font-medium text-gray-500">
+                                {t('summary.responseRate')}
+                            </span>
                         </div>
                         <p className="mt-2 text-2xl font-bold text-amber-700">
                             {summary.overall_response_rate}%
@@ -198,9 +210,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                 {viewMode === 'chart' ? (
                     <Tabs defaultValue="messages">
                         <TabsList className="mb-4">
-                            <TabsTrigger value="messages">Messages by Day</TabsTrigger>
-                            <TabsTrigger value="users">Users by Day</TabsTrigger>
-                            <TabsTrigger value="combined">Combined View</TabsTrigger>
+                            <TabsTrigger value="messages">{t('tabs.messagesByDay')}</TabsTrigger>
+                            <TabsTrigger value="users">{t('tabs.usersByDay')}</TabsTrigger>
+                            <TabsTrigger value="combined">{t('tabs.combinedView')}</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="messages" className="mt-0">
@@ -232,7 +244,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 COLORS.outgoing,
                                                                         }}
                                                                     ></span>
-                                                                    Outgoing: {data?.outgoing_messages}
+                                                                    {t('tooltip.outgoing', {
+                                                                        value: data?.outgoing_messages,
+                                                                    })}
                                                                 </p>
                                                                 <p className="text-sm">
                                                                     <span
@@ -242,7 +256,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 COLORS.incoming,
                                                                         }}
                                                                     ></span>
-                                                                    Incoming: {data?.incoming_messages}
+                                                                    {t('tooltip.incoming', {
+                                                                        value: data?.incoming_messages,
+                                                                    })}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -254,13 +270,13 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                         <Legend />
                                         <Bar
                                             dataKey="outgoing_messages"
-                                            name="Outgoing Messages"
+                                            name={t('series.outgoingMessages')}
                                             fill={COLORS.outgoing}
                                             radius={[4, 4, 0, 0]}
                                         />
                                         <Bar
                                             dataKey="incoming_messages"
-                                            name="Incoming Messages"
+                                            name={t('series.incomingMessages')}
                                             fill={COLORS.incoming}
                                             radius={[4, 4, 0, 0]}
                                         />
@@ -298,8 +314,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 COLORS.outgoing,
                                                                         }}
                                                                     ></span>
-                                                                    Unique Users (Out):{' '}
-                                                                    {data?.outgoing_users}
+                                                                    {t('tooltip.uniqueUsersOut', {
+                                                                        value: data?.outgoing_users,
+                                                                    })}
                                                                 </p>
                                                                 <p className="text-sm">
                                                                     <span
@@ -309,8 +326,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 COLORS.incoming,
                                                                         }}
                                                                     ></span>
-                                                                    Unique Users (In):{' '}
-                                                                    {data?.incoming_users}
+                                                                    {t('tooltip.uniqueUsersIn', {
+                                                                        value: data?.incoming_users,
+                                                                    })}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -322,13 +340,13 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                         <Legend />
                                         <Bar
                                             dataKey="outgoing_users"
-                                            name="Unique Users (Outgoing)"
+                                            name={t('series.uniqueUsersOutgoing')}
                                             fill={COLORS.outgoing}
                                             radius={[4, 4, 0, 0]}
                                         />
                                         <Bar
                                             dataKey="incoming_users"
-                                            name="Unique Users (Incoming)"
+                                            name={t('series.uniqueUsersIncoming')}
                                             fill={COLORS.incoming}
                                             radius={[4, 4, 0, 0]}
                                         />
@@ -359,14 +377,14 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                         <Bar
                                             yAxisId="left"
                                             dataKey="outgoing_messages"
-                                            name="Messages Sent"
+                                            name={t('series.messagesSent')}
                                             fill={COLORS.outgoing}
                                             radius={[4, 4, 0, 0]}
                                         />
                                         <Bar
                                             yAxisId="left"
                                             dataKey="incoming_messages"
-                                            name="Responses"
+                                            name={t('series.responses')}
                                             fill={COLORS.incoming}
                                             radius={[4, 4, 0, 0]}
                                         />
@@ -374,7 +392,7 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                             yAxisId="right"
                                             type="monotone"
                                             dataKey="response_rate"
-                                            name="Response Rate (%)"
+                                            name={t('series.responseRatePercent')}
                                             stroke={COLORS.responseRate}
                                             strokeWidth={2}
                                             dot={{ r: 4 }}
@@ -390,26 +408,26 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                        Day
+                                    <th className="px-4 py-3 text-start font-medium text-gray-700">
+                                        {t('table.day')}
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        Outgoing Users
+                                    <th className="px-4 py-3 text-end font-medium text-gray-700">
+                                        {t('table.outgoingUsers')}
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        Outgoing Messages
+                                    <th className="px-4 py-3 text-end font-medium text-gray-700">
+                                        {t('table.outgoingMessages')}
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        Incoming Users
+                                    <th className="px-4 py-3 text-end font-medium text-gray-700">
+                                        {t('table.incomingUsers')}
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        Incoming Messages
+                                    <th className="px-4 py-3 text-end font-medium text-gray-700">
+                                        {t('table.incomingMessages')}
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-700">
-                                        Response Rate
+                                    <th className="px-4 py-3 text-end font-medium text-gray-700">
+                                        {t('table.responseRate')}
                                     </th>
                                     <th className="px-4 py-3 text-center font-medium text-gray-700">
-                                        Templates
+                                        {t('table.templates')}
                                     </th>
                                 </tr>
                             </thead>
@@ -430,7 +448,9 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                     )}
                                                     <div>
                                                         <p className="font-medium text-gray-800">
-                                                            Day {day.day_number}
+                                                            {t('dayLabel', {
+                                                                number: day.day_number,
+                                                            })}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
                                                             {day.day_label}
@@ -479,7 +499,7 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                             <div>
                                                                 <p className="mb-2 text-xs font-semibold text-blue-600 flex items-center gap-1">
                                                                     <PaperPlaneTilt className="h-3 w-3" />
-                                                                    Outgoing Templates
+                                                                    {t('outgoingTemplates')}
                                                                 </p>
                                                                 <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                                                                     {day.outgoing.templates.map(
@@ -503,16 +523,20 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 )}
                                                                                 <div className="mt-2 flex gap-4 text-xs">
                                                                                     <span className="text-blue-600">
-                                                                                        {
-                                                                                            template.unique_users
-                                                                                        }{' '}
-                                                                                        users
+                                                                                        {t(
+                                                                                            'usersCount',
+                                                                                            {
+                                                                                                count: template.unique_users,
+                                                                                            }
+                                                                                        )}
                                                                                     </span>
                                                                                     <span className="text-gray-600">
-                                                                                        {
-                                                                                            template.total_messages
-                                                                                        }{' '}
-                                                                                        messages
+                                                                                        {t(
+                                                                                            'messagesCount',
+                                                                                            {
+                                                                                                count: template.total_messages,
+                                                                                            }
+                                                                                        )}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
@@ -526,7 +550,7 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                             <div>
                                                                 <p className="mb-2 text-xs font-semibold text-emerald-600 flex items-center gap-1">
                                                                     <ChatCircle className="h-3 w-3" />
-                                                                    Incoming Templates (Responses)
+                                                                    {t('incomingTemplatesResponses')}
                                                                 </p>
                                                                 <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                                                                     {day.incoming.templates.map(
@@ -550,16 +574,20 @@ export function TemplateAnalytics({ data, isLoading }: TemplateAnalyticsProps) {
                                                                                 )}
                                                                                 <div className="mt-2 flex gap-4 text-xs">
                                                                                     <span className="text-emerald-600">
-                                                                                        {
-                                                                                            template.unique_users
-                                                                                        }{' '}
-                                                                                        users
+                                                                                        {t(
+                                                                                            'usersCount',
+                                                                                            {
+                                                                                                count: template.unique_users,
+                                                                                            }
+                                                                                        )}
                                                                                     </span>
                                                                                     <span className="text-gray-600">
-                                                                                        {
-                                                                                            template.total_messages
-                                                                                        }{' '}
-                                                                                        messages
+                                                                                        {t(
+                                                                                            'messagesCount',
+                                                                                            {
+                                                                                                count: template.total_messages,
+                                                                                            }
+                                                                                        )}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>

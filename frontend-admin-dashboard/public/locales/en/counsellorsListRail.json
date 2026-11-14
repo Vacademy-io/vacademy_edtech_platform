@@ -1,0 +1,14 @@
+{
+    "empty": "No counsellors in this team subtree.",
+    "toast": {
+        "reactivated": "Counsellor reactivated",
+        "markedInactive": "Counsellor marked inactive",
+        "updateFailed": "Status update failed"
+    },
+    "assignedCount_one": "{{count}} assigned",
+    "assignedCount_other": "{{count}} assigned",
+    "markInactive": "Mark inactive",
+    "markActive": "Mark active",
+    "active": "Active",
+    "inactive": "Inactive"
+}

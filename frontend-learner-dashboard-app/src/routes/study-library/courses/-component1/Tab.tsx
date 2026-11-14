@@ -1,18 +1,21 @@
 // src/routes/study-library/-component/Tab.tsx
 import { Link, useRouterState } from '@tanstack/react-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/types/naming-settings';
 
-const getTabs = () => [
-  { name: `All ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`, path: '/study-library/courses' },
-  { name: 'In Progress', path: '/study-library/courses' },
-  { name: 'Completed', path: '/study-library/courses' },
+const getTabs = (t: (key: string, options?: Record<string, unknown>) => string, courses: string) => [
+  { name: t('catalog.tab.all', { courses }), path: '/study-library/courses' },
+  { name: t('catalog.tab.inProgress'), path: '/study-library/courses' },
+  { name: t('catalog.tab.completed'), path: '/study-library/courses' },
 ];
 
 const Tab: React.FC = () => {
+  const { t } = useTranslation("study");
   const location = useRouterState({ select: (state) => state.location });
-  const tabs = getTabs();
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+  const tabs = getTabs(t, courses);
 
   return (
     <div className="flex items-center p-4 h-14 border-b border-gray-300">

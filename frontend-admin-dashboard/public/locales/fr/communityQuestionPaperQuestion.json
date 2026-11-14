@@ -1,0 +1,8 @@
+{
+    "questionNumber": "Question {{number}}",
+    "questionImageAlt": "Image de la question {{number}}",
+    "marksCount_one": "{{count}} point",
+    "marksCount_many": "{{count}} de points",
+    "marksCount_other": "{{count}} points",
+    "minLabel": "min"
+}

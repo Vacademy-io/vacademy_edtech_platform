@@ -1,0 +1,18 @@
+{
+    "running": "Running...",
+    "run": "Run",
+    "view": "View",
+    "edit": "Edit",
+    "loadingEditor": "Loading Editor...",
+    "loadingEditorLower": "Loading editor...",
+    "outputLabel": "Output:",
+    "previewLabel": "Preview:",
+    "previewTitle": "Preview",
+    "cssPreviewArea": "CSS Preview Area",
+    "failedToLoadCodeEditor": "Failed to load code editor",
+    "compileErrorPrefix": "Compile Error: ",
+    "noOutputProduced": "No output produced",
+    "noOutput": "No output",
+    "errorPrefix": "Error: ",
+    "errorRunningCodePrefix": "Error running code: "
+}

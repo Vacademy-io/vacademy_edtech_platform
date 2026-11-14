@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,7 +11,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, AlertTriangle, CheckCircle, X, FileText, Settings } from 'lucide-react';
+import {
+    ArrowsClockwise,
+    Warning,
+    CheckCircle,
+    X,
+    FileText,
+    GearSix,
+} from '@phosphor-icons/react';
 import { WhatsAppIcon } from '@/components/ui/whatsapp-icon';
 import {
     MetaWhatsAppTemplate,
@@ -34,6 +42,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
     template,
     onMappingSaved,
 }) => {
+    const { t } = useTranslation('settingsWhatsAppTemplateMapping');
     const [mappings, setMappings] = useState<PlaceholderMapping[]>([]);
     const [vacademyFields, setVacademyFields] = useState<VacademyDataField[]>([]);
     const [saving, setSaving] = useState(false);
@@ -47,9 +56,9 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
             setVacademyFields(fields);
         } catch (err) {
             console.error('Error loading Vacademy fields:', err);
-            setError('Failed to load available fields');
+            setError(t('errors.loadFields'));
         }
-    }, []);
+    }, [t]);
 
     const loadExistingMapping = useCallback(async () => {
         if (!template) return;
@@ -189,7 +198,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
             onClose();
         } catch (err) {
             console.error('Error saving mapping:', err);
-            setError('Failed to save template mapping. Please try again.');
+            setError(t('errors.saveMapping'));
         } finally {
             setSaving(false);
         }
@@ -233,13 +242,13 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="flex h-[95vh] w-[95vw] max-w-7xl flex-col overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100 p-0">
+            <DialogContent className="flex max-h-dialog-tall w-dialog-xl flex-col overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100 p-0">
                 <DialogHeader className="shrink-0 border-b border-gray-200/60 bg-white/80 px-8 py-6 backdrop-blur-sm">
                     <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-900">
                         <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/25">
                             <WhatsAppIcon className="size-5 text-white" />
                         </div>
-                        Template Mapping
+                        {t('header.title')}
                     </DialogTitle>
                     <div className="mt-6">
                         <div className="rounded-xl border border-gray-200/60 bg-gradient-to-r from-gray-50 to-gray-100 p-6 shadow-sm">
@@ -250,11 +259,11 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                 {template.name}
                             </h3>
                             <h4 className="mb-3 text-sm font-medium text-gray-600">
-                                Template Body
+                                {t('header.templateBody')}
                             </h4>
                             <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-800">
                                 {template.components.find((c) => c.type === 'BODY')?.text ||
-                                    'No body content'}
+                                    t('header.noBodyContent')}
                             </div>
                         </div>
                     </div>
@@ -270,7 +279,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                     variant="destructive"
                                     className="border-red-200/60 bg-red-50/80 shadow-sm backdrop-blur-sm"
                                 >
-                                    <AlertTriangle className="size-4" />
+                                    <Warning className="size-4" />
                                     <AlertDescription className="font-medium text-red-700">
                                         {error}
                                     </AlertDescription>
@@ -281,9 +290,9 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                             <div className="space-y-6">
                                 <h3 className="flex items-center gap-2 text-lg font-medium text-gray-600">
                                     <div className="flex size-6 items-center justify-center rounded-lg bg-gray-500">
-                                        <Settings className="size-3 text-white" />
+                                        <GearSix className="size-3 text-white" />
                                     </div>
-                                    Map Dynamic Values
+                                    {t('mappings.sectionTitle')}
                                 </h3>
                                 <div className="space-y-6">
                                     {mappings.map((mapping) => (
@@ -305,14 +314,14 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                         <div className="h-px w-8 bg-gradient-to-l from-gray-300 to-transparent"></div>
                                                     </div>
                                                     <span className="rounded-lg bg-gray-50 px-3 py-1 text-sm font-medium text-gray-600">
-                                                        Vacademy Data Field
+                                                        {t('mappings.vacademyDataField')}
                                                     </span>
                                                 </div>
 
                                                 {/* Data Category Selection */}
                                                 <div className="space-y-3">
                                                     <label className="text-sm font-semibold text-gray-700">
-                                                        Data Category
+                                                        {t('mappings.dataCategory')}
                                                     </label>
                                                     <Select
                                                         value={
@@ -328,7 +337,11 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                         }
                                                     >
                                                         <SelectTrigger className="h-12 w-full rounded-xl border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                                            <SelectValue placeholder="Select data category..." />
+                                                            <SelectValue
+                                                                placeholder={t(
+                                                                    'mappings.selectCategoryPlaceholder'
+                                                                )}
+                                                            />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {getAvailableCategories().map(
@@ -358,7 +371,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                 {selectedCategories[mapping.metaPlaceholder] && (
                                                     <div className="space-y-3">
                                                         <label className="text-sm font-semibold text-gray-700">
-                                                            Field
+                                                            {t('mappings.field')}
                                                         </label>
                                                         <Select
                                                             value={mapping.vacademyField}
@@ -370,7 +383,11 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                             }
                                                         >
                                                             <SelectTrigger className="h-12 w-full rounded-xl border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                                                <SelectValue placeholder="Select field..." />
+                                                                <SelectValue
+                                                                    placeholder={t(
+                                                                        'mappings.selectFieldPlaceholder'
+                                                                    )}
+                                                                />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {getFieldsByCategory(
@@ -409,7 +426,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                         </div>
                                                         <div>
                                                             <span className="text-sm font-medium text-green-800">
-                                                                Mapped to:
+                                                                {t('mappings.mappedTo')}
                                                             </span>
                                                             <span className="ml-1 text-sm font-bold text-green-900">
                                                                 {
@@ -442,7 +459,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                     <div className="flex size-6 items-center justify-center rounded-full bg-green-500">
                                         <WhatsAppIcon className="size-3 text-white" />
                                     </div>
-                                    WhatsApp Message Preview
+                                    {t('preview.title')}
                                 </h4>
                                 <div className="rounded-2xl border border-green-200/60 bg-gradient-to-br from-green-50 to-emerald-50 p-6 shadow-lg">
                                     <div className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-green-800">
@@ -450,7 +467,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                             ? getTemplatePreview()
                                             : template.components.find((c) => c.type === 'BODY')
                                                   ?.text ||
-                                              'Complete all mappings to see the full preview'}
+                                              t('preview.completeAllToSeePreview')}
                                     </div>
                                 </div>
                             </div>
@@ -458,7 +475,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                             {/* Completion Status */}
                             <div className="space-y-4">
                                 <h4 className="text-sm font-semibold text-gray-700">
-                                    Completion Status
+                                    {t('completionStatus.title')}
                                 </h4>
                                 <div className="space-y-3">
                                     {mappings.map((mapping) => (
@@ -487,7 +504,9 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                 }`}
                                             >
                                                 {`{{${mapping.metaPlaceholder}}}`}{' '}
-                                                {mapping.vacademyField ? 'mapped' : 'pending'}
+                                                {mapping.vacademyField
+                                                    ? t('completionStatus.mapped')
+                                                    : t('completionStatus.pending')}
                                             </span>
                                         </div>
                                     ))}
@@ -500,7 +519,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                                                 <CheckCircle className="size-4 text-white" />
                                             </div>
                                             <span className="text-sm font-bold text-green-700">
-                                                All mappings complete!
+                                                {t('completionStatus.allComplete')}
                                             </span>
                                         </div>
                                     </div>
@@ -519,7 +538,7 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                         disabled={saving}
                         className="h-12 w-full rounded-xl border-neutral-300 px-8 py-3 font-semibold text-neutral-700 shadow-sm transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50 sm:w-auto"
                     >
-                        Cancel
+                        {t('footer.cancel')}
                     </Button>
                     <Button
                         onClick={handleSaveMapping}
@@ -528,11 +547,11 @@ export const WhatsAppTemplateMappingModal: React.FC<WhatsAppTemplateMappingModal
                     >
                         {saving ? (
                             <>
-                                <RefreshCw className="mr-2 size-4 animate-spin" />
-                                Saving...
+                                <ArrowsClockwise className="me-2 size-4 animate-spin" />
+                                {t('footer.saving')}
                             </>
                         ) : (
-                            'Save Mapping'
+                            t('footer.saveMapping')
                         )}
                     </Button>
                 </div>

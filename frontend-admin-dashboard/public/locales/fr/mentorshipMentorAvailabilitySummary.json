@@ -1,0 +1,16 @@
+{
+    "noHoursSet": "Aucun horaire hebdomadaire défini — aucun créneau n'est proposé aux apprenants.",
+    "sessionDuration_one": "Séance de {{count}} minute",
+    "sessionDuration_many": "Séances de {{count}} de minutes",
+    "sessionDuration_other": "Séances de {{count}} minutes",
+    "defaultLength": "Durée par défaut",
+    "days": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+    }
+}

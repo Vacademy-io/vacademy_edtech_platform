@@ -1,0 +1,123 @@
+{
+    "upload": {
+        "heading": "Upload answer sheet",
+        "dropzone": "Drag and drop a PDF file here, or click to select one"
+    },
+    "errors": {
+        "invalidFileType": "Invalid file type. Please upload a PDF file.",
+        "noPdfFile": "No PDF file available for annotation.",
+        "canvasContext": "Could not get a 2D context to rotate this page.",
+        "generatingPdf": "Generating PDF, please wait...",
+        "generatePdfFailed": "Failed to generate annotated PDF. Please try again.",
+        "fullscreenBlocked": "Your browser wouldn't allow fullscreen here.",
+        "awardMarksBeforeSubmit": "Please award marks before submitting.",
+        "draftSaveFailed": "Couldn't save draft. Please try again.",
+        "submitFailedTitle": "Evaluation not submitted",
+        "submitFailedRescued": "{{reason}} Nothing was saved for this copy — your marking is kept as a draft, so you can retry.",
+        "submitFailedNotRescued": "{{reason}} Nothing was saved — your marking is still on screen, please try again."
+    },
+    "confirmLeave": "Changes you made may not be saved. Are you sure you want to leave this page?",
+    "toasts": {
+        "draftSavedTitle": "Draft saved",
+        "draftSavedDesc": "You can safely leave and resume this evaluation later.",
+        "draftRestoredTitle": "Draft restored",
+        "draftRestoredDesc": "We loaded your saved progress. Continue where you left off.",
+        "annotationsCleared": "All annotations cleared",
+        "rotateWarning": "Existing marks on this page may shift — check their position after rotating.",
+        "evaluationSubmittedTitle": "Evaluation Submitted",
+        "evaluationSubmittedDesc": "The answer sheet evaluation has been completed and submitted."
+    },
+    "toolHelp": {
+        "select": "Select, move or resize any annotation on the page.",
+        "pen": "Click, then draw free-hand on the page. Adjust colour and thickness from the Stroke control next to it.",
+        "tick": "Click, then click anywhere on the page to stamp a green tick — click again to stamp more.",
+        "cross": "Click, then click anywhere on the page to stamp a red cross — click again to stamp more.",
+        "text": "Click, then click on the page to add a comment box and start typing.",
+        "box": "Click, then click anywhere on the page to draw a rectangle centred on that spot.",
+        "circle": "Click, then click anywhere on the page to draw a circle centred on that spot.",
+        "delete": "Delete the selected annotation(s) (or press Backspace/Delete)."
+    },
+    "controlHelp": {
+        "strokeColour": { "label": "Stroke & colour", "description": "Adjust pen thickness/colour — applies to what's selected too." },
+        "marksNumber": { "label": "Marks number", "description": "Insert a numeric mark (0–9, fractions, decimals)." },
+        "upload": { "label": "Upload", "description": "Load an evaluated PDF from your device and continue on it." },
+        "download": { "label": "Download", "description": "Download the annotated answer sheet." },
+        "reset": { "label": "Reset", "description": "Clear all annotations from every page." },
+        "undo": { "label": "Undo", "description": "Undo the last change on this page (bottom bar)." },
+        "redo": { "label": "Redo", "description": "Redo the last undone change (bottom bar)." },
+        "pageNavigation": { "label": "Page navigation", "description": "Move to the previous or next page (bottom bar)." },
+        "rotate": { "label": "Rotate", "description": "Rotate a sideways or upside-down scan to read it upright (bottom bar)." },
+        "zoom": { "label": "Zoom", "description": "Zoom in, out, or fit the page to the width (bottom bar)." },
+        "fullscreen": { "label": "Fullscreen", "description": "Hide the browser chrome for a bigger view of the answer sheet. Esc exits." },
+        "submit": { "label": "Submit", "description": "Submit the evaluation — marks and feedback are required." }
+    },
+    "penSwatches": {
+        "green": "Green",
+        "red": "Red",
+        "blue": "Blue",
+        "black": "Black"
+    },
+    "toolbar": {
+        "scrollLeft": "Scroll toolbar left",
+        "scrollRight": "Scroll toolbar right",
+        "strokeThicknessColour": "Stroke thickness and colour",
+        "thickness": "Thickness",
+        "colour": "Colour",
+        "insertMarksNumber": "Insert marks number",
+        "moreActions": "More actions",
+        "more": "More",
+        "uploadEvaluatedPdf": "Upload an evaluated PDF",
+        "downloadAnnotatedPdf": "Download annotated PDF",
+        "resetAnnotations": "Reset annotations",
+        "toolGuide": "Tool guide"
+    },
+    "resetDialog": {
+        "title": "Reset annotations?",
+        "description": "This removes all your marks and annotations from every page of this answer sheet. This can't be undone.",
+        "cancel": "Cancel",
+        "confirm": "Reset annotations"
+    },
+    "submitDialog": {
+        "title": "Confirm Submission",
+        "description": "Are you sure you want to submit this evaluation? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Continue"
+    },
+    "header": {
+        "title": "Answer Sheet Evaluation",
+        "rotatedBadge": "Rotated {{degrees}}°",
+        "openGradingPanel": "Open grading panel",
+        "grade": "Grade"
+    },
+    "helpDialog": {
+        "annotationTools": "Annotation tools",
+        "controls": "Controls"
+    },
+    "gradingPanel": {
+        "gradingLabel": "Grading",
+        "heading": "Evaluation",
+        "closePanel": "Close evaluation panel",
+        "closePanelTitle": "Close panel"
+    },
+    "footer": {
+        "submitEvaluation": "Submit evaluation",
+        "saveDraft": "Save draft",
+        "savingDraft": "Saving draft…",
+        "draftSavedHint": "Draft saved {{time}} · resume anytime",
+        "awardMarksHint": "Award marks to submit, or save a draft to finish later."
+    },
+    "bottomBar": {
+        "undo": "Undo",
+        "redo": "Redo",
+        "previousPage": "Previous page",
+        "nextPage": "Next page",
+        "zoomOut": "Zoom out",
+        "fitPageToWidth": "Fit page to width",
+        "zoomIn": "Zoom in",
+        "rotateLeft": "Rotate page left",
+        "rotateRight": "Rotate page right",
+        "exitFullscreen": "Exit fullscreen",
+        "enterFullscreen": "Enter fullscreen",
+        "fullscreenTitleEnter": "Fullscreen — more room to read the answer sheet"
+    }
+}

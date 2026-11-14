@@ -1,0 +1,79 @@
+{
+    "field": {
+        "priority": "الأولوية",
+        "expiresAt": "تنتهي الصلاحية في",
+        "position": "الموضع",
+        "pinStartTime": "مثبّت من",
+        "pinEndTime": "مثبّت حتى",
+        "showUntil": "يُعرض حتى",
+        "isDismissible": "السماح للمستخدمين بإغلاقه",
+        "messagePriority": "أولوية الرسالة",
+        "allowReplies": "السماح بالردود",
+        "packageSessionId": "معرّف جلسة الحزمة",
+        "streamType": "نوع البث",
+        "folderName": "اسم المجلد",
+        "category": "الفئة",
+        "accessLevel": "مستوى الوصول",
+        "communityType": "نوع المجتمع",
+        "tags": "الوسوم",
+        "taskTitle": "عنوان المهمة",
+        "estimatedMinutes": "الدقائق المقدّرة",
+        "taskDescription": "وصف المهمة",
+        "slideIds": "معرّفات الشرائح",
+        "goLive": "بدء التفعيل",
+        "deadline": "الموعد النهائي",
+        "status": "الحالة",
+        "reminderBeforeMinutes": "التذكير قبل (بالدقائق)",
+        "isMandatory": "إلزامي",
+        "autoStatusUpdate": "تحديث الحالة تلقائيًا"
+    },
+    "hint": {
+        "expiresAt": "اتركه فارغًا لتنبيه لا تنتهي صلاحيته أبدًا.",
+        "pinPriority": "الأرقام الأعلى تُثبَّت فوق الأرقام الأقل.",
+        "showUntil": "تتوقف الطبقة العلوية عن الظهور بعد هذا الوقت حتى لو لم يتم إغلاقها. اتركه فارغًا لعدم انتهاء الصلاحية.",
+        "overlayPriority": "بين 1 و10.",
+        "commaSeparated": "مفصولة بفواصل."
+    },
+    "placeholder": {
+        "folderName": "مثال: التعاميم",
+        "optional": "اختياري",
+        "tags": "إعلانات، امتحانات",
+        "taskDescription": "ماذا يجب على المتعلم أن يفعل؟",
+        "slideIds": "slide-id-1, slide-id-2"
+    },
+    "option": {
+        "priority": {
+            "high": "عالية",
+            "medium": "متوسطة",
+            "low": "منخفضة"
+        },
+        "position": {
+            "top": "أعلى",
+            "middle": "منتصف",
+            "bottom": "أسفل"
+        },
+        "streamType": {
+            "live": "مباشر",
+            "recorded": "مسجّل",
+            "upcoming": "قادم"
+        },
+        "accessLevel": {
+            "students": "الطلاب",
+            "teachers": "المعلمون",
+            "everyone": "الجميع"
+        },
+        "communityType": {
+            "school": "المدرسة",
+            "class": "الصف",
+            "club": "النادي"
+        },
+        "status": {
+            "draft": "مسودة",
+            "scheduled": "مجدول",
+            "live": "مباشر",
+            "completed": "مكتمل",
+            "overdue": "متأخر",
+            "cancelled": "ملغى"
+        }
+    }
+}

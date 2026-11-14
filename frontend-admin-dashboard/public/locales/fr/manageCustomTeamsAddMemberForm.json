@@ -1,0 +1,49 @@
+{
+    "title": "Ajouter un nouveau membre",
+    "description": "Créez un nouvel utilisateur et attribuez-lui une équipe/un rôle avec un accès spécifique.",
+    "sections": {
+        "userDetails": "Détails de l'utilisateur",
+        "userAccessMapping": "Mappage des accès utilisateur",
+        "userAccessMappingHint": "Sélectionnez une ou plusieurs sessions de forfait à autoriser."
+    },
+    "form": {
+        "fullNameLabel": "Nom complet *",
+        "fullNamePlaceholder": "Jean Dupont",
+        "emailLabel": "E-mail *",
+        "emailPlaceholder": "jean@exemple.com",
+        "phoneLabel": "Téléphone",
+        "phonePlaceholder": "123 456 7890",
+        "roleLabel": "Rôle *",
+        "selectRolePlaceholder": "Sélectionner un rôle",
+        "customRoleOption": "+ Rôle personnalisé",
+        "customRoleNamePlaceholder": "Saisir le nom du rôle personnalisé",
+        "hasFacultyAssignedLabel": "A la permission d'affectation du corps enseignant ?",
+        "packageSessionsLabel": "Sessions de forfait",
+        "packageSessionsSearchPlaceholder": "Rechercher des sessions de forfait...",
+        "loadingSessions": "Chargement des sessions...",
+        "noSessionsFound": "Aucune session de forfait trouvée.",
+        "sessionsPageInfo": "Page {{page}} sur {{totalPages}} ({{count}} au total)",
+        "sessionsSelected_one": "{{count}} session sélectionnée",
+        "sessionsSelected_many": "{{count}} session sélectionnée",
+        "sessionsSelected_other": "{{count}} sessions sélectionnées",
+        "linkageTypeLabel": "Type de rattachement",
+        "selectLinkageTypePlaceholder": "Sélectionner le type de rattachement",
+        "linkageDirect": "Direct",
+        "linkageInherited": "Hérité",
+        "linkagePartnership": "Partenariat"
+    },
+    "validation": {
+        "fullNameRequired": "Le nom complet est requis",
+        "invalidEmail": "Adresse e-mail invalide",
+        "roleRequired": "Le rôle est requis"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "addMember": "Ajouter un membre"
+    },
+    "toast": {
+        "addSuccess": "Membre ajouté avec succès",
+        "addFailed": "Échec de l'ajout du membre",
+        "customRoleNameRequired": "Veuillez saisir un nom de rôle personnalisé"
+    }
+}

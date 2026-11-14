@@ -20,6 +20,10 @@ Design:
     reorders the heuristic candidates to match, fills any shortfall from the
     heuristic order, and re-assigns composites monotonically (the FE sorts by
     composite; rank is authoritative, so composite must agree with rank).
+  * The call goes through llm_router.chat_with_chain with the
+    'reels_selection' use-case chain (GLM by default): Isoquant for GLM with
+    reasoning effort low and a max_tokens allowance on both gateway legs, then
+    the next model on any failure.
   * On any failure (no API key, transport error, malformed response, zero
     valid ids) the caller falls back to the pure-heuristic order — selection
     never blocks /scan.
@@ -29,12 +33,13 @@ implement is gone.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
 from typing import Optional, Sequence
 
-import httpx
+from .use_case_chat import chat_json
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +47,15 @@ logger = logging.getLogger(__name__)
 # (up to 60 windows × ~800 chars ≈ 12k input tokens), so it gets a longer
 # leash than the usual 15s LLM budget. Still bounded — /scan is interactive.
 _SELECT_TIMEOUT_S = 30.0
+# Whole-chain budget: walking the chain (gateway → OpenRouter → next model)
+# must not hold an interactive /scan for minutes.
+_SELECT_BUDGET_S = 45.0
 _SELECT_TEMPERATURE = 0.2
 # Output is an ordered id list + short reasons (≤50 entries × ~25 tokens ≈
-# 1.3k). 4000 leaves headroom for verbose models and for providers that
-# count reasoning tokens against max_tokens.
+# 1.3k). 4000 leaves headroom for verbose models; reasoning models (GLM) get
+# a further allowance on top from chat_with_chain.
 _SELECT_MAX_TOKENS = 4000
+SELECTION_USE_CASE = "reels_selection"
 # Hard cap on windows shipped to the LLM — keeps the prompt inside a cheap
 # model's comfortable context and the cost per scan predictable.
 MAX_SELECTION_WINDOWS = 60
@@ -92,17 +101,17 @@ async def select_top_candidates(
     target_duration_sec: int,
     topic_keywords: Sequence[str] = (),
     api_key: Optional[str],
-    base_url: str,
-    model: str,
+    models: Sequence[str],
 ) -> Optional[list[tuple[str, str]]]:
     """Run the LLM selection pass. Returns the ordered `[(id, reason), ...]`
     the model chose (best first, ≤ select_n entries), or None on any failure
     so the caller can fall back to the heuristic order.
 
     Each `candidate` is a dict with keys: id, transcript, t_start, t_end,
-    predicted_duration_s, scores (dict of the 5 axes + composite).
+    predicted_duration_s, scores (dict of the 5 axes + composite). `models` is
+    the chain to walk (first = preferred).
     """
-    if not candidates or not api_key or select_n <= 0:
+    if not candidates or not api_key or select_n <= 0 or not models:
         return None
     if len(candidates) <= 1:
         return None  # nothing to choose between
@@ -115,52 +124,31 @@ async def select_top_candidates(
         topic_keywords=topic_keywords,
     )
     payload = {
-        "model": model,
         "messages": [
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user},
         ],
         "temperature": _SELECT_TEMPERATURE,
         "max_tokens": _SELECT_MAX_TOKENS,
-        "response_format": {"type": "json_object"},
     }
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-
-    raw: Optional[str] = None
+    # json_object first; the chain again without it if a model rejected the
+    # parameter (400). Never raises — None means "heuristic order stands".
     try:
-        async with httpx.AsyncClient(timeout=_SELECT_TIMEOUT_S) as client:
-            try:
-                resp = await client.post(base_url, headers=headers, json=payload)
-            except httpx.HTTPError as e:
-                logger.warning(f"[ReelsSelect] transport error: {e}")
-                return None
-            if resp.status_code != 200:
-                # 400 with "response_format" in body → retry plain.
-                if resp.status_code == 400 and "response_format" in resp.text:
-                    plain = {k: v for k, v in payload.items() if k != "response_format"}
-                    try:
-                        resp = await client.post(base_url, headers=headers, json=plain)
-                    except httpx.HTTPError as e:
-                        logger.warning(f"[ReelsSelect] retry transport: {e}")
-                        return None
-                if resp.status_code != 200:
-                    logger.warning(
-                        f"[ReelsSelect] LLM {resp.status_code}: "
-                        f"{resp.text[:200]!r}"
-                    )
-                    return None
-            try:
-                data = resp.json()
-                raw = data["choices"][0]["message"]["content"]
-            except Exception as e:
-                logger.warning(f"[ReelsSelect] unwrap failed: {e}")
-                return None
-    except Exception as e:
-        logger.warning(f"[ReelsSelect] unexpected: {e}")
+        result = await asyncio.wait_for(
+            chat_json(
+                payload,
+                use_case=SELECTION_USE_CASE,
+                models=list(models),
+                api_key=api_key,
+                timeout=_SELECT_TIMEOUT_S,
+                label="ReelsSelect",
+            ),
+            timeout=_SELECT_BUDGET_S,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"[ReelsSelect] no answer within {_SELECT_BUDGET_S:.0f}s — heuristic order stands")
         return None
+    raw: Optional[str] = result.content if result is not None else None
 
     if not raw:
         return None

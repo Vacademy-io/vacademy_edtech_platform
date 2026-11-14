@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.session.service;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -38,6 +39,7 @@ import vacademy.io.common.institute.entity.session.Session;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class SessionService {
@@ -244,6 +246,9 @@ public class SessionService {
         packageSession.setStatus(PackageSessionStatusEnum.ACTIVE.name());
         packageSession.setStartTime(startDate);
         packageSession.setGroup(group);
+        if (StringUtils.hasText(levelDTO.getBatchName())) {
+            packageSession.setName(levelDTO.getBatchName().trim());
+        }
         packageSessionRepository.save(packageSession);
         defaultEnrollInviteService.createDefaultEnrollInvite(packageSession,instituteId);
         // If this level contains subgroups, create child package sessions under this parent.
@@ -296,21 +301,50 @@ public class SessionService {
         }
     }
 
+    /**
+     * Marks DELETED the batches of the caller's institute that sit on the given sessions, and the
+     * session row itself only when no other institute still uses it. The institute is the clientId
+     * header, and a batch is the institute's only when its course was linked to that institute
+     * first (a later link, which any institute can add, owns nothing). Every refusal is thrown
+     * before the first write.
+     */
     @Transactional
-    public String deleteSessions(List<String>sessionIds, CustomUserDetails user) {
-        List<Session>sessions = sessionRepository.findAllById(sessionIds);
-        for (Session session : sessions) {
-            session.setStatus(SessionStatusEnum.DELETED.name());
+    public String deleteSessions(List<String> sessionIds, String instituteId, CustomUserDetails user) {
+        String institute = LevelService.requireDeleteCaller(instituteId, user, "Session");
+        List<String> ids = LevelService.cleanDeleteIds(sessionIds, "session");
+
+        List<PackageSession> packageSessions = packageSessionRepository.findBySessionIdsAndInstituteId(ids, institute);
+        Set<String> ownedSessionIds = new HashSet<>();
+        for (PackageSession packageSession : packageSessions) {
+            if (packageSession.getSession() != null) {
+                ownedSessionIds.add(packageSession.getSession().getId());
+            }
         }
-        sessionRepository.saveAll(sessions);
-       List<PackageSession>packageSessions = packageSessionRepository.findBySessionIds(sessionIds);
-       List<String>packageSessionIds = new ArrayList<>();
-       for (PackageSession packageSession : packageSessions) {
-           packageSession.setStatus(PackageSessionStatusEnum.DELETED.name());
-           packageSessionIds.add(packageSession.getId());
-       }
-       packageSessionRepository.saveAll(packageSessions);
-       learnerInvitationService.deleteLearnerInvitationBySourceAndSourceId(LearnerInvitationSourceTypeEnum.PACKAGE_SESSION.name(), packageSessionIds);
+        LevelService.requireAllOwned(ids, ownedSessionIds, institute, user, "Session");
+        List<String> usedElsewhere = packageSessionRepository.findSessionIdsUsedOutsideInstitute(ids, institute);
+
+        List<String> packageSessionIds = new ArrayList<>();
+        for (PackageSession packageSession : packageSessions) {
+            packageSession.setStatus(PackageSessionStatusEnum.DELETED.name());
+            packageSessionIds.add(packageSession.getId());
+        }
+        packageSessionRepository.saveAll(packageSessions);
+
+        List<String> retiredSessionIds = new ArrayList<>(ids);
+        if (usedElsewhere != null) {
+            retiredSessionIds.removeAll(usedElsewhere);
+        }
+        if (!retiredSessionIds.isEmpty()) {
+            List<Session> sessions = sessionRepository.findAllById(retiredSessionIds);
+            for (Session session : sessions) {
+                session.setStatus(SessionStatusEnum.DELETED.name());
+            }
+            sessionRepository.saveAll(sessions);
+        }
+        log.info("Session delete: user={} institute={} sessions={} batches={} sessionRowsRetired={}",
+                user.getUserId(), institute, ids.size(), packageSessionIds.size(), retiredSessionIds.size());
+        // Last on purpose: this call is asynchronous and does not roll back with this method.
+        learnerInvitationService.deleteLearnerInvitationBySourceAndSourceId(LearnerInvitationSourceTypeEnum.PACKAGE_SESSION.name(), packageSessionIds);
         return "Session deleted successfully.";
     }
 
@@ -340,6 +374,18 @@ public class SessionService {
         Session session = resolveSession(sessionDTO);
         for (AddLevelWithSessionDTO levelDTO : sessionDTO.getLevels()) {
             levelService.addOrUpdateLevel(levelDTO, session, packageEntity, instituteId, user);
+        }
+        // Removing a session from ONE course's edit only deletes that course's
+        // batches (done by the level loop above). The session row itself is
+        // shared across courses, so retire it only once no live batch uses it.
+        if (!sessionDTO.isNewSession() && !isDefaultSession(sessionDTO)
+                && SessionStatusEnum.DELETED.name().equalsIgnoreCase(sessionDTO.getStatus())
+                && !packageSessionRepository.existsBySession_IdAndStatusIn(session.getId(),
+                        List.of(PackageSessionStatusEnum.ACTIVE.name(),
+                                PackageSessionStatusEnum.HIDDEN.name(),
+                                PackageSessionStatusEnum.DRAFT.name()))) {
+            session.setStatus(SessionStatusEnum.DELETED.name());
+            sessionRepository.save(session);
         }
     }
 
@@ -372,7 +418,10 @@ public class SessionService {
         if (StringUtils.hasText(sessionDTO.getSessionName())) {
             session.setSessionName(sessionDTO.getSessionName());
         }
-        if (StringUtils.hasText(sessionDTO.getStatus())) {
+        // DELETED is applied in addOrUpdateSession, after this course's batches
+        // are removed, and only if no other course still uses the session.
+        if (StringUtils.hasText(sessionDTO.getStatus())
+                && !SessionStatusEnum.DELETED.name().equalsIgnoreCase(sessionDTO.getStatus())) {
             session.setStatus(sessionDTO.getStatus());
         }
         if (sessionDTO.getStartDate() != null) {

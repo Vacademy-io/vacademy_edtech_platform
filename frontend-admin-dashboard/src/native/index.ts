@@ -61,4 +61,9 @@ export { hideSplash };
 export { isNative, isIOS, isAndroid, getPlatform } from './platform';
 export { setStatusBar } from './statusBar';
 export { registerForPush } from './pushNotifications';
-export { getFlavor, shouldForceVimShell, getFlavorInstituteId } from './flavor';
+export {
+    getFlavor,
+    shouldForceVimShell,
+    shouldForceEvalezyShell,
+    getFlavorInstituteId,
+} from './flavor';

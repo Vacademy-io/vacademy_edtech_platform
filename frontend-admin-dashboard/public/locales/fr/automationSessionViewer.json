@@ -1,0 +1,26 @@
+{
+    "sessionsAndAnalytics": "Sessions et analyses",
+    "statusFilter": {
+        "all": "Tous les statuts",
+        "active": "Actif",
+        "completed": "Terminé",
+        "error": "Erreur",
+        "timedOut": "Expiré"
+    },
+    "refresh": "Actualiser",
+    "stats": {
+        "total": "Total",
+        "active": "Actifs",
+        "completed": "Terminés",
+        "errors": "Erreurs",
+        "timedOut": "Expirés"
+    },
+    "loadingSessions": "Chargement des sessions...",
+    "noSessionsFound": "Aucune session trouvée",
+    "userId": "ID : {{id}}",
+    "nodeLabel": "Nœud :",
+    "noMessages": "Aucun message enregistré pour cette session",
+    "selectSessionPrompt": "Sélectionnez une session pour voir la conversation",
+    "bot": "Bot",
+    "user": "Utilisateur"
+}

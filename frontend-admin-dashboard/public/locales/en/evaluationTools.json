@@ -1,0 +1,10 @@
+{
+    "select": "Select",
+    "pen": "Pen",
+    "tick": "Tick",
+    "cross": "Cross",
+    "text": "Text",
+    "box": "Box",
+    "circle": "Circle",
+    "delete": "Delete"
+}

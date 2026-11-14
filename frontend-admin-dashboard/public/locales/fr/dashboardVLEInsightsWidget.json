@@ -1,0 +1,38 @@
+{
+    "heading": "Aperçu {{plural}}",
+    "subtitle": "Forfaits, places et croissance sur votre réseau",
+    "manage": "Gérer",
+    "planStatus": {
+        "title": "Statut du forfait",
+        "active": "Actif",
+        "pending": "En attente",
+        "expired": "Expiré",
+        "inactive": "Inactif",
+        "none": "Aucun forfait"
+    },
+    "seatUtilization": {
+        "title": "Utilisation des places",
+        "seatsFraction": "{{used}} / {{total}} places",
+        "seatsAvailable_one": "{{formatted}} place disponible sur le réseau",
+        "seatsAvailable_many": "{{formatted}} places disponibles sur le réseau",
+        "seatsAvailable_other": "{{formatted}} places disponibles sur le réseau"
+    },
+    "growth": {
+        "title": "Nouvelles inscriptions",
+        "tooltipLabel": "Nouveaux {{plural}}"
+    },
+    "months": {
+        "jan": "Janv.",
+        "feb": "Févr.",
+        "mar": "Mars",
+        "apr": "Avr.",
+        "may": "Mai",
+        "jun": "Juin",
+        "jul": "Juil.",
+        "aug": "Août",
+        "sep": "Sept.",
+        "oct": "Oct.",
+        "nov": "Nov.",
+        "dec": "Déc."
+    }
+}

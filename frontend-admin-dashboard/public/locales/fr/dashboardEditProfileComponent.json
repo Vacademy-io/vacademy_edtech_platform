@@ -1,0 +1,73 @@
+{
+    "trigger": {
+        "editInstitute": "Modifier l'établissement",
+        "addDetails": "Ajouter des détails"
+    },
+    "dialog": {
+        "title": "Modifier l'établissement"
+    },
+    "logoAlt": "logo",
+    "fields": {
+        "instituteName": {
+            "label": "Nom de l'établissement",
+            "placeholder": "Nom de l'établissement"
+        },
+        "instituteType": {
+            "label": "Type d'établissement"
+        },
+        "instituteEmail": {
+            "label": "E-mail de l'établissement",
+            "placeholder": "E-mail de l'établissement"
+        },
+        "institutePhoneNumber": {
+            "label": "Numéro de téléphone de l'établissement",
+            "placeholder": "123 456 7890"
+        },
+        "instituteWebsite": {
+            "label": "Site web de l'établissement",
+            "placeholder": "Site web de l'établissement"
+        },
+        "instituteAddress": {
+            "label": "Adresse",
+            "placeholder": "Ligne d'adresse 1"
+        },
+        "instituteCity": {
+            "label": "Ville/Village",
+            "placeholder": "Sélectionner la ville/village"
+        },
+        "instituteState": {
+            "label": "État/Région",
+            "placeholder": "Sélectionner l'État/la région"
+        },
+        "instituteCountry": {
+            "label": "Pays",
+            "placeholder": "Sélectionner le pays"
+        },
+        "institutePinCode": {
+            "label": "Code postal",
+            "placeholder": "Entrer le code postal"
+        }
+    },
+    "sections": {
+        "contactInformation": "Informations de contact",
+        "locationDetails": "Détails de localisation",
+        "instituteTheme": "Thème de l'établissement"
+    },
+    "theme": {
+        "current": "Actuel",
+        "changeTheme": "Changer de thème"
+    },
+    "actions": {
+        "saveChanges": "Enregistrer les modifications",
+        "cancel": "Annuler"
+    },
+    "toast": {
+        "updateSuccess": "Vos informations ont été mises à jour avec succès !"
+    },
+    "validation": {
+        "instituteNameRequired": "Le nom de l'établissement est requis",
+        "instituteTypeRequired": "Veuillez sélectionner le type d'établissement",
+        "invalidEmail": "Adresse e-mail invalide",
+        "invalidWebsite": "URL de site web invalide"
+    }
+}

@@ -59,6 +59,11 @@ class QuestionDTO(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     tags: Optional[List[str]] = None
     level: Optional[str] = None
+    # Vsmart Extract: the paper's section the question was printed under and
+    # its printed marks / negative marks (None when the paper says nothing).
+    section_name: Optional[str] = None
+    marks: Optional[float] = None
+    negative_marks: Optional[float] = None
 
 
 class TopicNumberMapDto(BaseModel):
@@ -77,3 +82,7 @@ class AutoQuestionPaperResponse(BaseModel):
     subjects: Optional[List[str]] = None
     classes: Optional[List[str]] = None
     topic_question_map: Optional[TopicNumberMapDto] = None
+    # Vsmart Extract only: how the paper was read (parts, key found, keyed,
+    # explained, credits) — shown above the preview so the teacher knows what
+    # to check. Absent for generated papers.
+    extraction: Optional[Dict[str, Any]] = None

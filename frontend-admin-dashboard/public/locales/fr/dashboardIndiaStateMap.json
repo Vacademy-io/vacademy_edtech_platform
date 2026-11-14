@@ -1,0 +1,16 @@
+{
+    "legend": {
+        "title": "Répartition en Inde",
+        "hoverPrompt": "Survolez un État"
+    },
+    "actions": {
+        "enlargeMap": "Agrandir la carte"
+    },
+    "map": {
+        "ariaLabel": "{{subOrgPlural}} par État indien",
+        "tooltip": "{{name}} : {{count}}"
+    },
+    "dialog": {
+        "heading": "{{subOrgPlural}} par État"
+    }
+}

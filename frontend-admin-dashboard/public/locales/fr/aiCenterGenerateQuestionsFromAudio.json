@@ -1,0 +1,71 @@
+{
+    "header": {
+        "title": "Questions à partir d'un audio",
+        "subtitle": "Déposez un enregistrement. Nous le transcrirons, puis vous demanderons quel type de questions vous voulez."
+    },
+    "sections": {
+        "dropRecording": "Déposez votre enregistrement",
+        "questionKind": "Quel type de questions voulez-vous ?"
+    },
+    "upload": {
+        "dropzoneTitle": "Déposez votre enregistrement ici, ou cliquez pour le choisir",
+        "dropzoneHint": "MP3, WAV, FLAC, AAC ou M4A.",
+        "removeFile": "Supprimer le fichier",
+        "uploading": "Téléversement de votre enregistrement…",
+        "transcribing": "Transcription en cours — environ 30 secondes en général."
+    },
+    "fileStatus": {
+        "uploading": "Téléversement…",
+        "transcribing": "Transcription…",
+        "readyToConfigure": "Prêt à configurer",
+        "drafting": "Rédaction des questions",
+        "done": "Terminé"
+    },
+    "fields": {
+        "focusAreas": {
+            "label": "Points à privilégier",
+            "placeholder": "ex. se concentrer sur les concepts clés de la photosynthèse, y compris le processus et les facteurs qui l'influencent"
+        },
+        "numQuestions": {
+            "label": "Combien ?",
+            "placeholder": "10"
+        },
+        "difficulty": {
+            "label": "Difficulté"
+        },
+        "language": {
+            "label": "Langue"
+        }
+    },
+    "difficulties": {
+        "easy": "Facile",
+        "medium": "Moyen",
+        "hard": "Difficile"
+    },
+    "languages": {
+        "english": "Anglais",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "taskFailed": "Nous n'avons pas pu terminer ce brouillon. Voulez-vous réessayer ?",
+        "generateFailed": "Nous n'avons pas pu rédiger de questions à partir de cet enregistrement. Réessayer ?",
+        "unsupportedFormat": "Impossible de lire les fichiers .{{ext}}. Essayez MP3, WAV, FLAC, AAC ou M4A.",
+        "uploadIncomplete": "Le téléversement ne s'est pas terminé. Voulez-vous réessayer ?",
+        "readError": "Une erreur s'est produite lors de la lecture de votre enregistrement. Réessayer ?",
+        "missingFocus": "Indiquez-nous sur quoi les questions doivent porter.",
+        "missingCount": "Combien de questions souhaitez-vous ?"
+    },
+    "progress": {
+        "title": "Rédaction de vos questions en cours",
+        "subtitle": "Écoute de l'enregistrement et création des questions. Cela prend généralement environ 30 secondes."
+    },
+    "actions": {
+        "draftQuestions": "Rédiger mes questions"
+    },
+    "taskListHeading": "Vsmart Audio",
+    "recentDrafts": {
+        "title": "Vos brouillons récents",
+        "fallbackLabel": "Brouillon basé sur un audio",
+        "emptyHint": "Vos brouillons basés sur des audios apparaîtront ici. Déposez un enregistrement ci-dessus pour commencer."
+    }
+}

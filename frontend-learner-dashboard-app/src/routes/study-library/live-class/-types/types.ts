@@ -52,6 +52,18 @@ export interface LearnerButtonConfig {
   visible?: boolean;
 }
 
+/**
+ * An instructor / presenter of a live class, as the backend returns them.
+ * Only `user_id` is guaranteed — the display fields come from the user
+ * directory and are absent when that lookup didn't resolve.
+ */
+export interface SessionInstructor {
+  user_id: string;
+  full_name?: string | null;
+  email?: string | null;
+  profile_pic_file_id?: string | null;
+}
+
 export interface SessionDetails {
   session_id: string;
   waiting_room_time: number;
@@ -75,6 +87,8 @@ export interface SessionDetails {
   default_class_link?: string | null;
   custom_meeting_link?: string | null;
   provider_meeting_id?: string | null;
+  /** Who is taking the class. Absent on older responses. */
+  instructors?: SessionInstructor[] | null;
 }
 
 export interface DaySession {
@@ -222,6 +236,8 @@ export interface PastSessionDetails {
     activity?: PastSessionActivity;
     /** Omitted entirely by the backend when show_class_materials=false. */
     materials?: PastSessionMaterial[];
+    /** Who took the class. Absent on older responses. */
+    instructors?: SessionInstructor[] | null;
 }
 
 export interface PastSessionsPageResponse {

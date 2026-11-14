@@ -18,6 +18,34 @@ from typing import Any, Dict, List, Tuple
 # Extracted from HTML_GENERATION_SYSTEM_PROMPT_ADVANCED lines 358-389, 728-810, 834-951.
 # ---------------------------------------------------------------------------
 
+# The renderer never PLAYS a shot. It seeks `gsap.globalTimeline` to a timestamp
+# and screenshots, so any motion driven by wall-clock time is invisible to it and
+# is silently dropped — the frame looks correct in a browser and renders frozen.
+# Measured on a shipped film: 13 of 31 shots lost their animation this way, 9 of
+# them because their tweens were registered inside a load handler that never fires
+# (the shot is injected into a shadow root after document load has completed).
+#
+# Defined once and appended to every preamble: the constraint is a property of the
+# renderer, not of a tier or a style, and the previous single-preamble copy of the
+# setTimeout half of it never reached the aspirational path that most runs use.
+SEEKABLE_MOTION_RULE = (
+    "\n**ONLY GSAP MOVES — everything else is dropped from the render.**\n"
+    "The renderer seeks `gsap.globalTimeline` frame by frame; it does not play the "
+    "page. Motion it cannot seek does not merely look wrong, it does not appear.\n"
+    "FORBIDDEN (all wall-clock driven):\n"
+    "  * CSS `animation:` / `@keyframes`\n"
+    "  * SVG SMIL — `<animate>`, `<animateTransform>`, `<animateMotion>`\n"
+    "  * `setTimeout` / `setInterval` / `requestAnimationFrame`\n"
+    "  * tweens created inside `DOMContentLoaded`, `window.onload`, or an\n"
+    "    `addEventListener('load', ...)` handler — the shot is injected AFTER load\n"
+    "    has fired, so the handler never runs and NOTHING animates.\n"
+    "REQUIRED: create every tween immediately at script execution (`gsap.to`, "
+    "`gsap.from`, `gsap.fromTo`, `gsap.timeline()`) so it registers on the global "
+    "timeline. Delay with `gsap.to('#el', {delay:1.4})` or `gsap.delayedCall(1.4, fn)`. "
+    "Reveal an SVG stroke by tweening `strokeDashoffset`, never with `<animate>`.\n\n"
+)
+
+
 CORE_PREAMBLE = (
     "You are an expert Educational Video Designer. You create visuals for LEARNING VIDEOS, NOT app/web UIs.\n"
     "Think: Khan Academy, 3Blue1Brown, Converse brand reels, whiteboard explainers. Professional, cinematic, polished.\n\n"
@@ -39,8 +67,22 @@ CORE_PREAMBLE = (
     "This creates the whole-composition parallax drift top-tier explainers use. "
     "Individual foreground subjects can ADDITIONALLY get a slow Ken Burns if they're photos.\n"
     "- **NO APP-LIKE CARDS** — no glassmorphism, no card grids, no mobile-UI feel.\n"
-    "- **NO setTimeout** — renderer seeks `gsap.globalTimeline` frame-by-frame. "
-    "Use `gsap.to('#el', {delay:1.4})` or `gsap.delayedCall(1.4, fn)` — setTimeout never fires.\n"
+    "- **ONLY GSAP MOVES.** The renderer never plays your shot. It seeks "
+    "`gsap.globalTimeline` to a timestamp and screenshots, so motion it cannot seek is "
+    "silently dropped from the video — the frame looks right in a browser and renders "
+    "frozen. Measured on a real film: 13 of 31 shots lost their animation this way.\n"
+    "  FORBIDDEN — every one of these is wall-clock driven and invisible to the seeker:\n"
+    "    * CSS `animation:` or `@keyframes`\n"
+    "    * SVG SMIL — `<animate>`, `<animateTransform>`, `<animateMotion>`\n"
+    "    * `setTimeout` / `setInterval` / `requestAnimationFrame`\n"
+    "    * creating tweens inside `DOMContentLoaded`, `window.onload` or an "
+    "`addEventListener('load')` handler. This is the most common mistake: the shot is "
+    "injected into a shadow root AFTER document load has already fired, so the handler "
+    "never runs and NOTHING animates.\n"
+    "  REQUIRED: create every tween immediately at script execution — `gsap.to`, "
+    "`gsap.from`, `gsap.fromTo`, `gsap.timeline()` — so it registers on the global "
+    "timeline. For delays use `gsap.to('#el', {delay:1.4})` or `gsap.delayedCall(1.4, fn)`. "
+    "For an SVG stroke reveal, tween `strokeDashoffset` — never `<animate>`.\n"
     "- **BACKGROUND TREATMENT** — the Director plan supplies a `background_treatment` field per shot. "
     "Honor it; never invent a hand-picked background hex. Accepted values: `brand_solid` (flat "
     "`var(--brand-bg)`), `brand_textured` (var(--brand-bg) + `.halftone` overlay), `brand_gradient` "
@@ -107,7 +149,7 @@ CORE_PREAMBLE = (
     "Sets: `mdi:`, `lucide:`, `tabler:`, `noto:`, `fluent-emoji:`.\n"
     "7. **SVG Maps**: `<img src='https://vacademy-media.s3.ap-south-1.amazonaws.com/assets/maps/us.svg' class='map-svg'/>`. "
     "Animate with GSAP.\n\n"
-)
+) + SEEKABLE_MOTION_RULE
 
 # ---------------------------------------------------------------------------
 # Animation tools — shared reference for all shot types.
@@ -631,7 +673,7 @@ CORE_PREAMBLE_ASPIRATIONAL = (
     "not requirements. If a different composition, hierarchy, or effect serves this shot's narration and "
     "visual concept better, take that path. The technical rails above (easing, no setTimeout, palette tokens, "
     "narration sync, legibility) remain hard requirements.\n\n"
-)
+) + SEEKABLE_MOTION_RULE
 
 # ---------------------------------------------------------------------------
 # Marketing / bold mode — a COMPILED design language, not an override.
@@ -678,7 +720,7 @@ MARKETING_PREAMBLE = (
     "adjacent inline-block spans collapse the space and render as STARTSHERE.\n"
     "- **NO setTimeout** — the renderer seeks `gsap.globalTimeline` frame-by-frame. "
     "Use GSAP `delay:` or `gsap.delayedCall()`. setTimeout never fires.\n\n"
-)
+) + SEEKABLE_MOTION_RULE
 
 MARKETING_PRINCIPLES = (
     "**BRAND-FILM DESIGN PRINCIPLES**:\n"
@@ -2217,7 +2259,15 @@ DOMAIN_SHOT_TYPES: Dict[str, List[str]] = {
     #   screenshot → UI walkthrough (annotation, process steps)
     #   diagram    → concept exposition (text diagram, data story)
     "input_image_photo": ["IMAGE_CLIP", "KINETIC_TITLE", "LOWER_THIRD", "TEXT_DIAGRAM"],
-    "input_image_screenshot": ["IMAGE_CLIP", "ANNOTATION_MAP", "PROCESS_STEPS", "LOWER_THIRD", "KINETIC_TITLE"],
+    # TEXT_DIAGRAM + DATA_STORY earn their place here: a product walkthrough
+    # has to explain structure and numbers between the screenshots, and
+    # without them a 15-still run has only one visual idea (a framed
+    # screenshot) repeated for its whole length. Both are pure-graphics
+    # types, so neither can fabricate a UI that contradicts the real one.
+    "input_image_screenshot": [
+        "IMAGE_CLIP", "ANNOTATION_MAP", "PROCESS_STEPS",
+        "TEXT_DIAGRAM", "DATA_STORY", "LOWER_THIRD", "KINETIC_TITLE",
+    ],
     "input_image_diagram": ["IMAGE_CLIP", "TEXT_DIAGRAM", "DATA_STORY", "KINETIC_TITLE", "LOWER_THIRD"],
     # Mixed assets — user picked at least one video AND at least one image.
     # Catalog is the union of the two primary clip types plus every shot

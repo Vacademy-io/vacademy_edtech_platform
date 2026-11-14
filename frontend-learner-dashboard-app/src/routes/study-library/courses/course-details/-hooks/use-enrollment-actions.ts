@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { UseFormReturn } from "react-hook-form";
 import { getSubjectDetails } from "@/routes/courses/course-details/-utils/helper";
 import type { EnrolledSession } from "@/hooks/use-enrollment-status";
@@ -36,6 +37,7 @@ export function useEnrollmentActions({
   authToken: string;
   paymentType: string | null;
 }) {
+  const { t } = useTranslation("courseDetailsB");
   const [enrollmentDialogOpen, setEnrollmentDialogOpen] = useState(false);
   const [donationDialogOpen, setDonationDialogOpen] = useState(false);
   const [pendingApprovalDialogOpen, setPendingApprovalDialogOpen] =
@@ -72,9 +74,7 @@ export function useEnrollmentActions({
     try {
       await addEnrolledSession(newEnrolledSession);
     } catch {
-      toast.error(
-        "Failed to update enrollment status. Please refresh the page.",
-      );
+      toast.error(t("enrollmentActions.toast.updateFailed"));
       return;
     }
 

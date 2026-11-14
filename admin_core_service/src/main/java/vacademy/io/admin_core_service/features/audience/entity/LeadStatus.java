@@ -52,9 +52,33 @@ public class LeadStatus {
     private Boolean isActive = true;
 
     /** System default (New/Converted/Lost): editable (rename/recolour) but not deletable. */
+    /**
+     * Whether this status is offered in the Lead Status FILTER dropdowns. Deliberately
+     * separate from {@code isActive}: a hidden status is still assignable, still shown on
+     * the leads that carry it, and still reportable — it is only kept out of the filter.
+     */
+    @Column(name = "show_in_filter", nullable = false)
+    @Builder.Default
+    private Boolean showInFilter = true;
+
     @Column(name = "is_system", nullable = false)
     @Builder.Default
     private Boolean isSystem = false;
+
+    /** User who created the row; null for rows seeded by the system. */
+    @Column(name = "created_by")
+    private String createdBy;
+
+    /** User who last changed the row. */
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    /** User who soft-deleted the row; cleared if it is reactivated. */
+    @Column(name = "deleted_by")
+    private String deletedBy;
+
+    @Column(name = "deleted_at")
+    private Timestamp deletedAt;
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private Timestamp createdAt;

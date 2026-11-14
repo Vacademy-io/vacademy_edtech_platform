@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsCurrentlyActiveUsers } from '../../-services/dashboard-services';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ interface CurrentlyActiveUsersWidgetProps {
 export default function CurrentlyActiveUsersWidget({
     instituteId,
 }: CurrentlyActiveUsersWidgetProps) {
+    const { t } = useTranslation('dashboardCurrentlyActiveUsersWidget');
     const { primaryColor } = useTheme();
 
     const { data, isLoading, error } = useQuery({
@@ -46,6 +48,19 @@ export default function CurrentlyActiveUsersWidget({
                 return DeviceTablet;
             default:
                 return Desktop;
+        }
+    };
+
+    const getDeviceLabel = (deviceType: string) => {
+        switch (deviceType?.toLowerCase()) {
+            case 'desktop':
+                return t('device.desktop');
+            case 'mobile':
+                return t('device.mobile');
+            case 'tablet':
+                return t('device.tablet');
+            default:
+                return deviceType;
         }
     };
 
@@ -96,10 +111,10 @@ export default function CurrentlyActiveUsersWidget({
                             </motion.div>
                             <div>
                                 <CardTitle className="text-lg font-bold text-gray-800">
-                                    Currently Active Users
+                                    {t('header.title')}
                                 </CardTitle>
                                 <CardDescription className="text-sm text-gray-600">
-                                    Real-time user sessions and activity
+                                    {t('header.subtitle')}
                                 </CardDescription>
                             </div>
                         </div>
@@ -112,7 +127,7 @@ export default function CurrentlyActiveUsersWidget({
                             <div className="text-2xl font-bold text-green-600">
                                 {data?.total_active_users || activeUsers.length}
                             </div>
-                            <div className="text-xs text-gray-500">Online Now</div>
+                            <div className="text-xs text-gray-500">{t('stats.onlineNow')}</div>
                         </motion.div>
                     </div>
                 </CardHeader>
@@ -132,12 +147,12 @@ export default function CurrentlyActiveUsersWidget({
                     ) : error ? (
                         <div className="py-8 text-center text-red-500">
                             <Users size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Failed to load active users</p>
+                            <p className="text-sm">{t('error.message')}</p>
                         </div>
                     ) : activeUsers.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <Users size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No active users at the moment</p>
+                            <p className="text-sm">{t('empty.message')}</p>
                         </div>
                     ) : (
                         <div className="max-h-96 space-y-3 overflow-y-auto">
@@ -176,7 +191,7 @@ export default function CurrentlyActiveUsersWidget({
                                                     <div className="flex items-center gap-1 text-xs text-gray-500">
                                                         <DeviceIcon size={12} />
                                                         <span className="capitalize">
-                                                            {user.device_type}
+                                                            {getDeviceLabel(user.device_type)}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -217,7 +232,7 @@ export default function CurrentlyActiveUsersWidget({
                                     transition={{ delay: 1 }}
                                     className="py-2 text-center text-sm text-gray-500"
                                 >
-                                    +{activeUsers.length - 10} more users online
+                                    {t('stats.moreUsers', { count: activeUsers.length - 10 })}
                                 </motion.div>
                             )}
                         </div>

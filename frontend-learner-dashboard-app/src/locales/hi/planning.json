@@ -1,0 +1,190 @@
+{
+    "common": {
+        "filters": "फ़िल्टर",
+        "clear": "हटाएँ",
+        "view": "देखें",
+        "close": "बंद करें",
+        "previous": "पिछला",
+        "next": "अगला",
+        "selectPeriod": "अवधि चुनें",
+        "viewModeTimeline": "टाइमलाइन",
+        "viewModeTable": "तालिका",
+        "pageOf": "पृष्ठ {{page}} / {{total}}"
+    },
+    "periodSelector": {
+        "today": "आज",
+        "tomorrow": "कल",
+        "allActivities": "सभी गतिविधियाँ"
+    },
+    "intervalTypeSelector": {
+        "today": "आज",
+        "thisWeek": "इस सप्ताह",
+        "thisMonth": "इस महीने",
+        "thisQuarter": "इस तिमाही",
+        "allPlannings": "सभी योजनाएँ"
+    },
+    "attachments": {
+        "label": "अटैचमेंट",
+        "openInNewTab": "नए टैब में खोलें",
+        "failedToLoad": "लोड नहीं हो सका",
+        "item": "अटैचमेंट {{index}}"
+    },
+    "filtersDialog": {
+        "title": "फ़िल्टर विकल्प",
+        "description": "जो देखना चाहते हैं उसे अनुकूलित करें",
+        "period": "अवधि",
+        "coursesAndBatches": "{{courses}}/{{batches}}",
+        "clearAllFilters": "सभी फ़िल्टर हटाएँ"
+    },
+    "planningFilters": {
+        "clearAll": "सभी हटाएँ",
+        "intervalType": "अवधि का प्रकार",
+        "unnamedBatch": "अनाम {{batch}}"
+    },
+    "intervalTypeOptions": {
+        "dayOfWeek": "सप्ताह का दिन",
+        "weekly": "साप्ताहिक",
+        "monthly": "मासिक",
+        "quarterly": "त्रैमासिक"
+    },
+    "intervalTypeLabel": {
+        "daily": "दैनिक",
+        "weekly": "सप्ताह का दिन",
+        "monthly": "सप्ताह",
+        "yearlyMonth": "महीना",
+        "yearlyQuarter": "तिमाही"
+    },
+    "todayIntervalLabel": {
+        "daily": "दैनिक",
+        "weekly": "इस सप्ताह",
+        "monthly": "इस महीने",
+        "yearlyMonth": "इस महीने",
+        "yearlyQuarter": "इस तिमाही"
+    },
+    "weekdays": {
+        "monday": "सोमवार",
+        "tuesday": "मंगलवार",
+        "wednesday": "बुधवार",
+        "thursday": "गुरुवार",
+        "friday": "शुक्रवार",
+        "saturday": "शनिवार",
+        "sunday": "रविवार"
+    },
+    "monthsFull": {
+        "january": "जनवरी",
+        "february": "फ़रवरी",
+        "march": "मार्च",
+        "april": "अप्रैल",
+        "may": "मई",
+        "june": "जून",
+        "july": "जुलाई",
+        "august": "अगस्त",
+        "september": "सितंबर",
+        "october": "अक्टूबर",
+        "november": "नवंबर",
+        "december": "दिसंबर"
+    },
+    "monthsShort": {
+        "jan": "जन",
+        "feb": "फ़र",
+        "mar": "मार्च",
+        "apr": "अप्रैल",
+        "may": "मई",
+        "jun": "जून",
+        "jul": "जुलाई",
+        "aug": "अग",
+        "sep": "सित",
+        "oct": "अक्टू",
+        "nov": "नव",
+        "dec": "दिस"
+    },
+    "quarterRanges": {
+        "q1": "जन - मार्च",
+        "q2": "अप्रैल - जून",
+        "q3": "जुलाई - सित",
+        "q4": "अक्टू - दिस"
+    },
+    "formatters": {
+        "weekLabel": "सप्ताह {{week}}, {{month}}",
+        "yearMonthLabel": "{{month}} '{{year}}",
+        "quarterFallback": "तिमाही {{num}}"
+    },
+    "groups": {
+        "today": "आज",
+        "tomorrow": "कल",
+        "pastDays": "बीते दिन",
+        "later": "बाद में",
+        "nextWeek": "अगला सप्ताह",
+        "nextMonth": "अगला महीना",
+        "nextQuarter": "अगली तिमाही",
+        "pastWeek": "पिछला सप्ताह",
+        "pastMonth": "पिछला महीना",
+        "pastQuarter": "पिछली तिमाही"
+    },
+    "table": {
+        "empty": {
+            "title": "अभी तक आपके साथ कोई योजना या गतिविधि साझा नहीं की गई है",
+            "description": "आपके {{teachers}} यहाँ योजनाएँ और गतिविधियाँ साझा करेंगे"
+        },
+        "headers": {
+            "interval": "अवधि",
+            "period": "समय",
+            "title": "शीर्षक",
+            "createdBy": "बनाया गया",
+            "createdAt": "बनाने की तारीख",
+            "actions": "कार्रवाइयाँ"
+        }
+    },
+    "timeline": {
+        "previousPage": "पिछला पृष्ठ",
+        "loadMore": "और लोड करें"
+    },
+    "timelineCard": {
+        "by": "द्वारा: {{name}}",
+        "viewDetails": "विवरण देखें"
+    },
+    "todayCard": {
+        "updatedAgo": "{{time}} पहले अपडेट किया गया",
+        "createdBy": "{{name}} द्वारा बनाया गया"
+    },
+    "viewDialog": {
+        "interval": "अवधि:",
+        "createdBy": "बनाया गया:",
+        "createdAt": "बनाने की तारीख:",
+        "description": "विवरण",
+        "content": "सामग्री",
+        "attachmentsCount": "अटैचमेंट ({{count}})"
+    },
+    "hub": {
+        "heading": "योजना और गतिविधि",
+        "subtitle": "अपने {{teachers}} द्वारा साझा की गई योजनाएँ और गतिविधियाँ देखें",
+        "plannings": {
+            "title": "योजनाएँ",
+            "description": "अपने {{teachers}} की योजनाएँ देखें",
+            "cta": "योजनाएँ देखें"
+        },
+        "activities": {
+            "title": "गतिविधियाँ",
+            "description": "अपने {{teachers}} की गतिविधियाँ देखें",
+            "cta": "गतिविधियाँ देखें"
+        }
+    },
+    "activityLogsPage": {
+        "navHeading": "मेरी गतिविधियाँ",
+        "subtitle": "दैनिक शिक्षण गतिविधियाँ देखें",
+        "errorLoad": "गतिविधियाँ लोड करने में विफल",
+        "empty": {
+            "title": "अभी तक कोई गतिविधि नहीं",
+            "description": "आपके {{teacher}} ने अभी तक कोई गतिविधि लॉग नहीं की है"
+        }
+    },
+    "planningLogsPage": {
+        "navHeading": "मेरी योजनाएँ",
+        "subtitle": "योजनाएँ और समय-सारणी देखें",
+        "errorLoad": "योजनाएँ लोड करने में विफल",
+        "empty": {
+            "title": "अभी तक कोई योजना नहीं",
+            "description": "आपके {{teacher}} ने इस अवधि के लिए कोई योजना नहीं जोड़ी है"
+        }
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "dropzone": {
+        "title": "अपनी ऑडियो फ़ाइल इम्पोर्ट करें",
+        "hint": "अपलोड करने के लिए खींचें या क्लिक करें",
+        "formats": "MP3, WAV, OGG, AAC, M4A समर्थित हैं",
+        "selected": "चयनित: {{fileName}}",
+        "duration": "अवधि: {{minutes}}:{{seconds}}"
+    },
+    "fields": {
+        "title": "शीर्षक",
+        "titlePlaceholder": "ऑडियो का शीर्षक दर्ज करें",
+        "description": "विवरण (वैकल्पिक)",
+        "descriptionPlaceholder": "इस ऑडियो के लिए विवरण दर्ज करें...",
+        "coverImage": "कवर इमेज (वैकल्पिक)",
+        "changeImage": "इमेज बदलें",
+        "uploadImage": "इमेज अपलोड करें",
+        "transcript": "ट्रांसक्रिप्ट (वैकल्पिक)",
+        "transcriptPlaceholder": "यहां ऑडियो ट्रांसक्रिप्ट पेस्ट करें या टाइप करें..."
+    },
+    "toasts": {
+        "reorderFailed": "स्लाइड बन गई लेकिन क्रम बदलना विफल रहा",
+        "createSuccess": "ऑडियो स्लाइड सफलतापूर्वक बनाई गई!",
+        "createFailed": "ऑडियो स्लाइड बनाने में विफल"
+    },
+    "actions": {
+        "uploading": "अपलोड हो रहा है...",
+        "submit": "ऑडियो स्लाइड बनाएं"
+    }
+}

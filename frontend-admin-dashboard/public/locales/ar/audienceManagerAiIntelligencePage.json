@@ -1,0 +1,107 @@
+{
+    "header": {
+        "title": "الذكاء الاصطناعي",
+        "subtitle": "جودة المكالمات والنشاط اليومي عبر الزمن — الفريق أولاً، ثم كل مستشار، مع التغيّر مقارنة بالفترة السابقة حتى ترى ما تحسّن.",
+        "settings": "Intelligence settings"
+    },
+    "loadingInstitute": "جارٍ تحميل المؤسسة…",
+    "emptyState": {
+        "title": "الذكاء الاصطناعي معطّل",
+        "description": "فعّل ذكاء المكالمات من الإعدادات لنسخ المكالمات وتحليلها، وستعرض هذه الصفحة عندها اتجاهات الفريق وكل مستشار."
+    },
+    "banner": {
+        "offWithData": "ذكاء المكالمات معطّل — لا يتم تحليل مكالمات جديدة. تُعرض بيانات محلَّلة سابقًا. فعّله من الإعدادات لاستئناف التحليل."
+    },
+    "comparing": {
+        "label": "مقارنة",
+        "against": "مقابل الفترة السابقة"
+    },
+    "period": {
+        "days_zero": "{{count}} يوم",
+        "days_one": "{{count}} يوم",
+        "days_two": "{{count}} يومان",
+        "days_few": "{{count}} أيام",
+        "days_many": "{{count}} يومًا",
+        "days_other": "{{count}} يوم",
+        "custom": "مخصّص",
+        "startDateLabel": "تاريخ البداية",
+        "endDateLabel": "تاريخ النهاية",
+        "to": "إلى"
+    },
+    "months": {
+        "jan": "يناير",
+        "feb": "فبراير",
+        "mar": "مارس",
+        "apr": "أبريل",
+        "may": "مايو",
+        "jun": "يونيو",
+        "jul": "يوليو",
+        "aug": "أغسطس",
+        "sep": "سبتمبر",
+        "oct": "أكتوبر",
+        "nov": "نوفمبر",
+        "dec": "ديسمبر"
+    },
+    "delta": {
+        "noChange": "لا تغيير"
+    },
+    "teamInsights": {
+        "heading": "رؤى الفريق",
+        "groupCallQuality": "الاتصال وجودة المكالمات",
+        "groupActivity": "النشاط اليومي",
+        "metrics": {
+            "callsAnalyzed": "المكالمات المحلَّلة",
+            "avgCallerRating": "متوسط تقييم المتصل",
+            "avgCallOutput": "متوسط نتيجة المكالمة",
+            "positiveSentiment": "المشاعر الإيجابية",
+            "leadsDispositioned": "العملاء المحتملون الذين تم تصنيفهم",
+            "callsMade": "المكالمات المُجراة",
+            "teamReach": "نسبة وصول الفريق"
+        },
+        "summary": {
+            "noChangeYet": "لا يوجد تغيّر ملموس مقارنة بالفترة السابقة حتى الآن.",
+            "aiSummaryLabel": "ملخّص الذكاء الاصطناعي —",
+            "whatImproved": "ما الذي تحسّن",
+            "needsAttention": "يحتاج إلى انتباه"
+        },
+        "aiSummary": {
+            "improved": "تحسّن: {{list}}.",
+            "watch": "انتبه: {{list}}.",
+            "coachingFocus": "محور تدريب الذكاء الاصطناعي: {{tip}}",
+            "mostHitObjection": "الاعتراض الأكثر تكرارًا: {{objection}}."
+        }
+    },
+    "counsellorBreakdown": {
+        "heading": "تفصيل المستشارين",
+        "subtitle": "المقاييس مقابل الفترة المماثلة السابقة",
+        "columns": {
+            "counsellor": "المستشار",
+            "analyzed": "محلَّلة",
+            "avgCaller": "متوسط المتصل",
+            "avgOutput": "متوسط النتيجة",
+            "dispositioned": "مصنَّفة",
+            "reach": "الوصول"
+        },
+        "noActivity": "لا يوجد نشاط للمستشارين في هذه الفترة.",
+        "whatTheyCanImprove": "ما يمكنهم تحسينه",
+        "coaching": {
+            "loading": "جارٍ تحميل التدريب…",
+            "noCoaching": "لا توجد مكالمات محلَّلة في هذا النطاق — لا يوجد تدريب لهذا المستشار بعد.",
+            "weakestSkills": "أضعف المهارات:",
+            "notEnoughSignal": "لا توجد بيانات كافية للتدريب في هذا النطاق."
+        },
+        "collapseAll": "Collapse all",
+        "expandAll": "Expand all"
+    },
+    "hero": {
+        "eyebrow": "Call quality · {{range}}",
+        "unit": "/10 avg caller rating",
+        "analyzed_one": "{{count}} call analyzed",
+        "analyzed_other": "{{count}} calls analyzed",
+        "positive": "{{value}}% positive sentiment",
+        "reach": "{{value}}% team reach"
+    },
+    "kpi": {
+        "was": "was {{value}}"
+    }
+}

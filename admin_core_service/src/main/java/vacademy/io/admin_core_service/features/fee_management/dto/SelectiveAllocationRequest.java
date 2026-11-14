@@ -18,4 +18,6 @@ public class SelectiveAllocationRequest {
     private List<String> studentFeePaymentIds;
     private BigDecimal amount;
     private String remarks;
+    /** How it was paid (mode, sub-option, reference, date); see OfflinePaymentDetailsService. */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails;
 }

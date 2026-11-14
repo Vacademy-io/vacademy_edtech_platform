@@ -27,13 +27,27 @@ public class AssessmentService {
     @Autowired
     private AssessmentInstituteMappingRepository assessmentInstituteMappingRepository;
 
+    /**
+     * NOTE: despite the name, this does NOT filter out deleted sections today.
+     * <p>
+     * The `activeSections` filter is enabled on a session opened here, while the query
+     * below runs through the Spring-managed session — so the filter never applies.
+     * (`Assessment.java` also declares the filter condition against an `active` column
+     * that does not exist, with a parameter name that does not match `Section`'s
+     * FilterDef, so enabling it correctly would produce invalid SQL.)
+     * <p>
+     * Deliberately left as-is: making the filter work would start excluding DELETED
+     * sections from three endpoints that currently return them — a behaviour change
+     * that needs its own pass. What IS fixed here is the session leak: the session was
+     * opened on every call and never closed, leaking a Hibernate session and its JDBC
+     * connection on three hot endpoints.
+     */
     public Optional<Assessment> getAssessmentWithActiveSections(String assessmentId, String instituteId) {
         if (assessmentId == null) return Optional.empty();
 
-        Session session = sessionFactory.openSession();
-        session.enableFilter("activeSections").setParameter("status", "ACTIVE");
-        // Fetch the assessment with active sections
-        // Assuming you have a repository method to find an assessment by ID
+        try (Session session = sessionFactory.openSession()) {
+            session.enableFilter("activeSections").setParameter("status", "ACTIVE");
+        }
         return assessmentRepository.findByAssessmentIdAndInstituteId(assessmentId, instituteId);
     }
 

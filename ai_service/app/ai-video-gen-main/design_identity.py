@@ -535,11 +535,18 @@ def generate_design_identity(
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """One cheap LLM call → validated identity. Never raises: any failure
     returns the mode's default identity. Returns (identity, usage)."""
+    # The pipeline's brand brief is a dict (`_extract_brand_brief() -> Dict`),
+    # not text. Slicing it raised "unhashable type: 'slice'" OUTSIDE the try
+    # below, so every run with a brand kit lost its design identity and fell
+    # back to the default look - while unbranded runs (which pass {} -> "")
+    # worked, which is why it went unnoticed.
+    if isinstance(brand_brief, dict):
+        brand_brief = json.dumps(brand_brief, ensure_ascii=False, default=str)
     user_payload = {
         "visual_style_mode": mode,
         "creative_concept": concept or {},
-        "script_summary": (script_summary or "")[:1500],
-        "brand_brief": (brand_brief or "")[:600],
+        "script_summary": str(script_summary or "")[:1500],
+        "brand_brief": str(brand_brief or "")[:600],
         "brand_fonts_locked": bool(brand_fonts_locked),
     }
     try:

@@ -1,0 +1,73 @@
+{
+    "trigger": {
+        "editInstitute": "Edit Institute",
+        "addDetails": "Add Details"
+    },
+    "dialog": {
+        "title": "Edit Institute"
+    },
+    "logoAlt": "logo",
+    "fields": {
+        "instituteName": {
+            "label": "Institute Name",
+            "placeholder": "Institute Name"
+        },
+        "instituteType": {
+            "label": "Institute Type"
+        },
+        "instituteEmail": {
+            "label": "Institute Email",
+            "placeholder": "Institute Email"
+        },
+        "institutePhoneNumber": {
+            "label": "Institute Phone Number",
+            "placeholder": "123 456 7890"
+        },
+        "instituteWebsite": {
+            "label": "Institute Website",
+            "placeholder": "Institute Website"
+        },
+        "instituteAddress": {
+            "label": "Address",
+            "placeholder": "Address line 1"
+        },
+        "instituteCity": {
+            "label": "City/Village",
+            "placeholder": "Select City/Village"
+        },
+        "instituteState": {
+            "label": "State",
+            "placeholder": "Select State"
+        },
+        "instituteCountry": {
+            "label": "Country",
+            "placeholder": "Select Country"
+        },
+        "institutePinCode": {
+            "label": "Pincode",
+            "placeholder": "Enter Pincode"
+        }
+    },
+    "sections": {
+        "contactInformation": "Contact Information",
+        "locationDetails": "Location Details",
+        "instituteTheme": "Institute Theme"
+    },
+    "theme": {
+        "current": "Current",
+        "changeTheme": "Change Theme"
+    },
+    "actions": {
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel"
+    },
+    "toast": {
+        "updateSuccess": "Your details has been updated successfully!"
+    },
+    "validation": {
+        "instituteNameRequired": "Institute Name is required",
+        "instituteTypeRequired": "Select institute type",
+        "invalidEmail": "Invalid email address",
+        "invalidWebsite": "Invalid website URL"
+    }
+}

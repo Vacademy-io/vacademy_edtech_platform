@@ -1,0 +1,32 @@
+{
+    "navHeading": "لوحة القبول",
+    "filterBar": {
+        "title": "مسار القبول",
+        "allClasses": "جميع الفصول"
+    },
+    "kpi": {
+        "totalEnquiries": "إجمالي الاستفسارات",
+        "totalApplications": "إجمالي الطلبات",
+        "totalAdmissions": "إجمالي القبولات"
+    },
+    "conversion": {
+        "enquiryToApplication": "من الاستفسار إلى الطلب",
+        "applicationToAdmission": "من الطلب إلى القبول",
+        "overall": "معدل التحويل الإجمالي"
+    },
+    "breakdown": {
+        "title": "تفصيل القبولات",
+        "fromEnquiry": {
+            "label": "من الاستفسار",
+            "description": "المسار الكامل: استفسار ← طلب ← قبول"
+        },
+        "fromApplicationOnly": {
+            "label": "من الطلب فقط",
+            "description": "بدأ عند مرحلة الطلب"
+        },
+        "direct": {
+            "label": "مباشر (حضوري)",
+            "description": "بدون استفسار أو طلب"
+        }
+    }
+}

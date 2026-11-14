@@ -1,0 +1,66 @@
+{
+    "heading": "Détails de l'élève",
+    "studentFirstName": {
+        "label": "Prénom de l'élève",
+        "placeholder": "Entrez le prénom"
+    },
+    "middleName": {
+        "label": "Deuxième prénom",
+        "placeholder": "Entrez le deuxième prénom"
+    },
+    "lastName": {
+        "label": "Nom de famille",
+        "placeholder": "Entrez le nom de famille"
+    },
+    "gender": {
+        "label": "Sexe",
+        "select": "Sélectionner le sexe",
+        "male": "Masculin",
+        "female": "Féminin",
+        "other": "Autre"
+    },
+    "applicationNumber": {
+        "label": "Numéro de candidature",
+        "placeholder": "Généré automatiquement / Modifiable"
+    },
+    "class": {
+        "label": "Classe",
+        "select": "Sélectionner la classe"
+    },
+    "section": {
+        "label": "Section",
+        "select": "Sélectionner la section"
+    },
+    "dateOfAdmission": {
+        "label": "Date d'admission"
+    },
+    "dateOfBirth": {
+        "label": "Date de naissance"
+    },
+    "residentialPhone": {
+        "label": "Téléphone du domicile"
+    },
+    "studentType": {
+        "label": "Type d'élève",
+        "select": "Sélectionner le type",
+        "regular": "Régulier",
+        "transfer": "Transfert"
+    },
+    "admissionType": {
+        "label": "Type d'admission",
+        "select": "Sélectionner le type",
+        "dayScholar": "Externe",
+        "hostel": "Internat"
+    },
+    "transport": {
+        "label": "Transport requis",
+        "no": "Non",
+        "yes": "Oui"
+    },
+    "aadhaarType": {
+        "label": "Type d'Aadhaar de l'élève",
+        "select": "Sélectionner le type",
+        "standard": "Standard",
+        "temporary": "Temporaire"
+    }
+}

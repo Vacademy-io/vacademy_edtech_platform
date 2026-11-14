@@ -1,0 +1,8 @@
+{
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "previewError": {
+        "title": "Impossible d'afficher un aperçu de ce fichier ici.",
+        "description": "Utilisez le bouton Télécharger ci-dessous pour enregistrer le fichier avec la bonne extension et l'ouvrir sur votre appareil."
+    }
+}

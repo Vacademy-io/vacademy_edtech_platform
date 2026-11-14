@@ -1,0 +1,30 @@
+{
+    "header": {
+        "eyebrow": "Mentorship",
+        "title": "Mentors & mentees"
+    },
+    "actions": {
+        "manage": "Manage",
+        "pendingTooltip": "Learners waiting to be paired with a mentor",
+        "pendingReview_one": "{{count}} to review",
+        "pendingReview_other": "{{count}} to review"
+    },
+    "tiles": {
+        "mentors": {
+            "label": "Mentors",
+            "subtitle": "Active mentors"
+        },
+        "mentees": {
+            "label": "Mentees",
+            "subtitle": "Students mentored"
+        },
+        "today": {
+            "label": "Today",
+            "subtitle": "Sessions today"
+        },
+        "upcoming": {
+            "label": "Upcoming",
+            "subtitle": "Next 7 days"
+        }
+    }
+}

@@ -1,4 +1,5 @@
 import { MyButton } from '@/components/design-system/button';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogClose, DialogContent } from '@/components/ui/dialog';
 import { FormProvider, useForm } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
@@ -31,6 +32,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
     question,
     videoDuration,
 }: VideoQuestionsTimeFrameDialogProps) => {
+    const { t } = useTranslation('studyLibraryVideoQuestionsEditTimeframe');
     const tempEditQuestionTimeFrameForm = useForm<VideoPlayerTimeFormType>({
         resolver: zodResolver(videoPlayerTimeSchema),
         defaultValues: {
@@ -55,13 +57,10 @@ const VideoQuestionsTimeFrameEditDialog = ({
         );
 
         if (timestamp === null || timestamp < 0 || timestamp > videoDuration) {
-            toast.error(
-                'Invalid timestamp. Please enter a valid time in MM:SS format or seconds also current timestamp should be less than video length',
-                {
-                    className: 'error-toast',
-                    duration: 3000,
-                }
-            );
+            toast.error(t('invalidTimestamp'), {
+                className: 'error-toast',
+                duration: 3000,
+            });
             return;
         }
         const currentQuestionIndex = formRefData.current.questions.findIndex(
@@ -148,7 +147,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
 
             <DialogContent className="w-full max-w-md p-0">
                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Time Stamp
+                    {t('timeStampTitle')}
                 </h1>
                 <FormProvider {...tempEditQuestionTimeFrameForm}>
                     <form className="flex flex-col items-center gap-2 p-3 sm:p-4">
@@ -184,7 +183,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('hrsLabel')}</span>
                             <span>:</span>
                             <FormField
                                 control={tempEditQuestionTimeFrameForm.control}
@@ -217,7 +216,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>min</span>
+                            <span>{t('minLabel')}</span>
                             <span>:</span>
                             <FormField
                                 control={tempEditQuestionTimeFrameForm.control}
@@ -250,7 +249,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>sec</span>
+                            <span>{t('secLabel')}</span>
 
                             <MyButton
                                 type="button"
@@ -263,7 +262,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                                     handleSetCurrentTimeStampEditForm();
                                 }}
                             >
-                                Use Current Position
+                                {t('useCurrentPosition')}
                             </MyButton>
                         </div>
                         <div className="mb-2 w-full px-2 sm:px-4">
@@ -273,7 +272,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                                 render={({ field }) => (
                                     <FormItem className="flex w-full items-center justify-between gap-4">
                                         <FormLabel>
-                                            Allow students to skip this question
+                                            {t('allowSkipLabel')}
                                             <span className="text-subtitle text-danger-600">*</span>
                                         </FormLabel>
                                         <FormControl>
@@ -301,7 +300,7 @@ const VideoQuestionsTimeFrameEditDialog = ({
                         onClick={handleEditTimeStampCurrentQuestion}
                         disable={isButtonDisabled}
                     >
-                        Edit
+                        {t('editButton')}
                     </MyButton>
                 </div>
             </DialogContent>

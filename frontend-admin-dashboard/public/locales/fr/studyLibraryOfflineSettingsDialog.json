@@ -1,0 +1,11 @@
+{
+    "offlineSettings": "Paramètres hors ligne",
+    "failedToLoadOfflineSettings": "Échec du chargement des paramètres hors ligne",
+    "offlineSettingsSaved": "Paramètres hors ligne enregistrés",
+    "failedToSaveOfflineSettings": "Échec de l'enregistrement des paramètres hors ligne",
+    "allowOfflineDownloadsByDefault": "Autoriser les téléchargements hors ligne par défaut",
+    "appliesToEverythingDescription": "S'applique à tout ce qui, dans ce cours, n'est pas couvert par une règle plus spécifique.",
+    "fineTuneFromMenu": "Ajustez par matière, module, chapitre ou diapositive depuis son <strong>menu</strong>",
+    "blockAlwaysWins": "Un <strong>blocage l'emporte toujours</strong> - bloquer un chapitre bloque ses diapositives même si elles sont autorisées.",
+    "embeddedContentNeedsInternet": "Le contenu YouTube/Vimeo/intégré nécessite toujours une connexion internet — il ne peut pas être téléchargé quels que soient ces paramètres."
+}

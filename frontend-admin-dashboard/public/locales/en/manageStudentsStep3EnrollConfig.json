@@ -1,0 +1,62 @@
+{
+    "courseInviteSection": {
+        "heading": "Enrollment Invite per {{term}}",
+        "description": "Choose an invite link for each {{term}}. Leave blank to auto-use the default invite.",
+        "inviteLinkLabel": "Invite Link",
+        "accessDaysLabel": "Access Days Override",
+        "accessDaysPlaceholder": "From invite",
+        "autoResolvedFromDefault": "(auto-resolved from DEFAULT invite)",
+        "payInInstallments": {
+            "label": "Pay in installments",
+            "description": "Split this price into installments for these learners. Uses the fee-plan discount instead of the discount above."
+        },
+        "autoResolvedOnlyActive": "(the course’s only active invite link)",
+        "pickInvite": "This course has {{count}} active invite links and no default one. Pick the invite link to enroll with.",
+        "noInvite": "No invite link for this course: learners are enrolled free."
+    },
+    "globalOptions": {
+        "heading": "Global Options",
+        "notifyLearnersLabel": "Notify {{term}}",
+        "notifyLearnersDescription": "Send enrollment confirmation emails to newly enrolled {{term}}",
+        "sendCredentialsLabel": "Send Credentials",
+        "sendCredentialsDescription": "Send registration email with login credentials to new {{term}}",
+        "duplicateHandling": {
+            "label": "If {{term}} is Already Enrolled",
+            "skipOption": "Skip silently (recommended)",
+            "errorOption": "Mark as error in report",
+            "skipDescription": "{{term}} with active access or a pending invitation will be silently skipped.",
+            "errorDescription": "{{term}} with active access or a pending invitation will appear as failures in the results.",
+            "alwaysReenrolled": "Expired or terminated {{term}} are always re-enrolled."
+        },
+        "paymentDate": {
+            "label": "Payment Date (Optional)",
+            "placeholder": "Select payment date",
+            "description": "Date when the payment was made. The membership and course access start from this date."
+        },
+        "transactionId": {
+            "label": "Transaction ID (Optional)",
+            "placeholder": "Enter transaction ID",
+            "description": "External payment transaction reference"
+        },
+        "paymentDetailsInCourse": "How it was paid is taken from each course's fee section above."
+    },
+    "workflows": {
+        "heading": "Workflows that will fire on enrollment",
+        "loading": "Loading linked workflows…",
+        "noneLinked": "No automation workflows are linked to the selected {{term}}s.",
+        "global": "Global",
+        "firesOnEveryEnrollment": "Fires on every batch enrollment:",
+        "noCourseSpecific": "No course-specific workflows linked.",
+        "verdict": {
+            "runs": "Global — its condition matches this {{term}}",
+            "unknown": "Global — fires only if the learner matches its condition"
+        }
+    },
+    "package": {
+        "blockers": {
+            "multiFee": "{{course}}: its fee plan bills more than one fee (or pays upfront), so it cannot follow a package schedule. Enroll it on its own.",
+            "notPaid": "{{course}}: free or subscription courses cannot be part of a package."
+        },
+        "inPackage": "Part of the admission package (fee {{fee}}). Discount, schedule and payment are set on the package below."
+    }
+}

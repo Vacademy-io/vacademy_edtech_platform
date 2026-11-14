@@ -1,0 +1,27 @@
+{
+    "intro": "A template says how each component is derived from an employee's CTC. Put an employee on a template and their monthly amounts are computed, not typed.",
+    "columns": {
+        "template": "Template",
+        "default": "Default",
+        "components": "Components",
+        "status": "Status"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+    "actions": {
+        "edit": "Edit",
+        "view": "View",
+        "newTemplate": "New template",
+        "retry": "Retry",
+        "retrying": "Retrying…"
+    },
+    "errors": {
+        "loadFailed": "Could not load salary templates."
+    },
+    "empty": {
+        "title": "No templates yet",
+        "description": "Create one for each pay shape you use — typically a standard staff structure and one for teaching roles."
+    }
+}

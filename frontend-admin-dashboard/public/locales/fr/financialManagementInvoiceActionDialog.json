@@ -1,0 +1,10 @@
+{
+    "title": "Générer la facture",
+    "invoiceFor": "Facture pour",
+    "generating": "Génération en cours...",
+    "downloadInvoice": "Télécharger la facture",
+    "sendInvoiceViaEmail": "Envoyer la facture par e-mail",
+    "recipientEmail": "E-mail du destinataire",
+    "sending": "Envoi en cours...",
+    "sendEmail": "Envoyer l'e-mail"
+}

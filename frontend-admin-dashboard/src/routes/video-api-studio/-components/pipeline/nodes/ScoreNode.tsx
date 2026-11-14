@@ -1,11 +1,13 @@
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { Loader2, Music } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { CircleNotch as Loader2, MusicNote as Music } from '@phosphor-icons/react';
 import { BaseNodeShell } from './BaseNodeShell';
-import { ACTIVE_SUB_STATUS } from '../-utils/stage-vocab';
+import { buildActiveSubStatus } from '../-utils/stage-vocab';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 function ScoreNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const slot = data.state.score;
     if (!slot) return null;
 
@@ -23,7 +25,7 @@ function ScoreNodeInner({ data }: NodeProps<PipelineNodeData>) {
     if (slot.state === 'cut' || slot.state === 'reshoot') {
         return (
             <BaseNodeShell kind="score" state={slot.state}>
-                <p className="text-[11px] text-red-700">{slot.error}</p>
+                <p className="text-2xs text-red-700">{slot.error}</p>
             </BaseNodeShell>
         );
     }
@@ -41,7 +43,7 @@ function ScoreNodeInner({ data }: NodeProps<PipelineNodeData>) {
                     <Loader2 className="size-3.5 animate-spin text-blue-600" />
                     {total > 0
                         ? `Composing chunk ${Math.min(completed + 1, total)} of ${total}`
-                        : ACTIVE_SUB_STATUS.score}
+                        : buildActiveSubStatus(t).score}
                 </div>
             </BaseNodeShell>
         );
@@ -57,16 +59,16 @@ function ScoreNodeInner({ data }: NodeProps<PipelineNodeData>) {
             <div className="space-y-1.5">
                 <div className="flex items-center gap-2 rounded-md border bg-white px-2 py-1.5">
                     <Music className="size-3.5 shrink-0 text-blue-600" />
-                    <span className="truncate text-[11px] font-medium text-foreground">
+                    <span className="truncate text-2xs font-medium text-foreground">
                         {audioUrl ? 'Score recorded' : 'Score wrapped'}
                     </span>
                     {audioUrl && (
-                        <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                        <span className="ml-auto shrink-0 text-2xs text-muted-foreground">
                             ▶ Open
                         </span>
                     )}
                 </div>
-                <p className="truncate text-[10px] text-muted-foreground">
+                <p className="truncate text-2xs text-muted-foreground">
                     {slot.data.segmentsTotal
                         ? `${slot.data.segmentsTotal} chunks merged`
                         : 'Background music sealed'}

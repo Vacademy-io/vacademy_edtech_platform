@@ -1,0 +1,5 @@
+{
+    "httpError": "خطأ Judge0 HTTP {{status}}: {{statusText}}",
+    "compileError": "خطأ في الترجمة",
+    "noOutput": "(لا يوجد ناتج)"
+}

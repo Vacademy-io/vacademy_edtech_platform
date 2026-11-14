@@ -11,6 +11,7 @@ import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.Part
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionEvaluationResultDto;
 import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess;
 import vacademy.io.assessment_service.features.assessment.entity.AiQuestionEvaluation;
+import vacademy.io.assessment_service.features.assessment.enums.AiEvaluationStatusEnum;
 import vacademy.io.assessment_service.features.assessment.client.AiServiceCopyCheckClient;
 import vacademy.io.assessment_service.features.assessment.repository.AiEvaluationProcessRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AiQuestionEvaluationRepository;
@@ -43,8 +44,9 @@ public class AiEvaluationProgressService {
                                 .orElseThrow(() -> new RuntimeException("Evaluation process not found: " + processId));
 
                 // Get all question evaluations
-                List<AiQuestionEvaluation> questionEvals = questionEvaluationRepository
-                                .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId());
+                // One row per question (the newest) so a pre-V53 duplicate is not listed twice.
+                List<AiQuestionEvaluation> questionEvals = AiQuestionEvaluationService.newestPerQuestion(
+                                questionEvaluationRepository.findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId()));
 
                 // "Resolved" questions (graded OR failed) carry the rich result DTO
                 // so the review page can render — and let the teacher grade — a
@@ -81,11 +83,16 @@ public class AiEvaluationProgressService {
                 String assessmentId = null;
                 String fileId = null;
 
+                // The checked copy THIS run rendered, read from the persisted
+                // complete payload. Deliberately not studentAttempt.evaluatedFileId:
+                // that column is per attempt, overwritten by every later run and
+                // left alone when a later render fails, so an older run's page
+                // would show another run's marks. Null when this run produced no
+                // copy; the FE then falls back to the raw sheet with its overlay.
+                fileId = evaluatedFileIdOf(process);
+
                 if (process.getStudentAttempt() != null) {
                         var studentAttempt = process.getStudentAttempt();
-
-                        // Get file ID from student attempt
-                        fileId = studentAttempt.getEvaluatedFileId();
 
                         // Get participant details from registration
                         if (studentAttempt.getRegistration() != null) {
@@ -126,7 +133,7 @@ public class AiEvaluationProgressService {
                 return EvaluationProgressDto.builder()
                                 .attemptId(process.getStudentAttempt().getId())
                                 .evaluationProcessId(process.getId())
-                                .overallStatus(process.getStatus())
+                                .overallStatus(displayStatus(process.getStatus()))
                                 .currentStep(process.getCurrentStep())
                                 .progress(progressInfo)
                                 .completedQuestions(completed)
@@ -134,10 +141,41 @@ public class AiEvaluationProgressService {
                                 .participantDetails(participantDetails)
                                 .assessmentId(assessmentId)
                                 .fileId(fileId)
+                                .copyRedrawnAt(copyRedrawnAtOf(process))
                                 .layoutMapUrl(layoutMapUrl)
                                 .rubricVersion(rubricVersion)
                                 .aiServiceJobId(process.getAiServiceJobId())
                                 .build();
+        }
+
+        private String copyRedrawnAtOf(AiEvaluationProcess process) {
+                String json = process.getEvaluationJson();
+                if (json == null || json.isBlank()) {
+                        return null;
+                }
+                try {
+                        JsonNode node = objectMapper.readTree(json).path("re_rendered_at");
+                        return node.isTextual() ? node.asText() : null;
+                } catch (Exception e) {
+                        return null;
+                }
+        }
+
+        private String evaluatedFileIdOf(AiEvaluationProcess process) {
+                if (!AiEvaluationStatusEnum.COMPLETED.name().equals(process.getStatus())) {
+                        return null;
+                }
+                String json = process.getEvaluationJson();
+                if (json == null || json.isBlank()) {
+                        return null;
+                }
+                try {
+                        JsonNode node = objectMapper.readTree(json).path("evaluated_file_id");
+                        return node.isTextual() && !node.asText().isBlank() ? node.asText() : null;
+                } catch (Exception e) {
+                        log.warn("[copy-check] unreadable evaluation_json on process {}", process.getId());
+                        return null;
+                }
         }
 
         /**
@@ -171,7 +209,7 @@ public class AiEvaluationProgressService {
                                         .processId(p.getId())
                                         .attemptId(attemptId)
                                         .participantName(participantName)
-                                        .status(p.getStatus())
+                                        .status(displayStatus(p.getStatus()))
                                         .questionsCompleted(p.getQuestionsCompleted())
                                         .questionsTotal(p.getQuestionsTotal())
                                         .needsReviewCount(failedByProcess.getOrDefault(p.getId(), 0L))
@@ -179,6 +217,17 @@ public class AiEvaluationProgressService {
                                         .completedAt(p.getCompletedAt())
                                         .build();
                 }).collect(Collectors.toList());
+        }
+
+        /**
+         * The status the dashboard shows. DISPATCHED (V52) is a claimed row a few
+         * seconds from being sent; the dashboard has always shown such a row as
+         * PENDING (it stayed PENDING while claimed) and has no label for the new
+         * state, so it keeps reading PENDING here.
+         */
+        static String displayStatus(String status) {
+                return AiEvaluationStatusEnum.DISPATCHED.name().equals(status)
+                                ? AiEvaluationStatusEnum.PENDING.name() : status;
         }
 
         /**
@@ -255,6 +304,7 @@ public class AiEvaluationProgressService {
                 JsonNode evaluationDetailsJson = null;
                 List<JsonNode> annotations = null;
                 List<JsonNode> criteriaBreakdown = null;
+                List<JsonNode> annotationEdits = null;
                 Double confidence = null;
                 String errorDetail = null;
 
@@ -285,6 +335,13 @@ public class AiEvaluationProgressService {
                                         criteriaBreakdown = new java.util.ArrayList<>();
                                         for (JsonNode item : fullResultJson.get("criteria_breakdown")) {
                                                 criteriaBreakdown.add(item);
+                                        }
+                                }
+                                if (fullResultJson.has(AiEvaluationReviewService.ANNOTATION_EDITS_KEY)
+                                                && fullResultJson.get(AiEvaluationReviewService.ANNOTATION_EDITS_KEY).isArray()) {
+                                        annotationEdits = new java.util.ArrayList<>();
+                                        for (JsonNode item : fullResultJson.get(AiEvaluationReviewService.ANNOTATION_EDITS_KEY)) {
+                                                annotationEdits.add(item);
                                         }
                                 }
                                 if (fullResultJson.has("confidence")) {
@@ -332,10 +389,12 @@ public class AiEvaluationProgressService {
                                 .evaluationDetailsJson(evaluationDetailsJson)
                                 .annotations(annotations)
                                 .criteriaBreakdown(criteriaBreakdown)
+                                .annotationEdits(annotationEdits)
                                 .rubricVersion(questionEval.getRubricVersion())
                                 .confidence(confidence)
                                 .errorDetail(errorDetail)
                                 .isEdited(questionEval.getIsEdited())
+                                .editedAt(questionEval.getEditedAt())
                                 .startedAt(questionEval.getStartedAt())
                                 .completedAt(questionEval.getCompletedAt())
                                 .build();

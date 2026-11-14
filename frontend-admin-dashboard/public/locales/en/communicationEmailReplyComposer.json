@@ -1,0 +1,19 @@
+{
+    "reply": "Reply",
+    "loadingSenders": "Loading senders…",
+    "noSenderConfigured": "No configured sender for this institute. Add one in Settings → Notification Settings → Email Settings to enable replies.",
+    "from": "From",
+    "subject": "Subject",
+    "writeReplyPlaceholder": "Write a reply…",
+    "sending": "Sending…",
+    "bodyEmpty": "Body cannot be empty",
+    "pickSender": "Pick a sender",
+    "replySent": "Reply sent",
+    "failedToSendReply": "Failed to send reply",
+    "send": "Send",
+    "discard": "Discard draft",
+    "editSubject": "Edit subject",
+    "noSubject": "(no subject)",
+    "replyQueued": "Reply queued — it goes out when today's sending limit resets",
+    "sendShortcut": "Send (Ctrl/⌘ + Enter)"
+}

@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Sentry from '@sentry/react';
 import { House, SignOut, WarningCircle, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
 import { MyButton } from '../design-system/button';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function GenericErrorPage({ error }: Props) {
+    const { t } = useTranslation('courseComponentsExtra');
     const router = useRouter();
     const navigate = useNavigate();
     const [eventId, setEventId] = useState<string | undefined>(undefined);
@@ -26,7 +28,7 @@ export function GenericErrorPage({ error }: Props) {
     return (
         <>
             <Helmet>
-                <title>Something went wrong</title>
+                <title>{t('genericErrorPage.title')}</title>
             </Helmet>
 
             <div className="h-screen w-full bg-gray-50 overflow-y-auto flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
@@ -41,46 +43,50 @@ export function GenericErrorPage({ error }: Props) {
                             </div>
                         </div>
                     </div>
-                    
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Something went wrong</h1>
+
+                    <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{t('genericErrorPage.title')}</h1>
                     <p className="mt-4 text-base text-gray-500 max-w-md mx-auto">
-                        An unexpected error occurred. We've securely logged the issue and our team is investigating it.
+                        {t('genericErrorPage.description')}
                     </p>
 
                     <div className="mt-6 bg-white border border-gray-200 rounded-xl p-4 text-start max-w-md mx-auto shadow-sm">
                         <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500" />
-                            Recommended Steps
+                            {t('common.recommendedSteps')}
                         </h3>
                         <ul className="mt-3 space-y-3 text-sm text-gray-600">
                             <li className="flex gap-3">
                                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 font-medium text-xs">1</span>
-                                <span>Try refreshing the page or returning to the home dashboard.</span>
+                                <span>{t('genericErrorPage.step1')}</span>
                             </li>
                             <li className="flex gap-3">
                                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 font-medium text-xs">2</span>
-                                <span>If the error persists, <strong className="font-semibold text-gray-900">log out and log back in</strong> to reset your session.</span>
+                                <span>
+                                    {t('genericErrorPage.step2Prefix')}{' '}
+                                    <strong className="font-semibold text-gray-900">{t('genericErrorPage.step2Emphasis')}</strong>
+                                    {' '}{t('genericErrorPage.step2Suffix')}
+                                </span>
                             </li>
                         </ul>
                     </div>
 
                     {!!error && process.env.NODE_ENV === 'development' && (
-                        <div className="mt-6 mx-auto max-w-xl text-start bg-white rounded-lg border border-gray-200 p-4 shadow-sm overflow-auto max-h-48">
-                            <p className="text-xs font-semibold text-gray-500 mb-2">Error Details (Development Only)</p>
+                        <div className="mt-6 mx-auto max-w-xl text-start bg-white rounded-lg border border-gray-200 p-4 shadow-sm overflow-auto max-h-48 space-y-2">
+                            <p className="text-xs font-semibold text-gray-500">{t('common.errorDetailsDevOnly')}</p>
                             <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap break-all">
                                 {String(error)}
                             </pre>
                         </div>
                     )}
 
-                    <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                        <MyButton 
-                            asChild 
+                    <div className="mt-8 flex flex-col sm:flex-row gap-stack justify-center">
+                        <MyButton
+                            asChild
                             className="w-full sm:w-auto"
                         >
                             <Link to="/dashboard">
                                 <House className="me-2 h-4 w-4" />
-                                Return Home
+                                {t('common.returnHome')}
                             </Link>
                         </MyButton>
                         <MyButton
@@ -88,7 +94,7 @@ export function GenericErrorPage({ error }: Props) {
                             className="w-full sm:w-auto"
                             onClick={() => router.history.back()}
                         >
-                            Go Back
+                            {t('common.goBack')}
                         </MyButton>
                         <ErrorFeedbackDialog
                             error={error as Error}
@@ -98,12 +104,12 @@ export function GenericErrorPage({ error }: Props) {
                                     buttonType="secondary"
                                     className="w-full sm:w-auto"
                                 >
-                                    Report Issue
+                                    {t('common.reportIssue')}
                                 </MyButton>
                             }
                         />
                     </div>
-                    
+
                     <div className="mt-6 border-t border-gray-200 pt-6 flex justify-center">
                         <button
                             onClick={() => {
@@ -113,7 +119,7 @@ export function GenericErrorPage({ error }: Props) {
                             className="text-sm font-medium text-gray-500 hover:text-gray-900 inline-flex items-center gap-2 transition-colors"
                         >
                             <SignOut className="h-4 w-4" />
-                            Sign out
+                            {t('common.signOut')}
                         </button>
                     </div>
                 </div>

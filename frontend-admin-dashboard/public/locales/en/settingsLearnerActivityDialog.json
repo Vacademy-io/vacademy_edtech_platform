@@ -1,0 +1,40 @@
+{
+    "header": {
+        "credits_one": "{{value}} credit",
+        "credits_other": "{{value}} credits",
+        "requests_one": "{{count}} request",
+        "requests_other": "{{count}} requests"
+    },
+    "toolLabel": {
+        "usedTool": "Used tool: {{name}}",
+        "usedToolGeneric": "AI used a tool",
+        "toolResult": "{{name}} result",
+        "toolResultGeneric": "Tool result"
+    },
+    "transcript": {
+        "selectConversation": "Select a conversation to read the full transcript.",
+        "loading": "Loading transcript…",
+        "loadError": "Could not load this transcript.",
+        "empty": "This conversation has no messages."
+    },
+    "conversations": {
+        "loading": "Loading conversations…",
+        "emptyTitle": "No AI conversations yet",
+        "emptyDescription": "{{name}} hasn’t chatted with the Student-AI tutor in the selected date range. Try widening the date range to see more.",
+        "thisMember": "This member",
+        "noMessagePreview": "No learner message"
+    },
+    "activity": {
+        "columns": {
+            "when": "When",
+            "tool": "Tool",
+            "model": "Model",
+            "credits": "Credits"
+        },
+        "description": "Every credit deduction across all AI tools in the selected period."
+    },
+    "tabs": {
+        "conversations": "Conversations",
+        "creditActivity": "Credit activity"
+    }
+}

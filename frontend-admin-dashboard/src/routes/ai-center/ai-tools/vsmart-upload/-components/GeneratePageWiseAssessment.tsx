@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import {
@@ -26,6 +27,9 @@ const GeneratePageWiseAssessment = ({
     setOpenPageWiseAssessmentDialog,
     htmlData,
 }: GeneratePageWiseAssessmentProps) => {
+    const { t } = useTranslation('aiCenterGeneratePageWiseAssessment');
+    const { t: tHelper } = useTranslation('aiCenterHelper');
+
     const rightEditorRef = useRef<ReactQuill | null>(null);
     const leftContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -150,8 +154,10 @@ const GeneratePageWiseAssessment = ({
                     ...(assessmentData.questions ?? []),
                     ...(response?.questions ?? []),
                 ];
-                const transformQuestionsData =
-                    transformQuestionsToGenerateAssessmentAI(addedQuestions);
+                const transformQuestionsData = transformQuestionsToGenerateAssessmentAI(
+                    addedQuestions,
+                    tHelper
+                );
                 form.reset({
                     ...form.getValues(),
                     title: assessmentData?.title,
@@ -247,7 +253,7 @@ const GeneratePageWiseAssessment = ({
                             className="text-sm"
                             onClick={() => setOpenPageWiseAssessmentDialog(false)}
                         >
-                            Close
+                            {t('actions.close')}
                         </MyButton>
                         <GeneratePageWiseAssessmentQuestionsDialog
                             form={form}
@@ -267,20 +273,24 @@ const GeneratePageWiseAssessment = ({
                     <div className="grid grid-cols-2 gap-4 p-4">
                         {/* Left Viewer */}
                         <div onMouseUp={handleLeftSelection}>
-                            <h2 className="mb-2 text-lg font-semibold">All Questions</h2>
+                            <h2 className="mb-2 text-lg font-semibold">
+                                {t('viewer.allQuestions')}
+                            </h2>
                             <div
                                 ref={leftContentRef}
                                 onMouseUp={handleLeftSelection}
                                 className="rounded border p-4"
                                 dangerouslySetInnerHTML={{
-                                    __html: convertSVGsToBase64(htmlData ?? '') || '',
+                                    __html: convertSVGsToBase64(htmlData ?? '', tHelper) || '',
                                 }}
                             />
                         </div>
 
                         {/* Right Editor */}
                         <div>
-                            <h2 className="mb-2 text-lg font-semibold">Selected Questions</h2>
+                            <h2 className="mb-2 text-lg font-semibold">
+                                {t('viewer.selectedQuestions')}
+                            </h2>
                             <ReactQuill ref={rightEditorRef} theme="snow" />
                         </div>
                     </div>
@@ -288,9 +298,9 @@ const GeneratePageWiseAssessment = ({
                     <Dialog open={popupVisible} onOpenChange={setPopupVisible}>
                         <DialogContent className="flex w-auto flex-col gap-4 p-0">
                             <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Alert
+                                {t('copyConfirm.title')}
                             </h1>
-                            <p className="px-4">Are you sure you want to copy selected text?</p>
+                            <p className="px-4">{t('copyConfirm.message')}</p>
                             <div className="flex items-center justify-between gap-4 px-4 pb-4">
                                 <MyButton
                                     type="button"
@@ -300,7 +310,7 @@ const GeneratePageWiseAssessment = ({
                                     className="text-sm"
                                     onClick={() => setPopupVisible(false)}
                                 >
-                                    No
+                                    {t('copyConfirm.no')}
                                 </MyButton>
                                 <MyButton
                                     type="button"
@@ -310,7 +320,7 @@ const GeneratePageWiseAssessment = ({
                                     className="text-sm"
                                     onClick={handleConfirmCopy}
                                 >
-                                    Yes
+                                    {t('copyConfirm.yes')}
                                 </MyButton>
                             </div>
                         </DialogContent>

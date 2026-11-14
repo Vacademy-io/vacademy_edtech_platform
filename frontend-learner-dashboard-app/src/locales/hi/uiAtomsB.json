@@ -1,0 +1,20 @@
+{
+    "common": {
+        "close": "बंद करें"
+    },
+    "pagination": {
+        "ariaLabel": "पेज नेविगेशन",
+        "previous": {
+            "ariaLabel": "पिछले पेज पर जाएं",
+            "label": "पिछला"
+        },
+        "next": {
+            "ariaLabel": "अगले पेज पर जाएं",
+            "label": "अगला"
+        },
+        "morePages": "और पेज"
+    },
+    "sidebar": {
+        "toggleSidebar": "साइडबार टॉगल करें"
+    }
+}

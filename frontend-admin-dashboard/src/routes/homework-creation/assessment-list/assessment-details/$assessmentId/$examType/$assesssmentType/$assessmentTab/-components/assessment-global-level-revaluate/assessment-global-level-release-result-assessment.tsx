@@ -10,8 +10,10 @@ import { MyButton } from '@/components/design-system/button';
 import { WarningCircle } from '@phosphor-icons/react';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
 
 export const AssessmentGlobalLevelReleaseResultAssessment = () => {
+    const { t } = useTranslation('homeworkCreationGlobalReleaseResultAssessment');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
     const [releaseResultDialog, setReleaseResultDialog] = useState(false);
@@ -28,13 +30,10 @@ export const AssessmentGlobalLevelReleaseResultAssessment = () => {
             selectedReleaseFilter: SelectedReleaseResultFilterInterface;
         }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedReleaseFilter),
         onSuccess: () => {
-            toast.success(
-                'Result for this assessment has been released for all students. Participants need to check their email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.releaseResultSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             setReleaseResultDialog(false);
         },
         onError: (error: unknown) => {
@@ -61,22 +60,27 @@ export const AssessmentGlobalLevelReleaseResultAssessment = () => {
                     buttonType="secondary"
                     className="font-medium"
                 >
-                    Release Result
+                    {t('trigger.releaseResult')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="flex flex-col p-0">
                 <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                    Release Result For All {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                    {t('dialog.title', {
+                        learnerPlural: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                    })}
                 </h1>
                 <div className="flex flex-col gap-2 p-4">
                     <div className="flex items-center text-danger-600">
-                        <p>Attention</p>
+                        <p>{t('dialog.attention')}</p>
                         <WarningCircle size={18} />
                     </div>
                     <h1>
-                        Are you sure you want to release result for all{' '}
-                        {getTerminology(RoleTerms.Learner, SystemTerms.Learner).toLocaleLowerCase()}
-                        s?
+                        {t('dialog.confirmText', {
+                            learnerLower: getTerminology(
+                                RoleTerms.Learner,
+                                SystemTerms.Learner
+                            ).toLocaleLowerCase(),
+                        })}
                     </h1>
                     <div className="flex justify-end">
                         <MyButton
@@ -86,7 +90,7 @@ export const AssessmentGlobalLevelReleaseResultAssessment = () => {
                             className="mt-4 font-medium"
                             onClick={handleReleaseResultForAllStudents}
                         >
-                            Yes
+                            {t('dialog.confirmButton')}
                         </MyButton>
                     </div>
                 </div>

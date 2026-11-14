@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { Eye } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { Eye, PencilSimple } from '@phosphor-icons/react';
 import { Row } from '@tanstack/react-table';
 import { MyButton } from '@/components/design-system/button';
+import { stashEvalReturnUrl } from '@/routes/evaluation/evaluation-tool/-utils/eval-return';
 import { StatusChips } from '@/components/design-system/chips';
 import { StudentTable } from '@/types/student-table-types';
 import { ActivityStatus } from '@/components/design-system/utils/types/chips-types';
@@ -18,8 +21,10 @@ import { Route } from '..';
 // assessments whose attempt is already evaluated — an eye button that opens the
 // evaluated (annotated) copy of the answer sheet.
 export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
-    const { assessmentId } = Route.useParams();
+    const { t } = useTranslation('assessmentEvaluationStatusCell');
+    const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
+    const navigate = useNavigate();
     const [isOpening, setIsOpening] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -37,12 +42,20 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
     };
     const status = rowData.evaluation_status || 'PENDING';
     // API returns: "COMPLETED" | "EVALUATING" | "PENDING"
+    // NOTE: statusMapping drives the chip's color/icon lookup (ActivityStatusData
+    // keys) — keep these untranslated. Display text is supplied separately via
+    // statusLabels below, passed as StatusChips' children.
     const statusMapping: Record<string, ActivityStatus> = {
         COMPLETED: 'evaluated',
         EVALUATING: 'evaluating',
         PENDING: 'pending',
     };
     const mappedStatus = statusMapping[status] || 'pending';
+    const statusLabels: Partial<Record<ActivityStatus, string>> = {
+        evaluated: t('evaluated'),
+        evaluating: t('evaluating'),
+        pending: t('pending'),
+    };
 
     // The evaluated copy's file id lives on the report detail, not the table
     // row, so resolve it on click.
@@ -57,7 +70,7 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
             )) as { evaluated_file_id?: string | null } | undefined;
             const fileId = report?.evaluated_file_id;
             if (!fileId) {
-                toast.error('No evaluated copy found for this attempt.');
+                toast.error(t('noEvaluatedCopyError'));
                 return;
             }
             const url = await getPublicUrl(fileId);
@@ -68,22 +81,44 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
             setPreviewOpen(true);
         } catch (error) {
             console.error('Failed to load evaluated copy:', error);
-            toast.error('Failed to load the evaluated copy. Please try again.');
+            toast.error(t('loadFailedError'));
         } finally {
             setIsOpening(false);
         }
     };
 
+    // Edit = the manual evaluation tool for this attempt (same route and return
+    // path as the row menu's Re-evaluate → Manual), opened with the AI's marks
+    // already on the sheet as editable objects. Opens straight away: the backend
+    // never moves an evaluated attempt back to Evaluating just for opening the
+    // tool, so there is nothing to warn about.
+    const openManualEditor = () => {
+        if (!rowData.attempt_id) return;
+        stashEvalReturnUrl(window.location.href);
+        navigate({
+            to: '/evaluation/evaluate/$assessmentId/$attemptId/$examType',
+            params: {
+                assessmentId,
+                attemptId: rowData.attempt_id,
+                examType: examType || 'EXAM',
+            },
+            // The AI's marks come onto the sheet as editable objects on open.
+            search: { aiMarks: true },
+        });
+    };
+
     return (
         <div className="flex items-center gap-2">
-            <StatusChips status={mappedStatus} />
+            <StatusChips status={mappedStatus}>
+                {statusLabels[mappedStatus] ?? mappedStatus}
+            </StatusChips>
             {isManualEvaluation && status === 'COMPLETED' && (
                 <MyButton
                     type="button"
                     buttonType="secondary"
                     scale="small"
                     className="w-8 !min-w-8"
-                    title="View evaluated copy"
+                    title={t('viewEvaluatedCopy')}
                     disable={isOpening}
                     onClick={handleViewEvaluated}
                 >
@@ -94,8 +129,25 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
                 open={previewOpen}
                 onOpenChange={setPreviewOpen}
                 fileUrl={previewUrl}
-                heading="Evaluated Copy"
-                downloadName={`Evaluated-Copy-${rowData.full_name || rowData.attempt_id || 'attempt'}`}
+                heading={t('evaluatedCopyHeading')}
+                downloadName={`${t('fileNamePrefix')}-${rowData.full_name || rowData.attempt_id || 'attempt'}`}
+                footerActions={
+                    rowData.attempt_id ? (
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="medium"
+                            title={t('editCopyHint')}
+                            onClick={() => {
+                                setPreviewOpen(false);
+                                openManualEditor();
+                            }}
+                        >
+                            <PencilSimple size={18} />
+                            {t('editCopy')}
+                        </MyButton>
+                    ) : null
+                }
             />
         </div>
     );

@@ -21,4 +21,14 @@ public interface ComplexPaymentOptionRepository extends JpaRepository<ComplexPay
     Optional<ComplexPaymentOption> findByIdAndStatusNot(String id, String status);
 
     List<ComplexPaymentOption> findByInstituteId(String instituteId);
+
+    /**
+     * Fee plans an admin manages: excludes system-built plans that back a one-time
+     * course price (source_payment_plan_id set, V575).
+     */
+    Page<ComplexPaymentOption> findByInstituteIdAndStatusNotAndSourcePaymentPlanIdIsNull(
+            String instituteId, String status, Pageable pageable);
+
+    /** The system-built FLEXIBLE plan behind a one-time payment plan, if one exists. */
+    Optional<ComplexPaymentOption> findBySourcePaymentPlanId(String sourcePaymentPlanId);
 }

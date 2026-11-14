@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.module.enums.ModuleStatusEnum;
 import vacademy.io.admin_core_service.features.slide.enums.SlideStatus;
 import vacademy.io.admin_core_service.features.slide.enums.SlideTypeEnum;
 import vacademy.io.admin_core_service.features.slide.repository.VideoSlideRepository;
+import vacademy.io.admin_core_service.features.slide.service.ScormTrackingService;
 import vacademy.io.admin_core_service.features.subject.enums.SubjectStatusEnum;
 
 import java.sql.Timestamp;
@@ -53,6 +54,8 @@ public class LearnerTrackingAsyncService {
         private vacademy.io.admin_core_service.features.learner_tracking.repository.AssignmentSlideTrackedRepository assignmentSlideTrackedRepository;
         @Autowired
         private vacademy.io.admin_core_service.features.slide.repository.AudioSlideRepository audioSlideRepository;
+        @Autowired
+        private vacademy.io.admin_core_service.features.slide.repository.ScormLearnerProgressRepository scormLearnerProgressRepository;
 
         // ==== Document Slide Tracking ====
 
@@ -694,6 +697,14 @@ public class LearnerTrackingAsyncService {
                 } else if (SlideTypeEnum.AUDIO.name().equals(slideType)) {
                         percentageWatched = computeAudioPercentageFromBreadcrumbs(userId, slideId);
                         operation = LearnerOperationEnum.PERCENTAGE_AUDIO_LISTENED;
+                } else if (SlideTypeEnum.SCORM.name().equals(slideType)) {
+                        // What the package itself last reported; null (no row, or nothing
+                        // derivable yet) leaves the slide without a percentage.
+                        percentageWatched = scormLearnerProgressRepository
+                                        .findTopByUserIdAndSlideIdOrderByAttemptNumberDesc(userId, slideId)
+                                        .map(ScormTrackingService::computeScormCompletionPercentage)
+                                        .orElse(null);
+                        operation = LearnerOperationEnum.PERCENTAGE_SCORM_COMPLETED;
                 } else {
                         // DOCUMENT and friends. (QUESTION/QUIZ/ASSIGNMENT/ASSESSMENT are
                         // recomputed by their own submit paths; a structural edit doesn't

@@ -1,0 +1,17 @@
+{
+    "title": "काउंसलर असाइन करें",
+    "description": "इस पूछताछ को असाइन करने के लिए एक काउंसलर खोजें और चुनें",
+    "searchLabel": "काउंसलर खोजें",
+    "searchPlaceholder": "नाम से खोजने के लिए टाइप करें...",
+    "searching": "खोजा जा रहा है...",
+    "noCounsellorsFound": "कोई काउंसलर नहीं मिला",
+    "selectedCounsellorLabel": "चयनित काउंसलर",
+    "cancel": "रद्द करें",
+    "assign": "असाइन करें",
+    "assigning": "असाइन किया जा रहा है...",
+    "toast": {
+        "assignSuccess": "काउंसलर सफलतापूर्वक असाइन किया गया",
+        "assignFailed": "काउंसलर असाइन करने में विफल",
+        "selectCounsellor": "कृपया एक काउंसलर चुनें"
+    }
+}

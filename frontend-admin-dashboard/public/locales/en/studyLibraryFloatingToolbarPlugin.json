@@ -1,0 +1,12 @@
+{
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "highlight": "Highlight",
+    "inlineCode": "Inline code",
+    "urlPlaceholder": "https://…",
+    "applyLink": "Apply link",
+    "cancel": "Cancel",
+    "link": "Link"
+}

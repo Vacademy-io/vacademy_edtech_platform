@@ -15,7 +15,7 @@ export const Chapters = ({ chapters}:{chapters:Chapter[]}) => {
                     <div>{t("chapters.emptyState", { chapters: getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters) })}</div>
                 </div>
             )}
-            <div className="flex flex-col gap-6 w-full">
+            <div className="flex flex-col gap-section w-full">
                 {chapters.map((chapter, index) => (
                     <ChapterCard
                         key={index}

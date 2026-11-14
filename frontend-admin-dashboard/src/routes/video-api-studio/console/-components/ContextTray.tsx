@@ -1,4 +1,5 @@
-import { Clapperboard, FileText, Globe, ImageIcon, Layers, Mic, Sparkles, Volume2, X } from 'lucide-react';
+import { FilmSlate, FileText, Globe, Image as ImageIcon, Stack as Layers, Microphone as Mic, Sparkle as Sparkles, SpeakerHigh as Volume2, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { RoutingPlan, RoutingToolName } from '../../-services/video-generation';
 
 export interface AttachmentItem {
@@ -109,14 +110,15 @@ function AudioSourceRow({
     muteTtsDuringSourceClips: boolean;
     onMuteTtsDuringSourceClipsChange: (mute: boolean) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioContextTray');
     if (!hasSources) return null;
     // Original-audio mode is only meaningful for a single source clip — with
     // multiple clips, the mix is ambiguous, so we force TTS narration.
     const originalAvailable = singleSource;
     return (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-indigo-200 bg-indigo-50/30 px-2 py-1.5 dark:border-indigo-800 dark:bg-indigo-950/20">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-indigo-500">
-                Audio
+            <span className="shrink-0 text-2xs font-medium uppercase tracking-wider text-indigo-500">
+                {t('audio.label')}
             </span>
             <div className="inline-flex shrink-0 rounded-md border bg-background p-0.5">
                 <button
@@ -125,8 +127,8 @@ function AudioSourceRow({
                     onClick={() => originalAvailable && onInputVideoAudioChange('original')}
                     title={
                         originalAvailable
-                            ? 'Use the original audio from your source clip'
-                            : 'Original audio is only available with a single source clip'
+                            ? t('audio.originalTitleAvailable')
+                            : t('audio.originalTitleUnavailable')
                     }
                     className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors ${
                         inputVideoAudio === 'original'
@@ -137,7 +139,7 @@ function AudioSourceRow({
                     }`}
                 >
                     <Volume2 className="size-3" />
-                    Original
+                    {t('audio.original')}
                 </button>
                 <button
                     type="button"
@@ -149,19 +151,19 @@ function AudioSourceRow({
                     }`}
                 >
                     <Mic className="size-3" />
-                    AI Narration
+                    {t('audio.aiNarration')}
                 </button>
             </div>
             {/* Secondary toggle — only meaningful when TTS is the primary track */}
             {inputVideoAudio === 'tts' && (
-                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-2xs text-muted-foreground">
                     <input
                         type="checkbox"
                         className="size-3 rounded border-border accent-indigo-500"
                         checked={muteTtsDuringSourceClips}
                         onChange={(e) => onMuteTtsDuringSourceClipsChange(e.target.checked)}
                     />
-                    Mute TTS during source clips
+                    {t('audio.muteTtsDuringSourceClips')}
                 </label>
             )}
         </div>
@@ -179,11 +181,12 @@ function RefsRow({
     attachments: AttachmentItem[];
     onRemove: (fileId: string) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioContextTray');
     if (attachments.length === 0) return null;
     return (
         <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Refs ({attachments.length})
+            <span className="shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
+                {t('refs.label', { count: attachments.length })}
             </span>
             <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
                 {attachments.map((a) => (
@@ -205,12 +208,12 @@ function RefsRow({
                         ) : (
                             <FileText className="size-4 text-red-500" />
                         )}
-                        <span className="max-w-[100px] truncate">{a.fileName}</span>
+                        <span className="max-w-24 truncate">{a.fileName}</span>
                         <button
                             type="button"
                             onClick={() => onRemove(a.fileId)}
                             className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                            aria-label={`Remove ${a.fileName}`}
+                            aria-label={t('refs.removeAria', { fileName: a.fileName })}
                         >
                             <X className="size-3.5" />
                         </button>
@@ -230,39 +233,39 @@ function SourcesRow({
     indexedVideos: IndexedVideoItem[];
     onRemove: (id: string) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioContextTray');
     if (selectedIds.length === 0) return null;
     return (
         <div className="flex items-center gap-2 rounded-md border border-indigo-200 bg-indigo-50/30 px-2 py-1.5 dark:border-indigo-800 dark:bg-indigo-950/20">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-indigo-500">
-                Sources ({selectedIds.length})
+            <span className="shrink-0 text-2xs font-medium uppercase tracking-wider text-indigo-500">
+                {t('sources.label', { count: selectedIds.length })}
             </span>
             <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
                 {selectedIds.map((id, idx) => {
                     const video = indexedVideos.find((v) => v.id === id);
                     const label = String.fromCharCode(65 + idx);
+                    const videoName = video?.name || t('sources.unknown');
                     return (
                         <div
                             key={id}
                             className="group flex shrink-0 items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs"
                             title={video?.name || id}
                         >
-                            <span className="flex size-4 items-center justify-center rounded-sm bg-indigo-500 text-[9px] font-bold text-white">
+                            <span className="flex size-4 items-center justify-center rounded-sm bg-indigo-500 text-2xs font-bold text-white">
                                 {label}
                             </span>
                             {video?.kind === 'image' ? (
                                 <ImageIcon className="size-3 shrink-0 text-muted-foreground" />
                             ) : (
-                                <Clapperboard className="size-3 shrink-0 text-muted-foreground" />
+                                <FilmSlate className="size-3 shrink-0 text-muted-foreground" />
                             )}
-                            <span className="max-w-[120px] truncate font-medium">
-                                {video?.name || 'Unknown'}
-                            </span>
+                            <span className="max-w-32 truncate font-medium">{videoName}</span>
                             <span className="text-muted-foreground">{video?.mode}</span>
                             <button
                                 type="button"
                                 onClick={() => onRemove(id)}
                                 className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                                aria-label={`Remove ${video?.name}`}
+                                aria-label={t('sources.removeAria', { name: videoName })}
                             >
                                 <X className="size-3.5" />
                             </button>
@@ -275,6 +278,7 @@ function SourcesRow({
 }
 
 function SmartPlanRow(props: ContextTrayProps) {
+    const { t } = useTranslation('videoApiStudioContextTray');
     const {
         routerPlan,
         routerLoading,
@@ -295,13 +299,15 @@ function SmartPlanRow(props: ContextTrayProps) {
     return (
         <div className="flex flex-col gap-1.5 rounded-md border border-violet-200 bg-violet-50/30 px-2 py-1.5 dark:border-violet-800 dark:bg-violet-950/20">
             <div className="flex flex-wrap items-center gap-1.5">
-                <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-violet-600">
-                    Smart plan
+                <span className="shrink-0 text-2xs font-medium uppercase tracking-wider text-violet-600">
+                    {t('smartPlan.label')}
                 </span>
                 {routerLoading && !routerPlan && (
-                    <span className="text-[11px] text-muted-foreground">analyzing prompt…</span>
+                    <span className="text-2xs text-muted-foreground">
+                        {t('smartPlan.analyzing')}
+                    </span>
                 )}
-                {routerPlan?.tools?.find((t) => t.name === 'scrape_url') && (
+                {routerPlan?.tools?.find((tool) => tool.name === 'scrape_url') && (
                     <button
                         type="button"
                         onClick={() => onToggleTool('scrape_url')}
@@ -310,24 +316,31 @@ function SmartPlanRow(props: ContextTrayProps) {
                                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40'
                                 : 'border-dashed bg-muted/30 text-muted-foreground'
                         }`}
-                        title={routerPlan.tools.find((t) => t.name === 'scrape_url')?.reason || ''}
+                        title={
+                            routerPlan.tools.find((tool) => tool.name === 'scrape_url')?.reason ||
+                            ''
+                        }
                     >
                         <Globe className="size-3.5" />
                         <span>
-                            {isToolEnabled('scrape_url') ? 'Capture website' : 'Skip website'}
+                            {isToolEnabled('scrape_url')
+                                ? t('smartPlan.captureWebsite')
+                                : t('smartPlan.skipWebsite')}
                         </span>
                         <span
-                            className={`ml-1 rounded px-1 text-[9px] uppercase ${
+                            className={`ms-1 rounded px-1 text-2xs uppercase ${
                                 isToolOverridden('scrape_url')
                                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                                     : 'bg-muted text-muted-foreground'
                             }`}
                         >
-                            {isToolOverridden('scrape_url') ? 'manual' : 'auto'}
+                            {isToolOverridden('scrape_url')
+                                ? t('smartPlan.manual')
+                                : t('smartPlan.auto')}
                         </span>
                     </button>
                 )}
-                {routerPlan?.tools?.find((t) => t.name === 'web_search') && (
+                {routerPlan?.tools?.find((tool) => tool.name === 'web_search') && (
                     <button
                         type="button"
                         onClick={() => onToggleTool('web_search')}
@@ -336,18 +349,27 @@ function SmartPlanRow(props: ContextTrayProps) {
                                 ? 'border-sky-300 bg-sky-50 text-sky-700 dark:bg-sky-950/40'
                                 : 'border-dashed bg-muted/30 text-muted-foreground'
                         }`}
-                        title={routerPlan.tools.find((t) => t.name === 'web_search')?.reason || ''}
+                        title={
+                            routerPlan.tools.find((tool) => tool.name === 'web_search')?.reason ||
+                            ''
+                        }
                     >
                         <Sparkles className="size-3.5" />
-                        <span>{isToolEnabled('web_search') ? 'Web search' : 'Skip search'}</span>
+                        <span>
+                            {isToolEnabled('web_search')
+                                ? t('smartPlan.webSearch')
+                                : t('smartPlan.skipSearch')}
+                        </span>
                         <span
-                            className={`ml-1 rounded px-1 text-[9px] uppercase ${
+                            className={`ms-1 rounded px-1 text-2xs uppercase ${
                                 isToolOverridden('web_search')
                                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                                     : 'bg-muted text-muted-foreground'
                             }`}
                         >
-                            {isToolOverridden('web_search') ? 'manual' : 'auto'}
+                            {isToolOverridden('web_search')
+                                ? t('smartPlan.manual')
+                                : t('smartPlan.auto')}
                         </span>
                     </button>
                 )}
@@ -360,22 +382,24 @@ function SmartPlanRow(props: ContextTrayProps) {
                                 ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40'
                                 : 'border-dashed bg-muted/30 text-muted-foreground'
                         }`}
-                        title="Mute TTS narration during source-clip shots so the demo's original audio plays"
+                        title={t('smartPlan.muteTtsTitle')}
                     >
                         <Volume2 className="size-3.5" />
                         <span>
                             {cfgValue('mute_tts_on_source_clips')
-                                ? 'Mute TTS on clips'
-                                : 'TTS over clips'}
+                                ? t('smartPlan.muteTtsOnClips')
+                                : t('smartPlan.ttsOverClips')}
                         </span>
                         <span
-                            className={`ml-1 rounded px-1 text-[9px] uppercase ${
+                            className={`ms-1 rounded px-1 text-2xs uppercase ${
                                 isCfgOverridden('mute_tts_on_source_clips')
                                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                                     : 'bg-muted text-muted-foreground'
                             }`}
                         >
-                            {isCfgOverridden('mute_tts_on_source_clips') ? 'manual' : 'auto'}
+                            {isCfgOverridden('mute_tts_on_source_clips')
+                                ? t('smartPlan.manual')
+                                : t('smartPlan.auto')}
                         </span>
                     </button>
                 )}
@@ -388,22 +412,24 @@ function SmartPlanRow(props: ContextTrayProps) {
                                 ? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/40'
                                 : 'border-dashed bg-muted/30 text-muted-foreground'
                         }`}
-                        title="Float infographics over the demo footage (vs. side-by-side card)"
+                        title={t('smartPlan.overlayTitle')}
                     >
                         <Layers className="size-3.5" />
                         <span>
                             {cfgValue('infographic_mode') === 'overlay'
-                                ? 'Overlay infographics'
-                                : 'Side infographics'}
+                                ? t('smartPlan.overlayInfographics')
+                                : t('smartPlan.sideInfographics')}
                         </span>
                         <span
-                            className={`ml-1 rounded px-1 text-[9px] uppercase ${
+                            className={`ms-1 rounded px-1 text-2xs uppercase ${
                                 isCfgOverridden('infographic_mode')
                                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                                     : 'bg-muted text-muted-foreground'
                             }`}
                         >
-                            {isCfgOverridden('infographic_mode') ? 'manual' : 'auto'}
+                            {isCfgOverridden('infographic_mode')
+                                ? t('smartPlan.manual')
+                                : t('smartPlan.auto')}
                         </span>
                     </button>
                 )}
@@ -411,14 +437,14 @@ function SmartPlanRow(props: ContextTrayProps) {
                     <button
                         type="button"
                         onClick={onToggleRouterExplanation}
-                        className="ml-auto shrink-0 text-[11px] text-violet-600 hover:underline"
+                        className="ml-auto shrink-0 text-2xs text-violet-600 hover:underline"
                     >
-                        {routerExplanationOpen ? 'Hide why ▴' : 'Why? ▾'}
+                        {routerExplanationOpen ? t('smartPlan.hideWhy') : t('smartPlan.why')}
                     </button>
                 )}
             </div>
             {routerExplanationOpen && routerPlan?.explanation && (
-                <div className="rounded bg-background/60 p-2 text-[11px] leading-relaxed text-muted-foreground">
+                <div className="rounded bg-background/60 p-2 text-2xs leading-relaxed text-muted-foreground">
                     {routerPlan.explanation}
                 </div>
             )}
@@ -435,11 +461,12 @@ function WebCaptureRow({
     ignoredUrls: Set<string>;
     onSetIgnored: (url: string, ignored: boolean) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioContextTray');
     if (detectedUrls.length === 0) return null;
     return (
         <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/30 px-2 py-1.5 dark:border-emerald-800 dark:bg-emerald-950/20">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-emerald-600">
-                Web capture
+            <span className="shrink-0 text-2xs font-medium uppercase tracking-wider text-emerald-600">
+                {t('webCapture.label')}
             </span>
             <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
                 {detectedUrls.map((url) => {
@@ -460,27 +487,27 @@ function WebCaptureRow({
                             }`}
                             title={
                                 isIgnored
-                                    ? `${url} — ignored (still in prompt, not captured)`
-                                    : `${url} — screenshots + images will be captured and used as references`
+                                    ? t('webCapture.ignoredTitle', { url })
+                                    : t('webCapture.activeTitle', { url })
                             }
                         >
                             <Globe className="size-3.5 text-emerald-600" />
-                            <span className="max-w-[160px] truncate font-medium">{host}</span>
+                            <span className="max-w-40 truncate font-medium">{host}</span>
                             {isIgnored ? (
                                 <button
                                     type="button"
                                     onClick={() => onSetIgnored(url, false)}
-                                    className="ml-0.5 rounded-full px-1 text-[10px] text-muted-foreground hover:text-emerald-600"
-                                    aria-label={`Re-enable capture for ${host}`}
+                                    className="ms-0.5 rounded-full px-1 text-2xs text-muted-foreground hover:text-emerald-600"
+                                    aria-label={t('webCapture.reEnableAria', { host })}
                                 >
-                                    undo
+                                    {t('webCapture.undo')}
                                 </button>
                             ) : (
                                 <button
                                     type="button"
                                     onClick={() => onSetIgnored(url, true)}
                                     className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-                                    aria-label={`Skip capture for ${host}`}
+                                    aria-label={t('webCapture.skipAria', { host })}
                                 >
                                     <X className="size-3.5" />
                                 </button>

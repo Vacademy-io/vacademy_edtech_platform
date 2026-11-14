@@ -1,4 +1,23 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
+
+/**
+ * This zod schema and the ALLOWED_FILE_TYPE_OPTIONS constant are module-scope
+ * singletons: the schema's exact shape is consumed via `z.infer` and the
+ * options array is imported directly by several files outside this i18n
+ * batch (assignment-preview.tsx, helper.ts, and the assessment/question-papers
+ * route). Converting to a `buildXxx(t)` factory would require touching every
+ * one of those call sites. Instead we use the same "outside a React render
+ * tree" fallback the rollout already established (see
+ * live-session/schedule/-schema/schema.ts): call the shared i18next singleton
+ * directly with a fixed namespace. Validation/label copy is still real,
+ * translated text — it just doesn't hot-swap without a reload, same tradeoff
+ * already accepted there.
+ */
+const NAMESPACE = 'studyLibraryAssignmentFormSchema';
+const t: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
 
 export const assignmentFormSchema = z.object({
     id: z.string(),
@@ -44,7 +63,7 @@ export const assignmentFormSchema = z.object({
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['endDate'],
-            message: 'End must be after start',
+            message: t('validation.endMustBeAfterStart'),
         });
     }
 });
@@ -60,12 +79,12 @@ export const ALL_FILES_VALUE = 'all';
 
 // File types an admin can allow learners to upload. PDF is always allowed.
 export const ALLOWED_FILE_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: ALL_FILES_VALUE, label: 'All Files' },
-    { value: 'pdf', label: 'PDF' },
-    { value: 'image', label: 'Image (PNG, JPG, GIF)' },
-    { value: 'doc', label: 'Document (DOC, DOCX)' },
-    { value: 'video', label: 'Video (MP4, MOV, WEBM)' },
-    { value: 'audio', label: 'Audio (MP3, WAV, M4A)' },
+    { value: ALL_FILES_VALUE, label: t('fileType.allFiles') },
+    { value: 'pdf', label: t('fileType.pdf') },
+    { value: 'image', label: t('fileType.image') },
+    { value: 'doc', label: t('fileType.document') },
+    { value: 'video', label: t('fileType.video') },
+    { value: 'audio', label: t('fileType.audio') },
 ];
 
 // The selection is round-tripped through the existing `comma_separated_media_ids`

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 // Import constants, types, and utilities
 import {
@@ -63,6 +64,8 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
     onDataChange,
     slideId,
 }) => {
+    const { t, i18n } = useTranslation('studyLibraryCodeEditorSlide');
+    const { t: tCodeEditorUtils } = useTranslation('studyLibraryCodeEditorUtils');
     const editorRef = useRef<unknown>(null);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     // Per-role enforcement: hide the code download for roles an admin has blocked.
@@ -281,45 +284,52 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
 
         try {
             copyCodeToClipboard(currentCode);
-            toast.success('Code copied to clipboard!', {
-                description: `${currentData.language} code has been copied successfully.`,
+            toast.success(t('toast.codeCopiedTitle'), {
+                description: t('toast.codeCopiedDescription', { language: currentData.language }),
                 duration: 2000,
             });
         } catch (error) {
             console.error('Failed to copy code:', error);
-            toast.error('Failed to copy code', {
-                description: 'Please try again or copy manually.',
+            toast.error(t('toast.copyFailedTitle'), {
+                description: t('toast.copyFailedDescription'),
                 duration: 3000,
             });
         }
-    }, [currentData.language]);
+    }, [currentData.language, t]);
 
     const handleDownloadCode = useCallback(() => {
         const currentCode = getCurrentCodeFromEditor();
 
         try {
             downloadCodeAsFile(currentCode, currentData.language);
-            toast.success('Code downloaded successfully!', {
-                description: `${currentData.language} code has been saved to your downloads.`,
+            toast.success(t('toast.codeDownloadedTitle'), {
+                description: t('toast.codeDownloadedDescription', {
+                    language: currentData.language,
+                }),
                 duration: 2000,
             });
         } catch (error) {
             console.error('Failed to download code:', error);
-            toast.error('Failed to download code', {
-                description: 'Please try again or save manually.',
+            toast.error(t('toast.downloadFailedTitle'), {
+                description: t('toast.downloadFailedDescription'),
                 duration: 3000,
             });
         }
-    }, [currentData.language]);
+    }, [currentData.language, t]);
 
     const handleInputSubmit = useCallback(() => {
         if (inputValue.trim()) {
-            const newOutput = handleUserInputSubmission(inputValue, currentData.language, output);
+            const newOutput = handleUserInputSubmission(
+                inputValue,
+                currentData.language,
+                output,
+                t
+            );
             setOutput(newOutput);
             setInputValue('');
             setWaitingForInput(false);
         }
-    }, [inputValue, currentData.language, output]);
+    }, [inputValue, currentData.language, output, t]);
 
     // Helper function to get the current code from the editor
     const getCurrentCodeFromEditor = useCallback((): string => {
@@ -342,19 +352,29 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
         setIsRunning(true);
         setIsPyodideLoading(true);
         setIsOutputExpanded(true); // Auto-expand output when running
-        setOutput('Loading Python environment...');
+        setOutput(t('loadingPythonEnvironmentShort'));
 
         try {
-            const { output, needsInput } = await executeCode(currentCode, currentData.language);
+            const { output, needsInput } = await executeCode(
+                currentCode,
+                currentData.language,
+                {},
+                tCodeEditorUtils,
+                i18n.language
+            );
             setOutput(output);
             setWaitingForInput(needsInput);
         } catch (error) {
-            setOutput(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            setOutput(
+                t('errorPrefix', {
+                    message: error instanceof Error ? error.message : t('unknownError'),
+                })
+            );
         } finally {
             setIsRunning(false);
             setIsPyodideLoading(false);
         }
-    }, [currentData.language, getCurrentCodeFromEditor]);
+    }, [currentData.language, getCurrentCodeFromEditor, t, tCodeEditorUtils, i18n.language]);
 
     const handleEditorDidMount = (editor: unknown) => {
         editorRef.current = editor;
@@ -454,15 +474,15 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                 <div className="flex flex-col items-center justify-between gap-2 lg:flex-row">
                     <CardTitle className="flex items-center gap-2">
                         <Code className="size-5" />
-                        Code Editor
+                        {t('title')}
                         {!isQuestionMode && (
                             <span className="ml-2 rounded-full bg-gray-100 px-2 py-1 text-xs font-normal text-gray-600">
-                                {currentData.viewMode === 'edit' ? 'Edit Mode' : 'View Mode'}
+                                {currentData.viewMode === 'edit' ? t('editMode') : t('viewMode')}
                             </span>
                         )}
                         {isQuestionMode && (
                             <span className="ml-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
-                                Question Mode
+                                {t('questionMode')}
                             </span>
                         )}
                     </CardTitle>
@@ -500,9 +520,9 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                     <Play className="mr-1 size-4" />
                                     {isRunning
                                         ? isPyodideLoading
-                                            ? 'Loading...'
-                                            : 'Running...'
-                                        : 'Run'}
+                                            ? t('loading')
+                                            : t('running')
+                                        : t('run')}
                                 </Button>
                             </>
                         )}
@@ -515,7 +535,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                 className="border-purple-200 text-purple-700 hover:bg-purple-50"
                             >
                                 <Sparkle className="mr-1 size-4" weight="fill" />
-                                Generate with AI
+                                {t('generateWithAi')}
                             </Button>
                         )}
 
@@ -523,7 +543,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Settings className="mr-1 size-4" />
-                                    Settings
+                                    {t('settings')}
                                     <ChevronDown className="ml-1 size-3" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -532,7 +552,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                     className="flex items-center justify-between"
                                     onSelect={(e) => e.preventDefault()}
                                 >
-                                    <span>Question Mode</span>
+                                    <span>{t('questionMode')}</span>
                                     <Switch
                                         checked={isQuestionMode}
                                         onCheckedChange={handleModeToggle}
@@ -543,7 +563,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem className="flex items-center justify-between">
-                                    <span>View/Edit Mode</span>
+                                    <span>{t('viewEditMode')}</span>
                                     <div className="flex items-center gap-1">
                                         <Eye className="size-3" />
                                         <Switch
@@ -566,12 +586,12 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                     {currentData.theme === 'light' ? (
                                         <>
                                             <Moon className="mr-2 size-4" />
-                                            Switch to Dark Theme
+                                            {t('switchToDarkTheme')}
                                         </>
                                     ) : (
                                         <>
                                             <Sun className="mr-2 size-4" />
-                                            Switch to Light Theme
+                                            {t('switchToLightTheme')}
                                         </>
                                     )}
                                 </DropdownMenuItem>
@@ -580,13 +600,13 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
 
                                 <DropdownMenuItem onClick={handleCopyCode}>
                                     <Copy className="mr-2 size-4" />
-                                    Copy Code
+                                    {t('copyCode')}
                                 </DropdownMenuItem>
 
                                 {allowCodeDownload && (
                                     <DropdownMenuItem onClick={handleDownloadCode}>
                                         <Download className="mr-2 size-4" />
-                                        Download Code
+                                        {t('downloadCode')}
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>
@@ -652,7 +672,9 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                     {/* Output Header */}
                                     <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2 dark:bg-gray-800">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium">Console</span>
+                                            <span className="text-sm font-medium">
+                                                {t('console')}
+                                            </span>
                                             {output && !isRunning && (
                                                 <span className="inline-flex size-2 rounded-full bg-green-500"></span>
                                             )}
@@ -685,9 +707,8 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                     <div className="flex-1 overflow-auto bg-gray-900 p-4 font-mono text-sm text-green-400">
                                         <pre className="whitespace-pre-wrap">
                                             {isPyodideLoading && isRunning
-                                                ? 'Loading Python environment (this may take a few seconds on first run)...'
-                                                : output ||
-                                                  'Click "Run Code" to see output here...'}
+                                                ? t('loadingPythonEnvironment')
+                                                : output || t('clickRunToSeeOutput')}
                                         </pre>
                                         {waitingForInput && (
                                             <div className="mt-2 flex items-center gap-2">
@@ -702,7 +723,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                                         }
                                                     }}
                                                     className="flex-1 border-none bg-transparent text-green-400 outline-none"
-                                                    placeholder="Type your input and press Enter..."
+                                                    placeholder={t('inputPlaceholder')}
                                                     autoFocus
                                                 />
                                             </div>
@@ -717,7 +738,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                                     onClick={handleInputSubmit}
                                                     className="rounded bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
                                                 >
-                                                    Submit
+                                                    {t('submit')}
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -726,7 +747,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                                                     }}
                                                     className="rounded bg-gray-600 px-3 py-1 text-sm text-white hover:bg-gray-700"
                                                 >
-                                                    Cancel
+                                                    {t('cancel')}
                                                 </button>
                                             </div>
                                         </div>
@@ -740,7 +761,7 @@ export const CodeEditorSlide: React.FC<CodeEditorSlideProps> = ({
                             <div className="border-t p-2">
                                 <Button variant="outline" size="sm" onClick={toggleOutputExpanded}>
                                     <ChevronUp className="mr-1 size-4" />
-                                    Show Output
+                                    {t('showOutput')}
                                 </Button>
                             </div>
                         )}

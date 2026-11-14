@@ -46,6 +46,12 @@ export interface PagedResponse<T> {
     number: number; // current page index
     sort?: unknown;
     empty: boolean;
+    /**
+     * Set only on the empty stand-in fetchSystemAlerts returns when the request failed, so
+     * callers that must not read a failure as "no alerts" (the dashboard's Pending Actions)
+     * can tell the two apart. Absent on real responses.
+     */
+    fetchFailed?: boolean;
 }
 
 export function getSystemAlertsUrl(userId: string): string {
@@ -87,6 +93,7 @@ export async function fetchSystemAlerts(params: {
             size: size,
             number: page,
             empty: true,
+            fetchFailed: true,
         };
     }
 }

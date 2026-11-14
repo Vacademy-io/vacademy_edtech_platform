@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.engagement.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.audience.service.PlaceholderEmailService;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 
@@ -15,12 +16,25 @@ import java.util.Objects;
  * Learners resolve from the student table; leads from audience_response.parent_* fields
  * (the same contact source the campaign-send path uses). A lead that also has a user_id
  * (converted) prefers the student row and falls back to lead contact fields.
+ *
+ * <p>Synthesized "name+phone@vacademy.com" addresses (leads that came in without an email) are
+ * treated as no email: the brain must not pick a channel nobody can receive, and a send to one
+ * is dropped by notification-service anyway.
  */
 @Service
 @RequiredArgsConstructor
 public class ContactResolver {
 
+    private static final java.util.regex.Pattern TEMPLATE_DOMAIN = java.util.regex.Pattern.compile(
+            "^(?:(?:my|your)-?(?:site|domain|website|company|business|email|mail)|example|sample|test|sitename|website|"
+            + "company)\\.[a-z.]{2,10}$|^example\\.|(?:^|\\.)(?:godaddy|secureserver|wix|wixpress|squarespace|weebly|webflow|jimdo|"
+            + "strikingly|site123|zyro|hostinger)\\.(?:com|net|io)$");
+    private static final java.util.Set<String> TEMPLATE_LOCALS = java.util.Set.of("filler", "test", "testing", "tester",
+            "sample", "dummy", "youremail", "yourmail", "yourname", "your", "email", "username", "name", "someone",
+            "johndoe", "janedoe", "user");
+
     private final EngagementReadDao dao;
+    private final PlaceholderEmailService placeholderEmailService;
 
     public List<Subject> resolve(List<EngagementMember> members) {
         List<String> userIds = members.stream()
@@ -41,10 +55,29 @@ public class ContactResolver {
                     .audienceResponseId(m.getAudienceResponseId())
                     .name(first(s, 0, l, 0))
                     .phone(first(s, 1, l, 1))
-                    .email(first(s, 2, l, 2))
+                    .email(first(realEmail(s), 2, realEmail(l), 2))
                     .build());
         }
         return subjects;
+    }
+
+    /** The contact row with a placeholder email blanked, so first() falls through to the other source. */
+    private String[] realEmail(String[] row) {
+        if (row == null || row[2] == null) return row;
+        if (!placeholderEmailService.isPlaceholder(row[2]) && !isTemplateAddress(row[2])) return row;
+        return new String[]{row[0], row[1], null};
+    }
+
+    /**
+     * What a website template or site builder prints until someone replaces it (contact@mysite.com,
+     * filler@godaddy.com). The Lead Agent stops collecting these (ai_service research/contacts.py,
+     * same rules); this also covers leads delivered before that, and any other source.
+     */
+    static boolean isTemplateAddress(String email) {
+        String e = email.trim().toLowerCase(java.util.Locale.ROOT);
+        int at = e.lastIndexOf('@');
+        if (at <= 0) return false;
+        return TEMPLATE_LOCALS.contains(e.substring(0, at)) || TEMPLATE_DOMAIN.matcher(e.substring(at + 1)).find();
     }
 
     private static String first(String[] a, int ai, String[] b, int bi) {

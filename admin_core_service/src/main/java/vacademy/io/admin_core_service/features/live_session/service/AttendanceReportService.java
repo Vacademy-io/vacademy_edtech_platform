@@ -4,12 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.common.dto.CustomFieldDTO;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.live_session.dto.*;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionParticipantRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionGuestRegistrationRepository;
+import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -120,6 +122,14 @@ public class AttendanceReportService {
         }
     }
     public Page<StudentAttendanceDTO> getAllByAttendanceFilterRequest(AttendanceFilterRequest filter, Pageable pageable) {
+        // Fail closed: batch_ids/live_session_ids are both optional ("all"), so instituteId is
+        // the only thing keeping this report inside one institute. Without it the query used to
+        // return every learner on the platform.
+        String instituteId = filter.getInstituteId() != null ? filter.getInstituteId().trim() : null;
+        if (instituteId == null || instituteId.isEmpty()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "institute_id is required");
+        }
+
         String name = (filter.getName() != null && !filter.getName().trim().isEmpty())
                 ? filter.getName().trim()
                 : null;
@@ -127,6 +137,7 @@ public class AttendanceReportService {
         List<String> batchIds = filter.getBatchIds() != null ? filter.getBatchIds() : Collections.emptyList();
         List<String> liveSessionIds = filter.getLiveSessionIds() != null ? filter.getLiveSessionIds() : Collections.emptyList();
         Page<String> studentIdsPage = liveSessionParticipantRepository.findDistinctStudentIdsWithFilters(
+                instituteId,
                 name,
                 filter.getStartDate(),
                 filter.getEndDate(),
@@ -140,6 +151,7 @@ public class AttendanceReportService {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
         List<AttendanceReportProjection> attendanceRecords = liveSessionParticipantRepository.getAttendanceReportForStudentIds(
+                instituteId,
                 studentIdsPage.getContent(),
                 filter.getStartDate(),
                 filter.getEndDate(),
@@ -205,6 +217,10 @@ public class AttendanceReportService {
         String search = (request.getSearchQuery() != null && !request.getSearchQuery().trim().isEmpty())
                 ? request.getSearchQuery().trim()
                 : null;
+        // Flag + value pair (not a nullable numeric) — Postgres cannot infer the
+        // type of a null bind in ":param IS NULL", so the query would fail with 42P18.
+        boolean hasRatingBelow = request.getRatingBelow() != null;
+        double ratingBelow = hasRatingBelow ? request.getRatingBelow() : 0d;
 
         return liveSessionParticipantRepository.searchFeedback(
                 request.getInstituteId(),
@@ -215,6 +231,8 @@ public class AttendanceReportService {
                 subjects,
                 subjects.size(),
                 search,
+                hasRatingBelow ? 1 : 0,
+                ratingBelow,
                 pageable
         );
     }
@@ -298,7 +316,10 @@ public class AttendanceReportService {
                     .statusType(guestDto.getStatusType())
                     .engagementData(guestDto.getEngagementData())
                     .providerTotalDurationMinutes(guestDto.getProviderTotalDurationMinutes())
+                    .providerTotalDurationSeconds(guestDto.getProviderTotalDurationSeconds())
                     .feedbackDetails(null)
+                    .batchName(null)
+                    .registeredAt(guestDto.getRegisteredAt())
                     .build();
         }
     }

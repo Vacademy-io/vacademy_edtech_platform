@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
     Warning,
     WarningCircle,
@@ -29,8 +30,9 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
     fallbackIcon: FallbackIcon,
     compact = false,
 }) => {
-    const errorDetails = getAnalyticsErrorDetails(error);
-    const showRetryButton = shouldShowRetryButton(error) && onRetry;
+    const { t } = useTranslation(['dashboardAnalyticsErrorDisplay', 'dashboardAnalyticsErrorHandler']);
+    const errorDetails = getAnalyticsErrorDetails(error, t);
+    const showRetryButton = shouldShowRetryButton(error, t) && onRetry;
 
     const getErrorIcon = () => {
         switch (errorDetails.iconType) {
@@ -76,7 +78,7 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
                             onClick={handleRefreshPage}
                         >
                             <ArrowCounterClockwise size={12} />
-                            Refresh Page
+                            {t('actions.refreshPage')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -87,7 +89,7 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
                             onClick={handleLoginRedirect}
                         >
                             <ArrowSquareOut size={12} />
-                            Login
+                            {t('actions.login')}
                         </MyButton>
                     </div>
                 );
@@ -105,7 +107,7 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
                     onClick={onRetry}
                 >
                     <ArrowCounterClockwise size={12} />
-                    Try Again
+                    {t('actions.tryAgain')}
                 </MyButton>
             );
         }
@@ -137,14 +139,14 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
             className="py-8 text-center"
         >
             <ErrorIcon size={32} className={`mx-auto mb-3 ${iconColor}`} />
-            <h4 className="mb-1 font-medium text-gray-800">Unable to load {widgetName}</h4>
+            <h4 className="mb-1 font-medium text-gray-800">
+                {t('errorMessage', { widgetName })}
+            </h4>
             <p className="mb-2 text-sm text-gray-600">{errorDetails.message}</p>
 
             {/* Additional context for 511 errors */}
             {error?.response?.status === 511 && (
-                <p className="mb-2 text-xs text-amber-600">
-                    Your session may have expired or requires re-authentication.
-                </p>
+                <p className="mb-2 text-xs text-amber-600">{t('sessionExpiredNotice')}</p>
             )}
 
             {getActionButton()}
@@ -152,7 +154,9 @@ export const AnalyticsErrorDisplay: React.FC<AnalyticsErrorDisplayProps> = ({
             {/* Debug info in development */}
             {process.env.NODE_ENV === 'development' && (
                 <details className="mt-4 text-left">
-                    <summary className="cursor-pointer text-xs text-gray-500">Debug Info</summary>
+                    <summary className="cursor-pointer text-xs text-gray-500">
+                        {t('debugInfoLabel')}
+                    </summary>
                     <pre className="mt-2 max-h-20 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-400">
                         {JSON.stringify(
                             {

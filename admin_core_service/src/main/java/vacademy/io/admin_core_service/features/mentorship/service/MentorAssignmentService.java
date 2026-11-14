@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -62,12 +63,17 @@ public class MentorAssignmentService {
         // over-sized request can't push a mentor past max_mentees.
         int load = (int) assignmentRepository.countByMentorIdAndStatus(mentor.getId(), MentorStatus.ACTIVE.name());
         List<MentorStudentAssignment> toSave = new ArrayList<>();
-        for (String studentUserId : distinctNonBlank(req.getStudentUserIds())) {
-            boolean exists = assignmentRepository
-                    .findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                            req.getInstituteId(), mentor.getId(), studentUserId, MentorStatus.ACTIVE.name())
-                    .isPresent();
-            if (exists) {
+        List<String> requested = distinctNonBlank(req.getStudentUserIds());
+        // Who this mentor already has, read up front: the admin UI can select a whole
+        // batch, and one lookup per student made that hundreds of queries in one
+        // transaction.
+        Set<String> alreadyMine = new HashSet<>();
+        forEachIdChunk(requested, chunk -> assignmentRepository
+                .findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                        req.getInstituteId(), mentor.getId(), chunk, MentorStatus.ACTIVE.name())
+                .forEach(a -> alreadyMine.add(a.getStudentUserId())));
+        for (String studentUserId : requested) {
+            if (alreadyMine.contains(studentUserId)) {
                 skipped++;
                 continue;
             }
@@ -115,14 +121,15 @@ public class MentorAssignmentService {
                     (int) assignmentRepository.countByMentorIdAndStatus(m.getId(), MentorStatus.ACTIVE.name()));
         }
 
-        // Preload existing (mentor,student) active pairs among these students so we never double-assign.
+        // Preload existing (mentor,student) active pairs among these students so we never
+        // double-assign. Read in slices rather than per student — a whole-batch bulk
+        // assign is routine from the picker, and per-student was one query each.
         Set<String> pairs = new HashSet<>();
         List<String> students = distinctNonBlank(req.getStudentUserIds());
-        for (String studentUserId : students) {
-            assignmentRepository
-                    .findByInstituteIdAndStudentUserIdAndStatus(req.getInstituteId(), studentUserId, MentorStatus.ACTIVE.name())
-                    .forEach(a -> pairs.add(pairKey(a.getMentorId(), a.getStudentUserId())));
-        }
+        forEachIdChunk(students, chunk -> assignmentRepository
+                .findByInstituteIdAndStudentUserIdInAndStatus(
+                        req.getInstituteId(), chunk, MentorStatus.ACTIVE.name())
+                .forEach(a -> pairs.add(pairKey(a.getMentorId(), a.getStudentUserId()))));
 
         int assigned = 0, skipped = 0, capacityFull = 0;
         List<MentorStudentAssignment> toSave = new ArrayList<>();
@@ -296,6 +303,21 @@ public class MentorAssignmentService {
 
     private static List<String> distinctNonBlank(List<String> ids) {
         return ids.stream().filter(s -> s != null && !s.isBlank()).distinct().collect(Collectors.toList());
+    }
+
+    /**
+     * Slice size for {@code IN (...)} id lookups.
+     *
+     * Postgres caps bind parameters per statement, and a driver that hits the cap
+     * fails the whole assignment — so the id list is read in slices rather than as
+     * one list whose length is whatever the admin selected.
+     */
+    private static final int ID_CHUNK = 500;
+
+    private static void forEachIdChunk(List<String> ids, Consumer<List<String>> read) {
+        for (int i = 0; i < ids.size(); i += ID_CHUNK) {
+            read.accept(ids.subList(i, Math.min(ids.size(), i + ID_CHUNK)));
+        }
     }
 
     private Map<String, UserDTO> hydrate(List<String> userIds) {

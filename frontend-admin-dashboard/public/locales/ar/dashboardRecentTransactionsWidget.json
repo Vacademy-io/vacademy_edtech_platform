@@ -1,0 +1,16 @@
+{
+    "heading": "أحدث المعاملات",
+    "viewAll": "عرض الكل",
+    "description": "أحدث نشاط الدفع في مؤسستك",
+    "emptyState": "لا توجد معاملات حتى الآن.",
+    "status": {
+        "success": "ناجحة",
+        "pending": "قيد الانتظار",
+        "failed": "فشلت",
+        "cancelled": "ملغاة"
+    },
+    "fallback": {
+        "unknownUser": "غير معروف",
+        "manualVendor": "يدوي"
+    }
+}

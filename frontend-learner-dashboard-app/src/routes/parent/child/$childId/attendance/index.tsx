@@ -123,7 +123,7 @@ function AttendanceScreen() {
 
         {/* Breakdown graph: present / absent / unmarked days */}
         {total > 0 ? (
-          <div className="flex flex-col gap-3 rounded-2xl bg-card px-5 py-4 shadow-sm">
+          <div className="flex flex-col gap-stack rounded-2xl bg-card px-5 py-4 shadow-sm">
             <h2 className="text-body font-semibold text-foreground">{t("attendance.graphTitle")}</h2>
             <div className="flex h-3 overflow-hidden rounded-full bg-muted">
               {stats.presentDays > 0 ? (
@@ -161,7 +161,7 @@ function AttendanceScreen() {
 
         {/* Recent classes — each with a present / absent chip */}
         {recent.length > 0 ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-stack">
             <h2 className="text-body font-semibold text-foreground">{t("attendance.recentTitle")}</h2>
             <ul className="flex flex-col gap-2">
               {recent.map((s, i) => {

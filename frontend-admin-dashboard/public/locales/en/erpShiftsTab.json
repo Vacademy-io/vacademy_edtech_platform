@@ -1,0 +1,23 @@
+{
+    "columns": {
+        "shift": "Shift",
+        "timing": "Timing",
+        "break": "Break",
+        "grace": "Grace",
+        "thresholds": "Full / half day"
+    },
+    "defaultShiftName": "Shift",
+    "defaultChip": "Default",
+    "nightTag": "night",
+    "minutesValue_one": "{{count}} min",
+    "minutesValue_other": "{{count}} min",
+    "editAriaLabel": "Edit {{name}}",
+    "defaultShiftFallback": "shift",
+    "intro": "Working hours, breaks and the thresholds that decide whether a day counts as full, half or absent. Employees with no assignment fall on the default shift.",
+    "assignToEmployees": "Assign to employees",
+    "addShift": "Add shift",
+    "loadError": "Couldn't load shifts.",
+    "emptyTitle": "No shifts defined yet",
+    "emptyDescription": "Add at least one shift and mark it default — until then a check-in has no hours to be measured against.",
+    "addFirstShift": "Add the first shift"
+}

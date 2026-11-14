@@ -18,6 +18,8 @@ public class SendAudienceMessageResponseDTO {
     private int recipientCount;
     private int accepted;
     private int failed;
+    /** Leads left out because they have no usable contact for the channel. */
+    private int skipped;
     private String batchId;
     private String status;  // COMPLETED, PROCESSING, PARTIAL, FAILED
 }

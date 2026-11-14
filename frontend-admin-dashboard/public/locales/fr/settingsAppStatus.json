@@ -1,0 +1,43 @@
+{
+    "title": "État de l'application",
+    "description": "État d'enregistrement et de publication de votre application sur Android, iOS, Windows et macOS. Configuré par l'équipe de la plateforme — cette vue est en lecture seule.",
+    "refreshStatus": "Actualiser le statut",
+    "errors": {
+        "loadStatus": "Impossible de charger l'état de l'application pour le moment. Réessayez d'actualiser dans un instant."
+    },
+    "loading": "Chargement de l'état de l'application…",
+    "emptyState": {
+        "title": "Aucune application enregistrée pour le moment",
+        "description": "Dès que l'équipe de la plateforme enregistre une application mobile ou de bureau pour votre établissement, son état s'affichera ici."
+    },
+    "untitledApp": "Application sans titre",
+    "noPlatforms": "Aucune plateforme activée pour cette application pour le moment.",
+    "viewInStore": "Voir dans la boutique",
+    "platforms": {
+        "android": "Android",
+        "ios": "iOS",
+        "windows": "Windows",
+        "macos": "macOS",
+        "unknown": "Autre"
+    },
+    "rejection": {
+        "title": "Rejeté par le store",
+        "reasonLabel": "Motif indiqué",
+        "noReason": "Le motif du store n'a pas encore été consigné — l'équipe plateforme s'en occupe.",
+        "decidedOn": "Rejeté le {{date}}",
+        "submittedOn": "Soumis le {{date}}"
+    },
+    "update": {
+        "title": "Mise à jour en cours",
+        "submittedOn": "Soumise le {{date}}",
+        "releaseNotes": "Nouveautés",
+        "availableGeneric": "Une version plus récente est prête et n'est pas encore sur le store."
+    },
+    "ota": {
+        "label": "Contenu de l'app (OTA)",
+        "publishedOn": "publié le {{date}}",
+        "minNativeVersion": "nécessite la version {{version}} ou ultérieure",
+        "sharedBundle": "bundle partagé, pas conçu pour votre app"
+    },
+    "lastCheckedOn": "Store vérifié le {{date}}"
+}

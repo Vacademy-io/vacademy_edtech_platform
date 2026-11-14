@@ -8,14 +8,15 @@ import { addReferralOption, convertToApiFormat } from '@/services/referral';
 import { useEffect, useState } from 'react';
 import { updateReferralOption } from '@/services/referral';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
-import { CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle, Warning } from '@phosphor-icons/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 interface AddReferralProgramDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
 }
 
 export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps) {
+    const { t } = useTranslation('manageStudentsAddReferralProgramDialog');
     const queryClient = useQueryClient();
     const [showUnifiedReferralSettings, setShowUnifiedReferralSettings] = useState(
         form.watch('showAddReferralDialog')
@@ -28,7 +29,7 @@ export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps
     // Error handling for component operations
     const handleError = (error: unknown, operation: string) => {
         console.error(`Error in ${operation}:`, error);
-        setError(`Failed to ${operation}. Please try again.`);
+        setError(t('errors.operationFailed', { operation }));
         setTimeout(() => setError(null), 5000);
     };
 
@@ -39,7 +40,7 @@ export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps
             if (editingUnifiedReferralSettings) {
                 // Update existing program
                 await updateReferralOption(editingUnifiedReferralSettings.id, settings);
-                setSuccess('Referral program updated successfully!');
+                setSuccess(t('success.updated'));
                 const updatedPrograms = referralPrograms.map((program) =>
                     program.id === editingUnifiedReferralSettings.id
                         ? { ...apiData, id: program.id }
@@ -54,7 +55,7 @@ export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
                 form.setValue('referralPrograms', [...referralPrograms, apiData]);
-                setSuccess('Referral program created successfully!');
+                setSuccess(t('success.created'));
             }
             queryClient.invalidateQueries({ queryKey: ['GET_REFERRAL_PROGRAM_DETAILS'] });
             form.setValue('showAddReferralDialog', false);
@@ -62,7 +63,7 @@ export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps
             setShowUnifiedReferralSettings(false);
             setTimeout(() => setSuccess(null), 5000);
         } catch (error) {
-            handleError(error, 'save referral program');
+            handleError(error, t('errors.operations.saveReferralProgram'));
         }
     };
 
@@ -75,7 +76,7 @@ export function AddReferralProgramDialog({ form }: AddReferralProgramDialogProps
             {/* Error Alert */}
             {error && (
                 <Alert variant="destructive">
-                    <AlertTriangle className="size-4" />
+                    <Warning className="size-4" />
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}

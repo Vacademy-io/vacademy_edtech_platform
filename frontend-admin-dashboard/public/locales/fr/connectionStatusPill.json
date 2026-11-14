@@ -1,0 +1,40 @@
+{
+    "label": {
+        "checking": "Mesure",
+        "slow": "Lent",
+        "network": "Réseau",
+        "good": "Bon"
+    },
+    "headline": {
+        "measuring": "Mesure de la vitesse",
+        "serverSlow": "Nos serveurs sont lents",
+        "networkSlow": "Votre connexion est lente",
+        "healthy": "Fonctionnement normal"
+    },
+    "note": {
+        "notEnoughSamples": "Pas encore assez d'échantillons pour conclure.",
+        "serverSlow": "Le problème vient de chez nous — vous n'avez rien à faire.",
+        "networkSlow": "Nos serveurs répondent normalement, le problème semble donc venir du réseau.",
+        "externalWait": "Certaines actions attendent un service externe, comme passer un appel ou démarrer un cours en direct. Cette attente est normale."
+    },
+    "metric": {
+        "server": "Serveur",
+        "connection": "Votre connexion",
+        "provider": "En attente du fournisseur"
+    },
+    "slowestCall": "Appel le plus lent",
+    "slowestAt": "à {{time}}",
+    "summary": {
+        "requests": "{{count}} requêtes",
+        "pings": "{{count}} pings",
+        "errors": "{{count}} erreurs",
+        "untimed": "{{count}} non chronométrées"
+    },
+    "copied": "Copié dans le presse-papiers",
+    "copyHint": "Cliquez sur l'icône pour copier les diagnostics",
+    "aria": {
+        "status": "{{headline}}. Serveur {{server}}, votre connexion {{network}}.",
+        "provider": "En attente du fournisseur {{value}}.",
+        "copy": "Cliquez pour copier les diagnostics."
+    }
+}

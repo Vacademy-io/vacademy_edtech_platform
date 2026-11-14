@@ -1,0 +1,80 @@
+{
+    "colors": {
+        "title": "रिपोर्ट के रंग",
+        "description": "असेसमेंट रिपोर्ट पीडीएफ और यूआई में उपयोग किए जाने वाले प्राथमिक और द्वितीयक रंग सेट करें।",
+        "primaryColor": "प्राथमिक रंग",
+        "secondaryColor": "द्वितीयक रंग"
+    },
+    "logoLetterhead": {
+        "title": "लोगो और लेटरहेड",
+        "description": "आपके संस्थान का लोगो और लेटरहेड नीचे दिखाया गया है। आप इन्हें बदल सकते हैं या नए अपलोड कर सकते हैं।",
+        "logo": {
+            "label": "हेडर में लोगो दिखाएं",
+            "hint": "रिपोर्ट के ऊपरी भाग में संस्थान का लोगो दिखाएं",
+            "imageAlt": "लोगो",
+            "none": "कोई लोगो नहीं",
+            "change": "बदलें",
+            "upload": "लोगो अपलोड करें"
+        },
+        "letterhead": {
+            "label": "लेटरहेड पृष्ठभूमि दिखाएं",
+            "hint": "रिपोर्ट की पृष्ठभूमि के रूप में पूरे पेज का लेटरहेड चित्र उपयोग करें",
+            "imageAlt": "लेटरहेड",
+            "none": "कोई लेटरहेड नहीं",
+            "change": "बदलें",
+            "upload": "लेटरहेड अपलोड करें",
+            "crop": "क्रॉप करें"
+        }
+    },
+    "watermark": {
+        "title": "वॉटरमार्क",
+        "description": "रिपोर्ट के प्रत्येक पेज पर एक तिरछा वॉटरमार्क टेक्स्ट जोड़ें।",
+        "enable": "वॉटरमार्क सक्षम करें",
+        "textLabel": "वॉटरमार्क टेक्स्ट",
+        "textPlaceholder": "जैसे CONFIDENTIAL या आपके संस्थान का नाम",
+        "opacity": "अपारदर्शिता ({{percent}}%)"
+    },
+    "headerFooter": {
+        "title": "हेडर और फ़ूटर",
+        "description": {
+            "prefix": "रिपोर्ट के हेडर और फ़ूटर के लिए कस्टम HTML। ये हर पेज पर दिखाई देते हैं। प्लेसहोल्डर के रूप में",
+            "suffix": "का उपयोग करें — इसे रिपोर्ट में वास्तविक असेसमेंट नाम से बदल दिया जाएगा।"
+        },
+        "footerText": {
+            "label": "फ़ूटर टेक्स्ट",
+            "placeholder": "रिपोर्ट के नीचे दिखाया जाने वाला फ़ूटर टेक्स्ट"
+        },
+        "headerHtml": {
+            "label": "कस्टम हेडर HTML",
+            "placeholder": "<div style=\"text-align:center;\">{{assessment_name}}</div>"
+        },
+        "footerHtml": {
+            "label": "कस्टम फ़ूटर HTML",
+            "placeholder": "<div style=\"text-align:center; font-size:10px; color:#999;\">Powered by MyInstitute</div>"
+        }
+    },
+    "preview": {
+        "title": "पूर्वावलोकन",
+        "showButton": "पूर्वावलोकन दिखाएं",
+        "hideButton": "पूर्वावलोकन छिपाएं",
+        "sample": {
+            "assessmentName": "नमूना गणित परीक्षा",
+            "subtitle": "छात्र प्रदर्शन विश्लेषण",
+            "score": "स्कोर",
+            "rank": "रैंक",
+            "percentile": "पर्सेंटाइल",
+            "sectionPerformance": "सेक्शन-वार प्रदर्शन",
+            "sectionTablePlaceholder": "सेक्शन डेटा तालिका पूर्वावलोकन"
+        }
+    },
+    "cropper": {
+        "titleLogo": "लोगो क्रॉप करें",
+        "titleLetterhead": "लेटरहेड क्रॉप करें",
+        "confirmLabel": "क्रॉप करें और अपलोड करें"
+    },
+    "toasts": {
+        "logoUploaded": "लोगो अपलोड हो गया",
+        "letterheadUploaded": "लेटरहेड अपलोड हो गया",
+        "uploadFailed": "अपलोड विफल रहा"
+    }
+}

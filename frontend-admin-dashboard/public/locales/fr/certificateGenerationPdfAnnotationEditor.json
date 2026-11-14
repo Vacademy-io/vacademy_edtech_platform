@@ -1,0 +1,66 @@
+{
+    "toolbar": {
+        "title": "Éditeur d'image",
+        "fieldsMapped_one": "{{count}} champ mappé",
+        "fieldsMapped_many": "{{count}} champ mappé",
+        "fieldsMapped_other": "{{count}} champs mappés",
+        "hint": "• Cliquez pour sélectionner • Double-cliquez pour modifier",
+        "save": "Enregistrer",
+        "clearAll": "Tout effacer"
+    },
+    "canvas": {
+        "imageAlt": "Modèle de certificat",
+        "editingTitle": "Appuyez sur Entrée ou Échap pour terminer la modification",
+        "selectTitle": "Cliquez pour sélectionner, double-cliquez pour modifier le texte",
+        "deleteFieldTitle": "Supprimer le champ",
+        "loading": "Chargement du modèle...",
+        "dropHere": "Déposez le champ ici",
+        "dropHint": "Positionnez le champ sur votre modèle de certificat"
+    },
+    "summary": {
+        "title": "Mappages de champs ({{count}})",
+        "position": "x:{{x}}, y:{{y}}"
+    },
+    "properties": {
+        "title": "Propriétés du champ",
+        "removeButton": "Supprimer",
+        "closeTitle": "Fermer les propriétés",
+        "fontSize": {
+            "label": "Taille de police",
+            "pxValue": "{{value}}px"
+        },
+        "fontFamily": {
+            "label": "Police"
+        },
+        "fontWeight": {
+            "label": "Graisse de police",
+            "normal": "Normal",
+            "bold": "Gras"
+        },
+        "textColor": {
+            "label": "Couleur du texte"
+        },
+        "textAlignment": {
+            "label": "Alignement du texte",
+            "left": "Gauche",
+            "center": "Centre",
+            "right": "Droite"
+        },
+        "backgroundColor": {
+            "label": "Couleur de fond",
+            "clear": "Effacer",
+            "current": "Actuel : {{value}}",
+            "transparent": "transparent"
+        },
+        "position": {
+            "label": "Position",
+            "x": "Position X",
+            "y": "Position Y"
+        },
+        "size": {
+            "label": "Taille du champ",
+            "width": "Largeur",
+            "height": "Hauteur"
+        }
+    }
+}

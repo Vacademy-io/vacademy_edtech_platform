@@ -1,0 +1,12 @@
+{
+    "errors": {
+        "operationFailed": "Échec de {{operation}}. Veuillez réessayer.",
+        "operations": {
+            "saveReferralProgram": "l'enregistrement du programme de parrainage"
+        }
+    },
+    "success": {
+        "updated": "Programme de parrainage mis à jour avec succès !",
+        "created": "Programme de parrainage créé avec succès !"
+    }
+}

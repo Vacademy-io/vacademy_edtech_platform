@@ -1,0 +1,12 @@
+{
+    "searchPlaceholder": "Search by name or phone...",
+    "feeType": "Fee Type",
+    "clearAll": "Clear All",
+    "status": {
+        "label": "Status",
+        "paid": "Paid",
+        "partial": "Partial",
+        "pending": "Pending",
+        "overdue": "Overdue"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "legend": {
+        "correct": "Correct",
+        "partiallyCorrect": "Partially Correct",
+        "wrongResponse": "Wrong Response",
+        "skipped": "Skipped"
+    }
+}

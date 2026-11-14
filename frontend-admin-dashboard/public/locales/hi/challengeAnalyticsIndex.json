@@ -1,0 +1,17 @@
+{
+    "pageHeading": "चैलेंज एनालिटिक्स डैशबोर्ड",
+    "pageTitle": "चैलेंज एनालिटिक्स डैशबोर्ड | Vacademy",
+    "metaDescription": "कार्रवाई योग्य जानकारी के साथ चैलेंज कार्यक्रमों में अभिभावकों की सहभागिता को ट्रैक करें",
+    "loadingTemplates": "एनालिटिक्स टेम्पलेट्स लोड हो रहे हैं...",
+    "centerFilterLabel": "केंद्र",
+    "tabs": {
+        "overview": "अवलोकन",
+        "centers": "केंद्र",
+        "participation": "सहभागिता",
+        "churn": "चर्न",
+        "referrals": "रेफरल",
+        "leaderboard": "लीडरबोर्ड",
+        "completions": "पूर्णताएं",
+        "templates": "टेम्पलेट्स"
+    }
+}

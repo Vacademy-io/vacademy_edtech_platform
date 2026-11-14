@@ -1,0 +1,18 @@
+{
+    "failedDialog": {
+        "heading": "Failed to load questions",
+        "clickPrefix": "Click",
+        "hereLink": "Here",
+        "retrySuffix": "to retry"
+    },
+    "retryButton": {
+        "label": "Retry"
+    },
+    "openChatButton": {
+        "label": "Open chat",
+        "loading": "Loading…"
+    },
+    "toast": {
+        "noDataExists": "No data exists!"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "generic": "{{operation}} में त्रुटि",
+        "operations": {
+            "savePaymentPlan": "भुगतान योजना सहेजने"
+        }
+    },
+    "success": {
+        "feePlanCreated": "फीस योजना बन गई — इसे योजना सूची से चुनें"
+    }
+}

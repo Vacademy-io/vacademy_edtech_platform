@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "Vsmart Organizer"
+    },
+    "fields": {
+        "prompt": {
+            "label": "Saisissez votre requête",
+            "placeholder": "Saisissez votre requête ici..."
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "regenerate": "Régénérer"
+    }
+}

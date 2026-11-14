@@ -1,5 +1,6 @@
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Row } from '@tanstack/react-table';
 import {
@@ -31,9 +32,19 @@ const MetaChip = ({ label, value }: { label: string; value: string }) => (
 );
 
 export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> }) => {
+    const { t } = useTranslation([
+        'studyLibraryBatchViewDetailsDialogBox',
+        'studyLibraryExportModuleDetailPdf',
+    ]);
     const [viewDetailsState, setViewDetailsState] = useState(false);
     const [chapterReportData, setChapterReportData] = useState<ChapterReport>();
-    const { pacageSessionId, course, session, level } = usePacageDetails();
+    const store = usePacageDetails();
+    // Multi-batch reports tag every row with its own batch; the store only
+    // remembers the first batch generated, so prefer the row.
+    const pacageSessionId = row.original.package_session_id || store.pacageSessionId;
+    const course = row.original.course_name ?? store.course;
+    const session = row.original.session_name ?? store.session;
+    const level = row.original.level_name ?? store.level;
     const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
     const ChapterWiseMutation = useMutation({
         mutationFn: fetchChapterWiseProgress,
@@ -61,7 +72,7 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
 
     const handleExportPDF = async () => {
         if (!chapterReportData?.length) {
-            toast.error('No data to export yet');
+            toast.error(t('toast.noDataToExport'));
             return;
         }
         setIsExporting(true);
@@ -84,11 +95,12 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
                     chapterTerm: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
                     batchTerm: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
                 },
-                chapterReportData
+                chapterReportData,
+                t
             );
-            toast.success('Report exported');
+            toast.success(t('toast.exportSuccess'));
         } catch {
-            toast.error('Failed to export PDF');
+            toast.error(t('toast.exportFailed'));
         } finally {
             setIsExporting(false);
         }
@@ -140,9 +152,9 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
                 setViewDetailsState(!viewDetailsState);
             }}
         >
-            View Details
+            {t('viewDetails')}
             <MyDialog
-                heading="Module Details Report"
+                heading={t('heading')}
                 open={viewDetailsState}
                 onOpenChange={setViewDetailsState}
                 dialogWidth="max-w-4xl"
@@ -185,7 +197,7 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
                                             value={row.getValue('subject') as string}
                                         />
                                     )}
-                                    <MetaChip label="Date" value={currDate} />
+                                    <MetaChip label={t('date')} value={currDate} />
                                 </div>
                             </div>
                             <MyButton
@@ -201,12 +213,12 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
                                 {isExporting ? (
                                     <div className="flex items-center gap-2">
                                         <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-primary-500"></div>
-                                        <span>Exporting…</span>
+                                        <span>{t('exporting')}</span>
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-1.5">
                                         <Export className="size-4" />
-                                        <span>Export PDF</span>
+                                        <span>{t('exportPdf')}</span>
                                     </div>
                                 )}
                             </MyButton>
@@ -219,12 +231,12 @@ export const ViewDetails = ({ row }: { row: Row<SubjectOverviewBatchColumnType> 
                         chapterReportData.length === 0 &&
                         !(isChapterPending || isLearnerPending) && (
                             <div className="rounded-lg border border-dashed border-neutral-200 p-8 text-center text-body text-neutral-400">
-                                No activity found for this{' '}
-                                {getTerminology(
-                                    ContentTerms.Module,
-                                    SystemTerms.Module
-                                ).toLowerCase()}
-                                .
+                                {t('noActivity', {
+                                    term: getTerminology(
+                                        ContentTerms.Module,
+                                        SystemTerms.Module
+                                    ).toLowerCase(),
+                                })}
                             </div>
                         )}
 

@@ -1,0 +1,9 @@
+{
+    "manage": "Manage {{term}}s",
+    "description": "Live and upcoming {{term}}s for this batch.",
+    "create": "Create {{term}}",
+    "failedToLoad": "Failed to load {{term}}s. Please try again.",
+    "emptyState": "No live or upcoming {{term}}s for this batch yet.",
+    "liveNow": "Live Now",
+    "upcoming": "Upcoming"
+}

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.onboarding.dto.CompleteStepInstanceRequest;
 import vacademy.io.admin_core_service.features.onboarding.dto.OnboardingInstanceDTO;
 import vacademy.io.admin_core_service.features.onboarding.dto.OnboardingResolvedFieldDTO;
+import vacademy.io.admin_core_service.features.onboarding.dto.OnboardingSubmittedStepDTO;
 import vacademy.io.admin_core_service.features.onboarding.dto.OnboardingStepInstanceDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.onboarding.entity.OnboardingInstance;
@@ -149,6 +150,25 @@ public class LearnerOnboardingController {
         return ResponseEntity.ok(onboardingStepInstanceService.getResolvedFieldsForRole(stepInstanceId, roleKey));
     }
 
+    /**
+     * Everything the subject filled in on one onboarding instance, step by step -- the backing
+     * call for the "my onboarding details" summary, which stays available long after the flow
+     * finished. One request for the whole history rather than one per step.
+     *
+     * <p>Ownership is checked on the INSTANCE here rather than per step-instance: same rule
+     * ({@link #assertOwnsStepInstance} resolves the instance anyway), one check instead of N.
+     * Field-level VIEW permission is still applied per step inside the service, so a parent or
+     * student only ever gets back what their own role may see.
+     */
+    @GetMapping("/instances/{instanceId}/submitted-steps")
+    public ResponseEntity<List<OnboardingSubmittedStepDTO>> getSubmittedSteps(
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            @PathVariable("instanceId") String instanceId) {
+        assertOwnsInstance(userDetails, onboardingInstanceService.getInstance(instanceId));
+        return ResponseEntity.ok(onboardingStepInstanceService.getSubmittedStepsForRole(
+                instanceId, resolveCallerRoleKey(userDetails)));
+    }
+
     @PostMapping("/step-instances/{stepInstanceId}/submit")
     public ResponseEntity<OnboardingStepInstanceDTO> submitStep(
             @RequestAttribute("user") CustomUserDetails userDetails,
@@ -190,7 +210,11 @@ public class LearnerOnboardingController {
      * self-match fails, so the common case (subject acting for themself) costs no extra call.
      */
     private void assertOwnsStepInstance(CustomUserDetails userDetails, OnboardingStepInstance stepInstance) {
-        OnboardingInstance instance = onboardingInstanceService.getInstance(stepInstance.getOnboardingInstanceId());
+        assertOwnsInstance(userDetails, onboardingInstanceService.getInstance(stepInstance.getOnboardingInstanceId()));
+    }
+
+    /** The ownership rule itself: the subject, the resolved subject, or either one's linked guardian. */
+    private void assertOwnsInstance(CustomUserDetails userDetails, OnboardingInstance instance) {
         String callerId = userDetails.getUserId();
         boolean owns = callerId.equals(instance.getSubjectUserId())
                 || callerId.equals(instance.getResolvedSubjectUserId())

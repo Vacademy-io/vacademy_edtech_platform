@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, ChatCircle, User, Robot } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import {
     listFlowSessions,
     getSessionDetail,
@@ -15,6 +16,7 @@ interface SessionViewerProps {
 }
 
 export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) {
+    const { t, i18n } = useTranslation('automationSessionViewer');
     const [sessions, setSessions] = useState<ChatbotFlowSession[]>([]);
     const [selectedSession, setSelectedSession] = useState<ChatbotFlowSession | null>(null);
     const [analytics, setAnalytics] = useState<FlowAnalytics | null>(null);
@@ -70,7 +72,7 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                     </button>
                     <div>
                         <h2 className="text-lg font-semibold">{flowName}</h2>
-                        <p className="text-xs text-gray-500">Sessions & Analytics</p>
+                        <p className="text-xs text-gray-500">{t('sessionsAndAnalytics')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -79,14 +81,14 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="text-xs border rounded px-2 py-1"
                     >
-                        <option value="">All statuses</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="ERROR">Error</option>
-                        <option value="TIMED_OUT">Timed Out</option>
+                        <option value="">{t('statusFilter.all')}</option>
+                        <option value="ACTIVE">{t('statusFilter.active')}</option>
+                        <option value="COMPLETED">{t('statusFilter.completed')}</option>
+                        <option value="ERROR">{t('statusFilter.error')}</option>
+                        <option value="TIMED_OUT">{t('statusFilter.timedOut')}</option>
                     </select>
                     <button onClick={loadData} className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">
-                        Refresh
+                        {t('refresh')}
                     </button>
                 </div>
             </div>
@@ -94,11 +96,11 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
             {/* Analytics summary */}
             {analytics && (
                 <div className="flex gap-3 px-4 py-3 border-b bg-gray-50">
-                    <StatCard label="Total" value={analytics.totalSessions} color="text-gray-800" />
-                    <StatCard label="Active" value={analytics.activeSessions} color="text-green-600" />
-                    <StatCard label="Completed" value={analytics.completedSessions} color="text-blue-600" />
-                    <StatCard label="Errors" value={analytics.errorSessions} color="text-red-600" />
-                    <StatCard label="Timed Out" value={analytics.timedOutSessions} color="text-yellow-600" />
+                    <StatCard label={t('stats.total')} value={analytics.totalSessions} color="text-gray-800" />
+                    <StatCard label={t('stats.active')} value={analytics.activeSessions} color="text-green-600" />
+                    <StatCard label={t('stats.completed')} value={analytics.completedSessions} color="text-blue-600" />
+                    <StatCard label={t('stats.errors')} value={analytics.errorSessions} color="text-red-600" />
+                    <StatCard label={t('stats.timedOut')} value={analytics.timedOutSessions} color="text-yellow-600" />
                 </div>
             )}
 
@@ -107,9 +109,9 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                 {/* Session list */}
                 <div className="w-80 border-r overflow-y-auto bg-white">
                     {loading ? (
-                        <p className="p-4 text-sm text-gray-400">Loading sessions...</p>
+                        <p className="p-4 text-sm text-gray-400">{t('loadingSessions')}</p>
                     ) : sessions.length === 0 ? (
-                        <p className="p-4 text-sm text-gray-400">No sessions found</p>
+                        <p className="p-4 text-sm text-gray-400">{t('noSessionsFound')}</p>
                     ) : (
                         sessions.map((s) => (
                             <button
@@ -132,7 +134,7 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                                         {s.currentNodeName || s.currentNodeType || '—'}
                                     </span>
                                     <span className="text-xs text-gray-400">
-                                        {s.lastActivityAt ? formatTime(s.lastActivityAt) : '—'}
+                                        {s.lastActivityAt ? formatTime(s.lastActivityAt, i18n.language) : '—'}
                                     </span>
                                 </div>
                             </button>
@@ -149,11 +151,16 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                                 <div>
                                     <span className="text-sm font-medium">{selectedSession.userPhone}</span>
                                     {selectedSession.userId && (
-                                        <span className="text-xs text-gray-400 ml-2">ID: {selectedSession.userId}</span>
+                                        <span className="text-xs text-gray-400 ms-2">
+                                            {t('userId', { id: selectedSession.userId })}
+                                        </span>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <span>Node: <strong>{selectedSession.currentNodeName || '—'}</strong></span>
+                                    <span>
+                                        {t('nodeLabel')}{' '}
+                                        <strong>{selectedSession.currentNodeName || '—'}</strong>
+                                    </span>
                                     <span className={`px-1.5 py-0.5 rounded-full ${statusColor(selectedSession.status)}`}>
                                         {selectedSession.status}
                                     </span>
@@ -182,12 +189,12 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                                                         <User size={12} />
                                                     )}
                                                     <span className="text-xs opacity-70">
-                                                        {msg.direction === 'OUTGOING' ? 'Bot' : 'User'}
+                                                        {msg.direction === 'OUTGOING' ? t('bot') : t('user')}
                                                     </span>
                                                 </div>
                                                 <p className="whitespace-pre-wrap break-words">{msg.body}</p>
                                                 <p className={`text-xs mt-1 ${msg.direction === 'OUTGOING' ? 'text-blue-200' : 'text-gray-400'}`}>
-                                                    {msg.timestamp ? formatTime(msg.timestamp) : ''}
+                                                    {msg.timestamp ? formatTime(msg.timestamp, i18n.language) : ''}
                                                     {msg.source ? ` · ${msg.source}` : ''}
                                                 </p>
                                             </div>
@@ -195,7 +202,7 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                                     ))
                                 ) : (
                                     <p className="text-center text-sm text-gray-400 py-8">
-                                        No messages recorded for this session
+                                        {t('noMessages')}
                                     </p>
                                 )}
                             </div>
@@ -204,7 +211,7 @@ export function SessionViewer({ flowId, flowName, onBack }: SessionViewerProps) 
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center text-gray-400">
                                 <ChatCircle size={48} className="mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">Select a session to view conversation</p>
+                                <p className="text-sm">{t('selectSessionPrompt')}</p>
                             </div>
                         </div>
                     )}
@@ -223,10 +230,10 @@ function StatCard({ label, value, color }: { label: string; value: number; color
     );
 }
 
-function formatTime(timestamp: string): string {
+function formatTime(timestamp: string, lang: string): string {
     try {
         const d = new Date(timestamp);
-        return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleString(lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch {
         return timestamp;
     }

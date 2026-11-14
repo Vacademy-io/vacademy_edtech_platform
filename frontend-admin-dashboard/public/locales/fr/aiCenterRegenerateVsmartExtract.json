@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "Vsmart Extract"
+    },
+    "fields": {
+        "prompt": {
+            "label": "Saisissez votre invite",
+            "placeholder": "Saisissez votre invite ici..."
+        }
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "regenerate": "Régénérer"
+    }
+}

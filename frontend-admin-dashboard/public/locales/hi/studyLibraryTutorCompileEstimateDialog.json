@@ -1,0 +1,66 @@
+{
+    "kindLabel": {
+        "document": "दस्तावेज़",
+        "pdf": "PDF",
+        "quiz": "क्विज़",
+        "aiVideo": "AI वीडियो",
+        "youtube": "YouTube वीडियो",
+        "videoUpload": "अपलोड किया गया वीडियो",
+        "videoLink": "वीडियो लिंक",
+        "scorm": "SCORM",
+        "notSupported": "समर्थित नहीं"
+    },
+    "actionLabel": {
+        "willPrepare": "तैयार किया जाएगा",
+        "alreadyPrepared": "पहले से तैयार",
+        "needsDetails": "विवरण चाहिए",
+        "free": "मुफ़्त",
+        "skipped": "छोड़ा गया",
+        "notSupported": "समर्थित नहीं",
+        "notPublished": "प्रकाशित नहीं"
+    },
+    "prepareThisSlide": "इस स्लाइड को तैयार करें",
+    "prepareForTeaching": "पढ़ाने के लिए तैयार करें",
+    "intro": "दस्तावेज़, PDF, YouTube वीडियो और AI वीडियो कंपाइल के अलावा अपने स्वयं के टेक्स्ट से मुफ़्त में तैयार किए जाते हैं। अपलोड किए गए वीडियो पहले ट्रांसक्राइब किए जाते हैं (स्पीच-टू-टेक्स्ट, प्रति मिनट शुल्क) और स्कैन किए गए PDF को OCR से पढ़ा जाता है (प्रति पृष्ठ शुल्क)। जब तक आप पुष्टि नहीं करते, कोई शुल्क नहीं लिया जाता।",
+    "couldNotEstimate": "लागत का अनुमान नहीं लगाया जा सका",
+    "transcribeSwitchLabel": "अपलोड किए गए वीडियो ट्रांसक्राइब करें ({{perMinute}} क्रेडिट प्रति मिनट, न्यूनतम {{minimum}})। बंद: उन्हें इसके बजाय लिखित विवरण की आवश्यकता होगी।",
+    "ocrSwitchLabel": "स्कैन किए गए PDF को OCR से पढ़ें ({{perPage}} क्रेडिट प्रति पृष्ठ)। बंद: उन्हें इसके बजाय लिखित विवरण की आवश्यकता होगी।",
+    "table": {
+        "slide": "स्लाइड",
+        "kind": "प्रकार",
+        "whatHappens": "क्या होगा",
+        "credits": "क्रेडिट"
+    },
+    "row": {
+        "minutesSuffix_one": " · {{count}} मिनट",
+        "minutesSuffix_other": " · {{count}} मिनट",
+        "ocrSuffix": " · {{credits}} क्रेडिट OCR",
+        "voiceSuffix": " · {{credits}} आवाज़",
+        "upToImages_one": "+ अधिकतम {{count}} छवि तक",
+        "upToImages_other": "+ अधिकतम {{count}} छवियों तक"
+    },
+    "nothingToPrepare": "तैयार करने के लिए कुछ नहीं।",
+    "summary": {
+        "slidesToPrepare_one": "{{count}} स्लाइड तैयार करनी है",
+        "slidesToPrepare_other": "{{count}} स्लाइड तैयार करनी हैं",
+        "alreadyPreparedSuffix_one": ", {{count}} पहले से तैयार",
+        "alreadyPreparedSuffix_other": ", {{count}} पहले से तैयार",
+        "needDetailsSuffix_one": ", {{count}} को विवरण चाहिए",
+        "needDetailsSuffix_other": ", {{count}} को विवरण चाहिए",
+        "approxCredits": "≈ {{credits}} क्रेडिट",
+        "toCompile": "{{credits}} कंपाइल के लिए",
+        "transcriptionSuffix_one": " + {{count}} मिनट के ट्रांसक्रिप्शन के लिए {{credits}}",
+        "transcriptionSuffix_other": " + {{count}} मिनट के ट्रांसक्रिप्शन के लिए {{credits}}",
+        "ocrSuffix_one": " + {{count}} पृष्ठ के OCR के लिए {{credits}}",
+        "ocrSuffix_other": " + {{count}} पृष्ठों के OCR के लिए {{credits}}",
+        "voiceSuffix_one": " + शिक्षक की आवाज़ एक बार तैयार करने के लिए {{credits}} ({{count}} भाषा; इसके बाद पाठ बिना प्रति-मिनट आवाज़ लागत के इसे चलाते हैं)",
+        "voiceSuffix_other": " + शिक्षक की आवाज़ एक बार तैयार करने के लिए {{credits}} ({{count}} भाषाएं; इसके बाद पाठ बिना प्रति-मिनट आवाज़ लागत के इसे चलाते हैं)",
+        "imagesSuffix": " + AI छवियों के लिए अधिकतम {{credits}} तक (प्रति बनाई गई छवि शुल्क)",
+        "compileCost": "। एक स्लाइड कंपाइल करने की लागत {{credits}} क्रेडिट है।",
+        "balance": "बैलेंस: {{credits}} क्रेडिट",
+        "insufficientSuffix": " — इस कंपाइल के लिए पर्याप्त नहीं है।"
+    },
+    "cancel": "रद्द करें",
+    "prepare": "तैयार करें",
+    "prepareWithCredits": "तैयार करें (≈ {{credits}} क्रेडिट)"
+}

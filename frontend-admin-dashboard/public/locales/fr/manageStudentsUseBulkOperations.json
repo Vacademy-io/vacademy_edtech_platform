@@ -1,0 +1,26 @@
+{
+    "updateBatch": {
+        "successTitle": "Succès",
+        "successDescription": "Groupes mis à jour avec succès pour les étudiants sélectionnés",
+        "errorTitle": "Erreur",
+        "errorDescription": "Échec de la mise à jour des groupes. Veuillez réessayer."
+    },
+    "extendSession": {
+        "successTitle": "Succès",
+        "successDescription": "Sessions prolongées avec succès pour les étudiants sélectionnés",
+        "errorTitle": "Erreur",
+        "errorDescription": "Échec de la prolongation des sessions. Veuillez réessayer."
+    },
+    "terminate": {
+        "successTitle": "Succès",
+        "successDescription": "Inscriptions résiliées avec succès pour les étudiants sélectionnés",
+        "errorTitle": "Erreur",
+        "errorDescription": "Échec de la résiliation des inscriptions. Veuillez réessayer."
+    },
+    "delete": {
+        "successTitle": "Succès",
+        "successDescription": "Étudiants sélectionnés supprimés avec succès",
+        "errorTitle": "Erreur",
+        "errorDescription": "Échec de la suppression des étudiants. Veuillez réessayer."
+    }
+}

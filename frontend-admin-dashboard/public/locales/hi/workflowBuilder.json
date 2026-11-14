@@ -1,0 +1,170 @@
+{
+    "weekdays": {
+        "mon": "सोम",
+        "monShort": "सो",
+        "tue": "मंगल",
+        "tueShort": "मं",
+        "wed": "बुध",
+        "wedShort": "बु",
+        "thu": "गुरु",
+        "thuShort": "गु",
+        "fri": "शुक्र",
+        "friShort": "शु",
+        "sat": "शनि",
+        "satShort": "श",
+        "sun": "रवि",
+        "sunShort": "र"
+    },
+    "schedulePicker": {
+        "heading": "चरण 3 — शेड्यूल सेट करें",
+        "howOften": "यह कितनी बार चलेगा?",
+        "frequency": {
+            "daily": { "label": "प्रतिदिन", "desc": "हर दिन" },
+            "weekly": { "label": "साप्ताहिक", "desc": "विशिष्ट दिन चुनें" },
+            "monthly": { "label": "मासिक", "desc": "महीने में एक बार" },
+            "interval": { "label": "दोहराव", "desc": "हर X मिनट में" },
+            "custom": { "label": "कस्टम", "desc": "क्रॉन एक्सप्रेशन" }
+        },
+        "atWhatTime": "किस समय?",
+        "onWhichDays": "किन दिनों में?",
+        "presets": {
+            "weekdays": "कार्यदिवस",
+            "weekends": "सप्ताहांत",
+            "monWedFri": "सोम, बुध, शुक्र",
+            "tueThu": "मंगल, गुरु",
+            "everyDay": "हर दिन"
+        },
+        "onWhichDayOfMonth": "महीने के किस दिन?",
+        "runEvery": "हर",
+        "minutes": "मिनट में चलाएं",
+        "intervalPresets": {
+            "min15": "15 मिनट",
+            "min30": "30 मिनट",
+            "hour1": "1 घंटा",
+            "hours2": "2 घंटे",
+            "hours6": "6 घंटे",
+            "hours12": "12 घंटे"
+        },
+        "cronLabel": "क्रॉन एक्सप्रेशन (Quartz फॉर्मेट)",
+        "cronPlaceholder": "0 0 9 * * ?",
+        "cronHint": "फॉर्मेट: sec min hr day month weekday. उदा. \"0 0 9 * * ?\" = प्रतिदिन सुबह 9 बजे",
+        "summary": {
+            "daily": "हर दिन {{time}} बजे चलेगा",
+            "selectAtLeastOneDay": "कम से कम एक दिन चुनें",
+            "weekdaysOnly": "कार्यदिवसों (सोम-शुक्र) में {{time}} बजे चलेगा",
+            "customDays": "हर {{days}} को {{time}} बजे चलेगा",
+            "monthly": "हर महीने की {{day}} तारीख को {{time}} बजे चलेगा",
+            "interval_one": "हर {{count}} मिनट में चलेगा",
+            "interval_other": "हर {{count}} मिनट में चलेगा",
+            "customPlaceholder": "क्रॉन एक्सप्रेशन दर्ज करें"
+        },
+        "timezone": "टाइमज़ोन",
+        "timezones": {
+            "kolkata": "एशिया/कोलकाता (IST)",
+            "utc": "UTC",
+            "newYork": "अमेरिका/न्यूयॉर्क (EST)",
+            "london": "यूरोप/लंदन (GMT)",
+            "dubai": "एशिया/दुबई (GST)"
+        },
+        "startDate": "आरंभ तिथि",
+        "endDate": "समाप्ति तिथि (वैकल्पिक)"
+    },
+    "setup": {
+        "title": "नया वर्कफ़्लो बनाएं",
+        "orManual": "या इसे मैन्युअल रूप से सेट करें",
+        "optional": "(वैकल्पिक)",
+        "back": "वापस",
+        "step1": {
+            "heading": "इस वर्कफ़्लो को हम क्या नाम दें?",
+            "subheading": "इसे ऐसा नाम दें जो इसके उद्देश्य को बताए।",
+            "nameLabel": "वर्कफ़्लो का नाम",
+            "namePlaceholder": "उदा. नामांकन के बाद स्वागत ईमेल",
+            "descriptionLabel": "विवरण",
+            "descriptionPlaceholder": "संक्षेप में बताएं कि यह वर्कफ़्लो क्या करता है",
+            "next": "आगे: ट्रिगर प्रकार चुनें"
+        },
+        "step2": {
+            "heading": "यह वर्कफ़्लो कब चलना चाहिए?",
+            "subheading": "चुनें कि वर्कफ़्लो को क्या शुरू करेगा — एक इवेंट या शेड्यूल।",
+            "eventDriven": {
+                "title": "जब कुछ होता है",
+                "desc": "जब कोई छात्र नामांकन करता है, फ़ॉर्म भरता है, भुगतान विफल होता है, आदि तब चलता है।"
+            },
+            "scheduled": {
+                "title": "शेड्यूल पर",
+                "desc": "निश्चित समय पर चलता है — प्रतिदिन, साप्ताहिक, मासिक, या कस्टम।"
+            },
+            "nextEvent": "आगे: इवेंट चुनें",
+            "nextSchedule": "आगे: शेड्यूल सेट करें",
+            "triggerNodeName": "ट्रिगर: {{event}}"
+        },
+        "step3": {
+            "eventHeading": "कौन सा इवेंट इस वर्कफ़्लो को ट्रिगर करेगा?",
+            "eventSubheading": "इवेंट चुनें, फिर वैकल्पिक रूप से इसे किसी विशिष्ट एंटिटी तक सीमित करें।",
+            "selectEventLabel": "इवेंट चुनें",
+            "selectEventPlaceholder": "-- एक इवेंट चुनें --",
+            "generalCategory": "सामान्य",
+            "scopeHeading": "दायरा (वैकल्पिक)",
+            "scopeHint": "एक विशिष्ट {{type}} चुनें या इसे \"सभी\" के लिए हर बार ट्रिगर होने दें।",
+            "triggerDescriptionLabel": "ट्रिगर विवरण",
+            "triggerDescriptionPlaceholder": "उदा. नए छात्र के नामांकन पर स्वागत ईमेल भेजें",
+            "scheduleHeading": "शेड्यूल सेट करें",
+            "scheduleSubheading": "चुनें कि यह वर्कफ़्लो कितनी बार और कब चलना चाहिए।",
+            "next": "आगे: वर्कफ़्लो बनाएं"
+        },
+        "steps": {
+            "name": "नाम",
+            "triggerType": "ट्रिगर प्रकार",
+            "eventSetup": "इवेंट सेटअप",
+            "schedule": "शेड्यूल",
+            "buildWorkflow": "वर्कफ़्लो बनाएं"
+        }
+    },
+    "triggerSummary": {
+        "allOf": "सभी {{type}}",
+        "selectedCount_one": "{{count}} चयनित…",
+        "selectedCount_other": "{{count}} चयनित…",
+        "noLongerExists": "{{id}} — अब मौजूद नहीं है"
+    },
+    "configSummary": {
+        "eventTrigger": "इवेंट ट्रिगर",
+        "schedule": "शेड्यूल",
+        "editSetup": "सेटअप संपादित करें",
+        "everyMinutes_one": "हर {{count}} मिनट",
+        "everyMinutes_other": "हर {{count}} मिनट",
+        "starts": "आरंभ: {{date}}",
+        "ends": "समाप्ति: {{date}}"
+    },
+    "canvas": {
+        "namePlaceholder": "वर्कफ़्लो का नाम...",
+        "eventDriven": "इवेंट-आधारित",
+        "scheduled": "शेड्यूल्ड",
+        "wizard": "विज़ार्ड",
+        "testRun": "टेस्ट रन",
+        "testRunning": "चल रहा है...",
+        "saveDraft": "ड्राफ़्ट सहेजें",
+        "publish": "प्रकाशित करें",
+        "dismiss": "खारिज करें",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "बताएं कि यह वर्कफ़्लो क्या करता है...",
+        "nodesUnit_one": "नोड",
+        "nodesUnit_other": "नोड",
+        "connectionsUnit_one": "कनेक्शन",
+        "connectionsUnit_other": "कनेक्शन",
+        "emptyHint": "इसे कॉन्फ़िगर करने के लिए किसी नोड पर क्लिक करें, या अपना वर्कफ़्लो बनाने के लिए बाईं ओर के पैलेट से नोड खींचें।",
+        "testRunResultsHeading": "टेस्ट रन परिणाम (ड्राई रन)",
+        "testRunFailedAlert": "टेस्ट रन विफल रहा। विवरण के लिए कंसोल देखें।"
+    },
+    "validation": {
+        "nameRequired": "वर्कफ़्लो का नाम आवश्यक है",
+        "addNode": "कम से कम एक नोड जोड़ें",
+        "addNodeBeforeTest": "टेस्ट करने से पहले कम से कम एक नोड जोड़ें",
+        "selectTriggerEvent": "इवेंट-आधारित वर्कफ़्लो के लिए एक ट्रिगर इवेंट चुनें",
+        "enterCron": "शेड्यूल्ड वर्कफ़्लो के लिए क्रॉन एक्सप्रेशन दर्ज करें",
+        "nodesNotConnected_one": "{{count}} नोड कनेक्ट नहीं है: {{names}}",
+        "nodesNotConnected_other": "{{count}} नोड कनेक्ट नहीं हैं: {{names}}",
+        "genericValidationError": "सत्यापन त्रुटि",
+        "unknownError": "अज्ञात त्रुटि",
+        "saveFailed": "सहेजना विफल रहा: {{message}}"
+    }
+}

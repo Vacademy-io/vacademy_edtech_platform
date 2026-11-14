@@ -1,0 +1,29 @@
+{
+    "summary": {
+        "selectedBanner": "{{term}} محدد — سيتم تسجيل {{learners}} في كل ما تم تحديده."
+    },
+    "search": {
+        "placeholder": "ابحث عن {{coursesTerm}}، {{levelsTerm}}..."
+    },
+    "filters": {
+        "filterBy": "تصفية حسب {{term}}",
+        "noneFound": "لم يتم العثور على {{term}}",
+        "tagLabel": "{{term}}: {{value}}",
+        "clearAll": "مسح الكل"
+    },
+    "errors": {
+        "failedToLoad": "فشل تحميل {{term}}.",
+        "tryAgain": "يرجى المحاولة مرة أخرى."
+    },
+    "list": {
+        "batchCount": "{{count}} {{term}}",
+        "empty": {
+            "title": "لم يتم العثور على {{term}}",
+            "subtitle": "حاول تعديل بحثك أو عوامل التصفية."
+        }
+    },
+    "pagination": {
+        "showingRange": "عرض {{from}}–{{to}} من {{total}}",
+        "pageOf": "{{current}} / {{total}}"
+    }
+}

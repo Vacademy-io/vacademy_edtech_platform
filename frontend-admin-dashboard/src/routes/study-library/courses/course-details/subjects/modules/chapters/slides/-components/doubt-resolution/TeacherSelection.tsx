@@ -9,6 +9,7 @@ import { handleAddReply } from '../../-helper/handleAddReply';
 import { Tag, X } from '@phosphor-icons/react';
 import React from 'react';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
+import { useTranslation } from 'react-i18next';
 
 
 // Custom debounce hook
@@ -50,6 +51,7 @@ export const TeacherSelection = ({
      */
     implicitAssignees?: { id: string; name: string }[];
 }) => {
+    const { t } = useTranslation('studyLibraryHandleAddReply');
     const addReply = useAddReply();
     const InstituteId = getInstituteId();
     const { data: TeachersList } = useTeacherList(
@@ -222,9 +224,9 @@ export const TeacherSelection = ({
                     .map((assignee) => assignee.id),
                 excluded_assignee_user_ids: excludedImplicitUserIds,
             };
-            await handleAddReply({ replyData, addReply, id: doubt.id });
+            await handleAddReply({ replyData, addReply, id: doubt.id, t });
         },
-        [doubt, addReply]
+        [doubt, addReply, t]
     );
 
     const debouncedSubmitReply = useDebounce(submitReply, 1000);

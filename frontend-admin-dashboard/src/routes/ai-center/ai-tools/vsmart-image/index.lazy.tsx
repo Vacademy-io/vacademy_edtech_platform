@@ -4,6 +4,7 @@ import { AICenterProvider } from '@/routes/ai-center/-contexts/useAICenterContex
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretLeft } from '@phosphor-icons/react';
 
 export const Route = createLazyFileRoute('/ai-center/ai-tools/vsmart-image/')({
@@ -11,17 +12,18 @@ export const Route = createLazyFileRoute('/ai-center/ai-tools/vsmart-image/')({
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('aiCenterVsmartImageIndex');
     const { setNavHeading } = useNavHeadingStore();
 
     useEffect(() => {
         const heading = (
             <div className="flex items-center gap-4">
                 <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-                <div>Questions from a Photo</div>
+                <div>{t('navHeading')}</div>
             </div>
         );
         setNavHeading(heading);
-    }, []);
+    }, [t]);
 
     return (
         <LayoutContainer>

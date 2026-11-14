@@ -1,0 +1,16 @@
+{
+    "noProblemStatement": "(لا يوجد وصف للمشكلة)",
+    "languagesLabel": "اللغات: {{languages}}",
+    "maxPointsLabel": "الحد الأقصى للنقاط: {{points}}",
+    "testsLabel": "الاختبارات: {{count}}",
+    "sampleTestCasesHeading": "حالات اختبار نموذجية",
+    "sampleLabel": "نموذج {{number}}",
+    "inputLabel": "الإدخال",
+    "expectedLabel": "المتوقع",
+    "moreAccepted_zero": "+{{count}} مقبول إضافي",
+    "moreAccepted_one": "+{{count}} مقبول إضافي",
+    "moreAccepted_two": "+{{count}} مقبولان إضافيان",
+    "moreAccepted_few": "+{{count}} مقبولات إضافية",
+    "moreAccepted_many": "+{{count}} مقبولًا إضافيًا",
+    "moreAccepted_other": "+{{count}} مقبول إضافي"
+}

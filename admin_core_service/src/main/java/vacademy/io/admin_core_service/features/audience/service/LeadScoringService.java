@@ -11,8 +11,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.audience.entity.Audience;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
 import vacademy.io.admin_core_service.features.audience.entity.LeadScore;
+import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
 import vacademy.io.admin_core_service.features.audience.repository.LeadScoreRepository;
 import vacademy.io.admin_core_service.features.common.repository.CustomFieldValuesRepository;
@@ -61,7 +63,13 @@ public class LeadScoringService {
     private LeadScoreRepository leadScoreRepository;
 
     @Autowired
+    private LeadTierService leadTierService;
+
+    @Autowired
     private AudienceResponseRepository audienceResponseRepository;
+
+    @Autowired
+    private AudienceRepository audienceRepository;
 
     @Autowired
     private EnquiryRepository enquiryRepository;
@@ -207,8 +215,9 @@ public class LeadScoringService {
         leadScore.setLastCalculatedAt(new Timestamp(System.currentTimeMillis()));
 
         LeadScore saved = leadScoreRepository.save(leadScore);
+        String savedTier = leadTierService.deriveTier(saved.getInstituteId(), saved.getRawScore());
         logger.info("Lead score calculated: response={}, score={}, tier={}",
-                audienceResponseId, rawScore, saved.getTier());
+                audienceResponseId, rawScore, savedTier);
 
         // Log SCORE_UPDATED whenever the score is set or changes (including initial calculation).
         if (!Integer.valueOf(rawScore).equals(oldRawScore)) {
@@ -226,7 +235,7 @@ public class LeadScoringService {
                         title, desc,
                         Map.of("old_score", oldRawScore != null ? oldRawScore : 0,
                                "new_score", rawScore,
-                               "tier", saved.getTier() != null ? saved.getTier() : ""),
+                               "tier", savedTier != null ? savedTier : ""),
                         responseForScoring != null ? responseForScoring.getStudentUserId() : null
                 );
             } catch (Exception e) {
@@ -274,6 +283,14 @@ public class LeadScoringService {
             logger.error("Error getting institute for recalculation", e);
         }
 
+        // Never scored yet (an intake path that skipped scoring): take the institute from
+        // the lead's list, so a recalculation can create the first score instead of no-oping.
+        if (instituteId == null && StringUtils.hasText(response.getAudienceId())) {
+            instituteId = audienceRepository.findById(response.getAudienceId())
+                    .map(Audience::getInstituteId)
+                    .orElse(null);
+        }
+
         if (instituteId == null) {
             logger.warn("Cannot determine institute for response: {}", audienceResponseId);
             return;
@@ -293,7 +310,11 @@ public class LeadScoringService {
      * Percentile is an expensive operation (touches all rows) so it runs as batch.
      */
     @Scheduled(fixedRate = 15 * 60 * 1000) // 15 minutes
-    @SchedulerLock(name = "LeadScoringService_batchRecalculatePercentiles", lockAtMostFor = "PT14M", lockAtLeastFor = "PT30S")
+    // lockAtLeastFor sits just under the 15-minute rate. Each of the 4 replicas ticks on its
+    // own fixedRate timer, so a 30s floor only stopped CONCURRENT runs: the job ran about once
+    // per replica per interval (266 runs in 16 h instead of ~64). Same fix as
+    // AirtelCcrImportScheduler; cron-scheduled jobs fire together and do not need it.
+    @SchedulerLock(name = "LeadScoringService_batchRecalculatePercentiles", lockAtMostFor = "PT14M", lockAtLeastFor = "PT14M")
     @Transactional
     public void batchRecalculatePercentiles() {
         logger.info("Starting batch percentile recalculation...");

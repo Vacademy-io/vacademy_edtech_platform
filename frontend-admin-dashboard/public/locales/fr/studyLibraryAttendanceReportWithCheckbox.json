@@ -1,0 +1,9 @@
+{
+    "select": "Sélectionner",
+    "srNo": "N° Sér.",
+    "membersName": "Nom des membres",
+    "attendanceStatus": "Statut de présence",
+    "present": "Présent",
+    "absent": "Absent",
+    "unmarked": "Non marqué"
+}

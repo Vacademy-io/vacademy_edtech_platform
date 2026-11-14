@@ -1,0 +1,90 @@
+{
+    "statusBadge": {
+        "wrapped": "Wrapped",
+        "halted": "Halted",
+        "inProduction": "In production"
+    },
+    "actions": {
+        "stopProduction": "Stop production",
+        "auditTooltip": "Open developer audit — see the full pipeline pathway, models, configs and URLs",
+        "audit": "Audit"
+    },
+    "haltedBanner": {
+        "title": "Production halted",
+        "description": "The pipeline failed before the final cut was assembled. Retry resumes from the last saved checkpoint — already-finished stages aren't redone.",
+        "retry": "Retry production"
+    },
+    "stagesList": {
+        "heading": "Production schedule",
+        "pipelineLabel": "Pipeline",
+        "shotPlannerFirst": "ShotPlanner-first"
+    },
+    "stats": {
+        "heading": "Production budget",
+        "tokens": "Tokens",
+        "estCost": "Est. cost",
+        "stills": "Stills",
+        "aiVideo": "AI video",
+        "aiVideoTooltip": "Veo-generated shots (fal.ai). Each runs {{min}}–{{max}} credits — hard cap {{cap}}/video.",
+        "aiVideoShots_one": "{{count}} shot",
+        "aiVideoShots_other": "{{count}} shots"
+    },
+    "assets": {
+        "heading": "Production assets",
+        "screenplay": "Screenplay",
+        "narration": "Narration",
+        "wordTimings": "Word timings",
+        "finalCut": "Final Cut",
+        "empty": "Assets will appear as production progresses…"
+    },
+    "actionsCard": {
+        "heading": "Actions"
+    },
+    "share": {
+        "label": "Shareable URL",
+        "copyLinkTitle": "Copy link"
+    },
+    "embed": {
+        "getEmbedCode": "Get embed code",
+        "heading": "Embed code",
+        "copied": "Copied",
+        "copy": "Copy"
+    },
+    "edit": {
+        "openInEditor": "Open in editor"
+    },
+    "render": {
+        "downloadMp4": "Download MP4",
+        "clearTitle": "Clear cached video to re-render",
+        "startingRender": "Starting render…",
+        "mastering": "Mastering…",
+        "masteringPercent": "Mastering… {{percent}}%",
+        "masterTheCut": "Master the cut (MP4)",
+        "retry": "Retry",
+        "timedOut": "Render timed out. Please try again.",
+        "readyToast": "Video ready for download!",
+        "failedGeneric": "Render failed",
+        "failedToast": "Video render failed",
+        "startedToast": "Video rendering started. This may take a few minutes.",
+        "failedToStart": "Failed to start render",
+        "failedToStartToast": "Failed to start video render",
+        "clearedToast": "Cached video cleared. You can render again.",
+        "failedToClear": "Failed to clear cached video"
+    },
+    "counters": {
+        "sources_one": "{{count}} src",
+        "sources_other": "{{count}} src",
+        "screenshots_one": "{{count}} 📸",
+        "screenshots_other": "{{count}} 📸",
+        "urls_one": "{{count}} URL",
+        "urls_other": "{{count}} URL",
+        "shots_one": "{{count}} shot",
+        "shots_other": "{{count}} shots",
+        "intrinsic_one": "{{count}} intr",
+        "intrinsic_other": "{{count}} intr",
+        "words_one": "{{count}} w",
+        "words_other": "{{count}} w",
+        "silent_one": "{{count}} silent",
+        "silent_other": "{{count}} silent"
+    }
+}

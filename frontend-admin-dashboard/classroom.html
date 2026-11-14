@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- The URL can carry a one-time code until main.tsx clears it: nothing may leak it. -->
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <title>Classroom</title>
+    <link rel="icon" href="data:," />
+    <style>
+        /* Shown until the bundle arrives, which on a slow connection is the first few seconds. */
+        html { background: hsl(0 0% 100%); }
+        @media (prefers-color-scheme: dark) { html { background: hsl(222.2 84% 4.9%); } }
+        #classroom-boot { display: flex; justify-content: center; padding-top: 40vh; }
+        #classroom-boot div {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 4px solid hsl(214.3 31.8% 91.4%); border-top-color: hsl(24 85% 54%);
+            animation: classroom-boot-spin 900ms linear infinite;
+        }
+        @keyframes classroom-boot-spin { to { transform: rotate(360deg); } }
+    </style>
+    <script>
+        if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <!-- The module entry is injected by vite.classroom.config.ts. A static tag here would be
+         followed by the main vite.config.ts dev pre-scan, which globs every .html file. -->
+</head>
+
+<body>
+    <div id="root"><div id="classroom-boot"><div></div></div></div>
+    <noscript>This page needs JavaScript.</noscript>
+</body>
+
+</html>

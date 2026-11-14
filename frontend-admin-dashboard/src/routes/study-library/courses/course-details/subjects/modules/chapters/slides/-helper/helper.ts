@@ -15,6 +15,12 @@ import {
     encodeAllowedFileTypes,
 } from '../-form-schemas/assignmentFormSchema';
 import { parseHtmlToString } from '@/lib/utils';
+import {
+    buildCbeSlideFields,
+    CBE_RESPONSE_TYPE,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import type { TFunction } from 'i18next';
 
 // Convert a UTC ISO timestamp from the backend ("2026-03-25T09:00:00Z")
 // into a "YYYY-MM-DDTHH:mm" string in the admin's LOCAL timezone for the
@@ -627,20 +633,31 @@ export function convertToQuestionSlideFormat(question: MyQuestion, sourceId?: st
         question?.subjectiveAnswerText
     );
 
+    // Spreadsheet & Written Response (docs/CBE_RESPONSE_QUESTION.md §3, slide row):
+    // auto_evaluation_json holds the redacted config, the solution / marking
+    // scheme / grading notes go in evaluation_secret_json — and only when the
+    // editor holds them, so a secret that failed to load is never overwritten.
+    const cbe = isCbeQuestionType(question?.questionType)
+        ? buildCbeSlideFields(question?.cbeConfig, question?.cbeSecretStatus)
+        : null;
+
     return {
         id: sourceId ? sourceId : crypto.randomUUID(),
         parent_rich_text: generateTextBlock(question?.parentRichTextContent || ''),
         text_data: generateTextBlock(question?.questionName || ''),
         explanation_text_data: generateTextBlock(question?.explanation || ''),
         media_id: '',
-        question_response_type: 'OPTION',
+        question_response_type: cbe ? CBE_RESPONSE_TYPE : 'OPTION',
         question_type: question?.questionType,
         access_level: 'PUBLIC',
-        auto_evaluation_json: auto_evaluation_json,
+        auto_evaluation_json: cbe ? cbe.auto_evaluation_json : auto_evaluation_json,
+        ...(cbe?.evaluation_secret_json !== undefined
+            ? { evaluation_secret_json: cbe.evaluation_secret_json }
+            : {}),
         evaluation_type: 'AUTO',
         default_question_time_mins: parseInt(question?.questionDuration?.min || '0'),
         re_attempt_count: question?.reattemptCount || '',
-        points: '0',
+        points: cbe ? cbe.points : '0',
         options: options?.map((opt, idx) => ({
             id: opt?.id || '',
             preview_id: opt?.id || idx,
@@ -689,11 +706,15 @@ export function convertToQuizBackendSlideFormat({
     status,
     notify,
     newSlide,
+    t,
 }: {
     activeItem: Slide;
     status: string;
     notify: boolean;
     newSlide: boolean;
+    /** Threaded in from the calling component's `useTranslation()` — this
+     *  helper isn't a component/hook, so it can't call useTranslation itself. */
+    t: TFunction;
 }) {
     return {
         id: activeItem?.id || '',
@@ -708,7 +729,11 @@ export function convertToQuizBackendSlideFormat({
         document_slide: null,
         question_slide: null,
         quiz_slide: activeItem?.quiz_slide
-            ? convertToQuizSlideFormat(activeItem.quiz_slide.questions as any, activeItem?.source_id)
+            ? convertToQuizSlideFormat(
+                  activeItem.quiz_slide.questions as any,
+                  t,
+                  activeItem?.source_id
+              )
             : null,
         assignment_slide: null,
         is_loaded: true,
@@ -880,12 +905,16 @@ export function cleanVideoQuestions(data: Slide[]) {
     return cleanedData;
 }
 
-export function convertToQuizSlideFormat(questionList: MyQuestion[], sourceId?: string) {
+export function convertToQuizSlideFormat(
+  questionList: MyQuestion[],
+  t: TFunction,
+  sourceId?: string
+) {
   const quizSlideId = sourceId ?? crypto.randomUUID();
 
   return {
     id: quizSlideId,
-    title: 'Untitled Quiz',
+    title: t('studyLibrarySlidesHelper:quiz.untitledQuiz'),
     description: generateTextBlock(''),
     questions: questionList.map((q, index) => {
       // Get the appropriate options based on question type

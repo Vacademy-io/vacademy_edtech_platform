@@ -1,6 +1,7 @@
 import { MyDialog } from '@/components/design-system/dialog';
 import { AddSessionDataType, AddSessionForm } from './add-session-form';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SessionData } from '@/types/study-library/session-types';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -26,12 +27,17 @@ export const AddSessionDialog = ({
     setDisableAddButton,
     submitFn,
 }: AddSessionDialogProps) => {
+    const { t } = useTranslation('manageInstituteAddSessionDialog');
     return (
         <MyDialog
             heading={
                 initialValues
-                    ? 'Edit ' + getTerminology(ContentTerms.Session, SystemTerms.Session)
-                    : 'Add ' + getTerminology(ContentTerms.Session, SystemTerms.Session)
+                    ? t('editHeading', {
+                          session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                      })
+                    : t('addHeading', {
+                          session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+                      })
             }
             trigger={trigger}
             dialogWidth="w-[700px]"

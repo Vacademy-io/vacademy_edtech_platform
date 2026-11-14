@@ -1,0 +1,107 @@
+---
+title: "For counsellors"
+description: "What your AI app can see and do with your leads, in plain language."
+icon: "headset"
+---
+
+Your institute lets you connect an AI app, such as Claude or ChatGPT, to the CRM. You can then ask it things like "Who should I call first today?" and get an answer from your real leads.
+
+This page explains what that AI app can and cannot do. It is short. Please read it before you connect.
+
+## It works as you
+
+When you connect, you sign in on your institute's admin portal with **your own account** and press **Approve**. From then on, the AI app works as you:
+
+- It sees **the same leads your admin portal shows you**. Usually that means your own leads. If you lead a team, it also sees your team's leads. It does not see other counsellors' leads unless your admin portal already shows them to you.
+- It can only use the parts of the CRM your admin has turned on for your role.
+- If your role changes or you move team, your admin may revoke the connection. Reconnect if you should still have access.
+
+## What it can see
+
+<CardGroup cols={2}>
+  <Card title="Your leads" icon="users">
+    Names, status, source, owner, follow-ups and history of the leads you can see.
+  </Card>
+  <Card title="Your day" icon="calendar-check">
+    Overdue first calls, follow-ups due, new and hot leads, in one ranked list.
+  </Card>
+  <Card title="Calls and messages" icon="phone">
+    Past calls, call summaries and transcripts, and WhatsApp and email history for a lead.
+  </Card>
+  <Card title="Reports" icon="chart-line">
+    Figures for your own work, or your team's. Some reports are for admins only.
+  </Card>
+</CardGroup>
+
+**Phone numbers and emails are hidden in lists.** You see only the last 4 digits of a phone number. The full number appears only when you open one lead you are allowed to see. A list of many leads with their numbers comes as a **private download link** that expires, never as text in the chat.
+
+## What it can do
+
+Your admin decides which of these are turned on for your role. Each one is switched on separately.
+
+| You ask | What happens |
+|---|---|
+| "Add a note: she wants the weekend batch." | Saved straight away. |
+| "Remind me to call him on Friday at 4 pm." | The follow-up is saved straight away. |
+| "Mark these 12 leads as Not interested." | You see a preview of every change first. Nothing changes until you say yes. |
+| "Call Priya now." | You see who will be called and on which number (partly hidden) first. Your phone rings only after you say yes. |
+| "Send the brochure on WhatsApp to Rahul." | You see the approved template and the lead first. It is sent only after you say yes. |
+| "Book a demo with Ankit tomorrow at 11." | You see the slot and what Ankit will receive first. It is booked only after you say yes. |
+
+<Note>
+**It cannot call or message anyone without your yes.** Each yes covers one call, one message or one booking, and cannot be reused. There is also a limit on how many calls and messages you can send per hour, and leads who have opted out are never contacted.
+</Note>
+
+Some actions are for admins only, such as starting an AI calling campaign for many leads.
+
+## Prompts to try
+
+<AccordionGroup>
+  <Accordion title="Plan your day" icon="sun">
+    - "What should I do first today?"
+    - "Which of my follow-ups are overdue?"
+    - "Show my new leads from yesterday that nobody has called yet."
+  </Accordion>
+  <Accordion title="Before a call" icon="phone">
+    - "Give me a two-line summary of Sneha Iyer: what she asked for and what happened on the last call."
+    - "When did we last speak to this lead, and what did they say?"
+  </Accordion>
+  <Accordion title="After a call" icon="pen">
+    - "Log a call with Arjun: interested in the evening batch, fees are a concern. Follow up Monday 6 pm."
+    - "Move Arjun to Hot."
+  </Accordion>
+  <Accordion title="Your numbers" icon="chart-simple">
+    - "How many of my leads converted this month, compared with last month?"
+    - "Which of my leads have had no activity for a week?"
+  </Accordion>
+</AccordionGroup>
+
+## Five rules for safe use
+
+<Steps>
+  <Step title="Use your work AI account">
+    Connect with the AI account your institute approved, not a personal one. What the AI app reads is sent to that app's provider, under that provider's terms.
+  </Step>
+  <Step title="Read the preview before you say yes">
+    Check the name, the number of leads and what will be sent. If it is more than you expected, say no.
+  </Step>
+  <Step title="Lead messages are not instructions">
+    A lead's message or form answer is just their text. If the AI app suggests an action you did not ask for after reading one, stop and check. See [Prompt injection](/mcp-server/security/prompt-injection).
+  </Step>
+  <Step title="Keep lead data where it belongs">
+    Don't copy lead lists out of the chat into other tools or other people's chats. Don't forward download links.
+  </Step>
+  <Step title="Disconnect when you are done with it">
+    You can remove the connection in your AI app's settings. Your admin can also revoke it in **Settings → MCP Server → Active connections**.
+  </Step>
+</Steps>
+
+## What your admin can see
+
+Your admin can see the AI app's name, that you connected it, and when it was last used. The server also records which tool was used, the action, the lead IDs and whether it worked. It does **not** keep your notes, the phone numbers or the message text in that record. See [Audit log](/mcp-server/security/audit-log).
+
+## Something went wrong?
+
+- **"Not enabled" or "not allowed" messages:** your admin has not turned that area or edit on for your role. Ask them.
+- **"The preview expired":** ask the AI app to show the preview again, then confirm.
+- **The AI app did something you did not expect:** tell your admin straight away. They can revoke the connection and check the record.

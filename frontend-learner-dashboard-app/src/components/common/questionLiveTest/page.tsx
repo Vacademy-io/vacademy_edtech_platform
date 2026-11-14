@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { QuestionDisplay } from "./question-display";
 import { SectionTabs } from "./section-tabs";
 import { Navbar } from "./navbar";
@@ -8,368 +8,58 @@ import { Footer } from "./footer";
 import { Sidebar } from "./sidebar";
 import { QuestionNavigator } from "./question-navigator";
 import { LiveTestUiProvider, useLiveTestUi } from "./live-test-ui-context";
+import {
+  LiveTestEngine,
+  type SubmitDialogProps,
+} from "./engine/live-test-engine";
+import { useLiveTestEngine } from "./engine/live-test-engine-context";
 import { ExamCalculator } from "./tools/exam-calculator";
 import { ExamScratchpad } from "./tools/exam-scratchpad";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { cn } from "@/lib/utils";
 import { useImmersiveMode } from "@/hooks/use-immersive-mode";
+import { useIOSSafeAreaInsets } from "@/hooks/use-ios-safe-area-insets";
 import { topSafeAreaInset } from "@/utils/safe-area";
 import NetworkStatus from "./network-status";
-import { Preferences } from "@capacitor/preferences";
-import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
-import { ASSESSMENT_SAVE } from "@/constants/urls";
-import { toast } from "sonner";
-import { safeParse } from "@/lib/storage";
-import {
-  LOCAL_SAVE_INTERVAL_MS,
-  REMOTE_SAVE_INTERVAL_MS,
-  REMOTE_SAVE_RETRY_ATTEMPTS,
-  REMOTE_SAVE_RETRY_BASE_MS,
-  REMOTE_SAVE_RETRY_MAX_MS,
-} from "@/constants/assessment-timings";
-
-export function convertToLocalDateTime(utcDate: string): string {
-  if (!utcDate) return "";
-
-  // Backend sends timestamps as UTC but sometimes omits the trailing 'Z'.
-  // Force UTC interpretation when no zone marker is present.
-  const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/i.test(utcDate);
-  const normalized = hasTimezone ? utcDate : `${utcDate.replace(" ", "T")}Z`;
-  const date = new Date(normalized);
-
-  const options: Intl.DateTimeFormatOptions = {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  };
-
-  const formattedDate = date.toLocaleString("en-GB", options);
-  return formattedDate
-    .replace(",", "")
-    .replace(/\s(am|pm)/i, (match) => match.toUpperCase());
-}
-
-// Function to format data from assessment-store
-export const getServerStartEndTime = async () => {
-  const { value } = await Preferences.get({ key: "server_start_end_time" });
-  return safeParse<{ start_time?: string; end_time?: string }>(value, {});
-};
-
-export const formatDataFromStore = async (
-  assessment_id: string,
-  status: string
-) => {
-  const parsedValue = await getServerStartEndTime();
-  const start_time = parsedValue.start_time
-    ? new Date(parsedValue.start_time).getTime()
-    : 0;
-
-  const state = useAssessmentStore.getState();
-  const attemptId = state.assessment?.attempt_id;
-  const timeElapsedInSeconds = state.assessment?.duration
-    ? state.assessment.duration * 60 - state.entireTestTimer
-    : 0;
-  const clientLastSync = new Date(
-    start_time + timeElapsedInSeconds * 1000
-  ).toISOString();
-
-  return {
-    attemptId: attemptId,
-    clientLastSync,
-    assessment: {
-      assessmentId: assessment_id,
-      entireTestDurationLeftInSeconds: state.entireTestTimer,
-      timeElapsedInSeconds,
-      status: status,
-      tabSwitchCount: state.tabSwitchCount || 0,
-    },
-    sections: state.assessment?.section_dtos?.map((section, idx) => {
-      const sectionTimeLeftSeconds = Math.round(
-        (state.sectionTimers?.[idx]?.timeLeft || 0) / 1000
-      );
-      return {
-      sectionId: section.id,
-      sectionDurationLeftInSeconds: sectionTimeLeftSeconds,
-      timeElapsedInSeconds: section.duration
-        ? section.duration * 60 - sectionTimeLeftSeconds
-        : 0,
-      questions: section.question_preview_dto_list?.map((question) => {
-        const rawAnswer = state.answers?.[question.question_id];
-        const normalizedAnswer = Array.isArray(rawAnswer)
-          ? rawAnswer[0]
-          : rawAnswer;
-        const codingAnswer = state.codingAnswers?.[question.question_id];
-
-        let responseData: Record<string, unknown> = {
-          type: question.question_type,
-        };
-        if (question.question_type === "CODING") {
-          responseData = {
-            type: "CODING",
-            language: codingAnswer?.language || "",
-            sourceCode: codingAnswer?.sourceCode || "",
-            verdict: codingAnswer?.verdict || "",
-            passedCount: codingAnswer?.passedCount ?? 0,
-            totalCount: codingAnswer?.totalCount ?? 0,
-            score: codingAnswer?.score ?? 0,
-            totalTimeMs: codingAnswer?.totalTimeMs ?? 0,
-            peakMemoryKb: codingAnswer?.peakMemoryKb ?? 0,
-            testCaseResults: codingAnswer?.testCaseResults ?? [],
-            pasteAttemptCount: codingAnswer?.pasteAttemptCount ?? 0,
-          };
-        } else if (question.question_type === "NUMERIC") {
-          responseData = {
-            type: "NUMERIC",
-            validAnswer:
-              normalizedAnswer !== undefined &&
-              normalizedAnswer !== null &&
-              !isNaN(parseFloat(normalizedAnswer))
-                ? parseFloat(normalizedAnswer)
-                : null,
-          };
-        } else if (
-          ["ONE_WORD", "LONG_ANSWER"].includes(question.question_type)
-        ) {
-          responseData = {
-            type: question.question_type,
-            answer: normalizedAnswer || "",
-          };
-        } else {
-          responseData = {
-            type: question.question_type,
-            optionIds: rawAnswer || [],
-          };
-        }
-
-        return {
-          questionId: question.question_id,
-          questionDurationLeftInSeconds:
-            state.questionTimers?.[question.question_id] || 0,
-          timeTakenInSeconds:
-            state.questionTimeSpent[question.question_id] || 0,
-          isMarkedForReview:
-            state.questionStates[question.question_id]?.isMarkedForReview ||
-            false,
-          isVisited:
-            state.questionStates[question.question_id]?.isVisited || false,
-          responseData,
-        };
-      }),
-      };
-    }),
-  };
-};
+import { QUESTION_TYPES } from "@/types/assessment";
+import { ProctorLayer } from "@/components/common/proctoring/ProctorLayer";
+import { renderedLayoutKind } from "./themes";
+import { useExamSkinIsolation } from "./themes/use-exam-skin-isolation";
+import { ConsoleLayout } from "./layouts/ConsoleLayout";
+import { ExamSummaryModal } from "./widgets/ExamSummaryModal";
 
 export default function Page() {
   return (
     <LiveTestUiProvider>
-      <LiveTestShell />
+      <ThemedLiveTestEngine>
+        <LiveTestShell />
+      </ThemedLiveTestEngine>
     </LiveTestUiProvider>
   );
 }
 
+const renderExamSummary = (props: SubmitDialogProps) => <ExamSummaryModal {...props} />;
+
+/**
+ * Clocks, autosave, submit, proctoring and guards: mounted once and
+ * independent of which parts the layout below draws. Console layouts confirm
+ * a submit with their Exam Summary table instead of the standard dialog.
+ */
+function ThemedLiveTestEngine({ children }: { children: ReactNode }) {
+  const { examTheme } = useLiveTestUi();
+  const isConsole = renderedLayoutKind(examTheme) === "console";
+  return (
+    <LiveTestEngine renderSubmitDialog={isConsole ? renderExamSummary : undefined}>
+      {children}
+    </LiveTestEngine>
+  );
+}
+
+/** Attempt-wide effects shared by every layout, then the theme's layout. */
 function LiveTestShell() {
-  const { loadState, saveState, currentQuestion } = useAssessmentStore();
-  const {
-    settings,
-    isCompact,
-    activeTool,
-    closeTool,
-    scratchpad,
-    setScratchpad,
-    isPaletteOpen,
-    setPaletteOpen,
-  } = useLiveTestUi();
+  const { settings, examTheme } = useLiveTestUi();
   const setLiveTest = useLiveTestStore((s) => s.setLiveTest);
-  const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
-  // The question area is the only scroller (see the h-dvh layout below), so it
-  // keeps its offset when the question swaps — the learner would land partway
-  // down the next question, often mid-options. Reset it on every change.
-  const questionScrollRef = useRef<HTMLElement>(null);
-  const [playMode, setPlayMode] = useState<string>("");
-  const [evaluationType, setEvaluationType] = useState<string>("");
-  // Latches so we show the "save failed" toast exactly once per failure streak
-  // and the "recovered" toast exactly once when it clears.
-  const hasShownSaveFailureToastRef = useRef(false);
-
-  const sendFormattedData = async () => {
-    const state = useAssessmentStore.getState();
-    state.setRemoteSaveStatus("saving");
-    const InstructionID_and_AboutID = await Preferences.get({
-      key: "InstructionID_and_AboutID",
-    });
-
-    const assessment_id_json = safeParse<{ assessment_id?: string } | null>(
-      InstructionID_and_AboutID.value,
-      null
-    );
-    const formattedData = await formatDataFromStore(
-      assessment_id_json?.assessment_id ?? "",
-      "LIVE"
-    );
-
-    let lastError: unknown;
-    for (let attempt = 0; attempt < REMOTE_SAVE_RETRY_ATTEMPTS; attempt++) {
-      try {
-        const response = await authenticatedAxiosInstance.post(
-          `${ASSESSMENT_SAVE}`,
-          { json_content: JSON.stringify(formattedData) },
-          {
-            params: {
-              attemptId: state.assessment?.attempt_id,
-              assessmentId: assessment_id_json?.assessment_id,
-            },
-          }
-        );
-
-        // Save announcements in local storage
-        await Preferences.set({
-          key: "announcements",
-          value: JSON.stringify(response.data),
-        });
-
-        state.setRemoteSaveStatus("success");
-        return response.data;
-      } catch (error) {
-        lastError = error;
-        const isLastAttempt = attempt === REMOTE_SAVE_RETRY_ATTEMPTS - 1;
-        if (isLastAttempt) break;
-        const delay = Math.min(
-          REMOTE_SAVE_RETRY_BASE_MS * 2 ** attempt,
-          REMOTE_SAVE_RETRY_MAX_MS
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-
-    state.setRemoteSaveStatus("failed");
-    console.error("Error sending data after retries:", lastError);
-    throw lastError;
-  };
-
-  const { isSubmitted } = useAssessmentStore();
-
-  useEffect(() => {
-    const sendData = async () => {
-      try {
-        await sendFormattedData();
-        if (hasShownSaveFailureToastRef.current) {
-          hasShownSaveFailureToastRef.current = false;
-          toast.success("Your responses are being saved again");
-        }
-      } catch (error) {
-        console.error("Error in periodic data sending:", error);
-        // Only toast on the first failure in a streak — the persistent
-        // NetworkStatus banner keeps the user informed after that.
-        if (!hasShownSaveFailureToastRef.current) {
-          hasShownSaveFailureToastRef.current = true;
-          toast.error("Your responses are not being recorded");
-        }
-      }
-    };
-
-    const sent = async () => {
-      // Check if isSubmitted is false and time is not up before sending data
-      const state = useAssessmentStore.getState();
-
-      if (!isSubmitted && state.entireTestTimer > 0) {
-        await sendData();
-      }
-    };
-
-    sent();
-
-    const interval = setInterval(() => {
-      sent();
-    }, REMOTE_SAVE_INTERVAL_MS);
-
-    // Cleanup function to clear the interval
-    return () => clearInterval(interval);
-  }, [isSubmitted]);
-
-  useEffect(() => {
-    const initializeAssessment = async () => {
-      // Check if this is a survey and we already have assessment data
-      const state = useAssessmentStore.getState();
-      const assessmentData = await Preferences.get({
-        key: "InstructionID_and_AboutID",
-      });
-      const assessment = safeParse<{ play_mode?: string } | null>(
-        assessmentData.value,
-        null
-      );
-
-      // For surveys, only load state if we don't already have assessment data
-      if (assessment?.play_mode === "SURVEY" && state.assessment && state.currentQuestion) {
-        console.log("Survey assessment already initialized, skipping loadState");
-        return;
-      }
-
-      await loadState();
-    };
-
-    initializeAssessment();
-
-    const saveInterval = setInterval(() => {
-      saveState();
-    }, LOCAL_SAVE_INTERVAL_MS);
-
-    return () => {
-      clearInterval(saveInterval);
-      saveState();
-    };
-  }, []);
-  useEffect(() => {
-    const reconcileTimer = async () => {
-      if (document.hidden) return;
-      const state = useAssessmentStore.getState();
-      const totalDurationSeconds = state.assessment?.duration
-        ? state.assessment.duration * 60
-        : 0;
-      if (!totalDurationSeconds) return;
-
-      const { start_time } = await getServerStartEndTime();
-      if (!start_time) return;
-
-      const startMs = new Date(start_time).getTime();
-      if (Number.isNaN(startMs)) return;
-
-      const elapsedSeconds = Math.floor((Date.now() - startMs) / 1000);
-      const remaining = Math.max(0, totalDurationSeconds - elapsedSeconds);
-      state.setEntireTestTimer(remaining);
-    };
-
-    document.addEventListener("visibilitychange", reconcileTimer);
-    return () => document.removeEventListener("visibilitychange", reconcileTimer);
-  }, []);
-
-  useEffect(() => {
-    const fetchPlayMode = async () => {
-      const storedMode = await Preferences.get({
-        key: "InstructionID_and_AboutID",
-      });
-      const parsedData = safeParse<{
-        play_mode?: string;
-        evaluation_type?: string;
-      } | null>(storedMode.value, null);
-      if (parsedData) {
-        setPlayMode(parsedData.play_mode ?? "");
-        setEvaluationType(parsedData.evaluation_type ?? "");
-      }
-    };
-
-    fetchPlayMode();
-  }, []);
-
-  useEffect(() => {
-    // "auto" not "smooth": a visible scroll animation on every Next tap reads as
-    // lag on low-end devices, and the learner is already looking at the top.
-    questionScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
-  }, [currentQuestion?.question_id]);
 
   // Stand down the app-level chrome (chatbot launcher, OTA banner, announcement
   // overlays) for as long as the learner is inside the attempt — see
@@ -383,9 +73,73 @@ function LiveTestShell() {
   // Take Android's system bars down for the attempt — they otherwise sit on top
   // of this shell's own header and footer.
   useImmersiveMode(hideAppChrome);
+  useIOSSafeAreaInsets();
+
+  // A themed exam screen looks like the exam it copies, not the institute's
+  // app skin; the default screen keeps the skin.
+  useExamSkinIsolation(examTheme.id);
+
+  return renderedLayoutKind(examTheme) === "console" ? <ConsoleLayout /> : <DefaultLayout />;
+}
+
+/** Today's exam screen (default theme). */
+function DefaultLayout() {
+  const currentQuestion = useAssessmentStore((s) => s.currentQuestion);
+  const { evaluationType, assessmentId, retrySave } = useLiveTestEngine();
+  const {
+    settings,
+    examTheme,
+    isCompact,
+    activeTool,
+    closeTool,
+    scratchpad,
+    setScratchpad,
+    isPaletteOpen,
+    setPaletteOpen,
+    isRailOpen,
+    setRailOpen,
+  } = useLiveTestUi();
+  const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
+  // The question area is the only scroller (see the h-dvh layout below), so it
+  // keeps its offset when the question swaps — the learner would land partway
+  // down the next question, often mid-options. Reset it on every change.
+  const questionScrollRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    // "auto" not "smooth": a visible scroll animation on every Next tap reads as
+    // lag on low-end devices, and the learner is already looking at the top.
+    questionScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [currentQuestion?.question_id]);
+
+  // Spreadsheet & Written Response questions own the whole question area as a
+  // split screen with their own scrolling panes (desktop only; phones stack).
+  const isCbeQuestion =
+    currentQuestion?.question_type === QUESTION_TYPES.CBE_RESPONSE;
+  const cbeSplitScreen = isCbeQuestion && !isCompact;
+
+  // Give the spreadsheet the room: collapse the desktop rail while a CBE
+  // question is open (the header toggle still brings it back), and reopen it
+  // afterwards only if it was this effect that closed it.
+  const railCollapsedForCbeRef = useRef(false);
+  useEffect(() => {
+    if (isCompact) return;
+    if (isCbeQuestion) {
+      if (isRailOpen) {
+        railCollapsedForCbeRef.current = true;
+        setRailOpen(false);
+      }
+    } else if (railCollapsedForCbeRef.current) {
+      railCollapsedForCbeRef.current = false;
+      setRailOpen(true);
+    }
+    // Only on entering / leaving a CBE question — not when the learner
+    // reopens the rail by hand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCbeQuestion, isCompact]);
 
   const showPalette = settings.questionPalette.enabled;
-  const showDesktopPalette = showPalette && !isCompact;
+  // The header's panel toggle brings a collapsed rail back (see Navbar).
+  const showDesktopPalette = showPalette && !isCompact && isRailOpen;
 
   const toolPanel =
     activeTool === "calculator" && settings.calculator.enabled ? (
@@ -406,13 +160,18 @@ function LiveTestShell() {
     // inset is re-applied here (see topSafeAreaInset). The bottom inset is
     // handled inside Footer.
     <div
+      // Exam theme hooks for styles/exam-themes/*.css ("default" here).
+      data-exam-theme={examTheme.id}
+      data-exam-theme-family={examTheme.family}
       className="fixed inset-0 flex w-full flex-col overflow-hidden bg-white"
       style={{ // design-lint-ignore: dynamic safe-area inset padding
         paddingTop: topSafeAreaInset(immersiveActive),
       }}
     >
-      <Navbar playMode={playMode} evaluationType={evaluationType} />
-      <NetworkStatus onRetrySave={sendFormattedData} />
+      <Navbar />
+      {/* Renders nothing unless the assessment is proctored (V48). */}
+      {assessmentId && <ProctorLayer assessmentId={assessmentId} />}
+      <NetworkStatus onRetrySave={retrySave} />
       <SectionTabs />
 
       <div className="flex min-h-0 flex-1">
@@ -423,10 +182,13 @@ function LiveTestShell() {
             <main
               ref={questionScrollRef}
               className={cn(
-                "h-full overflow-auto overscroll-contain px-4 py-5 md:px-8 md:py-7",
+                cbeSplitScreen
+                  ? // The CBE split view scrolls its two panes itself.
+                    "h-full overflow-hidden"
+                  : "h-full overflow-auto overscroll-contain px-4 py-5 md:px-8 md:py-7",
                 // Room to scroll the last option out from behind an open tool
                 // panel — it is docked over the canvas, not stacked below it.
-                toolPanel && "pb-tool-dock",
+                toolPanel && !cbeSplitScreen && "pb-tool-dock",
               )}
             >
               <QuestionDisplay />
@@ -451,6 +213,7 @@ function LiveTestShell() {
           <aside className="flex w-reg-320 flex-none flex-col border-s border-neutral-200">
             <QuestionNavigator
               onClose={() => {}}
+              onCollapse={() => setRailOpen(false)}
               evaluationType={evaluationType}
             />
           </aside>

@@ -1,0 +1,51 @@
+{
+    "header": {
+        "title": "Vidéos d'entrée",
+        "subtitle": "Téléchargez des vidéos pour l'indexation par IA (transcription, métadonnées visuelles, extraction des intervenants)",
+        "refreshButton": "Actualiser"
+    },
+    "uploadVideoButton": "Téléverser une vidéo",
+    "noApiKey": {
+        "message": "Aucune clé API trouvée. Créez-en une dans Video API Studio d'abord.",
+        "goToApiKeysButton": "Aller aux clés API"
+    },
+    "table": {
+        "columnName": "Nom",
+        "columnMode": "Mode",
+        "columnStatus": "Statut",
+        "columnDuration": "Durée",
+        "columnCreated": "Créé le",
+        "columnOutputs": "Résultats",
+        "deleteTooltip": "Supprimer",
+        "noValue": "-",
+        "processingProgress": "{{percent}} %",
+        "durationSeconds_one": "{{count}} s",
+        "durationSeconds_many": "{{count}} s",
+        "durationSeconds_other": "{{count}} s"
+    },
+    "empty": {
+        "loading": "Chargement...",
+        "title": "Aucune vidéo d'entrée pour le moment",
+        "subtitle": "Téléchargez un podcast ou un enregistrement de démonstration pour commencer"
+    },
+    "status": {
+        "PENDING": "En attente",
+        "QUEUED": "En file d'attente",
+        "PROCESSING": "En cours de traitement",
+        "COMPLETED": "Terminé",
+        "FAILED": "Échec"
+    },
+    "mode": {
+        "podcast": "Podcast",
+        "demo": "Démo"
+    },
+    "deleteConfirm": {
+        "message": "Supprimer « {{name}} » ? Cette action est irréversible."
+    },
+    "toast": {
+        "apiKeysLoadError": "Échec du chargement des clés API",
+        "videosLoadError": "Échec du chargement des vidéos d'entrée",
+        "deleteSuccess": "Supprimé",
+        "deleteError": "Échec de la suppression"
+    }
+}

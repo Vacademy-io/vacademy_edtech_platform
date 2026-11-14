@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouterState } from '@tanstack/react-router';
 import {
     BookOpen,
@@ -7,6 +8,7 @@ import {
     Compass,
     DeviceMobile,
     GraduationCap,
+    PlayCircle,
     Question,
     RocketLaunch,
     Sparkle,
@@ -21,10 +23,7 @@ import {
     getDisplaySettingsFromCache,
     getDisplaySettingsWithFallback,
 } from '@/services/display-settings';
-import {
-    ADMIN_DISPLAY_SETTINGS_KEY,
-    type DisplaySettingsData,
-} from '@/types/display-settings';
+import { ADMIN_DISPLAY_SETTINGS_KEY, type DisplaySettingsData } from '@/types/display-settings';
 import { useSupportConfig } from '@/services/support';
 import { useRoadmap, useRoadmapMeta } from '@/services/roadmap';
 import { SupportPanel } from '@/components/common/support/SupportPanel';
@@ -34,6 +33,7 @@ import { TutorialViewer } from './TutorialViewer';
 import { RoadmapViewer } from './RoadmapViewer';
 import { ExploreViewer } from './ExploreViewer';
 import { AdminAppViewer } from './AdminAppViewer';
+import { TrainingViewer } from './TrainingViewer';
 
 // Keep in sync with routes/__root.tsx publicRoutes — the dock only shows inside
 // the authenticated shell.
@@ -43,7 +43,6 @@ const PUBLIC_PREFIXES = [
     '/landing',
     '/pricing',
     '/content',
-    '/evaluator-ai',
     '/vim/onboarding',
     '/vim/login',
     '/vim/waitlist',
@@ -60,6 +59,12 @@ function readRoadmapSeenAt(): string | null {
 }
 
 export function AssistDock() {
+    // Subscribes the dock to language-change events: buildTutorials()/
+    // tutorialsForRoute() resolve tutorial titles via the `t` passed in below,
+    // but without this hook call here the component itself would never
+    // re-render when the language changes (see tutorials.ts header comment).
+    const { t: tTutorials } = useTranslation('tutorials');
+    const { t } = useTranslation('assistDock');
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     const search = useRouterState({ select: (s) => s.location.search }) as { selectedTab?: string };
     const panel = useAssistDock((s) => s.panel);
@@ -122,7 +127,7 @@ export function AssistDock() {
 
     if (!isAuthed || onPublicRoute || !showDock) return null;
 
-    const tutorials = tutorialsForRoute(pathname, search?.selectedTab);
+    const tutorials = tutorialsForRoute(tTutorials, pathname, search?.selectedTab);
     const hasNewRoadmap =
         !!roadmapMeta.data?.updatedAt && roadmapMeta.data.updatedAt !== roadmapSeenAt;
     const totalBadge = tutorials.length + (supportConfig.data?.openTicketCount ?? 0);
@@ -146,7 +151,7 @@ export function AssistDock() {
                    doesn't jump around when toggled. */
                 <button
                     type="button"
-                    aria-label="Expand guides & support"
+                    aria-label={t('expandGuidesAndSupport')}
                     onClick={() => setMinimized(false)}
                     className="fixed right-0 top-24 z-30 hidden items-center gap-1 rounded-l-lg border border-r-0 border-neutral-200 bg-white py-2 pl-2 pr-1.5 text-neutral-500 shadow-sm transition-colors hover:bg-neutral-100 md:flex"
                 >
@@ -169,7 +174,7 @@ export function AssistDock() {
                 <aside className="fixed inset-y-0 right-0 z-30 hidden w-14 flex-col items-center gap-1 border-l border-neutral-200 bg-white pb-4 pt-20 md:flex">
                     <button
                         type="button"
-                        aria-label="Minimize"
+                        aria-label={t('minimize')}
                         onClick={() => setMinimized(true)}
                         className="mb-1 flex size-6 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
                     >
@@ -177,7 +182,7 @@ export function AssistDock() {
                     </button>
 
                     <RailButton
-                        label="Guides"
+                        label={t('guides')}
                         active={panel === 'tutorials'}
                         onClick={() => togglePanel('tutorials')}
                         badge={tutorials.length || undefined}
@@ -186,7 +191,15 @@ export function AssistDock() {
                     </RailButton>
 
                     <RailButton
-                        label="Assist"
+                        label={t('training')}
+                        active={panel === 'training'}
+                        onClick={() => togglePanel('training')}
+                    >
+                        <PlayCircle size={20} weight={panel === 'training' ? 'fill' : 'duotone'} />
+                    </RailButton>
+
+                    <RailButton
+                        label={t('assist')}
                         active={panel === 'assistant'}
                         onClick={() => togglePanel('assistant')}
                     >
@@ -194,7 +207,7 @@ export function AssistDock() {
                     </RailButton>
 
                     <RailButton
-                        label="Issues"
+                        label={t('issues')}
                         active={panel === 'support'}
                         onClick={() => togglePanel('support')}
                         badge={supportConfig.data?.openTicketCount || undefined}
@@ -205,7 +218,7 @@ export function AssistDock() {
                     <div className="my-1 h-px w-8 bg-neutral-100" />
 
                     <RailButton
-                        label="What's new"
+                        label={t('whatsNew')}
                         active={panel === 'roadmap'}
                         onClick={openRoadmap}
                         dot={hasNewRoadmap}
@@ -214,7 +227,7 @@ export function AssistDock() {
                     </RailButton>
 
                     <RailButton
-                        label="Explore"
+                        label={t('explore')}
                         active={panel === 'explore'}
                         onClick={() => togglePanel('explore')}
                     >
@@ -222,7 +235,7 @@ export function AssistDock() {
                     </RailButton>
 
                     <RailButton
-                        label="Admin App"
+                        label={t('adminApp')}
                         active={panel === 'adminApp'}
                         onClick={() => togglePanel('adminApp')}
                     >
@@ -250,17 +263,21 @@ export function AssistDock() {
 
             <AdminAppViewer open={panel === 'adminApp'} onClose={() => setPanel('none')} />
 
+            <TrainingViewer open={panel === 'training'} onClose={() => setPanel('none')} />
+
             {/* Tutorials panel (slides out left of the rail) */}
             {panel === 'tutorials' && (
                 <div className="fixed bottom-4 right-16 top-20 z-40 flex w-72 flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
                     <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
                         <div className="flex items-center gap-2">
                             <GraduationCap size={18} className="text-primary-500" />
-                            <p className="text-body font-semibold text-neutral-800">Tutorials</p>
+                            <p className="text-body font-semibold text-neutral-800">
+                                {t('tutorials')}
+                            </p>
                         </div>
                         <button
                             type="button"
-                            aria-label="Close tutorials"
+                            aria-label={t('closeTutorials')}
                             onClick={() => setPanel('none')}
                             className="flex size-7 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
                         >
@@ -273,7 +290,7 @@ export function AssistDock() {
                             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                                 <BookOpen size={26} className="text-neutral-300" />
                                 <p className="text-caption text-neutral-500">
-                                    No tutorials for this page yet.
+                                    {t('noTutorialsForThisPage')}
                                 </p>
                             </div>
                         ) : (

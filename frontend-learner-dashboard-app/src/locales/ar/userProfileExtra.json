@@ -1,0 +1,278 @@
+{
+  "common": {
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "saveCard": "حفظ البطاقة"
+  },
+  "changePassword": {
+    "checkingPermissions": "جارٍ التحقق من الصلاحيات..."
+  },
+  "progressStats": {
+    "title": "إحصاءات التقدم",
+    "loading": "جارٍ التحميل...",
+    "empty": "لا توجد إحصاءات متاحة.",
+    "strengths": "نقاط القوة",
+    "weaknesses": "نقاط الضعف",
+    "showLess": "عرض أقل",
+    "viewMore": "عرض المزيد ({{count}})"
+  },
+  "badgesRank": {
+    "title": "الشارات والترتيب",
+    "viewAll": "عرض الكل",
+    "badgesEarned_zero": "{{count}} شارة مكتسبة",
+    "badgesEarned_one": "{{count}} شارة مكتسبة",
+    "badgesEarned_two": "{{count}} شارتان مكتسبتان",
+    "badgesEarned_few": "{{count}} شارات مكتسبة",
+    "badgesEarned_many": "{{count}} شارة مكتسبة",
+    "badgesEarned_other": "{{count}} شارة مكتسبة",
+    "bestRank": "أفضل ترتيب",
+    "instituteRank": "ترتيب المؤسسة"
+  },
+  "accountDetails": {
+    "validation": {
+      "usernameMin": "يجب أن يتكون اسم المستخدم من 3 أحرف على الأقل",
+      "usernameMax": "يجب أن يكون اسم المستخدم أقل من 50 حرفًا",
+      "usernameNoSpaces": "لا يمكن أن يحتوي اسم المستخدم على مسافات",
+      "passwordMin": "يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل",
+      "confirmPasswordRequired": "يرجى تأكيد كلمة المرور",
+      "passwordsDontMatch": "كلمتا المرور غير متطابقتين"
+    },
+    "toast": {
+      "loadUserError": "تعذّر تحميل بيانات المستخدم",
+      "userIdMissing": "لم يتم العثور على معرّف المستخدم. يرجى المحاولة مرة أخرى.",
+      "updateSuccess": "تم تحديث بيانات الحساب بنجاح!",
+      "usernameExists": "اسم المستخدم هذا موجود بالفعل. يرجى اختيار اسم مستخدم مختلف.",
+      "updateError": "تعذّر تحديث بيانات الحساب. يرجى المحاولة مرة أخرى."
+    },
+    "header": "تفاصيل الحساب",
+    "usernameSection": "اسم المستخدم",
+    "usernameLabel": "اسم المستخدم*",
+    "usernamePlaceholder": "أدخل اسم المستخدم الخاص بك",
+    "currentUsername": "الحالي: {{username}}",
+    "passwordSection": "تغيير كلمة المرور",
+    "newPasswordLabel": "كلمة المرور الجديدة*",
+    "newPasswordPlaceholder": "أدخل كلمة المرور الجديدة",
+    "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة*",
+    "confirmPasswordPlaceholder": "أكّد كلمة المرور الجديدة",
+    "passwordMinCharacters": "6 أحرف على الأقل",
+    "passwordsMatch": "كلمتا المرور متطابقتان",
+    "updating": "جارٍ التحديث...",
+    "updateDetails": "تحديث التفاصيل"
+  },
+  "sessionExpiry": {
+    "accessDays": "أيام الوصول ({{count}})"
+  },
+  "profileEdit": {
+    "header": "تعديل الملف الشخصي",
+    "profileImageAlt": "الصورة الشخصية",
+    "allowedFileTypes": "الصيغ المسموح بها: ‎*.jpeg، ‎*.jpg، ‎*.png، ‎*.gif",
+    "uploadNew": "رفع صورة جديدة",
+    "removePhoto": "إزالة الصورة",
+    "sections": {
+      "generalDetails": "التفاصيل العامة",
+      "contactInformation": "معلومات التواصل",
+      "locationDetails": "تفاصيل الموقع",
+      "guardianDetails": "بيانات ولي الأمر"
+    },
+    "fields": {
+      "fullName": "الاسم الكامل*",
+      "fullNamePlaceholder": "أدخل اسمك الكامل",
+      "gender": "الجنس*",
+      "genderPlaceholder": "اختر الجنس",
+      "genderMale": "ذكر",
+      "genderFemale": "أنثى",
+      "genderOther": "آخر",
+      "instituteName": "اسم الكلية/المدرسة",
+      "instituteNamePlaceholder": "أدخل اسم المؤسسة",
+      "mobileNumber": "رقم الجوال*",
+      "mobileNumberPlaceholder": "أدخل رقم الجوال",
+      "email": "البريد الإلكتروني*",
+      "emailPlaceholder": "أدخل عنوان البريد الإلكتروني",
+      "country": "الدولة",
+      "countryPlaceholder": "أدخل الدولة",
+      "addressLine": "العنوان (السطر الأول)",
+      "addressLinePlaceholder": "أدخل العنوان",
+      "city": "المدينة/القرية",
+      "state": "المحافظة",
+      "pincode": "الرمز البريدي",
+      "fatherName": "اسم الأب",
+      "motherName": "اسم الأم",
+      "guardianEmail": "البريد الإلكتروني لولي الأمر",
+      "guardianMobile": "رقم جوال ولي الأمر"
+    },
+    "saveChanges": "حفظ التغييرات"
+  },
+  "enrollmentExpiry": {
+    "loading": "جارٍ تحميل تسجيلاتك...",
+    "error": "تعذّر تحميل تفاصيل انتهاء صلاحية التسجيل.",
+    "empty": "أنت غير مسجَّل في أي {{courses}} حتى الآن.",
+    "enrolledFallbackTitle": "{{course}} مسجَّل",
+    "expired": "منتهي الصلاحية",
+    "expiresToday": "تنتهي صلاحيته اليوم",
+    "daysLeft_zero": "تبقّى {{count}} يوم",
+    "daysLeft_one": "تبقّى {{count}} يوم",
+    "daysLeft_two": "تبقّى {{count}} يومان",
+    "daysLeft_few": "تبقّى {{count}} أيام",
+    "daysLeft_many": "تبقّى {{count}} يومًا",
+    "daysLeft_other": "تبقّى {{count}} يوم",
+    "noExpiry": "بلا انتهاء صلاحية"
+  },
+  "billingDetailsForm": {
+    "validation": {
+      "nameRequired": "الاسم مطلوب",
+      "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا"
+    },
+    "labels": {
+      "billingName": "اسم الفوترة",
+      "billingEmail": "بريد الفوترة الإلكتروني",
+      "address": "العنوان",
+      "city": "المدينة",
+      "state": "المحافظة",
+      "postalCode": "الرمز البريدي",
+      "country": "الدولة"
+    },
+    "placeholders": {
+      "billingName": "الاسم على الحساب",
+      "billingEmail": "billing@email.com",
+      "address": "عنوان الشارع",
+      "country": "مثال: AU"
+    },
+    "toast": {
+      "success": "تم تحديث تفاصيل الفوترة",
+      "error": "تعذّر تحديث تفاصيل الفوترة. يرجى المحاولة مرة أخرى."
+    },
+    "saveBillingDetails": "حفظ تفاصيل الفوترة"
+  },
+  "paymentBillingSection": {
+    "title": "الدفع والفوترة",
+    "subscriptionsTitle": "الاشتراكات والدفع التلقائي",
+    "membershipTitle": "العضوية والوصول",
+    "loadingPayment": "جارٍ تحميل تفاصيل الدفع...",
+    "unavailable": "تفاصيل الدفع غير متاحة حاليًا. يرجى المحاولة مرة أخرى لاحقًا.",
+    "reason": {
+      "noCustomer": "لا توجد وسيلة دفع محفوظة بعد. ستظهر هنا بعد أول عملية دفع بالبطاقة.",
+      "gatewayNotConfigured": "المدفوعات عبر الإنترنت غير مُفعَّلة لمؤسستك.",
+      "managedAtCheckout": "تُدار وسيلة الدفع الخاصة بك عند الدفع ولا يمكن تغييرها هنا."
+    },
+    "noCardOnFile": "لا توجد بطاقة محفوظة",
+    "defaultCardBrand": "بطاقة",
+    "expires": "تنتهي في {{month}}/{{year}}",
+    "usedForRenewals": "تُستخدم لتجديد الاشتراك",
+    "updateCard": "تحديث البطاقة",
+    "addCard": "إضافة بطاقة",
+    "billingDetailsLabel": "تفاصيل الفوترة"
+  },
+  "subscriptionMandate": {
+    "loading": "جارٍ تحميل الاشتراكات...",
+    "error": "الاشتراكات غير متاحة حاليًا. يرجى المحاولة مرة أخرى لاحقًا.",
+    "empty": "ليس لديك أي اشتراكات نشطة تُجدَّد تلقائيًا.",
+    "defaultPlanName": "الاشتراك",
+    "trial": "تجريبي",
+    "autopayOff": "الدفع التلقائي متوقف",
+    "autoRenewsOn": "يتجدد تلقائيًا في {{date}}",
+    "accessUntil": "الوصول متاح حتى {{date}}",
+    "recurringSubscription": "اشتراك متكرر",
+    "cancelAutopay": "إلغاء الدفع التلقائي",
+    "toast": {
+      "cancelSuccessTitle": "تم إلغاء الدفع التلقائي",
+      "cancelSuccessDescription": "يظل الوصول متاحًا لك حتى نهاية فترتك الحالية.",
+      "cancelErrorTitle": "تعذّر إلغاء الدفع التلقائي",
+      "cancelErrorDescription": "يرجى المحاولة مرة أخرى بعد قليل.",
+      "planChangeOrderFailed": "We couldn't create the payment order.",
+      "planChangeFailedTitle": "Couldn't change the plan",
+      "planChangeFailedDescription": "Please try again in a moment.",
+      "planChangePaidTitle": "Payment received",
+      "planChangePaidDescription": "Your new plan will be active shortly."
+    },
+    "dialog": {
+      "title": "هل تريد إلغاء الدفع التلقائي؟",
+      "descriptionPrefix": "سيتوقف التجديد التلقائي لـ",
+      "descriptionSuffix": "سيتوقف. سيظل الوصول متاحًا لك حتى {{endDate}}، ولن يتم خصم أي مبلغ منك مرة أخرى.",
+      "defaultPlanName": "هذا الاشتراك",
+      "defaultEndDate": "نهاية فترتك الحالية",
+      "keepAutopay": "الإبقاء على الدفع التلقائي",
+      "cancelling": "جارٍ الإلغاء..."
+    },
+    "changePlan": "Change plan",
+    "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+    "planChangeCancelScheduled": "Cancel this change",
+    "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+    "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+    "planChangeCompletePayment": "Complete payment",
+    "planChangeDiscard": "Discard this change"
+  },
+  "cardUpdate": {
+    "success": "تم تحديث بطاقتك",
+    "genericError": "تعذّر تحديث البطاقة. يرجى المحاولة مرة أخرى.",
+    "stripe": {
+      "formNotReady": "نموذج الدفع غير جاهز. يرجى تحديث الصفحة.",
+      "cardFormNotFound": "لم يتم العثور على نموذج البطاقة. يرجى تحديث الصفحة.",
+      "verificationFailed": "فشل التحقق من البطاقة",
+      "verificationRetry": "تعذّر التحقق من البطاقة. يرجى المحاولة مرة أخرى.",
+      "note": "ستحل بطاقتك الجديدة محل البطاقة المستخدمة لتجديد الاشتراك. لن يتم خصم أي مبلغ الآن."
+    },
+    "eway": {
+      "incomplete": "يرجى إكمال تفاصيل البطاقة أولاً"
+    }
+  },
+  "onboarding": {
+    "title": "التهيئة",
+    "subtitle": "أكمل الخطوات أدناه لإنهاء عملية التهيئة الخاصة بك.",
+    "loadingStatus": "جارٍ تحميل حالة التهيئة الخاصة بك...",
+    "loadError": "تعذّر تحميل حالة التهيئة الخاصة بك. يرجى المحاولة مرة أخرى.",
+    "retry": "إعادة المحاولة",
+    "empty": "لا يوجد شيء لإكماله الآن.",
+    "onboardingFor": "التهيئة الخاصة بـ {{name}}",
+    "flowComplete": "اكتملت عملية التهيئة هذه. لا يوجد شيء آخر لفعله هنا.",
+    "handledByAdmin": "يتولى {{admin}} المدرسة معالجة \"{{stepName}}\"",
+    "handledByAdminHint": "لست بحاجة إلى فعل أي شيء هنا — سيتم إعلامك فور الانتهاء منها.",
+    "noActionNeeded": "لا حاجة لأي إجراء منك حاليًا لهذه الخطوة.",
+    "progress": "التقدم"
+  },
+  "onboardingProgress": {
+    "status": {
+      "pending": "قيد الانتظار",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتملة",
+      "skipped": "تم تخطّيها"
+    },
+    "view": "عرض"
+  },
+  "onboardingStepForm": {
+    "subtitle": "يرجى تعبئة التفاصيل أدناه للمتابعة.",
+    "loadingForm": "جارٍ تحميل النموذج...",
+    "loadError": "تعذّر تحميل نموذج هذه الخطوة. يرجى المحاولة مرة أخرى لاحقًا.",
+    "noFieldsConfigured": "لا توجد حقول مُعدَّة لهذه الخطوة.",
+    "markAsComplete": "وضع علامة كمكتملة",
+    "submitting": "جارٍ الإرسال...",
+    "submit": "إرسال",
+    "toast": {
+      "submittedTitle": "تم إرسال الخطوة",
+      "submittedDescription": "تم تسجيل {{stepName}}.",
+      "errorTitle": "تعذّر الإرسال",
+      "errorFallback": "حدث خطأ ما أثناء إرسال هذه الخطوة. يرجى المحاولة مرة أخرى."
+    },
+    "defaultFieldLabel": "الحقل",
+    "defaultFieldPlaceholder": "القيمة",
+    "notFilledIn": "لم تتم تعبئته",
+    "enterPlaceholder": "أدخل {{field}}",
+    "validation": {
+      "fieldRequired": "{{field}} مطلوب",
+      "fieldRequiredDefaultField": "هذا الحقل"
+    }
+  },
+  "submittedFormDialog": {
+    "loading": "جارٍ تحميل التفاصيل المُرسلة...",
+    "error": "تعذّر تحميل ما تم إرساله لهذه الخطوة. يرجى المحاولة مرة أخرى لاحقًا.",
+    "empty": "لم تحتوِ هذه الخطوة على أي حقول لتعبئتها — تم تعليمها كمكتملة فقط.",
+    "emptyValue": "—"
+  },
+  "onboardingDetails": {
+    "title": "المعلومات التي قدمتها",
+    "loading": "جارٍ تحميل معلوماتك..."
+  },
+  "fieldValue": {
+    "yes": "نعم",
+    "no": "لا"
+  }
+}

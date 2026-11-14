@@ -1,0 +1,6 @@
+{
+    "showReplies_one": "Show Reply ({{count}})",
+    "showReplies_other": "Show Replies ({{count}})",
+    "hideReplies_one": "Hide Reply ({{count}})",
+    "hideReplies_other": "Hide Replies ({{count}})"
+}

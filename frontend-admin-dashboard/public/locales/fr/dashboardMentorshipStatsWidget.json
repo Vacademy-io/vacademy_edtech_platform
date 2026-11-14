@@ -1,0 +1,31 @@
+{
+    "header": {
+        "eyebrow": "Mentorat",
+        "title": "Mentors et mentorés"
+    },
+    "actions": {
+        "manage": "Gérer",
+        "pendingTooltip": "Apprenants en attente d'être associés à un mentor",
+        "pendingReview_one": "{{count}} à examiner",
+        "pendingReview_many": "{{count}} à examiner",
+        "pendingReview_other": "{{count}} à examiner"
+    },
+    "tiles": {
+        "mentors": {
+            "label": "Mentors",
+            "subtitle": "Mentors actifs"
+        },
+        "mentees": {
+            "label": "Mentorés",
+            "subtitle": "Étudiants accompagnés"
+        },
+        "today": {
+            "label": "Aujourd'hui",
+            "subtitle": "Sessions du jour"
+        },
+        "upcoming": {
+            "label": "À venir",
+            "subtitle": "7 prochains jours"
+        }
+    }
+}

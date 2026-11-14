@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { CaretRight } from "@phosphor-icons/react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { SidebarItemProps } from "../../../../types/layout-container-types";
+import { sidebarOpenGroups } from "./open-groups";
 
 export const CollapsibleItem = ({ icon, title, subItems, onClick }: SidebarItemProps) => {
     const router = useRouter();
@@ -26,9 +27,16 @@ export const CollapsibleItem = ({ icon, title, subItems, onClick }: SidebarItemP
                 ([key, value]) => currentSearch?.[key] === value
             ));
     const isChildActive = subItems?.some(isSubItemActive);
+    const [open, setOpen] = useState(() =>
+        sidebarOpenGroups.resolve(title, !!isChildActive)
+    );
+    const handleOpenChange = (next: boolean) => {
+        setOpen(next);
+        sidebarOpenGroups.set(title, next);
+    };
 
     return (
-        <Collapsible asChild defaultOpen={isChildActive} className="group/collapsible">
+        <Collapsible asChild open={open} onOpenChange={handleOpenChange} className="group/collapsible">
             <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton

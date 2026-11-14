@@ -1,0 +1,16 @@
+{
+    "copyHistory": "Historique des copies",
+    "copiedContent": "Contenu copié",
+    "usedByBatches_one": "Utilisé par {{count}} lot",
+    "usedByBatches_many": "Utilisé par {{count}} de lots",
+    "usedByBatches_other": "Utilisé par {{count}} lots",
+    "showCopyHistory": "Afficher l'historique des copies",
+    "contentBroughtInFrom": "Le contenu a été importé depuis",
+    "usedAsSourceBy": "Utilisé comme source par",
+    "batchCount_one": "{{count}} lot",
+    "batchCount_many": "{{count}} de lots",
+    "batchCount_other": "{{count}} lots",
+    "linkedCopy": "Copie liée",
+    "separateCopy": "Copie distincte",
+    "unknownBatch": "Lot inconnu"
+}

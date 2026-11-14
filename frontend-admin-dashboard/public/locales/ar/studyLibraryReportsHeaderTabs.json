@@ -1,0 +1,21 @@
+{
+    "tabs": {
+        "batch": "الدفعة",
+        "liveClasses": "الحصص المباشرة",
+        "leaderboard": "لوحة الصدارة"
+    },
+    "reportSettings": "إعدادات التقارير",
+    "reportsSettingsHeading": "إعدادات التقارير",
+    "generateTypeReports": "إنشاء تقارير {{type}}",
+    "sendReportsToStudentViaMail": "إرسال التقارير إلى الطالب عبر البريد الإلكتروني",
+    "sendReportsToStudentViaWhatsapp": "إرسال التقارير إلى الطالب عبر واتساب",
+    "sendReportsToParentViaMail": "إرسال التقارير إلى ولي الأمر عبر البريد الإلكتروني",
+    "sendReportsToParentViaWhatsapp": "إرسال التقارير إلى ولي الأمر عبر واتساب",
+    "studentLearningProgressReport": "تقرير تقدم تعلم الطالب",
+    "batchLearningProgressReport": "تقرير تقدم تعلم الدفعة",
+    "saveChanges": "حفظ التغييرات",
+    "toast": {
+        "settingsUpdated": "تم تحديث الإعدادات!",
+        "updateFailed": "فشل التحديث"
+    }
+}

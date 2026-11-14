@@ -1,0 +1,103 @@
+{
+    "header": {
+        "title": "एआई इंटेलिजेंस",
+        "subtitle": "समय के साथ कॉल गुणवत्ता और दैनिक गतिविधि — पहले पूरी टीम, फिर हर काउंसलर, पिछली अवधि की तुलना में बदलाव के साथ ताकि आप देख सकें कि क्या सुधरा।",
+        "settings": "इंटेलिजेंस सेटिंग्स"
+    },
+    "loadingInstitute": "संस्थान लोड हो रहा है…",
+    "emptyState": {
+        "title": "एआई इंटेलिजेंस बंद है",
+        "description": "कॉल्स को ट्रांसक्राइब और विश्लेषित करने के लिए सेटिंग्स में कॉल इंटेलिजेंस चालू करें, फिर यह पेज टीम और प्रति-काउंसलर रुझान दिखाएगा।"
+    },
+    "banner": {
+        "offWithData": "कॉल इंटेलिजेंस बंद है — नई कॉल्स का विश्लेषण नहीं हो रहा। पहले से विश्लेषित डेटा दिखाया जा रहा है। विश्लेषण फिर से शुरू करने के लिए इसे सेटिंग्स में चालू करें।"
+    },
+    "comparing": {
+        "label": "तुलना",
+        "against": "पिछली अवधि से"
+    },
+    "period": {
+        "days_one": "{{count}} दिन",
+        "days_other": "{{count}} दिन",
+        "custom": "कस्टम",
+        "startDateLabel": "आरंभ तिथि",
+        "endDateLabel": "अंत तिथि",
+        "to": "से"
+    },
+    "months": {
+        "jan": "जन",
+        "feb": "फ़र",
+        "mar": "मार्च",
+        "apr": "अप्रैल",
+        "may": "मई",
+        "jun": "जून",
+        "jul": "जुल",
+        "aug": "अग",
+        "sep": "सित",
+        "oct": "अक्तू",
+        "nov": "नव",
+        "dec": "दिस"
+    },
+    "delta": {
+        "noChange": "कोई बदलाव नहीं"
+    },
+    "teamInsights": {
+        "heading": "टीम इनसाइट्स",
+        "groupCallQuality": "कॉलिंग और कॉल गुणवत्ता",
+        "groupActivity": "दैनिक गतिविधि",
+        "metrics": {
+            "callsAnalyzed": "विश्लेषित कॉल्स",
+            "avgCallerRating": "औसत कॉलर रेटिंग",
+            "avgCallOutput": "औसत कॉल परिणाम",
+            "positiveSentiment": "सकारात्मक भावना",
+            "leadsDispositioned": "वर्गीकृत लीड्स",
+            "callsMade": "की गई कॉल्स",
+            "teamReach": "टीम रीच"
+        },
+        "summary": {
+            "noChangeYet": "पिछली अवधि की तुलना में अभी तक कोई सार्थक बदलाव नहीं है।",
+            "aiSummaryLabel": "एआई सारांश —",
+            "whatImproved": "क्या सुधरा",
+            "needsAttention": "ध्यान देने योग्य"
+        },
+        "aiSummary": {
+            "improved": "सुधार: {{list}}।",
+            "watch": "ध्यान दें: {{list}}।",
+            "coachingFocus": "एआई कोचिंग फ़ोकस: {{tip}}",
+            "mostHitObjection": "सबसे अधिक बार आई आपत्ति: {{objection}}।"
+        }
+    },
+    "counsellorBreakdown": {
+        "heading": "काउंसलर विवरण",
+        "subtitle": "पिछली समान अवधि की तुलना में मेट्रिक्स",
+        "columns": {
+            "counsellor": "काउंसलर",
+            "analyzed": "विश्लेषित",
+            "avgCaller": "औसत कॉलर",
+            "avgOutput": "औसत परिणाम",
+            "dispositioned": "वर्गीकृत",
+            "reach": "रीच"
+        },
+        "noActivity": "इस अवधि में कोई काउंसलर गतिविधि नहीं है।",
+        "whatTheyCanImprove": "वे क्या सुधार सकते हैं",
+        "coaching": {
+            "loading": "कोचिंग लोड हो रही है…",
+            "noCoaching": "इस अवधि में कोई विश्लेषित कॉल नहीं — इस प्रतिनिधि के लिए अभी कोई कोचिंग नहीं है।",
+            "weakestSkills": "सबसे कमज़ोर कौशल:",
+            "notEnoughSignal": "इस अवधि में कोचिंग के लिए पर्याप्त संकेत नहीं है।"
+        },
+        "collapseAll": "सब समेटें",
+        "expandAll": "सब खोलें"
+    },
+    "hero": {
+        "eyebrow": "कॉल गुणवत्ता · {{range}}",
+        "unit": "/10 औसत कॉलर रेटिंग",
+        "analyzed_one": "{{count}} कॉल का विश्लेषण",
+        "analyzed_other": "{{count}} कॉल का विश्लेषण",
+        "positive": "{{value}}% सकारात्मक भाव",
+        "reach": "{{value}}% टीम पहुँच"
+    },
+    "kpi": {
+        "was": "पहले {{value}}"
+    }
+}

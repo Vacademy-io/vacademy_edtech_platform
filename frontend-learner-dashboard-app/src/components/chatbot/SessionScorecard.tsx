@@ -1,11 +1,13 @@
 import React from "react";
 import { Check, ArrowUpRight, X } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 interface SessionScorecardProps {
   summary: {
-    score?: number;
+    /** 0-100 percentage; null for doubt calls, which get a recap, not a grade. */
+    score?: number | null;
     total_questions?: number;
     strengths?: string[];
     areas_to_improve?: string[];
@@ -16,23 +18,24 @@ interface SessionScorecardProps {
   onStartNew: () => void;
 }
 
-const MODE_DISPLAY: Record<string, string> = {
-  voice_interview: "Mock Interview",
-  voice_doubt: "Doubt Discussion",
-  voice_oral_test: "Oral Test",
-};
-
 export const SessionScorecard: React.FC<SessionScorecardProps> = ({
   summary,
   mode,
   onClose,
   onStartNew,
 }) => {
-  const { score, total_questions, strengths, areas_to_improve, feedback } = summary;
-  const hasScore = score !== undefined && score !== null;
+  const { t } = useTranslation("chatFeatureB");
+  const MODE_DISPLAY: Record<string, string> = {
+    voice_interview: t("voiceModeLabels.interview"),
+    voice_doubt: t("voiceModeLabels.doubt"),
+    voice_oral_test: t("voiceModeLabels.oralTest"),
+  };
+  const { score, strengths, areas_to_improve, feedback } = summary;
+  const hasScore = typeof score === "number";
 
-  // Score circle calculations
-  const scorePercent = hasScore && total_questions ? Math.round((score / total_questions) * 100) : hasScore ? score : 0;
+  // The server sends a 0-100 percentage. It used to be divided by the question
+  // count, so 80 with 5 questions showed "80/5" and filled the ring 1600%.
+  const scorePercent = hasScore ? Math.max(0, Math.min(100, Math.round(score))) : 0;
   const circumference = 2 * Math.PI * 44; // r=44
   const strokeDashoffset = circumference - (circumference * scorePercent) / 100;
 
@@ -53,7 +56,9 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-semibold text-white">
-            {MODE_DISPLAY[mode] ?? "Session"} Summary
+            {t("sessionScorecard.summaryTitle", {
+              mode: MODE_DISPLAY[mode] ?? t("voiceModeLabels.sessionFallback"),
+            })}
           </h3>
           <button
             className="text-white/40 hover:text-white/70 transition-colors"
@@ -92,9 +97,9 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-bold text-white">
-                  {total_questions ? `${score}/${total_questions}` : `${scorePercent}%`}
+                  {`${scorePercent}%`}
                 </span>
-                <span className="text-caption text-white/40 uppercase tracking-wider">Score</span>
+                <span className="text-caption text-white/40 uppercase tracking-wider">{t("sessionScorecard.score")}</span>
               </div>
             </div>
           </div>
@@ -102,9 +107,9 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
 
         {/* Strengths */}
         {strengths && strengths.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-2">
-              Strengths
+          <div className="mb-4 space-y-2">
+            <h4 className="text-xs font-semibold text-green-400 uppercase tracking-wider">
+              {t("sessionScorecard.strengths")}
             </h4>
             <ul className="space-y-1.5">
               {strengths.map((s, i) => (
@@ -119,9 +124,9 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
 
         {/* Areas to improve */}
         {areas_to_improve && areas_to_improve.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
-              Areas to Improve
+          <div className="mb-4 space-y-2">
+            <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              {t("sessionScorecard.areasToImprove")}
             </h4>
             <ul className="space-y-1.5">
               {areas_to_improve.map((a, i) => (
@@ -136,9 +141,9 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
 
         {/* Feedback */}
         {feedback && (
-          <div className="mb-5">
-            <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-              Feedback
+          <div className="mb-5 space-y-2">
+            <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+              {t("sessionScorecard.feedback")}
             </h4>
             <p className="text-sm text-white/70 leading-relaxed">{feedback}</p>
           </div>
@@ -148,13 +153,13 @@ export const SessionScorecard: React.FC<SessionScorecardProps> = ({
         <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
-            className="flex-1 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+            className="flex-1 border-white/10 bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
             onClick={onClose}
           >
-            Close
+            {t("sessionScorecard.close")}
           </Button>
           <Button className="flex-1" onClick={onStartNew}>
-            Start New Session
+            {t("sessionScorecard.startNewSession")}
           </Button>
         </div>
       </motion.div>

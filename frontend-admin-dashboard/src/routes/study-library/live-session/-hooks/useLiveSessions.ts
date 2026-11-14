@@ -23,11 +23,20 @@ export function useLiveSessions(instituteId: string) {
     });
 }
 
-export function useUpcomingSessions(instituteId: string) {
+/**
+ * `options` lets a screen with several readers of the same list (the dashboard's KPI band and
+ * Live Classes widget) share one request: with the default staleTime of 0, every reader that
+ * mounts later refetches. Pages that want always-fresh data keep calling it without options.
+ */
+export function useUpcomingSessions(
+    instituteId: string,
+    options?: { staleTime?: number; enabled?: boolean }
+) {
     return useQuery<UpcomingSessionDay[], Error>({
         queryKey: ['upcomingSessions', instituteId],
         queryFn: () => getUpcomingSessions(instituteId),
-        staleTime: 0,
+        staleTime: options?.staleTime ?? 0,
+        enabled: options?.enabled ?? true,
     });
 }
 

@@ -1,0 +1,121 @@
+{
+  "header": {
+    "welcome": "Bienvenue, {{name}}",
+    "welcomePlain": "Bienvenue",
+    "profile": "Profil",
+    "streakUnit_one": "jour de série",
+    "streakUnit_other": "jours de série"
+  },
+  "hero": {
+    "continueLabel": "Continuer à apprendre",
+    "continue": "Continuer",
+    "count": "Avancement : {{done}} sur {{total}} {{slides}}",
+    "percent": "{{percent}} %",
+    "percentOfCourse": "{{percent}} % du {{course}}",
+    "progressLabel": "Progression du {{course}}",
+    "startLabel": "Commencez votre premier {{course}}",
+    "startHere": "Commencez ici",
+    "start": "Commencer {{name}}",
+    "coursesTitle": "Reprenez là où vous vous êtes arrêté",
+    "coursesBody": "Vos {{courses}} vous attendent.",
+    "coursesCta": "Aller aux {{courses}}",
+    "nearlyThere": "Presque fini · {{percent}} %",
+    "loading": "Chargement",
+    "errorTitle": "Une partie de votre accueil n'a pas pu se charger",
+    "errorBody": "Vérifiez votre connexion et réessayez.",
+    "retry": "Réessayer",
+    "type": {
+      "VIDEO": "Vidéo",
+      "DOCUMENT": "Lecture",
+      "PDF": "PDF",
+      "QUIZ": "Quiz",
+      "ASSESSMENT": "Test",
+      "ASSIGNMENT": "Devoir",
+      "AUDIO": "Audio",
+      "QUESTION": "Question",
+      "PRESENTATION": "Diapositives"
+    },
+    "coursesTitleNew": "On commence ?",
+    "coursesBodyNew": "Ouvrez vos {{courses}} pour commencer."
+  },
+  "empty": {
+    "title": "Trouvez votre premier {{course}}",
+    "body": "Quand vous rejoignez un {{course}}, il arrive ici dans sa propre couleur, prêt à commencer.",
+    "browse": "Parcourir les {{courses}}",
+    "waitTitle": "En attendant",
+    "tests": "Voir vos tests",
+    "testsBody": "Un test vous attend peut-être",
+    "profile": "Complétez votre profil",
+    "profileBody": "Ajoutez votre photo et vos informations",
+    "ask": "Vous attendez un {{course}} ? Demandez à {{institute}} de vous ajouter. Il apparaîtra ici.",
+    "askPlain": "Vous attendez un {{course}} ? Demandez à votre établissement de vous ajouter. Il apparaîtra ici."
+  },
+  "done": {
+    "title": "Vous avez terminé chaque {{course}} !",
+    "body": "{{done}} sur {{total}} {{courses}} terminés. Bravo.",
+    "caughtUpTitle": "Tout est à jour",
+    "caughtUpBody": "Rien n'est à reprendre pour le moment. Ouvrez vos {{courses}} pour choisir la suite.",
+    "next": "Et ensuite",
+    "testsTitle_one": "{{count}} test est ouvert",
+    "testsTitle_other": "{{count}} tests sont ouverts",
+    "testsBody": "Essayez-en un tant que c'est frais",
+    "goTests": "Aller aux tests"
+  },
+  "live": {
+    "joinBy": "Rejoindre avant {{time}}",
+    "startedAt": "Commencé à {{time}}",
+    "join": "Rejoindre",
+    "joinShort": "Rejoindre",
+    "startsIn_one": "Commence dans {{count}} min",
+    "startsIn_other": "Commence dans {{count}} min",
+    "dotLabel": ", un cours est en direct"
+  },
+  "today": {
+    "label": "Aujourd'hui",
+    "tasks": "{{done}} sur {{total}}",
+    "tasksToday": "tâches du jour",
+    "tasksLong": "{{done}} tâches sur {{total}}",
+    "tasksLeft_one": "Encore une pour finir le plan du jour",
+    "tasksLeft_other": "Encore {{count}} pour finir le plan du jour",
+    "tasksDone": "Le plan du jour est terminé",
+    "ringLabel": "{{done}} tâches sur {{total}} faites aujourd'hui",
+    "nextTask": "Tâche suivante",
+    "tests_one": "{{count}} test",
+    "tests_other": "{{count}} tests",
+    "openNow": "ouverts",
+    "testsLong_one": "{{count}} test ouvert",
+    "testsLong_other": "{{count}} tests ouverts",
+    "testsEyebrow": "Tests",
+    "testsSee": "Voir dans Tests",
+    "chipToday": "Aujourd'hui {{time}}",
+    "chipTomorrow": "Demain {{time}}",
+    "openTask": "Ouvrir la tâche suivante",
+    "openPlan": "Ouvrir le plan du jour",
+    "seePlan": "Voir le plan du jour"
+  },
+  "tiles": {
+    "title": "Vos {{courses}}",
+    "otherTitle": "Vos autres {{courses}}",
+    "lookBack": "Revoir",
+    "seeAll": "Tout voir",
+    "seeAllCount": "Voir les {{count}}",
+    "open": "Ouvrir {{course}}"
+  },
+  "fold": {
+    "more_one": "{{count}} autre en cours",
+    "more_other": "{{count}} autres en cours",
+    "inProgress_one": "{{count}} en cours",
+    "inProgress_other": "{{count}} en cours",
+    "seeAll": "Tout voir"
+  },
+  "pins": {
+    "unread": "Nouveau",
+    "dismiss": "Masquer {{title}}",
+    "dismissShort": "Masquer",
+    "showAll": "Tout afficher ({{count}})",
+    "showFewer": "Afficher moins"
+  },
+  "nav": {
+    "allPages": "Toutes les pages"
+  }
+}

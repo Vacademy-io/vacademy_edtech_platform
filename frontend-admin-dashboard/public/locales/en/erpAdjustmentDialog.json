@@ -1,0 +1,58 @@
+{
+    "dialog": {
+        "heading": "Add adjustment — {{month}}"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "adding": "Adding…",
+        "addAdjustment": "Add adjustment"
+    },
+    "fields": {
+        "employee": {
+            "label": "Employee"
+        },
+        "type": {
+            "label": "Type"
+        },
+        "code": {
+            "label": "Code",
+            "placeholder": "INCENTIVE",
+            "description": "Becomes the payslip line's component code."
+        },
+        "label": {
+            "label": "Label",
+            "placeholder": "Q2 performance incentive",
+            "description": "What the employee sees on their payslip."
+        },
+        "amount": {
+            "label": "Amount",
+            "placeholder": "5000",
+            "description": "Always a positive number — the type decides the direction."
+        },
+        "currency": {
+            "label": "Currency"
+        },
+        "runScope": {
+            "label": "Run scope"
+        },
+        "notes": {
+            "label": "Notes",
+            "placeholder": "Internal context — why this was granted or recovered."
+        }
+    },
+    "toast": {
+        "added": "Adjustment added"
+    },
+    "errors": {
+        "addFailed": "Could not add the adjustment."
+    },
+    "validation": {
+        "employeeRequired": "Pick an employee",
+        "codeMinLength": "Codes are at least 2 characters",
+        "codeFormat": "Uppercase letters, digits and underscores only — no spaces (e.g. INCENTIVE, ARREARS)",
+        "labelRequired": "Give it a label the employee will recognise",
+        "amountRequired": "Enter the amount",
+        "amountPositive": "Enter an amount above zero",
+        "notesMaxLength": "Keep the notes under 500 characters"
+    }
+}

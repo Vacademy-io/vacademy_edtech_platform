@@ -11,16 +11,18 @@ import { getSlideCompletionThreshold } from "@/constants/study-library";
  * Slide types a learner may complete by hand.
  *
  * Consumption content only. Quizzes, questions, assignments and assessments
- * complete by submission and SCORM reports its own status — declaring those
- * done would claim a score that was never earned, and the backend refuses them
- * anyway. Mainstream players draw the same line: Udemy and Coursera let you
- * tick a lecture or a reading, never a graded item.
+ * complete by submission — declaring those done would claim a score that was
+ * never earned, and the backend refuses them anyway. Mainstream players draw
+ * the same line: Udemy and Coursera let you tick a lecture or a reading, never
+ * a graded item. SCORM is included because many packages are reading screens
+ * that never report completion; the package's own report still counts too.
  */
 export const MANUALLY_COMPLETABLE_SLIDE_TYPES: ReadonlySet<string> = new Set([
   "VIDEO",
   "HTML_VIDEO",
   "AUDIO",
   "DOCUMENT",
+  "SCORM",
 ]);
 
 export interface CompletionContext {

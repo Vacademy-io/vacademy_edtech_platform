@@ -71,6 +71,10 @@ class SlideGrounding:
     # KB's full chunk census to find dropped material. (Their pages come from
     # the existing `pages` property, derived from citations.)
     chunk_ids: List[str] = field(default_factory=list)
+    # Sources the passages came from. In a textbook library every chapter is
+    # its own source restarting at page 1, so the coverage sweep must match
+    # an orphan chunk to a slide of the SAME source before it looks at pages.
+    source_ids: List[str] = field(default_factory=list)
     # False when the knowledge base does not really cover this slide.
     supported: bool = False
     top_similarity: float = 0.0
@@ -137,6 +141,111 @@ def _pages(node: Dict[str, Any]) -> str:
     if not start:
         return ""
     return f"  (pages {start}-{end})" if end and end != start else f"  (page {start})"
+
+
+# ── Section parts ────────────────────────────────────────────────────────────
+# FULL coverage promises every selected section becomes a slide; it does not
+# promise the slide can HOLD the section. A 60k-character section grounded
+# into one slide gets its first 28k characters (the faithful budget) and the
+# rest is never taught — the "course stays shallow however big the material
+# is" bound the owner reported on 2026-09-03. Outline time is where a section's
+# size is known and cheap to read (a size-only query), so that is where a large
+# section becomes "Part 1 of n … Part n of n", each part owning a consecutive
+# window of the section's chunks that fits one slide's budget.
+SECTION_SPLIT_BUDGET_CHARS = MAX_SLIDE_GROUNDING_CHARS_FAITHFUL
+MAX_SECTION_PARTS = 8
+
+
+def split_profile_by_budget(
+    profile: List[Dict[str, Any]],
+    budget: int = SECTION_SPLIT_BUDGET_CHARS,
+    max_parts: int = MAX_SECTION_PARTS,
+) -> List[Dict[str, Any]]:
+    """Cut a section's chunk profile ([{chunk_index, chars, page_start,
+    page_end}] in source order) into consecutive windows that each fit
+    `budget`. Returns [] when the whole section fits one slide, otherwise
+    [{index, count, chunk_from, chunk_to, chars, page_start, page_end}].
+
+    Windows are balanced by characters rather than filled greedily, so the
+    last part is a real slide and not a two-paragraph remainder."""
+    if not profile:
+        return []
+    total = sum(int(c.get("chars") or 0) for c in profile)
+    if total <= budget:
+        return []
+    n_parts = min(max_parts, max(2, -(-total // budget)))  # ceil division
+    target = total / n_parts
+
+    windows: List[List[Dict[str, Any]]] = []
+    current: List[Dict[str, Any]] = []
+    current_chars = 0
+    for chunk in profile:
+        chars = int(chunk.get("chars") or 0)
+        if current and current_chars + chars > target and len(windows) < n_parts - 1:
+            windows.append(current)
+            current, current_chars = [], 0
+        current.append(chunk)
+        current_chars += chars
+    if current:
+        windows.append(current)
+
+    out: List[Dict[str, Any]] = []
+    for i, window in enumerate(windows, start=1):
+        starts = [w["page_start"] for w in window if w.get("page_start")]
+        ends = [(w.get("page_end") or w.get("page_start")) for w in window if w.get("page_start")]
+        out.append({
+            "index": i,
+            "count": len(windows),
+            "chunk_from": window[0]["chunk_index"],
+            "chunk_to": window[-1]["chunk_index"],
+            "chars": sum(int(w.get("chars") or 0) for w in window),
+            "page_start": min(starts) if starts else None,
+            "page_end": max(ends) if ends else None,
+        })
+    return out
+
+
+def plan_section_parts(
+    db: Session,
+    *,
+    kb_id: str,
+    institute_id: str,
+    sections: List[Dict[str, Any]],
+    budget: int = SECTION_SPLIT_BUDGET_CHARS,
+    max_parts: int = MAX_SECTION_PARTS,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """{node_id: parts} for every slide-level node in `sections` whose linked
+    text exceeds one slide's grounding budget. Nodes that fit are absent, so
+    the caller's loop stays a plain "one node, one slide" for them.
+
+    Never raises: a failure here must degrade to the unsplit outline, not to
+    the LLM outline the deterministic path exists to avoid."""
+    try:
+        repo = KbRepository(db)
+        kb = repo.get_kb(kb_id, institute_id)
+        if not kb:
+            return {}
+        node_ids: List[str] = []
+        for topic in sections:
+            children = topic.get("subtopics") or []
+            for node in (children or [topic]):
+                if node.get("id"):
+                    node_ids.append(node["id"])
+        if not node_ids:
+            return {}
+        # Chunks are stored under the KB owner's institute (platform libraries).
+        profiles = repo.get_node_chunk_profiles(
+            kb_id=kb_id, institute_id=kb["institute_id"], node_ids=node_ids
+        )
+        out: Dict[str, List[Dict[str, Any]]] = {}
+        for node_id, profile in profiles.items():
+            parts = split_profile_by_budget(profile, budget, max_parts)
+            if parts:
+                out[node_id] = parts
+        return out
+    except Exception:  # noqa: BLE001
+        logger.warning("Section-part planning failed for KB %s; outline stays unsplit", kb_id, exc_info=True)
+        return {}
 
 
 def outline_grounding_block(
@@ -273,6 +382,10 @@ async def ground_slide(
     # todo) — retrieval bridge when node_id linkage yields nothing.
     page_start: Optional[int] = None,
     page_end: Optional[int] = None,
+    # A section split into parts at outline time (see plan_section_parts):
+    # inclusive chunk_index bounds of THIS part's window.
+    chunk_from: Optional[int] = None,
+    chunk_to: Optional[int] = None,
 ) -> SlideGrounding:
     """Retrieve the material for one slide.
 
@@ -310,7 +423,8 @@ async def ground_slide(
             # Chunks are stored under the KB owner's institute (PLATFORM
             # libraries!), same scoping search() applies internally.
             hits = repo.get_chunks_for_node(
-                kb_id=kb_id, institute_id=kb["institute_id"], node_id=node_id
+                kb_id=kb_id, institute_id=kb["institute_id"], node_id=node_id,
+                chunk_from=chunk_from, chunk_to=chunk_to,
             )
             if hits:
                 # Hydrate figures the same way search() does.
@@ -330,9 +444,16 @@ async def ground_slide(
     # both trees share, and deterministic slides carry their section's span.
     if not hits and page_start is not None and page_end is not None:
         try:
+            # Pin the span to the node's own source when it has one: chapters
+            # of a textbook library each restart at page 1, so an unscoped
+            # "pages 3-7" would return page 3-7 of every chapter in the book.
+            span_source = (
+                repo.get_node_source_ids(kb_id, [node_id]) if node_id else []
+            )
             hits = repo.get_chunks_for_pages(
                 kb_id=kb_id, institute_id=kb["institute_id"],
                 page_start=int(page_start), page_end=int(page_end),
+                source_id=span_source[0] if len(span_source) == 1 else None,
             )
             if hits:
                 all_fids = [fid for h in hits for fid in h.get("figure_ids", [])]
@@ -383,6 +504,8 @@ async def ground_slide(
         result.citations.append(_cite(hit))
         if hit.get("chunk_id"):
             result.chunk_ids.append(hit["chunk_id"])
+        if hit.get("source_id") and hit["source_id"] not in result.source_ids:
+            result.source_ids.append(hit["source_id"])
         for fig in hit.get("figures") or []:
             result.figures.append(fig)
 
@@ -417,9 +540,12 @@ def assign_uncovered_chunks(
     """Pure assignment logic (offline-testable): uncovered chunk → nearest slide.
 
     Nearness is by page distance to the pages a slide actually retrieved —
-    the one signal that exists regardless of how ingest shaped the tree. A
-    chunk with no page, or a sweep with no paged slides, assigns to the first
-    supported slide rather than being dropped."""
+    the one signal that exists regardless of how ingest shaped the tree —
+    but only among slides that drew on the chunk's OWN source when the
+    chunk names one: chapters of a textbook library each restart at page 1,
+    so "page 4 of Chapter 6" is not near "page 3 of Chapter 5". A chunk with
+    no page, or a sweep with no paged slides, assigns to the first supported
+    slide rather than being dropped."""
     used = {cid for g in groundings.values() for cid in g.chunk_ids}
     supported = [(path, g) for path, g in groundings.items() if g.supported]
     if not supported:
@@ -430,17 +556,22 @@ def assign_uncovered_chunks(
         if chunk["chunk_id"] in used:
             continue
         page = chunk.get("page_start")
+        source = chunk.get("source_id")
+        same_source = [
+            (path, g) for path, g in supported if source and source in g.source_ids
+        ]
+        candidates = same_source or supported
         best_path = None
         if page is not None:
             best_dist = None
-            for path, g in supported:
+            for path, g in candidates:
                 if not g.pages:
                     continue
                 dist = min(abs(page - p) for p in g.pages)
                 if best_dist is None or dist < best_dist:
                     best_dist, best_path = dist, path
         if best_path is None:
-            best_path = supported[0][0]
+            best_path = candidates[0][0]
         assignments.setdefault(best_path, []).append(chunk)
     return assignments
 

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { Helmet } from 'react-helmet';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { CaretLeft } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/study-library/live-session/schedule/step1
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryLiveSessionScheduleStep1');
     const { setNavHeading } = useNavHeadingStore();
     const { clearSessionId, clearStep1Data, isEdit } = useLiveSessionStore();
     const navigate = useNavigate();
@@ -25,7 +27,7 @@ function RouteComponent() {
                 onClick={() => navigate({ to: '/study-library/live-session' })}
                 className="cursor-pointer"
             />
-            <div>Schedule Live Sessions</div>
+            <div>{t('heading')}</div>
         </div>
     );
 
@@ -71,11 +73,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Schedule</title>
-                <meta
-                    name="description"
-                    content="This page helpls you schedule the live session for the institute"
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
             <ScheduleStep1 />
         </LayoutContainer>

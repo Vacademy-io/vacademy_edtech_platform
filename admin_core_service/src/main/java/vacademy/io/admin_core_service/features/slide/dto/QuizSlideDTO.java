@@ -27,6 +27,8 @@ public class QuizSlideDTO {
 
     private Double passPercentage;
 
+    private Boolean partialMarking;
+
     private Integer reAttemptCount;
 
     private List<QuizSlideQuestionDTO> questions;

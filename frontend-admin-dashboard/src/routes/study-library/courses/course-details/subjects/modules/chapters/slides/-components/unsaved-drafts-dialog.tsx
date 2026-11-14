@@ -16,6 +16,8 @@
  * by opening a slide and saving it there.
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Warning, ArrowSquareOut, FileDoc } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -101,14 +103,14 @@ function groupDrafts(drafts: SlideDraft[]): SubjectGroup[] {
     return [...subjects.values()];
 }
 
-function timeAgo(epochMs: number): string {
+function timeAgo(epochMs: number, t: TFunction): string {
     const mins = Math.max(0, Math.round((Date.now() - epochMs) / 60000));
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins} min ago`;
+    if (mins < 1) return t('justNow');
+    if (mins < 60) return t('minAgo', { count: mins });
     const hours = Math.round(mins / 60);
-    if (hours < 24) return `${hours} hr ago`;
+    if (hours < 24) return t('hrAgo', { count: hours });
     const days = Math.round(hours / 24);
-    return `${days} day${days === 1 ? '' : 's'} ago`;
+    return t('dayAgo', { count: days });
 }
 
 export const UnsavedDraftsDialog = ({
@@ -120,6 +122,7 @@ export const UnsavedDraftsDialog = ({
     onKeep,
     onDiscard,
 }: UnsavedDraftsDialogProps) => {
+    const { t } = useTranslation('studyLibraryUnsavedDraftsDialog');
     const navigate = useNavigate();
     const subjectGroups = useMemo(() => groupDrafts(drafts), [drafts]);
     const showSubjectHeaders = subjectGroups.length > 1;
@@ -160,15 +163,14 @@ export const UnsavedDraftsDialog = ({
 
     return (
         <MyDialog
-            heading="Unsaved changes"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="w-full max-w-lg"
             footer={
                 <div className="flex w-full flex-col gap-3">
                     <p className="text-caption text-neutral-500">
-                        Kept only on this device — logging out or clearing browser data will lose
-                        these changes. Open a {slideTerm} to save it.
+                        {t('keptOnDeviceHint', { slideTerm })}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                         {mode === 'leave' ? (
@@ -178,7 +180,7 @@ export const UnsavedDraftsDialog = ({
                                     scale="medium"
                                     onClick={() => onKeep?.()}
                                 >
-                                    Keep in browser
+                                    {t('keepInBrowser')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="secondary"
@@ -186,7 +188,7 @@ export const UnsavedDraftsDialog = ({
                                     className="border-danger-400 text-danger-600 hover:bg-danger-50"
                                     onClick={() => onDiscard?.()}
                                 >
-                                    Discard changes
+                                    {t('discardChanges')}
                                 </MyButton>
                             </>
                         ) : (
@@ -195,7 +197,7 @@ export const UnsavedDraftsDialog = ({
                                 scale="medium"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Close
+                                {t('close')}
                             </MyButton>
                         )}
                     </div>
@@ -209,8 +211,8 @@ export const UnsavedDraftsDialog = ({
                     </span>
                     <p className="text-subtitle text-neutral-600">
                         {mode === 'leave'
-                            ? `These ${slidesTermPlural} have edits that haven't been saved to the database. Click one to open it, or choose what to do before leaving.`
-                            : `These ${slidesTermPlural} have edits that haven't been saved to the database. Click one to open it and save.`}
+                            ? t('unsavedEditsHintLeave', { slidesTermPlural })
+                            : t('unsavedEditsHintReview', { slidesTermPlural })}
                     </p>
                 </div>
 
@@ -245,10 +247,16 @@ export const UnsavedDraftsDialog = ({
                                                     <FileDoc className="size-4 shrink-0 text-warning-600" />
                                                     <span className="min-w-0 flex-1">
                                                         <span className="block truncate text-body font-medium text-neutral-700">
-                                                            {draft.context?.slideTitle || 'Untitled'}
+                                                            {draft.context?.slideTitle ||
+                                                                t('untitled')}
                                                         </span>
                                                         <span className="block text-caption text-neutral-500">
-                                                            edited {timeAgo(draft.savedAt)}
+                                                            {t('editedAgo', {
+                                                                timeAgo: timeAgo(
+                                                                    draft.savedAt,
+                                                                    t
+                                                                ),
+                                                            })}
                                                         </span>
                                                     </span>
                                                     <ArrowSquareOut className="size-4 shrink-0 text-neutral-400 transition-colors group-hover:text-warning-600" />
@@ -262,7 +270,7 @@ export const UnsavedDraftsDialog = ({
                     ))}
                     {drafts.length === 0 && (
                         <p className="py-4 text-center text-body text-neutral-400">
-                            No unsaved changes in this course.
+                            {t('noUnsavedChanges')}
                         </p>
                     )}
                 </div>

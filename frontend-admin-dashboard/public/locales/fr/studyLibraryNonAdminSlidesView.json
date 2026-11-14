@@ -1,0 +1,6 @@
+{
+    "switchToInstructorView": "Passer à la vue Instructeur",
+    "switchToLearnerView": "Passer à la vue Apprenant",
+    "readOnlyCourseBanner": "Ce cours est {{status}}. Vous pouvez uniquement consulter le contenu et répondre aux questions.",
+    "unsavedChangesBanner": "Vous avez des modifications non enregistrées dans « {{slideTitle}} ». N'oubliez pas d'enregistrer avant de changer de diapositive."
+}

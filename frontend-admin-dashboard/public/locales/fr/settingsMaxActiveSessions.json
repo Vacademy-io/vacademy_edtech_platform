@@ -1,0 +1,19 @@
+{
+    "card": {
+        "title": "Limite de sessions simultanées",
+        "description": "Contrôlez le nombre maximal de sessions actives qu'un apprenant peut avoir en même temps."
+    },
+    "field": {
+        "label": "Nombre maximal de sessions actives",
+        "hint": "0 signifie illimité (aucune restriction)"
+    },
+    "button": {
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+    },
+    "toasts": {
+        "saveSuccess": "Limite de sessions simultanées mise à jour avec succès",
+        "saveFailed": "Échec de la mise à jour de la limite de sessions",
+        "syncFailed": "Paramètre enregistré, mais la synchronisation avec le service d'authentification a échoué. La prise en compte peut prendre un moment."
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "canvasContextFailed": "Failed to get canvas 2D context",
+        "imageLoadFailed": "Failed to load image",
+        "certificateGenerationFailed": "Failed to generate certificate for {{name}}: {{message}}",
+        "previewGenerationFailed": "Failed to generate preview: {{message}}",
+        "unknownError": "Unknown error"
+    },
+    "defaults": {
+        "instituteName": "University of Technology",
+        "sampleValue": "Sample {{field}}",
+        "sampleText": "Sample Text"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "heading": "Planifications",
+    "actions": {
+        "create": "Créer",
+        "viewAll": "Tout afficher"
+    },
+    "loading": "Chargement des planifications..."
+}

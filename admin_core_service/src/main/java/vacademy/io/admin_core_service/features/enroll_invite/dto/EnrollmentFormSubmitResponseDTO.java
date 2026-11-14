@@ -18,4 +18,17 @@ public class EnrollmentFormSubmitResponseDTO {
     private String userId;
     private List<String> abandonedCartEntryIds;
     private String message;
+
+    /**
+     * Whether THIS learner still gets the invite's free trial.
+     *
+     * <p>False once they have consumed one — matched on phone where the institute
+     * identifies by phone, so a second account on the same number does not earn a second
+     * trial. The form reads it to stop promising "start your trial for Rs 1" to someone the
+     * backend is about to charge the full plan price, which is how the two came to disagree
+     * on screen in the first place.
+     *
+     * <p>True whenever the invite configures no trial at all — there is nothing to lose.
+     */
+    private Boolean trialAvailable;
 }

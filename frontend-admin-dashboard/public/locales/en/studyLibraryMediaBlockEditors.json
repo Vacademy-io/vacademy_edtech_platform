@@ -1,0 +1,20 @@
+{
+    "uploading": "Uploading…",
+    "noImage": "No image",
+    "uploadImage": "Upload image",
+    "imageUploadFailed": "Image upload failed",
+    "altTextPlaceholder": "Alt text (optional)",
+    "noVideo": "No video",
+    "uploadVideo": "Upload video",
+    "videoUploadFailed": "Video upload failed",
+    "noFile": "No file",
+    "uploadFile": "Upload file",
+    "fileUploadFailed": "File upload failed",
+    "downloadFile": "Download file",
+    "noEmbed": "No embed",
+    "embedUrlPlaceholder": "Paste a YouTube / Vimeo / Loom / any URL",
+    "embed": "Embed",
+    "embeddedContentTitle": "Embedded content",
+    "calloutPlaceholder": "Write a callout…",
+    "themeAriaLabel": "{{theme}} theme"
+}

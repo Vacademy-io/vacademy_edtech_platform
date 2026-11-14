@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "معلومات إضافية",
+        "description": "التفاصيل المطلوبة والاختيارية لهذا الاستفسار"
+    },
+    "placeholder": {
+        "select": "اختر {{fieldName}}",
+        "enter": "أدخل {{fieldName}}"
+    }
+}

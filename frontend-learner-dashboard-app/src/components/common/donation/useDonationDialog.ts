@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
 import { invalidateDonationStatusCache } from "@/services/user-enrollment-status";
 import {
@@ -16,6 +17,11 @@ import {
   processDonationPayment,
   getUserPlanId,
 } from "../../../services/donation-payment";
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface UseDonationDialogProps {
   open: boolean;
@@ -54,6 +60,53 @@ export const useDonationDialog = ({
   onSlideAccessSuccess,
   targetSlideDetails,
 }: UseDonationDialogProps) => {
+  const { t } = useTranslation("layoutCommonB");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+
+  // Centralised, user-friendly error mapping shared by both the payment and
+  // free-enrollment (skip) flows — the backend errors they translate are the
+  // same regardless of which path triggered them.
+  const mapBackendError = useCallback(
+    (error: unknown, fallback: string): string => {
+      if (!(error instanceof Error)) return fallback;
+      const errorMsg = error.message.toLowerCase();
+      if (errorMsg.includes("duplicate key") || errorMsg.includes("already exists")) {
+        return t("donation.hook.errors.alreadyEnrolled", { course, courses });
+      }
+      if (errorMsg.includes("enrollment configuration error")) {
+        return t("donation.hook.errors.courseConfigError", { course });
+      }
+      if (
+        errorMsg.includes("payment gateway error") ||
+        errorMsg.includes("payment gateway configuration")
+      ) {
+        return t("donation.hook.errors.paymentGatewayError");
+      }
+      if (
+        errorMsg.includes("authentication error") ||
+        errorMsg.includes("authentication required") ||
+        errorMsg.includes("network authentication required")
+      ) {
+        return t("donation.hook.errors.loginAgain");
+      }
+      if (errorMsg.includes("access denied")) {
+        return t("donation.hook.errors.accessDenied");
+      }
+      if (errorMsg.includes("enrolldto") || errorMsg.includes("enrollinviteid")) {
+        return t("donation.hook.errors.courseDataError", { course });
+      }
+      if (errorMsg.includes("jdbc exception") || errorMsg.includes("sql")) {
+        return t("donation.hook.errors.systemError");
+      }
+      if (errorMsg.includes("failed to link student")) {
+        return t("donation.hook.errors.enrollmentError");
+      }
+      return t("donation.hook.errors.somethingWentWrong");
+    },
+    [t, course, courses]
+  );
+
   // Use the shared payment dialog hook
   const {
     enrollmentData,
@@ -254,9 +307,7 @@ export const useDonationDialog = ({
               }
             } catch (mountError) {
               // Card mount error handled silently
-              setCardElementError(
-                "Failed to load card input. Please refresh and try again."
-              );
+              setCardElementError(t("donation.hook.errors.cardMountFailed"));
             }
           }, 200);
 
@@ -280,9 +331,7 @@ export const useDonationDialog = ({
           });
         } catch (error) {
           // Stripe initialization error handled silently
-          setCardElementError(
-            "Failed to load payment form. Please refresh and try again."
-          );
+          setCardElementError(t("donation.hook.errors.paymentFormLoadFailed"));
         }
       }
     };
@@ -377,9 +426,7 @@ export const useDonationDialog = ({
         selectedAmount === null ||
         selectedAmount === undefined
       ) {
-        setValidationError(
-          "⚠️ Please select or enter a donation amount to continue"
-        );
+        setValidationError(t("donation.hook.errors.selectAmount"));
         return;
       }
 
@@ -390,19 +437,18 @@ export const useDonationDialog = ({
 
       if (selectedAmount === "other") {
         if (!customAmount || customAmount.trim() === "") {
-          setValidationError("Please enter a donation amount");
+          setValidationError(t("donation.hook.errors.enterAmount"));
           return;
         }
         if (isNaN(currentAmount) || currentAmount <= 0) {
-          setValidationError("Please enter a valid donation amount");
+          setValidationError(t("donation.hook.errors.invalidAmount"));
           return;
         }
         if (currentAmount < minAmount) {
           setValidationError(
-            `Minimum donation amount is ${formatCurrency(
-              minAmount,
-              getCurrency()
-            )}`
+            t("donation.hook.errors.minimumAmount", {
+              amount: formatCurrency(minAmount, getCurrency()),
+            })
           );
           return;
         }
@@ -412,7 +458,7 @@ export const useDonationDialog = ({
     } else if (step === "email") {
       // Validate email before proceeding to payment
       if (!email || !email.trim()) {
-        setValidationError("Please enter your email address");
+        setValidationError(t("donation.hook.errors.enterEmail"));
         return;
       }
 
@@ -424,7 +470,7 @@ export const useDonationDialog = ({
         setValidationError(
           error instanceof Error
             ? error.message
-            : "Please enter a valid email address"
+            : t("donation.hook.errors.invalidEmail")
         );
         return;
       }
@@ -432,6 +478,7 @@ export const useDonationDialog = ({
       setStep("payment");
     }
   }, [
+    t,
     step,
     selectedAmount,
     customAmount,
@@ -456,9 +503,7 @@ export const useDonationDialog = ({
     try {
       // Use Stripe Elements only
       if (!stripe || !cardElement) {
-        setCardElementError(
-          "Payment form not loaded. Please refresh and try again."
-        );
+        setCardElementError(t("donation.hook.errors.paymentFormNotLoaded"));
         return;
       }
 
@@ -470,7 +515,7 @@ export const useDonationDialog = ({
         setCardElementError(
           emailError instanceof Error
             ? emailError.message
-            : "Invalid email format"
+            : t("donation.hook.errors.invalidEmailFormat")
         );
         return;
       }
@@ -557,63 +602,15 @@ export const useDonationDialog = ({
       }
     } catch (error) {
       // Provide user-friendly error messages instead of backend technical errors
-      let errorMessage = "Payment failed. Please try again.";
-
-      if (error instanceof Error) {
-        const errorMsg = error.message.toLowerCase();
-
-        // Handle specific backend errors with user-friendly messages
-        if (
-          errorMsg.includes("duplicate key") ||
-          errorMsg.includes("already exists")
-        ) {
-          errorMessage =
-            "You are already enrolled in this course. Please check your enrolled courses.";
-        } else if (errorMsg.includes("enrollment configuration error")) {
-          errorMessage =
-            "Course configuration error. Please refresh the page and try again.";
-        } else if (
-          errorMsg.includes("payment gateway error") ||
-          errorMsg.includes("payment gateway configuration")
-        ) {
-          errorMessage =
-            "Payment system error. Please try again or contact support.";
-        } else if (
-          errorMsg.includes("authentication error") ||
-          errorMsg.includes("authentication required")
-        ) {
-          errorMessage = "Please log in again and try again.";
-        } else if (errorMsg.includes("access denied")) {
-          errorMessage =
-            "Access denied. Please check your permissions and try again.";
-        } else if (
-          errorMsg.includes("enrolldto") ||
-          errorMsg.includes("enrollinviteid")
-        ) {
-          errorMessage =
-            "Course data error. Please refresh the page and try again.";
-        } else if (errorMsg.includes("network authentication required")) {
-          errorMessage = "Please log in again and try again.";
-        } else if (
-          errorMsg.includes("jdbc exception") ||
-          errorMsg.includes("sql")
-        ) {
-          errorMessage = "System error. Please try again or contact support.";
-        } else if (errorMsg.includes("failed to link student")) {
-          errorMessage =
-            "Enrollment error. Please try again or contact support.";
-        } else {
-          // For any other errors, show a generic message
-          errorMessage =
-            "Something went wrong. Please try again or contact support.";
-        }
-      }
-
-      setCardElementError(errorMessage);
+      setCardElementError(
+        mapBackendError(error, t("donation.hook.errors.paymentFailed"))
+      );
     } finally {
       setIsApiLoading(false);
     }
   }, [
+    t,
+    mapBackendError,
     enrollmentData,
     paymentGatewayData,
     selectedPaymentPlan,
@@ -663,7 +660,7 @@ export const useDonationDialog = ({
       // Get real user data from preferences
       const userData = await getRealUserData();
       if (!userData) {
-        setValidationError("Unable to fetch user data. Please try again.");
+        setValidationError(t("donation.hook.errors.unableToFetchUserData"));
         return;
       }
 
@@ -676,7 +673,7 @@ export const useDonationDialog = ({
         setValidationError(
           emailError instanceof Error
             ? emailError.message
-            : "Invalid email format"
+            : t("donation.hook.errors.invalidEmailFormat")
         );
         return;
       }
@@ -706,58 +703,15 @@ export const useDonationDialog = ({
       }
     } catch (error) {
       // Provide user-friendly error messages instead of backend technical errors
-      let errorMessage = "Enrollment failed. Please try again.";
-
-      if (error instanceof Error) {
-        const errorMsg = error.message.toLowerCase();
-
-        // Handle specific backend errors with user-friendly messages
-        if (
-          errorMsg.includes("duplicate key") ||
-          errorMsg.includes("already exists")
-        ) {
-          errorMessage =
-            "You are already enrolled in this course. Please check your enrolled courses.";
-        } else if (errorMsg.includes("enrollment configuration error")) {
-          errorMessage =
-            "Course configuration error. Please refresh the page and try again.";
-        } else if (
-          errorMsg.includes("authentication error") ||
-          errorMsg.includes("authentication required")
-        ) {
-          errorMessage = "Please log in again and try again.";
-        } else if (errorMsg.includes("access denied")) {
-          errorMessage =
-            "Access denied. Please check your permissions and try again.";
-        } else if (
-          errorMsg.includes("enrolldto") ||
-          errorMsg.includes("enrollinviteid")
-        ) {
-          errorMessage =
-            "Course data error. Please refresh the page and try again.";
-        } else if (errorMsg.includes("network authentication required")) {
-          errorMessage = "Please log in again and try again.";
-        } else if (
-          errorMsg.includes("jdbc exception") ||
-          errorMsg.includes("sql")
-        ) {
-          errorMessage = "System error. Please try again or contact support.";
-        } else if (errorMsg.includes("failed to link student")) {
-          errorMessage =
-            "Enrollment error. Please try again or contact support.";
-        } else {
-          // For any other errors, show a generic message
-          errorMessage =
-            "Something went wrong. Please try again or contact support.";
-        }
-      }
-
-      // Show error to user
-      setValidationError(errorMessage);
+      setValidationError(
+        mapBackendError(error, t("donation.hook.errors.enrollmentFailed"))
+      );
     } finally {
       setIsApiLoading(false);
     }
   }, [
+    t,
+    mapBackendError,
     mode,
     targetSlideDetails,
     onSlideAccessSuccess,

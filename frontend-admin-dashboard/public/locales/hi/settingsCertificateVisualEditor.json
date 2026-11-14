@@ -1,0 +1,62 @@
+{
+    "toolbar": {
+        "fieldsPlaced_one": "{{count}} फ़ील्ड रखी गई",
+        "fieldsPlaced_other": "{{count}} फ़ील्ड रखी गईं",
+        "dropToAdd": "— जोड़ने के लिए यहाँ छोड़ें",
+        "uploadCustomImage": "कस्टम इमेज अपलोड करें"
+    },
+    "canvas": {
+        "removeFieldTitle": "हटाएं"
+    },
+    "badge": {
+        "certificateIdFieldLabel": "प्रमाणपत्र आईडी",
+        "autoStampTitle": "हर प्रमाणपत्र पर स्वतः अंकित — इसे खुद स्थिति देने के लिए खींचें",
+        "stopPrintingTitle": "इसे स्वतः प्रिंट न करें",
+        "turnOffAriaLabel": "स्वतः अंकन बंद करें",
+        "certificateNumberLabel": "प्रमाणपत्र संख्या",
+        "stampedFooter": "{{names}} हर प्रमाणपत्र पर नीचे दाईं ओर अंकित होता है। इसे खुद स्थिति देने के लिए डैश वाले बॉक्स को खींचें, या इसे पूरी तरह प्रिंट होने से रोकने के लिए हटा दें।"
+    },
+    "properties": {
+        "title": "फ़ील्ड गुण",
+        "removeButton": "हटाएं",
+        "closeTitle": "गुण बंद करें",
+        "fontSize": {
+            "label": "फ़ॉन्ट आकार",
+            "pxValue": "{{value}}px",
+            "customPlaceholder": "कस्टम px"
+        },
+        "fontFamily": {
+            "label": "फ़ॉन्ट फ़ैमिली"
+        },
+        "fontWeight": {
+            "label": "फ़ॉन्ट वज़न",
+            "normal": "सामान्य",
+            "bold": "बोल्ड"
+        },
+        "textColor": {
+            "label": "टेक्स्ट रंग"
+        },
+        "textAlignment": {
+            "label": "टेक्स्ट संरेखण",
+            "left": "बाएं",
+            "center": "बीच में",
+            "right": "दाएं"
+        },
+        "backgroundColor": {
+            "label": "पृष्ठभूमि रंग",
+            "clear": "साफ़ करें",
+            "current": "वर्तमान: {{value}}",
+            "transparentValue": "पारदर्शी"
+        },
+        "position": {
+            "label": "स्थिति",
+            "x": "X स्थिति",
+            "y": "Y स्थिति"
+        },
+        "fieldSize": {
+            "label": "फ़ील्ड आकार",
+            "width": "चौड़ाई",
+            "height": "ऊंचाई"
+        }
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "validation": {
+        "nameRequired": "Name is required",
+        "invalidEmail": "Enter a valid email"
+    },
+    "tabs": {
+        "addPerson": "Add {{person}}",
+        "linkExistingPerson": "Link Existing {{person}}"
+    },
+    "form": {
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "{{person}}'s full name",
+        "emailLabel": "Email",
+        "emailPlaceholder": "name@example.com",
+        "mobileLabel": "Mobile (optional)",
+        "mobilePlaceholder": "9876543210"
+    },
+    "existing": {
+        "changeTitle": "Change",
+        "searchPlaceholder": "Search {{person}} by name, email…",
+        "searching": "Searching…",
+        "select": "+ Select",
+        "noResults": "No {{person}} found matching \"{{query}}\"",
+        "minChars": "Type at least 2 characters to search"
+    }
+}

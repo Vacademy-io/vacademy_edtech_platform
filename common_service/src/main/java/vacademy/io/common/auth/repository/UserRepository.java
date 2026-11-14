@@ -307,6 +307,12 @@ public interface UserRepository extends CrudRepository<User, String> {
         @Query("UPDATE User u SET u.lastTokenUpdateTime = CURRENT_TIMESTAMP WHERE u.id IN :userIds")
         void updateLastTokenUpdateTime(@Param("userIds") List<String> userIds);
 
+        /** Stamps a successful sign-in; one narrow UPDATE, no entity load. */
+        @Modifying
+        @Transactional
+        @Query("UPDATE User u SET u.lastLoginTime = CURRENT_TIMESTAMP WHERE u.id = :userId")
+        int updateLastLoginTime(@Param("userId") String userId);
+
         Optional<User> findFirstByEmailOrderByCreatedAtDesc(String email);
 
         /**
@@ -366,9 +372,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         AND ur.institute_id = :instituteId
                         AND (:roleNames IS NULL OR r.role_name IN (:roleNames))
                         AND (
-                            (:query IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR u.mobile_number LIKE CONCAT('%', :query, '%'))
+                            (CAST(:query AS text) IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR u.mobile_number LIKE CONCAT('%', CAST(:query AS text), '%'))
                         )
                         ORDER BY u.full_name ASC
                         LIMIT 10
@@ -384,9 +390,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         WHERE ur.status = 'ACTIVE'
                         AND ur.institute_id = :instituteId
                         AND (
-                            (:query IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR u.mobile_number LIKE CONCAT('%', :query, '%'))
+                            (CAST(:query AS text) IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR u.mobile_number LIKE CONCAT('%', CAST(:query AS text), '%'))
                         )
                         ORDER BY u.full_name ASC
                         LIMIT 10
@@ -399,9 +405,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         LEFT JOIN user_role ur ON u.id = ur.user_id
                         WHERE (:instituteId IS NULL OR ur.institute_id = :instituteId)
                         AND (
-                            LOWER(COALESCE(u.full_name, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-                            OR LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-                            OR COALESCE(u.mobile_number, '') LIKE CONCAT('%', :query, '%')
+                            LOWER(COALESCE(u.full_name, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                            OR LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                            OR COALESCE(u.mobile_number, '') LIKE CONCAT('%', CAST(:query AS text), '%')
                         )
                         LIMIT 500
                         """, nativeQuery = true)
@@ -411,6 +417,7 @@ public interface UserRepository extends CrudRepository<User, String> {
         @Query(value = """
                         SELECT u.* FROM users u
                         WHERE u.mobile_number IS NOT NULL AND TRIM(u.mobile_number) != ''
+                        AND RIGHT(REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g'), 10) = RIGHT(:digitsOnly, 10)
                         AND (
                             REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g') = :digitsOnly
                             OR (
@@ -423,6 +430,13 @@ public interface UserRepository extends CrudRepository<User, String> {
                         LIMIT 1
                         """, nativeQuery = true)
         Optional<User> findLatestUserByMobileNumber(@Param("digitsOnly") String digitsOnly);
+
+        // Both phone lookups carry a leading RIGHT(..., 10) = RIGHT(:digitsOnly, 10). The OR
+        // below already implies it (an exact match shares its last 10 digits; the second branch
+        // compares them directly), so it changes no result -- it gives idx_users_mobile_last10
+        // (auth V25) an indexable predicate. Without it every phone login normalised all 254k
+        // users' numbers with REGEXP_REPLACE: ~350 ms, now under 20 ms. Keep the expression
+        // byte-for-byte equal to the index definition or the planner will not match it.
 
         /**
          * Same phone matching as {@link #findLatestUserByMobileNumber}, but only
@@ -440,6 +454,7 @@ public interface UserRepository extends CrudRepository<User, String> {
                         SELECT u.* FROM users u
                         JOIN user_role ur ON ur.user_id = u.id
                         WHERE u.mobile_number IS NOT NULL AND TRIM(u.mobile_number) != ''
+                        AND RIGHT(REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g'), 10) = RIGHT(:digitsOnly, 10)
                         AND ur.institute_id = :instituteId
                         AND ur.status IN ('ACTIVE', 'INVITED')
                         AND (

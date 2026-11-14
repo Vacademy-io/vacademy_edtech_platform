@@ -25,9 +25,9 @@ public class AgentChatRequest {
     @NotBlank(message = "Message is required")
     private String message;
 
-    // LLM model to use (user selectable from frontend)
-    @Builder.Default
-    private String model = "anthropic/claude-3.5-sonnet";
+    // LLM model the user picked in the frontend. Null/blank = the admin_agent row in
+    // ai_model_defaults decides (GLM by default).
+    private String model;
 
     // Optional: Additional context parameters
     private AgentContext context;

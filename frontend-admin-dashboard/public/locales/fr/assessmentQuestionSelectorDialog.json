@@ -1,0 +1,33 @@
+{
+    "dialog": {
+        "heading_one": "Sélectionner les questions ({{count}} au total)",
+        "heading_many": "Sélectionner les questions ({{count}} au total)",
+        "heading_other": "Sélectionner les questions ({{count}} au total)"
+    },
+    "footer": {
+        "selectedCount_one": "{{count}} sélectionnée",
+        "selectedCount_many": "{{count}} sélectionnées",
+        "selectedCount_other": "{{count}} sélectionnées"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "addQuestions_one": "Ajouter {{count}} question",
+        "addQuestions_many": "Ajouter {{count}} questions",
+        "addQuestions_other": "Ajouter {{count}} questions"
+    },
+    "search": {
+        "placeholder": "Rechercher des questions..."
+    },
+    "tags": {
+        "filterLabel": "Filtrer par étiquette :"
+    },
+    "list": {
+        "selectAll_one": "Tout sélectionner ({{count}})",
+        "selectAll_many": "Tout sélectionner ({{count}})",
+        "selectAll_other": "Tout sélectionner ({{count}})",
+        "matchingCount_one": "{{count}} correspondance",
+        "matchingCount_many": "{{count}} correspondances",
+        "matchingCount_other": "{{count}} correspondances",
+        "emptyState": "Aucune question ne correspond à votre recherche."
+    }
+}

@@ -3,8 +3,11 @@ package vacademy.io.admin_core_service.features.slide.service;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.entity.RichTextData;
 import vacademy.io.admin_core_service.features.common.service.RichTextDataService;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeySurface;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionOptionDTO;
@@ -24,6 +27,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class QuizSlideService {
+
+    @Autowired
+    private AnswerKeyAccess answerKeyAccess;
 
     @Autowired
     private SlideService slideService;
@@ -102,6 +108,11 @@ public class QuizSlideService {
         quizSlide.setMarksPerQuestion(dto.getMarksPerQuestion() != null ? dto.getMarksPerQuestion() : 1.0);
         quizSlide.setNegativeMarking(dto.getNegativeMarking() != null ? dto.getNegativeMarking() : 0.0);
         quizSlide.setPassPercentage(dto.getPassPercentage());
+        // Null = the caller does not know about this setting (older payload builders):
+        // keep what is stored rather than silently switching partial marking off.
+        if (dto.getPartialMarking() != null) {
+            quizSlide.setPartialMarking(dto.getPartialMarking());
+        }
         quizSlide.setReAttemptCount(dto.getReAttemptCount());
         addOrUpdateQuestionsInBulk(quizSlide, dto.getQuestions());
     }
@@ -175,7 +186,7 @@ public class QuizSlideService {
             } else {
                 existingQuestion.setExplanationText(new RichTextData(dto.getExplanationText()));
             }
-        } else {
+        } else if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING)) {
             existingQuestion.setExplanationText(null);
         }
 
@@ -194,7 +205,11 @@ public class QuizSlideService {
             existingQuestion.setAccessLevel(dto.getAccessLevel());
         }
 
-        existingQuestion.setAutoEvaluationJson(dto.getAutoEvaluationJson());
+        // Once authoring reads can come back without answers, a save built from one must not
+        // erase what is stored. Until then a save does what it always has.
+        if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING) || StringUtils.hasText(dto.getAutoEvaluationJson())) {
+            existingQuestion.setAutoEvaluationJson(dto.getAutoEvaluationJson());
+        }
         existingQuestion.setEvaluationType(dto.getEvaluationType());
         existingQuestion.setQuestionOrder(dto.getQuestionOrder());
         existingQuestion.setCanSkip(dto.getCanSkip());
@@ -262,7 +277,7 @@ public class QuizSlideService {
             } else {
                 existingOption.setExplanationText(new RichTextData(dto.getExplanationText()));
             }
-        } else {
+        } else if (!answerKeyAccess.isOn(AnswerKeySurface.AUTHORING)) {
             existingOption.setExplanationText(null);
         }
 
@@ -284,6 +299,7 @@ public class QuizSlideService {
         newQuizSlide.setMarksPerQuestion(originalQuizSlide.getMarksPerQuestion() != null ? originalQuizSlide.getMarksPerQuestion() : 1.0);
         newQuizSlide.setNegativeMarking(originalQuizSlide.getNegativeMarking() != null ? originalQuizSlide.getNegativeMarking() : 0.0);
         newQuizSlide.setPassPercentage(originalQuizSlide.getPassPercentage());
+        newQuizSlide.setPartialMarking(Boolean.TRUE.equals(originalQuizSlide.getPartialMarking()));
         newQuizSlide.setReAttemptCount(originalQuizSlide.getReAttemptCount());
 
         // Copy description RichTextData if it exists

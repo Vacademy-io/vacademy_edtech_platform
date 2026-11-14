@@ -1,0 +1,22 @@
+{
+  "trigger": {
+    "inviteUsers": "دعوة مستخدمين"
+  },
+  "dialog": {
+    "title": "دعوة مستخدم"
+  },
+  "form": {
+    "nameLabel": "الاسم الكامل",
+    "namePlaceholder": "الاسم الكامل (الأول والأخير)",
+    "emailLabel": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل البريد الإلكتروني",
+    "roleTypeLabel": "نوع الدور",
+    "submit": "دعوة المستخدم"
+  },
+  "validation": {
+    "nameRequired": "الاسم الكامل مطلوب",
+    "emailRequired": "البريد الإلكتروني مطلوب",
+    "emailInvalid": "صيغة البريد الإلكتروني غير صحيحة",
+    "roleRequired": "مطلوب نوع دور واحد على الأقل"
+  }
+}

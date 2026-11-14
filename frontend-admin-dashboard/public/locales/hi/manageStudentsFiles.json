@@ -1,0 +1,127 @@
+{
+    "mediaTypes": {
+        "video": "वीडियो",
+        "audio": "ऑडियो",
+        "pdf": "PDF दस्तावेज़",
+        "doc": "वर्ड दस्तावेज़",
+        "image": "छवि",
+        "note": "नोट",
+        "other": "अन्य"
+    },
+    "fileTypes": {
+        "file": "फ़ाइल",
+        "url": "लिंक",
+        "note": "नोट"
+    },
+    "folders": {
+        "uncategorized": "अवर्गीकृत",
+        "addToFolder": "फ़ोल्डर में जोड़ें",
+        "fileCount_one": "{{count}} फ़ाइल",
+        "fileCount_other": "{{count}} फ़ाइलें"
+    },
+    "row": {
+        "viewNote": "नोट देखें",
+        "download": "डाउनलोड करें",
+        "openLink": "लिंक खोलें",
+        "manageAccess": "एक्सेस प्रबंधित करें",
+        "delete": "हटाएं"
+    },
+    "toasts": {
+        "loadFilesFailed": "छात्र की फ़ाइलें लोड करने में विफल",
+        "noStudentSelected": "कोई छात्र चयनित नहीं है",
+        "enterFileName": "कृपया फ़ाइल का नाम दर्ज करें",
+        "selectFile": "कृपया एक फ़ाइल चुनें",
+        "fileUploaded": "फ़ाइल सफलतापूर्वक अपलोड की गई",
+        "enterUrl": "कृपया एक URL दर्ज करें",
+        "urlAdded": "URL सफलतापूर्वक जोड़ा गया",
+        "enterNoteContent": "कृपया नोट की सामग्री दर्ज करें",
+        "noteCreated": "नोट सफलतापूर्वक बनाया गया",
+        "addFileFailed": "फ़ाइल जोड़ने में विफल",
+        "fileDeleted": "फ़ाइल सफलतापूर्वक हटाई गई",
+        "deleteFileFailed": "फ़ाइल हटाने में विफल",
+        "filesRefreshed": "फ़ाइलें ताज़ा की गईं",
+        "loadAccessFailed": "फ़ाइल एक्सेस विवरण लोड करने में विफल",
+        "viewAccessRevoked": "देखने की अनुमति रद्द की गई",
+        "viewAccessGranted": "देखने की अनुमति दी गई",
+        "updateViewAccessFailed": "देखने की अनुमति अपडेट करने में विफल",
+        "editAccessRevoked": "संपादन अनुमति रद्द की गई",
+        "editAccessGranted": "संपादन अनुमति दी गई",
+        "updateEditAccessFailed": "संपादन अनुमति अपडेट करने में विफल",
+        "getFileUrlFailed": "फ़ाइल URL प्राप्त करने में विफल",
+        "openFileFailed": "फ़ाइल खोलने में विफल"
+    },
+    "empty": {
+        "title": "अभी तक कोई फ़ाइल नहीं",
+        "hint": "इस छात्र के लिए फ़ाइल अपलोड करें, URL जोड़ें, या नोट बनाएं।",
+        "addFirstFile": "पहली फ़ाइल जोड़ें"
+    },
+    "error": {
+        "title": "फ़ाइलें लोड नहीं हो सकीं",
+        "hint": "छात्र की फ़ाइलें प्राप्त करते समय कुछ गड़बड़ हो गई।"
+    },
+    "heroStats": {
+        "totalFiles": "कुल फ़ाइलें",
+        "folders": "फ़ोल्डर",
+        "recent": "हाल की (7 दिन)"
+    },
+    "actionBar": {
+        "uploadFile": "फ़ाइल अपलोड करें",
+        "addLink": "लिंक जोड़ें",
+        "addNote": "नोट जोड़ें",
+        "refreshFiles": "फ़ाइलें ताज़ा करें"
+    },
+    "addDialog": {
+        "titleFor": "{{term}} के लिए फ़ाइल जोड़ें",
+        "descriptionFor": "इस {{term}} के लिए फ़ाइल अपलोड करें, URL जोड़ें, या नोट बनाएं",
+        "tabs": {
+            "file": "फ़ाइल",
+            "url": "URL",
+            "note": "नोट"
+        },
+        "selectFileLabel": "फ़ाइल चुनें *",
+        "selected": "चयनित: {{name}} ({{size}} MB)",
+        "mediaTypeLabel": "मीडिया प्रकार *",
+        "urlLabel": "URL *",
+        "urlPlaceholder": "https://example.com/resource",
+        "urlHint": "किसी बाहरी संसाधन का मान्य URL दर्ज करें",
+        "noteContentLabel": "नोट सामग्री *",
+        "notePlaceholder": "यहां अपना नोट लिखें...",
+        "noteHint": "इस छात्र के लिए रिच टेक्स्ट नोट बनाएं",
+        "fileNameLabel": "फ़ाइल का नाम *",
+        "fileNamePlaceholder": "जैसे, ट्यूटोरियल वीडियो - React मूल बातें",
+        "folderNameLabel": "फ़ोल्डर का नाम",
+        "folderNamePreselected": "पूर्व-चयनित",
+        "folderNamePlaceholder": "जैसे, असाइनमेंट, प्रमाणपत्र, संसाधन",
+        "folderNameHintPreselected": "चयनित फ़ोल्डर में फ़ाइल जोड़ी जा रही है",
+        "folderNameHintDefault": "वैकल्पिक: फ़ाइलों को फ़ोल्डर में व्यवस्थित करें (केस-असंवेदनशील)",
+        "grantEditAccessLabel": "छात्र को संपादन अनुमति भी दें",
+        "cancel": "रद्द करें",
+        "uploading": "अपलोड हो रहा है...",
+        "adding": "जोड़ा जा रहा है...",
+        "addSubmit": "{{type}} जोड़ें"
+    },
+    "viewNoteDialog": {
+        "titleFallback": "नोट देखें",
+        "description": "इस छात्र के लिए नोट की सामग्री देखें",
+        "noContent": "कोई सामग्री उपलब्ध नहीं है",
+        "close": "बंद करें"
+    },
+    "deleteDialog": {
+        "title": "फ़ाइल हटाएं",
+        "description": "क्या आप वाकई इस फ़ाइल को हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकती।",
+        "cancel": "रद्द करें",
+        "confirm": "हटाएं"
+    },
+    "accessDialog": {
+        "titleFor": "{{term}} एक्सेस प्रबंधित करें",
+        "description": "इस फ़ाइल पर छात्र की क्या पहुंच है, इसे नियंत्रित करें",
+        "viewAccessTitle": "देखने की अनुमति",
+        "viewAccessHint": "{{term}} इस फ़ाइल को देख सकता है",
+        "editAccessTitle": "संपादन अनुमति",
+        "editAccessHint": "{{term}} इस फ़ाइल को संपादित कर सकता है",
+        "grant": "अनुमति दें",
+        "revoke": "रद्द करें",
+        "helpText": "संपादन अनुमति से छात्र इस फ़ाइल में बदलाव कर सकेगा।",
+        "close": "बंद करें"
+    }
+}

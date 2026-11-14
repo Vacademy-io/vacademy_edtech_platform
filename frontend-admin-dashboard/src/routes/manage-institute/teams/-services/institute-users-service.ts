@@ -5,6 +5,7 @@ export interface InstituteUser {
     id: string;
     full_name: string;
     email: string | null;
+    username?: string | null;
     mobile_number?: string | null;
     profile_pic_file_id?: string | null;
     roles?: string[];
@@ -51,6 +52,7 @@ export async function fetchEligibleOrgUsers(instituteId: string): Promise<Instit
         id: u.id as string,
         full_name: (u.full_name as string) ?? '',
         email: (u.email as string) || null,
+        username: (u.username as string) || null,
         mobile_number: (u.mobile_number as string) ?? null,
         profile_pic_file_id: (u.profile_pic_file_id as string) ?? null,
         roles: Array.isArray((u as { roles?: { role_name?: string }[] }).roles)

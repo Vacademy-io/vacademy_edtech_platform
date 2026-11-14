@@ -1,0 +1,108 @@
+{
+    "errors": {
+        "cannotBeEmpty": "खाली नहीं हो सकता",
+        "mustBeJsonObject": "एक JSON ऑब्जेक्ट होना चाहिए ({ ... })",
+        "invalidJson": "अमान्य JSON",
+        "unknownError": "अज्ञात त्रुटि",
+        "failedToSave": "सेव करने में विफल"
+    },
+    "queryParamsEditor": {
+        "label": "चरण सेटिंग्स",
+        "hint": "यह चरण अपना डेटा कैसे चुनता है"
+    },
+    "objectListEditor": {
+        "hint": "जितने चाहें उतने जोड़ें — खाली लिंक होने पर वह प्रविष्टि छिप जाती है",
+        "add": "जोड़ें",
+        "remove": "हटाएं"
+    },
+    "flatMapEditor": {
+        "add": "जोड़ें",
+        "removeKey": "{{key}} हटाएं"
+    },
+    "nestedMapGridEditor": {
+        "hint": "खाली = डिफ़ॉल्ट लिंक का उपयोग करें",
+        "linksSet_one": "{{count}} लिंक सेट किया गया",
+        "linksSet_other": "{{count}} लिंक सेट किए गए",
+        "usingDefault": "डिफ़ॉल्ट का उपयोग हो रहा है",
+        "defaultLinkPlaceholder": "डिफ़ॉल्ट लिंक"
+    },
+    "outputDataPointsEditor": {
+        "defaultLabelItems": "आइटम",
+        "defaultLabelValues": "मान",
+        "defaultLabelSchedule": "शेड्यूल",
+        "structuredValueHint": "संरचित मान — नीचे config_json में संपादित करें",
+        "fieldNamePlaceholder": "fieldName",
+        "noEditableSettings": "इस नोड पर कोई संपादन योग्य टेक्स्ट सेटिंग नहीं है।",
+        "title": "वर्कफ़्लो सेटिंग्स",
+        "hint": "टेम्पलेट टेक्स्ट, लिंक और ऑडियंस मान",
+        "addSetting": "सेटिंग जोड़ें",
+        "modeSpelTitle": "SpEL एक्सप्रेशन — सादे टेक्स्ट के रूप में मानने के लिए क्लिक करें",
+        "modeTextTitle": "सादा टेक्स्ट — SpEL एक्सप्रेशन के रूप में मानने के लिए क्लिक करें",
+        "modeSpel": "SpEL",
+        "modeText": "टेक्स्ट",
+        "removeSetting": "सेटिंग हटाएं",
+        "advancedFormulas": "उन्नत फॉर्मूले ({{count}}) — केवल तभी संपादित करें जब आप SpEL जानते हों"
+    },
+    "templateVarsEditor": {
+        "title": "संदेश सामग्री",
+        "hint": "यह नोड क्या भेजता है — टेक्स्ट स्वतंत्र रूप से संपादित करें",
+        "template": "टेम्पलेट",
+        "templatePlaceholder": "एक WhatsApp टेम्पलेट चुनें",
+        "previewUnavailableTitle": "संदेश पूर्वावलोकन उपलब्ध नहीं है",
+        "previewUnavailableNoBody": "इस WhatsApp टेम्पलेट का बॉडी टेक्स्ट यहां अभी संग्रहीत नहीं है।",
+        "previewUnavailableNotImported": "यह WhatsApp टेम्पलेट Meta में बनाया गया था और अभी तक आयात नहीं किया गया है।",
+        "previewUnavailableSuffix": "संदेश सामान्य रूप से भेजा जाता रहेगा — केवल पूर्वावलोकन गायब है। पूरा टेक्स्ट अपने मानों के साथ देखने के लिए अपने टेम्पलेट आयात करें।",
+        "importTemplates": "WhatsApp से टेम्पलेट आयात करें",
+        "importing": "आयात हो रहा है…",
+        "missingValuesTitle_one": "इस टेम्पलेट को {{count}} और मान चाहिए",
+        "missingValuesTitle_other": "इस टेम्पलेट को {{count}} और मान चाहिए",
+        "missingValuesBody_one": "WhatsApp टेम्पलेट {{list}} का उपयोग करता है, लेकिन यह चरण इसे प्रदान नहीं करता। जब तक यह भर नहीं दिया जाता, संदेश भेजने में विफल रहेंगे।",
+        "missingValuesBody_other": "WhatsApp टेम्पलेट {{list}} का उपयोग करता है, लेकिन यह चरण इन्हें प्रदान नहीं करता। जब तक ये भर नहीं दिए जाते, संदेश भेजने में विफल रहेंगे।",
+        "addMissing_one": "इसे जोड़ें",
+        "addMissing_other": "इन्हें जोड़ें",
+        "unusedKeys": "अब इस टेम्पलेट में उपयोग नहीं होता: {{list}} — छोड़ना या हटाना सुरक्षित है।",
+        "fixedWording": "इस संदेश की शब्दावली स्वीकृत WhatsApp टेम्पलेट द्वारा तय है। ऊपर हाइलाइट किए गए हिस्से भेजते समय प्रत्येक शिक्षार्थी के लिए भरे जाते हैं।",
+        "filledAutomatically": "स्वचालित रूप से भरा गया: {{list}}",
+        "autoFilledVariables": "स्वतः-भरे गए वेरिएबल ({{count}}) — नाम, लिंक, तारीखें",
+        "varFallbackLabel": "वेरिएबल {{key}}"
+    },
+    "nodeCard": {
+        "unsaved": "असहेजा",
+        "startBadge": "प्रारंभ",
+        "endBadge": "समाप्त",
+        "nodeName": "नोड नाम",
+        "nodeNamePlaceholder": "नोड नाम",
+        "nodeType": "नोड प्रकार",
+        "status": "स्थिति",
+        "startNode": "प्रारंभ नोड",
+        "endNode": "समाप्ति नोड",
+        "configJsonLabel": "config_json",
+        "configJsonHint": "रूटिंग और नोड सेटिंग्स यहां रहती हैं",
+        "format": "फ़ॉर्मेट",
+        "formatTitle": "JSON फ़ॉर्मेट करें",
+        "retryConfigLabel": "retry_config",
+        "retryConfigHint": "वैकल्पिक — जैसे {{example}}",
+        "retryConfigNonePlaceholder": "(कोई नहीं)",
+        "automaticStep": "स्वचालित चरण — यहां कॉन्फ़िगर करने के लिए कुछ नहीं है।",
+        "saved": "सहेजा गया",
+        "unsavedChanges": "असहेजे बदलाव",
+        "revert": "वापस लाएं",
+        "saving": "सहेजा जा रहा है...",
+        "saveNode": "नोड सहेजें"
+    },
+    "page": {
+        "loading": "कॉन्फ़िगरेशन लोड हो रहा है...",
+        "failedToLoad": "कॉन्फ़िगरेशन लोड करने में विफल",
+        "noNodes": "इस वर्कफ़्लो में कॉन्फ़िगर करने के लिए कोई नोड नहीं है।",
+        "devTitle": "डेवलपर व्यू — पूर्ण नोड कॉन्फ़िगरेशन",
+        "devDescription": "प्रत्येक नोड की कच्ची <0>config_json</0> (इसकी <1>routing</1> सहित) को सीधे संपादित करें। बदलावों को मान्य किया जाता है और सीधे नोड टेम्पलेट में सहेजा जाता है — चल रहा वर्कफ़्लो इन्हें अपने अगले निष्पादन में लागू करता है।",
+        "simpleTitle": "वर्कफ़्लो सेटिंग्स",
+        "simpleDescription": "नीचे अपने संदेश, लिंक और सेटिंग्स संपादित करें, फिर प्रत्येक कार्ड सहेजें। बदलाव वर्कफ़्लो के अगले रन से स्वतः लागू होते हैं।",
+        "expandAll": "सभी विस्तृत करें",
+        "collapseAll": "सभी संक्षिप्त करें",
+        "expandAllTitle": "हर चरण विस्तृत करें",
+        "collapseAllTitle": "हर चरण संक्षिप्त करें",
+        "simpleView": "सरल व्यू",
+        "developerView": "डेवलपर व्यू"
+    }
+}

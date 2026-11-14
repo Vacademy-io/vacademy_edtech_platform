@@ -46,6 +46,7 @@ import {
   extractBookingErrorMessage,
   getBrowserTimezone,
 } from "../-services/booking-services";
+import { useTranslation } from "react-i18next";
 
 // Fixed invitee fields + the page's campaign custom fields (validated by the
 // same getDynamicSchema the audience-response/register forms use, nested
@@ -54,24 +55,34 @@ import {
 // `authed` drops the identity rules entirely: a signed-in learner never sees those
 // three inputs, and the authenticated book endpoint fills name/email/phone in from
 // their account. Keeping the rules would fail validation on fields nobody can fill.
+interface DetailsValidationMessages {
+  nameRequired: string;
+  emailInvalid: string;
+  identityRequired: string;
+  phoneInvalid: string;
+}
+
 const buildDetailsSchema = (
   formFields: AssessmentCustomFieldOpenRegistration[],
-  authed: boolean
+  authed: boolean,
+  messages: DetailsValidationMessages
 ) => {
   const base = z.object({
-    name: authed ? z.string().trim() : z.string().trim().min(1, "Please enter your name"),
-    email: z.string().trim().email("Please enter a valid email").or(z.literal("")),
+    name: authed
+      ? z.string().trim()
+      : z.string().trim().min(1, messages.nameRequired),
+    email: z.string().trim().email(messages.emailInvalid).or(z.literal("")),
     phone: z.string().trim(),
     custom: getDynamicSchema(formFields),
   });
   if (authed) return base;
   return base
     .refine((v) => v.email !== "" || v.phone !== "", {
-      message: "Please provide an email or a phone number",
+      message: messages.identityRequired,
       path: ["email"],
     })
     .refine((v) => v.phone === "" || v.phone.replace(/\D/g, "").length >= 7, {
-      message: "Please enter a valid phone number",
+      message: messages.phoneInvalid,
       path: ["phone"],
     });
 };
@@ -105,10 +116,11 @@ export const BookingConfirmation = ({
   booking: BookingView;
   instituteId?: string;
 }) => {
+  const { t } = useTranslation("liveClassGuest");
   const isPending = booking.status === "PENDING";
   const tz = booking.invitee_timezone;
   return (
-    <div className="flex flex-col items-center gap-6 py-6 text-center">
+    <div className="flex flex-col items-center gap-section py-6 text-center">
       <div
         className={
           isPending
@@ -124,16 +136,28 @@ export const BookingConfirmation = ({
       </div>
       <div className="flex flex-col gap-2">
         <h2 className="text-h3 font-semibold text-neutral-700">
-          {isPending ? "Booking request received" : "Booking confirmed"}
+          {isPending
+            ? t("bookingResponse.confirmation.pendingTitle")
+            : t("bookingResponse.confirmation.confirmedTitle")}
         </h2>
         <p className="text-body text-neutral-500">
           {isPending
-            ? `Your request for ${booking.title} is awaiting confirmation${
-                booking.host_name ? ` from ${booking.host_name}` : ""
-              }. We'll let you know as soon as it's approved.`
-            : `You're scheduled for ${booking.title}${
-                booking.host_name ? ` with ${booking.host_name}` : ""
-              }.`}
+            ? booking.host_name
+              ? t("bookingResponse.confirmation.pendingWithHost", {
+                  title: booking.title,
+                  host: booking.host_name,
+                })
+              : t("bookingResponse.confirmation.pendingNoHost", {
+                  title: booking.title,
+                })
+            : booking.host_name
+              ? t("bookingResponse.confirmation.confirmedWithHost", {
+                  title: booking.title,
+                  host: booking.host_name,
+                })
+              : t("bookingResponse.confirmation.confirmedNoHost", {
+                  title: booking.title,
+                })}
         </p>
       </div>
       <div className="flex w-full flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-left">
@@ -145,7 +169,7 @@ export const BookingConfirmation = ({
         </div>
         <div className="flex items-center gap-2 text-caption text-neutral-500">
           <Clock size={18} className="shrink-0 text-primary-500" />
-          <span>Timezone: {tz.replace(/_/g, " ")}</span>
+          <span>{t("common.timezoneLabel", { tz: tz.replace(/_/g, " ") })}</span>
         </div>
       </div>
       {booking.meet_link && (
@@ -162,27 +186,30 @@ export const BookingConfirmation = ({
             layoutVariant="default"
             className="w-full"
           >
-            <VideoCamera size={18} className="mr-2" /> Join meeting link
+            <VideoCamera size={18} className="me-2" /> {t("common.joinMeetingLink")}
           </MyButton>
         </a>
       )}
       <p className="text-caption text-neutral-500">
         {booking.invitee_email
-          ? `A confirmation email with these details has been sent to ${booking.invitee_email}.`
-          : "A confirmation with these details has been sent to you."}
+          ? t("bookingResponse.confirmation.emailSentWithAddress", {
+              email: booking.invitee_email,
+            })
+          : t("bookingResponse.confirmation.emailSentGeneric")}
       </p>
       <Link
         to="/booking-manage"
         search={{ token: booking.manage_token, instituteId }}
         className="text-body font-semibold text-primary-500 underline-offset-2 hover:underline"
       >
-        Manage booking (cancel or reschedule)
+        {t("bookingResponse.confirmation.manageLink")}
       </Link>
     </div>
   );
 };
 
 const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) => {
+  const { t } = useTranslation("liveClassGuest");
   const domainRouting = useDomainRouting();
   const queryClient = useQueryClient();
 
@@ -220,8 +247,14 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
     [pageData.custom_fields]
   );
   const detailsSchema = useMemo(
-    () => buildDetailsSchema(formFields, !!authed),
-    [formFields, authed]
+    () =>
+      buildDetailsSchema(formFields, !!authed, {
+        nameRequired: t("bookingResponse.page.validation.nameRequired"),
+        emailInvalid: t("bookingResponse.page.validation.emailInvalid"),
+        identityRequired: t("bookingResponse.page.validation.identityRequired"),
+        phoneInvalid: t("bookingResponse.page.validation.phoneInvalid"),
+      }),
+    [formFields, authed, t]
   );
 
   const form = useForm<DetailsFormValues>({
@@ -296,7 +329,7 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
       toast.error(
         extractBookingErrorMessage(
           error,
-          "Could not complete your booking. Please try again."
+          t("bookingResponse.page.bookingFailed")
         )
       );
       await queryClient.invalidateQueries({ queryKey: ["GET_BOOKING_SLOTS"] });
@@ -343,7 +376,7 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
       </nav>
 
       <div className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6">
+        <div className="mx-auto flex max-w-2xl flex-col gap-section">
           {/* Page header */}
           <ModernCard variant="glass" padding="lg" rounded="lg">
             <ModernCardHeader className="mb-2 p-0">
@@ -353,14 +386,15 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
             </ModernCardHeader>
             {pageData.host_name && (
               <p className="text-body text-neutral-600">
-                Hosted by{" "}
+                {t("common.hostedBy")}{" "}
                 <span className="font-semibold">{pageData.host_name}</span>
               </p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-4 text-caption text-neutral-500">
               <span className="flex items-center gap-1">
                 <Clock size={16} className="text-primary-500" />
-                {selectedDuration ?? pageData.duration_minutes} min
+                {selectedDuration ?? pageData.duration_minutes}{" "}
+                {t("bookingResponse.page.minutesShort")}
               </span>
               {pageData.location_type && (
                 <span className="flex items-center gap-1">
@@ -382,13 +416,13 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
               // The direct path has no form to sit on while the POST runs, so the
               // picker is replaced rather than left tappable — a second tap would
               // race the first booking.
-              <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <div className="flex flex-col items-center gap-stack py-10 text-center">
                 <CircleNotch
                   size={28}
                   className="animate-spin text-primary-500"
                 />
                 <p className="text-body text-neutral-600">
-                  Booking your session…
+                  {t("bookingResponse.page.bookingInProgress")}
                 </p>
               </div>
             )}
@@ -396,10 +430,10 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
             {step === "pick" && !(submitting && bookDirectly) && (
               <>
                 {sessionTypes.length > 0 && (
-                  <div className="mb-5">
-                    <ModernCardHeader className="mb-3 p-0">
+                  <div className="mb-5 space-y-stack">
+                    <ModernCardHeader className="p-0">
                       <ModernCardTitle size="md" className="text-neutral-700">
-                        Choose a session
+                        {t("bookingResponse.page.chooseSession")}
                       </ModernCardTitle>
                     </ModernCardHeader>
                     <div className="flex flex-wrap gap-2">
@@ -425,7 +459,7 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                             </span>
                             <span className="flex items-center gap-1 text-caption text-neutral-500">
                               <Clock size={12} className="text-primary-500" />
-                              {st.duration_minutes} min
+                              {st.duration_minutes} {t("bookingResponse.page.minutesShort")}
                             </span>
                           </button>
                         );
@@ -435,7 +469,7 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                 )}
                 <ModernCardHeader className="mb-4 p-0">
                   <ModernCardTitle size="md" className="text-neutral-700">
-                    Pick a time
+                    {t("bookingResponse.page.pickATime")}
                   </ModernCardTitle>
                 </ModernCardHeader>
                 <SlotPicker
@@ -466,12 +500,14 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                     layoutVariant="icon"
                     scale="medium"
                     onClick={() => setStep("pick")}
-                    aria-label="Back to time selection"
+                    aria-label={t("bookingResponse.page.backToTimeAria")}
                   >
                     <ArrowLeft size={16} />
                   </MyButton>
                   <ModernCardTitle size="md" className="text-neutral-700">
-                    {authed ? "A few questions" : "Your details"}
+                    {authed
+                      ? t("bookingResponse.page.questionsTitle")
+                      : t("bookingResponse.page.detailsTitle")}
                   </ModernCardTitle>
                 </div>
                 <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 p-3 text-body text-neutral-700">
@@ -498,9 +534,11 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                               <FormControl>
                                 <MyInput
                                   inputType="text"
-                                  label="Name"
+                                  label={t("bookingResponse.page.form.nameLabel")}
                                   required
-                                  inputPlaceholder="Your full name"
+                                  inputPlaceholder={t(
+                                    "bookingResponse.page.form.namePlaceholder"
+                                  )}
                                   input={field.value}
                                   onChangeFunction={field.onChange}
                                   error={form.formState.errors.name?.message}
@@ -519,8 +557,10 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                               <FormControl>
                                 <MyInput
                                   inputType="email"
-                                  label="Email"
-                                  inputPlaceholder="you@example.com"
+                                  label={t("bookingResponse.page.form.emailLabel")}
+                                  inputPlaceholder={t(
+                                    "bookingResponse.page.form.emailPlaceholder"
+                                  )}
                                   input={field.value}
                                   onChangeFunction={field.onChange}
                                   error={form.formState.errors.email?.message}
@@ -539,8 +579,10 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                               <FormControl>
                                 <MyInput
                                   inputType="tel"
-                                  label="Phone"
-                                  inputPlaceholder="Your phone number"
+                                  label={t("bookingResponse.page.form.phoneLabel")}
+                                  inputPlaceholder={t(
+                                    "bookingResponse.page.form.phonePlaceholder"
+                                  )}
                                   input={field.value}
                                   onChangeFunction={field.onChange}
                                   error={form.formState.errors.phone?.message}
@@ -552,15 +594,13 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                           )}
                         />
                         <p className="text-caption text-neutral-500">
-                          Provide at least an email or a phone number so we can
-                          share your booking details.
+                          {t("bookingResponse.page.form.identityHint")}
                         </p>
                       </>
                     )}
                     {authed && (
                       <p className="text-caption text-neutral-500">
-                        We&apos;ll use the name and contact details on your
-                        account — just answer the questions below.
+                        {t("bookingResponse.page.form.authedHint")}
                       </p>
                     )}
                     {formFields.length > 0 && (
@@ -578,10 +618,10 @@ const BookingPage = ({ pageData, instituteId, slug, authed }: BookingPageProps) 
                       className="w-full"
                     >
                       {submitting
-                        ? "Booking…"
+                        ? t("bookingResponse.page.submit.booking")
                         : pageData.require_approval
-                          ? "Request booking"
-                          : "Confirm booking"}
+                          ? t("bookingResponse.page.submit.requestBooking")
+                          : t("bookingResponse.page.submit.confirmBooking")}
                     </MyButton>
                   </form>
                 </Form>

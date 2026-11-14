@@ -89,9 +89,9 @@ public class SuperAdminInstituteService {
                 log.warn("Failed to fetch credit balance for institute {}: {}", instituteId, e.getMessage());
             }
 
-            // Reuse existing count queries via a simple approach
-            List<Object[]> rows = instituteRepository.findAllInstitutesWithCounts(null, 1, 0);
-            // Actually query specifically for this institute
+            // Counts for this institute only: the search narrows the LATERAL counts to the
+            // institutes matching its name. (An unfiltered call here used to count every
+            // institute and discard the result.)
             List<Object[]> instRows = instituteRepository.findAllInstitutesWithCounts(inst.getInstituteName(), 1, 0);
             long studentCount = 0, courseCount = 0, batchCount = 0;
             // Use dedicated single-institute counts from the main list query

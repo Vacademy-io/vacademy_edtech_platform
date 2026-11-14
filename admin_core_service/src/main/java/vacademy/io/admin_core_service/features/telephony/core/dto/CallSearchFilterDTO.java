@@ -27,6 +27,12 @@ public class CallSearchFilterDTO {
 
     private String fromDate;
     private String toDate;
+    /**
+     * Optional instant window (UTC epoch millis) that overrides fromDate/toDate —
+     * the "last 1 h / 3 h / 24 h" presets. toTs omitted = now.
+     */
+    private Long fromTs;
+    private Long toTs;
 
     /** INBOUND | OUTBOUND (null = both). */
     private String direction;

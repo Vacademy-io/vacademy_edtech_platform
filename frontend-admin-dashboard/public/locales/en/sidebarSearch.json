@@ -1,0 +1,11 @@
+{
+    "categoryAiTools": "AI Tools",
+    "categoryCrm": "CRM",
+    "categoryErp": "ERP",
+    "categoryLms": "LMS",
+    "locked": "Locked",
+    "noResultsFound": "No results found",
+    "searchPlaceholder": "Search tabs, features...",
+    "settingsDomainHeading": "Settings · {{domain}}",
+    "tryDifferentSearchTerm": "Try a different search term"
+}

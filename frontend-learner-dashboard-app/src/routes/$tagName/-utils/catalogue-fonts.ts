@@ -57,6 +57,17 @@ export const CATALOGUE_FONTS: CatalogueFontEntry[] = [
     { label: 'Newsreader', stack: 'Newsreader, serif', css2: `Newsreader${W_TEXT}`, serif: true },
     { label: 'Lora', stack: 'Lora, serif', css2: `Lora${W_TEXT}`, serif: true },
     { label: 'DM Serif Display', stack: '"DM Serif Display", serif', css2: 'DM Serif Display:wght@400', serif: true, display: true },
+    // ── Devanagari (Hindi / Marathi sites) ────────────────────────────
+    // Latin-only faces fall back to whatever Devanagari font the OS has, so a
+    // हिन्दी site picks one of these. Each also covers Latin, so an English
+    // page in the same site keeps one consistent face. Weights match what
+    // Google Fonts serves for each family (a weight it lacks fails the whole
+    // merged request): Tiro Devanagari Hindi has 400 only.
+    { label: 'Noto Sans Devanagari', stack: '"Noto Sans Devanagari", sans-serif', css2: `Noto Sans Devanagari${W_TEXT}` },
+    { label: 'Mukta', stack: 'Mukta, sans-serif', css2: `Mukta${W_TEXT}` },
+    { label: 'Hind', stack: 'Hind, sans-serif', css2: `Hind${W_TEXT}` },
+    { label: 'Noto Serif Devanagari', stack: '"Noto Serif Devanagari", serif', css2: `Noto Serif Devanagari${W_TEXT}`, serif: true },
+    { label: 'Tiro Devanagari Hindi', stack: '"Tiro Devanagari Hindi", serif', css2: 'Tiro Devanagari Hindi:wght@400', serif: true, display: true },
 ];
 
 /** First family name of a CSS stack, unquoted ("Open Sans", sans-serif → Open Sans). */

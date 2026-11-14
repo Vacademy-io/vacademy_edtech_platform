@@ -2,6 +2,7 @@ import { StudentReportData } from '@/types/student-analysis';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -42,16 +43,13 @@ export const StudentReportDetailsDialog = ({
     open,
     onOpenChange,
     report,
-    title = 'Analysis Report',
+    title,
 }: StudentReportDetailsDialogProps) => {
+    const { t } = useTranslation('manageStudentsReportDetailsDialog');
+
     if (!report) return null;
 
-    const formatTitle = (key: keyof StudentReportData) => {
-        return key
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
+    const resolvedTitle = title ?? t('dialog.defaultTitle');
 
     const KEYS = {
         STRENGTHS: 'strengths' as keyof StudentReportData,
@@ -68,7 +66,7 @@ export const StudentReportDetailsDialog = ({
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading={title}
+            heading={resolvedTitle}
             dialogWidth="max-w-4xl"
             content={
                 <div className="flex flex-col gap-4">
@@ -76,10 +74,10 @@ export const StudentReportDetailsDialog = ({
                     <div>
                         <Tabs defaultValue="efforts" className="w-full">
                                 <TabsList className="mb-4 grid w-full grid-cols-4">
-                                    <TabsTrigger value="efforts">Efforts</TabsTrigger>
-                                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                                    <TabsTrigger value="topics">Topics</TabsTrigger>
-                                    <TabsTrigger value="remedial">Remedial</TabsTrigger>
+                                    <TabsTrigger value="efforts">{t('tabs.efforts')}</TabsTrigger>
+                                    <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+                                    <TabsTrigger value="topics">{t('tabs.topics')}</TabsTrigger>
+                                    <TabsTrigger value="remedial">{t('tabs.remedial')}</TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="efforts" className="space-y-6">
@@ -125,7 +123,7 @@ export const StudentReportDetailsDialog = ({
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="text-lg">
-                                                    {formatTitle(KEYS.STRENGTHS)}
+                                                    {t('sections.strengths')}
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -155,7 +153,7 @@ export const StudentReportDetailsDialog = ({
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="text-lg">
-                                                    {formatTitle(KEYS.WEAKNESSES)}
+                                                    {t('sections.weaknesses')}
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">

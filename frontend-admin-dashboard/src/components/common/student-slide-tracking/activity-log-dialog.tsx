@@ -44,7 +44,12 @@ import { useRouter } from '@tanstack/react-router';
 import AssessmentAttemptActivity from './assessment-attempt-activity';
 import DocumentInteractionsPanel from './document-interactions-panel';
 import AiInsightsPanel from './ai-insights-panel';
+import { AssignmentAiEvaluator } from './assignment-ai-evaluator';
+import type { AssignmentAiEvaluation } from '@/services/study-library/slide-operations/assignment-ai-evaluation';
 import { getInstituteId } from '@/constants/helper';
+import { CbeSlideAttempts, type CbeSlideAttemptRow } from '@/components/common/cbe-review/cbe-slide-attempts';
+import { parseCbeConfig } from '@/components/cbe/types';
+import { parseCbeSlideResponse } from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 interface AssignmentFileInfo {
     fileId: string;
@@ -140,6 +145,8 @@ const SubmissionCard = ({
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [savedFlash, setSavedFlash] = useState(false);
+    // The form holds an AI suggestion the teacher has not saved yet.
+    const [aiFilled, setAiFilled] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     // marks=0 is set by default at student submission time, so the teacher has
     // only actually graded if any of: positive marks, feedback, or checked copy.
@@ -170,6 +177,14 @@ const SubmissionCard = ({
         }
     };
 
+    // AI Evaluator result -> grade form. A suggestion only: nothing is saved until Save Grade.
+    const handleApplyAiEvaluation = useCallback((evaluation: AssignmentAiEvaluation) => {
+        if (evaluation.marks_awarded != null) setMarks(String(evaluation.marks_awarded));
+        if (evaluation.feedback) setFeedback(evaluation.feedback);
+        if (evaluation.evaluated_file_id) setCheckedFileId(evaluation.evaluated_file_id);
+        setAiFilled(true);
+    }, []);
+
     const handleViewCheckedFile = async () => {
         if (!checkedFileId) return;
         const url = await getPublicUrl(checkedFileId);
@@ -187,6 +202,7 @@ const SubmissionCard = ({
                 checked_file_id: checkedFileId || undefined,
             });
             setSavedFlash(true);
+            setAiFilled(false);
             onGradeSaved();
             setTimeout(() => setSavedFlash(false), 2000);
         } catch (err) {
@@ -333,6 +349,15 @@ const SubmissionCard = ({
                             </span>
                         </div>
 
+                        {/* AI Evaluator */}
+                        {row.trackedId && (
+                            <AssignmentAiEvaluator
+                                trackedId={row.trackedId}
+                                hasFiles={row.files.length > 0}
+                                onApply={handleApplyAiEvaluation}
+                            />
+                        )}
+
                         {/* Marks */}
                         <div className="flex flex-col gap-1">
                             <label className="text-[11px] font-medium text-neutral-600">
@@ -433,6 +458,13 @@ const SubmissionCard = ({
                                 </button>
                             )}
                         </div>
+
+                        {aiFilled && (
+                            <p className="rounded-md bg-warning-50 px-2.5 py-1.5 text-caption text-warning-700">
+                                Filled in by the AI Evaluator. Review and edit, then save - the
+                                learner sees nothing until you do.
+                            </p>
+                        )}
 
                         {/* Save */}
                         <button
@@ -1057,7 +1089,32 @@ export const ActivityLogDialog = ({
             }));
         }
         if (activeItem?.source_type === 'QUESTION') {
-            transformedContent = activityLogs.content.map((item: ActivityContent) => ({
+            transformedContent = activityLogs.content.map((item: ActivityContent) => {
+                // Spreadsheet & Written Response: {type, answer, evaluation} — shown as
+                // cards under the table, not as a selected-options string.
+                const cbeAttempt = parseCbeSlideResponse(item.question_slides[0]?.response_json);
+                if (cbeAttempt) {
+                    return {
+                        activityId: item.id,
+                        activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
+                        attemptNumber: item.question_slides[0]?.attempt_number,
+                        startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
+                        endTime: formatDateTime(item.end_time_in_millis).split(',')[1],
+                        duration: `${(
+                            (item.end_time_in_millis - item.start_time_in_millis) /
+                            1000 /
+                            60
+                        ).toFixed(2)} mins`,
+                        questionName: '',
+                        response:
+                            cbeAttempt.evaluation?.marks_awarded != null
+                                ? `${cbeAttempt.evaluation.marks_awarded} / ${cbeAttempt.evaluation.max_marks ?? '—'}`
+                                : '—',
+                        responseStatus: item.question_slides[0]?.response_status,
+                        cbeAttempt,
+                    };
+                }
+                return {
                 activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
                 attemptNumber: item.question_slides[0]?.attempt_number,
                 startTime: formatDateTime(item.start_time_in_millis).split(',')[1],
@@ -1078,7 +1135,8 @@ export const ActivityLogDialog = ({
                           .join(',')
                     : '',
                 responseStatus: item.question_slides[0]?.response_status,
-            }));
+                };
+            });
         }
 
         if (activeItem?.source_type === 'QUIZ') {
@@ -1612,6 +1670,29 @@ export const ActivityLogDialog = ({
                                             />
                                         </div>
                                     )}
+                                    <CbeSlideAttempts
+                                        rows={(
+                                            tableData.content as Array<{
+                                                activityId?: string;
+                                                attemptNumber?: number;
+                                                activityDate?: string;
+                                                responseStatus?: string;
+                                                cbeAttempt?: CbeSlideAttemptRow['attempt'] | null;
+                                            }>
+                                        )
+                                            .filter((row) => row.cbeAttempt)
+                                            .map((row, i) => ({
+                                                key: row.activityId ?? `cbe-${i}`,
+                                                attemptNumber: row.attemptNumber,
+                                                activityDate: row.activityDate,
+                                                responseStatus: row.responseStatus,
+                                                attempt: row.cbeAttempt as CbeSlideAttemptRow['attempt'],
+                                            }))}
+                                        config={parseCbeConfig(
+                                            (activeItem?.question_slide as { cbeConfig?: unknown } | null)
+                                                ?.cbeConfig
+                                        )}
+                                    />
                                 </div>
                             )}
 

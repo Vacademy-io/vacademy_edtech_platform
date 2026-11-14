@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "label": "निर्यात करें"
+    },
+    "settingsButton": "निर्यात सेटिंग्स",
+    "close": "बंद करें",
+    "letterhead": {
+        "upload": "लेटरहेड",
+        "delete": "लेटरहेड हटाएं"
+    },
+    "answerKeyToggle": "उत्तर कुंजी के साथ"
+}

@@ -1,0 +1,41 @@
+{
+    "systemFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "username": "उपयोगकर्ता नाम",
+        "userId": "उपयोगकर्ता आईडी",
+        "dateOfBirth": "जन्म तिथि",
+        "gender": "लिंग",
+        "address": "पता",
+        "city": "शहर",
+        "region": "क्षेत्र / राज्य",
+        "pinCode": "पिन कोड"
+    },
+    "sources": {
+        "systemField": "सिस्टम फ़ील्ड",
+        "customField": "कस्टम फ़ील्ड",
+        "session": "सत्र वेरिएबल",
+        "context": "संदर्भ (फ़ोन, instituteId, …)",
+        "fixed": "निश्चित मान"
+    },
+    "emptyState": "अभी तक कोई मैपिंग नहीं है। उपयोगकर्ता डेटा से {{placeholder}} हल करने और डिफ़ॉल्ट मान सेट करने के लिए एक जोड़ें।",
+    "placeholderName": "प्लेसहोल्डर का नाम",
+    "remove": "हटाएँ",
+    "selectSystemField": "— सिस्टम फ़ील्ड चुनें —",
+    "selectCustomField": "— कस्टम फ़ील्ड चुनें —",
+    "loadingCustomFields": "लोड हो रहा है…",
+    "customFieldOption": "{{name}} ({{type}})",
+    "noCustomFieldsFound": "इस संस्थान के लिए कोई कस्टम फ़ील्ड नहीं मिली।",
+    "loadError": "त्रुटि: {{message}}",
+    "retry": "पुनः प्रयास करें",
+    "fieldPlaceholder": {
+        "fixed": "निश्चित मान",
+        "context": "phone | instituteId | userId | messageText",
+        "session": "सत्र वेरिएबल कुंजी"
+    },
+    "defaultValuePlaceholder": "डिफ़ॉल्ट (मान न मिलने पर उपयोग होता है)",
+    "addVariable": "वेरिएबल जोड़ें",
+    "noInstituteId": "कोई instituteId उपलब्ध नहीं है",
+    "loadCustomFieldsFailed": "कस्टम फ़ील्ड लोड करने में विफल"
+}

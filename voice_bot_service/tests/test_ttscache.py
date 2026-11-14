@@ -332,6 +332,9 @@ def test_a_row_whose_file_vanished_is_not_indexed(cache):
 # ── the ledger ──────────────────────────────────────────────────────────────
 
 def test_render_is_due_only_after_min_seen_sightings(cache):
+    """The knob still works when raised — _Settings pins it to 2, while the
+    shipped default is 1. This is the way back if the ledger ever shows a fat
+    never-recurring tail, so it has to keep being exercised."""
     c = _cand("Yeh humara flagship programme hai.")
     cache.ladder([c])
     assert cache.due() == []                    # once seen is not evidence
@@ -571,9 +574,31 @@ async def _sentinel_run_tts(text, context_id=None):
 class _FakeTTS:
     _push_start_frame = True
     _push_stop_frames = True
+    # Mirrors smallest: word_timestamps=True, so pipecat sets this False and
+    # builds text frames from vendor word timings that a cache hit never gets.
+    _push_text_frames = False
 
     def __init__(self):
         self.run_tts = _sentinel_run_tts
+
+    # The serve path reports TTFB through the wrapped engine; stop_ttfb_metrics is
+    # called on every hit (the clock is only STARTED when the base class did not).
+    async def start_ttfb_metrics(self):
+        pass
+
+    async def stop_ttfb_metrics(self):
+        pass
+
+
+def _install_on(monkeypatch, tmp_path, tts, *, mode):
+    """install_tts_cache against a caller-supplied service object."""
+    pytest.importorskip("pipecat.frames.frames")
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    return ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines=set(), cache_mode=mode,
+        cache=SpeechCache(root=str(tmp_path / "speech")))
 
 
 def _install(monkeypatch, tmp_path, *, mode, speech=True, llm=True, agents=()):
@@ -671,7 +696,10 @@ def _prompt_for(mode, language="hinglish"):
         pytest.skip("%-d strftime is glibc-only; this asserts in CI")
     from app import bot
     agent = {"id": "a1", "name": "T", "language": language, "voice": "mrunal",
-             "tts_model": "smallest_pro", "systemPrompt": "SCRIPT BODY",
+             # An education script: the consistency rule's examples (रमन, क्लास)
+             # are education words, and a non-education agent gets neutral ones
+             # (app/agent_domain; tests/test_agent_grounding.py).
+             "tts_model": "smallest_pro", "systemPrompt": "SCRIPT BODY about live classes",
              "openingLine": "नमस्ते जी।", "speech_cache_mode": mode}
     return bot.build_system_prompt({"agent": agent, "instituteName": "X",
                                     "direction": "OUTBOUND", "leadName": "P"})
@@ -918,3 +946,607 @@ async def test_report_now_pushes_unattributed_history(routes, cache, monkeypatch
     out = await routes.tts_cache_report_now(_Req())
     assert out["pushed"] == 1 and out["ok"] is True
     assert sent["ids"] == [ttscache.UNATTRIBUTED]
+
+
+def test_min_seen_defaults_to_one(monkeypatch):
+    """A sentence renders on its FIRST sighting, not its second.
+
+    Counting vendor payments for a line spoken N times: no cache costs N; at a
+    threshold of 2 it costs 3 (two live plus the render) and is free from the
+    third use; at 1 it costs 2 and is free from the SECOND. So 1 wins whenever
+    the line recurs at all and loses one cheap off-call render when it does not.
+
+    Pinned because the value is a silent economic trade — nothing fails if it
+    drifts back to 2, the cache just quietly stops earning on everything with a
+    short tail. Measured on shreya-v3's first day, 54 of 73 sentences sat at one
+    sighting, so a threshold of 2 was holding back the whole backlog.
+    """
+    monkeypatch.delenv("TTS_CACHE_MIN_SEEN", raising=False)
+    from app.config import Settings
+    assert Settings().tts_cache_min_seen == 1
+
+
+# ── a cache hit must count as speech ────────────────────────────────────────
+
+async def test_a_cache_hit_emits_a_TTSTextFrame(monkeypatch, tmp_path):
+    """THE frame that makes a served sentence visible downstream.
+
+    smallest and sarvam are built with word_timestamps=True, so pipecat sets
+    push_text_frames=False and builds TTSTextFrames from the vendor's word-timing
+    messages. A cache hit never calls the vendor, so those never arrive — and the
+    served sentence emitted ZERO TTSTextFrames.
+
+    Everything that decides "has the bot said this?" reads that frame.
+    PlayedTranscriptRecorder logs only TTSTextFrame; NoRepeatGate tests
+    containment in what it logged. With none emitted, a cached sentence was
+    permanently "never said" and the model could repeat it without limit. Live
+    call f425326e: one 8.2s line played THREE times at envelope correlation
+    0.996 — the same blob replayed, not a re-synthesis — with REPLY_LOOP and 30
+    unsaid-reverts.
+    """
+    from pipecat.frames.frames import TTSTextFrame
+    pytest.importorskip("pipecat.frames.frames")
+    line = "Theek hai, dhanyavaad."
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(600))
+
+    tts = _FakeTTS()
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+
+    frames = [f async for f in tts.run_tts(line, "ctx-1") if f is not None]
+    kinds = [type(f).__name__ for f in frames]
+    assert "TTSAudioRawFrame" in kinds, "expected a cache hit; got %r" % (kinds,)
+
+    texts = [f for f in frames if isinstance(f, TTSTextFrame)]
+    assert len(texts) == 1, "exactly one TTSTextFrame, got %d" % len(texts)
+    assert texts[0].text == line, "must carry the ORIGINAL text the caller heard"
+
+    # AFTER the audio, matching where pipecat's own base class appends its tail
+    # frame. Before it, the sentence would count as heard the moment playout
+    # STARTED, and a caller who talked over it would be told they had heard it —
+    # the exact bug NoRepeatGate's never-played revert exists to prevent.
+    assert kinds.index("TTSTextFrame") > kinds.index("TTSAudioRawFrame")
+
+
+async def test_a_cache_MISS_does_not_add_a_text_frame(monkeypatch, tmp_path):
+    """The vendor path is untouched: pipecat still owns the text frame there, and
+    emitting our own would duplicate it into the transcript."""
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    tts = _FakeTTS()
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines=set(), cache_mode="FULL", cache=c)
+    frames = [f async for f in tts.run_tts("Kuch aur poochhna hai?", "ctx-2")
+              if f is not None]
+    assert [type(f).__name__ for f in frames] == [],         "a miss must yield exactly what the engine yielded, and nothing more"
+
+
+async def test_no_text_frame_when_pipecat_already_emits_one(monkeypatch, tmp_path):
+    """sarvam, deepgram and google set push_text_frames=True, so pipecat appends
+    its OWN TTSTextFrame after run_tts returns. Emitting ours too would put the
+    sentence in the played transcript and the assistant context twice — the model
+    would see itself say the line twice and the repeat check would compare
+    doubled text. Only the word-timestamp services (smallest) need ours.
+
+    (A real pipecat service places the text at its heard point and drops
+    pipecat's copy — the tests below. This stand-in has no
+    append_to_audio_context to drop it through, so it must get none of ours.)
+    """
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Theek hai, dhanyavaad."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(600))
+
+    tts = _FakeTTS()
+    tts._push_text_frames = True          # behave like sarvam
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-3")
+             if f is not None]
+    assert "TTSAudioRawFrame" in kinds, "still expected a cache hit"
+    assert "TTSTextFrame" not in kinds,         "pipecat appends its own here — ours would duplicate the sentence"
+
+
+def test_owns_text_frame_defaults_to_not_emitting():
+    """Unknown service: a missing frame degrades the repeat check, a duplicated
+    one corrupts the transcript. Prefer the recoverable failure."""
+    class _Unknown: pass
+    assert ttscache.owns_text_frame(_Unknown()) is False
+
+
+# ── a cached sentence is HEARD by its audio, like a live one (call 34452119) ─
+
+def test_heard_chunk_count_is_the_first_boundary_at_or_past_the_share():
+    assert ttscache.heard_chunk_count(0) == 0
+    assert ttscache.heard_chunk_count(1) == 1, "the text never leads its audio"
+    assert ttscache.heard_chunk_count(3) == 2
+    assert ttscache.heard_chunk_count(10) == 6
+    assert ttscache.heard_chunk_count(660) == 396        # a 13.2 s blob in 20 ms chunks
+    assert ttscache.heard_chunk_count(10, share=1.0) == 10
+    assert ttscache.heard_chunk_count(10, share=2.0) == 10, "never past the last chunk"
+
+
+class _QueueTTS(_FakeTTS):
+    """A push_text_frames engine (navana / sarvam) with pipecat's audio-context
+    append: what the hit path's frames and pipecat's own late TTSTextFrame are
+    queued through. Records the queue in order."""
+    _push_start_frame = True
+    _push_stop_frames = False
+    _push_text_frames = True
+
+    def __init__(self):
+        super().__init__()
+        self.queue = []
+        self._tts_contexts = {}
+
+    async def append_to_audio_context(self, context_id, frame):
+        self.queue.append((context_id, frame))
+
+
+async def _speak(tts, text, cid, *, append_to_context=True, stop_after=None):
+    """pipecat's _push_tts_frames for one sentence: register the context, run
+    run_tts appending every frame it yields, then append the base class's own
+    TTSTextFrame. stop_after=N: the run is interrupted after N yielded frames
+    (the generator is closed and pipecat appends nothing more)."""
+    from types import SimpleNamespace
+    from pipecat.frames.frames import AggregationType, TTSTextFrame
+    tts._tts_contexts[cid] = SimpleNamespace(append_to_context=append_to_context)
+    gen = tts.run_tts(text, cid)
+    n = 0
+    async for f in gen:
+        if f is not None:
+            await tts.append_to_audio_context(cid, f)
+        n += 1
+        if stop_after is not None and n >= stop_after:
+            await gen.aclose()
+            return
+    late = TTSTextFrame(text, aggregated_by=AggregationType.SENTENCE)
+    late.context_id = cid
+    late.append_to_context = append_to_context
+    await tts.append_to_audio_context(cid, late)
+
+
+def _install_queue_tts(monkeypatch, tmp_path, lines):
+    monkeypatch.setattr(ttscache, "get_settings", lambda: _Settings(str(tmp_path)))
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    for line, ms in lines:
+        cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                     pace=1.1, temperature=0.5, fixed=True)
+        c.ladder([cand]); c.store(cand, _pcm(ms))
+    tts = _QueueTTS()
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line for line, _ in lines}, cache_mode="FULL", cache=c)
+    return tts
+
+
+def _kinds(queue, cid=None):
+    return [type(f).__name__ for c, f in queue if cid is None or c == cid]
+
+
+async def test_a_cached_sentence_is_heard_at_60_percent_of_its_audio_and_said_once(
+        monkeypatch, tmp_path):
+    """Call 34452119 (2026-10-02): a 13.2 s cached reply sentence, cut at 63 %.
+    pipecat appended its text BEHIND the whole blob, so the cut left it out of
+    the played transcript; NoRepeatGate un-recorded it and the model said all of
+    it again. The text must sit 60 % of the way into the audio — where a live
+    Navana sentence's is released — and pipecat's late copy must be dropped:
+    one TTSTextFrame per sentence, carrying the context's append_to_context."""
+    from pipecat.frames.frames import TTSTextFrame
+    line = "Shiksha Nation में हमारा focus सिर्फ syllabus पूरा करने पर नहीं है।"
+    tts = _install_queue_tts(monkeypatch, tmp_path, [(line, 1000)])
+    await _speak(tts, line, "ctx-cached", append_to_context=False)
+    kinds = _kinds(tts.queue)
+    texts = [f for _, f in tts.queue if isinstance(f, TTSTextFrame)]
+    assert len(texts) == 1, f"one text frame per sentence, got {len(texts)}: {kinds}"
+    assert texts[0].text == line
+    assert getattr(texts[0], "_vacademy_cached_text", False), "pipecat's late copy got through"
+    assert texts[0].append_to_context is False, "a re-said opening must not re-enter the context"
+    n_audio = kinds.count("TTSAudioRawFrame")
+    before = kinds[:kinds.index("TTSTextFrame")].count("TTSAudioRawFrame")
+    assert n_audio == 50                                  # 1 s in 20 ms chunks
+    assert before == 30, f"text after {before} of {n_audio} chunks — want 60 % (30)"
+
+
+async def test_a_cached_question_keeps_its_text_behind_the_whole_clip(monkeypatch, tmp_path):
+    """Replay corpus, 2026-10-02: placing the cached OPENING's text at 60 % made a
+    "हाँ" that cut it at 61-79 % read as the answer to its question — which starts
+    at 66 % and was never heard. A clip ending in a question keeps pipecat's own
+    text frame, after the last chunk, exactly as before; nothing is armed to drop."""
+    from pipecat.frames.frames import TTSTextFrame
+    opening = ("नमस्ते जी, मैं श्रेया बोल रही हूँ Shiksha Nation से। आपने live classes की "
+               "inquiry की थी। क्या मैं जान सकती हूँ कि किससे बात कर रही हूँ?")
+    tts = _install_queue_tts(monkeypatch, tmp_path, [(opening, 1000)])
+    await _speak(tts, opening, "ctx-open", append_to_context=False)
+    kinds = _kinds(tts.queue)
+    texts = [f for _, f in tts.queue if isinstance(f, TTSTextFrame)]
+    assert len(texts) == 1, kinds
+    assert not getattr(texts[0], "_vacademy_cached_text", False), "the cache placed a question's text"
+    assert "TTSAudioRawFrame" not in kinds[kinds.index("TTSTextFrame"):], "text before the clip ended"
+    await _speak(tts, "Kuch aur poochhna hai?", "ctx-open")
+    assert [f.text for c, f in tts.queue if isinstance(f, TTSTextFrame)][-1] == "Kuch aur poochhna hai?", \
+        "a drop was left armed"
+
+
+def test_ends_in_question():
+    f = ttscache.ends_in_question
+    assert f("क्या मैं जान सकती हूँ कि किससे बात कर रही हूँ?")
+    assert f("Is this Raman? ")
+    assert f('He asked "really?"')
+    assert f("कौन-सा time ठीक रहेगा？")
+    assert not f("Hello, is this Raman? I am Aarushi from Vacademy.")
+    assert not f("Shiksha Nation में हमारा focus सिर्फ syllabus पूरा करने पर नहीं है।")
+    assert not f("")
+
+
+async def test_a_live_sentence_keeps_pipecats_text_frame(monkeypatch, tmp_path):
+    """The drop is armed only by a cache HIT: a miss (and every live sentence
+    after a hit) keeps the base class's TTSTextFrame — the live path is the
+    engine's own, untouched."""
+    from pipecat.frames.frames import TTSTextFrame
+    cached = "Thank you."
+    tts = _install_queue_tts(monkeypatch, tmp_path, [(cached, 400)])
+    await _speak(tts, cached, "ctx-1")
+    await _speak(tts, "Kuch aur poochhna hai?", "ctx-2")
+    live = [f for c, f in tts.queue if c == "ctx-2" and isinstance(f, TTSTextFrame)]
+    assert [f.text for f in live] == ["Kuch aur poochhna hai?"]
+    assert not getattr(live[0], "_vacademy_cached_text", False)
+    assert len([f for c, f in tts.queue if c == "ctx-1" and isinstance(f, TTSTextFrame)]) == 1
+
+
+async def test_a_hit_cut_before_its_heard_point_places_no_text_and_arms_nothing(
+        monkeypatch, tmp_path):
+    """Interrupted at ~30 % (the 30 % cut of the timing sim): no text frame is
+    queued — the sentence is not heard and may be said again — and no drop is
+    left armed to swallow the next sentence's text on the same context (a
+    shared turn context reuses the id)."""
+    from pipecat.frames.frames import TTSTextFrame
+    line = "Generally parents have three or four basic expectations."
+    tts = _install_queue_tts(monkeypatch, tmp_path, [(line, 1000)])
+    await _speak(tts, line, "ctx-shared", stop_after=15)       # 15 of 50 chunks
+    assert not [f for _, f in tts.queue if isinstance(f, TTSTextFrame)]
+    await _speak(tts, "Would you agree with that?", "ctx-shared")
+    texts = [f.text for _, f in tts.queue if isinstance(f, TTSTextFrame)]
+    assert texts == ["Would you agree with that?"]
+
+
+def test_the_handoff_drops_only_the_armed_contexts_next_copy():
+    from pipecat.frames.frames import AggregationType, TTSTextFrame
+    h = ttscache.CachedTextHandoff()
+
+    def tf(text, own=False):
+        f = TTSTextFrame(text, aggregated_by=AggregationType.SENTENCE)
+        if own:
+            f._vacademy_cached_text = True
+        return f
+    assert not h.take("a", tf("x")), "nothing armed"
+    h.arm("a", "Thank you.")
+    assert not h.take("a", tf("Thank you.", own=True)), "our own placed frame is never dropped"
+    assert not h.take("b", tf("Thank you.")), "another context's frame is not ours to drop"
+    assert h.take("a", tf("Thank you. ")), "pipecat's copy (whitespace aside) is dropped"
+    assert not h.take("a", tf("Thank you.")), "one-shot"
+    h.arm("a", "Thank you.")
+    h.clear()
+    assert not h.take("a", tf("Thank you.")), "cleared by the next run_tts"
+
+
+def test_a_word_timestamp_engine_keeps_its_own_append(monkeypatch, tmp_path):
+    """smallest (push_text_frames off) already spreads a cached sentence's words
+    over its blob: nothing of the handoff is installed on it."""
+    monkeypatch.setattr(ttscache, "get_settings", lambda: _Settings(str(tmp_path)))
+
+    class _WordTTS(_FakeTTS):
+        async def append_to_audio_context(self, context_id, frame):
+            pass
+    tts = _WordTTS()
+    assert ttscache.owns_text_frame(tts)
+    ttscache.install_tts_cache(
+        tts, engine="smallest", model="lightning", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines=set(), cache_mode="FULL",
+        cache=SpeechCache(root=str(tmp_path / "speech")))
+    assert "append_to_audio_context" not in vars(tts), "the word-timestamp engine was wrapped"
+
+
+def test_a_hit_records_itself_even_with_no_prior_provenance(cache):
+    """THE reason every backfilled entry read 0 hits forever.
+
+    A cache HIT never ladders — only the miss path adds a candidate — so the
+    provenance row may not exist when the first hit lands, and it certainly does
+    not for anything laddered before per-agent tracking existed. This used to be
+    a bare UPDATE, which matched zero rows there and dropped the hit silently.
+    """
+    c = _cand("Namaste ji.", fixed=True)          # laddered with NO agent_id
+    cache.ladder([c]); cache.store(c, _pcm(600))
+    assert [e for e in cache.export_for_report()
+            if e["agentId"] == "agent-a"] == [], "no provenance row yet"
+
+    cache._bump_agent_hit(c.key, "agent-a", "AGENT-A", "inst-1")
+
+    rows = [e for e in cache.export_for_report() if e["agentId"] == "agent-a"]
+    assert len(rows) == 1, "the hit must CREATE the attribution row"
+    assert rows[0]["hits"] == 1
+    assert rows[0]["agentName"] == "AGENT-A"
+    assert rows[0]["sentence"] == "Namaste ji."
+
+
+def test_repeated_hits_accumulate_on_the_same_row(cache):
+    c = _acand("Theek hai.", "agent-a", fixed=True)
+    cache.ladder([c])
+    for _ in range(3):
+        cache._bump_agent_hit(c.key, "agent-a", "AGENT-A", "inst-1")
+    row = [e for e in cache.export_for_report() if e["agentId"] == "agent-a"][0]
+    assert row["hits"] == 3
+    assert row["sightings"] == 1, "a hit is not a sighting — ladder owns that"
+
+
+# ── the ordering guard no longer starves the cache ──────────────────────────
+
+def test_enabling_the_cache_switches_the_engine_to_per_sentence_contexts(
+        monkeypatch, tmp_path):
+    """One context per turn is what forced a cached sentence to the vendor."""
+    tts = _FakeTTS()
+    tts._reuse_context_id_within_turn = True
+    _install_on(monkeypatch, tmp_path, tts, mode="FULL")
+    assert tts._reuse_context_id_within_turn is False
+    assert ttscache.per_sentence_contexts(tts) is True
+
+
+def test_a_DISABLED_agent_keeps_pipecat_turn_bracketing(monkeypatch, tmp_path):
+    """The ship-safety guarantee. Turn bracketing drives DuckGate, the watchdog
+    and dead-air measurement, so an agent nobody enabled must not have it
+    changed underneath them."""
+    tts = _FakeTTS()
+    tts._reuse_context_id_within_turn = True
+    _install_on(monkeypatch, tmp_path, tts, mode="OFF")
+    assert tts._reuse_context_id_within_turn is True, "must be left untouched"
+
+
+async def test_a_cached_sentence_serves_even_with_vendor_audio_in_flight(
+        monkeypatch, tmp_path):
+    """THE fix. On live call a2d883c4, 14 sentences worth 955 characters were
+    already rendered and were re-synthesised anyway, because one earlier miss in
+    the turn had set vendor_inflight and TTSStoppedFrame only clears it at the
+    END of a turn on these engines.
+    """
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Theek hai, dhanyavaad."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(600))
+
+    tts = _FakeTTS()
+    tts._reuse_context_id_within_turn = True
+    watcher = ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+
+    watcher.note_vendor_dispatch()          # an earlier sentence went to the vendor
+    assert watcher.vendor_inflight is True
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-9")
+             if f is not None]
+    assert "TTSAudioRawFrame" in kinds,         "cached audio must serve mid-turn now that ordering is fixed by context"
+
+
+async def test_the_guard_still_applies_if_contexts_are_NOT_per_sentence(
+        monkeypatch, tmp_path):
+    """Belt and braces: on any service we could not switch, serving mid-turn
+    would still reorder audio, so the guard must keep refusing."""
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Theek hai, dhanyavaad."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(600))
+    tts = _FakeTTS()
+    watcher = ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    tts._reuse_context_id_within_turn = True     # pretend the switch did not take
+    watcher.note_vendor_dispatch()
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-10")
+             if f is not None]
+    assert "TTSAudioRawFrame" not in kinds, "ordering beats hit rate, always"
+
+
+# ── call f225f71e (2026-09-10): a 187,810 ms drone cached under "Got it." ─────
+
+def test_plausible_duration_rejects_drones_and_keeps_real_speech():
+    from app.ttscache import plausible_duration
+    assert not plausible_duration("Got it.", 187_810)
+    assert not plausible_duration("Perfect.", 50_600)
+    # Real renders from the live cache (text length -> duration) all pass.
+    assert plausible_duration("Got it.", 960)
+    assert plausible_duration("जी?", 1_200)
+    assert plausible_duration("नमस्ते जी, ये call record की जाएगी। मैं श्रेया बोल रही हूँ शिक्षा नेशन से।", 12_200)
+    assert plausible_duration("x" * 70, 18_400)          # slow, long Hindi line
+    # 4 s floor: a short line may take up to 4 s (pauses, slow voice).
+    assert plausible_duration("Okay.", 3_900)
+    assert not plausible_duration("Okay.", 4_100 * 2)
+
+
+async def test_a_cached_sentence_closes_its_own_per_sentence_context(
+        monkeypatch, tmp_path):
+    """Live call 994162b0 (2026-09-12): 'Thank you.' from the cache, then 3.6 s
+    of silence before the next cached sentence. With per-sentence contexts the
+    base class never closes a cached context (the vendor's 'done' does that for
+    vendor audio, and the turn-end close targets an id no sentence uses), so the
+    queue sat open until pipecat's 3 s idle timeout and the next sentence's audio
+    waited behind it. The hit path must append the stop bracket and the None
+    sentinel itself, in that order, after its audio and text."""
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Thank you."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(400))
+
+    tts = _FakeTTS()
+    tts._reuse_context_id_within_turn = True
+    removed = []
+
+    async def remove_audio_context(cid):
+        removed.append(cid)
+    tts.remove_audio_context = remove_audio_context
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    assert ttscache.per_sentence_contexts(tts)
+
+    order = []
+    async for f in tts.run_tts(line, "ctx-thanks"):
+        if f is not None:
+            order.append(type(f).__name__)
+    assert "TTSAudioRawFrame" in order and "TTSTextFrame" in order
+    assert order[-1] == "TTSStoppedFrame", order
+    # The close waits for the blob's own playout (400 ms here): closing at once
+    # stamped the next sentence's words early (call 859c20ee).
+    assert removed == [], "closed before the audio could have played"
+    import asyncio as _a
+    await _a.sleep(0.6)
+    assert removed == ["ctx-thanks"]
+    # the stop bracket must come AFTER the text frame, which comes after audio
+    assert order.index("TTSTextFrame") > order.index("TTSAudioRawFrame")
+    assert order.index("TTSStoppedFrame") > order.index("TTSTextFrame")
+
+
+async def test_a_cached_sentence_does_not_close_a_shared_turn_context(
+        monkeypatch, tmp_path):
+    """With one context per TURN (cache disabled for the agent, or a sync
+    engine), closing after the first sentence would cut the rest of the turn
+    off. The base class owns the close there; the hit path must not touch it."""
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Theek hai, dhanyavaad."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(600))
+    tts = _FakeTTS()
+    removed = []
+
+    async def remove_audio_context(cid):
+        removed.append(cid)
+    tts.remove_audio_context = remove_audio_context
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    tts._reuse_context_id_within_turn = True      # shared turn context
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-1") if f is not None]
+    assert "TTSAudioRawFrame" in kinds
+    assert "TTSStoppedFrame" not in kinds and removed == []
+
+
+async def test_a_push_text_frames_engine_is_left_to_the_base_class(
+        monkeypatch, tmp_path):
+    """On an engine where pipecat appends the TTSTextFrame AFTER run_tts
+    returns, closing inside run_tts would put the None sentinel ahead of the
+    text and the sentence would vanish from the played transcript (the timing
+    simulator's stub caught this). Such engines keep the base-class close."""
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Thank you."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(400))
+    tts = _FakeTTS()
+    tts._push_text_frames = True
+    removed = []
+
+    async def remove_audio_context(cid):
+        removed.append(cid)
+    tts.remove_audio_context = remove_audio_context
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-2") if f is not None]
+    assert "TTSAudioRawFrame" in kinds and removed == []
+
+
+def test_force_complete_leaves_queued_sentences_alone():
+    """Call 859c20ee: every sentence after a cache hit recorded twice, because
+    the hit's context end force-completed the slots of sentences still queued
+    behind it. Only slots of ended/playing contexts may be flushed."""
+    class _Slot:
+        def __init__(self, cid, complete=False):
+            self.context_id, self.spoken, self.complete, self.tracker = cid, True, complete, object()
+
+    class _Seq:
+        def __init__(self):
+            self._slots = [_Slot("playing"), _Slot("queued-1"), _Slot("queued-2")]
+            self.calls = []
+
+        def force_complete(self, pts):
+            self.calls.append([s.context_id for s in self._slots])
+            for s in self._slots:
+                s.complete = True
+            return []
+
+    class _T:
+        _aggregated_frame_sequencer = _Seq()
+        _playing_context_id = "playing"
+
+        def audio_context_available(self, cid):
+            return cid in ("playing", "queued-1", "queued-2")
+
+    t = _T()
+    assert ttscache.scope_force_complete_to_ended_contexts(t) is True
+    assert ttscache.scope_force_complete_to_ended_contexts(t) is False, "idempotent"
+    seq = t._aggregated_frame_sequencer
+    seq.force_complete(0)
+    assert seq.calls == [["playing"]], "queued sentences must not be flushed"
+    assert [s.context_id for s in seq._slots] == ["playing", "queued-1", "queued-2"], "order restored"
+    assert [s.complete for s in seq._slots] == [True, False, False]
+    # once their contexts are gone (played, deleted) they are flushed normally
+    t.audio_context_available = lambda cid: False
+    seq.force_complete(0)
+    assert seq.calls[-1] == ["playing", "queued-1", "queued-2"]
+
+
+
+async def test_a_long_cached_sentence_holds_the_next_one_until_it_has_played(
+        monkeypatch, tmp_path):
+    """Call d9aed777 (2026-09-25): a 10.9 s cached sentence handed the next,
+    live sentence to the vendor 6 s in (emission runs ~2x real time), its words
+    were stamped inside the cached one, and the played transcript interleaved
+    the two. The hit path now returns only ~0.3 s before its own audio ends."""
+    import time as _t
+    monkeypatch.setattr(ttscache, "get_settings",
+                        lambda: _Settings(str(tmp_path)))
+    line = "Generally when parents join a coaching class they have basic expectations."
+    c = SpeechCache(root=str(tmp_path / "speech")); c.open()
+    cand = _cand(line, engine="sarvam", model="bulbul:v3", voice="priya",
+                 pace=1.1, temperature=0.5, fixed=True)
+    c.ladder([cand]); c.store(cand, _pcm(2000))
+    tts = _FakeTTS()
+    tts._reuse_context_id_within_turn = True
+    async def remove_audio_context(cid):
+        pass
+    tts.remove_audio_context = remove_audio_context
+    ttscache.install_tts_cache(
+        tts, engine="sarvam", model="bulbul:v3", voice="priya", pace=1.1,
+        temperature=0.5, fixed_lines={line}, cache_mode="FULL", cache=c)
+    assert ttscache.per_sentence_contexts(tts)
+    t0 = _t.monotonic()
+    kinds = [type(f).__name__ async for f in tts.run_tts(line, "ctx-long") if f is not None]
+    took = _t.monotonic() - t0
+    assert "TTSAudioRawFrame" in kinds
+    assert took >= 2.0 - ttscache._NEXT_SENTENCE_LEAD_SECS - 0.1, \
+        f"returned {took:.2f}s into a 2.0 s blob — the next sentence would start inside it"
+    assert took < 2.0 + 0.3, f"held {took:.2f}s — longer than the blob itself"

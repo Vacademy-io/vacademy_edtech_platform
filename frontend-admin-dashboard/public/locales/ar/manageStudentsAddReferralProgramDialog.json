@@ -1,0 +1,12 @@
+{
+    "errors": {
+        "operationFailed": "فشل {{operation}}. يرجى المحاولة مرة أخرى.",
+        "operations": {
+            "saveReferralProgram": "حفظ برنامج الإحالة"
+        }
+    },
+    "success": {
+        "updated": "تم تحديث برنامج الإحالة بنجاح!",
+        "created": "تم إنشاء برنامج الإحالة بنجاح!"
+    }
+}

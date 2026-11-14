@@ -27,6 +27,39 @@ public class LiveSessionStep2RequestDTO {
 
     private String joinLink;
 
+    /**
+     * The session's instructors / presenters (V524), as user ids.
+     *
+     * <p>Tri-state on purpose:
+     * <ul>
+     *   <li><b>null</b> — the client didn't touch instructors. Every client
+     *       written before this feature sends null, and keeps its existing
+     *       behaviour: the creator seeded at step 1 stays.</li>
+     *   <li><b>empty list</b> — explicitly remove all instructors. The session
+     *       then falls back to its creator, so it never becomes orphaned.</li>
+     *   <li><b>non-empty</b> — the exact list to reconcile to.</li>
+     * </ul>
+     *
+     * <p>Lives on step 2 alongside the other "who is this class for" fields,
+     * which also gives the bulk endpoint instructor support for free via
+     * {@code step2PerRow}.
+     */
+    private List<String> instructorUserIds;
+
+    /**
+     * Instructors as humans typed them — user id, email or username (V524).
+     *
+     * <p>Exists for the bulk CSV import, where an admin authoring a spreadsheet
+     * cannot reasonably be asked for UUIDs. Resolved against the institute's
+     * staff directory and merged into {@link #instructorUserIds}; identifiers
+     * that match nobody are reported as a per-row warning rather than failing
+     * the row, so one typo in one cell does not cost the admin the import.
+     *
+     * <p>Ignored when null. Resolution is additive: sending both this and
+     * {@code instructorUserIds} yields the union.
+     */
+    private List<String> instructorIdentifiers;
+
     // === Reschedule Context ===
     /**
      * Wall-clock schedule this session held BEFORE the current edit, supplied by the

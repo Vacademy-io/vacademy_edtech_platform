@@ -1,0 +1,65 @@
+{
+    "title": "Offline payment modes",
+    "description": "The options admins pick from when they record a payment by hand. Switch a mode or option off instead of deleting it: past payments keep pointing at it.",
+    "loading": "Loading…",
+    "requireMode": {
+        "label": "Require a mode when recording a payment",
+        "hint": "When off, the mode is optional."
+    },
+    "defaultMode": "Preselected mode",
+    "noDefault": "None",
+    "mode": {
+        "active": "Mode on",
+        "labelPlaceholder": "Mode name, e.g. UPI",
+        "referenceLabelPlaceholder": "Reference label, e.g. UTR number",
+        "remove": "Remove mode",
+        "referenceRequired": "Reference required",
+        "proofRequired": "Proof required"
+    },
+    "extra": {
+        "cheque_date": "Ask cheque date",
+        "bank_name": "Ask bank",
+        "payer_name": "Ask who paid"
+    },
+    "subModes": {
+        "heading": "Options (e.g. PhonePe, Google Pay, or the account the money went into)",
+        "active": "Option on",
+        "placeholder": "Option name",
+        "remove": "Remove option",
+        "add": "Add option",
+        "labelPlaceholder": "What options are called, e.g. Account",
+        "required": "An option must be picked"
+    },
+    "addMode": "Add payment mode",
+    "save": "Save",
+    "saving": "Saving…",
+    "toasts": {
+        "saved": "Payment modes saved",
+        "saveError": "Could not save payment modes"
+    },
+    "errors": {
+        "modeLabel": "Every mode needs a name.",
+        "subModeLabel": "Every option needs a name.",
+        "noActive": "Keep at least one mode on.",
+        "fieldLabel": "Every field needs a name.",
+        "selectOptions": "Every dropdown field needs at least one choice."
+    },
+    "required": "Required",
+    "fields": {
+        "heading": "Extra fields for this mode (e.g. Bank branch, Cheque status, Transaction date)",
+        "active": "Field on",
+        "labelPlaceholder": "Field name, e.g. Cheque status",
+        "type": "Field type",
+        "types": {
+            "TEXT": "Text",
+            "DATE": "Date",
+            "NUMBER": "Number",
+            "SELECT": "Dropdown"
+        },
+        "remove": "Remove field",
+        "optionPlaceholder": "Choice, e.g. Cleared",
+        "removeOption": "Remove choice",
+        "addOption": "Add choice",
+        "add": "Add field"
+    }
+}

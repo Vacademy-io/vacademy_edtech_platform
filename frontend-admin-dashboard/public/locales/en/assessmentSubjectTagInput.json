@@ -1,0 +1,7 @@
+{
+    "placeholder": "Add a subject/topic tag",
+    "removeTag": "Remove {{tag}}",
+    "noTagsFound": "No tags found.",
+    "createTag": "Create “{{value}}”",
+    "existingTags": "Existing tags"
+}

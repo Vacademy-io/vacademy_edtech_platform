@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useCatalogStore } from "../-store/catalogStore";
 import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
@@ -22,6 +23,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   handleChange,
   disabled,
 }) => {
+  const { t } = useTranslation("coursesRouteA");
   const [isExpanded, setIsExpanded] = useState(false);
   const initialDisplayCount = 3;
   const canExpand = items.length > initialDisplayCount;
@@ -34,12 +36,12 @@ const FilterSection: React.FC<FilterSectionProps> = ({
       <div className="space-y-2">
         {items.length === 0 && !disabled && (
           <p className="text-sm text-gray-500">
-            No {title.toLowerCase()} available.
+            {t("filterPanel.noItemsAvailable", { title: title.toLowerCase() })}
           </p>
         )}
         {disabled && (
           <p className="text-sm text-gray-500">
-            {title} filters are currently unavailable.
+            {t("filterPanel.filtersUnavailable", { title })}
           </p>
         )}
         {itemsToDisplay.map((item) => (
@@ -71,12 +73,12 @@ const FilterSection: React.FC<FilterSectionProps> = ({
         >
           {isExpanded ? (
             <>
-              Show Less
+              {t("filterPanel.showLess")}
               <CaretUp size={14} />
             </>
           ) : (
             <>
-              Show More
+              {t("filterPanel.showMore")}
               <CaretDown size={14} />
             </>
           )}
@@ -114,6 +116,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   tagsDisabled = false,
   instructorsDisabled = false,
 }) => {
+  const { t } = useTranslation("coursesRouteA");
   const { instructor, instituteData } = useCatalogStore();
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
 
@@ -163,7 +166,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         >
           <div className="flex items-center space-x-2">
             <Funnel size={18} className="text-gray-600" />
-            <span className="text-sm font-semibold text-gray-900">Filters</span>
+            <span className="text-sm font-semibold text-gray-900">{t("filterPanel.title")}</span>
             {hasActiveFilters && (
               <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full">
                 {selectedLevels.length + selectedTags.length + selectedInstructors.length}
@@ -181,42 +184,42 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       <div className={`lg:block ${isMobileExpanded ? 'block' : 'hidden'}`}>
         {/* Desktop Header */}
         <div className="hidden lg:flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Filters</h2>
+          <h2 className="text-xl font-bold text-gray-800">{t("filterPanel.title")}</h2>
           <div className="flex gap-1">
             <Button
               onClick={clearAllFilters}
               disabled={!hasActiveFilters}
               className={`px-2 py-1 h-fit transition text-xs mt-px`}
             >
-              Clear All
+              {t("filterPanel.clearAll")}
             </Button>
             <Button
               onClick={onApplyFilters}
               disabled={!hasActiveFilters}
               className={`px-2 py-1 h-fit transition text-xs mt-px`}
             >
-              Apply
+              {t("filterPanel.apply")}
             </Button>
           </div>
         </div>
 
         {/* Mobile Header */}
         <div className="lg:hidden flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-gray-800">Filters</h2>
+          <h2 className="text-lg font-bold text-gray-800">{t("filterPanel.title")}</h2>
           <div className="flex gap-1">
             <Button
               onClick={clearAllFilters}
               disabled={!hasActiveFilters}
               className={`px-2 py-1 h-fit transition text-xs mt-px`}
             >
-              Clear All
+              {t("filterPanel.clearAll")}
             </Button>
             <Button
               onClick={onApplyFilters}
               disabled={!hasActiveFilters}
               className={`px-2 py-1 h-fit transition text-xs mt-px`}
             >
-              Apply
+              {t("filterPanel.apply")}
             </Button>
           </div>
         </div>

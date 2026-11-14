@@ -165,13 +165,15 @@ public class LearnerDashBoardService {
                 0,
                 validPackageSessionIds.isEmpty() ? List.of() : slideRepository.findRecentIncompleteSlides(
                         user.getUserId(),
+                        instituteId,
                         validPackageSessionIds,
                         VALID_SLIDE_STATUSES,
                         VALID_SLIDE_STATUSES, 
                         ACTIVE_CHAPTERS,
                         ACTIVE_MODULES,
                         ACTIVE_SUBJECTS,
-                        List.of(PackageSessionStatusEnum.ACTIVE.name(), PackageSessionStatusEnum.HIDDEN.name())
+                        List.of(PackageSessionStatusEnum.ACTIVE.name(), PackageSessionStatusEnum.HIDDEN.name()),
+                        ACTIVE_LEARNERS
                 ),
                 askForTnc,
                 tncUrl,

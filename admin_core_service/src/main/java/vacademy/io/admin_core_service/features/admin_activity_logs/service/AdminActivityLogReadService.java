@@ -2,6 +2,8 @@ package vacademy.io.admin_core_service.features.admin_activity_logs.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -165,21 +167,44 @@ public class AdminActivityLogReadService {
                 if (filter.getEndDate() != null) {
                     predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), filter.getEndDate()));
                 }
-                if (filter.getActorId() != null && !filter.getActorId().isBlank()) {
-                    predicates.add(cb.equal(root.get("actorId"), filter.getActorId()));
-                }
-                if (filter.getEntityType() != null && !filter.getEntityType().isBlank()) {
-                    predicates.add(cb.equal(root.get("entityType"), filter.getEntityType()));
-                }
+                // One value emits `= ?` (the composite indexes' fast path);
+                // several emit `IN (...)`, which those same indexes still serve.
+                addInPredicate(predicates, cb, root.get("actorId"), filter.getActorIds());
+                addInPredicate(predicates, cb, root.get("entityType"), filter.getEntityTypes());
                 if (filter.getEntityId() != null && !filter.getEntityId().isBlank()) {
                     predicates.add(cb.equal(root.get("entityId"), filter.getEntityId()));
                 }
-                if (filter.getAction() != null && !filter.getAction().isBlank()) {
-                    predicates.add(cb.equal(root.get("action"), filter.getAction()));
-                }
+                addInPredicate(predicates, cb, root.get("action"), filter.getActions());
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    /**
+     * Adds an equality (one value) or {@code IN} (several) predicate, skipping
+     * blank entries. An empty list adds nothing: a filter the caller left empty
+     * must widen the result set, never empty it.
+     */
+    private void addInPredicate(List<Predicate> predicates,
+            CriteriaBuilder cb,
+            Path<String> column,
+            List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return;
+        }
+        List<String> cleaned = values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (cleaned.isEmpty()) {
+            return;
+        }
+        if (cleaned.size() == 1) {
+            predicates.add(cb.equal(column, cleaned.get(0)));
+            return;
+        }
+        predicates.add(column.in(cleaned));
     }
 
     private AdminActivityLogResponseDTO toDto(AdminActivityLog log) {

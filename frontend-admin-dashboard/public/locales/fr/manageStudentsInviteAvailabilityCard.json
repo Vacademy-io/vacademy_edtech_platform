@@ -1,0 +1,14 @@
+{
+    "title": "Fenêtre de disponibilité",
+    "description": "Limitez éventuellement la période pendant laquelle ce lien accepte les inscriptions. En dehors de cette période (ou si le lien est désactivé), les apprenants verront le message ci-dessous au lieu du formulaire d'inscription.",
+    "startDate": {
+        "label": "Date de début (facultatif)"
+    },
+    "endDate": {
+        "label": "Date de fin (facultatif)"
+    },
+    "unavailableMessage": {
+        "label": "Message affiché en cas d'indisponibilité",
+        "placeholder": "Par ex. : Les inscriptions pour ce groupe sont closes. Contactez-nous pour connaître la prochaine session."
+    }
+}

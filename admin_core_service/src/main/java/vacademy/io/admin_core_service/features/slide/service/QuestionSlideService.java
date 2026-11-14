@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.service.RichTextDataService;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.dto.OptionDTO;
 import vacademy.io.admin_core_service.features.slide.dto.QuestionSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.SlideDTO;
@@ -51,6 +52,7 @@ public class QuestionSlideService {
     }
 
     public String addQuestionSlide(SlideDTO slideDTO, String chapterId) {
+        separateCbeSecretForCreate(slideDTO.getQuestionSlide());
         QuestionSlide questionSlide = new QuestionSlide(slideDTO.getQuestionSlide());
         QuestionSlide savedQuestionSlide = questionSlideRepository.save(questionSlide);
         return slideService.saveSlide(slideDTO.getId(), savedQuestionSlide.getId(), SlideTypeEnum.QUESTION.name(),
@@ -72,10 +74,50 @@ public class QuestionSlideService {
         return "success";
     }
 
+    /**
+     * CBE_RESPONSE: the solution, marking scheme and grading notes never stay in
+     * auto_evaluation_json, which learners receive. Whatever the client sent, they are moved
+     * into evaluation_secret_json here. Any other question type stores no secret.
+     */
+    void separateCbeSecretForCreate(QuestionSlideDTO dto) {
+        if (dto == null) {
+            return;
+        }
+        if (!CbeConfigSecrets.isCbe(dto.getQuestionType(), dto.getAutoEvaluationJson())) {
+            dto.setEvaluationSecretJson(null);
+            return;
+        }
+        CbeConfigSecrets.Split split = CbeConfigSecrets.split(dto.getAutoEvaluationJson(),
+                dto.getEvaluationSecretJson());
+        dto.setAutoEvaluationJson(split.redactedConfig());
+        dto.setEvaluationSecretJson(split.resolve(null));
+    }
+
+    /**
+     * As {@link #separateCbeSecretForCreate}, on an update. A request that carries no secret
+     * (neither secret keys in the config nor a non-blank evaluation_secret_json) leaves the
+     * stored one alone: only an explicit secret replaces it.
+     */
+    void applyCbeSecretOnUpdate(QuestionSlideDTO dto, QuestionSlide questionSlide) {
+        String type = dto.getQuestionType() != null ? dto.getQuestionType() : questionSlide.getQuestionType();
+        if (!CbeConfigSecrets.isCbe(type, dto.getAutoEvaluationJson())) {
+            return;
+        }
+        CbeConfigSecrets.Split split = CbeConfigSecrets.split(dto.getAutoEvaluationJson(),
+                dto.getEvaluationSecretJson());
+        dto.setAutoEvaluationJson(split.redactedConfig());
+        String secret = split.resolve(questionSlide.getEvaluationSecretJson());
+        if (secret != null) {
+            questionSlide.setEvaluationSecretJson(secret);
+        }
+    }
+
     public void updateData(QuestionSlideDTO dto, QuestionSlide questionSlide) {
         if (dto.getId() != null) {
             questionSlide.setId(dto.getId());
         }
+
+        applyCbeSecretOnUpdate(dto, questionSlide);
 
         List<RichTextDataDTO> richTextDTOs = new ArrayList<>();
 

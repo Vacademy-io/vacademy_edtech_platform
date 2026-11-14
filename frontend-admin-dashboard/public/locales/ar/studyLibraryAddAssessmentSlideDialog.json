@@ -1,0 +1,42 @@
+{
+    "tooltips": {
+        "draftAssessmentTooltip": "لا يمكن أداء التقييمات في وضع المسودة حتى يتم نشرها"
+    },
+    "labels": {
+        "ends": "ينتهي في {{date}}",
+        "durationMinutes_zero": "{{count}} دقيقة",
+        "durationMinutes_one": "دقيقة واحدة",
+        "durationMinutes_two": "دقيقتان",
+        "durationMinutes_few": "{{count}} دقائق",
+        "durationMinutes_many": "{{count}} دقيقة",
+        "durationMinutes_other": "{{count}} دقيقة"
+    },
+    "fallbackAssessmentName": "تقييم {{number}}",
+    "assessmentSlideTitle": "تقييم: {{name}}",
+    "assessmentFallbackBaseName": "تقييم",
+    "errors": {
+        "linkFailed": "فشل ربط التقييم"
+    },
+    "toasts": {
+        "linkedAsSlide": "تم ربط التقييم كشريحة"
+    },
+    "search": {
+        "placeholder": "البحث عن التقييمات بالاسم..."
+    },
+    "states": {
+        "loading": "جارٍ تحميل التقييمات...",
+        "loadFailed": "فشل تحميل التقييمات. يرجى المحاولة مرة أخرى.",
+        "noSearchMatches": "لا توجد تقييمات مطابقة لبحثك.",
+        "noAssessmentsAvailable": "لا توجد تقييمات متاحة لهذه المؤسسة."
+    },
+    "pagination": {
+        "pageOf": "صفحة {{page}} من {{totalPages}}",
+        "prev": "السابق",
+        "next": "التالي"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "linking": "جارٍ الربط...",
+        "linkAsSlide": "ربط كشريحة"
+    }
+}

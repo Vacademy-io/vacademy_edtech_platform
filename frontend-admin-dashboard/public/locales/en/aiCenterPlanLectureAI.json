@@ -1,0 +1,69 @@
+{
+    "header": {
+        "title": "Lesson Planner",
+        "subtitle": "Tell us what students should learn, and we'll draft a plan you can refine."
+    },
+    "steps": {
+        "goal": {
+            "title": "What should students learn or be able to do?",
+            "hint": "The clearer your goal, the better the plan.",
+            "placeholder": "By the end of this lecture, students should understand the process of photosynthesis and be able to explain its importance in the ecosystem.",
+            "requiredError": "Please describe what students should learn."
+        },
+        "audience": {
+            "title": "Who are you teaching, and for how long?",
+            "classLabel": "Class",
+            "classPlaceholder": "e.g. 8th standard",
+            "classRequiredError": "Please enter a class",
+            "durationLabel": "Duration",
+            "hoursPlaceholder": "0",
+            "minutesPlaceholder": "40",
+            "hoursUnit": "hrs",
+            "minutesUnit": "min"
+        },
+        "refine": {
+            "title": "Refine the approach",
+            "hint": "Optional — we've picked sensible defaults.",
+            "teachingStyleLabel": "Teaching style",
+            "languageLabel": "Language",
+            "questionsToggleLabel": "Include questions in the plan",
+            "questionsToggleDescription": "Add discussion or check-for-understanding questions at each segment.",
+            "homeworkToggleLabel": "Include homework",
+            "homeworkToggleDescription": "Add a short assignment students can do after the lecture."
+        }
+    },
+    "teachingMethodOptions": {
+        "conceptFirst": "Concept-First",
+        "storytelling": "Storytelling",
+        "problemSolution": "Problem-Solution",
+        "questionLed": "Question-Led",
+        "stepByStepTutorial": "Step-by-Step Tutorial",
+        "gamified": "Gamified",
+        "caseBasedLearning": "Case-Based Learning"
+    },
+    "languageOptions": {
+        "english": "English",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "generateFailed": "We couldn't draft a plan. Want to try again?",
+        "taskFailed": "We couldn't finish this plan. Want to try again?"
+    },
+    "actions": {
+        "draftMyPlan": "Draft my plan"
+    },
+    "generating": {
+        "title": "Drafting your plan",
+        "subtitle": "Organizing the lecture into clear segments. Usually ~30 seconds."
+    },
+    "draftingDone": {
+        "title": "Here's the lesson plan we drafted",
+        "subtitle": "Open it to review the timeline, edit any segment, or export."
+    },
+    "recentFiles": {
+        "title": "Your recent plans",
+        "fallbackLabel": "Lesson plan",
+        "emptyHint": "Your lesson plans will appear here. Draft your first one above."
+    },
+    "productName": "Vsmart Lecturer"
+}

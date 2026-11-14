@@ -1,0 +1,67 @@
+{
+    "heading": "قوالب واتساب",
+    "subheading": "يحتاج واتساب الاستباقي إلى قوالب معتمدة من Meta. يقترحها الذكاء الاصطناعي؛ أنت توافق وترسل؛ Meta تراجع.",
+    "emptyState": "لا توجد قوالب بعد. دع الذكاء الاصطناعي يقترح بعضها بناءً على ملخص هذا المحرك.",
+    "actions": {
+        "checkMeta": "تحقق من Meta",
+        "moreOptions": "خيارات أخرى",
+        "thinking": "يفكّر…",
+        "proposeTemplates": "اقتراح قوالب",
+        "edit": "تعديل",
+        "approve": "موافقة",
+        "submitToMeta": "إرسال إلى Meta",
+        "withdraw": "سحب",
+        "cancel": "إلغاء"
+    },
+    "errors": {
+        "loadFailed": "تعذر تحميل القوالب. يرجى إعادة المحاولة."
+    },
+    "proposalCard": {
+        "round": "الجولة {{value}}",
+        "variables": "المتغيرات: {{list}}",
+        "metaRejected": "Meta: {{reason}}",
+        "metaRecategorised": "وافقت Meta على هذا لكن ضمن فئة <b>{{metaCategory}}</b> (لقد اقترحت {{proposedCategory}}). إنه قابل للاستخدام؛ اطلب بدائل إذا كانت الفئة مهمة."
+    },
+    "editDialog": {
+        "heading": "تعديل القالب",
+        "bodyLabel": "النص (استخدم {{p1}}، {{p2}} … للمتغيرات)",
+        "categoryLabel": "الفئة",
+        "variablesLabel": "المتغيرات (واحد لكل {{n}}، بالترتيب) + قيمة نموذجية يراها مراجع Meta",
+        "namePlaceholder": "الاسم",
+        "samplePlaceholder": "مثال: عائشة",
+        "addVariable": "+ إضافة متغير",
+        "footerLabel": "التذييل (اختياري، ≤60 حرفًا)",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "errors": {
+            "bodyEmpty": "النص فارغ.",
+            "bodyTooLong": "يتجاوز النص حد واتساب البالغ 1024 حرفًا.",
+            "placeholderZero": "تبدأ العناصر النائبة من {{p1}} — {{p0}} غير مسموح به.",
+            "placeholderMissing": "العنصر النائب {{placeholder}} مفقود — يجب أن تكون متسلسلة بدءًا من 1.",
+            "variableRowMismatch": "يحتوي النص على {{variables}} لكن {{rows}}. يجب أن يتطابق العددان.",
+            "variableCount_zero": "{{count}} متغيّر",
+            "variableCount_one": "متغيّر واحد",
+            "variableCount_two": "متغيّران",
+            "variableCount_few": "{{count}} متغيّرات",
+            "variableCount_many": "{{count}} متغيّرًا",
+            "variableCount_other": "{{count}} متغيّر",
+            "rowCount_zero": "{{count}} صف",
+            "rowCount_one": "صف واحد",
+            "rowCount_two": "صفّان",
+            "rowCount_few": "{{count}} صفوف",
+            "rowCount_many": "{{count}} صفًا",
+            "rowCount_other": "{{count}} صف"
+        },
+        "charCount": "{{count}} / 1024 characters",
+        "removeVariable": "Remove variable"
+    },
+    "proposalCount_one": "{{count}} proposal",
+    "proposalCount_other": "{{count}} proposals",
+    "flow": {
+        "propose": "AI proposes",
+        "approve": "You edit & approve",
+        "submit": "Submit to Meta",
+        "meta": "Meta approves",
+        "send": "Engine can send"
+    }
+}

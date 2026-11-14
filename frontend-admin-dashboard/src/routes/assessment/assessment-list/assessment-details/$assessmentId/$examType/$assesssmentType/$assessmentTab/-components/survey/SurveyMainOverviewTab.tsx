@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -31,13 +33,22 @@ import {
     RadialBarChart,
     RadialBar
 } from 'recharts';
-import { Users, CheckCircle, Clock, TrendingUp, MessageSquare, Eye, Loader2, AlertCircle } from 'lucide-react';
+import {
+    Users,
+    CheckCircle,
+    Clock,
+    TrendUp as TrendingUp,
+    ChatText as MessageSquare,
+    Eye,
+    CircleNotch as Loader2,
+    WarningCircle as AlertCircle,
+} from '@phosphor-icons/react';
 import { useSurveyOverview, useSurveyRespondents } from './hooks/useSurveyData';
 import { TransformedQuestionAnalytics, ResponseDistribution } from './types';
 import { surveyApiService, AssessmentQuestionPreview, QuestionOptionWithExplanation } from '@/services/survey-api';
 import { useBatchNames } from './hooks/useBatchNames';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 interface QuestionData {
     questionContent: string;
@@ -52,11 +63,13 @@ interface BarChartComponentProps {
   fillColor: string;
 }
 
-const BarChartComponent: React.FC<BarChartComponentProps> = ({ data, fillColor }) => (
+const BarChartComponent: React.FC<BarChartComponentProps> = ({ data, fillColor }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
+    return (
     <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                     dataKey="value"
                     tick={{ fontSize: 12 }}
@@ -67,13 +80,13 @@ const BarChartComponent: React.FC<BarChartComponentProps> = ({ data, fillColor }
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                     formatter={(value: number, name: string, props: any) => [
-                        `${value} responses (${props.payload?.percentage || 0}%)`,
-                        'Count'
+                        t('charts.tooltipResponsesPercent', { count: value, percentage: props.payload?.percentage || 0 }),
+                        t('charts.countLabel')
                     ]}
-                    labelStyle={{ color: '#374151' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                     contentStyle={{
-                        backgroundColor: '#f9fafb',
-                        border: '1px solid #e5e7eb',
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
@@ -86,13 +99,16 @@ const BarChartComponent: React.FC<BarChartComponentProps> = ({ data, fillColor }
             </BarChart>
         </ResponsiveContainer>
     </div>
-);
+    );
+};
 
 interface ResponseLegendProps {
   responses: ResponseDistribution[];
 }
 
-const ResponseLegend: React.FC<ResponseLegendProps> = ({ responses }) => (
+const ResponseLegend: React.FC<ResponseLegendProps> = ({ responses }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
+    return (
     <div className="space-y-2">
         {responses.map((response: ResponseDistribution, idx: number) => (
             <div key={idx} className="flex justify-between items-center">
@@ -100,12 +116,13 @@ const ResponseLegend: React.FC<ResponseLegendProps> = ({ responses }) => (
                     {response.value}
                 </div>
                 <div className="text-lg font-semibold text-gray-600">
-                    {response.percentage.toFixed(0)}% ({response.count} responses)
+                    {t('legend.percentResponses', { percentage: response.percentage.toFixed(0), count: response.count })}
                 </div>
             </div>
         ))}
     </div>
-);
+    );
+};
 
 interface QuestionContentProps {
   question: TransformedQuestionAnalytics;
@@ -113,19 +130,21 @@ interface QuestionContentProps {
 
 const McqQuestionContent: React.FC<QuestionContentProps> = ({ question }) => (
     <div className="space-y-6">
-        <BarChartComponent data={question.responseDistribution} fillColor="#8884d8" />
+        <BarChartComponent data={question.responseDistribution} fillColor="hsl(var(--chart-5))" />
         <ResponseLegend responses={question.responseDistribution} />
     </div>
 );
 
 const McqMultipleChoiceContent: React.FC<QuestionContentProps> = ({ question }) => (
     <div className="space-y-6">
-        <BarChartComponent data={question.responseDistribution} fillColor="#00C49F" />
+        <BarChartComponent data={question.responseDistribution} fillColor="hsl(var(--chart-2))" />
         <ResponseLegend responses={question.responseDistribution} />
     </div>
 );
 
-const TrueFalseContent: React.FC<QuestionContentProps> = ({ question }) => (
+const TrueFalseContent: React.FC<QuestionContentProps> = ({ question }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
+    return (
     <div className="space-y-6">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
             <div className="flex-1 max-w-sm">
@@ -137,13 +156,13 @@ const TrueFalseContent: React.FC<QuestionContentProps> = ({ question }) => (
                                     {
                                         name: 'True',
                                         value: question.responseDistribution[0]?.percentage || 0,
-                                        fill: '#10B981',
+                                        fill: 'hsl(var(--success-500))',
                                         count: question.responseDistribution[0]?.count || 0
                                     },
                                     {
                                         name: 'False',
                                         value: question.responseDistribution[1]?.percentage || 0,
-                                        fill: '#EF4444',
+                                        fill: 'hsl(var(--danger-600))',
                                         count: question.responseDistribution[1]?.count || 0
                                     }
                                 ]}
@@ -157,21 +176,27 @@ const TrueFalseContent: React.FC<QuestionContentProps> = ({ question }) => (
                                 endAngle={450}
                             >
                                 {[
-                                    { name: 'True', value: question.responseDistribution[0]?.percentage || 0, fill: '#10B981' },
-                                    { name: 'False', value: question.responseDistribution[1]?.percentage || 0, fill: '#EF4444' }
+                                    { name: 'True', value: question.responseDistribution[0]?.percentage || 0, fill: 'hsl(var(--success-500))' },
+                                    { name: 'False', value: question.responseDistribution[1]?.percentage || 0, fill: 'hsl(var(--danger-600))' }
                                 ].map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                 ))}
                             </Pie>
                             <Tooltip
-                                formatter={(value: any, name: string) => [
-                                    `${value}% (${name === 'True' ? question.responseDistribution[0]?.count || 0 : question.responseDistribution[1]?.count || 0} responses)`,
-                                    name
-                                ]}
-                                labelStyle={{ color: '#374151' }}
+                                formatter={(value: any, name: string) => {
+                                    const respCount = name === 'True'
+                                        ? question.responseDistribution[0]?.count || 0
+                                        : question.responseDistribution[1]?.count || 0;
+                                    const label = name === 'True' ? t('trueFalse.true') : t('trueFalse.false');
+                                    return [
+                                        t('trueFalse.tooltipPercent', { count: respCount, percentage: value }),
+                                        label
+                                    ];
+                                }}
+                                labelStyle={{ color: 'hsl(var(--foreground))' }}
                                 contentStyle={{
-                                    backgroundColor: '#f9fafb',
-                                    border: '1px solid #e5e7eb',
+                                    backgroundColor: 'hsl(var(--card))',
+                                    border: '1px solid hsl(var(--border))',
                                     borderRadius: '8px',
                                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
@@ -183,68 +208,76 @@ const TrueFalseContent: React.FC<QuestionContentProps> = ({ question }) => (
                             <div className="text-lg font-semibold text-gray-700">
                                 {(question.responseDistribution[0]?.percentage || 0).toFixed(2)}%
                             </div>
-                            <div className="text-xs text-gray-600">True</div>
+                            <div className="text-xs text-gray-600">{t('trueFalse.true')}</div>
                         </div>
                     </div>
                 </div>
             </div>
             <div className="flex-1 space-y-4">
                 <div className="text-center">
-                    <div className="text-lg font-semibold text-green-600 mb-1">True</div>
+                    <div className="text-lg font-semibold text-green-600 mb-1">{t('trueFalse.true')}</div>
                     <div className="text-2xl font-bold text-green-700 mb-1">
                         {(question.responseDistribution[0]?.percentage || 0).toFixed(2)}%
                     </div>
                     <div className="text-sm text-gray-600">
-                        {question.responseDistribution[0]?.count || 0} responses
+                        {t('common.responseCount', { count: question.responseDistribution[0]?.count || 0 })}
                     </div>
                 </div>
                 <div className="text-center">
-                    <div className="text-lg font-semibold text-red-600 mb-1">False</div>
+                    <div className="text-lg font-semibold text-red-600 mb-1">{t('trueFalse.false')}</div>
                     <div className="text-2xl font-bold text-red-700 mb-1">
                         {(question.responseDistribution[1]?.percentage || 0).toFixed(2)}%
                     </div>
                     <div className="text-sm text-gray-600">
-                        {question.responseDistribution[1]?.count || 0} responses
+                        {t('common.responseCount', { count: question.responseDistribution[1]?.count || 0 })}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-);
+    );
+};
 
-const TextQuestionContent: React.FC<QuestionContentProps> = ({ question }) => (
+const TextQuestionContent: React.FC<QuestionContentProps> = ({ question }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
+    return (
     <div className="space-y-4">
         <div className="text-lg font-semibold mb-4">
-            Recent Responses ({question.totalResponses} total responses):
+            {t('textQuestion.recentResponses', { count: question.totalResponses })}
         </div>
         <div className="space-y-4">
             {question.responseDistribution.slice(0, 5).map((response: ResponseDistribution, idx: number) => (
                 <div key={idx} className="p-4 border rounded-lg">
                     <div className="text-sm text-gray-700 italic">"{response.value}"</div>
-                    <div className="text-xs text-gray-500 mt-1">{response.count} similar responses</div>
+                    <div className="text-xs text-gray-500 mt-1">{t('textQuestion.similarResponses', { count: response.count })}</div>
                 </div>
             ))}
         </div>
     </div>
-);
+    );
+};
 
-const NumericalQuestionContent: React.FC<QuestionContentProps> = ({ question }) => (
+const NumericalQuestionContent: React.FC<QuestionContentProps> = ({ question }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
+    return (
     <div className="space-y-4">
-        <div className="text-lg font-semibold mb-4">Response Distribution:</div>
+        <div className="text-lg font-semibold mb-4">{t('numerical.responseDistribution')}</div>
         <div className="space-y-3">
             {question.responseDistribution.slice(0, 5).map((response: ResponseDistribution, idx: number) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                     <span className="font-medium">{idx + 1}. {response.value}</span>
                     <Badge variant="secondary">
-                        {response.count} responses ({response.percentage}%)
+                        {t('numerical.responsesPercent', { count: response.count, percentage: response.percentage })}
                     </Badge>
                 </div>
             ))}
         </div>
     </div>
-);
+    );
+};
 
 const QuestionTypeRenderer = ({ question }: { question: TransformedQuestionAnalytics }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
     switch (question.questionType) {
         case 'mcq_single_choice':
             return <McqQuestionContent question={question} />;
@@ -258,12 +291,12 @@ const QuestionTypeRenderer = ({ question }: { question: TransformedQuestionAnaly
         case 'numerical':
             return <NumericalQuestionContent question={question} />;
         default:
-            return <div>Unsupported question type</div>;
+            return <div>{t('question.unsupportedType')}</div>;
     }
 };
 
 const renderQuestionContent = (question: TransformedQuestionAnalytics, index: number, onViewResponses: (question: TransformedQuestionAnalytics, index: number) => void) => {
-    const questionNumber = `Q${index + 1}`;
+    const questionNumber = i18next.t('assessmentSurveyMainOverviewTab:question.number', { number: index + 1 });
 
     return (
         <Card className="h-fit">
@@ -274,7 +307,7 @@ const renderQuestionContent = (question: TransformedQuestionAnalytics, index: nu
                             {questionNumber}. {question.questionText}
                         </CardTitle>
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                            <span>{question.totalResponses} responses</span>
+                            <span>{i18next.t('assessmentSurveyMainOverviewTab:common.responseCount', { count: question.totalResponses })}</span>
                         </div>
                         <Badge className="bg-primary-100 text-primary-800 border-primary-200 mb-4">
                             {question.questionType.replace('_', ' ').toUpperCase()}
@@ -287,7 +320,7 @@ const renderQuestionContent = (question: TransformedQuestionAnalytics, index: nu
                         onClick={() => onViewResponses(question, index)}
                     >
                         <Eye className="h-4 w-4" />
-                        View Individual Responses
+                        {i18next.t('assessmentSurveyMainOverviewTab:question.viewIndividualResponses')}
                     </Button>
                 </div>
             </CardHeader>
@@ -311,21 +344,21 @@ const formatMcqResponse = (responseData: any, questionData: any): string => {
       return responseData.optionIds.join(', ');
           }
         }
-  return 'No options selected';
+  return i18next.t('assessmentSurveyMainOverviewTab:responses.noOptionsSelected');
 };
 
 const formatNumericResponse = (responseData: any): string => {
         if (responseData.validAnswer !== null && responseData.validAnswer !== undefined) {
     return responseData.validAnswer.toString();
         }
-  return 'No numeric answer provided';
+  return i18next.t('assessmentSurveyMainOverviewTab:responses.noNumericAnswer');
 };
 
 const formatTextResponse = (responseData: any): string => {
         if (responseData.answer && responseData.answer.trim() !== '') {
     return responseData.answer;
   }
-  return 'No text answer provided';
+  return i18next.t('assessmentSurveyMainOverviewTab:responses.noTextAnswer');
 };
 
 const RESPONSE_TYPE_FORMATTERS = {
@@ -339,7 +372,7 @@ const RESPONSE_TYPE_FORMATTERS = {
 
 const formatAnswerByType = (responseData: any, questionData: any): string => {
   const formatter = RESPONSE_TYPE_FORMATTERS[responseData.type as keyof typeof RESPONSE_TYPE_FORMATTERS];
-  return formatter ? formatter(responseData, questionData) : 'Unknown response type';
+  return formatter ? formatter(responseData, questionData) : i18next.t('assessmentSurveyMainOverviewTab:responses.unknownType');
 };
 
 const createParsedResponse = (response: any, responseData: any, questionData: any, formattedAnswer: string) => ({
@@ -361,7 +394,7 @@ const createErrorResponse = (responseString: string) => ({
       questionType: 'Unknown',
       questionContent: 'Survey Question',
       questionOrder: 0,
-      formattedAnswer: 'Error parsing response data',
+      formattedAnswer: i18next.t('assessmentSurveyMainOverviewTab:responses.errorParsing'),
       timeTaken: 0,
       durationLeft: 0,
       isVisited: false,
@@ -396,6 +429,7 @@ interface SurveyMainOverviewTabProps {
 }
 
 export const SurveyMainOverviewTab: React.FC<SurveyMainOverviewTabProps> = ({ assessmentId, sectionIds, assessmentName, assessmentDetails }) => {
+    const { t } = useTranslation('assessmentSurveyMainOverviewTab');
     const { data: overviewData, loading: overviewLoading, error: overviewError } = useSurveyOverview(assessmentId, sectionIds);
     const { data: respondentData, loading: respondentLoading } = useSurveyRespondents(assessmentId, 1, 100, assessmentName, sectionIds);
     const { getBatchName } = useBatchNames();
@@ -498,7 +532,7 @@ export const SurveyMainOverviewTab: React.FC<SurveyMainOverviewTabProps> = ({ as
             <div className="flex items-center justify-center h-64">
                 <div className="flex items-center gap-2">
                     <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Loading survey data...</span>
+                    <span>{t('overview.loading')}</span>
                 </div>
             </div>
         );
@@ -510,10 +544,10 @@ export const SurveyMainOverviewTab: React.FC<SurveyMainOverviewTabProps> = ({ as
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Survey Data</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('overview.errorTitle')}</h3>
                     <p className="text-gray-600 mb-4">{overviewError}</p>
                     <Button onClick={() => window.location.reload()}>
-                        Try Again
+                        {t('overview.tryAgain')}
                     </Button>
                 </div>
             </div>
@@ -526,8 +560,8 @@ export const SurveyMainOverviewTab: React.FC<SurveyMainOverviewTabProps> = ({ as
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Survey Data Available</h3>
-                    <p className="text-gray-600">No survey responses found for this assessment.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('overview.emptyTitle')}</h3>
+                    <p className="text-gray-600">{t('overview.emptyDescription')}</p>
                 </div>
             </div>
         );
@@ -539,66 +573,6 @@ export const SurveyMainOverviewTab: React.FC<SurveyMainOverviewTabProps> = ({ as
         setSelectedQuestion(question);
         setIsDialogOpen(true);
     };
-const BarChartComponent = ({ data, fillColor }: { data: ResponseDistribution[], fillColor: string }) => (
-                            <div className="h-64">
-                                <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                        <XAxis
-                                            dataKey="value"
-                                            tick={{ fontSize: 12 }}
-                                            angle={-45}
-                                            textAnchor="end"
-                                            height={80}
-                                        />
-                                        <YAxis tick={{ fontSize: 12 }} />
-                                        <Tooltip
-                                            formatter={(value: number, name: string, props: any) => [
-                                                `${value} responses (${props.payload?.percentage || 0}%)`,
-                                                'Count'
-                                            ]}
-                                            labelStyle={{ color: '#374151' }}
-                                            contentStyle={{
-                                                backgroundColor: '#f9fafb',
-                                                border: '1px solid #e5e7eb',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="count"
-                    fill={fillColor}
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-);
-
-const ResponseLegend = ({ responses }: { responses: ResponseDistribution[] }) => (
-                            <div className="space-y-2">
-        {responses.map((response: ResponseDistribution, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center">
-                                        <div className="text-lg font-semibold text-gray-800">
-                                            {response.value}
-                                        </div>
-                                        <div className="text-lg font-semibold text-gray-600">
-                                            {response.percentage.toFixed(0)}% ({response.count} responses)
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-);
-
-const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalytics }) => (
-                        <div className="space-y-6">
-        <BarChartComponent data={question.responseDistribution} fillColor="#8884d8" />
-        <ResponseLegend responses={question.responseDistribution} />
-                            </div>
-);
-
-
-
 
     return (
         <div className="space-y-6">
@@ -608,18 +582,18 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-primary-600 flex items-center gap-2">
                             <Users className="h-5 w-5" />
-                            Total Participants
+                            {t('overview.totalParticipants')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
                             <div className="flex items-baseline gap-2">
                                 <span className="text-4xl font-bold text-gray-900">{analytics.completedResponses}</span>
-                                <span className="text-lg text-gray-600">responded</span>
+                                <span className="text-lg text-gray-600">{t('overview.responded')}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-500">
-                                    out of <span className="font-semibold text-gray-700">{analytics.totalParticipants}</span>
+                                    {t('overview.outOf')} <span className="font-semibold text-gray-700">{analytics.totalParticipants}</span>
                                 </div>
                             </div>
                         </div>
@@ -630,7 +604,7 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                     <CardHeader>
                         <CardTitle className="text-lg font-semibold text-primary-600 flex items-center gap-2">
                             <CheckCircle className="h-5 w-5" />
-                            Completion Rate
+                            {t('overview.completionRate')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -663,10 +637,10 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
 
             {/* Individual Responses Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+                <DialogContent className="max-w-6xl max-h-dialog-tall overflow-y-auto scrollbar-hide">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-semibold">
-                            Individual Responses
+                            {t('overview.individualResponsesTitle')}
                         </DialogTitle>
                     </DialogHeader>
 
@@ -678,7 +652,7 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                                         <div className="flex items-center justify-center h-32">
                                             <div className="flex items-center gap-2">
                                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                                <span>Loading responses...</span>
+                                                <span>{t('overview.loadingResponses')}</span>
                                             </div>
                                         </div>
                                     );
@@ -689,7 +663,7 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                                         <div className="flex items-center justify-center h-32">
                                             <div className="flex items-center gap-2">
                                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                                <span>Loading questions data...</span>
+                                                <span>{t('overview.loadingQuestionsData')}</span>
                                             </div>
                                         </div>
                                     );
@@ -700,7 +674,7 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                                         <div className="flex items-center justify-center h-32">
                                             <div className="flex items-center gap-2">
                                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                                <span>Loading batch data...</span>
+                                                <span>{t('overview.loadingBatchData')}</span>
                                             </div>
                                         </div>
                                     );
@@ -735,9 +709,9 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                                         if (filteredResponses.length === 0) {
                                             return (
                                                 <div className="text-center py-8">
-                                                    <p className="text-gray-500">No responses found for this question.</p>
+                                                    <p className="text-gray-500">{t('overview.noResponsesForQuestion')}</p>
                                                     <p className="text-xs text-gray-400 mt-2">
-                                                        Question ID: {selectedQuestion.questionId}
+                                                        {t('overview.questionIdLabel', { id: selectedQuestion.questionId })}
                                                     </p>
                                                 </div>
                                             );
@@ -747,17 +721,17 @@ const McqQuestionContent = ({ question }: { question: TransformedQuestionAnalyti
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                                        {!isPublicSurvey && <TableHead className="font-semibold w-32">Name</TableHead>}
-                                        <TableHead className="font-semibold w-48">Email</TableHead>
-                                                        {!isPublicSurvey && <TableHead className="font-semibold w-32">Batch</TableHead>}
-                                                        <TableHead className="font-semibold w-96">Response</TableHead>
+                                                        {!isPublicSurvey && <TableHead className="font-semibold w-32">{t('overview.tableName')}</TableHead>}
+                                        <TableHead className="font-semibold w-48">{t('overview.tableEmail')}</TableHead>
+                                                        {!isPublicSurvey && <TableHead className="font-semibold w-32">{t('overview.tableBatch')}</TableHead>}
+                                                        <TableHead className="font-semibold w-96">{t('overview.tableResponse')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                                     {filteredResponses.map((respondent, idx) => {
                                                         const parsedResponse = parseResponseData(respondent.response, questionsData);
                                                         // Get batch name from source_id (batch ID)
-                                                        const batchName = respondent.source_id ? getBatchName(respondent.source_id) : 'N/A';
+                                                        const batchName = respondent.source_id ? getBatchName(respondent.source_id) : t('overview.notApplicable');
 
 
                                                         return (

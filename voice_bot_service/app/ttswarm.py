@@ -44,7 +44,7 @@ def _to_pcm8k(data: bytes) -> Optional[bytes]:
 
 
 async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
-                     text: str) -> Optional[bytes]:
+                     text: str, language: str | None = None) -> Optional[bytes]:
     """One complete render, as 8 kHz PCM. None on any failure.
 
     Returns a WHOLE buffer or nothing — there is no partial success here, which
@@ -62,7 +62,7 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
         elif eng == "edge":
             raw = await _main._edge_tts_mp3(text, voice, p)
         elif eng == "smallest":
-            raw = await _main._smallest_tts_wav(text, voice, model or s.smallest_model, p)
+            raw = await _main._smallest_tts_wav(text, voice, model or s.smallest_model, p, language)
         elif eng == "rumik":
             # Normalise exactly as the live path does, or the cached audio would
             # not match the text we keyed it under.
@@ -74,9 +74,20 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
                 normalize_for_rumik(text), voice or s.rumik_voice,
                 s.rumik_api_key, model=model or "mulberry",
                 description=rumik_pace_description(p))
+        elif eng == "navana":
+            # No speed: the live stream cannot send one (Navana's streaming hello
+            # rejects it), so the render must not either or the cached audio
+            # would not match what the live call speaks.
+            from .providers import navana_language
+            raw = await _main._navana_tts_wav(text, voice or s.navana_tts_voice,
+                                              navana_language(language), None)
         elif eng == "sarvam":
             raw = await _main._synth_audio(text, voice or s.sarvam_tts_voice,
                                            model or s.sarvam_tts_model, "hi-IN")
+        elif eng == "sarvam_v4":
+            from .sarvam_v4_voices import SARVAM_V4_DEFAULT_VOICE, SARVAM_V4_MODEL
+            raw = await _main._synth_audio(text, voice or SARVAM_V4_DEFAULT_VOICE,
+                                           SARVAM_V4_MODEL, "hi-IN")
         else:
             logger.warning("tts-warm: no one-shot renderer for engine {!r}", eng)
             return None
@@ -88,8 +99,38 @@ async def synthesize(*, engine: str, model: str, voice: str, pace, temperature,
     return await asyncio.to_thread(_to_pcm8k, raw)
 
 
+_RENDER_TIMEOUT_SECS = 90.0
+
+
+async def render_candidate(cache, cand: Candidate) -> bool:
+    """Serialize background renders; a save and a sweep must not pay twice.
+
+    This lock is never acquired by live playback. A stalled vendor also has a
+    total deadline so it cannot hold the entire warm queue indefinitely.
+    """
+    async with cache._lock:
+        if cache.lookup(cand.key, cand.text) is not None:
+            return True
+        if not await asyncio.to_thread(cache.can_render, cand.key):
+            return False
+        try:
+            pcm = await asyncio.wait_for(
+                synthesize(engine=cand.engine, model=cand.model, voice=cand.voice,
+                           pace=cand.pace, temperature=cand.temperature,
+                           text=cand.text, language=cand.language),
+                timeout=_RENDER_TIMEOUT_SECS)
+            if pcm and await asyncio.to_thread(cache.store, cand, pcm):
+                return True
+            error = "invalid audio" if pcm else "empty or failed synthesis"
+        except Exception as exc:
+            logger.exception("tts-warm: render failed for {}", cand.key[:12])
+            error = type(exc).__name__
+        await asyncio.to_thread(cache.render_failed, cand.key, error)
+        return False
+
+
 async def warm(*, engine: str, model: str, voice: str, pace, temperature,
-               texts: list) -> dict:
+               texts: list, language: str | None = None) -> dict:
     """Pre-render a set of known-good lines. Used by warm-on-save.
 
     These are ADMIN-AUTHORED strings, not sentences learned from a call, so they
@@ -106,9 +147,18 @@ async def warm(*, engine: str, model: str, voice: str, pace, temperature,
     # engine and leaves the model to us precisely because only this process knows
     # what its env resolves to.
     from .providers import default_engine_model
+    engine = (engine or "").strip().lower()
     if not (model or "").strip():
         model = default_engine_model(engine, voice)
+    if engine.startswith("smallest") or engine.startswith("lightning"):
+        engine = "smallest"
 
+    from .speech_language import smallest_language_code
+    if engine == "navana":
+        from .providers import navana_language
+        language = navana_language(language)
+    else:
+        language = smallest_language_code(language) if engine == "smallest" else ""
     done = skipped = failed = 0
     for text in texts:
         t = (text or "").strip()
@@ -123,19 +173,14 @@ async def warm(*, engine: str, model: str, voice: str, pace, temperature,
                             temperature=temperature, sample_rate=SAMPLE_RATE,
                             term_map_version=(rumik_term_map_version()
                                               if engine == "rumik" else ""),
-                            text=t)
+                            text=t, language=language)
             if cache.lookup(key, t) is not None:
                 skipped += 1
                 continue
-            pcm = await synthesize(engine=engine, model=model, voice=voice,
-                                   pace=pace, temperature=temperature, text=t)
-            if not pcm:
-                failed += 1
-                continue
             cand = Candidate(key=key, text=t, chars=len(t), engine=engine,
                              model=model or "", voice=voice or "", pace=pace,
-                             temperature=temperature, fixed=True)
-            if await asyncio.to_thread(cache.store, cand, pcm):
+                             temperature=temperature, fixed=True, language=language)
+            if await render_candidate(cache, cand):
                 done += 1
             else:
                 failed += 1
@@ -218,11 +263,7 @@ async def sweeper() -> None:
                 if _box_is_busy():
                     logger.info("tts-warm: box got busy — pausing render pass")
                     break
-                pcm = await synthesize(engine=cand.engine, model=cand.model,
-                                       voice=cand.voice, pace=cand.pace,
-                                       temperature=cand.temperature, text=cand.text)
-                if pcm:
-                    await asyncio.to_thread(cache.store, cand, pcm)
+                await render_candidate(cache, cand)
                 # Space the vendor calls out: this is background work competing
                 # with live calls for the same box and the same rate limit.
                 await asyncio.sleep(1.0)

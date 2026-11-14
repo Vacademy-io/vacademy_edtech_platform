@@ -1,0 +1,63 @@
+{
+    "form16": {
+        "employeeLabel": "Employee",
+        "employeePickerPlaceholder": "Choose an employee",
+        "empty": {
+            "title": "Pick an employee",
+            "description": "Form 16 Part B is issued per employee for the financial year."
+        },
+        "errors": {
+            "loadFailed": "Could not build Form 16 for this employee.",
+            "downloadFailed": "Could not download Form 16."
+        },
+        "incompleteYearNotice": "The financial year is incomplete — annual figures are projections until March payroll is processed.",
+        "stats": {
+            "grossSalary": "Gross salary",
+            "totalExemptions": "Total exemptions",
+            "taxableIncome": "Taxable income",
+            "tdsDeducted": "TDS deducted"
+        },
+        "card": {
+            "regime": "Regime",
+            "pan": "PAN",
+            "deductorTan": "Deductor TAN",
+            "totalTaxLiability": "Total tax liability"
+        },
+        "table": {
+            "month": "Month",
+            "incomePaid": "Income paid",
+            "tds": "TDS"
+        },
+        "toast": {
+            "downloaded": "Form 16 downloaded"
+        },
+        "actions": {
+            "preparing": "Preparing…",
+            "downloadPdf": "Download PDF"
+        }
+    },
+    "form24q": {
+        "errors": {
+            "loadFailed": "Could not build the Form 24Q data."
+        },
+        "reconciliation": {
+            "mismatch": "TDS deducted does not match the challans recorded",
+            "matched": "TDS deducted matches the challans recorded",
+            "deducted": "Deducted:",
+            "deposited": "Deposited:",
+            "mismatchHint": "Record the missing challan in the Challans register, or check whether a deposit was made against a different quarter."
+        },
+        "stats": {
+            "deductees": "Deductees",
+            "challans": "Challans",
+            "deductorTan": "Deductor TAN"
+        },
+        "table": {
+            "employee": "Employee",
+            "pan": "PAN",
+            "month": "Month",
+            "incomePaid": "Income paid",
+            "tds": "TDS"
+        }
+    }
+}

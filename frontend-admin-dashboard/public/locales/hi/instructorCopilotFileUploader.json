@@ -1,0 +1,19 @@
+{
+    "defaultAcceptMsg": "समर्थित फ़ॉर्मैट: MP3, WAV, M4A, OGG",
+    "dropHere": "फ़ाइल यहाँ छोड़ें",
+    "dragDrop": "फ़ाइल को यहाँ खींचें और छोड़ें",
+    "clickToBrowse": "या ब्राउज़ करने के लिए क्लिक करें",
+    "formatsAndMaxSize": "{{formats}} (अधिकतम {{maxSize}}MB)",
+    "uploading": "अपलोड हो रहा है... {{percent}}%",
+    "units": {
+        "bytes": "बाइट्स",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+    },
+    "errors": {
+        "fileTooLarge": "फ़ाइल बहुत बड़ी है। अधिकतम आकार {{maxSize}}MB है।",
+        "invalidFileType": "अमान्य फ़ाइल प्रकार। {{formats}}",
+        "uploadFailed": "फ़ाइल अपलोड नहीं हो सकी। कृपया फिर से प्रयास करें।"
+    }
+}

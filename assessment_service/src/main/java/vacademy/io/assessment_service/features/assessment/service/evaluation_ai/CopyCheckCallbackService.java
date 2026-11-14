@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.CopyCheckCallbackDto;
 import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess;
@@ -41,12 +43,19 @@ import java.util.Optional;
 public class CopyCheckCallbackService {
 
     private final AiEvaluationProcessRepository processRepository;
+    private final vacademy.io.assessment_service.features.assessment.copy_intake.service.CopyIntakeService copyIntakeService;
     private final AiQuestionEvaluationRepository questionEvaluationRepository;
     private final CopyCheckLayoutRepository layoutRepository;
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
     private final StudentAttemptRepository studentAttemptRepository;
     private final AiEvaluationCancellationService cancellationService;
+    private final TypedAnswerEvaluation typedAnswerEvaluation;
     private final ObjectMapper objectMapper;
+
+    /** Hands the checked copy's marks to the AI reports. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private CopyCheckReportDataSender reportDataSender;
 
     @Transactional
     public void onProgress(CopyCheckCallbackDto.Progress payload) {
@@ -55,14 +64,48 @@ public class CopyCheckCallbackService {
             log.warn("[copy-check] progress callback for unknown process={}", payload.getProcessId());
             return;
         }
-        process.setCurrentStep(payload.getStep());
+        // Progress never moves a finished process: a straggler (or a heartbeat
+        // that overlapped the complete callback) must not flip COMPLETED back
+        // to EVALUATING, and a reaped run must stay reaped.
+        if (isTerminal(process.getStatus())) {
+            log.info("[copy-check] ignoring progress '{}' for finished process {} (status={})",
+                    payload.getStep(), payload.getProcessId(), process.getStatus());
+            return;
+        }
+        // ai_service re-posts the current step every minute as a heartbeat. A
+        // repeat carries no news, so it only moves updated_at - as a targeted
+        // UPDATE, never a full-row save that could race a real state change.
+        boolean heartbeat = payload.getStep() != null && payload.getStep().equals(process.getCurrentStep())
+                && (payload.getLayoutMap() == null || payload.getLayoutMap().isNull());
+        if (heartbeat) {
+            processRepository.touch(process.getId(), new Date(), TERMINAL);
+            return;
+        }
+        // A targeted UPDATE of step/status/updated_at only, guarded on "not finished".
+        // A full-row save here used to write back every column as this callback had
+        // read it - including a claim, job id or status another writer had just
+        // changed (gate G6). The entity is deliberately not modified, so nothing
+        // else is flushed either.
+        String status = null;
         if ("LAYOUT_OCR_DONE".equals(payload.getStep())) {
-            process.setStatus(AiEvaluationStatusEnum.EXTRACTING.name());
+            status = AiEvaluationStatusEnum.EXTRACTING.name();
             persistLayoutIfPresent(process, payload.getLayoutMap());
         } else if ("GRADING".equals(payload.getStep())) {
-            process.setStatus(AiEvaluationStatusEnum.EVALUATING.name());
+            status = AiEvaluationStatusEnum.EVALUATING.name();
         }
-        processRepository.save(process);
+        Date now = new Date();
+        if (status != null) {
+            processRepository.applyProgressStepAndStatus(process.getId(), payload.getStep(), status, now, TERMINAL);
+        } else {
+            processRepository.applyProgressStep(process.getId(), payload.getStep(), now, TERMINAL);
+        }
+    }
+
+    /** Nothing further can happen to a process in one of these states. */
+    private static final List<String> TERMINAL = AiEvaluationStatusEnum.TERMINAL;
+
+    private static boolean isTerminal(String status) {
+        return status != null && TERMINAL.contains(status.toUpperCase());
     }
 
     private void persistLayoutIfPresent(AiEvaluationProcess process, JsonNode layoutMap) {
@@ -100,8 +143,16 @@ public class CopyCheckCallbackService {
                 : "COMPLETED";
         boolean failed = "FAILED".equals(qStatus);
 
-        Optional<AiQuestionEvaluation> row = questionEvaluationRepository
-                .findByEvaluationProcessIdAndQuestionId(process.getId(), payload.getQuestionId());
+        // Duplicated tracking rows (a double dispatch) used to turn this lookup
+        // into "2 results were returned" and lose the whole verdict; take the
+        // newest row instead and let the rest sit idle.
+        List<AiQuestionEvaluation> rowsForQuestion = questionEvaluationRepository
+                .findAllByEvaluationProcessIdAndQuestionIdOrderByCreatedAtDesc(process.getId(), payload.getQuestionId());
+        if (rowsForQuestion.size() > 1) {
+            log.warn("[copy-check] {} tracking rows for question {} in process {}; using the newest",
+                    rowsForQuestion.size(), payload.getQuestionId(), process.getId());
+        }
+        Optional<AiQuestionEvaluation> row = AiQuestionEvaluationService.newest(rowsForQuestion);
 
         // Never let a late or retried AI callback overwrite a mark a human has
         // already reviewed/edited on the review page.
@@ -160,9 +211,10 @@ public class CopyCheckCallbackService {
         }
 
         if (!wasTerminal) {
-            int completed = (process.getQuestionsCompleted() == null ? 0 : process.getQuestionsCompleted()) + 1;
-            process.setQuestionsCompleted(completed);
-            processRepository.save(process);
+            // An increment in SQL: question callbacks arrive concurrently, and a
+            // read-modify-save of the whole row lost counts (and could undo other
+            // columns' changes) when two landed together.
+            processRepository.incrementQuestionsCompleted(process.getId(), new Date());
         }
     }
 
@@ -181,6 +233,11 @@ public class CopyCheckCallbackService {
             cancellationService.clearFlag(payload.getProcessId());
             return;
         }
+        if (fromAnotherRun(process, payload.getJobId())) {
+            log.info("[copy-check] ignoring complete callback of job {} for process {}: it now runs as job {}",
+                    payload.getJobId(), payload.getProcessId(), process.getAiServiceJobId());
+            return;
+        }
         process.setStatus(AiEvaluationStatusEnum.COMPLETED.name());
         process.setCompletedAt(new Date());
         try {
@@ -188,6 +245,8 @@ public class CopyCheckCallbackService {
         } catch (JsonProcessingException ignored) {
         }
         processRepository.save(process);
+        // A copy from a bulk upload: settle its intake row and maybe the batch.
+        notifyIntake(payload.getProcessId(), true, null);
 
         if (process.getStudentAttempt() != null) {
             StudentAttempt attempt = studentAttemptRepository
@@ -208,13 +267,13 @@ public class CopyCheckCallbackService {
                 // Recompute from the successfully-graded questions rather than
                 // trusting the AI's reported total: FAILED questions are excluded
                 // (not counted as a silent 0) until a teacher grades them, which
-                // recomputes this total via AiEvaluationReviewService.
-                List<AiQuestionEvaluation> rows = questionEvaluationRepository
-                        .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId());
-                double total = rows.stream()
-                        .filter(q -> "COMPLETED".equals(q.getStatus()) && q.getMarksAwarded() != null)
-                        .mapToDouble(q -> q.getMarksAwarded().doubleValue())
-                        .sum();
+                // recomputes this total via AiEvaluationReviewService. An online
+                // attempt's run covers only its written answers; the objective
+                // marks scored on submit are added back in.
+                // One row per question (newest): a pre-V53 duplicate must not count twice.
+                List<AiQuestionEvaluation> rows = AiQuestionEvaluationService.newestPerQuestion(questionEvaluationRepository
+                        .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId()));
+                double total = typedAnswerEvaluation.attemptTotal(attempt, rows);
                 attempt.setTotalMarks(total);
                 attempt.setResultMarks(total);
 
@@ -245,6 +304,10 @@ public class CopyCheckCallbackService {
                     attempt.setEvaluatedFileId(payload.getEvaluatedFileId());
                 }
                 studentAttemptRepository.save(attempt);
+                if (reportDataSender != null) {
+                    // The AI reports read these marks; sent after this commits.
+                    reportDataSender.sendAfterCommit(attempt.getId());
+                }
             }
         }
         cancellationService.clearFlag(payload.getProcessId());
@@ -268,16 +331,85 @@ public class CopyCheckCallbackService {
                     payload.getProcessId());
             return;
         }
+        // An older run of a re-dispatched copy failing must not fail the run that
+        // replaced it (whose own complete callback would then be ignored as reaped).
+        if (fromAnotherRun(process, payload.getJobId())) {
+            log.info("[copy-check] ignoring failed callback of job {} for process {}: it now runs as job {}",
+                    payload.getJobId(), payload.getProcessId(), process.getAiServiceJobId());
+            return;
+        }
         process.setStatus(AiEvaluationStatusEnum.FAILED.name());
-        process.setErrorMessage(payload.getErrorMessage());
+        process.setErrorMessage(withErrorCode(payload.getErrorCode(), payload.getErrorMessage()));
         process.setCompletedAt(new Date());
         processRepository.save(process);
+        // A copy waiting for the teacher's language confirmation keeps its code in
+        // front, so the batch panel can offer "Check in <language>"; other
+        // failures show their message as before.
+        notifyIntake(payload.getProcessId(), false,
+                "language_needs_confirmation".equals(payload.getErrorCode())
+                        ? withErrorCode(payload.getErrorCode(), payload.getErrorMessage())
+                        : payload.getErrorMessage());
         cancellationService.clearFlag(payload.getProcessId());
         log.warn("[copy-check] process {} failed: {}", payload.getProcessId(), payload.getErrorMessage());
+    }
+
+    /**
+     * The stored failure text with ai_service's machine code in front ("code: message"),
+     * the same shape the dispatcher uses for its own refusals ("insufficient_credits: ..."),
+     * so the partner API can report the code without matching message text. A message
+     * that already starts with the code, or a callback without one, is stored as is.
+     */
+    static String withErrorCode(String code, String message) {
+        if (code == null || !code.matches("[a-z][a-z0-9_]{0,63}")) {
+            return message;
+        }
+        if (message == null || message.isBlank()) {
+            return code;
+        }
+        return message.startsWith(code + ":") ? message : code + ": " + message;
+    }
+
+    /**
+     * A terminal callback from an ai_service job this process no longer runs as: the
+     * copy was re-dispatched (sweeper requeue, a submit retry) and a different job was
+     * recorded for it. Unknown on either side (an older ai_service build sends no job id;
+     * no job recorded yet) = not provable, so the callback is accepted as before.
+     */
+    static boolean fromAnotherRun(AiEvaluationProcess process, String callbackJobId) {
+        String current = process.getAiServiceJobId();
+        return StringUtils.hasText(callbackJobId) && StringUtils.hasText(current)
+                && !callbackJobId.trim().equals(current.trim());
     }
 
     /** A process that has been reaped by the sweeper (FAILED) or the user (CANCELLED). */
     private static boolean isReaped(String status) {
         return "FAILED".equalsIgnoreCase(status) || "CANCELLED".equalsIgnoreCase(status);
+    }
+
+    /**
+     * Best-effort: the intake bookkeeping must never fail a grading callback.
+     * Runs after this callback's transaction commits, so the batch settles on
+     * committed data and the completion email is not sent inside a database
+     * transaction that is still open.
+     */
+    private void notifyIntake(String processId, boolean succeeded, String error) {
+        Runnable update = () -> {
+            try {
+                copyIntakeService.onEvaluationFinished(processId, succeeded, error);
+                copyIntakeService.getBatchIdForProcess(processId).ifPresent(copyIntakeService::finalizeIfDone);
+            } catch (Exception e) {
+                log.warn("[copy-check] intake update failed for process {}: {}", processId, e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    update.run();
+                }
+            });
+        } else {
+            update.run();
+        }
     }
 }

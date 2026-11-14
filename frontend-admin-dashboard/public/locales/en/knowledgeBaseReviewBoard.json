@@ -1,0 +1,40 @@
+{
+    "nudges": {
+        "harder": {
+            "label": "Make it harder"
+        },
+        "easier": {
+            "label": "Make it easier"
+        },
+        "moreApplication": {
+            "label": "More application"
+        }
+    },
+    "emptyState": {
+        "title": "No questions could be written from the selected material.",
+        "description": "Try widening the chapter selection, or check that those chapters processed correctly."
+    },
+    "marks_one": "{{count}} mark",
+    "marks_other": "{{count}} marks",
+    "status": {
+        "needsFixing": "Needs fixing",
+        "check": "Check"
+    },
+    "markingScheme": "Marking scheme",
+    "pageLabel": "page {{page}}",
+    "noPageRecorded": "no page recorded",
+    "diagramsFromBook_one": "{{count}} diagram from the book",
+    "diagramsFromBook_other": "{{count}} diagrams from the book",
+    "actions": {
+        "rewrite": "Rewrite",
+        "rewriting": "Rewriting…",
+        "edit": "Edit",
+        "delete": "Remove",
+        "moveUp": "Move up",
+        "moveDown": "Move down"
+    },
+    "errors": {
+        "sectionRemoved": "This question's section is no longer in the plan."
+    },
+    "diagramMissing": "Needs a diagram that could not be drawn: {{description}}. Add one by hand, or rewrite the question."
+}

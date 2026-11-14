@@ -1,0 +1,30 @@
+{
+    "summary": {
+        "prefix": "الوجهة الافتراضية:",
+        "fallback": "تم تحديد الوجهة"
+    },
+    "button": {
+        "change": "تغيير"
+    },
+    "cascadeField": {
+        "labels": {
+            "course": "الدورة",
+            "session": "الجلسة",
+            "level": "المستوى",
+            "subject": "المادة",
+            "module": "الوحدة",
+            "chapter": "الفصل"
+        },
+        "placeholders": {
+            "course": "اختر الدورة",
+            "session": "اختر الجلسة",
+            "level": "اختر المستوى",
+            "subject": "اختر المادة",
+            "module": "اختر الوحدة",
+            "chapter": "اختر الفصل"
+        },
+        "searchPlaceholder": "ابحث عن {{label}}…",
+        "emptyText": "لا توجد نتائج مطابقة"
+    },
+    "noDefaultSet": "لم يتم تعيين وجهة افتراضية — سيتم الرفع التلقائي فقط للجلسات التي لها وجهتها الخاصة."
+}

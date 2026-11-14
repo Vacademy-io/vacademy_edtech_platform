@@ -1,0 +1,22 @@
+{
+    "timestampLabel": "Timestamp: {{time}}",
+    "correctBadge": "Correct",
+    "questionsList": {
+        "timeStampLine": "{{index}}. Time stamp - {{time}}"
+    },
+    "deleteDialog": {
+        "title": "Delete Question",
+        "confirmMessage": "Are you sure you want to delete this question?",
+        "description": "This permanently removes the question at this timestamp and can't be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete"
+    },
+    "toasts": {
+        "questionDeleted": "Question deleted",
+        "videoJumpedTo": "Video jumped to {{time}}"
+    },
+    "errors": {
+        "deleteQuestionFailed": "Failed to delete question",
+        "seekFailed": "Failed to seek video"
+    }
+}

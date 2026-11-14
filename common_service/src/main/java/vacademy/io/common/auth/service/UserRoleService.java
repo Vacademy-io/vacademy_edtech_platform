@@ -3,6 +3,7 @@ package vacademy.io.common.auth.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vacademy.io.common.auth.entity.Permissions;
 import vacademy.io.common.auth.entity.UserRole;
+import vacademy.io.common.auth.enums.UserRoleStatus;
 
 import java.util.HashMap;
 import java.util.List;
@@ -11,13 +12,49 @@ import java.util.stream.Collectors;
 
 public class UserRoleService {
 
-    // Method to create the map
+    /**
+     * Role statuses that still let a user into an institute. Everything else found in
+     * user_role (DISABLED, DELETED, DELETE, CANCEL, INACTIVE) means an admin took the
+     * access away. INVITED counts: an invitee signs in with the emailed credentials, and
+     * the first sign-in is what turns the invite ACTIVE.
+     */
+    public static final List<String> ACCESS_GRANTING_STATUSES =
+            List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name());
+
+    public static boolean grantsAccess(UserRole userRole) {
+        return userRole != null && userRole.getStatus() != null
+                && ACCESS_GRANTING_STATUSES.contains(userRole.getStatus());
+    }
+
+    /**
+     * True when this user is (or was) staff in the institute and every one of their roles
+     * there has been revoked — e.g. "Disable access" / "Delete member" on the Teams tab.
+     * Learner-only users are deliberately out of scope, and so is any institute the user
+     * has no rows in (cross-institute calls, requests without a clientId header).
+     */
+    public static boolean isStaffAccessRevoked(List<UserRole> userRoles, String instituteId) {
+        if (instituteId == null || instituteId.isBlank() || "null".equals(instituteId) || userRoles == null) {
+            return false;
+        }
+        List<UserRole> inInstitute = userRoles.stream()
+                .filter(userRole -> instituteId.equals(userRole.getInstituteId()))
+                .toList();
+        boolean heldStaffRole = inInstitute.stream().anyMatch(userRole -> userRole.getRole() != null
+                && !STUDENT_ROLE.equals(userRole.getRole().getName()));
+        return heldStaffRole && inInstitute.stream().noneMatch(UserRoleService::grantsAccess);
+    }
+
+    private static final String STUDENT_ROLE = "STUDENT";
+
+    // Method to create the map. Revoked roles are left out, so a token never carries an
+    // institute the user has been disabled or removed from.
     public static Map<String, Object> createInstituteRoleMap(List<UserRole> userRoles) {
         // Create a map to hold the results
         Map<String, Object> instituteMap = new HashMap<>();
 
         // Group user roles by instituteId
         Map<String, List<UserRole>> rolesByInstitute = userRoles.stream()
+                .filter(UserRoleService::grantsAccess)
                 .collect(Collectors.groupingBy(UserRole::getInstituteId));
 
         // Iterate through each group and build the desired structure

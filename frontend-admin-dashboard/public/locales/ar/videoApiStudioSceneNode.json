@@ -1,0 +1,34 @@
+{
+    "ariaLabel": "مشهد {{sceneNumber}} — انقر للتفاصيل",
+    "aiVideoTooltip": "فيديو مولّد بالذكاء الاصطناعي (fal.ai Veo)",
+    "aiBadge": "ذكاء اصطناعي",
+    "intrinsicTooltip": "{{field}} — تم كتم السرد الرئيسي خلال هذه النافذة؛ تشغّل اللقطة صوتها الخاص (صوت Veo / صوت المقطع المصدر).",
+    "intrinsicBadge": "صامت",
+    "regenTooltip_zero": "{{count}} محاولة إعادة توليد — انقر لعرض سجل الأحكام",
+    "regenTooltip_one": "محاولة إعادة توليد واحدة ({{count}}) — انقر لعرض سجل الأحكام",
+    "regenTooltip_two": "محاولتا إعادة توليد ({{count}}) — انقر لعرض سجل الأحكام",
+    "regenTooltip_few": "{{count}} محاولات إعادة توليد — انقر لعرض سجل الأحكام",
+    "regenTooltip_many": "{{count}} محاولة إعادة توليد — انقر لعرض سجل الأحكام",
+    "regenTooltip_other": "{{count}} محاولة إعادة توليد — انقر لعرض سجل الأحكام",
+    "intentRoleTooltip": "الدور المقصود: {{value}}",
+    "backgroundTreatmentTooltip": "معالجة الخلفية: {{value}}",
+    "transitionInTooltip": "الانتقال الداخل: {{value}}",
+    "workingFallback": "جارٍ العمل…",
+    "htmlPreviewTitle": "معاينة HTML للمشهد {{sceneNumber}}",
+    "htmlSceneLabel": "مشهد HTML",
+    "textSceneLabel": "مشهد نصي",
+    "substage": {
+        "htmlGen": "جارٍ إنشاء HTML",
+        "density": "كثافة الحركة",
+        "bboxLint": "فحص الإطار المحيط",
+        "brandAsset": "فحص أصول العلامة التجارية",
+        "visionReview": "مراجعة بصرية",
+        "screenshot": "التقاط لقطة شاشة",
+        "tts": "تسجيل السرد الصوتي",
+        "mediaPolling": "استطلاع مهمة الوسائط"
+    },
+    "externalCallState": {
+        "queued": "في الانتظار",
+        "polling": "قيد الاستطلاع"
+    }
+}

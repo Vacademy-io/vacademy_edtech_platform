@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { UseFormReturn } from "react-hook-form";
 import type { EnrolledSession } from "@/hooks/use-enrollment-status";
 import type { CourseDetailsFormValues } from "../-components/course-details-schema";
@@ -32,6 +33,7 @@ export function usePaymentStatusSync({
   addEnrolledSession: (session: EnrolledSession) => Promise<void>;
   form: UseFormReturn<CourseDetailsFormValues>;
 }) {
+  const { t } = useTranslation("courseDetailsB");
   const [paymentStatusChecked, setPaymentStatusChecked] =
     useState<boolean>(false);
   const [isCheckingPaymentStatus, setIsCheckingPaymentStatus] =
@@ -158,9 +160,7 @@ export function usePaymentStatusSync({
               "CourseDetailsPage - Error enrolling user on page load:",
               error,
             );
-            toast.error(
-              "Failed to update enrollment status. Please refresh the page.",
-            );
+            toast.error(t("enrollmentActions.toast.updateFailed"));
           }
         }
       }

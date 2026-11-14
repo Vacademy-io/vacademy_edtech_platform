@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Plus, X } from '@phosphor-icons/react';
+import { Plus, Sparkle, X } from '@phosphor-icons/react';
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -9,7 +9,9 @@ import {
 import { QuestionPaperUpload } from './QuestionPaperUpload';
 import { useIsMobile } from '@/hooks/use-mobile';
 import useDialogStore from '../-global-states/question-paper-dialogue-close';
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
+import { GenerateWithAiDialog } from './GenerateWithAiDialog';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionPaperHeadingInterface {
     currentQuestionIndex: number;
@@ -20,6 +22,8 @@ export const QuestionPapersHeading = ({
     currentQuestionIndex,
     setCurrentQuestionIndex,
 }: QuestionPaperHeadingInterface) => {
+    const { t } = useTranslation('assessmentQuestionPapersHeading');
+    const [generateOpen, setGenerateOpen] = useState(false);
     const isMobile = useIsMobile();
     const {
         isMainQuestionPaperAddDialogOpen,
@@ -37,13 +41,10 @@ export const QuestionPapersHeading = ({
             }`}
         >
             <div className="flex flex-col">
-                <h1 className="text-[1.25rem] font-bold text-neutral-600">
-                    Question Paper Access & Management
+                <h1 className="text-h3 font-bold text-neutral-600">
+                    {t('heading')}
                 </h1>
-                <p className="text-neutral-600">
-                    Quickly access and manage all question papers across classes and subjects.
-                    Easily browse and organize papers to support smooth exam preparation.
-                </p>
+                <p className="text-neutral-600">{t('description')}</p>
             </div>
             <AlertDialog
                 open={isMainQuestionPaperAddDialogOpen}
@@ -52,12 +53,14 @@ export const QuestionPapersHeading = ({
                 <AlertDialogTrigger>
                     <Button className="bg-primary-500 text-white">
                         <Plus />
-                        Add Question Paper
+                        {t('addQuestionPaper')}
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="p-0">
                     <div className="flex items-center justify-between rounded-md bg-primary-50">
-                        <h1 className="rounded-sm p-4 text-primary-500">Add Question Paper</h1>
+                        <h1 className="rounded-sm p-4 text-primary-500">
+                            {t('addQuestionPaper')}
+                        </h1>
                         <AlertDialogCancel
                             onClick={() => setIsMainQuestionPaperAddDialogOpen(false)}
                             className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -66,6 +69,20 @@ export const QuestionPapersHeading = ({
                         </AlertDialogCancel>
                     </div>
                     <div className="mb-6 mt-2 flex flex-col items-center justify-center gap-6">
+                        {/* Generate with AI — the Acadine-style path: pick a book or
+                            knowledge base, then configure syllabus, question mix and
+                            test details in the paper wizard. */}
+                        <Button
+                            variant="outline"
+                            className="w-40 border-primary-300 text-primary-600"
+                            onClick={() => {
+                                setIsMainQuestionPaperAddDialogOpen(false);
+                                setGenerateOpen(true);
+                            }}
+                        >
+                            <Sparkle className="mr-1 size-4" />
+                            {t('generateWithAi')}
+                        </Button>
                         {/* Create Manually Dialog */}
                         <AlertDialog
                             open={isManualQuestionPaperDialogOpen}
@@ -73,13 +90,13 @@ export const QuestionPapersHeading = ({
                         >
                             <AlertDialogTrigger>
                                 <Button variant="outline" className="w-40 text-neutral-600">
-                                    Create Manually
+                                    {t('createManually')}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="p-0">
                                 <div className="flex items-center justify-between rounded-md bg-primary-50">
                                     <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                        Create Question Paper Manually
+                                        {t('createQuestionPaperManually')}
                                     </h1>
                                     <AlertDialogCancel
                                         onClick={() => setIsManualQuestionPaperDialogOpen(false)}
@@ -103,13 +120,13 @@ export const QuestionPapersHeading = ({
                         >
                             <AlertDialogTrigger>
                                 <Button variant="outline" className="w-40 text-neutral-600">
-                                    Upload from Device
+                                    {t('uploadFromDevice')}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="p-0">
                                 <div className="flex items-center justify-between rounded-md bg-primary-50">
                                     <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                        Upload Question Paper From Device
+                                        {t('uploadQuestionPaperFromDevice')}
                                     </h1>
                                     <AlertDialogCancel
                                         onClick={() => setIsUploadFromDeviceDialogOpen(false)}
@@ -128,6 +145,7 @@ export const QuestionPapersHeading = ({
                     </div>
                 </AlertDialogContent>
             </AlertDialog>
+            <GenerateWithAiDialog open={generateOpen} onOpenChange={setGenerateOpen} />
         </div>
     );
 };

@@ -1,0 +1,36 @@
+{
+    "typeLabel": {
+        "MCQS": "اختيار من متعدد",
+        "MCQM": "اختيار من متعدد (عدة إجابات)",
+        "TRUE_FALSE": "صح / خطأ",
+        "ONE_WORD": "كلمة واحدة",
+        "LONG_ANSWER": "إجابة طويلة",
+        "NUMERIC": "رقمي",
+        "PASSAGE": "قطعة / فهم المقروء",
+        "ASSERTION_REASON": "الادعاء والسبب"
+    },
+    "difficultyLabel": {
+        "EASY": "سهل",
+        "MEDIUM": "متوسط",
+        "HARD": "صعب"
+    },
+    "columns": {
+        "section": "القسم",
+        "whatItTests": "ما الذي يختبره",
+        "type": "النوع",
+        "questions": "الأسئلة",
+        "marksEach": "الدرجة لكل سؤال",
+        "difficulty": "الصعوبة",
+        "total": "الإجمالي"
+    },
+    "aria": {
+        "oneFewer": "سؤال واحد أقل في {{topic}}",
+        "oneMore": "سؤال واحد أكثر في {{topic}}",
+        "marksPer": "الدرجة لكل سؤال في {{topic}}",
+        "remove": "إزالة {{topic}}"
+    },
+    "footer": {
+        "total": "الإجمالي"
+    },
+    "pageRange": "ص. {{range}}"
+}

@@ -1,0 +1,12 @@
+{
+    "heading": "لوحة المتصدرين",
+    "table": {
+        "duration": "{{minutes}} دقيقة {{seconds}} ثانية",
+        "percentileLabel": "المئين",
+        "marksLabel": "الدرجات"
+    },
+    "export": {
+        "pdfSuccess": "تم تصدير بيانات لوحة المتصدرين بصيغة PDF بنجاح",
+        "csvSuccess": "تم تصدير بيانات لوحة المتصدرين بصيغة CSV بنجاح"
+    }
+}

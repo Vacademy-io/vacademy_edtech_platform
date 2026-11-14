@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "formNotInitialized": "फ़ॉर्म सही तरीके से आरंभ नहीं हुआ है"
+    },
+    "settings": {
+        "title": "प्रश्न सेटिंग्स",
+        "numericalType": "संख्यात्मक प्रकार",
+        "decimalPrecisionPlaceholder": "दशमलव सटीकता"
+    },
+    "comprehensionText": "अनुच्छेद पाठ",
+    "question": {
+        "label": "प्रश्न"
+    },
+    "defaults": {
+        "answer": "उत्तर:",
+        "explanation": "व्याख्या:"
+    }
+}

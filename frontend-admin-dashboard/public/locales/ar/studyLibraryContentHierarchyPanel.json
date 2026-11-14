@@ -1,0 +1,12 @@
+{
+    "courseStructure": "هيكل الدورة",
+    "completedRatio": "{{completed}}/{{total}} مكتملة",
+    "generatingCount_zero": "لا يوجد قيد الإنشاء",
+    "generatingCount_one": "شريحة واحدة قيد الإنشاء",
+    "generatingCount_two": "شريحتان قيد الإنشاء",
+    "generatingCount_few": "{{count}} شرائح قيد الإنشاء",
+    "generatingCount_many": "{{count}} شريحة قيد الإنشاء",
+    "generatingCount_other": "{{count}} شريحة قيد الإنشاء",
+    "aiVideoDelay": "سيتوفر فيديو الذكاء الاصطناعي بعد بضع دقائق",
+    "ratio": "{{completed}}/{{total}}"
+}

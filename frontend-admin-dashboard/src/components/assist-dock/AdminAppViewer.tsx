@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AndroidLogo, AppleLogo, CaretLeft, DeviceMobile } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -13,6 +14,7 @@ import { requestAdminAppLink, type AdminAppPlatform } from '@/services/adminApp'
  * store link is sent over WhatsApp (from the Vidyayatan account).
  */
 export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const { t } = useTranslation('adminAppViewer');
     const [platform, setPlatform] = useState<AdminAppPlatform | null>(null);
     const [phone, setPhone] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -41,23 +43,23 @@ export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () =
         if (!platform) return;
         const normalized = normalizePhone(phone);
         if (!normalized) {
-            setError('Enter a valid mobile number (with country code for non-India numbers).');
+            setError(t('invalidMobileNumber'));
             return;
         }
         setError(null);
         setSending(true);
         try {
             await requestAdminAppLink(platform, normalized);
-            toast.success('Link sent — check WhatsApp on that number.');
+            toast.success(t('linkSentToast'));
             onClose();
         } catch {
-            toast.error('Could not send the link. Please try again.');
+            toast.error(t('linkSendFailedToast'));
         } finally {
             setSending(false);
         }
     };
 
-    const heading = platform ? 'Send the app link' : 'Get the Admin app';
+    const heading = platform ? t('sendTheAppLink') : t('getTheAdminApp');
 
     return (
         <MyDialog
@@ -73,18 +75,17 @@ export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () =
                             <DeviceMobile size={26} weight="duotone" />
                         </span>
                         <p className="text-body text-neutral-600">
-                            Install the Vacademy Admin app on your phone. Choose your platform to
-                            get the download link over WhatsApp.
+                            {t('installAppDescription')}
                         </p>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <PlatformChoice
-                            label="Android"
+                            label={t('android')}
                             icon={<AndroidLogo size={28} weight="duotone" />}
                             onClick={() => setPlatform('ANDROID')}
                         />
                         <PlatformChoice
-                            label="iOS"
+                            label={t('ios')}
                             icon={<AppleLogo size={28} weight="duotone" />}
                             onClick={() => setPlatform('IOS')}
                         />
@@ -99,25 +100,25 @@ export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () =
                             <AppleLogo size={20} weight="duotone" />
                         )}
                         <span className="text-body font-medium">
-                            {platform === 'ANDROID' ? 'Android' : 'iOS'} app
+                            {t('appNameSuffix', {
+                                platformName: platform === 'ANDROID' ? t('android') : t('ios'),
+                            })}
                         </span>
                     </div>
                     <MyInput
                         inputType="tel"
-                        label="Mobile number"
+                        label={t('mobileNumberLabel')}
                         required
                         input={phone}
                         onChangeFunction={(e) => {
                             setPhone(e.target.value);
                             if (error) setError(null);
                         }}
-                        inputPlaceholder="e.g. 9876543210"
+                        inputPlaceholder={t('mobileNumberPlaceholder')}
                         error={error}
                         className="w-full"
                     />
-                    <p className="text-caption text-neutral-500">
-                        We&apos;ll send the app link to your mobile number over WhatsApp.
-                    </p>
+                    <p className="text-caption text-neutral-500">{t('sendOverWhatsappNote')}</p>
                     <div className="flex items-center justify-between gap-3 pt-1">
                         <MyButton
                             buttonType="secondary"
@@ -129,7 +130,7 @@ export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () =
                             disable={sending}
                         >
                             <span className="flex items-center gap-1">
-                                <CaretLeft size={14} /> Back
+                                <CaretLeft size={14} /> {t('back')}
                             </span>
                         </MyButton>
                         <MyButton
@@ -138,7 +139,7 @@ export function AdminAppViewer({ open, onClose }: { open: boolean; onClose: () =
                             onClick={handleSend}
                             disable={sending || phone.trim().length === 0}
                         >
-                            {sending ? 'Sending…' : 'Send link'}
+                            {sending ? t('sending') : t('sendLink')}
                         </MyButton>
                     </div>
                 </div>

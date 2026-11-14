@@ -263,4 +263,69 @@ public class CreditUsageDtos {
         private List<TopicCount> topTopics;
         private List<DailyActivityRow> dailyActivity;
     }
+
+    // ── Automations chatbot (WhatsApp flow AI replies) credit usage ──────────
+    // Distinct from the ChatbotSummary/ChatbotSessionRow types above, which
+    // describe the in-app Student AI. These read credit_transactions rows with
+    // request_type='chatbot', written by ChatbotAiService when a flow's
+    // AI_RESPONSE node answers someone.
+
+    /** Credits one Automations flow's AI replies consumed in the window. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FlowAiUsageRow {
+        /** chatbot_flow id — carried on the transaction as batch_id. Null for pre-V495 rows. */
+        private String flowId;
+        /** Flow name as it was when the turn was charged (parsed from the description). */
+        private String flowName;
+        private double totalCredits;
+        /** Number of AI turns charged. */
+        private long turnCount;
+        /** Distinct people the bot replied to. */
+        private long userCount;
+        /** Epoch millis of the most recent charged turn. */
+        private Long lastUsedAt;
+    }
+
+    /** One charged AI turn in the Automations chatbot drill-down. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FlowAiUsageLogRow {
+        private String id;
+        /** Epoch millis. */
+        private Long createdAt;
+        private String flowId;
+        private String userId;
+        /** Resolved from auth-service; null when the number never matched a user. */
+        private String name;
+        private String email;
+        private String model;
+        private double credits;
+        private String description;
+    }
+
+    /** Header figures for the Automations chatbot AI usage panel. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FlowAiUsageSummary {
+        private double totalCredits;
+        private long turnCount;
+        private long userCount;
+        private long flowCount;
+        /** Current institute balance, so the panel can show the funding state in one call. */
+        private Double currentBalance;
+        /**
+         * False when the balance is exhausted (or unreadable) — the same gate
+         * ChatbotAiService applies, so the UI can show the feature as paused
+         * instead of guessing from the number.
+         */
+        private boolean aiEnabled;
+        private List<FlowAiUsageRow> byFlow;
+    }
 }

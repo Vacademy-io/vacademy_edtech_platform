@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "Vsmart Extract"
+    },
+    "fields": {
+        "prompt": {
+            "label": "Enter your prompt",
+            "placeholder": "Enter your prompt here..."
+        }
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "regenerate": "Regenerate"
+    }
+}

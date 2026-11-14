@@ -1,0 +1,17 @@
+{
+    "unknownSource": "Source inconnue",
+    "statusPosted": "Comptabilisée",
+    "statusReversed": "Extournée",
+    "statusUnknown": "Inconnu",
+    "defaultAccount": "Compte",
+    "undated": "Non datée",
+    "doesNotBalance": "Ne s'équilibre pas",
+    "noMemo": "Aucun mémo enregistré pour cette écriture.",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "accountColumn": "Compte",
+    "noLinesStored": "Cette écriture n'a aucune ligne enregistrée. Ses totaux proviennent uniquement de l'en-tête, il n'y a donc rien à rapprocher ici.",
+    "totalsBalanced": "Totaux — débits égaux aux crédits",
+    "totalsUnbalanced": "Totaux — débits et crédits diffèrent",
+    "unbalancedWarning": "Cette écriture ne s'équilibre pas. Une écriture de journal doit toujours comptabiliser des débits égaux aux crédits — signalez-le au responsable du grand livre avant d'importer le mois dans votre logiciel comptable."
+}

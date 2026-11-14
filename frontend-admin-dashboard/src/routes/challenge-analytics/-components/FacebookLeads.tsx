@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FacebookLeadsDailyFunnel } from './FacebookLeadsDailyFunnel';
 import { CenterDistributionCharts } from './CenterDistributionCharts';
@@ -98,13 +100,16 @@ function leadStatus(lead: AudienceLead, isOptedOut: boolean): LeadStatusKind {
     return 'ACTIVE';
 }
 
-const STATUS_LABEL: Record<LeadStatusKind, string> = {
-    CONVERTED: 'Converted',
-    OPT_OUT_INACTIVE: 'Inactive',
-    OPT_OUT_EXPLICIT: 'Opted out',
-    OPTED_OUT: 'Opted out',
-    ACTIVE: 'Active',
-};
+/** Status badge labels — module-scope constants need a builder so they can use `t`. */
+function buildStatusLabels(t: TFunction): Record<LeadStatusKind, string> {
+    return {
+        CONVERTED: t('status.converted'),
+        OPT_OUT_INACTIVE: t('status.inactive'),
+        OPT_OUT_EXPLICIT: t('status.optedOut'),
+        OPTED_OUT: t('status.optedOut'),
+        ACTIVE: t('status.active'),
+    };
+}
 
 const STATUS_CLASS: Record<LeadStatusKind, string> = {
     CONVERTED: 'bg-emerald-100 text-emerald-700',
@@ -143,6 +148,10 @@ export function FacebookLeads({
     allCenters,
     enabled,
 }: FacebookLeadsProps) {
+    const { t, i18n } = useTranslation('challengeAnalyticsFacebookLeads');
+    const statusLabels = useMemo(() => buildStatusLabels(t), [t]);
+    const centerLabel = (c: string) => (c === UNSPECIFIED ? t('unspecifiedCenter') : c);
+
     // Facebook audiences = active SOCIAL MEDIA campaigns.
     const fbAudiences = useMemo(
         () =>
@@ -254,7 +263,7 @@ export function FacebookLeads({
             const rec = recipientByPhone.get(phoneKey(phone));
             return {
                 id: lead.response_id,
-                name: leadName(lead) || 'Anonymous',
+                name: leadName(lead) || t('leadExplorer.anonymous'),
                 phone,
                 center: leadCenter(lead) || UNSPECIFIED,
                 submittedAt: lead.submitted_at_local ?? null,
@@ -266,7 +275,7 @@ export function FacebookLeads({
             ...active.map((l) => build(l, false)),
             ...optedOut.map((l) => build(l, true)),
         ];
-    }, [active, optedOut, recipientByPhone]);
+    }, [active, optedOut, recipientByPhone, t]);
 
     const centerOptions = useMemo(
         () => Array.from(new Set(explorerRows.map((r) => r.center))).sort(),
@@ -290,14 +299,23 @@ export function FacebookLeads({
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
 
     const exportToCSV = () => {
-        const headers = ['Name', 'Phone', 'Center', 'Status', 'Days Messaged', 'Submitted'];
+        const headers = [
+            t('csv.name'),
+            t('csv.phone'),
+            t('csv.center'),
+            t('csv.status'),
+            t('csv.daysMessaged'),
+            t('csv.submitted'),
+        ];
         const rows = filteredRows.map((r) => [
             r.name,
-            r.phone || 'N/A',
-            r.center,
-            STATUS_LABEL[r.status],
+            r.phone || t('leadExplorer.notAvailable'),
+            centerLabel(r.center),
+            statusLabels[r.status],
             String(r.daysMessaged),
-            r.submittedAt ? new Date(r.submittedAt).toLocaleString() : 'N/A',
+            r.submittedAt
+                ? new Date(r.submittedAt).toLocaleString(i18n.language)
+                : t('leadExplorer.notAvailable'),
         ]);
         const csv = [headers, ...rows].map((line) => line.map((c) => `"${c}"`).join(',')).join('\n');
         const a = document.createElement('a');
@@ -314,20 +332,20 @@ export function FacebookLeads({
         icon: KpiCardProps['icon'];
         color: KpiCardProps['color'];
     }> = [
-        { label: 'Total Leads', value: totalLeads, icon: Users, color: 'blue' },
-        { label: 'Active Centers', value: activeCenters, icon: MapPin, color: 'violet' },
+        { label: t('kpi.totalLeads'), value: totalLeads, icon: Users, color: 'blue' },
+        { label: t('kpi.activeCenters'), value: activeCenters, icon: MapPin, color: 'violet' },
         {
-            label: 'Messaged',
+            label: t('kpi.messaged'),
             value: funnel?.summary?.unique_recipients ?? 0,
             icon: PaperPlaneTilt,
             color: 'indigo',
         },
         {
-            label: 'Replied',
+            label: t('kpi.replied'),
             value: funnel?.summary?.replied_recipients ?? 0,
             sub:
                 funnel?.summary?.reply_rate != null
-                    ? `${funnel.summary.reply_rate}% reply rate`
+                    ? t('kpi.replyRate', { rate: funnel.summary.reply_rate })
                     : undefined,
             icon: ChatCircle,
             color: 'emerald',
@@ -335,15 +353,18 @@ export function FacebookLeads({
         ...(hasOptOuts
             ? [
                   {
-                      label: 'Opted-Out',
+                      label: t('kpi.optedOut'),
                       value: optedOut.length,
-                      sub: `${explicitCount} explicit · ${inactiveCount} inactive`,
+                      sub: t('kpi.optedOutSub', {
+                          explicit: explicitCount,
+                          inactive: inactiveCount,
+                      }),
                       icon: Warning,
                       color: 'red' as const,
                   },
               ]
             : []),
-        { label: 'Converted', value: convertedCount, icon: GraduationCap, color: 'emerald' },
+        { label: t('kpi.converted'), value: convertedCount, icon: GraduationCap, color: 'emerald' },
     ];
     const kpiLgColsClass = kpiCards.length === 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-5';
 
@@ -367,12 +388,12 @@ export function FacebookLeads({
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-2">
                     <FacebookLogo className="size-5 text-blue-600" weight="fill" />
-                    <CardTitle className="text-base font-semibold">Facebook Leads</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-gray-500">
                         <FacebookLogo className="size-8 text-gray-300" weight="fill" />
-                        <p>No active Facebook (Social Media) campaign found for this institute.</p>
+                        <p>{t('noCampaign')}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -401,15 +422,15 @@ export function FacebookLeads({
                 <TabsList className="flex w-full justify-start gap-1 overflow-x-auto">
                     <TabsTrigger value="centers" className="shrink-0 gap-2">
                         <MapPin className="size-4" />
-                        Centers
+                        {t('tabs.centers')}
                     </TabsTrigger>
                     <TabsTrigger value="messages" className="shrink-0 gap-2">
                         <PaperPlaneTilt className="size-4" />
-                        Daily Messages
+                        {t('tabs.dailyMessages')}
                     </TabsTrigger>
                     <TabsTrigger value="leads" className="shrink-0 gap-2">
                         <Users className="size-4" />
-                        Leads
+                        {t('tabs.leads')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -424,8 +445,8 @@ export function FacebookLeads({
                         interactions: r.messaged,
                         optedOut: r.optedOut,
                     }))}
-                    usersLabel="Leads"
-                    interactionsLabel="Messaged"
+                    usersLabel={t('centerTable.leads')}
+                    interactionsLabel={t('centerTable.messaged')}
                 />
             )}
 
@@ -438,13 +459,14 @@ export function FacebookLeads({
                         </div>
                         <div>
                             <CardTitle className="text-base font-semibold">
-                                Center Performance — Facebook Leads
+                                {t('centerTable.title')}
                             </CardTitle>
                             <p className="text-xs text-gray-500">
-                                Leads, messaging & opt-outs per center (all centers funnel into one
-                                Facebook campaign; grouped by the lead&apos;s center).{' '}
-                                <span className="font-medium text-gray-600">Share</span> = each
-                                center&apos;s % of total Facebook leads.
+                                {t('centerTable.descriptionPrefix')}{' '}
+                                <span className="font-medium text-gray-600">
+                                    {t('centerTable.shareWord')}
+                                </span>{' '}
+                                {t('centerTable.descriptionSuffix')}
                             </p>
                         </div>
                     </div>
@@ -452,8 +474,8 @@ export function FacebookLeads({
                 <CardContent>
                     {noLeads ? (
                         <div className="flex flex-col items-center justify-center gap-1 py-10 text-center text-gray-500">
-                            <p>No Facebook leads in the selected date range.</p>
-                            <p className="text-xs">Try widening the date range above.</p>
+                            <p>{t('centerTable.noLeadsTitle')}</p>
+                            <p className="text-xs">{t('centerTable.noLeadsHint')}</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto rounded-lg border">
@@ -461,44 +483,44 @@ export function FacebookLeads({
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            Center
+                                            {t('centerTable.center')}
                                         </th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-700">
                                             <span className="flex items-center justify-end gap-1">
                                                 <Users className="size-3.5" />
-                                                Leads
+                                                {t('centerTable.leads')}
                                             </span>
                                         </th>
                                         <th className="hidden px-4 py-3 text-left font-medium text-gray-700 md:table-cell">
                                             <span className="flex items-center gap-1">
-                                                Share of leads
-                                                <InfoHint text="Each center's share of all Facebook leads = this center's leads ÷ total leads." />
+                                                {t('centerTable.shareOfLeads')}
+                                                <InfoHint text={t('centerTable.shareInfoHint')} />
                                             </span>
                                         </th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-700">
                                             <span className="flex items-center justify-end gap-1">
                                                 <PaperPlaneTilt className="size-3.5" />
-                                                Messaged
+                                                {t('centerTable.messaged')}
                                             </span>
                                         </th>
                                         <th className="hidden px-4 py-3 text-right font-medium text-gray-700 sm:table-cell">
                                             <span className="flex items-center justify-end gap-1">
                                                 <ChatCircle className="size-3.5" />
-                                                Replied
+                                                {t('centerTable.replied')}
                                             </span>
                                         </th>
                                         {hasOptOuts && (
                                             <th className="px-4 py-3 text-right font-medium text-gray-700">
                                                 <span className="flex items-center justify-end gap-1">
                                                     <Warning className="size-3.5" />
-                                                    Opt-Outs
+                                                    {t('centerTable.optOuts')}
                                                 </span>
                                             </th>
                                         )}
                                         <th className="hidden px-4 py-3 text-right font-medium text-gray-700 lg:table-cell">
                                             <span className="flex items-center justify-end gap-1">
                                                 <GraduationCap className="size-3.5" />
-                                                Converted
+                                                {t('centerTable.converted')}
                                             </span>
                                         </th>
                                     </tr>
@@ -516,11 +538,11 @@ export function FacebookLeads({
                                             <tr key={row.center} className="border-t hover:bg-gray-50">
                                                 <td className="px-4 py-3">
                                                     <span className="font-medium text-gray-800">
-                                                        {row.center}
+                                                        {centerLabel(row.center)}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-semibold text-blue-700">
-                                                    {row.leads.toLocaleString()}
+                                                    {row.leads.toLocaleString(i18n.language)}
                                                 </td>
                                                 <td className="hidden px-4 py-3 md:table-cell">
                                                     <div className="flex items-center gap-2">
@@ -537,16 +559,16 @@ export function FacebookLeads({
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-medium text-indigo-700">
-                                                    {row.messaged.toLocaleString()}
+                                                    {row.messaged.toLocaleString(i18n.language)}
                                                 </td>
                                                 <td className="hidden px-4 py-3 text-right text-emerald-700 sm:table-cell">
-                                                    {row.replied.toLocaleString()}
+                                                    {row.replied.toLocaleString(i18n.language)}
                                                 </td>
                                                 {hasOptOuts && (
                                                     <td className="px-4 py-3 text-right">
                                                         {row.optedOut > 0 ? (
                                                             <span className="font-medium text-red-600">
-                                                                {row.optedOut.toLocaleString()}
+                                                                {row.optedOut.toLocaleString(i18n.language)}
                                                             </span>
                                                         ) : (
                                                             <span className="text-gray-400">0</span>
@@ -554,7 +576,7 @@ export function FacebookLeads({
                                                     </td>
                                                 )}
                                                 <td className="hidden px-4 py-3 text-right font-medium text-emerald-700 lg:table-cell">
-                                                    {row.converted.toLocaleString()}
+                                                    {row.converted.toLocaleString(i18n.language)}
                                                 </td>
                                             </tr>
                                         );
@@ -563,25 +585,29 @@ export function FacebookLeads({
                                 <tfoot className="border-t bg-gray-50">
                                     <tr>
                                         <td className="px-4 py-3 font-semibold text-gray-700">
-                                            Total
+                                            {t('centerTable.total')}
                                         </td>
                                         <td className="px-4 py-3 text-right font-bold text-blue-700">
-                                            {totalLeads.toLocaleString()}
+                                            {totalLeads.toLocaleString(i18n.language)}
                                         </td>
                                         <td className="hidden px-4 py-3 md:table-cell" />
                                         <td className="px-4 py-3 text-right font-bold text-indigo-700">
-                                            {(funnel?.summary?.unique_recipients ?? 0).toLocaleString()}
+                                            {(funnel?.summary?.unique_recipients ?? 0).toLocaleString(
+                                                i18n.language
+                                            )}
                                         </td>
                                         <td className="hidden px-4 py-3 text-right font-bold text-emerald-700 sm:table-cell">
-                                            {(funnel?.summary?.replied_recipients ?? 0).toLocaleString()}
+                                            {(funnel?.summary?.replied_recipients ?? 0).toLocaleString(
+                                                i18n.language
+                                            )}
                                         </td>
                                         {hasOptOuts && (
                                             <td className="px-4 py-3 text-right font-bold text-red-600">
-                                                {optedOut.length.toLocaleString()}
+                                                {optedOut.length.toLocaleString(i18n.language)}
                                             </td>
                                         )}
                                         <td className="hidden px-4 py-3 text-right font-bold text-emerald-700 lg:table-cell">
-                                            {convertedCount.toLocaleString()}
+                                            {convertedCount.toLocaleString(i18n.language)}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -613,10 +639,10 @@ export function FacebookLeads({
                 <CardHeader className="pb-2">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle className="text-base font-semibold">Lead Explorer</CardTitle>
-                            <p className="text-xs text-gray-500">
-                                Every Facebook lead — center, status & days messaged
-                            </p>
+                            <CardTitle className="text-base font-semibold">
+                                {t('leadExplorer.title')}
+                            </CardTitle>
+                            <p className="text-xs text-gray-500">{t('leadExplorer.subtitle')}</p>
                         </div>
                         {filteredRows.length > 0 && (
                             <Button
@@ -626,7 +652,7 @@ export function FacebookLeads({
                                 className="gap-2 self-start"
                             >
                                 <Download className="size-4" />
-                                Export CSV
+                                {t('leadExplorer.exportCsv')}
                             </Button>
                         )}
                     </div>
@@ -637,7 +663,7 @@ export function FacebookLeads({
                         <div className="relative w-full sm:w-64">
                             <MagnifyingGlass className="absolute left-2.5 top-2.5 size-4 text-gray-400" />
                             <Input
-                                placeholder="Search name, phone, center"
+                                placeholder={t('leadExplorer.searchPlaceholder')}
                                 value={search}
                                 onChange={(e) => {
                                     setSearch(e.target.value);
@@ -654,13 +680,13 @@ export function FacebookLeads({
                             }}
                         >
                             <SelectTrigger className="w-full sm:w-48">
-                                <SelectValue placeholder="Center" />
+                                <SelectValue placeholder={t('leadExplorer.centerPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All centers</SelectItem>
+                                <SelectItem value="all">{t('leadExplorer.allCenters')}</SelectItem>
                                 {centerOptions.map((c) => (
                                     <SelectItem key={c} value={c}>
-                                        {c}
+                                        {centerLabel(c)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -673,25 +699,29 @@ export function FacebookLeads({
                             }}
                         >
                             <SelectTrigger className="w-full sm:w-44">
-                                <SelectValue placeholder="Status" />
+                                <SelectValue placeholder={t('leadExplorer.statusPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All statuses</SelectItem>
-                                <SelectItem value="ACTIVE">Active</SelectItem>
-                                <SelectItem value="CONVERTED">Converted</SelectItem>
-                                <SelectItem value="OPTED_OUT">Opted out</SelectItem>
-                                <SelectItem value="OPT_OUT_INACTIVE">Inactive</SelectItem>
+                                <SelectItem value="all">{t('leadExplorer.allStatuses')}</SelectItem>
+                                <SelectItem value="ACTIVE">{t('status.active')}</SelectItem>
+                                <SelectItem value="CONVERTED">{t('status.converted')}</SelectItem>
+                                <SelectItem value="OPTED_OUT">{t('status.optedOut')}</SelectItem>
+                                <SelectItem value="OPT_OUT_INACTIVE">
+                                    {t('status.inactive')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                         <span className="text-xs text-gray-500 sm:ml-auto">
-                            {filteredRows.length.toLocaleString()} of {totalLeads.toLocaleString()}{' '}
-                            leads
+                            {t('leadExplorer.countSummary', {
+                                shown: filteredRows.length,
+                                count: totalLeads,
+                            })}
                         </span>
                     </div>
 
                     {filteredRows.length === 0 ? (
                         <div className="flex items-center justify-center py-10 text-center text-gray-500">
-                            No leads match the current filters.
+                            {t('leadExplorer.noResults')}
                         </div>
                     ) : (
                         <>
@@ -700,22 +730,22 @@ export function FacebookLeads({
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                                #
+                                                {t('leadExplorer.index')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                                Lead
+                                                {t('leadExplorer.lead')}
                                             </th>
                                             <th className="hidden px-4 py-3 text-left font-medium text-gray-700 sm:table-cell">
-                                                Center
+                                                {t('leadExplorer.center')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                                Status
+                                                {t('leadExplorer.status')}
                                             </th>
                                             <th className="hidden px-4 py-3 text-right font-medium text-gray-700 md:table-cell">
-                                                Days Messaged
+                                                {t('leadExplorer.daysMessaged')}
                                             </th>
                                             <th className="hidden px-4 py-3 text-left font-medium text-gray-700 lg:table-cell">
-                                                Submitted
+                                                {t('leadExplorer.submitted')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -737,13 +767,13 @@ export function FacebookLeads({
                                                     )}
                                                 </td>
                                                 <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">
-                                                    {row.center}
+                                                    {centerLabel(row.center)}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span
                                                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[row.status]}`}
                                                     >
-                                                        {STATUS_LABEL[row.status]}
+                                                        {statusLabels[row.status]}
                                                     </span>
                                                 </td>
                                                 <td className="hidden px-4 py-3 text-right md:table-cell">
@@ -761,7 +791,7 @@ export function FacebookLeads({
                                                               new Date(row.submittedAt),
                                                               'MMM dd, yyyy'
                                                           )
-                                                        : 'N/A'}
+                                                        : t('leadExplorer.notAvailable')}
                                                 </td>
                                             </tr>
                                         ))}
@@ -771,7 +801,10 @@ export function FacebookLeads({
                             {totalPages > 1 && (
                                 <div className="mt-4 flex items-center justify-between">
                                     <span className="text-sm text-gray-500">
-                                        Page {page + 1} of {totalPages}
+                                        {t('leadExplorer.page', {
+                                            page: page + 1,
+                                            total: totalPages,
+                                        })}
                                     </span>
                                     <div className="flex gap-2">
                                         <Button
@@ -780,7 +813,7 @@ export function FacebookLeads({
                                             onClick={() => setPage((p) => Math.max(0, p - 1))}
                                             disabled={page === 0}
                                         >
-                                            Previous
+                                            {t('leadExplorer.previous')}
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -790,7 +823,7 @@ export function FacebookLeads({
                                             }
                                             disabled={page >= totalPages - 1}
                                         >
-                                            Next
+                                            {t('leadExplorer.next')}
                                         </Button>
                                     </div>
                                 </div>
@@ -824,6 +857,7 @@ const KPI_BG: Record<KpiCardProps['color'], string> = {
 };
 
 function KpiCard({ label, value, sub, icon: Icon, color }: KpiCardProps) {
+    const { i18n } = useTranslation('challengeAnalyticsFacebookLeads');
     return (
         <Card className="shadow-sm">
             <CardContent className="pt-4">
@@ -834,7 +868,7 @@ function KpiCard({ label, value, sub, icon: Icon, color }: KpiCardProps) {
                     <div className="min-w-0">
                         <p className="truncate text-xs text-gray-500">{label}</p>
                         <p className="text-xl font-bold text-gray-800">
-                            {typeof value === 'number' ? value.toLocaleString() : value}
+                            {typeof value === 'number' ? value.toLocaleString(i18n.language) : value}
                         </p>
                         {sub && <p className="truncate text-xs text-gray-400">{sub}</p>}
                     </div>
@@ -859,6 +893,7 @@ function DailyMessageFunnel({
     rosterFilter,
     onRosterFilterChange,
 }: DailyMessageFunnelProps) {
+    const { t } = useTranslation('challengeAnalyticsFacebookLeads');
     const days = funnel?.days || [];
     const recipients = funnel?.recipients || [];
     const maxSends = Math.max(...days.map((d) => d.total_sends), 1);
@@ -878,11 +913,9 @@ function DailyMessageFunnel({
                     </div>
                     <div>
                         <CardTitle className="text-base font-semibold">
-                            Daily-Message Funnel
+                            {t('dailyFunnel.title')}
                         </CardTitle>
-                        <p className="text-xs text-gray-500">
-                            The 7-day WhatsApp journey — sends, recipients & replies per day
-                        </p>
+                        <p className="text-xs text-gray-500">{t('dailyFunnel.subtitle')}</p>
                     </div>
                 </div>
             </CardHeader>
@@ -891,7 +924,7 @@ function DailyMessageFunnel({
                     <div className="h-40 animate-pulse rounded bg-gray-100" />
                 ) : days.length === 0 ? (
                     <div className="flex items-center justify-center py-10 text-center text-gray-500">
-                        No journey messages sent in the selected date range.
+                        {t('dailyFunnel.empty')}
                     </div>
                 ) : (
                     <div className="space-y-5">
@@ -902,7 +935,7 @@ function DailyMessageFunnel({
                                 return (
                                     <div key={d.day_number} className="flex items-center gap-3">
                                         <span className="w-12 shrink-0 text-xs font-medium text-gray-600">
-                                            Day {d.day_number}
+                                            {t('dailyFunnel.day', { n: d.day_number })}
                                         </span>
                                         <div className="h-6 flex-1 overflow-hidden rounded-md bg-gray-100">
                                             {/* dynamic funnel bar width */}
@@ -916,10 +949,14 @@ function DailyMessageFunnel({
                                             </div>
                                         </div>
                                         <span className="hidden w-24 shrink-0 text-right text-xs text-gray-500 sm:inline">
-                                            {d.unique_recipients} ppl
+                                            {t('dailyFunnel.peopleCount', {
+                                                count: d.unique_recipients,
+                                            })}
                                         </span>
                                         <span className="w-20 shrink-0 text-right text-xs font-medium text-emerald-700">
-                                            {d.reply_rate}% reply
+                                            {t('dailyFunnel.replyRatePercent', {
+                                                rate: d.reply_rate,
+                                            })}
                                         </span>
                                     </div>
                                 );
@@ -930,16 +967,22 @@ function DailyMessageFunnel({
                         <div>
                             <div className="mb-2 flex items-center justify-between">
                                 <h4 className="text-sm font-medium text-gray-700">
-                                    Who received messages
+                                    {t('dailyFunnel.whoReceivedMessages')}
                                 </h4>
                                 <Select value={rosterFilter} onValueChange={onRosterFilterChange}>
                                     <SelectTrigger className="w-40">
-                                        <SelectValue placeholder="Filter" />
+                                        <SelectValue placeholder={t('dailyFunnel.filterPlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All recipients</SelectItem>
-                                        <SelectItem value="replied">Replied</SelectItem>
-                                        <SelectItem value="silent">Silent (no reply)</SelectItem>
+                                        <SelectItem value="all">
+                                            {t('dailyFunnel.rosterAll')}
+                                        </SelectItem>
+                                        <SelectItem value="replied">
+                                            {t('dailyFunnel.rosterReplied')}
+                                        </SelectItem>
+                                        <SelectItem value="silent">
+                                            {t('dailyFunnel.rosterSilent')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -948,19 +991,19 @@ function DailyMessageFunnel({
                                     <thead className="sticky top-0 bg-gray-50">
                                         <tr>
                                             <th className="px-4 py-2 text-left font-medium text-gray-700">
-                                                Phone
+                                                {t('dailyFunnel.phone')}
                                             </th>
                                             <th className="hidden px-4 py-2 text-left font-medium text-gray-700 sm:table-cell">
-                                                Center
+                                                {t('dailyFunnel.center')}
                                             </th>
                                             <th className="px-4 py-2 text-left font-medium text-gray-700">
-                                                Days received
+                                                {t('dailyFunnel.daysReceived')}
                                             </th>
                                             <th className="hidden px-4 py-2 text-left font-medium text-gray-700 md:table-cell">
-                                                Last sent
+                                                {t('dailyFunnel.lastSent')}
                                             </th>
                                             <th className="px-4 py-2 text-center font-medium text-gray-700">
-                                                Replied
+                                                {t('dailyFunnel.replied')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -1008,8 +1051,7 @@ function DailyMessageFunnel({
                             {funnel?.recipients_truncated && (
                                 <p className="mt-2 flex items-center gap-1 text-xs text-amber-600">
                                     <ArrowsClockwise className="size-3" />
-                                    Recipient list was capped — narrow the date range for the full
-                                    roster.
+                                    {t('dailyFunnel.truncatedWarning')}
                                 </p>
                             )}
                         </div>

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.BulkCounsellorTargetRequest;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.CounsellorTargetDTO;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.UpsertCounsellorTargetRequest;
@@ -75,6 +76,7 @@ public class LeadWorkbenchSettingService {
 
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
+    private final InstituteSettingWriter instituteSettingWriter;
     private final CounsellorRatingRepository counsellorRatingRepository;
 
     // ────────────────────────────────────────────────────────────────
@@ -463,8 +465,7 @@ public class LeadWorkbenchSettingService {
 
     private void persist(Institute institute, ObjectNode root) {
         try {
-            institute.setSetting(objectMapper.writeValueAsString(root));
-            instituteRepository.save(institute);
+            instituteSettingWriter.save(institute, objectMapper.writeValueAsString(root));
         } catch (JsonProcessingException e) {
             throw new VacademyException("Could not save institute settings: " + e.getMessage());
         }

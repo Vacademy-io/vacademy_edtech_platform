@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "أكثر المستخدمين نشاطًا",
+        "subtitle": "أفضل المستخدمين أداءً من حيث النشاط والتفاعل"
+    },
+    "error": {
+        "message": "فشل تحميل المستخدمين النشطين"
+    },
+    "empty": {
+        "message": "لا تتوفر بيانات نشاط للمستخدمين"
+    },
+    "status": {
+        "online": "متصل",
+        "recent": "نشط مؤخرًا",
+        "offline": "غير متصل",
+        "unknown": "غير معروف"
+    },
+    "device": {
+        "desktop": "سطح المكتب",
+        "mobile": "الجوال",
+        "tablet": "الجهاز اللوحي"
+    },
+    "stats": {
+        "sessions_zero": "{{count}} جلسة",
+        "sessions_one": "{{count}} جلسة واحدة",
+        "sessions_two": "{{count}} جلستان",
+        "sessions_few": "{{count}} جلسات",
+        "sessions_many": "{{count}} جلسة",
+        "sessions_other": "{{count}} جلسة",
+        "calls_zero": "{{count}} مكالمة",
+        "calls_one": "{{count}} مكالمة واحدة",
+        "calls_two": "{{count}} مكالمتان",
+        "calls_few": "{{count}} مكالمات",
+        "calls_many": "{{count}} مكالمة",
+        "calls_other": "{{count}} مكالمة",
+        "totalTime": "إجمالي الوقت",
+        "last": "آخر نشاط: {{date}}"
+    }
+}

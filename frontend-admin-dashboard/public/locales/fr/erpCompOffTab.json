@@ -1,0 +1,25 @@
+{
+    "approvedToast": "Repos compensateur approuvé",
+    "rejectedToast": "Repos compensateur rejeté",
+    "updateErrorFallback": "Impossible de mettre à jour ce repos compensateur.",
+    "columns": {
+        "employee": "Employé",
+        "workedOn": "Travaillé le",
+        "earnedDays": "Jours acquis",
+        "expires": "Expire",
+        "status": "Statut"
+    },
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "approving": "Approbation…",
+    "rejecting": "Rejet…",
+    "intro": "Jours travaillés par un employé alors qu'il n'y était pas tenu. Approuver une demande crédite son solde COMP_OFF des jours acquis, qui expirent ensuite à la date indiquée — un repos compensateur non utilisé n'est pas reporté au-delà.",
+    "employeeLabel": "Employé",
+    "allEmployeesPlaceholder": "Tous les employés",
+    "showEveryone": "Tout afficher",
+    "loadError": "Impossible de charger les repos compensateurs.",
+    "emptyTitle": "Aucun repos compensateur enregistré",
+    "emptyDescriptionFiltered": "Cet employé n'a encore demandé aucun repos compensateur.",
+    "emptyDescriptionAll": "Le repos compensateur apparaît ici lorsqu'un employé revendique un jour travaillé pendant un jour férié ou un repos hebdomadaire.",
+    "footerNote": "Un repos compensateur approuvé apparaît comme une ligne COMP_OFF dans le tableau des soldes ci-dessus, où il se comporte comme tout autre type de congé jusqu'à son expiration."
+}

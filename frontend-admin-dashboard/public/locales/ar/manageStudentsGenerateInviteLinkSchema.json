@@ -1,0 +1,48 @@
+{
+    "relatedCourses": {
+        "course1": {
+            "name": "الرياضيات المتقدمة",
+            "description": "دراسة معمّقة في التفاضل والتكامل والجبر.",
+            "tags": {
+                "math": "رياضيات",
+                "advanced": "متقدم",
+                "stem": "العلوم والتقنية"
+            }
+        },
+        "course2": {
+            "name": "الفيزياء للمهندسين",
+            "description": "الميكانيكا والديناميكا الحرارية والمزيد.",
+            "tags": {
+                "physics": "فيزياء",
+                "engineering": "هندسة"
+            }
+        },
+        "course3": {
+            "name": "الكتابة الإبداعية",
+            "description": "أطلق العنان لموهبتك في سرد القصص.",
+            "tags": {
+                "writing": "كتابة",
+                "creativity": "إبداع",
+                "arts": "فنون"
+            }
+        }
+    },
+    "billingContactFields": {
+        "nameLabel": "الاسم الكامل لجهة اتصال الفوترة",
+        "emailLabel": "البريد الإلكتروني لجهة اتصال الفوترة",
+        "roleLabel": "الدور"
+    },
+    "validation": {
+        "planNameRequired": "اسم الخطة مطلوب",
+        "descriptionRequired": "الوصف مطلوب",
+        "titleRequired": "العنوان مطلوب",
+        "codeRequired": "الرمز مطلوب",
+        "valueRequired": "القيمة مطلوبة",
+        "expiryDateRequired": "تاريخ الانتهاء مطلوب",
+        "programNameRequired": "اسم البرنامج مطلوب",
+        "refereeBenefitRequired": "ميزة المُحال إليه مطلوبة",
+        "tierRequired": "المستوى مطلوب",
+        "rewardRequired": "المكافأة مطلوبة",
+        "atLeastOneTierRequired": "مطلوب مستوى واحد على الأقل"
+    }
+}

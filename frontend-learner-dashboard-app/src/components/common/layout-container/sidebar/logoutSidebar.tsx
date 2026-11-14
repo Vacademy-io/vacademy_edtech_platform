@@ -1,11 +1,13 @@
+import { useTranslation } from "react-i18next";
 import { useOfflineAvailable } from "@/hooks/offline/use-offline-availability";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { SidebarMenu } from "@/components/ui/sidebar";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { collectSidebarNavRoutes } from "./active-route";
 
 import { SidebarItem } from "./sidebar-item";
 import {
-  HamBurgerSidebarItemsData,
+  getHamBurgerSidebarItemsData,
   stripOfflineEntries,
   filterHamburgerMenuItemsWithPermissions,
   getTerminology,
@@ -27,6 +29,7 @@ export const LogoutSidebar = ({
 }: {
   sidebarComponent?: React.ReactNode;
 }) => {
+  const { t } = useTranslation("layoutCommonA");
   const {
     instituteLogoFileUrl,
     sideBarOpen,
@@ -43,8 +46,8 @@ export const LogoutSidebar = ({
 
   const { permissions } = useStudentPermissions();
 
-  const [filteredHamburgerItems, setFilteredHamburgerItems] = useState(
-    HamBurgerSidebarItemsData
+  const [filteredHamburgerItems, setFilteredHamburgerItems] = useState(() =>
+    getHamBurgerSidebarItemsData(t)
   );
   // Same offline gate as the sidebar and the top-navbar dropdown: this sheet
   // renders the same list, so without it the entry stays reachable here.
@@ -53,6 +56,11 @@ export const LogoutSidebar = ({
     offlineAvailable === true
       ? filteredHamburgerItems
       : stripOfflineEntries(filteredHamburgerItems);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navRoutes = collectSidebarNavRoutes(
+    offlineFilteredItems.map((obj) => ({ ...obj, to: obj.to || "/" })),
+    pathname
+  );
 
   const [studentData, setStudentData] = useState<Student | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>(
@@ -62,7 +70,7 @@ export const LogoutSidebar = ({
   useEffect(() => {
     if (isNullOrEmptyOrUndefined(permissions)) return;
     filterHamburgerMenuItemsWithPermissions(
-      HamBurgerSidebarItemsData,
+      getHamBurgerSidebarItemsData(t),
       permissions || {
         canViewProfile: false,
         canEditProfile: false,
@@ -138,7 +146,7 @@ export const LogoutSidebar = ({
                 <div className="relative">
                   <img
                     src={instituteLogoFileUrl}
-                    alt="Institute Logo"
+                    alt={t("logoutSidebar.instituteLogoAlt")}
                     onClick={
                       homeIconClickRoute ? handleInstituteLogoClick : undefined
                     }
@@ -178,7 +186,7 @@ export const LogoutSidebar = ({
                     <img
                       className="w-12 h-12 rounded-full object-cover border-2 border-primary-200 dark:border-primary-800 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg"
                       src={profileImageUrl}
-                      alt="Profile Photo"
+                      alt={t("logoutSidebar.profilePhotoAlt")}
                     />
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
@@ -232,6 +240,7 @@ export const LogoutSidebar = ({
                       title={obj.title}
                       to={(obj.to || "/") as string}
                       onClick={setSidebarOpen}
+                      navRoutes={navRoutes}
                     />
                   </div>
                 </div>

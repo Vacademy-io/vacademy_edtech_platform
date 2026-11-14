@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": "Configure Workflow",
+        "description": "Set up an automated message for <bold>“{{audienceName}}”</bold>. For more complex flows (delays, conditions, multiple steps), use the full workflow builder."
+    },
+    "kind": {
+        "label": "Workflow type",
+        "confirmation": {
+            "title": "Confirmation",
+            "description": "Sent immediately when a lead submits the form."
+        },
+        "followup": {
+            "title": "Follow-up",
+            "description": "Sent N days after a lead submits the form."
+        }
+    },
+    "fields": {
+        "followupDays": {
+            "label": "Send follow-up how many days after submission?",
+            "helper": "Workflow runs daily at 9:00 AM IST and messages leads whose submission date is exactly this many days ago. To send on multiple days (e.g. day 3 AND day 7) create separate workflows for each."
+        },
+        "name": {
+            "label": "Workflow name",
+            "placeholder": "e.g. Welcome confirmation for new leads"
+        },
+        "description": {
+            "label": "Description",
+            "optional": "(optional)",
+            "placeholder": "What does this workflow do?"
+        },
+        "channel": {
+            "label": "Send via",
+            "email": "Email only",
+            "whatsapp": "WhatsApp only",
+            "both": "Email + WhatsApp",
+            "helper": "Reach leads over email, WhatsApp, or both."
+        },
+        "template": {
+            "label": "Email template",
+            "loading": "Loading templates...",
+            "placeholder": "-- Select a template --",
+            "noneFound": "No email templates found. Create one in the Communications section first.",
+            "untitledFallback": "Untitled"
+        },
+        "whatsappTemplate": {
+            "label": "WhatsApp template",
+            "placeholder": "-- Select a WhatsApp template --",
+            "noneFound": "No approved WhatsApp templates found. They sync from Meta — open Communication → WhatsApp Templates and sync, or get the template approved in Meta first.",
+            "helper": "Its variables auto-fill from each lead's fields."
+        }
+    },
+    "nameSuggestion": {
+        "confirmation": "{{audienceName}} — confirmation",
+        "followup_one": "{{audienceName}} — follow-up after {{count}} day",
+        "followup_other": "{{audienceName}} — follow-up after {{count}} days"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "submit": "Create Workflow",
+        "submitting": "Creating..."
+    },
+    "toast": {
+        "success": "Workflow created",
+        "errorFallback": "Failed to create workflow"
+    },
+    "dto": {
+        "confirmation": {
+            "descriptionFallback": "Send a confirmation message when a lead submits \"{{audienceName}}\"",
+            "triggerNodeName": "Trigger: Audience form submitted"
+        },
+        "followup": {
+            "descriptionFallback_one": "Send a follow-up message to leads who submitted \"{{audienceName}}\" exactly {{count}} day ago",
+            "descriptionFallback_other": "Send a follow-up message to leads who submitted \"{{audienceName}}\" exactly {{count}} days ago",
+            "queryNodeName": "Fetch recent leads"
+        },
+        "sendNodeName": "Send: {{templateName}}",
+        "sendWhatsappNodeName": "WhatsApp: {{templateName}}"
+    }
+}

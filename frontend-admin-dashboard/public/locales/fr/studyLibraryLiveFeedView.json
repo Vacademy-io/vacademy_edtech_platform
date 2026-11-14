@@ -1,0 +1,17 @@
+{
+    "verbs": {
+        "submitted": "a soumis",
+        "ran": "a exécuté",
+        "answered": "a répondu à",
+        "updated": "a mis à jour"
+    },
+    "aLearner": "Un apprenant",
+    "aSlide": "une diapositive",
+    "loadError": "Impossible de charger le flux en direct.",
+    "retry": "Réessayer",
+    "windowSummary_one": "dernière {{count}} min · plus récent d'abord",
+    "windowSummary_many": "dernières {{count}} min · plus récent d'abord",
+    "windowSummary_other": "dernières {{count}} min · plus récent d'abord",
+    "emptyTitle": "Rien ne s'est encore passé dans ce groupe",
+    "emptySubtitle": "Les soumissions, tentatives et exécutions de code apparaîtront ici au fur et à mesure."
+}

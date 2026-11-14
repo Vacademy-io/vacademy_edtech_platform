@@ -28,7 +28,10 @@ public final class PaymentOptionJsonDiscountAccessor {
     // Discovers jackson-datatype-jsr310 (transitively present via spring-boot-starter-json)
     // so LocalDateTime fields on UserPlanDiscountJson can be serialized. Without this,
     // every write of an audit entry blows up with "Java 8 date/time type not supported".
-    private static final ObjectMapper OM = new ObjectMapper().findAndRegisterModules();
+    // Unknown fields are ignored: a snapshot written by a newer build (a field added later) must
+    // not read back as empty here — the next recompute would then drop the discount entirely.
+    private static final ObjectMapper OM = new ObjectMapper().findAndRegisterModules()
+            .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private PaymentOptionJsonDiscountAccessor() {}
 

@@ -1,0 +1,10 @@
+{
+    "title": "मुफ़्त शिक्षा का समर्थन करें",
+    "chooseAmount": "दान करने के लिए राशि चुनें",
+    "customAmount": {
+        "label": "{{currency}} {{symbol}} अन्य",
+        "placeholder": "कस्टम राशि दर्ज करें",
+        "minimumAmount": "न्यूनतम राशि: {{symbol}}{{amount}}"
+    },
+    "continueButton": "जारी रखें"
+}

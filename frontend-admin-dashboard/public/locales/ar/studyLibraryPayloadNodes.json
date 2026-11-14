@@ -1,0 +1,13 @@
+{
+    "flashcard": {
+        "front": "الوجه الأمامي",
+        "back": "الوجه الخلفي"
+    },
+    "quiz": {
+        "label": "اختبار قصير"
+    },
+    "multiLangCode": {
+        "editorHeading": "محرر أكواد {{language}}",
+        "outputLabel": "الناتج:"
+    }
+}

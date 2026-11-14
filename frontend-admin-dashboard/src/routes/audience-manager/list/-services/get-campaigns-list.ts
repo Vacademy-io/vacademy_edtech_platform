@@ -67,6 +67,8 @@ export interface CampaignItem {
     institute_custom_fields?: any[];
     default_initial_score?: number;
     sub_org_id?: string;
+    /** Key -> value tags on the list, e.g. `{ state: 'Maharashtra', course: 'MBA' }`. */
+    tags?: Record<string, string>;
 }
 
 const fetchCampaignsList = async (payload: CampaignListRequest): Promise<CampaignListResponse> => {
@@ -76,6 +78,37 @@ const fetchCampaignsList = async (payload: CampaignListRequest): Promise<Campaig
         data: payload,
     });
     return response?.data;
+};
+
+/**
+ * A request for this many lists or more means "every list": source pickers, list filters and
+ * access settings all ask for 200 on page 0. The endpoint is newest-first, so once an institute
+ * has more lists than that the oldest ones (often its main source lists) silently dropped out.
+ */
+export const ALL_CAMPAIGNS_PAGE_SIZE = 200;
+const MAX_CAMPAIGN_PAGES = 50;
+
+/** Every list matching the filters, paged through ALL_CAMPAIGNS_PAGE_SIZE at a time, as one page. */
+export const fetchAllCampaignsList = async (
+    payload: Omit<CampaignListRequest, 'page' | 'size'>
+): Promise<CampaignListResponse> => {
+    const first = await fetchCampaignsList({ ...payload, page: 0, size: ALL_CAMPAIGNS_PAGE_SIZE });
+    if (!first || first.last !== false) return first;
+    const content = [...(first.content ?? [])];
+    const pages = Math.min(first.totalPages ?? MAX_CAMPAIGN_PAGES, MAX_CAMPAIGN_PAGES);
+    for (let page = 1; page < pages; page++) {
+        const next = await fetchCampaignsList({ ...payload, page, size: ALL_CAMPAIGNS_PAGE_SIZE });
+        content.push(...(next?.content ?? []));
+        if (!next?.content?.length || next.last !== false) break;
+    }
+    return {
+        ...first,
+        content,
+        numberOfElements: content.length,
+        size: content.length,
+        totalPages: 1,
+        last: true,
+    };
 };
 
 export const handleFetchCampaignsList = (payload: CampaignListRequest) => {
@@ -91,6 +124,9 @@ export const handleFetchCampaignsList = (payload: CampaignListRequest) => {
             payload.sub_org_id,
         ],
         queryFn: async () => {
+            if (payload.page === 0 && payload.size >= ALL_CAMPAIGNS_PAGE_SIZE) {
+                return fetchAllCampaignsList(payload);
+            }
             const data = await fetchCampaignsList(payload);
             return data;
         },

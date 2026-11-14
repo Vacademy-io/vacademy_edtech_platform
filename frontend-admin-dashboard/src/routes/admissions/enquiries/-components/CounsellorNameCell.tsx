@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ADMIN_DETAILS_URL } from '@/constants/urls';
@@ -26,6 +27,7 @@ const fetchCounsellorDetails = async (counsellorId: string): Promise<UserProfile
 };
 
 export const CounsellorNameCell = ({ counsellorId, enquiryId }: CounsellorNameCellProps) => {
+    const { t } = useTranslation('admissionsCounsellorNameCell');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { data, isLoading, error } = useQuery({
@@ -48,7 +50,7 @@ export const CounsellorNameCell = ({ counsellorId, enquiryId }: CounsellorNameCe
                             setIsDialogOpen(true);
                         }}
                     >
-                        Assign
+                        {t('assign')}
                     </MyButton>
                 </div>
                 <AssignCounsellorDialog
@@ -72,8 +74,10 @@ export const CounsellorNameCell = ({ counsellorId, enquiryId }: CounsellorNameCe
     }
 
     if (error) {
-        return <div className="p-3 text-sm text-red-500">Error loading</div>;
+        return <div className="p-3 text-sm text-red-500">{t('errorLoading')}</div>;
     }
 
-    return <div className="p-3 text-sm text-neutral-700">{data?.full_name || 'Unknown'}</div>;
+    return (
+        <div className="p-3 text-sm text-neutral-700">{data?.full_name || t('unknown')}</div>
+    );
 };

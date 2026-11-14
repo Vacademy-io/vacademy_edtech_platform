@@ -8,7 +8,7 @@ import {
 } from '@/components/common/custom-fields/AddCustomFieldDialog';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { InviteForm } from '../../-schema/InviteFormSchema';
-import { MandatoryKeys } from '../../-utils/inviteLinkKeyChecks';
+import { FieldRole, classifyFieldRole } from '@/components/common/custom-fields/field-roles';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -17,6 +17,7 @@ import {
     FormFieldRowHeader,
 } from '@/components/common/custom-fields/FormFieldRow';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CustomFieldsSectionProps {
     toggleIsRequired: (id: number) => void;
@@ -42,6 +43,7 @@ export const CustomFieldsSection = ({
     handleDeleteOpenField,
     handleEditFieldAt,
 }: CustomFieldsSectionProps) => {
+    const { t } = useTranslation('manageStudentsCustomFieldsSection');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { watch, control } = useFormContext<InviteForm>();
     const customFields = watch('custom_fields');
@@ -66,8 +68,10 @@ export const CustomFieldsSection = ({
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-col">
-                <p className="text-title font-semibold">{`Form Fields (${fields.length})`}</p>
-                <p className="text-caption text-neutral-500">Drag to reorder fields</p>
+                <p className="text-title font-semibold">
+                    {t('header.title', { count: fields.length })}
+                </p>
+                <p className="text-caption text-neutral-500">{t('header.subtitle')}</p>
             </div>
             <FormFieldRowHeader />
             <Sortable
@@ -80,7 +84,6 @@ export const CustomFieldsSection = ({
             >
                 <div className="flex flex-col gap-4">
                     {fields.map((field, index) => {
-                        const locked = field.oldKey || MandatoryKeys(field.name);
                         const isEditing = editingIndex === index;
                         return (
                             <SortableItem key={field.id} value={field.id} asChild>
@@ -90,7 +93,6 @@ export const CustomFieldsSection = ({
                                         name={field.name}
                                         type={field.type}
                                         isRequired={field.isRequired}
-                                        locked={locked}
                                         isEditing={isEditing}
                                         onToggleRequired={() => toggleIsRequired(field.id)}
                                         onEdit={() => setEditingIndex(index)}
@@ -115,6 +117,21 @@ export const CustomFieldsSection = ({
                     })}
                 </div>
             </Sortable>
+            {/* Nothing stops an admin removing Email any more — but a learner is enrolled under
+                their email address, so a form without one cannot create their account. Say so
+                rather than letting the invite go out broken. */}
+            {!(customFields ?? [])
+                .filter((field) => field.status !== 'DELETED')
+                .some(
+                    (field) =>
+                        classifyFieldRole({ type: field.type, label: field.name }) ===
+                        FieldRole.EMAIL
+                ) && (
+                <p className="text-caption text-warning-600">
+                    Learners are enrolled under their email address — without an Email field on
+                    this form, an account cannot be created for them.
+                </p>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3">
                 {!customFields
                     ?.filter((field) => field.status === 'ACTIVE')
@@ -131,7 +148,7 @@ export const CustomFieldsSection = ({
                             ])
                         }
                     >
-                        <Plus size={32} /> Add Gender
+                        <Plus size={32} /> {t('quickAddButtons.gender')}
                     </MyButton>
                 )}
                 {!customFields
@@ -143,7 +160,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'State', false)}
                     >
-                        <Plus size={32} /> Add State
+                        <Plus size={32} /> {t('quickAddButtons.state')}
                     </MyButton>
                 )}
                 {!customFields
@@ -155,7 +172,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'City', false)}
                     >
-                        <Plus size={32} /> Add City
+                        <Plus size={32} /> {t('quickAddButtons.city')}
                     </MyButton>
                 )}
                 {!customFields
@@ -169,7 +186,7 @@ export const CustomFieldsSection = ({
                             handleAddOpenFieldValues('textfield', 'School/College', false)
                         }
                     >
-                        <Plus size={32} /> Add School/College
+                        <Plus size={32} /> {t('quickAddButtons.schoolCollege')}
                     </MyButton>
                 )}
                 {!customFields
@@ -181,7 +198,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'Address', false)}
                     >
-                        <Plus size={32} /> Add Address
+                        <Plus size={32} /> {t('quickAddButtons.address')}
                     </MyButton>
                 )}
                 {!customFields
@@ -193,7 +210,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'Pincode', false)}
                     >
-                        <Plus size={32} /> Pincode
+                        <Plus size={32} /> {t('quickAddButtons.pincode')}
                     </MyButton>
                 )}
                 {!customFields
@@ -205,7 +222,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'Father Name', false)}
                     >
-                        <Plus size={32} /> Father Name
+                        <Plus size={32} /> {t('quickAddButtons.fatherName')}
                     </MyButton>
                 )}
                 {!customFields
@@ -217,7 +234,7 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'Mother Name', false)}
                     >
-                        <Plus size={32} /> Mother Name
+                        <Plus size={32} /> {t('quickAddButtons.motherName')}
                     </MyButton>
                 )}
                 {!customFields
@@ -231,7 +248,7 @@ export const CustomFieldsSection = ({
                             handleAddOpenFieldValues('textfield', 'Parent Phone Number', false)
                         }
                     >
-                        <Plus size={32} /> Parent Phone Number
+                        <Plus size={32} /> {t('quickAddButtons.parentPhoneNumber')}
                     </MyButton>
                 )}
                 {!customFields
@@ -243,14 +260,14 @@ export const CustomFieldsSection = ({
                         buttonType="secondary"
                         onClick={() => handleAddOpenFieldValues('textfield', 'Parent Email', false)}
                     >
-                        <Plus size={32} /> Parent Email
+                        <Plus size={32} /> {t('quickAddButtons.parentEmail')}
                     </MyButton>
                 )}
 
                 <AddCustomFieldDialog
                     trigger={
                         <MyButton type="button" scale="medium" buttonType="secondary">
-                            <Plus size={32} /> Add Custom Field
+                            <Plus size={32} /> {t('addCustomFieldButton')}
                         </MyButton>
                     }
                     onAddField={handleAddCustomField}

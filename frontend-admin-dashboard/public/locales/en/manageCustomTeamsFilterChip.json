@@ -1,0 +1,4 @@
+{
+    "labelSeparator": "{{label}}:",
+    "removeFilter": "Remove {{label}} filter {{value}}"
+}

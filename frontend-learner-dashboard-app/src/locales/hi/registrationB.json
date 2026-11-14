@@ -1,0 +1,336 @@
+{
+  "common": {
+    "back": "वापस",
+    "cancel": "रद्द करें",
+    "continue": "जारी रखें",
+    "submitting": "सबमिट हो रहा है...",
+    "submitRegistration": "पंजीकरण सबमिट करें",
+    "sessionMissing": "पंजीकरण सत्र नहीं मिला। कृपया फिर से शुरू करें"
+  },
+  "subOrgRegistration": {
+    "linkError": {
+      "title": "पंजीकरण लिंक बंद कर दिया गया है",
+      "defaultMessage": "यह पंजीकरण लिंक अमान्य है या अब नए पंजीकरण स्वीकार नहीं कर रहा है।",
+      "contactHint": "नया पंजीकरण लिंक पाने के लिए कृपया संस्थान से संपर्क करें।"
+    },
+    "paymentResult": {
+      "notFoundTitle": "हमें आपका पंजीकरण सत्र नहीं मिला",
+      "notFoundDescription": "चिंता न करें — यदि आपका भुगतान सफल हो गया है, तो आपका संगठन अपने आप पंजीकृत हो जाएगा और लॉगिन जानकारी आपके बताए गए {{admin}} ईमेल पर भेज दी जाएगी।",
+      "notFoundEmailHint": "यदि कुछ मिनटों में ईमेल न आए, तो कृपया संस्थान से संपर्क करें।",
+      "waitingTitle": "आपके भुगतान की पुष्टि की जा रही है...",
+      "waitingDescription": "आमतौर पर इसमें कुछ ही पल लगते हैं। इस पेज को खुला रखें — भुगतान की पुष्टि होते ही यह अपने आप अपडेट हो जाएगा।",
+      "reassurancePrefix": "पुष्टि में सामान्य से अधिक समय लग रहा है। आप इस पेज को बेझिझक बंद कर सकते हैं — भुगतान की पुष्टि होते ही आपका संगठन पंजीकृत कर दिया जाएगा और लॉगिन जानकारी भेज दी जाएगी",
+      "reassuranceTo": "इस पते पर",
+      "reassuranceToAdminEmail": "आपके बताए गए {{admin}} ईमेल पर"
+    },
+    "wizard": {
+      "defaultTemplateName": "संगठन पंजीकरण",
+      "subtitle": "{{instituteName}} के साथ अपना संगठन पंजीकृत करें",
+      "defaultInstituteName": "संस्थान",
+      "steps": {
+        "details": "जानकारी",
+        "verifyEmail": "ईमेल सत्यापित करें",
+        "additionalInfo": "अतिरिक्त जानकारी",
+        "terms": "शर्तें",
+        "identityVerification": "पहचान सत्यापन",
+        "payment": "भुगतान"
+      },
+      "toast": {
+        "completeError": "पंजीकरण पूरा करने में विफल। कृपया फिर से प्रयास करें",
+        "codeSentNewEmail": "आपके नए ईमेल पर सत्यापन कोड भेज दिया गया है",
+        "detailsUpdated": "जानकारी अपडेट कर दी गई है",
+        "codeSent": "आपके ईमेल पर सत्यापन कोड भेज दिया गया है",
+        "saveError": "आपकी जानकारी सहेजने में विफल। कृपया फिर से प्रयास करें",
+        "startError": "पंजीकरण शुरू करने में विफल। कृपया फिर से प्रयास करें",
+        "resumeError": "यह पंजीकरण फिर से शुरू नहीं किया जा सका। कृपया फिर से प्रयास करें",
+        "emailVerified": "ईमेल सफलतापूर्वक सत्यापित हो गया!",
+        "invalidOtp": "अमान्य या समय-सीमा समाप्त OTP",
+        "resendError": "फिर से भेजने में विफल। कृपया फिर से प्रयास करें",
+        "codeResent": "सत्यापन कोड फिर से भेज दिया गया है"
+      }
+    },
+    "details": {
+      "validation": {
+        "orgNameRequired": "संगठन का नाम आवश्यक है",
+        "adminNameRequired": "{{admin}} का नाम आवश्यक है",
+        "adminEmailRequired": "{{admin}} का ईमेल आवश्यक है",
+        "adminEmailInvalid": "एक मान्य ईमेल पता दर्ज करें",
+        "phoneInvalid": "चुने गए देश के लिए एक मान्य फ़ोन नंबर दर्ज करें",
+        "pincodeTooLong": "पिनकोड बहुत लंबा है",
+        "addressLine1Required": "पता लाइन 1 आवश्यक है",
+        "cityRequired": "शहर आवश्यक है",
+        "stateRequired": "राज्य आवश्यक है",
+        "pincodeRequired": "पिनकोड आवश्यक है"
+      },
+      "title": "संगठन की जानकारी",
+      "subtitle": "हमें अपने संगठन और {{admin}} के बारे में बताएं",
+      "orgName": {
+        "label": "संगठन का नाम",
+        "placeholder": "जैसे Acme Coaching Center"
+      },
+      "logo": {
+        "label": "संगठन का लोगो",
+        "previewAlt": "संगठन के लोगो का पूर्वावलोकन",
+        "uploading": "अपलोड हो रहा है...",
+        "change": "लोगो बदलें",
+        "upload": "लोगो अपलोड करें",
+        "remove": "हटाएं",
+        "hint": "वैकल्पिक — PNG या JPG सबसे बेहतर रहता है"
+      },
+      "adminName": {
+        "label": "{{admin}} का पूरा नाम",
+        "placeholder": "{{admin}} का पूरा नाम"
+      },
+      "adminEmail": {
+        "label": "{{admin}} का ईमेल",
+        "placeholder": "admin@yourorg.com",
+        "hint": "हम इस ईमेल पर एक सत्यापन कोड भेजेंगे"
+      },
+      "adminPhone": {
+        "label": "{{admin}} का फ़ोन नंबर",
+        "placeholder": "123 456 7890"
+      },
+      "address": {
+        "line1": { "label": "पता लाइन 1", "placeholder": "भवन, सड़क" },
+        "line2": { "label": "पता लाइन 2", "placeholder": "इलाका, आस-पास की जगह (वैकल्पिक)" },
+        "city": { "label": "शहर", "placeholder": "शहर" },
+        "state": { "label": "राज्य", "placeholder": "राज्य" },
+        "pincode": { "label": "पिनकोड", "placeholder": "जैसे 110001" }
+      },
+      "submit": {
+        "saving": "सहेजा जा रहा है...",
+        "sendingCode": "कोड भेजा जा रहा है..."
+      },
+      "toast": {
+        "logoInvalidType": "कृपया लोगो के लिए एक इमेज फ़ाइल चुनें",
+        "logoUploadFailed": "लोगो अपलोड करने में विफल। कृपया फिर से प्रयास करें"
+      },
+      "resume": {
+        "inProgress": "इस ईमेल के साथ एक पंजीकरण पहले से ही प्रगति में है।",
+        "descriptionPrefix": "जहां आपने छोड़ा था वहीं से शुरू करें — हम",
+        "descriptionSuffix": " पर एक सत्यापन कोड भेजेंगे।",
+        "button": "पंजीकरण फिर से शुरू करें"
+      }
+    },
+    "otp": {
+      "toast": {
+        "invalidCode": "कृपया एक मान्य सत्यापन कोड दर्ज करें"
+      },
+      "title": "अपना ईमेल सत्यापित करें",
+      "sentTo": "हमने इस पते पर एक सत्यापन कोड भेजा है",
+      "sentToResume": "आपका पंजीकरण फिर से शुरू करने के लिए हमने इस पते पर एक कोड भेजा है",
+      "cantFindEmail": "ईमेल नहीं मिल रहा है?",
+      "checkSpam": "अपने <b1>स्पैम</b1> या <b2>जंक</b2> फ़ोल्डर की जांच करें",
+      "correctEmail": "सुनिश्चित करें कि ईमेल पता सही है",
+      "waitRefresh": "कुछ सेकंड प्रतीक्षा करें और अपना इनबॉक्स रीफ़्रेश करें",
+      "enterCodeLabel": "सत्यापन कोड दर्ज करें",
+      "codePlaceholder": "6-अंकों का कोड दर्ज करें",
+      "verifying": "सत्यापित किया जा रहा है...",
+      "verifyContinue": "सत्यापित करें और जारी रखें",
+      "editDetails": "जानकारी संपादित करें",
+      "resending": "भेजा जा रहा है...",
+      "resendCode": "कोड फिर से भेजें"
+    },
+    "customFields": {
+      "title": "अतिरिक्त जानकारी",
+      "subtitle": "संस्थान द्वारा मांगी गई कुछ और जानकारी",
+      "noFieldsMessage": "किसी अतिरिक्त जानकारी की आवश्यकता नहीं है।",
+      "phonePlaceholder": "123 456 7890"
+    },
+    "tnc": {
+      "title": "नियम एवं शर्तें",
+      "subtitle": "पंजीकरण पूरा करने के लिए कृपया शर्तों की समीक्षा करें और उन्हें स्वीकार करें",
+      "loadingDocument": "दस्तावेज़ लोड हो रहा है...",
+      "loadError": "हम नियम एवं शर्तों का दस्तावेज़ लोड नहीं कर सके। आप आगे बढ़ने के लिए नीचे शर्तों को स्वीकार कर सकते हैं।",
+      "openInNewTab": "नए टैब में खोलें",
+      "noDocNoConsent": "पंजीकरण पूरा करने के लिए कृपया पुष्टि करें कि आप संस्थान की नियम एवं शर्तों को स्वीकार करते हैं।",
+      "acceptCheckboxLabel": "मैं नियम एवं शर्तें स्वीकार करता/करती हूं"
+    },
+    "kyc": {
+      "defaultPanInstructions": "DigiLocker में, सहमति मांगे जाने पर आधार और PAN दोनों के लिए चेकबॉक्स चुनें — यदि इनमें से कोई भी अचयनित रहता है तो सत्यापन पूरा नहीं हो सकता।",
+      "failure": {
+        "consentDenied": "DigiLocker सहमति अस्वीकार कर दी गई। अपनी पहचान सत्यापित करने के लिए, कृपया फिर से प्रयास करें और अपने दस्तावेज़ों तक पहुंच की अनुमति दें।",
+        "expired": "सत्यापन लिंक पूरा होने से पहले ही समाप्त हो गया। जारी रखने के लिए एक नया सत्यापन शुरू करें।",
+        "failed": "हम आपकी पहचान सत्यापित नहीं कर सके। कृपया फिर से प्रयास करें।"
+      },
+      "title": "पहचान सत्यापन",
+      "subtitle": "DigiLocker के माध्यम से {{admin}} की पहचान सुरक्षित रूप से सत्यापित करें",
+      "checkingStatus": "सत्यापन स्थिति जांची जा रही है...",
+      "intro": "{{admin}} के रूप में, पंजीकरण पूरा होने से पहले आपकी पहचान सत्यापित की जानी चाहिए। आपको निम्नलिखित दस्तावेज़ सुरक्षित रूप से साझा करने के लिए DigiLocker (भारत सरकार) पर ले जाया जाएगा — यहां कोई कॉपी अपलोड नहीं की जाती।",
+      "requiredDocuments": "आवश्यक दस्तावेज़",
+      "preparingVerification": "सत्यापन तैयार किया जा रहा है...",
+      "verifyWithDigiLocker": "DigiLocker से सत्यापित करें",
+      "completeInTab": "DigiLocker टैब में सत्यापन पूरा करें",
+      "autoUpdateHint": "पूरा होते ही यह पेज अपने आप अपडेट हो जाता है — इसे खुला रखें।",
+      "tabBlocked": "आपके ब्राउज़र ने DigiLocker टैब को ब्लॉक कर दिया।",
+      "openVerification": "DigiLocker सत्यापन खोलें",
+      "preparingNewLink": "नया लिंक तैयार किया जा रहा है...",
+      "restartVerification": "टैब में समस्या आ रही है? सत्यापन फिर से शुरू करें",
+      "verifiedSuccess": "पहचान सफलतापूर्वक सत्यापित हो गई",
+      "verifiedName": "सत्यापित नाम",
+      "aadhaar": "आधार",
+      "pan": "PAN",
+      "verificationNotCompleted": "सत्यापन पूरा नहीं हुआ",
+      "tryAgain": "फिर से प्रयास करें",
+      "startVerificationFailed": "पहचान सत्यापन शुरू करने में विफल। कृपया फिर से प्रयास करें"
+    },
+    "payment": {
+      "stripeLoading": "भुगतान फ़ॉर्म अभी भी लोड हो रहा है। कृपया थोड़ी देर प्रतीक्षा करें और फिर से प्रयास करें",
+      "stripeFailed": "भुगतान प्रक्रिया विफल रही। कृपया अपने कार्ड की जानकारी जांचें",
+      "ewayIncomplete": "कृपया पहले कार्ड की जानकारी पूरी करें",
+      "sessionPrepFailed": "भुगतान सत्र तैयार नहीं किया जा सका। कृपया सहायता टीम से संपर्क करें",
+      "initFailedContactSupport": "भुगतान शुरू करने में विफल। कृपया फिर से प्रयास करें या सहायता टीम से संपर्क करें",
+      "initFailed": "भुगतान शुरू करने में विफल। कृपया फिर से प्रयास करें",
+      "orderCreateFailed": "भुगतान ऑर्डर बनाने में विफल। कृपया फिर से प्रयास करें",
+      "gatewayNotReady": "भुगतान गेटवे अभी तैयार नहीं है। कृपया फिर से प्रयास करें",
+      "phonepeFailed": "PhonePe चेकआउट शुरू नहीं किया जा सका। कृपया फिर से प्रयास करें या सहायता टीम से संपर्क करें",
+      "vendorUnsupported": "भुगतान गेटवे \"{{vendor}}\" अभी समर्थित नहीं है। कृपया सहायता टीम से संपर्क करें",
+      "processFailed": "भुगतान संसाधित नहीं किया जा सका। कृपया फिर से प्रयास करें",
+      "alreadyInProgressTitle": "भुगतान पहले से ही प्रगति में है",
+      "alreadyInProgressPrefix": "इस पंजीकरण के लिए भुगतान पहले से ही संसाधित किया जा रहा है। यदि आपने इसे पूरा कर लिया है, तो आपकी लॉगिन जानकारी जल्द ही ईमेल कर दी जाएगी",
+      "alreadyInProgressSuffix": "पर।",
+      "retryHint": "यदि भुगतान सफल नहीं हुआ, तो आप इसे नीचे फिर से आज़मा सकते हैं।",
+      "completePaymentButton": "भुगतान पूरा करें",
+      "retryConfirmTitle": "अपना भुगतान पूरा करें",
+      "retryConfirmFor": "आपका पंजीकरण",
+      "retryConfirmLockedIn": "सहेजा जा चुका है — केवल भुगतान बाकी है। आपकी योजना पहले ही तय की जा चुकी है",
+      "retryConfirmAt": "इस राशि पर",
+      "proceedButton": "भुगतान के लिए आगे बढ़ें",
+      "selectedPlanLabel": "चुनी गई योजना",
+      "paymentLabel": "भुगतान",
+      "changePlanButton": "योजना बदलें",
+      "registrationPaymentFor": "{{templateName}} के लिए पंजीकरण भुगतान",
+      "tryAgainButton": "फिर से प्रयास करें",
+      "confirmAndPayButton": "पुष्टि करें और भुगतान करें",
+      "processingButton": "संसाधित किया जा रहा है...",
+      "continueToPaymentButton": "भुगतान की ओर बढ़ें"
+    },
+    "completion": {
+      "redirectingPaid": "भुगतान की पुष्टि हो गई — आगे ले जाया जा रहा है...",
+      "redirectingFree": "पंजीकरण की पुष्टि हो गई — आगे ले जाया जा रहा है...",
+      "paidTitle": "भुगतान प्राप्त हो गया — आपका संगठन पंजीकृत हो चुका है।",
+      "freeTitle": "आपका संगठन पंजीकृत हो चुका है!",
+      "orgReadySuffix": "तैयार है।",
+      "credentialsSentPrefix": "लॉगिन जानकारी इस पते पर भेज दी गई है",
+      "defaultPrefix": "आपका संगठन पंजीकृत हो चुका है। लॉगिन जानकारी इस पते पर भेज दी गई है",
+      "goToAdminPortal": "{{admin}} पोर्टल पर जाएं"
+    }
+  },
+  "subOrgLearners": {
+    "page": {
+      "navHeading": "प्रैक्टिस सदस्य प्रबंधन",
+      "toast": {
+        "notAuthenticated": "उपयोगकर्ता प्रमाणित नहीं है",
+        "instituteNotFound": "संस्थान आईडी नहीं मिली",
+        "accessCheckFailed": "एक्सेस अनुमतियां जांचने में विफल"
+      },
+      "checkingPermissions": "अनुमतियां जांची जा रही हैं...",
+      "accessDeniedTitle": "एक्सेस अस्वीकृत",
+      "accessDeniedDescription": "इस पेज तक पहुंचने के लिए आपके पास आवश्यक अनुमतियां नहीं हैं। कृपया {{admin}} से संपर्क करें।",
+      "defaultOrgName": "उप-संगठन",
+      "subtitle": "अपने {{orgName}} के लिए स्टाफ़ प्रबंधित करें",
+      "refreshButton": "रीफ़्रेश करें",
+      "bulkUploadButton": "बल्क अपलोड",
+      "selectBatchTitle": "{{batch}} चुनें",
+      "selectBatchPlaceholder": "एक {{batch}} चुनें",
+      "practiceGroupTitle": "प्रैक्टिस समूह"
+    },
+    "toast": {
+      "selectBatch": "कृपया एक {{batch}} चुनें",
+      "invalidBatch": "यह {{batch}} अमान्य है",
+      "loadFormConfigFailed": "पंजीकरण फ़ॉर्म कॉन्फ़िगरेशन लोड करने में विफल"
+    },
+    "addStaff": {
+      "addButton": "स्टाफ़ जोड़ें",
+      "addingLabel": "जोड़ा जा रहा है...",
+      "dialogTitle": "नया स्टाफ़ सदस्य जोड़ें",
+      "phonePlaceholder": "+1 234 567 8900",
+      "fallback": {
+        "emailLabel": "ईमेल *",
+        "emailPlaceholder": "staff@example.com",
+        "fullNameLabel": "पूरा नाम *",
+        "fullNamePlaceholder": "पूरा नाम दर्ज करें",
+        "mobileLabel": "मोबाइल नंबर *"
+      },
+      "toast": {
+        "configProblem": "इस संस्थान के आमंत्रण फ़ॉर्म में पहचाना जा सकने वाला ईमेल या पूरा नाम फ़ील्ड नहीं है। आमंत्रण फ़ॉर्म कॉन्फ़िगरेशन जांचने के लिए किसी {{admin}} से कहें।",
+        "emailNameRequired": "ईमेल और नाम आवश्यक फ़ील्ड हैं।",
+        "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+        "invalidPhone": "कृपया देश कोड के साथ एक मान्य फ़ोन नंबर दर्ज करें (जैसे, +1234567890)",
+        "addFailed": "स्टाफ़ जोड़ने में विफल"
+      }
+    },
+    "table": {
+      "staffCountTitle": "स्टाफ़ ({{count}})",
+      "selectedCount_one": "{{count}} स्टाफ़ सदस्य चुना गया",
+      "selectedCount_other": "{{count}} स्टाफ़ सदस्य चुने गए",
+      "loading": "स्टाफ़ लोड हो रहा है...",
+      "emptyTitle": "कोई स्टाफ़ नहीं मिला",
+      "emptyDescription": "इस {{batch}} में स्टाफ़ जोड़कर शुरुआत करें।",
+      "statusColumn": "स्थिति"
+    },
+    "terminate": {
+      "selectedButton": "चयनित समाप्त करें ({{count}})",
+      "confirmTitle": "समाप्ति की पुष्टि करें",
+      "confirmDescription_one": "इस सदस्यता से <b1>{{count}}</b1> स्टाफ़ सदस्य को हटाएं।",
+      "confirmDescription_other": "इस सदस्यता से <b1>{{count}}</b1> स्टाफ़ सदस्यों को हटाएं।",
+      "modeLabel": "समाप्ति मोड",
+      "hardLabel": "अभी समाप्त करें",
+      "hardDescription": "— एक्सेस तुरंत रद्द कर दिया जाता है।",
+      "softLabel": "तारीख तक बनाए रखें",
+      "softDescription": "— एक्सेस नीचे दी गई अंतिम एक्सेस तारीख तक जारी रहता है, फिर अपने आप समाप्त हो जाता है।",
+      "lastAccessDateLabel": "अंतिम एक्सेस तारीख",
+      "pickDateHint": "एक्सेस बनाए रखने के लिए एक तारीख चुनें।",
+      "schedulingLabel": "शेड्यूल किया जा रहा है...",
+      "terminatingLabel": "समाप्त किया जा रहा है...",
+      "toast": {
+        "selectMembers": "कृपया समाप्त करने के लिए सदस्य चुनें",
+        "pickDate": "सॉफ्ट समाप्ति के लिए कृपया एक अंतिम एक्सेस तारीख चुनें",
+        "softSuccess_one": "{{count}} स्टाफ़ सदस्य का एक्सेस {{date}} तक जारी रहेगा",
+        "softSuccess_other": "{{count}} स्टाफ़ सदस्यों का एक्सेस {{date}} तक जारी रहेगा",
+        "hardSuccess_one": "{{count}} स्टाफ़ सदस्य सफलतापूर्वक समाप्त कर दिया गया",
+        "hardSuccess_other": "{{count}} स्टाफ़ सदस्य सफलतापूर्वक समाप्त कर दिए गए",
+        "failed": "स्टाफ़ समाप्त करने में विफल। कृपया फिर से प्रयास करें।"
+      }
+    },
+    "bulkUpload": {
+      "dialogTitle": "स्टाफ़ बल्क अपलोड",
+      "instructionsTitle": "निर्देश",
+      "steps": {
+        "step1": "आवश्यक फ़ॉर्मेट देखने के लिए सैंपल टेम्पलेट डाउनलोड करें",
+        "step2": "स्टाफ़ की जानकारी भरें (* चिह्नित फ़ील्ड आवश्यक हैं)",
+        "step3": "अपनी फ़ाइल सहेजें और उसे नीचे अपलोड करें",
+        "step4": "हर पंक्ति को अलग-अलग संसाधित किया जाएगा"
+      },
+      "downloadButton": "सैंपल टेम्पलेट डाउनलोड करें",
+      "downloadHint": "सभी आवश्यक फ़ील्ड वाला Excel टेम्पलेट",
+      "processingLabel": "{{total}} में से {{processed}} स्टाफ़ को संसाधित किया जा रहा है...",
+      "dropHere": "अपनी फ़ाइल यहां छोड़ें",
+      "dragDropPrompt": "अपनी फ़ाइल यहां खींचें और छोड़ें, या",
+      "browseButton": "फ़ाइलें ब्राउज़ करें",
+      "supportsHint": ".xlsx, .xls और .csv फ़ाइलें समर्थित हैं",
+      "resultsTitle": "अपलोड परिणाम",
+      "resultsSuccessBadge": "{{count}} सफल",
+      "resultsFailedBadge": "{{count}} विफल",
+      "resultRowLabel": "पंक्ति {{rowNumber}}: {{fullName}}",
+      "unknownValue": "अज्ञात",
+      "closeButton": "बंद करें",
+      "result": {
+        "invalidData": "अमान्य डेटा: ईमेल और नाम आवश्यक हैं। कृपया फ़ॉर्मेट जांचें।",
+        "success": "सफलतापूर्वक जोड़ा गया"
+      },
+      "toast": {
+        "templateDownloaded": "सैंपल टेम्पलेट सफलतापूर्वक डाउनलोड हो गया",
+        "parseFailed": "फ़ाइल पढ़ने में विफल। कृपया सुनिश्चित करें कि यह एक मान्य Excel या CSV फ़ाइल है।",
+        "readFailed": "फ़ाइल पढ़ने में विफल",
+        "invalidFileType": "कृपया एक मान्य Excel (.xlsx, .xls) या CSV फ़ाइल अपलोड करें",
+        "emptyFile": "फ़ाइल खाली प्रतीत होती है",
+        "processFailed": "फ़ाइल संसाधित करने में विफल",
+        "addedSuccess_one": "{{count}} स्टाफ़ सदस्य सफलतापूर्वक जोड़ा गया",
+        "addedSuccess_other": "{{count}} स्टाफ़ सदस्य सफलतापूर्वक जोड़े गए",
+        "addedFailedCount_one": "{{count}} स्टाफ़ सदस्य जोड़ने में विफल। नीचे परिणाम देखें।",
+        "addedFailedCount_other": "{{count}} स्टाफ़ सदस्य जोड़ने में विफल। नीचे परिणाम देखें।"
+      }
+    }
+  }
+}

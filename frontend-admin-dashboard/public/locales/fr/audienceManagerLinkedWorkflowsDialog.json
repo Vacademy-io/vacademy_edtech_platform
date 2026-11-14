@@ -1,0 +1,39 @@
+{
+    "dialog": {
+        "titlePrefix": "Workflows liés à",
+        "description": "Workflows qui se déclenchent pour cette campagne — soit en la ciblant spécifiquement, soit en s’exécutant globalement sur toutes les campagnes. Comprend les workflows déclenchés par événement (à la soumission d’un lead) ET les workflows planifiés (par ex. e-mails de relance)."
+    },
+    "status": {
+        "refreshing": "Actualisation…",
+        "foundCount_one": "{{count}} workflow trouvé",
+        "foundCount_many": "{{count}} workflows trouvés",
+        "foundCount_other": "{{count}} workflows trouvés",
+        "loading": "Chargement des workflows…",
+        "error": "Échec du chargement des workflows. Cliquez sur Actualiser pour réessayer."
+    },
+    "actions": {
+        "refresh": "Actualiser",
+        "open": "Ouvrir",
+        "close": "Fermer"
+    },
+    "empty": {
+        "title": "Aucun workflow lié à cette campagne pour le moment.",
+        "hint": "Utilisez « Configurer le workflow » dans le menu pour en créer un."
+    },
+    "badge": {
+        "specific": "Cette campagne",
+        "global": "Toutes les campagnes",
+        "matchReason": {
+            "eventDriven": "À la soumission",
+            "scheduled": "Planifié"
+        }
+    },
+    "workflowStatus": {
+        "active": "Actif",
+        "draft": "Brouillon",
+        "inactive": "Inactif"
+    },
+    "workflow": {
+        "triggerLabel": "Déclencheur : {{name}}"
+    }
+}

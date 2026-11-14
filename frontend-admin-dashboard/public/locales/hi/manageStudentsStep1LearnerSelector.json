@@ -1,0 +1,26 @@
+{
+    "summary": {
+        "learnersSelected_one": "{{count}} शिक्षार्थी चयनित",
+        "learnersSelected_other": "{{count}} शिक्षार्थी चयनित"
+    },
+    "chip": {
+        "editing": "(संपादन हो रहा है…)",
+        "newUser": "(नया उपयोगकर्ता)",
+        "editTitle": "संपादित करें",
+        "removeTitle": "हटाएं"
+    },
+    "tabs": {
+        "search": "मौजूदा में खोजें",
+        "fromCourse": "{{term}} से",
+        "csv": "CSV आयात करें",
+        "manual": "मैन्युअल रूप से जोड़ें"
+    },
+    "search": {
+        "placeholder": "नाम, ईमेल या उपयोगकर्ता नाम से खोजें…",
+        "searching": "खोजा जा रहा है…",
+        "added": "जोड़ा गया",
+        "addAction": "+ जोड़ें",
+        "noResults": "\"{{query}}\" से मेल खाने वाला कोई छात्र नहीं मिला",
+        "minChars": "खोजने के लिए कम से कम 2 अक्षर टाइप करें"
+    }
+}

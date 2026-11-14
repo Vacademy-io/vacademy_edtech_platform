@@ -1,0 +1,209 @@
+{
+    "releaseNote": "Marks are held until you release them from the Submissions tab (Release Result).",
+    "omrOff": "OMR sheet mode is off for this assessment. Turn it on in Basic Info to print sets and scan sheets.",
+    "common": {
+        "cancel": "Cancel",
+        "loading": "Loading…"
+    },
+    "settings": {
+        "title": "Sets & shuffle",
+        "subtitle": "How many paper sets to print and whether they differ.",
+        "setCount": "Number of sets",
+        "shuffleQuestions": "Shuffle question order between sets",
+        "shuffleOptions": "Shuffle option order between sets",
+        "setAHint": "Set A always keeps the order the questions were authored in; shuffling applies to the other sets.",
+        "locked": "Filled sheets have been uploaded, so the sets are locked: changing them now would no longer match the printed papers and sheets.",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "OMR settings saved"
+    },
+    "roll": {
+        "title": "Roll-number pre-check",
+        "subtitle": "Each learner bubbles their enrollment number as the roll number.",
+        "recheck": "Re-check",
+        "checking": "Checking enrollment numbers…",
+        "participants_one": "{{count}} participant",
+        "participants_other": "{{count}} participants",
+        "digits_one": "Roll number: {{count}} digit",
+        "digits_other": "Roll number: {{count}} digits",
+        "ok": "Every participant has a usable enrollment number. The OMR sheets can be downloaded.",
+        "fixHint": "Fix the enrollment numbers in Manage Students, then re-check. OMR sheets cannot be downloaded until every number is usable.",
+        "table": {
+            "name": "Name",
+            "enrollment": "Enrollment number",
+            "problem": "Problem",
+            "detail": "Detail"
+        },
+        "problem": {
+            "MISSING": "Missing",
+            "NOT_NUMERIC": "Not numeric",
+            "TOO_LONG": "Too long",
+            "DUPLICATE": "Duplicate",
+            "CONFLICTING": "Conflicting"
+        }
+    },
+    "sets": {
+        "title": "Paper sets",
+        "subtitle_one": "{{count}} question on the paper.",
+        "subtitle_other": "{{count}} questions on the paper.",
+        "generate": "Generate sets",
+        "regenerate": "Regenerate sets",
+        "generating": "Generating…",
+        "generated_one": "{{count}} set generated",
+        "generated_other": "{{count}} sets generated",
+        "confirmTitle": "Regenerate sets?",
+        "confirmBody": "Regenerating replaces all sets; reprint every paper and sheet.",
+        "paperIssues": "This paper cannot be printed as an OMR sheet yet:",
+        "lockedHint": "Sheets have been uploaded, so the sets can no longer be regenerated.",
+        "sheetBlocked": "OMR sheets can be downloaded once the roll-number pre-check passes.",
+        "empty": "No sets yet. Generate them to download the papers and OMR sheets.",
+        "setLabel": "Set {{code}}",
+        "table": {
+            "set": "Set",
+            "questions": "Questions",
+            "size": "Sheet size",
+            "actions": "Actions"
+        },
+        "density": {
+            "LARGE": "Large bubbles",
+            "DENSE": "Dense"
+        },
+        "questionPaper": "Question paper",
+        "answerKey": "Answer key",
+        "omrSheet": "OMR sheet",
+        "upload": "Upload filled sheets"
+    },
+    "upload": {
+        "title": "Upload filled sheets · Set {{code}}",
+        "intro": "Upload the filled OMR sheets printed for Set {{code}}: one PDF of the whole class (a page per sheet) and/or separate PDF, JPG or PNG files. Each sheet is read, matched to a learner by the roll number and graded in the background.",
+        "drop": "Drop sheets here or click to choose",
+        "dropHint": "PDF, JPG or PNG · up to {{max}} files · {{mb}} MB each",
+        "notAccepted": "{{name}} is not a PDF, JPG or PNG file",
+        "tooLarge": "{{name}} is larger than {{mb}} MB",
+        "tooMany": "At most {{max}} files per upload; split it",
+        "nothingUploaded": "None of the files could be uploaded",
+        "remove": "Remove",
+        "state": {
+            "ready": "Ready",
+            "uploading": "Uploading…",
+            "uploaded": "Uploaded",
+            "error": "Upload failed"
+        },
+        "someFailed_one": "{{count}} file could not be uploaded and was left out.",
+        "someFailed_other": "{{count}} files could not be uploaded and were left out.",
+        "start_one": "Upload and scan {{count}} file",
+        "start_other": "Upload and scan {{count}} files",
+        "starting": "Uploading…",
+        "started_one": "Scanning {{count}} file",
+        "started_other": "Scanning {{count}} files"
+    },
+    "uploads": {
+        "title": "Uploaded sheets",
+        "subtitle": "Every upload of filled sheets for this assessment, newest first.",
+        "empty": "No sheets uploaded yet.",
+        "startedBy": "{{name}} · {{when}} · {{count}} file(s)",
+        "review": "Review"
+    },
+    "batchStatus": {
+        "RUNNING": "Reading",
+        "NEEDS_REVIEW": "Needs review",
+        "COMPLETED": "Completed"
+    },
+    "sheetStatus": {
+        "PENDING": "Waiting",
+        "READING": "Reading",
+        "GRADED": "Graded",
+        "NEEDS_REVIEW": "Needs review",
+        "FAILED": "Failed",
+        "SKIPPED": "Skipped"
+    },
+    "counts": {
+        "graded": "{{count}} graded",
+        "needsReview": "{{count}} need review",
+        "flagged": "{{count}} flagged",
+        "failed": "{{count}} failed",
+        "reading": "{{count}} reading"
+    },
+    "stats": {
+        "sheets": "Sheets",
+        "graded": "Graded",
+        "needsReview": "Needs review",
+        "flagged": "Flagged",
+        "failed": "Failed"
+    },
+    "flag": {
+        "MULTI": "Two bubbles filled",
+        "LOW_CONFIDENCE": "Faint mark"
+    },
+    "review": {
+        "title": "Review sheets · Set {{code}}",
+        "refresh": "Refresh",
+        "reading_one": "{{count}} sheet is still being read…",
+        "reading_other": "{{count}} sheets are still being read…",
+        "filter": {
+            "NEEDS_REVIEW": "Needs review",
+            "FLAGGED": "Flagged",
+            "GRADED": "Graded",
+            "FAILED": "Failed",
+            "SKIPPED": "Skipped"
+        },
+        "emptyFilter": "No sheets here.",
+        "page": "page {{page}}",
+        "roll": "Roll read",
+        "rollLowConfidence": "faint, check it",
+        "readSet": "set {{code}}",
+        "learner": "Learner",
+        "suggested": "(suggested)",
+        "marks": "Marks",
+        "nameCropAlt": "Name written on the sheet",
+        "flaggedCount_one": "{{count}} flagged question",
+        "flaggedCount_other": "{{count}} flagged questions",
+        "viewSheet": "View sheet",
+        "viewMarks": "View detected marks",
+        "assign": "Assign learner",
+        "skip": "Skip",
+        "retry": "Retry",
+        "fixAnswers": "Fix flagged answers"
+    },
+    "assign": {
+        "title": "Assign this sheet to a learner",
+        "readRoll": "Roll number read: {{roll}}",
+        "search": "Search by name or enrollment number",
+        "none": "No learner matches",
+        "hasSheet": "has a sheet",
+        "hasSheetWarning": "{{name}} already has a graded OMR sheet on this assessment; a second sheet will be refused.",
+        "confirm": "Assign",
+        "assigning": "Assigning…"
+    },
+    "fix": {
+        "title": "Fix flagged answers",
+        "intro": "Only the questions the reader was unsure of can be corrected. Pick what the learner meant; the sheet is re-graded.",
+        "question": "Q{{no}}",
+        "read": "Read: {{value}}",
+        "blank": "blank",
+        "notAttempted": "Not attempted",
+        "save_one": "Save {{count}} correction",
+        "save_other": "Save {{count}} corrections",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "assigned": "Sheet assigned and graded",
+        "skipped": "Sheet skipped",
+        "retried": "Sheet queued again",
+        "fixed": "Answers corrected and re-graded",
+        "needsReview_one": "Sheets read · {{count}} needs review",
+        "needsReview_other": "Sheets read · {{count}} need review",
+        "completed_one": "Sheets read · {{count}} graded",
+        "completed_other": "Sheets read · {{count}} graded"
+    },
+    "errors": {
+        "loadFailed": "Could not load the OMR settings.",
+        "rollFailed": "Could not check the roll numbers.",
+        "saveFailed": "Could not save the OMR settings.",
+        "generateFailed": "Could not generate the sets.",
+        "downloadFailed": "Could not download the OMR sheet.",
+        "startFailed": "Could not start the scan.",
+        "actionFailed": "That did not work. Try again.",
+        "fileUnavailable": "That file is not available."
+    }
+}

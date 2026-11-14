@@ -1,16 +1,24 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
-import { Examination, Mock, Practice, Survey } from '@/svgs';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import { QuickOfflineTestDialog } from './-components/offline-test/QuickOfflineTestDialog';
+import {
+    AssessmentTypePicker,
+    type AssessmentTypeKey,
+} from './assessment-list/-components/AssessmentTypePicker';
 
 // Route stub for TanStack Router - actual component loaded via index.lazy.tsx
 export const Route = createFileRoute('/assessment/')({});
 
 function AssessmentPage() {
+    const { t } = useTranslation('assessmentIndex');
     const { setNavHeading } = useNavHeadingStore();
     const navigate = useNavigate();
+    // Manual Upload Exam opens the one-screen form; it links to the full wizard.
+    const [offlineOpen, setOfflineOpen] = useState(false);
 
     const handleRedirectRoute = (type: string) => {
         navigate({
@@ -25,81 +33,31 @@ function AssessmentPage() {
         });
     };
 
+    const handlePick = (type: AssessmentTypeKey) => {
+        if (type === 'MANUAL_UPLOAD_EXAM') {
+            setOfflineOpen(true);
+            return;
+        }
+        handleRedirectRoute(type);
+    };
+
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Assessments</h1>);
+        setNavHeading(<h1 className="text-lg">{t('pageHeading')}</h1>);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
         <>
             <Helmet>
-                <title>Assessments</title>
-                <meta
-                    name="description"
-                    content="This page shows all types of assessments that you can create here."
-                />
+                <title>{t('pageHeading')}</title>
+                <meta name="description" content={t('metaDescription')} />
             </Helmet>
             <div className="pb-4 text-lg font-semibold sm:pb-6 sm:text-title">
-                Create Assessment
+                {t('createAssessmentHeading')}
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:gap-8">
-                <div
-                    onClick={() => handleRedirectRoute('EXAM')}
-                    className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
-                >
-                    <Examination className="size-16 sm:size-auto" />
-                    <h1 className="mt-2 text-lg font-semibold sm:text-[1.4rem]">Examination</h1>
-                    <p className="mt-1 text-center text-xs text-neutral-500 sm:text-sm">
-                        A Fixed-time assessment that goes live for a specific schedule, simulating
-                        real exam conditions.
-                    </p>
-                </div>
-                <div
-                    onClick={() => handleRedirectRoute('MOCK')}
-                    className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
-                >
-                    <Mock className="size-16 sm:size-auto" />
-                    <h1 className="mt-2 text-lg font-semibold sm:text-[1.4rem]">Mock Assessment</h1>
-                    <p className="mt-1 text-center text-xs text-neutral-500 sm:text-sm">
-                        A practice assessment always available, with a fixed duration to replicate
-                        exam scenarios.
-                    </p>
-                </div>
-                <div
-                    onClick={() => handleRedirectRoute('PRACTICE')}
-                    className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
-                >
-                    <Practice className="size-16 sm:size-auto" />
-                    <h1 className="mt-2 text-lg font-semibold sm:text-[1.4rem]">
-                        Practice Assessment
-                    </h1>
-                    <p className="mt-1 text-center text-xs text-neutral-500 sm:text-sm">
-                        An on-demand assessment with no time limits, allowing students to attempt it
-                        anytime.
-                    </p>
-                </div>
-                <div
-                    onClick={() => handleRedirectRoute('SURVEY')}
-                    className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
-                >
-                    <Survey className="size-16 sm:size-auto" />
-                    <h1 className="mt-2 text-lg font-semibold sm:text-[1.4rem]">Survey</h1>
-                    <p className="mt-1 text-center text-xs text-neutral-500 sm:text-sm">
-                        A set of questions for feedback or opinions, with no right or wrong answers.
-                    </p>
-                </div>
-                <div
-                    onClick={() => handleRedirectRoute('MANUAL_UPLOAD_EXAM')}
-                    className="flex cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-4 transition-all hover:border-primary-200 hover:shadow-md active:scale-[0.98] sm:p-6 md:p-8"
-                >
-                    <Examination className="size-16 sm:size-auto" />
-                    <h1 className="mt-2 text-lg font-semibold sm:text-[1.4rem]">
-                        Manual Upload Exam
-                    </h1>
-                    <p className="mt-1 text-center text-xs text-neutral-500 sm:text-sm">
-                        Students download the question paper, solve offline, and upload answer
-                        sheets. Teachers check and assign marks manually.
-                    </p>
-                </div>
+            <div className="max-w-4xl">
+                <AssessmentTypePicker onPick={handlePick} />
             </div>
+            <QuickOfflineTestDialog open={offlineOpen} onOpenChange={setOfflineOpen} />
         </>
     );
 }

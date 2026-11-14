@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ export function AnswerSpacingQuestionPaperDialogAI({
     spacings,
     onSave,
 }: AnswerSpacingDialogProps) {
+    const { t } = useTranslation('aiCenterAnswerSpacingQuestionPaperDialog');
     const [localSpacings, setLocalSpacings] = useState<{ [questionId: string]: number }>(spacings);
 
     // Reset local spacings when dialog opens
@@ -78,43 +80,51 @@ export function AnswerSpacingQuestionPaperDialogAI({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[80vh] min-w-fit overflow-y-auto">
+            <DialogContent className="max-h-[80vh] min-w-fit overflow-y-auto">{/* design-lint-ignore: vh-based dialog height matches MyDialog primitive */}
                 <DialogHeader>
-                    <DialogTitle>Manage Answer Spacing</DialogTitle>
+                    <DialogTitle>{t('title')}</DialogTitle>
                 </DialogHeader>
 
                 <div className="py-4">
                     <div className="mb-4 rounded-md border border-blue-100 bg-blue-50 p-3">
                         <p className="text-sm text-blue-700">
-                            Specify the space (in mm) to be provided after each question for
-                            answers. Valid range is between <strong>{MIN_SPACING}mm</strong> and{' '}
-                            <strong>{MAX_SPACING}mm</strong>.
+                            <Trans
+                                t={t}
+                                i18nKey="helper.text"
+                                values={{ min: MIN_SPACING, max: MAX_SPACING }}
+                                components={{ strong: <strong /> }}
+                            />
                         </p>
                     </div>
 
                     <Table>
                         <TableHeader className="bg-primary-100">
                             <TableRow>
-                                <TableHead className="w-[80px]">Q.No.</TableHead>
-                                <TableHead className="w-[120px]">Section</TableHead>
-                                <TableHead className="w-2/5">Question</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead className="w-[120px]">Space (mm)</TableHead>
+                                <TableHead className="w-20">{t('table.headers.qNo')}</TableHead>
+                                <TableHead className="w-32">
+                                    {t('table.headers.section')}
+                                </TableHead>
+                                <TableHead className="w-2/5">
+                                    {t('table.headers.question')}
+                                </TableHead>
+                                <TableHead>{t('table.headers.type')}</TableHead>
+                                <TableHead className="w-32">
+                                    {t('table.headers.space')}
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody className="bg-neutral-50">
                             {eligibleQuestions.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="py-4 text-center">
-                                        No eligible questions found. Only long answer and one-word
-                                        questions can have custom spacing.
+                                        {t('table.empty')}
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 eligibleQuestions.map((question, idx) => (
                                     <TableRow key={question.question_id}>
                                         <TableCell>{idx + 1}</TableCell>
-                                        <TableCell className="max-w-[300px] overflow-hidden">
+                                        <TableCell className="max-w-xs overflow-hidden">
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -131,7 +141,7 @@ export function AnswerSpacingQuestionPaperDialogAI({
                                                     </TooltipTrigger>
                                                     <TooltipContent
                                                         side="bottom"
-                                                        className="max-h-[300px] w-[400px] overflow-y-auto"
+                                                        className="max-h-72 w-96 overflow-y-auto"
                                                     >
                                                         <div
                                                             className="text-sm"
@@ -146,8 +156,8 @@ export function AnswerSpacingQuestionPaperDialogAI({
                                         </TableCell>
                                         <TableCell>
                                             {question.question_type === 'LONG_ANSWER'
-                                                ? 'Long Answer'
-                                                : 'One Word'}
+                                                ? t('table.type.longAnswer')
+                                                : t('table.type.oneWord')}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center">
@@ -170,7 +180,7 @@ export function AnswerSpacingQuestionPaperDialogAI({
                                                     }
                                                 />
                                                 <span className="ml-1 text-xs text-gray-500">
-                                                    mm
+                                                    {t('table.unit')}
                                                 </span>
                                             </div>
                                         </TableCell>
@@ -183,13 +193,13 @@ export function AnswerSpacingQuestionPaperDialogAI({
 
                 <div className="mt-4 flex justify-end gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('actions.cancel')}
                     </Button>
                     <Button
                         className="bg-primary-500 text-white hover:bg-primary-400"
                         onClick={handleSave}
                     >
-                        Save Settings
+                        {t('actions.save')}
                     </Button>
                 </div>
             </DialogContent>

@@ -1,0 +1,11 @@
+{
+    "endOfConversations": "Fin des conversations",
+    "noConversations": "Aucune conversation par e-mail pour l'instant",
+    "noConversationsHint": "Les conversations apparaissent dès que vous envoyez ou recevez un e-mail",
+    "yesterday": "Hier",
+    "you": "Vous",
+    "deliveryFailed": "Échec de la distribution",
+    "noSubject": "(sans objet)",
+    "hasAttachments": "Contient des pièces jointes",
+    "noMatches": "Aucune conversation ne correspond à votre recherche"
+}

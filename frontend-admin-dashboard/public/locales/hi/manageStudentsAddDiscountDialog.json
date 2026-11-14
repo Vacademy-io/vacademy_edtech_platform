@@ -1,0 +1,32 @@
+{
+    "title": "नई छूट जोड़ें",
+    "fields": {
+        "title": {
+            "label": "छूट शीर्षक",
+            "placeholder": "छूट शीर्षक दर्ज करें"
+        },
+        "code": {
+            "label": "छूट कोड",
+            "placeholder": "छूट कोड दर्ज करें"
+        },
+        "type": {
+            "label": "छूट प्रकार",
+            "placeholder": "प्रकार चुनें",
+            "options": {
+                "percent": "प्रतिशत छूट",
+                "rupees": "रुपये में छूट"
+            }
+        },
+        "value": {
+            "label": "छूट मूल्य",
+            "placeholderPercent": "प्रतिशत दर्ज करें (जैसे 10)",
+            "placeholderRupees": "राशि दर्ज करें (जैसे 500)"
+        },
+        "expires": {
+            "label": "समाप्ति तिथि"
+        }
+    },
+    "actions": {
+        "save": "सहेजें"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "trigger": {
+        "label": "Topic Wise Sort Questions"
+    },
+    "dialog": {
+        "title": "Topic Wise Sort Questions",
+        "options": {
+            "topic": "Select any topic questions covered",
+            "pages": "Select questions from specific pages",
+            "questionNo": "Select a set of questions"
+        },
+        "extractButton": "Extract"
+    },
+    "tasksList": {
+        "heading": "Vsmart Organizer"
+    }
+}

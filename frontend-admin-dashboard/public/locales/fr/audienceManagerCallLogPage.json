@@ -1,0 +1,27 @@
+{
+    "header": {
+        "navTitle": "Journal des appels",
+        "title": "Journal des appels",
+        "subtitle": "Chaque appel de votre équipe — IA et humain, entrant et sortant, tous fournisseurs confondus. Filtrez, qualifiez et exportez.",
+        "callingSettings": "Paramètres d'appel",
+        "refresh": "Actualiser"
+    },
+    "filters": {
+        "presetLabel": "{{days}} j",
+        "from": "Du",
+        "to": "Au",
+        "apply": "Appliquer",
+        "reset": "Réinitialiser",
+        "noInstitute": "Choisissez un établissement pour afficher le journal des appels.",
+        "presetHours": "{{hours}} h",
+        "customHoursPlaceholder": "N dern. heures",
+        "customHoursLabel": "N dernières heures"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "Filtrer par conseiller",
+        "allCounsellors": "Tous les conseillers"
+    },
+    "callIntelligence": {
+        "heading": "Intelligence des appels"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "errors": {
+        "authRequired": "Authentication required. Please refresh the page or log in again.",
+        "sessionExpired": "Session expired. Please log in again.",
+        "accessDenied": "Access denied. You don't have permission to view this data.",
+        "notFound": "Analytics data not found for this institute.",
+        "tooManyRequests": "Too many requests. Please wait a moment and try again.",
+        "serverUnavailable": "Server temporarily unavailable. We're working on it.",
+        "serviceError": "Service error ({{status}}). Please try again later.",
+        "connectionLost": "Connection lost. Please check your internet and try again.",
+        "requestTimedOut": "Request timed out. The server is taking too long to respond.",
+        "genericFallback": "Unable to load data. Please try again later."
+    }
+}

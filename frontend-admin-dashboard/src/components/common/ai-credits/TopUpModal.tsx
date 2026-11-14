@@ -9,17 +9,27 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkle, CheckCircle, Warning, Check } from '@phosphor-icons/react';
+import { Sparkle, CheckCircle, Warning, Check, DownloadSimple } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { isNative } from '@/native/platform';
+import { isInEvalezyShell } from '@/lib/evalezy-mode';
+
+/** The Evalezy app pays in the browser and waits here; other surfaces keep their flow. */
+const inAppCheckout = () => isNative() && isInEvalezyShell();
 import {
     useCreditPacksQuery,
     usePurchaseCreditPackMutation,
     useOrderStatusQuery,
     useInvalidateCreditQueriesOnPaid,
+    useBillingProfileQuery,
+    downloadInvoicePdf,
+    isValidGstin,
     type CreditPack,
 } from '@/services/ai-credits/credit-pack-services';
+import { EMPTY_GST_BILLING, GstBillingFields } from './GstBillingFields';
 
 interface TopUpModalProps {
     open: boolean;
@@ -40,6 +50,7 @@ type Phase = 'pick' | 'launching' | 'awaiting' | 'success' | 'error';
  * this UI just reflects what the webhook has fulfilled.
  */
 export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalProps) {
+    const { t: tPlans } = useTranslation('aiPlans');
     const instituteId = getCurrentInstituteId();
     const packsQuery = useCreditPacksQuery(instituteId, open);
     const purchaseMutation = usePurchaseCreditPackMutation();
@@ -49,6 +60,24 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
     const [phase, setPhase] = useState<Phase>('pick');
     const [pollingFor, setPollingFor] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [downloading, setDownloading] = useState(false);
+
+    // GST identity — prefilled from the institute's saved billing profile and
+    // written back on purchase. Only shown for INR buyers (exports are 0%).
+    const billingQuery = useBillingProfileQuery(instituteId, open);
+    const [gstin, setGstin] = useState('');
+    const [stateCode, setStateCode] = useState('');
+    const [billingTouched, setBillingTouched] = useState(false);
+    const [gstinError, setGstinError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!open || billingTouched || !billingQuery.data) return;
+        setGstin(billingQuery.data.gstin ?? '');
+        setStateCode(billingQuery.data.state_code ?? '');
+    }, [open, billingTouched, billingQuery.data]);
+
+    const isInr =
+        (packsQuery.data?.[0]?.currency ?? billingQuery.data?.currency ?? 'INR') === 'INR';
 
     // Poll status every 2s while awaiting webhook fulfillment.
     const statusQuery = useOrderStatusQuery(
@@ -64,6 +93,9 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
             setPhase('pick');
             setPollingFor(null);
             setErrorMessage(null);
+            setBillingTouched(false);
+            setGstinError(null);
+            setDownloading(false);
         }
     }, [open]);
 
@@ -103,9 +135,10 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
         }
     }, [phase, statusQuery.data, invalidateCredits]);
 
-    // Stop polling after 60s — webhook may run later under load.
+    // Stop polling after 60s — webhook may run later under load. Not in the apps:
+    // there the wait includes the buyer paying in the browser, and they can close it.
     useEffect(() => {
-        if (phase !== 'awaiting' || !pollingFor) return;
+        if (phase !== 'awaiting' || !pollingFor || inAppCheckout()) return;
         const timer = setTimeout(() => {
             if (phase === 'awaiting') {
                 toast.message('Payment is processing', {
@@ -124,6 +157,21 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
 
     const handleBuy = async () => {
         if (!instituteId || !selectedPack) return;
+
+        const trimmedGstin = gstin.trim();
+        if (isInr) {
+            if (trimmedGstin && !isValidGstin(trimmedGstin)) {
+                setGstinError('Enter a valid 15-character GSTIN, e.g. 27AAAAA0000A1Z5');
+                return;
+            }
+            if (!trimmedGstin && !stateCode) {
+                setGstinError(
+                    'Select your state so the correct GST (CGST/SGST or IGST) is applied'
+                );
+                return;
+            }
+        }
+
         setPhase('launching');
         setErrorMessage(null);
 
@@ -143,11 +191,23 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
             const order = await purchaseMutation.mutateAsync({
                 instituteId,
                 packId: selectedPack.pack_id,
-                returnUrl: url.toString(),
+                // The app's own origin (https://localhost) means nothing to the browser
+                // the payment opens in: it would end on an error page after a good payment.
+                returnUrl: inAppCheckout() ? undefined : url.toString(),
+                ...(isInr && billingTouched
+                    ? { buyerGstin: trimmedGstin, buyerStateCode: stateCode || undefined }
+                    : {}),
             });
 
             if (!order.payment_link_url) {
                 throw new Error('Payment link unavailable — please try again');
+            }
+
+            // In the apps the page opens in the browser and the app stays where it
+            // is, so wait for the payment here; nothing comes back with ?topup_pp.
+            if (inAppCheckout()) {
+                setPollingFor(order.platform_payment_id);
+                setPhase('awaiting');
             }
 
             // Redirect to Razorpay's hosted page. Unlike checkout.js it works on
@@ -221,6 +281,29 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
                                 </div>
                             )}
 
+                            {/* GST details — INR buyers only */}
+                            {isInr && packsQuery.data && packsQuery.data.length > 0 && (
+                                <div className="mt-4">
+                                    <GstBillingFields
+                                        value={{ ...EMPTY_GST_BILLING, gstin, stateCode }}
+                                        onChange={(patch) => {
+                                            setBillingTouched(true);
+                                            setGstinError(null);
+                                            if (patch.gstin !== undefined) setGstin(patch.gstin);
+                                            if (patch.stateCode !== undefined) {
+                                                setStateCode(patch.stateCode);
+                                            }
+                                        }}
+                                        error={gstinError}
+                                        hint={
+                                            billingQuery.data?.gstin && !billingTouched
+                                                ? tPlans('billing.savedHint')
+                                                : null
+                                        }
+                                    />
+                                </div>
+                            )}
+
                             {/* Quiet trust line */}
                             <p className="mt-4 text-center text-[11px] text-neutral-400">
                                 Secure payments by Razorpay · Cards, UPI, Netbanking
@@ -239,10 +322,14 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
                         <div className="flex flex-col items-center gap-3 py-12">
                             <Loader2 className="size-8 animate-spin text-purple-600" />
                             <p className="text-sm font-medium text-neutral-800">
-                                Confirming your payment…
+                                {inAppCheckout()
+                                    ? 'Finish the payment in your browser'
+                                    : 'Confirming your payment…'}
                             </p>
-                            <p className="text-xs text-neutral-500">
-                                This usually takes a few seconds.
+                            <p className="max-w-xs text-center text-xs text-neutral-500">
+                                {inAppCheckout()
+                                    ? 'Then come back here: the credits appear a few seconds after it clears. Closing this does not cancel a payment.'
+                                    : 'This usually takes a few seconds.'}
                             </p>
                         </div>
                     )}
@@ -257,8 +344,50 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
                             </p>
                             {statusQuery.data?.credits_granted != null && (
                                 <p className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
-                                    +{statusQuery.data.credits_granted.toLocaleString()} credits
-                                    added
+                                    +{statusQuery.data.credits_granted.toLocaleString('en-IN')}{' '}
+                                    credits added
+                                </p>
+                            )}
+                            {statusQuery.data?.invoice_id ? (
+                                <button
+                                    type="button"
+                                    disabled={downloading}
+                                    onClick={async () => {
+                                        const inv = statusQuery.data;
+                                        if (!inv?.invoice_id) return;
+                                        setDownloading(true);
+                                        try {
+                                            await downloadInvoicePdf(
+                                                inv.invoice_id,
+                                                `${inv.invoice_number ?? inv.invoice_id}.pdf`
+                                            );
+                                        } catch {
+                                            toast.error('Could not download the invoice', {
+                                                description:
+                                                    'You can also find it under AI Credits → Billing.',
+                                            });
+                                        } finally {
+                                            setDownloading(false);
+                                        }
+                                    }}
+                                    className="mt-1 inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50 disabled:opacity-60"
+                                >
+                                    {downloading ? (
+                                        <Loader2 className="size-4 animate-spin" />
+                                    ) : (
+                                        <DownloadSimple className="size-4" weight="bold" />
+                                    )}
+                                    Download GST invoice
+                                    {statusQuery.data.invoice_number && (
+                                        <span className="font-mono text-xs text-neutral-400">
+                                            {statusQuery.data.invoice_number}
+                                        </span>
+                                    )}
+                                </button>
+                            ) : (
+                                <p className="max-w-xs text-center text-xs text-neutral-500">
+                                    Your GST tax invoice has been emailed and is available under AI
+                                    Credits → Billing.
                                 </p>
                             )}
                         </div>
@@ -306,6 +435,15 @@ export function TopUpModal({ open, onOpenChange, resumePaymentId }: TopUpModalPr
                                     : 'Pick a pack'}
                             </button>
                         </>
+                    )}
+                    {phase === 'awaiting' && inAppCheckout() && (
+                        <button
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                            className="w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 sm:w-auto"
+                        >
+                            Close
+                        </button>
                     )}
                     {(phase === 'success' || phase === 'error') && (
                         <button
@@ -376,7 +514,12 @@ function PackCard({ pack, selected, onSelect }: PackCardProps) {
             </div>
 
             {/* Tax breakdown */}
-            <div className="mt-3 border-t border-dashed border-neutral-200 pt-2.5 text-[11px] text-neutral-500">
+            <div
+                className={cn(
+                    'mt-3 border-t border-dashed border-neutral-200 pt-2.5 text-[11px] text-neutral-500',
+                    isInEvalezyShell() && 'w-full'
+                )}
+            >
                 <div className="flex items-center justify-between">
                     <span>Base</span>
                     <span className="tabular-nums">{pack.display_base_major}</span>

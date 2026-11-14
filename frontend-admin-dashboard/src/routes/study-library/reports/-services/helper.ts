@@ -1,6 +1,9 @@
 import { LearnersReportResponse, TransformedReport } from '../-types/types';
 import { ChartDataType } from '../-components/student/lineChart';
 import dayjs from 'dayjs';
+import i18n from '@/i18n';
+
+const NS = 'studyLibraryReportsHelper';
 
 export const transformLearnersReport = (report: LearnersReportResponse): TransformedReport[] => {
     const learnerData = report.learner_progress_report.daily_time_spent;
@@ -13,7 +16,7 @@ export const transformLearnersReport = (report: LearnersReportResponse): Transfo
         reportMap.set(activity_date, {
             date: dayjs(activity_date).format('DD/MM/YYYY'),
             timeSpent: `${convertMinutesToTimeFormat(avg_daily_time_minutes)}`,
-            timeSpentBatch: '0 min', // Default, will update if batch data exists
+            timeSpentBatch: i18n.t(`${NS}:zeroMinutes`), // Default, will update if batch data exists
         });
     });
 
@@ -26,7 +29,7 @@ export const transformLearnersReport = (report: LearnersReportResponse): Transfo
         } else {
             reportMap.set(activity_date, {
                 date: activity_date,
-                timeSpent: '0 min', // Default, will update if learner data exists
+                timeSpent: i18n.t(`${NS}:zeroMinutes`), // Default, will update if learner data exists
                 timeSpentBatch: `${convertMinutesToTimeFormat(avg_daily_time_minutes)}`,
             });
         }
@@ -82,9 +85,13 @@ export function convertMinutesToTimeFormat(totalMinutes: number): string {
     const hours: number = Math.floor((totalSeconds % secondsPerDay) / 3600);
     const minutes: number = Math.floor((totalSeconds % 3600) / 60);
     const seconds: number = totalSeconds % 60;
-    if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-    else if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-    else return `${minutes}m ${seconds}s`;
+    const dUnit = i18n.t(`${NS}:units.day`);
+    const hUnit = i18n.t(`${NS}:units.hour`);
+    const mUnit = i18n.t(`${NS}:units.minute`);
+    const sUnit = i18n.t(`${NS}:units.second`);
+    if (days > 0) return `${days}${dUnit} ${hours}${hUnit} ${minutes}${mUnit} ${seconds}${sUnit}`;
+    else if (hours > 0) return `${hours}${hUnit} ${minutes}${mUnit} ${seconds}${sUnit}`;
+    else return `${minutes}${mUnit} ${seconds}${sUnit}`;
 }
 export const convertCommaSeparatedToArray = (input: string | null | undefined): string[] => {
     if (!input) {

@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import {
     Slide,
     useSlidesMutations,
@@ -48,7 +50,9 @@ export function getSlideStatusForUser(): 'DRAFT' | 'PUBLISHED' {
             localStorage.setItem('triggerApprovalButton', Date.now().toString());
             // Show a notification to let user know the slide is auto-published
             import('sonner').then(({ toast }) => {
-                toast.success('Slide created and auto-published for review');
+                toast.success(
+                    i18next.t('studyLibraryNonAdminSlides:toasts.createdAndAutoPublished')
+                );
             });
         }
 
@@ -60,6 +64,7 @@ export function getSlideStatusForUser(): 'DRAFT' | 'PUBLISHED' {
 }
 
 export function useNonAdminSlides(chapterId: string) {
+    const { t } = useTranslation('studyLibraryNonAdminSlides');
     const [unsavedChanges, setUnsavedChanges] = useState<UnsavedChanges>({
         hasChanges: false,
         slideId: null,
@@ -98,7 +103,7 @@ export function useNonAdminSlides(chapterId: string) {
                     await slidesMutations.addUpdateAssignmentSlide(
                         convertedData as unknown as AssignmentSlidePayload
                     );
-                    toast.success('Assignment slide published successfully');
+                    toast.success(t('toasts.assignmentPublished'));
                 } else if (slide?.source_type === 'QUESTION') {
                     const convertedData = convertToQuestionBackendSlideFormat({
                         activeItem: slide,
@@ -109,14 +114,14 @@ export function useNonAdminSlides(chapterId: string) {
                     await slidesMutations.updateQuestionOrder(
                         convertedData as unknown as SlideQuestionsDataInterface
                     );
-                    toast.success('Question slide published successfully');
+                    toast.success(t('toasts.questionPublished'));
                 } else if (slide?.source_type === 'QUIZ') {
                     const payload = createQuizSlidePayload(slide.quiz_slide?.questions || [], {
                         ...slide,
                         status: publishedStatus,
                     });
                     await slidesMutations.addUpdateQuizSlide(payload);
-                    toast.success('Quiz slide published successfully');
+                    toast.success(t('toasts.quizPublished'));
                 } else if (slide?.source_type === 'VIDEO') {
                     if (slide.video_slide) {
                         // Convert in-memory (MyQuestion-shaped) video questions into the
@@ -130,9 +135,9 @@ export function useNonAdminSlides(chapterId: string) {
                             newSlide: isNewSlide,
                         });
                         await slidesMutations.addUpdateVideoSlide(videoSlidePayload);
-                        toast.success('Video slide published successfully');
+                        toast.success(t('toasts.videoPublished'));
                     } else {
-                        toast.error('Video slide data is missing');
+                        toast.error(t('toasts.videoDataMissing'));
                     }
                 } else if (slide?.source_type === 'AUDIO') {
                     if (slide.audio_slide) {
@@ -156,12 +161,12 @@ export function useNonAdminSlides(chapterId: string) {
                             },
                         };
                         await slidesMutations.addUpdateAudioSlide(audioSlidePayload);
-                        toast.success('Audio slide published successfully');
+                        toast.success(t('toasts.audioPublished'));
                     } else {
-                        toast.error('Audio slide data is missing');
+                        toast.error(t('toasts.audioDataMissing'));
                     }
                 } else {
-                    // Handle DOCUMENT slides (DOC, PDF, PRESENTATION, CODE, JUPYTER, SCRATCH)
+                    // Handle DOCUMENT slides (DOC, PDF, PPT_ANIM, PRESENTATION, CODE, JUPYTER, SCRATCH)
                     let currentData: string;
                     let totalPages: number;
 
@@ -169,6 +174,20 @@ export function useNonAdminSlides(chapterId: string) {
                     if (docType === 'PRESENTATION') {
                         // For presentations, data is a file ID, not HTML content
                         currentData = slide.document_slide?.data || '';
+                        totalPages = slide.document_slide?.total_pages || 1;
+                    } else if (docType === 'PDF' || docType === 'PPT_ANIM') {
+                        // File-backed slides: data is a PDF file id / deck base URL. The
+                        // editor is empty on these, so `currentEditorContent` is the
+                        // empty-document shell — using it here published that shell over
+                        // the file reference and broke the slide for admins and learners.
+                        currentData =
+                            slide.document_slide?.data ||
+                            slide.document_slide?.published_data ||
+                            '';
+                        if (!currentData) {
+                            toast.error(t('toasts.saveFailed'));
+                            return false;
+                        }
                         totalPages = slide.document_slide?.total_pages || 1;
                     } else if (
                         docType === 'CODE' ||
@@ -185,13 +204,13 @@ export function useNonAdminSlides(chapterId: string) {
                             );
                             const slideTypeName =
                                 docType === 'CODE'
-                                    ? 'Code Editor'
+                                    ? t('slideTypes.codeEditor')
                                     : docType === 'JUPYTER'
-                                      ? 'Jupyter Notebook'
+                                      ? t('slideTypes.jupyterNotebook')
                                       : docType === 'SCRATCH'
-                                        ? 'Scratch Project'
-                                        : 'Interactive Slide';
-                            toast.success(`${slideTypeName} is already up to date!`);
+                                        ? t('slideTypes.scratchProject')
+                                        : t('slideTypes.interactiveSlide');
+                            toast.success(t('toasts.alreadyUpToDate', { slideType: slideTypeName }));
                             return false;
                         }
 
@@ -235,9 +254,9 @@ export function useNonAdminSlides(chapterId: string) {
 
                     await slidesMutations.addUpdateDocumentSlide(publishedSlide);
                     if (slide.document_slide?.type === 'PRESENTATION') {
-                        toast.success('Presentation published successfully');
+                        toast.success(t('toasts.presentationPublished'));
                     } else {
-                        toast.success('Slide published successfully');
+                        toast.success(t('toasts.slidePublished'));
                     }
                 }
 
@@ -255,11 +274,11 @@ export function useNonAdminSlides(chapterId: string) {
                 return true;
             } catch (error) {
                 console.error('❌ Error saving slide as published:', error);
-                toast.error('Failed to save slide');
+                toast.error(t('toasts.saveFailed'));
                 return false;
             }
         },
-        [slidesMutations]
+        [slidesMutations, t]
     );
 
     // Mark slide as having unsaved changes
@@ -312,7 +331,7 @@ export function useNonAdminSlides(chapterId: string) {
             if (unsavedChanges.hasChanges) {
                 // Show confirmation dialog
                 const shouldSave = window.confirm(
-                    `You have unsaved changes in "${unsavedChanges.slideTitle}". Do you want to save them?`
+                    t('confirm.unsavedChanges', { slideTitle: unsavedChanges.slideTitle })
                 );
 
                 if (shouldSave) {
@@ -331,7 +350,7 @@ export function useNonAdminSlides(chapterId: string) {
                 return { shouldSave: false, callback };
             }
         },
-        [unsavedChanges, clearUnsavedChanges]
+        [unsavedChanges, clearUnsavedChanges, t]
     );
 
     return {

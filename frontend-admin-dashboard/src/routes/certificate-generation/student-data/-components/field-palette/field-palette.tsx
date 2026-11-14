@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
+import { useTranslation } from 'react-i18next';
 import {
     AvailableField,
     CertificateGenerationSession,
@@ -130,71 +131,73 @@ const DraggableField = ({ field }: DraggableFieldProps) => {
 };
 
 export const FieldPalette = ({ session }: FieldPaletteProps) => {
+    const { t, i18n } = useTranslation('certificateGenerationFieldPalette');
+
     // System fields that are always available
     const systemFields: AvailableField[] = [
         {
             name: 'user_id',
-            displayName: 'User ID',
+            displayName: t('fields.userId.label'),
             type: 'text',
             isRequired: true,
             source: 'system',
-            sampleValue: 'USR001',
+            sampleValue: t('fields.userId.sample'),
         },
         {
             name: 'enrollment_number',
-            displayName: 'Enrollment Number',
+            displayName: t('fields.enrollmentNumber.label'),
             type: 'text',
             isRequired: true,
             source: 'system',
-            sampleValue: 'ENR2024001',
+            sampleValue: t('fields.enrollmentNumber.sample'),
         },
         {
             name: 'student_name',
-            displayName: 'Student Name',
+            displayName: t('fields.studentName.label'),
             type: 'text',
             isRequired: true,
             source: 'system',
-            sampleValue: 'John Doe',
+            sampleValue: t('fields.studentName.sample'),
         },
         {
             name: 'full_name',
-            displayName: 'Full Name',
+            displayName: t('fields.fullName.label'),
             type: 'text',
             isRequired: false,
             source: 'system',
-            sampleValue: 'John Michael Doe',
+            sampleValue: t('fields.fullName.sample'),
         },
         {
             name: 'email',
-            displayName: 'Email Address',
+            displayName: t('fields.email.label'),
             type: 'text',
             isRequired: false,
             source: 'system',
-            sampleValue: 'john.doe@example.com',
+            sampleValue: t('fields.email.sample'),
         },
         {
             name: 'mobile_number',
-            displayName: 'Mobile Number',
+            displayName: t('fields.mobileNumber.label'),
             type: 'text',
             isRequired: false,
             source: 'system',
-            sampleValue: '+1 (555) 123-4567',
+            sampleValue: t('fields.mobileNumber.sample'),
         },
         {
             name: 'institute_name',
-            displayName: 'Institute Name',
+            displayName: t('fields.instituteName.label'),
             type: 'text',
             isRequired: false,
             source: 'system',
-            sampleValue: 'University of Technology',
+            sampleValue: t('fields.instituteName.sample'),
         },
         {
             name: 'completion_date',
-            displayName: 'Completion Date',
+            displayName: t('fields.completionDate.label'),
             type: 'date',
             isRequired: false,
             source: 'system',
-            sampleValue: new Date().toLocaleDateString(),
+            sampleValue: new Date().toLocaleDateString(i18n.language),
         },
     ];
 
@@ -236,15 +239,16 @@ export const FieldPalette = ({ session }: FieldPaletteProps) => {
         <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-neutral-700">Available Fields</h3>
-                <div className="text-xs text-neutral-500">{allFields.length} fields available</div>
+                <h3 className="text-lg font-semibold text-neutral-700">{t('header.title')}</h3>
+                <div className="text-xs text-neutral-500">
+                    {t('header.count', { count: allFields.length })}
+                </div>
             </div>
 
             {/* Instructions */}
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <p className="text-xs text-blue-700">
-                    <strong>Instructions:</strong> Drag fields from this panel onto the PDF template
-                    to position them where you want the data to appear on the certificate.
+                    <strong>{t('instructions.label')}</strong> {t('instructions.text')}
                 </p>
             </div>
 
@@ -252,8 +256,12 @@ export const FieldPalette = ({ session }: FieldPaletteProps) => {
             <div>
                 <div className="mb-3 flex items-center gap-2">
                     <div className="size-3 rounded-full bg-blue-500"></div>
-                    <h4 className="text-sm font-medium text-neutral-700">System Fields</h4>
-                    <span className="text-xs text-neutral-500">({systemFields.length})</span>
+                    <h4 className="text-sm font-medium text-neutral-700">
+                        {t('sections.systemFields')}
+                    </h4>
+                    <span className="text-xs text-neutral-500">
+                        {t('sections.fieldCount', { count: systemFields.length })}
+                    </span>
                 </div>
                 <div className="space-y-2">
                     {systemFields.map((field) => (
@@ -267,8 +275,12 @@ export const FieldPalette = ({ session }: FieldPaletteProps) => {
                 <div>
                     <div className="mb-3 flex items-center gap-2">
                         <div className="size-3 rounded-full bg-green-500"></div>
-                        <h4 className="text-sm font-medium text-neutral-700">CSV Data Fields</h4>
-                        <span className="text-xs text-neutral-500">({csvFields.length})</span>
+                        <h4 className="text-sm font-medium text-neutral-700">
+                            {t('sections.csvFields')}
+                        </h4>
+                        <span className="text-xs text-neutral-500">
+                            {t('sections.fieldCount', { count: csvFields.length })}
+                        </span>
                     </div>
                     <div className="space-y-2">
                         {csvFields.map((field) => (
@@ -284,10 +296,10 @@ export const FieldPalette = ({ session }: FieldPaletteProps) => {
                     <div className="text-center">
                         <Database className="mx-auto mb-2 size-8 text-amber-600" />
                         <p className="text-sm font-medium text-amber-800">
-                            No CSV Fields Available
+                            {t('noCsvFields.title')}
                         </p>
                         <p className="mt-1 text-xs text-amber-700">
-                            Upload a CSV file in Step 1 to see additional fields for mapping
+                            {t('noCsvFields.description')}
                         </p>
                     </div>
                 </div>
@@ -295,15 +307,15 @@ export const FieldPalette = ({ session }: FieldPaletteProps) => {
 
             {/* Field Legend */}
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-                <h4 className="mb-2 text-xs font-medium text-neutral-600">Field Types</h4>
+                <h4 className="mb-2 text-xs font-medium text-neutral-600">{t('legend.title')}</h4>
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs text-neutral-600">
                         <div className="size-2 rounded-full bg-blue-500"></div>
-                        <span>System Fields - Built-in student data</span>
+                        <span>{t('legend.systemFields')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-neutral-600">
                         <div className="size-2 rounded-full bg-green-500"></div>
-                        <span>CSV Fields - Custom data from uploaded file</span>
+                        <span>{t('legend.csvFields')}</span>
                     </div>
                 </div>
             </div>

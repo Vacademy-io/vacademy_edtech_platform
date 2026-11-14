@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { MyDialog } from "@/components/design-system/dialog";
@@ -22,6 +23,7 @@ export interface DeviceLimitDialogProps {
 }
 
 export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetry }: DeviceLimitDialogProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
 
@@ -30,10 +32,10 @@ export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetr
     try {
       await selfRevokeDevice(deviceId);
       setRemoved((prev) => new Set(prev).add(deviceId));
-      toast.success("Device removed. You can now register this device.");
+      toast.success(t("offline.deviceLimitDialog.toasts.removed"));
     } catch (error) {
       console.error("[offline] failed to self-revoke device", error);
-      toast.error("Couldn't remove that device. Please try again.");
+      toast.error(t("offline.deviceLimitDialog.toasts.removeFailed"));
     } finally {
       setBusyId(null);
     }
@@ -45,7 +47,7 @@ export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetr
   };
 
   return (
-    <MyDialog open={open} onOpenChange={onOpenChange} heading="Offline device limit reached" dialogWidth="w-96">
+    <MyDialog open={open} onOpenChange={onOpenChange} heading={t("offline.deviceLimitDialog.heading")} dialogWidth="w-96">
       <div className="flex flex-col gap-4 p-2">
         <p className="text-body text-neutral-600">{message}</p>
         <div className="flex flex-col gap-2">
@@ -58,12 +60,12 @@ export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetr
               >
                 <div className="flex flex-col">
                   <span className="text-body font-medium text-neutral-700">
-                    {device.device_name ?? "Unnamed device"}
+                    {device.device_name ?? t("offline.deviceLimitDialog.unnamedDevice")}
                   </span>
-                  <span className="text-caption text-neutral-400">{device.platform ?? "unknown"}</span>
+                  <span className="text-caption text-neutral-400">{device.platform ?? t("offline.deviceLimitDialog.unknownPlatform")}</span>
                 </div>
                 {isRemoved ? (
-                  <span className="text-caption text-success-600">Removed</span>
+                  <span className="text-caption text-success-600">{t("offline.deviceLimitDialog.removed")}</span>
                 ) : (
                   <button
                     type="button"
@@ -71,7 +73,7 @@ export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetr
                     onClick={() => void handleRemove(device.id)}
                     className="inline-flex items-center gap-1 text-caption text-danger-600 hover:underline disabled:opacity-50"
                   >
-                    <Trash size={14} /> Remove
+                    <Trash size={14} /> {t("offline.deviceLimitDialog.remove")}
                   </button>
                 )}
               </div>
@@ -79,7 +81,7 @@ export const DeviceLimitDialog = ({ open, onOpenChange, devices, message, onRetr
           })}
         </div>
         <MyButton buttonType="primary" disable={removed.size === 0} onClick={handleRetry}>
-          Retry download
+          {t("offline.deviceLimitDialog.retryDownload")}
         </MyButton>
       </div>
     </MyDialog>

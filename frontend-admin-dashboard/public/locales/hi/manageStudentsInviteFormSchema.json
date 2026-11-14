@@ -1,0 +1,7 @@
+{
+    "validation": {
+        "inviteLinkRequired": "आमंत्रण लिंक आवश्यक है",
+        "maxCoursesRequired": "यह फ़ील्ड आवश्यक है",
+        "inviteLinkAlreadyPresent": "इस बैच के लिए आमंत्रण लिंक पहले से मौजूद है"
+    }
+}

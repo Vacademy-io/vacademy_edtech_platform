@@ -1,0 +1,20 @@
+{
+    "recipe": {
+        "setUpButton": "Configurer",
+        "modeScheduled": "S'exécute selon un calendrier",
+        "modeTriggered": "S'exécute automatiquement lorsqu'il est déclenché"
+    },
+    "turnOffDialog": {
+        "title": "Désactiver l'automatisation ?",
+        "descriptionPart1": "Cela arrête ",
+        "descriptionPart2": ". Les e-mails programmés ou déclenchés par un événement configurés par cette automatisation ne seront plus envoyés. Vous pouvez la réactiver à tout moment.",
+        "cancel": "Annuler",
+        "turningOff": "Désactivation…",
+        "turnOff": "Désactiver"
+    },
+    "toasts": {
+        "turnedOff": "Automatisation désactivée.",
+        "turnOffFailed": "Impossible de la désactiver : {{message}}",
+        "unknownError": "Erreur inconnue"
+    }
+}

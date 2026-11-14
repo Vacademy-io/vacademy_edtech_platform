@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -64,10 +65,14 @@ public class UnifiedSendRequest {
         private String emailSubject;
         private String emailBody;
         private String emailType;
+        /** Bulk marketing mail: add the unsubscribe footer when that keeps the same sender. */
+        private Boolean commercialBulk;
         @JsonProperty("fromEmail")
         private String fromEmail;
         @JsonProperty("fromName")
         private String fromName;
+        /** The Message-ID this email answers, so it joins that thread in the recipient's inbox. */
+        private String inReplyTo;
         private String headerType;
         private String headerUrl;
         private Map<String, String> buttonUrlParams;
@@ -87,5 +92,16 @@ public class UnifiedSendRequest {
 
         private String source;
         private String sourceId;
+
+        /**
+         * Who is sending (see {@link MessageOrigin}) — shown in the WhatsApp Inbox and timeline.
+         * Left off the JSON when unset, so every other send's request body is unchanged.
+         */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originType;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originId;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originName;
     }
 }

@@ -57,6 +57,9 @@ public class UserInstituteService {
     private InstituteDefaultUserSubscriptionService instituteDefaultUserSubscriptionService;
     @Autowired
     private CreditClient creditClient;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.product_config.service.PlatformProductService platformProductService;
     @Autowired
     private vacademy.io.admin_core_service.features.audience.service.LeadStatusService leadStatusService;
 
@@ -142,8 +145,14 @@ public class UserInstituteService {
                             savedInstitute.getId(), e.getMessage());
                 }
 
-                // Initialize credits for the new institute (200 initial credits)
-                creditClient.initializeCreditsAsync(savedInstitute.getId());
+                // Opening credits. A product can set its own; then this waits, because the first
+                // balance read would otherwise create the wallet at the default amount.
+                Integer demoCredits = platformProductService.demoCreditsFor(savedInstitute.getProduct());
+                if (demoCredits != null) {
+                    creditClient.initializeCredits(savedInstitute.getId(), demoCredits);
+                } else {
+                    creditClient.initializeCreditsAsync(savedInstitute.getId());
+                }
 
                 return new InstituteIdAndNameDTO(savedInstitute.getId(), savedInstitute.getInstituteName());
             }

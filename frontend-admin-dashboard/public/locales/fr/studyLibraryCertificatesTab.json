@@ -1,0 +1,13 @@
+{
+    "selectBatchToSeeCertificateInfo": "Sélectionnez un lot pour voir les informations de certificat de ce cours.",
+    "certificates": "Certificats",
+    "issueAndManageCertificates": "Délivrez et gérez les certificats de fin de cours pour ce cours.",
+    "certificatesTurnedOff": "Les certificats sont désactivés pour ce cours",
+    "courseOverridesInstituteDefault": "Ce cours remplace le paramètre par défaut de l'établissement. Les apprenants ne recevront pas de certificats tant que cette option n'est pas activée.",
+    "instituteDefaultIsOff": "Le paramètre par défaut de l'établissement est désactivé. Vous pouvez toujours activer les certificats pour ce cours uniquement depuis l'icône des paramètres ci-dessus.",
+    "design": "Modèle :",
+    "uploadedForThisCourse": "téléversé pour ce cours",
+    "instituteDefault": "modèle par défaut de l'établissement",
+    "chosenForThisCourse": "— choisi pour ce cours.",
+    "inheritedFromInstitute": "— hérité de l'établissement."
+}

@@ -1,0 +1,51 @@
+{
+    "title": "किस्त समायोजित करें",
+    "summary": {
+        "feeType": "शुल्क प्रकार",
+        "expected": "अपेक्षित",
+        "paid": "भुगतान किया गया",
+        "due": "बकाया"
+    },
+    "type": {
+        "concession": "छूट",
+        "penalty": "जुर्माना"
+    },
+    "current": {
+        "heading": "वर्तमान समायोजन"
+    },
+    "reasonPrefix": "कारण: {{reason}}",
+    "actions": {
+        "retract": "समायोजन वापस लें",
+        "submitPenalty": "जुर्माना लागू करें",
+        "submitConcession": "अनुमोदन हेतु सबमिट करें",
+        "submitting": "सबमिट हो रहा है..."
+    },
+    "form": {
+        "concessionHint": "बकाया राशि घटाता है",
+        "concessionApproval": "अनुमोदन आवश्यक है",
+        "penaltyHint": "बकाया राशि बढ़ाता है",
+        "penaltyInstant": "तुरंत लागू होता है",
+        "amountLabel": "राशि",
+        "amountPlaceholder": "राशि दर्ज करें",
+        "reasonLabel": "कारण",
+        "reasonPlaceholderConcession": "जैसे, छात्रवृत्ति, आर्थिक कठिनाई",
+        "reasonPlaceholderPenalty": "जैसे, देर से भुगतान, नीति उल्लंघन"
+    },
+    "toast": {
+        "penaltyApplied": "जुर्माना लागू किया गया",
+        "concessionSubmitted": "छूट अनुमोदन हेतु सबमिट की गई",
+        "submitFailed": "समायोजन सबमिट करने में विफल",
+        "retracted": "समायोजन वापस ले लिया गया",
+        "retractFailed": "समायोजन वापस लेने में विफल",
+        "selectType": "छूट या जुर्माना चुनें",
+        "invalidAmount": "मान्य राशि दर्ज करें",
+        "exceedsExpected": "छूट अपेक्षित राशि से अधिक नहीं हो सकती"
+    },
+    "history": {
+        "heading": "इतिहास",
+        "loading": "इतिहास लोड हो रहा है…",
+        "empty": "अभी तक कोई समायोजन गतिविधि नहीं है।",
+        "by": "द्वारा {{actor}}",
+        "page": "पृष्ठ {{current}} में से {{total}}"
+    }
+}

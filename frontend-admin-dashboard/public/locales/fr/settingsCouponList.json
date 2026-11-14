@@ -1,0 +1,50 @@
+{
+    "discount": {
+        "maxCap": ", max ₹{{amount}}"
+    },
+    "validity": {
+        "noExpiry": "Pas d'expiration",
+        "until": "jusqu'au {{date}}"
+    },
+    "filters": {
+        "searchPlaceholder": "Rechercher par code",
+        "searchAriaLabel": "Rechercher des coupons par code",
+        "statusAriaLabel": "Filtrer par statut"
+    },
+    "status": {
+        "all": "Tous les statuts",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "deleted": "Supprimé"
+    },
+    "actions": {
+        "createCoupon": "Créer un coupon",
+        "tryAgain": "Réessayer"
+    },
+    "table": {
+        "code": "Code",
+        "discount": "Remise",
+        "validity": "Validité",
+        "usage": "Utilisation",
+        "status": "Statut",
+        "actions": "Actions",
+        "productPageBadge": "page produit"
+    },
+    "confirm": {
+        "deleteMessage": "Supprimer le coupon « {{code}} » ? Les utilisations existantes sont conservées ; cela empêche uniquement de nouvelles applications."
+    },
+    "toasts": {
+        "deleted": "Coupon « {{code}} » supprimé"
+    },
+    "errors": {
+        "deleteFailed": "Impossible de supprimer le coupon",
+        "loadFailed": "Impossible de charger les coupons",
+        "loadTitle": "Impossible de charger les coupons"
+    },
+    "empty": {
+        "filteredTitle": "Aucun coupon ne correspond à ces filtres",
+        "emptyTitle": "Aucun coupon pour le moment",
+        "filteredSubtitle": "Essayez d'effacer la recherche ou le filtre de statut.",
+        "emptySubtitle": "Créez un coupon pour permettre aux {{learnerPlural}} d'appliquer une remise au moment du paiement."
+    }
+}

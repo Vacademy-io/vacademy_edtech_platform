@@ -1,0 +1,324 @@
+{
+    "common": {
+        "copy": "कॉपी करें",
+        "paramTable": {
+            "field": "फ़ील्ड",
+            "type": "प्रकार",
+            "required": "आवश्यक",
+            "default": "डिफ़ॉल्ट",
+            "description": "विवरण",
+            "yes": "हाँ",
+            "no": "नहीं"
+        },
+        "sectionTitles": {
+            "queryParameters": "क्वेरी पैरामीटर",
+            "codeExamples": "कोड उदाहरण",
+            "response": "प्रतिक्रिया",
+            "requestBody": "रिक्वेस्ट बॉडी",
+            "requestBodyParameters": "रिक्वेस्ट बॉडी पैरामीटर"
+        }
+    },
+    "overview": {
+        "cardTitle": "Vacademy कंटेंट जनरेशन API",
+        "cardDescription": "एक ही REST एंडपॉइंट के ज़रिए AI-संचालित शैक्षणिक कंटेंट — वीडियो, क्विज़, फ्लैशकार्ड, गेम और भी बहुत कुछ — जनरेट करें।",
+        "features": {
+            "sse": {
+                "title": "SSE स्ट्रीमिंग",
+                "description": "हर चरण पूरा होने पर लाइव प्रगति देखें।"
+            },
+            "backgroundJobs": {
+                "title": "बैकग्राउंड जॉब्स",
+                "description": "कनेक्शन बंद करने पर भी जनरेशन जारी रहता है।"
+            },
+            "restPolling": {
+                "title": "REST पोलिंग",
+                "description": "सरल विकल्प — शुरू करें फिर /urls/{id} को पोल करें।"
+            }
+        },
+        "baseUrlLabel": "बेस URL",
+        "authHeaderLabel": "ऑथेंटिकेशन हेडर",
+        "authHeaderNote": "हर रिक्वेस्ट में यह हेडर शामिल होना चाहिए। ऊपर दिए गए API Keys टैब से कीज़ जनरेट करें।"
+    },
+    "contentTypes": {
+        "sectionTitle": "समर्थित कंटेंट प्रकार",
+        "video": {
+            "description": "नैरेशन ऑडियो और कैप्शन के साथ समय-सिंक्ड HTML स्लाइड्स।"
+        },
+        "slides": {
+            "description": "इमेज, टेबल और डायग्राम वाला HTML प्रेज़ेंटेशन डेक।"
+        },
+        "quiz": {
+            "description": "स्पष्टीकरण सहित बहुविकल्पीय प्रश्न सेट।"
+        },
+        "storybook": {
+            "description": "पेज-दर-पेज सचित्र कहानी।"
+        },
+        "flashcards": {
+            "description": "स्पेस्ड-रिपिटीशन लर्निंग के लिए फ्लिप-कार्ड डेक।"
+        },
+        "interactiveGame": {
+            "description": "स्वयं-निहित शैक्षणिक HTML गेम।"
+        },
+        "puzzleBook": {
+            "description": "क्रॉसवर्ड, वर्ड सर्च या लॉजिक पहेलियाँ।"
+        },
+        "simulation": {
+            "description": "इंटरैक्टिव फिज़िक्स/साइंस/इकोनॉमिक्स सैंडबॉक्स।"
+        },
+        "mapExploration": {
+            "description": "क्षेत्र संबंधी जानकारी वाला क्लिक करने योग्य SVG मानचित्र।"
+        },
+        "worksheet": {
+            "description": "प्रिंट करने योग्य या भरने योग्य होमवर्क वर्कशीट।"
+        },
+        "codePlayground": {
+            "description": "निर्देशों सहित ब्राउज़र-में कोडिंग अभ्यास।"
+        },
+        "timeline": {
+            "description": "कालानुक्रमिक घटना विज़ुअलाइज़ेशन।"
+        },
+        "conversation": {
+            "description": "संवाद-आधारित भाषा सीखने का अभ्यास।"
+        },
+        "navigationModeLabel": "नेविगेशन मोड",
+        "navAutoPlays": "ऑडियो के साथ ऑटो-प्ले होता है",
+        "navUserClicks": "उपयोगकर्ता क्लिक करके आगे बढ़ता है",
+        "navSelfContained": "पूरी तरह इंटरैक्टिव HTML ऐप"
+    },
+    "generationStages": {
+        "sectionTitle": "जनरेशन चरण",
+        "tableHeaders": {
+            "stage": "चरण",
+            "outputFile": "आउटपुट फ़ाइल",
+            "s3UrlsKey": "s3_urls की",
+            "description": "विवरण"
+        },
+        "script": {
+            "description": "LLM नैरेशन स्क्रिप्ट और कंटेंट प्लान जनरेट करता है।"
+        },
+        "tts": {
+            "description": "टेक्स्ट-टू-स्पीच स्क्रिप्ट को ऑडियो में बदलता है।"
+        },
+        "words": {
+            "description": "कैप्शन के लिए वर्ड-लेवल टाइमस्टैंप अलाइनमेंट।"
+        },
+        "html": {
+            "description": "✅ अनुशंसित रुकने का बिंदु। ऑडियो टाइमस्टैंप से सिंक की गई HTML स्लाइड्स।"
+        },
+        "render": {
+            "description": "पूर्ण वीडियो रेंडर (धीमा, केवल डाउनलोड/एक्सपोर्ट के लिए आवश्यक)।"
+        },
+        "footer": "<1>POST /generate</1> पर <3>target_stage</3> क्वेरी पैरामीटर नियंत्रित करता है कि किस चरण पर रुकना है। डिफ़ॉल्ट <5>HTML</5> है।"
+    },
+    "tabs": {
+        "generate": "जनरेट करें",
+        "polling": "REST पोलिंग",
+        "history": "इतिहास",
+        "status": "स्थिति",
+        "urls": "URLs",
+        "frames": "फ्रेम एडिट",
+        "events": "SSE इवेंट्स"
+    },
+    "generateTab": {
+        "streamBadge": "SSE स्ट्रीम",
+        "cardTitle": "कंटेंट जनरेट करें — SSE स्ट्रीमिंग",
+        "cardDescription": "एक जनरेशन जॉब शुरू करता है और <1>Server-Sent Events</1> के ज़रिए रीयल-टाइम प्रगति स्ट्रीम करता है। जॉब सर्वर पर बैकग्राउंड टास्क के रूप में चलता है — कनेक्शन बंद करने से जनरेशन रद्द नहीं होगा। परिणाम बाद में प्राप्त करने के लिए <3>GET /urls/{video_id}</3> का उपयोग करें।",
+        "targetStageDescription": "इस चरण पर जनरेशन रोकें। अनुशंसित: HTML (पूर्ण कंटेंट, बिना रेंडर के)। विकल्प: SCRIPT · TTS · WORDS · HTML · RENDER.",
+        "responseTitle": "प्रतिक्रिया (SSE इवेंट स्ट्रीम)",
+        "responseNote": "Content-Type: <1>text/event-stream</1>। हर लाइन <3>data: </3> से शुरू होती है, उसके बाद एक JSON ऑब्जेक्ट आता है।"
+    },
+    "generateParams": {
+        "prompt": {
+            "description": "जनरेट किए जाने वाले कंटेंट का प्राकृतिक भाषा में विवरण।"
+        },
+        "contentType": {
+            "description": "कंटेंट का प्रकार। इनमें से एक: VIDEO, SLIDES, QUIZ, STORYBOOK, FLASHCARDS, INTERACTIVE_GAME, PUZZLE_BOOK, SIMULATION, MAP_EXPLORATION, WORKSHEET, CODE_PLAYGROUND, TIMELINE, CONVERSATION."
+        },
+        "language": {
+            "description": "नैरेशन और कंटेंट के लिए भाषा। जैसे \"English (India)\", \"Hindi\", \"Spanish\"।"
+        },
+        "voiceGender": {
+            "description": "\"female\" या \"male\"।"
+        },
+        "ttsProvider": {
+            "description": "\"standard\" (Edge TTS, मुफ़्त) या \"premium\" (Google Cloud / Sarvam AI, 2x क्रेडिट्स)। प्रीमियम स्वचालित रूप से रूट करता है: भारतीय भाषाएँ → Sarvam, वैश्विक → Google।"
+        },
+        "voiceId": {
+            "description": "प्रीमियम TTS के लिए विशिष्ट आवाज़। Sarvam आवाज़ें: \"shubh\", \"priya\", आदि। Google आवाज़ें: \"en-US-Journey-F\", आदि। उपलब्ध विकल्पों की सूची के लिए GET /tts/voices का उपयोग करें।"
+        },
+        "captionsEnabled": {
+            "description": "क्या आउटपुट में वर्ड-लेवल कैप्शन डेटा एम्बेड करना है।"
+        },
+        "htmlQuality": {
+            "description": "\"classic\" (तेज़, सरल लेआउट) या \"advanced\" (अधिक समृद्ध, अधिक जटिल)।"
+        },
+        "targetAudience": {
+            "description": "जटिलता को कैलिब्रेट करने के लिए उपयोग किया जाने वाला आयु/स्तर विवरण। जैसे \"Class 5 (Ages 10-11)\", \"Undergraduate\"।"
+        },
+        "targetDuration": {
+            "description": "आउटपुट की अनुमानित लंबाई। विकल्प: \"30 seconds\", \"1 minute\", \"2-3 minutes\", \"5 minutes\", \"10 minutes\"।"
+        },
+        "model": {
+            "description": "उपयोग करने के लिए LLM मॉडल ID। अनुशंसित डिफ़ॉल्ट के लिए खाली छोड़ें।"
+        },
+        "videoId": {
+            "description": "इस जनरेशन के लिए कस्टम स्थिर पहचानकर्ता। छोड़े जाने पर स्वतः जनरेट होता है। फिर से शुरू करने के लिए वही ID उपयोग करें।"
+        }
+    },
+    "pollingTab": {
+        "badge": "REST पोलिंग",
+        "cardTitle": "कंटेंट जनरेट करें — REST पोलिंग",
+        "cardDescription": "SSE स्ट्रीमिंग का सरल विकल्प। जनरेशन शुरू करें (आप HTTP कनेक्शन तुरंत बंद कर सकते हैं — सर्वर चलता रहता है), फिर <1>GET /urls/{video_id}</1> को समय-समय पर तब तक कॉल करें जब तक <3>html_url</3> उपलब्ध न हो जाए।",
+        "whenToUseTitle": "पोलिंग बनाम SSE कब उपयोग करें",
+        "sseBullet": "<0>SSE</0>: उन UI डैशबोर्ड के लिए सबसे अच्छा जिन्हें लाइव प्रगति बार (चरण %, संदेश) चाहिए।",
+        "pollingBullet": "<0>पोलिंग</0>: बैकएंड स्क्रिप्ट, क्रॉन जॉब्स के लिए, या जब आपको रीयल-टाइम अपडेट की आवश्यकता न हो, तब सबसे अच्छा।",
+        "sameEndpointBullet": "दोनों एक ही एंडपॉइंट का उपयोग करते हैं — फ़र्क बस इतना है कि आप प्रतिक्रिया स्ट्रीम पढ़ते हैं या नहीं।",
+        "flowTitle": "पोलिंग फ़्लो",
+        "steps": {
+            "1": {
+                "label": "POST /generate",
+                "description": "जॉब शुरू करें। आपके द्वारा नियंत्रित एक स्थिर video_id शामिल करें।"
+            },
+            "2": {
+                "label": "SSE स्ट्रीम बंद करें (या अनदेखा करें)",
+                "description": "जनरेशन हर हाल में सर्वर पर जारी रहता है।"
+            },
+            "3": {
+                "label": "हर 10 सेकंड में GET /urls/{video_id} पोल करें",
+                "description": "जब तक html_url मौजूद न हो, तब तक दोहराएँ।"
+            },
+            "4": {
+                "label": "लौटाए गए URLs का उपयोग करें",
+                "description": "html_url + audio_url अपने प्लेयर को पास करें।"
+            }
+        }
+    },
+    "historyTab": {
+        "cardTitle": "जनरेशन इतिहास प्राप्त करें",
+        "cardDescription": "आपके इंस्टीट्यूट के लिए पिछली N कंटेंट जनरेशन लौटाता है, नवीनतम-पहले क्रम में। प्रति रिक्वेस्ट अधिकतम 50।",
+        "limitParamDescription": "लौटाए जाने वाले आइटमों की संख्या। अधिकतम 50 तक सीमित।"
+    },
+    "statusTab": {
+        "cardTitle": "वीडियो स्थिति प्राप्त करें",
+        "cardDescription": "सभी उपलब्ध S3 URLs सहित किसी जनरेशन का पूर्ण स्थिति रिकॉर्ड लौटाता है। यह जाँचने के लिए उपयोग करें कि कौन से चरण पूरे हो चुके हैं।",
+        "statusValuesLabel": "स्थिति मान (<1>status</1> फ़ील्ड)",
+        "values": {
+            "pending": {
+                "description": "कतार में, अभी शुरू नहीं हुआ"
+            },
+            "inProgress": {
+                "description": "सक्रिय रूप से जनरेट हो रहा है"
+            },
+            "completed": {
+                "description": "सभी चरण पूरे हुए"
+            },
+            "failed": {
+                "description": "त्रुटि हुई"
+            }
+        }
+    },
+    "urlsTab": {
+        "cardTitle": "प्लेयर URLs प्राप्त करें",
+        "cardDescription": "प्लेयर में कंटेंट एम्बेड करने के लिए आवश्यक विशिष्ट URLs लौटाता है। पोलिंग के लिए यह सबसे कुशल एंडपॉइंट है — <1>/status</1> से छोटी प्रतिक्रिया।",
+        "howToDetectTitle": "जनरेशन पूर्ण होने का पता कैसे लगाएँ",
+        "videoBullet": "<0>VIDEO</0>: <2>html_url != null AND audio_url != null</2> की प्रतीक्षा करें",
+        "slidesBullet": "<0>SLIDES / QUIZ / आदि</0>: <2>html_url != null</2> की प्रतीक्षा करें (ऑडियो आवश्यक नहीं)",
+        "failedBullet": "<0>विफल</0>: <2>status === \"FAILED\"</2>",
+        "urlFileDescriptionsTitle": "URL फ़ाइल विवरण",
+        "params": {
+            "htmlUrl": {
+                "description": "time_based_frame.json — {timestamp, html} ऑब्जेक्ट्स की एक ऐरे। AIContentPlayer को भेजें।"
+            },
+            "audioUrl": {
+                "description": "narration.mp3 — AI-सिंथेसाइज़्ड नैरेशन ऑडियो।"
+            },
+            "wordsUrl": {
+                "description": "narration.words.json — कैप्शन प्रदर्शन के लिए {word, start, end} की ऐरे।"
+            },
+            "avatarUrl": {
+                "description": "avatar_video.mp4 — बोलता हुआ अवतार वीडियो (यदि generate_avatar सही था)।"
+            }
+        }
+    },
+    "framesTab": {
+        "regenerate": {
+            "cardTitle": "एक फ्रेम को फिर से जनरेट करें",
+            "cardDescription": "AI को प्रॉम्प्ट के आधार पर किसी विशिष्ट स्लाइड/फ्रेम के HTML को फिर से लिखने के लिए कहें। नया HTML केवल <1>पूर्वावलोकन</1> के लिए लौटाता है — अभी टाइमलाइन में बदलाव नहीं करता। <3>/frame/update</3> कॉल करके पुष्टि करें।",
+            "params": {
+                "videoId": {
+                    "description": "जनरेट किए गए कंटेंट की ID।"
+                },
+                "timestamp": {
+                    "description": "संपादित किए जाने वाले फ्रेम का सेकंड में समय। निकटतम फ्रेम चुना जाएगा।"
+                },
+                "userPrompt": {
+                    "description": "फ्रेम को बदलने के तरीके के लिए निर्देश। जैसे \"Change background to dark blue and font to yellow.\""
+                }
+            }
+        },
+        "update": {
+            "cardTitle": "फ्रेम अपडेट कमिट करें",
+            "cardDescription": "पुष्ट किए गए HTML परिवर्तन को संग्रहीत टाइमलाइन (time_based_frame.json) में लिखता है। उपयोगकर्ता द्वारा <1>/frame/regenerate</1> से पूर्वावलोकन स्वीकृत करने के बाद इसे कॉल करें।",
+            "params": {
+                "videoId": {
+                    "description": "जनरेट किए गए कंटेंट की ID।"
+                },
+                "frameIndex": {
+                    "description": "अपडेट किए जाने वाले फ्रेम का शून्य-आधारित इंडेक्स। /frame/regenerate द्वारा लौटाए गए मान का उपयोग करें।"
+                },
+                "newHtml": {
+                    "description": "संग्रहीत करने के लिए पूर्ण HTML स्ट्रिंग। आमतौर पर /frame/regenerate से प्राप्त new_html।"
+                }
+            }
+        }
+    },
+    "eventsTab": {
+        "cardTitle": "SSE इवेंट रेफ़रेंस",
+        "cardDescription": "<1>POST /generate</1> SSE स्ट्रीम में हर इवेंट <3>data: </3> लाइन पर एक JSON ऑब्जेक्ट होता है। चार इवेंट प्रकार होते हैं।",
+        "progress": {
+            "sectionTitle": "progress — चरण अपडेट",
+            "note": "हर चरण की शुरुआत और अंत में उत्सर्जित होता है। हर चरण पूरा होने पर <1>files</1> फ़ील्ड भरी जाती है।"
+        },
+        "completed": {
+            "sectionTitle": "completed — जनरेशन पूर्ण हुआ",
+            "note": "अंतिम इवेंट। सभी अनुरोधित चरण पूरे हो गए हैं।"
+        },
+        "info": {
+            "sectionTitle": "info — जानकारीपूर्ण संदेश",
+            "note": "गैर-महत्वपूर्ण स्थिति संदेश (जैसे फिर से शुरू करने पर छोड़े गए चरण)।"
+        },
+        "error": {
+            "sectionTitle": "error — जनरेशन विफल हुआ",
+            "note": "पाइपलाइन विफल होने पर भेजा जाता है। <1>stage</1> फ़ील्ड बताता है कि कौन-सा चरण विफल हुआ।"
+        },
+        "heartbeatNote": "<0>हार्टबीट</0> — 60 सेकंड की चुप्पी पर सर्वर प्रॉक्सी को सक्रिय रखने के लिए एक SSE कमेंट लाइन (<2>: heartbeat</2>) भेजता है। ये <4>data:</4> इवेंट नहीं हैं और आपके पार्सर द्वारा इन्हें अनदेखा किया जाना चाहिए।"
+    },
+    "errors": {
+        "cardTitle": "HTTP त्रुटि संदर्भ",
+        "tableHeaders": {
+            "code": "कोड",
+            "meaning": "अर्थ",
+            "cause": "सामान्य कारण"
+        },
+        "unauthorized": {
+            "meaning": "अनधिकृत",
+            "cause": "X-Institute-Key हेडर गुम या अमान्य है।"
+        },
+        "forbidden": {
+            "meaning": "निषिद्ध",
+            "cause": "API कुंजी रद्द कर दी गई है या किसी अन्य इंस्टीट्यूट की है।"
+        },
+        "notFound": {
+            "meaning": "नहीं मिला",
+            "cause": "video_id डेटाबेस में मौजूद नहीं है।"
+        },
+        "validationError": {
+            "meaning": "सत्यापन त्रुटि",
+            "cause": "आवश्यक फ़ील्ड गुम है या पैरामीटर का मान अमान्य है।"
+        },
+        "internalServerError": {
+            "meaning": "आंतरिक सर्वर त्रुटि",
+            "cause": "पाइपलाइन विफल हुई। विवरण के लिए SSE त्रुटि इवेंट देखें।"
+        }
+    }
+}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,8 @@ interface ContactSheetDecisionProps {
  * prompt while everything else stays cached.
  */
 export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: ContactSheetDecisionProps) {
+    const { t } = useTranslation('videoApiStudioContactSheetDecision');
+
     const shots = useMemo<ContactSheetShot[]>(() => {
         const raw = (decision.payload?.shots as ContactSheetShot[]) ?? [];
         return Array.isArray(raw) ? raw : [];
@@ -60,12 +63,12 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <FilmStrip className="size-4 text-violet-600" />
                 </span>
-                Contact sheet · {shots.length} shots
+                {t('header.title', { count: shots.length })}
             </div>
 
             {shots.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    No shots to review — approve to continue.
+                    {t('empty')}
                 </p>
             ) : (
                 <div className="grid max-h-96 grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3">
@@ -82,7 +85,7 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                                 {s.thumb_url ? (
                                     <img
                                         src={s.thumb_url}
-                                        alt={`Shot ${s.shot_index + 1}`}
+                                        alt={t('shot.label', { number: s.shot_index + 1 })}
                                         className="aspect-video w-full bg-muted object-cover"
                                         loading="lazy"
                                     />
@@ -94,10 +97,12 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                                 <div className="space-y-1.5 p-2">
                                     <div className="flex items-center justify-between gap-1">
                                         <span className="text-xs font-medium text-foreground">
-                                            Shot {s.shot_index + 1}
+                                            {t('shot.label', { number: s.shot_index + 1 })}
                                             {s.shot_type ? (
                                                 <span className="ml-1 font-normal text-muted-foreground">
-                                                    · {s.shot_type.toLowerCase().replace(/_/g, ' ')}
+                                                    {t('shot.type', {
+                                                        type: s.shot_type.toLowerCase().replace(/_/g, ' '),
+                                                    })}
                                                 </span>
                                             ) : null}
                                         </span>
@@ -109,7 +114,7 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                                             className="h-6 gap-1 px-1.5 text-xs"
                                         >
                                             <ArrowCounterClockwise className="size-3" />
-                                            {selected ? 'Keep it' : 'Redo'}
+                                            {selected ? t('shot.keepIt') : t('shot.redo')}
                                         </Button>
                                     </div>
                                     {s.narration_excerpt ? (
@@ -127,7 +132,7 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                                                     [s.shot_index]: e.target.value,
                                                 }))
                                             }
-                                            placeholder="What should change? e.g. use a real product screenshot, bigger headline…"
+                                            placeholder={t('shot.notePlaceholder')}
                                             className="min-h-14 text-xs"
                                         />
                                     )}
@@ -141,8 +146,8 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
             <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
                 <span className="text-xs text-muted-foreground">
                     {regenCount > 0
-                        ? `${regenCount} shot${regenCount === 1 ? '' : 's'} will be regenerated with your notes.`
-                        : 'Everything look good?'}
+                        ? t('footer.regenNote', { count: regenCount })
+                        : t('footer.allGood')}
                 </span>
                 <Button
                     size="sm"
@@ -151,7 +156,9 @@ export function ContactSheetDecision({ decision, isSubmitting, onSubmit }: Conta
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {regenCount > 0 ? `Redo ${regenCount} & finish` : 'Approve & finish'}
+                    {regenCount > 0
+                        ? t('footer.submitRedo', { count: regenCount })
+                        : t('footer.submitApprove')}
                 </Button>
             </div>
         </div>

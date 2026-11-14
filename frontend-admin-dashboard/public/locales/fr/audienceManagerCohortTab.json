@@ -1,0 +1,31 @@
+{
+    "section": {
+        "title": "Analyse des cohortes"
+    },
+    "emptyHint": "Aucune cohorte d'acquisition sur cette période. Essayez une plage de dates plus large.",
+    "csv": {
+        "headers": {
+            "cohort": "Cohorte",
+            "leads": "Prospects",
+            "converted": "Convertis",
+            "convPct": "Conv. %",
+            "revenue": "Revenu",
+            "avgDealValue": "Valeur moyenne de vente",
+            "revenuePerLead": "Revenu / prospect",
+            "medianDaysToConvert": "Jours médians pour convertir"
+        }
+    },
+    "table": {
+        "headers": {
+            "cohort": "Cohorte",
+            "leads": "Prospects",
+            "converted": "Convertis",
+            "convPct": "Conv. %",
+            "revenue": "Revenu",
+            "avgDeal": "Vente moy.",
+            "revPerLead": "Revenu / prospect",
+            "medianDays": "Jours médians"
+        }
+    },
+    "footnote": "Chaque cohorte correspond aux prospects acquis ce mois-là ; le revenu est le revenu total collecté auprès de ceux qui ont converti."
+}

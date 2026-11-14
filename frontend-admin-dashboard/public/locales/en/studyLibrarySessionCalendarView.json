@@ -1,0 +1,35 @@
+{
+    "weekday": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+    },
+    "today": "Today",
+    "moreSessions_one": "+{{count}} more",
+    "moreSessions_other": "+{{count}} more",
+    "legend": {
+        "liveClass": "Live Class",
+        "upcomingClass": "Upcoming Class",
+        "pastClass": "Past Class"
+    },
+    "sessionsFor": "Sessions for {{date}}",
+    "defaultClassInformation": "Default Class Information",
+    "classNameLabel": "Class Name:",
+    "linkLabel": "Link:",
+    "customButtonLabel": "Custom Button:",
+    "durationMinutes_one": "{{count}} minute",
+    "durationMinutes_other": "{{count}} minutes",
+    "status": {
+        "live": "Live",
+        "upcoming": "Upcoming",
+        "past": "Past",
+        "scheduled": "Scheduled"
+    },
+    "startAsHost": "Start as Host",
+    "joinSession": "Join Session",
+    "noSessionsFound": "No sessions found."
+}

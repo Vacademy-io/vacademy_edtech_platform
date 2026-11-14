@@ -4,12 +4,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppMessageOriginResolver;
 import vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppTemplateRenderer;
 import vacademy.io.notification_service.features.communication_timeline.dto.CommunicationTimelineRequest;
 import vacademy.io.notification_service.features.communication_timeline.dto.UnifiedCommunicationDTO;
@@ -27,6 +30,17 @@ public class CommunicationTimelineService {
     private final NotificationLogRepository notificationLogRepository;
     private final ObjectMapper objectMapper;
     private final WhatsAppTemplateRenderer templateRenderer;
+
+    /**
+     * Who sent each WhatsApp message (workflow / chatbot flow). Setter-injected and optional, so
+     * the existing constructor keeps its shape; null simply means no origin is shown.
+     */
+    private WhatsAppMessageOriginResolver originResolver;
+
+    @Autowired(required = false)
+    public void setOriginResolver(WhatsAppMessageOriginResolver originResolver) {
+        this.originResolver = originResolver;
+    }
 
     private static final Map<String, String[]> TYPE_TO_CHANNEL_DIRECTION = Map.of(
             "EMAIL", new String[]{"EMAIL", "OUTBOUND"},
@@ -94,8 +108,9 @@ public class CommunicationTimelineService {
 
         // Map to DTOs
         Map<String, WhatsAppTemplateRenderer.InstituteTemplates> templateCache = templateRenderer.newCache();
+        WhatsAppMessageOriginResolver.Cache originCache = originResolver != null ? originResolver.newCache() : null;
         List<UnifiedCommunicationDTO> dtos = logs.getContent().stream()
-                .map(nl -> mapToDTO(nl, latestEmailEvents, allEmailEvents, templateCache))
+                .map(nl -> mapToDTO(nl, latestEmailEvents, allEmailEvents, templateCache, originCache))
                 .collect(Collectors.toList());
 
         return new PageImpl<>(dtos, pageable, logs.getTotalElements());
@@ -146,7 +161,8 @@ public class CommunicationTimelineService {
             NotificationLog nl,
             Map<String, NotificationLog> latestEmailEvents,
             Map<String, List<NotificationLog>> allEmailEvents,
-            Map<String, WhatsAppTemplateRenderer.InstituteTemplates> templateCache) {
+            Map<String, WhatsAppTemplateRenderer.InstituteTemplates> templateCache,
+            WhatsAppMessageOriginResolver.Cache originCache) {
 
         String[] channelDirection = TYPE_TO_CHANNEL_DIRECTION.getOrDefault(
                 nl.getNotificationType(), new String[]{"UNKNOWN", "UNKNOWN"});
@@ -171,6 +187,9 @@ public class CommunicationTimelineService {
             mapEmailFields(builder, nl, latestEmailEvents, allEmailEvents);
         } else if ("WHATSAPP".equals(channel)) {
             mapWhatsAppFields(builder, nl, templateCache);
+            if (originResolver != null) {
+                builder.origin(originResolver.resolve(nl, nl.getInstituteId(), originCache));
+            }
         }
 
         return builder.build();
@@ -194,14 +213,36 @@ public class CommunicationTimelineService {
         builder.bodyPreview(truncate(body, 150));
         builder.fullBody(body);
 
-        // Email status from tracking events
+        // The real subject line, stored beside the row rather than in it: body holds the rendered
+        // HTML, so EmailService parks the subject in message_payload ({"subject": ...}). Title above
+        // is a truncation of that HTML and is no substitute — anything resending this message needs
+        // the subject that actually went out.
+        builder.subject(extractEmailSubject(nl));
+
+        // Email status, in order of authority:
+        //   1. an SES tracking event   — the provider's own outcome, always freshest
+        //   2. the stored deliveryStatus — a send we ourselves refused/failed before SMTP
+        //   3. SENT                     — the default
+        // (3) is not optimism: an EMAIL row is written only AFTER the SMTP handoff succeeded
+        // (EmailService.saveEmailNotificationLog is called on the line after mailSender.send),
+        // so "no tracking event" means "we have no delivery confirmation", never "not sent".
+        // Reporting that as PENDING made every successful send read as a failure the moment SES
+        // event ingestion stopped — it has produced nothing since 2026-07-28, so ~113k emails
+        // were sitting on an amber "Pending" chip while their own timeline said "Email sent".
+        String failureStatus = storedFailureStatus(nl);
+        String eventStatus = null;
         NotificationLog latestEvent = latestEmailEvents.get(nl.getId());
         if (latestEvent != null) {
-            String eventType = extractEmailEventType(latestEvent.getBody());
-            builder.status(normalizeEmailStatus(eventType));
-        } else {
-            builder.status("PENDING");
+            eventStatus = normalizeEmailStatus(extractEmailEventType(latestEvent.getBody()));
+            // An unrecognised event body normalizes to PENDING; that is an unparseable event,
+            // not evidence the mail is unsent, so let it fall through rather than surface it.
+            if ("PENDING".equals(eventStatus)) {
+                eventStatus = null;
+            }
         }
+        builder.status(eventStatus != null ? eventStatus
+                : failureStatus != null ? failureStatus
+                : "SENT");
 
         // Build status timeline from all events
         List<NotificationLog> events = allEmailEvents.getOrDefault(nl.getId(), List.of());
@@ -216,14 +257,63 @@ public class CommunicationTimelineService {
                         .build())
                 .toList());
 
-        // Always prepend SENT event
-        timeline.add(0, UnifiedCommunicationDTO.StatusEvent.builder()
-                .status("SENT")
-                .timestamp(nl.getNotificationDate())
-                .details("Email sent")
-                .build());
+        // Open the timeline with what happened at our end: the send, or the reason we never sent.
+        if (failureStatus != null) {
+            timeline.add(0, UnifiedCommunicationDTO.StatusEvent.builder()
+                    .status(failureStatus)
+                    .timestamp(nl.getNotificationDate())
+                    .details(StringUtils.hasText(nl.getDeliveryErrorMessage())
+                            ? nl.getDeliveryErrorMessage()
+                            : "Email not sent")
+                    .build());
+        } else {
+            timeline.add(0, UnifiedCommunicationDTO.StatusEvent.builder()
+                    .status("SENT")
+                    .timestamp(nl.getNotificationDate())
+                    .details("Email sent")
+                    .build());
+        }
 
         builder.statusTimeline(timeline);
+    }
+
+    /**
+     * The delivery outcome recorded by our own send path, for the rows where we know the mail
+     * never reached SES at all — an unsubscribed recipient, a missing address, a send that threw.
+     * Only failures are stored; a successful send leaves the column null and defers to SES.
+     * Returns null when there is no recorded failure, so callers can fall through.
+     */
+    /**
+     * Subject of an outbound EMAIL row, read from {@code message_payload} ({@code {"subject": ...}}
+     * — the key EmailService writes). Null when the payload is absent or carries no subject, which
+     * is every row written before the subject was stored there; callers fall back to the title.
+     */
+    private String extractEmailSubject(NotificationLog nl) {
+        String payload = nl.getMessagePayload();
+        if (!StringUtils.hasText(payload)) {
+            return null;
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(
+                    payload, new TypeReference<Map<String, Object>>() {});
+            Object subject = parsed.get("subject");
+            return (subject instanceof String s && StringUtils.hasText(s)) ? s : null;
+        } catch (Exception e) {
+            log.debug("Could not parse EMAIL messagePayload for log {}: {}", nl.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private String storedFailureStatus(NotificationLog nl) {
+        String stored = nl.getDeliveryStatus();
+        if (!StringUtils.hasText(stored)) {
+            return null;
+        }
+        String normalized = stored.trim().toUpperCase();
+        return switch (normalized) {
+            case "FAILED", "BOUNCED", "COMPLAINT" -> normalized;
+            default -> null;
+        };
     }
 
     private void mapInboundEmailFields(
@@ -340,15 +430,39 @@ public class CommunicationTimelineService {
         // for structured template sends; other payload shapes keep the legacy parse above, and the
         // send-failure surfaces as a FAILED status instead of the misleading default DELIVERED.
         String status = "DELIVERED"; // WA messages in log are typically already delivered
+        // Whether the SEND itself was refused (no message ever left), as opposed to a message the
+        // provider took and later rejected. Only the former makes the send entry of the timeline a
+        // failure; the latter is a second event after a real handover.
+        boolean sendRefusedAtHandover = false;
         WhatsAppTemplateRenderer.Rendered rendered =
                 templateRenderer.render(nl, nl.getInstituteId(), templateCache);
         if (rendered != null) {
             if (rendered.templateName != null) templateName = rendered.templateName;
             if (rendered.body != null) messageBody = rendered.body;
-            if ("FAILED".equals(rendered.deliveryStatus)) status = "FAILED";
+            if ("FAILED".equals(rendered.deliveryStatus)) {
+                status = "FAILED";
+                sendRefusedAtHandover = true;
+            }
             // Surface the header media (image/video/document) so the UI can display the attachment.
             builder.headerType(rendered.headerType);
             builder.headerMediaUrl(rendered.headerMediaUrl);
+            builder.buttons(rendered.buttons);
+        }
+
+        // The optimistic default above assumes acceptance equals arrival. It does not: a provider
+        // 2xx is a queue receipt, and the outcome lands later on the status webhook — which now
+        // stamps it here. When the provider has actually spoken, say what it said; when it hasn't
+        // (null), keep the historical assumption so nothing that reads this API shifts underneath it.
+        String failureDetail = null;
+        if (nl.getDeliveryStatus() != null) {
+            status = nl.getDeliveryStatus();
+            if ("FAILED".equals(status)) {
+                failureDetail = nl.getDeliveryErrorMessage() != null
+                        ? nl.getDeliveryErrorMessage() : "Not delivered";
+                if (nl.getDeliveryErrorCode() != null) {
+                    failureDetail = failureDetail + " (" + nl.getDeliveryErrorCode() + ")";
+                }
+            }
         }
 
         String title = templateName != null ? templateName : truncate(body, 60);
@@ -359,14 +473,29 @@ public class CommunicationTimelineService {
         builder.status(status);
         builder.metadata(metadata.isEmpty() ? null : metadata);
 
-        // Simple status timeline for WA
-        String outboundStatus = "FAILED".equals(status) ? "FAILED" : "SENT";
+        // Simple status timeline for WA. This entry is the SEND, so it keeps its pre-existing
+        // meaning: FAILED only when the provider refused to take the message at all. A message that
+        // was handed over and rejected afterwards still genuinely left at this timestamp, and its
+        // rejection is the separate entry below — collapsing the two would lose the handover.
+        String outboundStatus = sendRefusedAtHandover ? "FAILED" : "SENT";
         List<UnifiedCommunicationDTO.StatusEvent> timeline = new ArrayList<>();
         timeline.add(UnifiedCommunicationDTO.StatusEvent.builder()
                 .status("INBOUND".equals(direction) ? "RECEIVED" : outboundStatus)
                 .timestamp(nl.getNotificationDate())
                 .details(body)
                 .build());
+
+        // Second entry: what the provider reported afterwards. Kept separate from the send entry so
+        // the timeline shows both facts — we handed it over at T, the provider rejected it at T+1s —
+        // which is the whole story a support agent needs and could not previously see anywhere.
+        if (nl.getDeliveryStatus() != null && !"INBOUND".equals(direction)) {
+            timeline.add(UnifiedCommunicationDTO.StatusEvent.builder()
+                    .status(nl.getDeliveryStatus())
+                    .timestamp(nl.getDeliveryUpdatedAt() != null
+                            ? nl.getDeliveryUpdatedAt() : nl.getNotificationDate())
+                    .details(failureDetail != null ? failureDetail : "Reported by WhatsApp")
+                    .build());
+        }
         builder.statusTimeline(timeline);
     }
 
@@ -487,8 +616,9 @@ public class CommunicationTimelineService {
         }
 
         Map<String, WhatsAppTemplateRenderer.InstituteTemplates> templateCache = templateRenderer.newCache();
+        WhatsAppMessageOriginResolver.Cache originCache = originResolver != null ? originResolver.newCache() : null;
         List<UnifiedCommunicationDTO> dtos = logs.getContent().stream()
-                .map(nl -> mapToDTO(nl, latestEmailEvents, allEmailEvents, templateCache))
+                .map(nl -> mapToDTO(nl, latestEmailEvents, allEmailEvents, templateCache, originCache))
                 .collect(Collectors.toList());
 
         return new PageImpl<>(dtos, pageable, logs.getTotalElements());

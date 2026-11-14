@@ -1,6 +1,13 @@
 'use client';
 
 import { MCQS, MCQM, Numerical, TrueFalse, LongAnswer, SingleWord, CMCQS, CMCQM } from '@/svgs';
+import { Table } from '@phosphor-icons/react';
+import {
+    cbeQuestionMark,
+    isCbeQuestionType,
+    makeDefaultCbeConfig,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { useTranslation } from 'react-i18next';
 import { QuestionType as QuestionTypeList } from '@/constants/dummy-data';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
@@ -32,6 +39,7 @@ export interface QuestionTypeProps {
 }
 
 const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
+    const { t } = useTranslation('studyLibraryAddQuestionDialog');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { setActiveItem, getSlideById, items } = useContentStore();
 
@@ -94,11 +102,26 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
             questionResponseType: '',
             subjectiveAnswerText: '',
             reattemptCount: '',
+            // Spreadsheet & Written Response: one spreadsheet part (a), 10 marks. The
+            // editor owns this (empty) secret, so it is saved with the new slide.
+            ...(isCbeQuestionType(questionType)
+                ? (() => {
+                      const cbeConfig = makeDefaultCbeConfig();
+                      return {
+                          cbeConfig,
+                          cbeSecretStatus: 'owned' as const,
+                          questionMark: cbeQuestionMark(cbeConfig),
+                      };
+                  })()
+                : {}),
         };
 
         const questionSlides = items.filter((slide) => slide.source_type === 'QUESTION');
         const questionIndex = questionSlides.length + 1;
-        const autoTitle = `${questionType} Question ${questionIndex}`;
+        const autoTitle = t('autoTitle', {
+            type: isCbeQuestionType(questionType) ? t('cbeTitleType') : questionType,
+            index: questionIndex,
+        });
 
         try {
             const slideStatus = getSlideStatusForUser();
@@ -107,7 +130,7 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
                 source_id: '',
                 source_type: 'QUESTION',
                 title: autoTitle,
-                description: 'Question',
+                description: t('questionWord'),
                 image_file_id: '',
                 status: slideStatus,
                 slide_order: getNextSlideOrder(items || []),
@@ -153,12 +176,12 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
                     slideOrderPayload: reorderedSlides,
                 });
 
-                toast.success('Question added successfully!');
+                toast.success(t('addSuccess'));
                 questionForm.reset();
                 return response;
             }
         } catch (error) {
-            toast.error('Failed to add question');
+            toast.error(t('addError'));
         }
 
         return null;
@@ -182,28 +205,28 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
     return (
         <>
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Quick Access</div>
+                <div className="text-subtitle font-semibold">{t('quickAccess')}</div>
                 <QuestionType
                     icon={<MCQS />}
-                    text="Multiple Choice Questions (Single correct)"
+                    text={t('mcqSingleCorrect')}
                     type={QuestionTypeList.MCQS}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<MCQM />}
-                    text="Multiple Choice Questions (Multiple correct)"
+                    text={t('mcqMultipleCorrect')}
                     type={QuestionTypeList.MCQM}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<Numerical />}
-                    text="Numerical"
+                    text={t('numerical')}
                     type={QuestionTypeList.NUMERIC}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<TrueFalse />}
-                    text="True False"
+                    text={t('trueFalse')}
                     type={QuestionTypeList.TRUE_FALSE}
                     handleAddQuestion={handleAddQuestion}
                 />
@@ -212,16 +235,16 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
             <Separator className="my-6" />
 
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Writing Skills</div>
+                <div className="text-subtitle font-semibold">{t('writingSkills')}</div>
                 <QuestionType
                     icon={<LongAnswer />}
-                    text="Long Answer"
+                    text={t('longAnswer')}
                     type={QuestionTypeList.LONG_ANSWER}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<SingleWord />}
-                    text="Single Word"
+                    text={t('singleWord')}
                     type={QuestionTypeList.ONE_WORD}
                     handleAddQuestion={handleAddQuestion}
                 />
@@ -230,22 +253,38 @@ const AddQuestionDialog = ({ openState }: { openState?: (open: boolean) => void 
             <Separator className="my-6" />
 
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Reading Skills</div>
+                <div className="text-subtitle font-semibold">{t('cbeSection')}</div>
+                <QuestionType
+                    icon={
+                        <div className="flex size-10 items-center justify-center rounded-md bg-success-50">
+                            <Table size={22} className="text-success-600" weight="bold" />
+                        </div>
+                    }
+                    text={t('cbeResponse')}
+                    type={QuestionTypeList.CBE_RESPONSE}
+                    handleAddQuestion={handleAddQuestion}
+                />
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="flex flex-col gap-4">
+                <div className="text-subtitle font-semibold">{t('readingSkills')}</div>
                 <QuestionType
                     icon={<CMCQS />}
-                    text="Comprehension MCQ (Single correct)"
+                    text={t('comprehensionSingleCorrect')}
                     type={QuestionTypeList.CMCQS}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<CMCQM />}
-                    text="Comprehension MCQ (Multiple correct)"
+                    text={t('comprehensionMultipleCorrect')}
                     type={QuestionTypeList.CMCQM}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<CMCQM />}
-                    text="Comprehension Numeric"
+                    text={t('comprehensionNumeric')}
                     type={QuestionTypeList.CNUMERIC}
                     handleAddQuestion={handleAddQuestion}
                 />

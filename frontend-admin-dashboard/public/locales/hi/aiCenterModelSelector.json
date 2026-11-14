@@ -1,0 +1,10 @@
+{
+    "aiModelLabel": "एआई मॉडल",
+    "unableToLoadModels": "मॉडल लोड नहीं हो सके",
+    "tooltipDescription": "प्रोसेसिंग के लिए एक एआई मॉडल चुनें। अधिकांश मामलों के लिए डिफ़ॉल्ट मॉडल की सलाह दी जाती है।",
+    "selectModel": "मॉडल चुनें",
+    "defaultRecommended": "डिफ़ॉल्ट (अनुशंसित)",
+    "defaultModelSummary": "{{name}} - {{description}}",
+    "availableModels": "उपलब्ध मॉडल",
+    "footerNote": "अलग-अलग मॉडलों की क्षमताएँ अलग-अलग होती हैं। अधिकांश कार्यों के लिए डिफ़ॉल्ट मॉडल सबसे अच्छा काम करता है।"
+}

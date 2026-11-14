@@ -1,0 +1,33 @@
+{
+    "untitled": "{{term}} sans titre",
+    "helmet": {
+        "title": "Gérer les {{termPlural}}",
+        "titleWithName": "{{name}} — Gérer les {{termPlural}}"
+    },
+    "backToList": "Retour aux {{termPlural}}",
+    "subtitle": {
+        "manage": "Gérez le paiement administrateur, les apprenants, les factures et les membres de l'équipe de ce/cette {{term}}.",
+        "view": "Consultez le paiement administrateur, les apprenants, les factures et les membres de l'équipe de ce/cette {{term}}."
+    },
+    "editTerm": "Modifier {{term}}",
+    "resync": {
+        "action": "Resynchroniser les invitations",
+        "inProgress": "Resynchronisation…",
+        "failed": "Échec de la resynchronisation des invitations",
+        "alreadyInSync": "Déjà synchronisé — aucun changement nécessaire",
+        "createdSummary": "{{invites}} resynchronisées sur {{courses}}",
+        "inviteCount_one": "{{count}} invitation",
+        "inviteCount_many": "{{count}} invitations",
+        "inviteCount_other": "{{count}} invitations",
+        "courseCount_one": "{{count}} cours",
+        "courseCount_many": "{{count}} cours",
+        "courseCount_other": "{{count}} cours",
+        "renamedSummary_one": "{{count}} renommée pour correspondre à vos paramètres de nommage",
+        "renamedSummary_many": "{{count}} renommées pour correspondre à vos paramètres de nommage",
+        "renamedSummary_other": "{{count}} renommées pour correspondre à vos paramètres de nommage"
+    },
+    "notFound": {
+        "message": "Impossible de trouver un(e) {{term}} correspondant à ce lien.",
+        "goingBack": "Retour à la liste…"
+    }
+}

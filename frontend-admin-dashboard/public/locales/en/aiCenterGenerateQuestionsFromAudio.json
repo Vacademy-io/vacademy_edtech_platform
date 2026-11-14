@@ -1,0 +1,71 @@
+{
+    "header": {
+        "title": "Questions from Audio",
+        "subtitle": "Drop a recording. We'll transcribe it, then ask what kind of questions you want."
+    },
+    "sections": {
+        "dropRecording": "Drop your recording",
+        "questionKind": "What kind of questions do you want?"
+    },
+    "upload": {
+        "dropzoneTitle": "Drop your recording here, or click to choose",
+        "dropzoneHint": "MP3, WAV, FLAC, AAC, or M4A.",
+        "removeFile": "Remove file",
+        "uploading": "Uploading your recording…",
+        "transcribing": "Transcribing — usually ~30 seconds."
+    },
+    "fileStatus": {
+        "uploading": "Uploading…",
+        "transcribing": "Transcribing…",
+        "readyToConfigure": "Ready to configure",
+        "drafting": "Drafting questions",
+        "done": "Done"
+    },
+    "fields": {
+        "focusAreas": {
+            "label": "Focus areas",
+            "placeholder": "e.g. focus on key concepts about photosynthesis, including the process and factors that affect it"
+        },
+        "numQuestions": {
+            "label": "How many?",
+            "placeholder": "10"
+        },
+        "difficulty": {
+            "label": "Difficulty"
+        },
+        "language": {
+            "label": "Language"
+        }
+    },
+    "difficulties": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+    },
+    "languages": {
+        "english": "English",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "taskFailed": "We couldn't finish this draft. Want to try again?",
+        "generateFailed": "We couldn't draft questions from this recording. Try again?",
+        "unsupportedFormat": "We can't read .{{ext}} files. Try MP3, WAV, FLAC, AAC, or M4A.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "readError": "Something went wrong reading your recording. Try again?",
+        "missingFocus": "Tell us what the questions should focus on.",
+        "missingCount": "How many questions would you like?"
+    },
+    "progress": {
+        "title": "Drafting your questions",
+        "subtitle": "Listening to the recording and crafting questions. Usually ~30 seconds."
+    },
+    "actions": {
+        "draftQuestions": "Draft my questions"
+    },
+    "taskListHeading": "Vsmart Audio",
+    "recentDrafts": {
+        "title": "Your recent drafts",
+        "fallbackLabel": "Audio-based draft",
+        "emptyHint": "Your audio-based drafts will appear here. Drop a recording above to start."
+    }
+}

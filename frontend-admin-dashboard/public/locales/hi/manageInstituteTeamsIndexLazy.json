@@ -1,0 +1,39 @@
+{
+    "navHeading": "टीमें",
+    "tabs": {
+        "instituteUsers": "संस्थान उपयोगकर्ता",
+        "invites": "आमंत्रण",
+        "orgChart": "ऑर्ग चार्ट"
+    },
+    "search": {
+        "placeholder": "नाम, ईमेल से खोजें..."
+    },
+    "filters": {
+        "roleType": "भूमिका प्रकार",
+        "status": "स्थिति",
+        "subOrg": "सब-ऑर्ग",
+        "applyFilters": "फ़िल्टर लागू करें",
+        "clearAll": "सभी साफ़ करें",
+        "clearAllFilters": "सभी फ़िल्टर साफ़ करें"
+    },
+    "columns": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "username": "उपयोगकर्ता नाम",
+        "password": "पासवर्ड",
+        "phone": "फ़ोन",
+        "roles": "भूमिकाएं",
+        "subOrgs": "सब-ऑर्ग",
+        "actions": "कार्रवाइयां"
+    },
+    "subOrgColumn": {
+        "assignedTooltip": "इस व्यक्ति को सौंपा गया",
+        "grantedByRoleTooltip": "इस व्यक्ति की भूमिका द्वारा दिया गया",
+        "viaRole": "भूमिका के माध्यम से"
+    },
+    "assignSubOrgs": "{{term}} असाइन करें",
+    "emptyState": {
+        "title": "कोई टीम सदस्य नहीं मिला",
+        "body": "आपकी वर्तमान खोज या फ़िल्टर से मेल खाने वाला कोई टीम सदस्य नहीं मिला। उन्हें समायोजित करें या नए उपयोगकर्ताओं को आमंत्रित करें।"
+    }
+}

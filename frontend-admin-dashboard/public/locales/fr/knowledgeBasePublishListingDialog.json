@@ -1,0 +1,50 @@
+{
+    "validation": {
+        "titleRequired": "Donnez un titre à cette bibliothèque",
+        "summaryRequired": "Écrivez une ligne décrivant ce que c'est",
+        "summaryMax": "Limitez le résumé à 280 caractères",
+        "subjectRequired": "La matière est nécessaire pour le filtrage",
+        "levelRequired": "La classe ou l'examen est nécessaire pour le filtrage"
+    },
+    "toast": {
+        "identifyFailed": "Impossible de vous identifier. Veuillez vous reconnecter.",
+        "uploadFailed": "Impossible de charger cette image. Veuillez réessayer.",
+        "saveSuccess": "Détails de la bibliothèque enregistrés",
+        "saveFailed": "Impossible d'enregistrer ces détails"
+    },
+    "heading": {
+        "edit": "Modifier les détails de la bibliothèque",
+        "create": "Décrire cette bibliothèque"
+    },
+    "cancel": "Annuler",
+    "save": "Enregistrer les détails",
+    "saving": "Enregistrement…",
+    "intro": "C'est ce qu'un établissement lit en décidant de dépenser des crédits. Rédigez-le pour quelqu'un qui n'a jamais vu le contenu.",
+    "cover": {
+        "defaultTitle": "Bibliothèque",
+        "replace": "Remplacer la couverture",
+        "add": "Ajouter une image de couverture",
+        "remove": "Supprimer",
+        "altLabel": "Décrivez la couverture",
+        "altPlaceholder": "ex. couverture du manuel de physique NCERT classe 11",
+        "altHint": "Lu à voix haute par un lecteur d'écran, et affiché si l'image ne se charge pas."
+    },
+    "fields": {
+        "titleLabel": "Titre",
+        "titlePlaceholder": "ex. Physique NCERT — Classe 11",
+        "summaryLabel": "Résumé en une ligne",
+        "summaryPlaceholder": "ex. Programme complet, les deux parties, avec exemples résolus",
+        "descriptionLabel": "Description complète",
+        "descriptionPlaceholder": "Ce qu'il couvre, à qui il convient, et ce qu'un enseignant devrait savoir avant de l'utiliser.",
+        "subjectLabel": "Matière",
+        "subjectPlaceholder": "Physique",
+        "levelLabel": "Classe ou examen",
+        "levelPlaceholder": "Classe 11",
+        "boardLabel": "Conseil",
+        "boardPlaceholder": "CBSE",
+        "languageLabel": "Langue",
+        "languagePlaceholder": "Anglais",
+        "tagsLabel": "Étiquettes",
+        "tagsPlaceholder": "mécanique, thermodynamique, exemples résolus"
+    }
+}

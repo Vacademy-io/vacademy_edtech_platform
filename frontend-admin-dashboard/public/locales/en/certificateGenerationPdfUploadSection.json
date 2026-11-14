@@ -1,0 +1,52 @@
+{
+    "readyCard": {
+        "title": "Template ready",
+        "preview": "Preview",
+        "remove": "Remove",
+        "removing": "Removing",
+        "imageAlt": "Certificate template preview",
+        "typeLabel": "Type",
+        "typePdf": "PDF → Image",
+        "typeImage": "Image",
+        "formatLabel": "Format",
+        "dimensionsLabel": "Dimensions",
+        "uploadedLabel": "Uploaded",
+        "confirmRemove": "Are you sure you want to remove this template? This will also clear all field mappings."
+    },
+    "dropzone": {
+        "processingDefault": "Processing file...",
+        "fileTypeUnsupported": "File type not supported",
+        "dropHere": "Drop file here",
+        "uploadTitle": "Upload Certificate Template",
+        "processingSubtitle": "Please wait while we process your template",
+        "dragDropSubtitle": "Drag and drop your PDF or image file here, or click to browse",
+        "chooseFile": "Choose Template File"
+    },
+    "requirements": {
+        "title": "Supported formats:",
+        "pdf": "PDF files (will be converted to image)",
+        "png": "PNG images",
+        "jpg": "JPG/JPEG images",
+        "maxSize": "Maximum file size: 50MB",
+        "recommendation": "Recommended: High resolution for better quality"
+    },
+    "processingSteps": {
+        "readingPdf": "Reading PDF file...",
+        "loadingPdf": "Loading PDF document...",
+        "renderingPdf": "Rendering PDF to image...",
+        "convertingImage": "Converting to image format...",
+        "loadingImage": "Loading image...",
+        "processingImage": "Processing image..."
+    },
+    "errors": {
+        "title": "Upload Error",
+        "processFailed": "Failed to process {{fileType}} file. Please ensure it's a valid file.",
+        "uploadFailed": "Failed to upload file",
+        "loadImageFailed": "Failed to load image",
+        "canvasContextFailed": "Failed to get canvas context"
+    },
+    "fileTypes": {
+        "pdf": "PDF",
+        "image": "image"
+    }
+}

@@ -33,6 +33,10 @@ public class ConnectorListItemDTO {
      */
     private String defaultValuesJson;
 
+    /** Google: campaigns that have sent leads but are not routed to a list yet (their
+     *  leads go to this connector's own audience). Null for other vendors. */
+    private Integer unmappedCampaigns;
+
     public static ConnectorListItemDTO from(FormWebhookConnector c) {
         return ConnectorListItemDTO.builder()
                 .id(c.getId())

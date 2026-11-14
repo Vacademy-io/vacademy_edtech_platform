@@ -11,13 +11,40 @@ interface Props {
     to?: number | undefined;
 }
 
+// audience_response.source_type values, as readable names. Anything not listed
+// falls back to a title-cased version of the raw value (see sourceLabel).
+const SOURCE_LABELS: Record<string, string> = {
+    AUDIENCE_CAMPAIGN: 'Website / campaign form',
+    WEBSITE: 'Website / campaign form',
+    WALK_IN: 'Walk-in (added by counsellor)',
+    SELF_SIGNUP: 'Self sign-up',
+    META_LEAD_ADS: 'Meta lead ads',
+    FACEBOOK_ADS: 'Facebook ads',
+    INSTAGRAM_ADS: 'Instagram ads',
+    GOOGLE_ADS: 'Google ads',
+    GOOGLE_LEAD_ADS: 'Google ads',
+    LINKEDIN_ADS: 'LinkedIn ads',
+    INBOUND_CALL: 'Inbound call',
+    LIVE_SESSION: 'Live session',
+    COURSE_CATALOGUE: 'Course catalogue',
+    UNKNOWN: 'Unknown (no lead form)',
+};
+
+function sourceLabel(source: string): string {
+    const key = source.trim().toUpperCase();
+    const known = SOURCE_LABELS[key];
+    if (known) return known;
+    const words = key.replace(/_/g, ' ').toLowerCase();
+    return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /**
- * Where the conversions are coming from. Each row = one lead source with
- * inbound volume, converted count, and a conversion-rate %.
+ * Where the leads are coming from. Each row = one lead source with inbound
+ * volume, converted count, and a conversion-rate %. A lead is counted under
+ * exactly one source, so the rows add up to the total lead count.
  *
- * Rendered as a list so the row-by-row comparison stays scannable; the
- * percentage doubles as the bar width so the eye can spot the
- * best-converting source without reading numbers.
+ * Rendered as a list so the row-by-row comparison stays scannable; the bar
+ * width is the source's share of all leads.
  */
 export function ConversionBySourceWidget({
     instituteId,
@@ -47,7 +74,7 @@ export function ConversionBySourceWidget({
             <div className="mb-3">
                 <h3 className="text-h4 font-medium text-neutral-900">Conversion by source</h3>
                 <p className="text-caption text-neutral-500">
-                    Where the converted leads came from
+                    Leads by source. Bar = share of leads, figures = converted / total leads
                 </p>
             </div>
             {isLoading ? (
@@ -61,8 +88,8 @@ export function ConversionBySourceWidget({
                         return (
                             <li key={r.source} className="space-y-1">
                                 <div className="flex items-baseline justify-between gap-2">
-                                    <span className="text-body font-medium capitalize text-neutral-900">
-                                        {r.source.toLowerCase()}
+                                    <span className="text-body font-medium text-neutral-900">
+                                        {sourceLabel(r.source)}
                                     </span>
                                     <span className="text-caption text-neutral-500">
                                         {r.conversions} / {r.leads} ·{' '}

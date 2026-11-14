@@ -1,0 +1,27 @@
+{
+    "boolYes": "Oui",
+    "boolNo": "Non",
+    "intro": "Chaque ligne pouvant figurer sur un bulletin de paie. Les codes sont ce sur quoi le moteur de paie s'appuie, traitez-les donc comme des identifiants plutôt que des libellés.",
+    "addComponent": "Ajouter un élément",
+    "loadError": "Impossible de charger les éléments de salaire.",
+    "retry": "Réessayer",
+    "retrying": "Nouvel essai…",
+    "emptyTitle": "Aucun élément pour l'instant",
+    "emptyDescription": "Commencez par les revenus que vous versez réellement — BASIC et HRA viennent généralement en premier. Les retenues légales (TDS, PF, ESI, PT) sont créées par la paie elle-même, vous n'avez donc pas besoin de les ajouter.",
+    "columns": {
+        "component": "Élément",
+        "code": "Code",
+        "type": "Type",
+        "category": "Catégorie",
+        "taxable": "Imposable",
+        "statutory": "Légal",
+        "glAccount": "Compte comptable",
+        "state": "État"
+    },
+    "glTooltip": "Où cet élément est comptabilisé dans le journal comptable ; laissé vide, il utilise la valeur par défaut de son type",
+    "glDefault": "Par défaut",
+    "stateActive": "Actif",
+    "stateInactive": "Inactif",
+    "editAriaLabel": "Modifier {{name}}",
+    "defaultComponentName": "élément"
+}

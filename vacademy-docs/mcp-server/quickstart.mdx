@@ -1,0 +1,185 @@
+---
+title: "Quickstart"
+description: "Turn the server on, choose what AI apps can do and who can connect, then connect Claude and run your first prompts. About five minutes."
+icon: "rocket"
+---
+
+This guide has two parts. An **admin** sets things up once. Then **each person** connects their own AI app.
+
+<Info>
+You need an admin account in your institute's admin portal for the first part. Everyone else can skip to [For everyone](#for-everyone) once an admin has shared the server URL.
+</Info>
+
+## For admins (once)
+
+<Steps>
+  <Step title="Switch the server on. Don't save yet.">
+    In your admin portal, open **Settings → MCP Server**. Under **Enable the MCP server**, switch on **MCP server enabled**.
+
+    Don't click **Save settings** yet. You will save once, at the end of step 3.
+
+    <Frame caption="Settings → MCP Server, with the MCP server enabled switch at the top.">
+      <img src="/mcp-server/images/screenshots/settings-enable.svg" alt="Placeholder for a screenshot of the MCP Server settings page and its enable switch" />
+    </Frame>
+  </Step>
+
+  <Step title="Choose what AI apps can do">
+    Under **What AI apps can do**, set each area to **Off**, **View** or **Edit**. Open a row to see exactly what it allows.
+
+    <Warning>
+    When you first switch the server on, the page ticks every area at **Edit**, except the edits that are **turned on separately** (opt-in). That includes some edits that apply at once, such as course invite links. For a safe start, click **View only**, then set every area except **Institute stats**, **Lead forms** and **Courses** to **Off**.
+    </Warning>
+
+    A safe first setup:
+
+    | Area | Level |
+    | :--- | :--- |
+    | Institute stats | View |
+    | Lead forms | View |
+    | Courses | View |
+    | Everything else | Off |
+
+    Some edits, such as publishing a website or enrolling learners, are **turned on separately** (opt-in). Neither the Edit level nor **Turn everything on** switches them on. See [Opt-in edits](/mcp-server/settings/opt-in-features).
+
+    <Frame caption="What AI apps can do, with the Courses row open: each edit shows its badge, and some say Turned on separately.">
+      <img src="/mcp-server/images/screenshots/settings-areas.svg" alt="Placeholder for a screenshot of the area list with one row open" />
+    </Frame>
+  </Step>
+
+  <Step title="Choose who can connect, then save">
+    Under **Who can connect**, add the roles that may use an AI app. **Admin** is allowed by default.
+
+    For example, add *Teacher* for your course team, or the role your institute uses for counsellors (a custom role, if you created one). Anyone whose role is not on the list is refused, even with the link.
+
+    To give one role more than the rest, use **Per-role access (advanced)**. See [Who can connect](/mcp-server/settings/roles).
+
+    Now click **Save settings**. Nothing changes for your team until you save.
+
+    <Note>Learners and parents can never connect, whatever you select.</Note>
+  </Step>
+
+  <Step title="Copy and share the server URL">
+    Under **Connect your AI app**, click **Copy** next to **Server URL**. It looks like this:
+
+    ```text
+    https://<your backend>/ai-service/mcp/i/<institute_id>
+    ```
+
+    Share it with the people you allowed in step 3. It is not a secret: it does nothing without a sign-in. You can ignore **Your client ID** for now. Most apps don't need it. A ready-made message for your team is in [Turn on the server](/mcp-server/settings/enable-the-server#message-to-your-team).
+
+    <Frame caption="The Connect your AI app card, with the server URL and its Copy button.">
+      <img src="/mcp-server/images/screenshots/settings-connect-card.svg" alt="Placeholder for a screenshot of the Connect your AI app card" />
+    </Frame>
+  </Step>
+</Steps>
+
+## For everyone
+
+<Tip>
+Counsellors: read [For counsellors](/mcp-server/for-counsellors) before you connect. It takes three minutes.
+</Tip>
+
+<Steps>
+  <Step title="Connect your AI app">
+    In Claude on the web or desktop:
+
+    1. Open **Customize → Connectors** (in older versions of Claude: **Settings → Connectors**).
+    2. Click **+ Add**, then **Add custom connector**.
+    3. Give it a name, for example your institute's name, and paste the server URL.
+    4. Finish adding it, then click **Connect**.
+    5. A browser tab opens on your admin portal. Sign in with your own account and click **Approve**.
+
+    Menus may move. See [Connect Claude](/mcp-server/connect/claude) for details, or pick your app: [ChatGPT](/mcp-server/connect/chatgpt), [Cursor](/mcp-server/connect/cursor), [Claude Code](/mcp-server/connect/claude-code), [VS Code](/mcp-server/connect/vscode).
+  </Step>
+
+  <Step title="Check who you are connected as">
+    Start a new chat and ask:
+
+    ```text
+    Who am I connected as?
+    ```
+
+    The AI app calls the `whoami` tool and answers with your name and your institute's name. This tool is always on, so it is a good first test.
+  </Step>
+
+  <Step title="Try a real question">
+    Ask something from an area your admin turned on for your role. Each tab names the area it needs.
+
+    <Tabs>
+      <Tab title="Admin">
+        Needs **Lead forms** and **Institute stats** at View.
+
+        ```text
+        List our lead campaigns and how many leads each one received.
+        ```
+
+        ```text
+        How many learners are active right now, and how much in fees is outstanding?
+        ```
+      </Tab>
+      <Tab title="Course team">
+        Needs **Courses** at View.
+
+        ```text
+        Show me the chapters and slides of our "Class 10 Science" course.
+        ```
+      </Tab>
+      <Tab title="Counsellor">
+        Needs **CRM: Leads** at View.
+
+        ```text
+        What's on my plate today?
+        ```
+
+        ```text
+        Find the lead with phone ending 4321.
+        ```
+      </Tab>
+    </Tabs>
+
+    <Note>
+
+    **Three different questions you may see**
+
+    - **Approve**: once, on your admin portal, when you connect.
+    - **Allow**: your AI app asking before it uses a tool. This prompt comes from your AI app, not from us.
+    - **Confirm**: you say yes in the chat after reading a preview. Only this one makes a live change. See [Confirmations](/mcp-server/usage/confirmations).
+    </Note>
+  </Step>
+</Steps>
+
+## If something does not work
+
+<AccordionGroup>
+  <Accordion title="The AI app shows no tools">
+    - **No tools at all:** the server is off, the settings were not saved, or your role is not under **Who can connect**.
+    - **Only `whoami` (Who is connected):** you are connected, but every area is Off for your role. Ask an admin to set one to View.
+
+    Then start a new chat, or reconnect. Some apps cache the tool list.
+  </Accordion>
+  <Accordion title="The approval page says I'm in a different institute">
+    You are signed in to another institute in the admin portal. Sign in with your account for the institute in the URL, then approve again.
+  </Accordion>
+  <Accordion title="The approval page says the request expired">
+    Approval requests last 15 minutes and work once. Start the connection again from your AI app.
+  </Accordion>
+  <Accordion title="A tool says it is not enabled">
+    That area, or that particular edit, is off for your role. Ask an admin to turn it on in **Settings → MCP Server**. The change applies to your next request; no need to reconnect.
+  </Accordion>
+  <Accordion title="The AI app asks me to reconnect">
+    Your sign-in could no longer be renewed, for example after a long break, or an admin revoked the connection. Reconnect from your AI app and approve again.
+  </Accordion>
+</AccordionGroup>
+
+More fixes are in [Troubleshooting](/mcp-server/usage/troubleshooting).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Areas and levels" icon="sliders" href="/mcp-server/settings/areas-and-levels">
+    What each area's View and Edit levels allow.
+  </Card>
+  <Card title="Prompting tips" icon="lightbulb" href="/mcp-server/usage/prompting-tips">
+    Get better results from your AI app.
+  </Card>
+</CardGroup>

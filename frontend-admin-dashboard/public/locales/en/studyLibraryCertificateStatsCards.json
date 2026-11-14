@@ -1,0 +1,22 @@
+{
+    "totalEnrolled": {
+        "title": "Total Enrolled",
+        "subtitle": "Learners in this batch"
+    },
+    "certificatesGenerated": {
+        "title": "Certificates Generated",
+        "subtitle": "Issued so far"
+    },
+    "certificatesPending": {
+        "title": "Certificates Pending",
+        "subtitle": "Not yet issued"
+    },
+    "awaitingGeneration": {
+        "title": "Awaiting Generation",
+        "subtitle": "Past {{threshold}}%, no certificate"
+    },
+    "closeToThreshold": {
+        "title": "Close to Threshold",
+        "subtitle": "{{nearFloor}}–{{thresholdMinusOne}}% complete"
+    }
+}

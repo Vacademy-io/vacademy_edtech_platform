@@ -1,0 +1,23 @@
+{
+    "intro": "Every payslip issued to you, newest first. Each one is a PDF signed off by your institute — download it whenever you need it for a landlord, a loan or your own records.",
+    "yearLabel": "Year",
+    "payslipCount_one": "{{count}} payslip",
+    "payslipCount_other": "{{count}} payslips",
+    "netPay": "Net pay",
+    "emailedToYou": "Emailed to you",
+    "download": "Download",
+    "downloading": "Downloading…",
+    "issuedOn": "Issued {{date}}",
+    "issueDateUnknown": "Issue date not recorded",
+    "emptyState": {
+        "title": "No payslips for {{year}}",
+        "description": "A payslip only appears once your institute has run payroll for that month and generated the slips. If a month you were paid for is missing, ask your HR team."
+    },
+    "toasts": {
+        "downloaded": "Payslip downloaded"
+    },
+    "errors": {
+        "loadFailed": "Couldn't load your payslips.",
+        "downloadFailed": "Could not download this payslip."
+    }
+}

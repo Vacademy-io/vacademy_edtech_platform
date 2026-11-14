@@ -3,6 +3,7 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { Form } from '@/components/ui/form';
@@ -101,6 +102,7 @@ export const AddPptDialog = ({
 }: {
     openState?: ((open: boolean) => void) | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryAddPptDialog');
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const data = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = data && Object.keys(data.authorities)[0];
@@ -152,14 +154,14 @@ export const AddPptDialog = ({
             }, 500);
         } catch (error) {
             console.error('Error reordering slides:', error);
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toast.reorderFailed'));
         }
     };
 
     const handleFileSubmit = async (selectedFile: File) => {
         const ext = selectedFile.name.split('.').pop()?.toLowerCase();
         if (!['ppt', 'pptx'].includes(ext || '')) {
-            setError('Please upload only PPT or PPTX files');
+            setError(t('errors.onlyPptOrPptx'));
             return;
         }
 
@@ -169,7 +171,7 @@ export const AddPptDialog = ({
 
         const fileName = selectedFile.name.replace(/\.[^/.]+$/, '');
         form.setValue('pptTitle', fileName);
-        toast.success('PPT file selected successfully');
+        toast.success(t('toast.fileSelected'));
     };
 
     // Create a document slide. `data` is the slide payload — a PDF fileId, or for
@@ -213,7 +215,7 @@ export const AddPptDialog = ({
         const decoded = data as { userId?: string; sub?: string } | undefined;
         const userId = decoded?.userId || decoded?.sub || '';
 
-        setStatusMessage('Uploading presentation…');
+        setStatusMessage(t('status.uploadingPresentation'));
         setUploadProgress(15);
         const pptFileId = await UploadFileInS3(
             file!,
@@ -223,19 +225,19 @@ export const AddPptDialog = ({
             INSTITUTE_ID || 'STUDENTS',
             true // public — the worker fetches the source; the output is served to learners
         );
-        if (!pptFileId) throw new Error('Failed to upload presentation for conversion.');
+        if (!pptFileId) throw new Error(t('errors.uploadFailed'));
 
         const pptxUrl = await getPublicUrl(pptFileId);
-        if (!pptxUrl) throw new Error('Failed to resolve the uploaded presentation URL.');
+        if (!pptxUrl) throw new Error(t('errors.resolveUrlFailed'));
 
-        setStatusMessage('Converting (animations preserved)…');
+        setStatusMessage(t('status.convertingAnimated'));
         setUploadProgress(30);
         const submit = await authenticatedAxiosInstance.post(ANIMATE_PPTX_URL, {
             pptx_url: pptxUrl,
             dpi: 110,
         });
         const jobId: string | undefined = submit.data?.job_id;
-        if (!jobId) throw new Error('Conversion did not start.');
+        if (!jobId) throw new Error(t('errors.conversionDidNotStart'));
 
         // Poll the worker job (via the AI-service proxy) until it finishes. Bail
         // fast (→ PDF fallback) if the conversion service stops responding rather
@@ -254,13 +256,13 @@ export const AddPptDialog = ({
                 const status = await authenticatedAxiosInstance.get(`${ANIMATE_PPTX_URL}/${jobId}`);
                 job = status.data || {};
             } catch {
-                if (++unreachable >= 3) throw new Error('Lost contact with the conversion service.');
+                if (++unreachable >= 3) throw new Error(t('errors.lostContact'));
                 continue;
             }
             // "unknown" = the proxy couldn't reach the worker; a run of them means
             // a dead worker — fall back instead of waiting out the timeout.
             if (!job.status || job.status === 'unknown') {
-                if (++unreachable >= 3) throw new Error('Conversion service is not responding.');
+                if (++unreachable >= 3) throw new Error(t('errors.serviceNotResponding'));
                 continue;
             }
             unreachable = 0;
@@ -272,12 +274,12 @@ export const AddPptDialog = ({
                 break;
             }
             if (job.status === 'failed') {
-                throw new Error(job.error || 'Presentation conversion failed.');
+                throw new Error(job.error || t('errors.conversionFailed'));
             }
         }
-        if (!result?.deck_base) throw new Error('Presentation conversion timed out.');
+        if (!result?.deck_base) throw new Error(t('errors.conversionTimedOut'));
 
-        setStatusMessage('Creating slide…');
+        setStatusMessage(t('status.creatingSlide'));
         setUploadProgress(95);
         return createDocumentSlide('PPT_ANIM', result.deck_base, result.slide_count || 1);
     };
@@ -285,16 +287,16 @@ export const AddPptDialog = ({
     // Fallback path: the original static-PDF conversion (CloudConvert via
     // media-service). Used when the animated conversion is unavailable or fails.
     const uploadAsPdf = async (): Promise<string> => {
-        setStatusMessage('Converting PPT to PDF…');
+        setStatusMessage(t('status.convertingToPdf'));
         setUploadProgress(40);
         const pdfFile = await convertPptToPdf(file!);
 
-        setStatusMessage('Analyzing PDF pages…');
+        setStatusMessage(t('status.analyzingPdfPages'));
         const arrayBuffer = await pdfFile.arrayBuffer();
         const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
 
-        setStatusMessage('Uploading converted PDF…');
+        setStatusMessage(t('status.uploadingConvertedPdf'));
         setUploadProgress(70);
         const fileId = await uploadFile({
             file: pdfFile,
@@ -303,16 +305,16 @@ export const AddPptDialog = ({
             source: INSTITUTE_ID,
             sourceId: 'PDF_DOCUMENTS',
         });
-        if (!fileId) throw new Error('Failed to upload the converted PDF.');
+        if (!fileId) throw new Error(t('errors.uploadConvertedPdfFailed'));
 
-        setStatusMessage('Creating slide…');
+        setStatusMessage(t('status.creatingSlide'));
         setUploadProgress(90);
         return createDocumentSlide('PDF', fileId, totalPages);
     };
 
     const handleUpload = async () => {
         if (!file) {
-            toast.error('Please select a file first');
+            toast.error(t('toast.selectFileFirst'));
             return;
         }
 
@@ -329,19 +331,18 @@ export const AddPptDialog = ({
                 // Resilience: any failure (worker down, unsupported deck, timeout)
                 // degrades to the static PDF the product already shipped.
                 console.warn('Animated conversion failed; falling back to PDF.', animErr);
-                setStatusMessage('Falling back to PDF…');
+                setStatusMessage(t('status.fallingBackToPdf'));
                 response = await uploadAsPdf();
             }
 
             if (response) {
                 openState?.(false);
-                toast.success('PPT uploaded successfully!');
+                toast.success(t('toast.uploadSuccess'));
             }
             setUploadProgress(100);
             setStatusMessage('');
         } catch (err) {
-            const errorMessage =
-                err instanceof Error ? err.message : 'Upload failed. Please try again.';
+            const errorMessage = err instanceof Error ? err.message : t('errors.uploadFailedRetry');
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -408,10 +409,10 @@ export const AddPptDialog = ({
                                     </div>
                                     <div>
                                         <p className="mb-1 font-medium text-neutral-700">
-                                            Drop your PPT file here, or click to browse
+                                            {t('dropzone.title')}
                                         </p>
                                         <p className="text-sm text-neutral-500">
-                                            Supports .ppt and .pptx files (up to 20 MB)
+                                            {t('dropzone.subtitle')}
                                         </p>
                                     </div>
                                 </div>
@@ -437,7 +438,7 @@ export const AddPptDialog = ({
                         />
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-neutral-600">
-                                {statusMessage || 'Processing...'}
+                                {statusMessage || t('status.processing')}
                             </span>
                             <span className="font-medium text-primary-600">{uploadProgress}%</span>
                         </div>
@@ -464,10 +465,10 @@ export const AddPptDialog = ({
                         {isUploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                {statusMessage || 'Processing...'}
+                                {statusMessage || t('status.processing')}
                             </div>
                         ) : (
-                            'Upload PPT'
+                            t('actions.uploadPpt')
                         )}
                     </MyButton>
                 </DialogFooter>

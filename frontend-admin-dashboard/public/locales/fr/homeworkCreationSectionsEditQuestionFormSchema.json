@@ -1,0 +1,14 @@
+{
+    "questionNameRequired": "Le nom de la question est requis",
+    "optionRequired": "L'option {{number}} est requise",
+    "mcqs": {
+        "optionsRequired": "Les questions QCM (réponse unique) doivent avoir des options à choix unique",
+        "exactlyFourOptions": "Un QCM (réponse unique) doit comporter exactement 4 options",
+        "exactlyOneSelected": "Un QCM (réponse unique) doit avoir exactement une option sélectionnée"
+    },
+    "mcqm": {
+        "optionsRequired": "Les questions QCM (réponses multiples) doivent avoir des options à choix multiple",
+        "exactlyFourOptions": "Un QCM (réponses multiples) doit comporter exactement 4 options",
+        "atLeastOneSelected": "Un QCM (réponses multiples) doit avoir au moins une option sélectionnée"
+    }
+}

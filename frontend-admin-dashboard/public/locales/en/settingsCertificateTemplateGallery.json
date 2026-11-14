@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "Choose a Certificate Template",
+        "subtitle": "Pick a ready-made design or upload your own image / PDF below."
+    },
+    "badge": {
+        "customUpload": "Custom Upload",
+        "builtin": "Built-in"
+    },
+    "card": {
+        "default": "Default",
+        "selected": "Selected"
+    },
+    "customCard": {
+        "title": "Custom Upload",
+        "altText": "Custom upload",
+        "uploadPlaceholder": "Your upload",
+        "tooltipUse": "Use the image you uploaded",
+        "tooltipEnable": "Upload an image or PDF below to enable this slot",
+        "descriptionUploaded": "Your uploaded design",
+        "descriptionEmpty": "Upload below to use"
+    }
+}

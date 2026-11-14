@@ -1,0 +1,21 @@
+{
+    "toast": {
+        "reorderFailed": "Slide created but reordering failed",
+        "addSuccess": "Assignment added successfully!",
+        "addFailed": "Failed to add assignment"
+    },
+    "header": {
+        "title": "Create New Assignment",
+        "subtitle": "Add a new assignment slide for your students"
+    },
+    "form": {
+        "titleLabel": "Assignment Title",
+        "titlePlaceholder": "Enter assignment title (e.g., Math Problem Set 1)"
+    },
+    "preview": {
+        "assignmentDraft": "Assignment • Draft"
+    },
+    "helperText": "The assignment will be created as a draft and can be edited later",
+    "creating": "Creating Assignment...",
+    "createAssignment": "Create Assignment"
+}

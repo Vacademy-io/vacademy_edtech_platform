@@ -1,0 +1,132 @@
+{
+    "byCode": {
+        "131047": {
+            "title": "Fenêtre de réponse de 24 heures fermée",
+            "detail": "Cette personne vous a écrit pour la dernière fois il y a plus de 24 heures, donc WhatsApp n'autorise plus une réponse libre. Envoyez un modèle approuvé pour rouvrir la conversation."
+        },
+        "131026": {
+            "title": "Message non livrable",
+            "detail": "WhatsApp n'a pas pu livrer à ce numéro — il se peut qu'il ne soit pas sur WhatsApp, ait été mal saisi, ou que la personne n'ait jamais accepté de messages de cette entreprise."
+        },
+        "131049": {
+            "title": "Retenu par WhatsApp",
+            "detail": "WhatsApp limite le nombre de messages marketing qu'une personne reçoit. Rien n'est cassé — réessayez plus tard, ou utilisez un modèle utilitaire si le message est transactionnel."
+        },
+        "130472": {
+            "title": "Exclu par une expérimentation WhatsApp",
+            "detail": "Ce numéro fait partie d'un groupe expérimental de Meta qui ne reçoit pas de messages marketing. Les modèles utilitaires et d'authentification ne sont pas affectés."
+        },
+        "131021": {
+            "title": "Impossible d'envoyer un message à ce numéro",
+            "detail": "Le destinataire est le même que l'expéditeur, ou le numéro ne peut pas recevoir de messages de ce compte."
+        },
+        "131051": {
+            "title": "Type de message non pris en charge",
+            "detail": "WhatsApp n'accepte pas ce type de message sur ce compte."
+        },
+        "131052": {
+            "title": "Le média n'a pas pu être téléchargé",
+            "detail": "WhatsApp n'a pas pu récupérer la pièce jointe depuis son URL. Vérifiez que le fichier est toujours public et renvoyez-le."
+        },
+        "131053": {
+            "title": "Le média n'a pas pu être envoyé",
+            "detail": "WhatsApp a rejeté la pièce jointe — généralement à cause du format ou de la taille du fichier. Renvoyez-la dans un format pris en charge, sous la limite de taille."
+        },
+        "131042": {
+            "title": "Problème de facturation sur le compte WhatsApp",
+            "detail": "Meta n'a aucun moyen de paiement fonctionnel pour ce compte WhatsApp Business, donc chaque message sur ce numéro est refusé. Corrigez la carte dans WhatsApp Manager → Facturation."
+        },
+        "131031": {
+            "title": "Compte WhatsApp restreint",
+            "detail": "Meta a verrouillé ou restreint ce compte WhatsApp Business, généralement pour une raison de politique ou de qualité. Vérifiez la page de qualité du compte dans WhatsApp Manager."
+        },
+        "131045": {
+            "title": "Numéro mal enregistré",
+            "detail": "Ce numéro WhatsApp n'est pas entièrement enregistré auprès de Meta, ou son certificat est incorrect. Réenregistrez-le dans Paramètres → WhatsApp."
+        },
+        "133010": {
+            "title": "Numéro non enregistré",
+            "detail": "Ce numéro WhatsApp n'a pas terminé son enregistrement auprès de Meta et ne peut encore rien envoyer."
+        },
+        "190": {
+            "title": "Jeton d'accès WhatsApp expiré",
+            "detail": "Le jeton d'accès Meta de cet établissement n'est plus valide, aucun message ne peut donc être envoyé. Mettez-le à jour dans Paramètres → WhatsApp."
+        },
+        "368": {
+            "title": "Compte temporairement bloqué",
+            "detail": "Meta a temporairement bloqué ce compte pour des raisons de politique. L'envoi ne reprendra qu'une fois le blocage expiré ou l'appel traité."
+        },
+        "132000": {
+            "title": "Nombre incorrect de valeurs de modèle",
+            "detail": "Le modèle a été rempli avec un nombre de valeurs différent de celui des espaces réservés."
+        },
+        "132001": {
+            "title": "Modèle introuvable",
+            "detail": "Aucun modèle approuvé avec ce nom et cette langue n'existe sur le compte. Synchronisez les modèles, ou choisissez-en un autre."
+        },
+        "132005": {
+            "title": "Texte du modèle trop long",
+            "detail": "Le modèle rempli dépasse la longueur autorisée par WhatsApp. Raccourcissez les valeurs."
+        },
+        "132007": {
+            "title": "Contenu du modèle rejeté",
+            "detail": "Les valeurs ont enfreint les règles de formatage de WhatsApp — généralement un retour à la ligne, une tabulation, ou quatre espaces consécutifs dans un espace réservé."
+        },
+        "132012": {
+            "title": "Format de valeur du modèle incompatible",
+            "detail": "L'une des valeurs ne correspond pas au format avec lequel le modèle a été approuvé."
+        },
+        "132015": {
+            "title": "Modèle suspendu pour faible qualité",
+            "detail": "WhatsApp a suspendu ce modèle car des destinataires l'ont signalé comme indésirable. Utilisez un autre modèle en attendant qu'il se rétablisse."
+        },
+        "132016": {
+            "title": "Modèle désactivé",
+            "detail": "WhatsApp a définitivement désactivé ce modèle pour des raisons de qualité. Il ne peut plus être utilisé."
+        },
+        "rateLimit": {
+            "title": "Limite de débit atteinte",
+            "detail": "Ce compte a atteint sa limite de requêtes WhatsApp. Patientez quelques minutes puis réessayez."
+        },
+        "131056": {
+            "title": "Trop de messages à cette personne",
+            "detail": "WhatsApp a limité le nombre de messages entre ce compte et ce destinataire. Réessayez plus tard."
+        }
+    },
+    "byText": {
+        "outOfCredits": {
+            "title": "Crédits WhatsApp épuisés",
+            "detail": "Le compte de messagerie n'a plus de crédits. Rechargez-le auprès du fournisseur avant de renvoyer un message."
+        },
+        "sessionWindowClosed": {
+            "title": "Fenêtre de réponse de 24 heures fermée",
+            "detail": "Cette personne vous a écrit pour la dernière fois il y a plus de 24 heures, seul un modèle approuvé peut désormais l'atteindre."
+        }
+    },
+    "notDelivered": "Non livré",
+    "offline": {
+        "title": "Vous êtes hors ligne",
+        "detail": "Reconnectez-vous et réessayez."
+    },
+    "timedOut": {
+        "title": "La requête a expiré",
+        "detail": "Le serveur a mis trop de temps à répondre. Réessayez."
+    },
+    "couldNotReachServer": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "unexpectedError": "Erreur inattendue : {{message}}",
+    "noAccess": {
+        "title": "Vous n'avez pas accès à cette boîte de réception",
+        "detail": "Votre session a peut-être expiré — rechargez la page et reconnectez-vous."
+    },
+    "conversationGone": "Le serveur ne dispose plus de cette conversation.",
+    "fileTooLarge": {
+        "title": "Ce fichier est trop volumineux",
+        "detail": "WhatsApp rejette les pièces jointes dépassant sa limite de taille."
+    },
+    "tooManyRequests": {
+        "title": "Trop de requêtes",
+        "detail": "Ralentissez un instant, puis réessayez."
+    },
+    "serverError": "Le serveur a renvoyé une erreur ({{status}}). Réessayez dans un instant.",
+    "requestFailed": "La requête a échoué avec le statut {{status}}."
+}

@@ -1,0 +1,15 @@
+{
+    "heading": "Continue Learning",
+    "action": {
+        "viewProgress": "View progress"
+    },
+    "course": {
+        "fallbackName": "Active course",
+        "session": "Session {{session}}"
+    },
+    "behindBadge_one": "Behind on {{count}} course",
+    "behindBadge_other": "Behind on {{count}} courses",
+    "ring": {
+        "complete": "Complete"
+    }
+}

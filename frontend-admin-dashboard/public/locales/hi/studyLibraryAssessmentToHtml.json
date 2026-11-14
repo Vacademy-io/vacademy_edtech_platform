@@ -1,0 +1,12 @@
+{
+    "noQuestionsAvailable": "कोई प्रश्न उपलब्ध नहीं है।",
+    "questionFallback": "प्रश्न {{number}}",
+    "correctAnswer_one": "सही उत्तर: {{answers}}",
+    "correctAnswer_other": "सही उत्तर: {{answers}}",
+    "explanation": "स्पष्टीकरण: {{text}}",
+    "defaultTitle": "मूल्यांकन",
+    "invalidQuestion": "अमान्य प्रश्न",
+    "optionA": "विकल्प A",
+    "questionParsingFailed": "प्रश्न पार्स करने में विफल",
+    "questionCouldNotBeParsed": "प्रश्न को पार्स नहीं किया जा सका"
+}

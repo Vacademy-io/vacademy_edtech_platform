@@ -1,0 +1,26 @@
+{
+    "welcomeBack": "Bon retour",
+    "defaultOrgName": "Mon organisation",
+    "manage": "Gérer",
+    "stats": {
+        "learners": {
+            "label": "Apprenants",
+            "subtitle": "Membres inscrits"
+        },
+        "seats": {
+            "label": "Places",
+            "seatsLeft_one": "{{count}} place restante",
+            "seatsLeft_many": "{{count}} places restantes",
+            "seatsLeft_other": "{{count}} places restantes",
+            "noCap": "Aucun plafond de places"
+        },
+        "collected": {
+            "label": "Encaissé",
+            "subtitle": "Frais reçus"
+        },
+        "outstanding": {
+            "label": "Impayé",
+            "subtitle": "Frais dus"
+        }
+    }
+}

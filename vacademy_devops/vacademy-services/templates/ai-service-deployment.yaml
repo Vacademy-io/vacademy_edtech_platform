@@ -25,16 +25,33 @@ spec:
       labels:
         app: ai-service
     spec:
+      # Graceful drain of in-flight AI-video runs: preStop hands them back as
+      # "interrupted" (resumed at once by the replacement pod), then uvicorn
+      # gets --timeout-graceful-shutdown 60. Mirrors the CI patch in
+      # .github/workflows/docker-publish-ai-service.yml (CI does not run helm).
+      terminationGracePeriodSeconds: 120
       containers:
         - name: ai-service
           image: "{{ .Values.services.ai_service.image.repository }}:{{ .Values.services.ai_service.image.tag }}"
           imagePullPolicy: Always
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - python
+                  - -c
+                  - >-
+                    import os,urllib.request as u;u.urlopen(u.Request("http://127.0.0.1:{{ .Values.services.ai_service.port }}/ai-service/internal/ai-video/v1/drain?wait_s=20",method="POST",headers={"X-Internal-Service-Token":os.environ.get("INTERNAL_SERVICE_TOKEN","")}),timeout=45)
           envFrom:
             - configMapRef:
                 name: myconfigmapv1.0
             - secretRef:
                 name: vacademy-secrets
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: WHISPER_CPU_THREADS
               value: "{{ .Values.services.ai_service.whisper.cpuThreads | default "2" }}"
             - name: WHISPER_NUM_WORKERS

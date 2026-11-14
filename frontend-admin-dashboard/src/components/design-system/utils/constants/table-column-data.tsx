@@ -56,7 +56,10 @@ const BatchCell = ({
     package_session_id: string;
     row: Row<StudentTable>;
 }) => {
-    const { packageName, levelName } = useGetStudentBatch(package_session_id);
+    // batchName is the batch's own name where it has one, falling back to the
+    // level + course this used to print. Without it every learner of an institute
+    // whose levels are all "default" showed the identical batch.
+    const { batchName } = useGetStudentBatch(package_session_id);
     const { handleClick, handleDoubleClick } = useClickHandlers();
 
     return (
@@ -64,7 +67,7 @@ const BatchCell = ({
             onClick={() => handleClick('package_session_id', row)}
             onDoubleClick={(e) => handleDoubleClick(e, 'package_session_id', row)}
         >
-            {levelName} {packageName}
+            {batchName}
         </div>
     );
 };

@@ -1,0 +1,28 @@
+{
+    "channelSelect": {
+        "metaDirect": "ميتا المباشر",
+        "allProviders": "جميع المزودين"
+    },
+    "settingsButton": {
+        "title": "إعدادات التدفق — بما في ذلك من يتم إبلاغه عند تسليم البوت للمحادثة",
+        "label": "الإعدادات"
+    },
+    "saveButton": {
+        "saving": "جارٍ الحفظ...",
+        "dirty": "حفظ *",
+        "default": "حفظ"
+    },
+    "activateButton": {
+        "deactivate": "إلغاء التفعيل",
+        "activate": "تفعيل"
+    },
+    "toast": {
+        "saveSuccess": "تم حفظ التدفق بنجاح",
+        "activeSaveBlocked": "لا يمكن حفظ تدفق نشط. قم بإلغاء تفعيله أولاً، ثم احفظ.",
+        "saveFailed": "فشل حفظ التدفق",
+        "saveFlowFirst": "احفظ التدفق أولاً",
+        "deactivated": "تم إلغاء تفعيل التدفق",
+        "activated": "تم تفعيل التدفق",
+        "validationFailed": "فشل التحقق من الصحة"
+    }
+}

@@ -6,6 +6,8 @@ import { MyButton } from '@/components/design-system/button';
 import { searchEnquiriesByFilter, type EnquiryDetailsResponse } from '../-services/applicant-services';
 import { toast } from 'sonner';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // overall_status values returned by the backend
 type EnquiryStatus = 'ENQUIRY' | 'APPLICATION' | 'ADMISSION';
@@ -22,11 +24,11 @@ interface EnquirySearchModalProps {
     onSelectForAdmission?: (enquiryData: EnquiryDetailsResponse) => void;
 }
 
-const STATUS_BADGE: Record<EnquiryStatus, { label: string; className: string }> = {
-    ENQUIRY:     { label: 'Enquiry',     className: 'bg-orange-100 text-orange-800' },
-    APPLICATION: { label: 'Applied',     className: 'bg-blue-100 text-blue-800' },
-    ADMISSION:   { label: 'Admitted',    className: 'bg-green-100 text-green-800' },
-};
+const buildStatusBadge = (t: TFunction): Record<EnquiryStatus, { label: string; className: string }> => ({
+    ENQUIRY:     { label: t('statusBadge.enquiry'),  className: 'bg-orange-100 text-orange-800' },
+    APPLICATION: { label: t('statusBadge.applied'),  className: 'bg-blue-100 text-blue-800' },
+    ADMISSION:   { label: t('statusBadge.admitted'), className: 'bg-green-100 text-green-800' },
+});
 
 export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
     isOpen,
@@ -41,12 +43,14 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
     const [searchResults, setSearchResults] = useState<EnquiryDetailsResponse[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
     const { instituteDetails } = useInstituteDetailsStore();
+    const { t } = useTranslation('admissionsEnquirySearchModal');
+    const statusBadge = buildStatusBadge(t);
 
     if (!isOpen) return null;
 
     const handleSearch = async () => {
         if (!searchName.trim() && !searchPhone.trim() && !searchTrackingId.trim()) {
-            toast.warning('Please enter at least one search criteria');
+            toast.warning(t('toast.enterAtLeastOneCriteria'));
             return;
         }
 
@@ -62,7 +66,7 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
             setHasSearched(true);
         } catch (error) {
             console.error('Error searching enquiries:', error);
-            toast.error('Failed to search enquiries. Please try again.');
+            toast.error(t('toast.searchFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -84,9 +88,9 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-5xl rounded-lg bg-white p-6 shadow-xl flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-5xl rounded-lg bg-white p-6 shadow-xl flex flex-col max-h-dialog-tall">
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-neutral-900">Search Enquiry</h2>
+                    <h2 className="text-xl font-semibold text-neutral-900">{t('title')}</h2>
                     <button
                         onClick={onClose}
                         className="text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -99,11 +103,11 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     {/* filter by name */}
                     <div>
-                        <Label htmlFor="searchName">Student / Parent Name</Label>
+                        <Label htmlFor="searchName">{t('filters.nameLabel')}</Label>
                         <Input
                             id="searchName"
                             type="text"
-                            placeholder="e.g., John Doe"
+                            placeholder={t('filters.namePlaceholder')}
                             value={searchName}
                             onChange={(e) => setSearchName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -112,11 +116,11 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                     </div>
                     {/* filter by phone number */}
                     <div>
-                        <Label htmlFor="searchPhone">Phone Number</Label>
+                        <Label htmlFor="searchPhone">{t('filters.phoneLabel')}</Label>
                         <Input
                             id="searchPhone"
                             type="tel"
-                            placeholder="e.g., 9876543210"
+                            placeholder={t('filters.phonePlaceholder')}
                             value={searchPhone}
                             onChange={(e) => setSearchPhone(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -125,11 +129,11 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                     </div>
                     {/* filter by Enquiry tracking id */}
                     <div>
-                        <Label htmlFor="searchTrackingId">Tracking ID</Label>
+                        <Label htmlFor="searchTrackingId">{t('filters.trackingIdLabel')}</Label>
                         <Input
                             id="searchTrackingId"
                             type="text"
-                            placeholder="e.g., A9KQ2"
+                            placeholder={t('filters.trackingIdPlaceholder')}
                             value={searchTrackingId}
                             onChange={(e) => setSearchTrackingId(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -146,7 +150,7 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                         className="w-full md:w-auto"
                     >
                         <MagnifyingGlass className="mr-2 size-4" />
-                        {isLoading ? 'Searching...' : 'Search Enquiries'}
+                        {isLoading ? t('actions.searching') : t('actions.searchEnquiries')}
                     </MyButton>
                 </div>
 
@@ -155,23 +159,23 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                     <table className="w-full text-left text-sm text-neutral-600">
                         <thead className="bg-neutral-50 text-xs font-semibold uppercase text-neutral-500 sticky top-0 shadow-sm z-10">
                             <tr>
-                                <th className="px-4 py-3 bg-neutral-50">Tracking ID</th>
-                                <th className="px-4 py-3 bg-neutral-50">Student Name</th>
-                                <th className="px-4 py-3 bg-neutral-50">Parent Name</th>
-                                <th className="px-4 py-3 bg-neutral-50">Phone</th>
-                                <th className="px-4 py-3 bg-neutral-50">Status</th>
+                                <th className="px-4 py-3 bg-neutral-50">{t('table.headers.trackingId')}</th>
+                                <th className="px-4 py-3 bg-neutral-50">{t('table.headers.studentName')}</th>
+                                <th className="px-4 py-3 bg-neutral-50">{t('table.headers.parentName')}</th>
+                                <th className="px-4 py-3 bg-neutral-50">{t('table.headers.phone')}</th>
+                                <th className="px-4 py-3 bg-neutral-50">{t('table.headers.status')}</th>
                                 {showApplicationCol && (
-                                    <th className="px-4 py-3 bg-neutral-50 text-center">Application</th>
+                                    <th className="px-4 py-3 bg-neutral-50 text-center">{t('table.headers.application')}</th>
                                 )}
                                 {showAdmissionCol && (
-                                    <th className="px-4 py-3 bg-neutral-50 text-center">Admission</th>
+                                    <th className="px-4 py-3 bg-neutral-50 text-center">{t('table.headers.admission')}</th>
                                 )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-200">
                             {searchResults.map((result, idx) => {
                                 const status: EnquiryStatus = result.overall_status || 'ENQUIRY';
-                                const badge = STATUS_BADGE[status] ?? STATUS_BADGE.ENQUIRY;
+                                const badge = statusBadge[status] ?? statusBadge.ENQUIRY;
 
                                 // Application button: disable only if already applied or admitted
                                 const appApplied = status === 'APPLICATION' || status === 'ADMISSION';
@@ -206,7 +210,7 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                                                     onClick={() => handleSelectForApplication(result)}
                                                     disabled={appApplied}
                                                 >
-                                                    {appApplied ? 'Applied' : 'Apply'}
+                                                    {appApplied ? t('actions.applied') : t('actions.apply')}
                                                 </MyButton>
                                             </td>
                                         )}
@@ -219,7 +223,7 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                                                     onClick={() => handleSelectForAdmission(result)}
                                                     disabled={admAdmitted}
                                                 >
-                                                    {admAdmitted ? 'Admitted' : 'Admit'}
+                                                    {admAdmitted ? t('actions.admitted') : t('actions.admit')}
                                                 </MyButton>
                                             </td>
                                         )}
@@ -229,14 +233,14 @@ export const EnquirySearchModal: React.FC<EnquirySearchModalProps> = ({
                             {searchResults.length === 0 && hasSearched && !isLoading && (
                                 <tr>
                                     <td colSpan={colSpanEmpty} className="px-4 py-12 text-center text-neutral-500">
-                                        No enquiries found matching your search.
+                                        {t('table.empty.noResults')}
                                     </td>
                                 </tr>
                             )}
                             {searchResults.length === 0 && !hasSearched && !isLoading && (
                                 <tr>
                                     <td colSpan={colSpanEmpty} className="px-4 py-12 text-center text-neutral-400">
-                                        Enter search criteria and click Search to find enquiries.
+                                        {t('table.empty.prompt')}
                                     </td>
                                 </tr>
                             )}

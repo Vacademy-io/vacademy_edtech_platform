@@ -1,0 +1,128 @@
+{
+    "schema": {
+        "titleRequired": "Le titre est requis",
+        "durationRequired": "La durée est requise",
+        "timezoneRequired": "Le fuseau horaire est requis",
+        "horizonDaysInvalid": "Saisissez un nombre de jours"
+    },
+    "days": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+    },
+    "durationOption_one": "{{count}} minute",
+    "durationOption_many": "{{count}} minutes",
+    "durationOption_other": "{{count}} minutes",
+    "noMinimumNotice": "Aucun préavis minimum",
+    "hoursOption_one": "{{count}} heure",
+    "hoursOption_many": "{{count}} heures",
+    "hoursOption_other": "{{count}} heures",
+    "daysOption_one": "{{count}} jour",
+    "daysOption_many": "{{count}} jours",
+    "daysOption_other": "{{count}} jours",
+    "noReminder": "Aucun rappel avant la réunion",
+    "minutesBeforeOption_one": "{{count}} minute avant",
+    "minutesBeforeOption_many": "{{count}} minutes avant",
+    "minutesBeforeOption_other": "{{count}} minutes avant",
+    "hoursBeforeOption_one": "{{count}} heure avant",
+    "hoursBeforeOption_many": "{{count}} heures avant",
+    "hoursBeforeOption_other": "{{count}} heures avant",
+    "daysBeforeOption_one": "{{count}} jour avant",
+    "daysBeforeOption_many": "{{count}} jours avant",
+    "daysBeforeOption_other": "{{count}} jours avant",
+    "fieldOptions": {
+        "inviteeName": "Nom de l'invité",
+        "meetingDatetime": "Date et heure de la réunion",
+        "meetingDate": "Date de la réunion",
+        "meetingTime": "Heure de la réunion",
+        "meetLink": "Lien Google Meet / de connexion",
+        "hostName": "Nom de l'hôte",
+        "meetingTitle": "Titre de la réunion",
+        "durationMinutes": "Durée (minutes)"
+    },
+    "defaultHostSelected": "Hôte sélectionné",
+    "defaultHostMe": "Moi",
+    "toast": {
+        "enableOneDay": "Activez au moins un jour de disponibilité hebdomadaire",
+        "updated": "Page de réservation mise à jour",
+        "created": "Page de réservation créée",
+        "updateFailed": "Échec de la mise à jour de la page de réservation",
+        "createFailed": "Échec de la création de la page de réservation"
+    },
+    "basics": {
+        "title": "Informations de base",
+        "description": "L'essentiel que les gens voient lorsqu'ils réservent du temps avec vous.",
+        "titleLabel": "Titre",
+        "titlePlaceholder": "ex. Appel de conseil",
+        "hostLabel": "Hôte",
+        "hostDescription": "Qui anime cette réunion et apparaît comme point de contact.",
+        "durationLabel": "Durée",
+        "timezoneLabel": "Fuseau horaire",
+        "audienceLabel": "Liste d'audience (facultatif)",
+        "audienceNone": "Aucune"
+    },
+    "availability": {
+        "title": "Disponibilité",
+        "description": "Choisissez les jours et heures où les gens peuvent réserver, et le délai de préavis nécessaire.",
+        "weeklyAvailability": "Disponibilité hebdomadaire",
+        "weeklyAvailabilityDescription": "Cochez les jours où vous êtes libre, puis définissez vos horaires pour chaque jour.",
+        "to": "à",
+        "minNoticeLabel": "Préavis minimum",
+        "horizonLabel": "Horizon de réservation (jours)",
+        "horizonPlaceholder": "30",
+        "footnote": "Le préavis minimum évite les réservations de dernière minute ; l'horizon de réservation limite la distance dans le temps à laquelle on peut réserver."
+    },
+    "location": {
+        "title": "Lieu et règles de réservation",
+        "description": "Décidez comment se déroule la réunion, et si vous devez approuver les réservations au préalable.",
+        "meetTitle": "Attribuer Google Meet",
+        "meetDescription": "Ajouter un lien Google Meet à chaque réunion réservée",
+        "approvalTitle": "Approbation requise",
+        "approvalDescription": "Les nouvelles réservations restent en attente jusqu'à ce que l'hôte les approuve"
+    },
+    "reminders": {
+        "title": "Rappels",
+        "description": "Informez les invités par e-mail ou WhatsApp avant leur réunion.",
+        "email": "E-mail",
+        "whatsapp": "WhatsApp",
+        "templateLabel": "Modèle WhatsApp",
+        "templatePlaceholder": "Choisissez un modèle approuvé",
+        "templateEmptyText": "Aucun modèle approuvé ne correspond à votre recherche.",
+        "noTemplateOption": "Aucun modèle (n'enverra pas de WhatsApp)",
+        "loadingTemplates": "Chargement des modèles…",
+        "noApprovedTemplates": "Aucun modèle WhatsApp approuvé pour le moment. Créez-en un et faites-le approuver dans Communication → Modèles WhatsApp.",
+        "fillVariables": "Renseignez les variables du modèle",
+        "mapToPlaceholder": "Associer à…",
+        "notSet": "— non défini —",
+        "noVariables": "Ce modèle n'a pas de variables — il sera envoyé tel quel.",
+        "remindBeforeLabel": "Rappeler avant la réunion",
+        "remindBeforeFootnote": "Envoie un rappel supplémentaire ce délai avant le début de la réunion, en plus du message de confirmation de réservation."
+    },
+    "formQuestions": {
+        "title": "Questions du formulaire",
+        "description": "Questions supplémentaires auxquelles l'invité répond lors de la réservation, en plus du nom, de l'e-mail et du téléphone.",
+        "addQuestion": "Ajouter une question",
+        "empty": "Aucune question personnalisée pour le moment.",
+        "questionPlaceholder": "Question (ex. En quoi avez-vous besoin d'aide ?)",
+        "fieldTypes": {
+            "text": "Texte court",
+            "textarea": "Texte long",
+            "dropdown": "Liste déroulante",
+            "number": "Nombre",
+            "email": "E-mail",
+            "phone": "Téléphone"
+        },
+        "required": "Obligatoire",
+        "optionsPlaceholder": "Options, séparées par des virgules (ex. Carrière, Entretien, CV)"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement...",
+        "saveChanges": "Enregistrer les modifications",
+        "createBookingPage": "Créer la page de réservation"
+    }
+}

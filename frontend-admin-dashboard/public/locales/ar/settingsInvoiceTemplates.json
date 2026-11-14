@@ -1,0 +1,66 @@
+{
+    "types": {
+        "invoice": {
+            "title": "قوالب فاتورة PDF",
+            "description": "التخطيط المستخدم لعرض فاتورة PDF — العلامة التجارية وجدول البنود والإجماليات."
+        },
+        "invoiceEmail": {
+            "title": "قوالب بريد الفاتورة الإلكتروني",
+            "description": "نص البريد الإلكتروني المرسل إلى المتعلم مع إرفاق فاتورة PDF."
+        }
+    },
+    "actions": {
+        "generateSampleTitle": "إنشاء قالب نموذجي مع تعبئة جميع متغيرات الفاتورة مسبقًا",
+        "generateSample": "إنشاء نموذج",
+        "generating": "جارٍ الإنشاء…",
+        "createTemplate": "إنشاء قالب"
+    },
+    "toasts": {
+        "loadFailed": "فشل تحميل القوالب. يرجى المحاولة مرة أخرى.",
+        "sampleCreated": "تم إنشاء القالب النموذجي — جارٍ فتح المحرر…",
+        "generateSampleFailed": "فشل إنشاء القالب النموذجي. يرجى المحاولة مرة أخرى.",
+        "deleteSuccess": "تم حذف القالب بنجاح!",
+        "deleteFailed": "فشل حذف القالب. يرجى المحاولة مرة أخرى.",
+        "defaultSet": "تم تحديث القالب الافتراضي",
+        "defaultSetFailed": "تعذّر تعيين القالب الافتراضي. يُرجى المحاولة مرة أخرى."
+    },
+    "loading": "جارٍ تحميل القوالب…",
+    "emptyState": {
+        "messagePdf": "لا توجد قوالب فاتورة PDF بعد. سيتم استخدام القالب الافتراضي المدمج حتى تنشئ واحدًا.",
+        "messageEmail": "لا توجد قوالب بريد فاتورة إلكتروني بعد. سيتم استخدام القالب الافتراضي المدمج حتى تنشئ واحدًا.",
+        "createFirst": "أنشئ أول قالب لك"
+    },
+    "table": {
+        "columns": {
+            "name": "الاسم",
+            "subject": "الموضوع",
+            "created": "تاريخ الإنشاء",
+            "actions": "الإجراءات"
+        },
+        "noSubject": "لا يوجد موضوع",
+        "actions": {
+            "preview": "معاينة",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "setDefault": "تعيين كافتراضي"
+        },
+        "defaultBadge": "افتراضي",
+        "defaultBadgeTitle": "يُستخدم لكل فاتورة جديدة"
+    },
+    "pagination": {
+        "templateCount_zero": "{{count}} قالب",
+        "templateCount_one": "{{count}} قالب",
+        "templateCount_two": "{{count}} قالبان",
+        "templateCount_few": "{{count}} قوالب",
+        "templateCount_many": "{{count}} قالبًا",
+        "templateCount_other": "{{count}} قالب",
+        "pageOf": "صفحة {{page}} من {{total}}"
+    },
+    "deleteDialog": {
+        "title": "حذف القالب",
+        "description": "هل أنت متأكد أنك تريد حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف…",
+        "delete": "حذف"
+    }
+}

@@ -79,6 +79,14 @@ public class LiveSessionLogs {
     private Integer providerTotalDurationMinutes;
 
     /**
+     * Exact seconds in the meeting, when the provider reports that precisely
+     * (BBB does; Zoom gives whole minutes, leaving this NULL). The minutes
+     * column above is a floor of this and is kept for existing consumers.
+     */
+    @Column(name = "provider_total_duration_seconds")
+    private Integer providerTotalDurationSeconds;
+
+    /**
      * Audit of the attendance-criteria evaluation for this row: verdict, reason,
      * attendedMinutes, scheduledMinutes, requiredMinutes, thresholdPercent,
      * previousStatus, evaluatedAt. Attendance is disputed data, so an absence

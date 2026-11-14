@@ -12,23 +12,23 @@ import { Badge } from '@/components/ui/badge';
 import { MyButton } from '@/components/design-system/button';
 import { UseFormReturn } from 'react-hook-form';
 import { InviteLinkFormValues } from './GenerateInviteLinkSchema';
+import { useTranslation } from 'react-i18next';
 
 interface DiscountSettingsDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
 }
 
 export function DiscountSettingsDialog({ form }: DiscountSettingsDialogProps) {
+    const { t } = useTranslation('manageStudentsDiscountSettingsDialog');
     return (
         <ShadDialog
             open={form.watch('showDiscountDialog')}
             onOpenChange={(open) => form.setValue('showDiscountDialog', open)}
         >
-            <ShadDialogContent className="flex h-[70vh] min-w-[60vw] max-w-lg flex-col">
+            <ShadDialogContent className="flex max-h-dialog-tall w-dialog-md flex-col">
                 <ShadDialogHeader>
-                    <ShadDialogTitle>Select Discount Settings</ShadDialogTitle>
-                    <ShadDialogDescription>
-                        Choose a discount coupon or create a new one
-                    </ShadDialogDescription>
+                    <ShadDialogTitle>{t('title')}</ShadDialogTitle>
+                    <ShadDialogDescription>{t('description')}</ShadDialogDescription>
                 </ShadDialogHeader>
                 <div className="mt-4 flex-1 space-y-4 overflow-auto">
                     {form.getValues('discounts')?.map((discount) => (
@@ -52,7 +52,7 @@ export function DiscountSettingsDialog({ form }: DiscountSettingsDialogProps) {
                                     </span>
                                     {form.watch('selectedDiscountId') === discount.id && (
                                         <Badge variant="default" className="ml-2">
-                                            Active
+                                            {t('badge.active')}
                                         </Badge>
                                     )}
                                     {discount.code && (
@@ -66,11 +66,11 @@ export function DiscountSettingsDialog({ form }: DiscountSettingsDialogProps) {
                                 <div className="mt-1 flex items-center gap-4 text-sm">
                                     <span className="font-semibold text-green-700">
                                         {discount.type === 'percent'
-                                            ? `${discount.value}% off`
-                                            : `₹${discount.value} off`}
+                                            ? t('discount.percentOff', { value: discount.value })
+                                            : t('discount.rupeesOff', { value: discount.value })}
                                     </span>
                                     <span className="text-xs text-gray-500">
-                                        Expires: {discount.expires}
+                                        {t('discount.expires', { date: discount.expires })}
                                     </span>
                                 </div>
                             )}
@@ -85,7 +85,7 @@ export function DiscountSettingsDialog({ form }: DiscountSettingsDialogProps) {
                         onClick={() => form.setValue('showAddDiscountDialog', true)}
                         className="p-4"
                     >
-                        + Add New Discount
+                        {t('actions.addNew')}
                     </MyButton>
                 </div>
             </ShadDialogContent>

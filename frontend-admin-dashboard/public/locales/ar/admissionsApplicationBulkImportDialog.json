@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "title": "استيراد الطلبات دفعة واحدة",
+        "description": "ارفع ملف CSV، واختر الصف/الدفعة، ثم راجع وأكّد الاستيراد"
+    },
+    "steps": {
+        "label": "الخطوة {{number}}"
+    },
+    "upload": {
+        "templateHint": "نزّل نموذج CSV واملأه ببيانات المتقدمين ثم ارفعه",
+        "dropzoneCta": "انقر لرفع ملف `.csv`",
+        "validRowsLabel": "الصفوف الصالحة",
+        "skippedRowsLabel": "الصفوف المتجاوَزة"
+    },
+    "classSelect": {
+        "helperText": "اختر الصف/الدفعة المطلوب لتقديم الطلبات.",
+        "placeholder": "اختر صفًا/دفعة"
+    },
+    "sample": {
+        "studentName": "أحمد الطالب",
+        "fatherName": "محمد الأب",
+        "motherName": "فاطمة الأم"
+    },
+    "columns": {
+        "studentName": "اسم الطالب",
+        "gender": "الجنس",
+        "dateOfBirth": "تاريخ الميلاد",
+        "fatherName": "اسم الأب",
+        "fatherEmail": "البريد الإلكتروني للأب",
+        "fatherMobile": "رقم جوال الأب",
+        "motherName": "اسم الأم",
+        "motherEmail": "البريد الإلكتروني للأم",
+        "motherMobile": "رقم جوال الأم",
+        "status": "الحالة",
+        "source": "المصدر"
+    },
+    "preview": {
+        "summary_zero": "معاينة {{count}} صف صالح",
+        "summary_one": "معاينة {{count}} صف صالح واحد",
+        "summary_two": "معاينة {{count}} صفّين صالحين",
+        "summary_few": "معاينة {{count}} صفوف صالحة",
+        "summary_many": "معاينة {{count}} صفًا صالحًا",
+        "summary_other": "معاينة {{count}} صف صالح"
+    },
+    "errors": {
+        "onlyCsvSupported": "يُدعم ملفات .csv فقط",
+        "missingRequiredColumns": "أعمدة مطلوبة مفقودة: {{columns}}",
+        "failedToParseCsv": "فشل في تحليل ملف CSV"
+    },
+    "toasts": {
+        "importResult_zero": "تم استيراد {{count}} طلب ({{failedCount}} فشل)",
+        "importResult_one": "تم استيراد {{count}} طلب واحد ({{failedCount}} فشل)",
+        "importResult_two": "تم استيراد {{count}} طلبين ({{failedCount}} فشل)",
+        "importResult_few": "تم استيراد {{count}} طلبات ({{failedCount}} فشل)",
+        "importResult_many": "تم استيراد {{count}} طلبًا ({{failedCount}} فشل)",
+        "importResult_other": "تم استيراد {{count}} طلب ({{failedCount}} فشل)",
+        "importFailedFallback": "فشل استيراد الطلبات",
+        "instituteDetailsUnavailable": "تفاصيل المؤسسة غير متاحة",
+        "selectClassBatch": "يرجى اختيار صف/دفعة",
+        "invalidClassBatchSelection": "اختيار الصف/الدفعة غير صالح"
+    },
+    "buttons": {
+        "downloadTemplate": "تنزيل النموذج",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "next": "التالي",
+        "confirmImport": "تأكيد الاستيراد",
+        "importing": "جارٍ الاستيراد..."
+    }
+}

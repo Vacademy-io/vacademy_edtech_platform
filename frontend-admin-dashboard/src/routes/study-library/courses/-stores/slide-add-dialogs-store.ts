@@ -14,6 +14,7 @@ interface DialogState {
     isScormDialogOpen: boolean;
     isVimeoDialogOpen: boolean;
     isAssessmentDialogOpen: boolean;
+    isAiVideoDialogOpen: boolean;
 
     // Dialog actions
     openPdfDialog: () => void;
@@ -64,6 +65,9 @@ interface DialogState {
     closeAssessmentDialog: () => void;
     toggleAssessmentDialog: () => void;
 
+    openAiVideoDialog: () => void;
+    closeAiVideoDialog: () => void;
+
     resetDialogs: () => void;
 }
 
@@ -80,6 +84,7 @@ export const useDialogStore = create<DialogState>((set) => ({
     isScormDialogOpen: false,
     isVimeoDialogOpen: false,
     isAssessmentDialogOpen: false,
+    isAiVideoDialogOpen: false,
 
     // PDF Dialog actions
     openPdfDialog: () => set({ isPdfDialogOpen: true }),
@@ -146,6 +151,10 @@ export const useDialogStore = create<DialogState>((set) => ({
     toggleAssessmentDialog: () =>
         set((state) => ({ isAssessmentDialogOpen: !state.isAssessmentDialogOpen })),
 
+    // AI Video (generate with AI) Dialog actions
+    openAiVideoDialog: () => set({ isAiVideoDialogOpen: true }),
+    closeAiVideoDialog: () => set({ isAiVideoDialogOpen: false }),
+
     // Reset all dialogs
     resetDialogs: () =>
         set({
@@ -161,5 +170,6 @@ export const useDialogStore = create<DialogState>((set) => ({
             isScormDialogOpen: false,
             isVimeoDialogOpen: false,
             isAssessmentDialogOpen: false,
+            isAiVideoDialogOpen: false,
         }),
 }));

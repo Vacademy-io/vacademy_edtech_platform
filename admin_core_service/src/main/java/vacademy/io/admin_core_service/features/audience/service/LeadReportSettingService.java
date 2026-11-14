@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -47,7 +48,10 @@ public class LeadReportSettingService {
     /** Effective report settings for one institute. */
     public record ReportSettings(String timezone,
                                  java.util.Set<String> connectedCallStatuses,
-                                 java.util.Set<String> interestedStatusKeys) {
+                                 java.util.Set<String> interestedStatusKeys,
+                                 java.util.List<String> courseGroupOrder,
+                                 String admissionFieldId,
+                                 boolean hideConvertedInAllLeads) {
     }
 
     public static final String DEFAULT_TIMEZONE = "Asia/Kolkata";
@@ -55,7 +59,10 @@ public class LeadReportSettingService {
     public static final ReportSettings DEFAULTS = new ReportSettings(
             DEFAULT_TIMEZONE,
             nullSafeSet(Set.of("COMPLETED")),
-            nullSafeSet(Set.of("INTERESTED")));
+            nullSafeSet(Set.of("INTERESTED")),
+            List.of(),
+            null,
+            false);
 
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
@@ -92,8 +99,18 @@ public class LeadReportSettingService {
             if (settingJson == null || settingJson.isBlank()) return DEFAULTS;
 
             JsonNode root = objectMapper.readTree(settingJson);
-            JsonNode reports = root.path("setting").path("LEAD_SETTING").path("data").path("reports");
-            if (!reports.isObject()) return DEFAULTS;
+            JsonNode leadSetting = root.path("setting").path("LEAD_SETTING").path("data");
+            // All Leads hides converted leads when this is on; the lead counts here follow it so
+            // the Overview total matches the All Leads count for the same dates.
+            boolean hideConverted = leadSetting.path("hideConvertedInAllLeads").asBoolean(false);
+            JsonNode reports = leadSetting.path("reports");
+            if (!reports.isObject()) {
+                return hideConverted
+                        ? new ReportSettings(DEFAULTS.timezone(), DEFAULTS.connectedCallStatuses(),
+                                DEFAULTS.interestedStatusKeys(), DEFAULTS.courseGroupOrder(),
+                                DEFAULTS.admissionFieldId(), true)
+                        : DEFAULTS;
+            }
 
             String timezone = validTimezoneOrDefault(reports.path("timezone"), instituteId);
 
@@ -106,7 +123,18 @@ public class LeadReportSettingService {
             Set<String> interested = stringSetOrDefault(reports.path("interested_status_keys"),
                     DEFAULTS.interestedStatusKeys(), false);
 
-            return new ReportSettings(timezone, connected, interested);
+            // Course tags in the institute's priority order: a student who joined courses from
+            // several groups at once is counted once, under the group that comes first here.
+            List<String> courseGroupOrder = orderedStrings(reports.path("course_group_order"));
+
+            // Custom field (e.g. Branch) the Admissions report breaks admissions down by.
+            String admissionFieldId = reports.path("admission_field_id").isTextual()
+                    && !reports.path("admission_field_id").asText().isBlank()
+                    ? reports.path("admission_field_id").asText().trim()
+                    : null;
+
+            return new ReportSettings(timezone, connected, interested, courseGroupOrder, admissionFieldId,
+                    hideConverted);
         } catch (Exception e) {
             log.warn("Failed to read lead report settings for institute {} — using defaults: {}",
                     instituteId, e.getMessage());
@@ -143,6 +171,16 @@ public class LeadReportSettingService {
             values.add(uppercase ? v.toUpperCase() : v);
         }
         return values.isEmpty() ? fallback : Collections.unmodifiableSet(values);
+    }
+
+    /** A JSON array of non-blank strings in saved order, duplicates dropped; empty when absent. */
+    private static List<String> orderedStrings(JsonNode node) {
+        if (!node.isArray()) return List.of();
+        Set<String> values = new LinkedHashSet<>();
+        for (JsonNode item : node) {
+            if (item.isTextual() && !item.asText().isBlank()) values.add(item.asText().trim());
+        }
+        return List.copyOf(values);
     }
 
     /** Unmodifiable set that tolerates {@code contains(null)} (unlike Set.of). */

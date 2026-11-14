@@ -1,0 +1,13 @@
+{
+    "radiogroup": {
+        "ariaLabel": "Generation mode"
+    },
+    "options": {
+        "assist": "Assist",
+        "auto": "Auto"
+    },
+    "description": {
+        "assist": "Assist: review the plan, script & visuals as we go.",
+        "auto": "Auto: we handle everything end-to-end."
+    }
+}

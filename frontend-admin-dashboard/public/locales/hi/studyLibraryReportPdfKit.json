@@ -1,0 +1,8 @@
+{
+    "cornerLabel": {
+        "default": "शिक्षण रिपोर्ट"
+    },
+    "footer": {
+        "pageOf": "पृष्ठ {{p}} / {{pageCount}}"
+    }
+}

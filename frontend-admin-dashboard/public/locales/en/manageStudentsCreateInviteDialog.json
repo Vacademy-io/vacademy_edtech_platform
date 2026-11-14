@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "heading": "Invite Learner"
+    },
+    "inviteLink": {
+        "label": "Invite Link Name",
+        "placeholder": "Enter invite link name"
+    },
+    "activeStatus": {
+        "label": "Active Status"
+    },
+    "batchSelection": {
+        "label": "Batch Selection",
+        "createBatch": "Create Batch",
+        "assignBatches": "I want to assign batches",
+        "learnersChooseBatches": "I want {{term}}s to choose batches",
+        "maxBatchesLabel": "Enter max number of batches a student can select"
+    },
+    "linkExpiration": {
+        "label": "Link expiration days",
+        "days": "days"
+    },
+    "inviteeEmail": {
+        "label": "Enter invitee email",
+        "placeholder": "you@email.com",
+        "addButton": "Add"
+    },
+    "validation": {
+        "invalidEmail": "Please enter a valid email address",
+        "duplicateEmail": "This email has already been added"
+    },
+    "toast": {
+        "batchCreateSuccess": "Batch created successfully",
+        "batchCreateError": "Failed to create batch",
+        "inviteError": "Error updating/creating invite",
+        "formErrors": "Please fix the form errors before submitting"
+    }
+}

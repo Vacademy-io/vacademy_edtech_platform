@@ -1,0 +1,107 @@
+{
+  "loadError": {
+    "title": "Impossible de charger les badges",
+    "hint": "Une erreur s'est produite lors du chargement des badges de cet apprenant."
+  },
+  "disabledBanner": {
+    "text": "Les badges sont désactivés pour cet établissement. Les attributions sont enregistrées, mais les apprenants ne les verront pas et ne seront pas notifiés tant que les badges ne sont pas activés dans Paramètres → Badges et récompenses (les parents disposant d'un accès au portail les voient immédiatement)."
+  },
+  "picker": {
+    "label": "Badge",
+    "placeholder": "Choisissez un badge à attribuer",
+    "empty": "Aucun badge disponible à attribuer pour le moment.",
+    "groupManual": "Attribués par le personnel",
+    "groupAuto": "Badges de réussite",
+    "earned": "Obtenu",
+    "create": "Créer un nouveau badge"
+  },
+  "trigger": {
+    "manual": "Attribué manuellement par le personnel",
+    "course_count": "Cours suivis",
+    "slide_count": "Diapositives disponibles",
+    "streak": "Série quotidienne",
+    "xp_total": "XP total gagné",
+    "course_completion": "% d'achèvement du cours",
+    "assessment_score": "% de score à l'évaluation",
+    "live_session_count": "Cours en direct suivis",
+    "live_session_streak": "Série de cours en direct (d'affilée)"
+  },
+  "unit": {
+    "course_count": "cours",
+    "slide_count": "diapositives",
+    "streak": "jours",
+    "xp_total": "XP",
+    "course_completion": "%",
+    "assessment_score": "%",
+    "live_session_count": "cours",
+    "live_session_streak": "cours"
+  },
+  "preview": {
+    "autoChip": "{{label}} · {{threshold}} {{unit}}",
+    "hidden": "Caché",
+    "noDescription": "Aucune description",
+    "autoHeldHint": "Cet apprenant a déjà débloqué ce badge automatiquement. L'attribuer l'enregistre comme une attribution du personnel avec votre note."
+  },
+  "award": {
+    "heading": "Attribuer un badge",
+    "empty": "Aucun badge configuré pour le moment. Ajoutez-en d'abord dans Paramètres → Badges et récompenses.",
+    "noteLabel": "Note pour l'apprenant (facultatif)",
+    "notePlaceholder": "ex. Meilleur score au contrôle de l'unité — l'apprenant la voit avec le badge",
+    "submit": "Attribuer le badge",
+    "toastNew": "Badge attribué",
+    "toastAlreadyActive": "Possède déjà ce badge",
+    "toastNotEnrolled": "Cet apprenant n'appartient pas à cet établissement ; le badge n'a pas été attribué.",
+    "toastUpgraded": "Enregistré comme attribution du personnel",
+    "toastNotNotified": "Les apprenants ne sont pas notifiés tant que les badges sont désactivés",
+    "errorToast": "Échec de l'attribution du badge"
+  },
+  "awarded": {
+    "heading": "Badges attribués",
+    "emptyTitle": "Aucun badge pour l'instant",
+    "emptyHint": "Récompensez cet apprenant avec un badge ci-dessus.",
+    "badgeFallback": "badge",
+    "hidden": "Caché",
+    "metaManual": "Attribué par le personnel · {{date}}",
+    "metaManualNoDate": "Attribué par le personnel",
+    "metaAuto": "Débloqué automatiquement · enregistré le {{date}}",
+    "metaAutoNoDate": "Débloqué automatiquement",
+    "revokeAriaLabel": "Révoquer {{name}}",
+    "successToast": "Badge révoqué",
+    "errorToast": "Échec de la révocation du badge"
+  },
+  "revoke": {
+    "title": "Révoquer « {{name}} » ?",
+    "manualBody": "L'apprenant perd ce badge ; l'enregistrement est conservé pour l'audit.",
+    "autoBody": "Cela le retire des classements, des statistiques et de la vue parent. L'application de l'apprenant peut continuer à l'afficher comme débloqué tant que la règle est remplie.",
+    "cancel": "Annuler",
+    "confirm": "Révoquer"
+  },
+  "create": {
+    "title": "Créer un nouveau badge",
+    "intro": "Le personnel attribue ce badge depuis le profil d'un apprenant ou la liste des élèves. Chaque apprenant ne peut détenir un badge qu'une seule fois — pour une reconnaissance récurrente, créez des variantes datées ou par palier.",
+    "nameLabel": "Nom",
+    "namePlaceholder": "ex. Coup de main",
+    "nameRequired": "Donnez un nom au badge.",
+    "nameTooLong": "Le nom doit faire moins de 120 caractères.",
+    "duplicateWarning": "Un badge actif nommé « {{name}} » existe déjà. Vous pouvez quand même créer celui-ci.",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Ce que ce badge récompense — les apprenants le voient avec le badge.",
+    "descriptionTooLong": "La description doit faire moins de 500 caractères.",
+    "iconLabel": "Icône",
+    "iconOptionAriaLabel": "Utiliser l'icône {{name}}",
+    "iconLibraryHint": "Badge de la bibliothèque utilisé",
+    "iconCustomHint": "Image importée utilisée",
+    "chooseFromLibrary": "Choisir dans la bibliothèque",
+    "uploadImage": "Importer une image",
+    "uploading": "Import en cours…",
+    "imageUploaded": "Image importée",
+    "uploadFailed": "Échec de l'import de l'image",
+    "hiddenLabel": "Caché jusqu'à l'obtention",
+    "hiddenHelp": "Les apprenants ne voient pas ce badge avant de l'obtenir. S'applique sur les applications apprenant à jour.",
+    "cancel": "Annuler",
+    "submit": "Créer le badge",
+    "submitting": "Création…",
+    "successToast": "Badge « {{name}} » créé et sélectionné",
+    "errorToast": "Impossible de créer le badge. Réessayez."
+  }
+}

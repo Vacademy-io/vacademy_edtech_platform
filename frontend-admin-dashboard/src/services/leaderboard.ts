@@ -9,6 +9,16 @@ export interface LeaderboardBadge {
     icon: string;
 }
 
+/** Ranking measure: POINTS reads the ledger, ACTIVITY is minutes learning (the server default). */
+export type LeaderboardMetric = 'POINTS' | 'ACTIVITY';
+/** All time, or since Monday. Only POINTS honours it. */
+export type LeaderboardWindow = 'ALL' | 'WEEK';
+
+export interface LeaderboardOptions {
+    metric?: LeaderboardMetric;
+    window?: LeaderboardWindow;
+}
+
 export interface LeaderboardEntry {
     rank: number | null;
     userId: string | null;
@@ -39,19 +49,24 @@ export interface BadgeStatsData {
 }
 
 /** Admin course/batch leaderboard (real names + badge counts), ranked by activity. */
-export async function getCourseLeaderboardAdmin(packageSessionId: string): Promise<LeaderboardData> {
+export async function getCourseLeaderboardAdmin(
+    packageSessionId: string,
+    options?: LeaderboardOptions
+): Promise<LeaderboardData> {
     const instituteId = getCurrentInstituteId();
     const { data } = await authenticatedAxiosInstance.get<LeaderboardData>(`${BASE}/course/admin`, {
-        params: { packageSessionId, instituteId },
+        params: { packageSessionId, instituteId, ...options },
     });
     return data;
 }
 
 /** Admin institute-WIDE leaderboard: every learner ranked across all their courses combined. */
-export async function getInstituteLeaderboardAdmin(): Promise<LeaderboardData> {
+export async function getInstituteLeaderboardAdmin(
+    options?: LeaderboardOptions
+): Promise<LeaderboardData> {
     const instituteId = getCurrentInstituteId();
     const { data } = await authenticatedAxiosInstance.get<LeaderboardData>(`${BASE}/institute/admin`, {
-        params: { instituteId },
+        params: { instituteId, ...options },
     });
     return data;
 }

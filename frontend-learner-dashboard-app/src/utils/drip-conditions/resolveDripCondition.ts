@@ -1,6 +1,7 @@
 import type {
   DripConditionJson,
   DripConditionLevel,
+  DripConditionRuleType,
   DripConditionTarget,
 } from "./types";
 
@@ -24,14 +25,17 @@ export interface ResolvedDripConditions {
   /** Institute-wide master switch (COURSE_SETTING.data.dripConditions.enabled) */
   enabled: boolean;
   /**
-   * Explicit opt-in to enforce conditions stored in the settings blob.
+   * Explicit opt-in to enforce PROGRESS rules stored in the settings blob.
    *
    * MUST default to false. Those conditions were written by the admin
    * dashboard for a long time while nothing read them, so institutes are
-   * carrying rules that have never once locked anything — 83 of them across
-   * 10 institutes as of Aug 2026, nearly all `lock` or `hide`. Honouring them
-   * automatically would take content away from learners who have had it open
-   * for months. An admin has to turn this on per institute.
+   * carrying prerequisite / completion / sequential rules that have never
+   * once locked anything — 70-odd across 10 institutes as of Sep 2026.
+   * Honouring them automatically would take content away from learners who
+   * have had it open for months. An admin has to turn this on per institute.
+   *
+   * Time rules (`date_based`, `relative_date`) are NOT behind this flag — see
+   * enforceableCondition.
    */
   applyConfiguredRules: boolean;
   conditions: StoredDripCondition[];
@@ -93,12 +97,50 @@ const isLive = (config: DripConditionJson): boolean =>
   Array.isArray(config.rules) &&
   config.rules.length > 0;
 
+/** Rules the clock alone can satisfy — no learner action involved. */
+export const TIME_RULE_TYPES: readonly DripConditionRuleType[] = [
+  "date_based",
+  "relative_date",
+];
+
+/**
+ * The part of a saved condition this institute actually enforces.
+ *
+ * Time rules always apply. Every legacy date rule in production is already in
+ * the past (checked Sep 2026), so enforcing them changes nothing for existing
+ * learners, and a future-dated one is exactly what the admin just asked for —
+ * "unlock on the 19th" saving without locking anything was reported as a bug.
+ *
+ * Progress rules stay behind `applyConfiguredRules`: those are the dormant
+ * legacy rules that would lock content under learners mid-course. Until the
+ * institute opts in, a mixed condition is narrowed to its time rules (AND of
+ * fewer rules only ever unlocks more), and a progress-only condition is
+ * dropped entirely.
+ */
+export function enforceableCondition(
+  condition: DripConditionJson | null | undefined,
+  applyConfiguredRules: boolean
+): DripConditionJson | null {
+  if (!condition) return null;
+  if (applyConfiguredRules) return condition;
+  const rules = (condition.rules ?? []).filter((rule) =>
+    TIME_RULE_TYPES.includes(rule.type)
+  );
+  if (rules.length === 0) return null;
+  return rules.length === condition.rules.length
+    ? condition
+    : { ...condition, rules };
+}
+
 /**
  * The condition that governs one piece of content.
  *
  * An item's own condition wins; otherwise the course-wide condition applies,
  * but only the part of it that targets this level — a package rule set to drip
  * chapters must leave subjects and slides alone.
+ *
+ * Pass `applyConfiguredRules` to get back only what the institute enforces
+ * (see enforceableCondition); it defaults to the opted-out reading.
  */
 export function resolveDripCondition(
   conditions: StoredDripCondition[] | null | undefined,
@@ -106,10 +148,14 @@ export function resolveDripCondition(
     level: Exclude<DripConditionLevel, "package">;
     levelId: string | null | undefined;
     packageId: string | null | undefined;
-  }
+  },
+  options: { applyConfiguredRules?: boolean } = {}
 ): DripConditionJson | null {
   if (!conditions?.length) return null;
   const { level, levelId, packageId } = target;
+  const applyConfiguredRules = options.applyConfiguredRules === true;
+  const enforceable = (config: DripConditionJson): DripConditionJson | null =>
+    isLive(config) ? enforceableCondition(config, applyConfiguredRules) : null;
 
   if (levelId) {
     const own = conditions
@@ -117,7 +163,8 @@ export function resolveDripCondition(
         (c) => c.level === level && c.level_id === levelId && c.enabled !== false
       )
       .flatMap(configsOf)
-      .find(isLive);
+      .map(enforceable)
+      .find((config) => config !== null);
     if (own) return own;
   }
 
@@ -130,10 +177,9 @@ export function resolveDripCondition(
           c.enabled !== false
       )
       .flatMap(configsOf)
-      .find(
-        (config) =>
-          isLive(config) && config.target === (level as DripConditionTarget)
-      );
+      .filter((config) => config.target === (level as DripConditionTarget))
+      .map(enforceable)
+      .find((config) => config !== null);
     if (fromPackage) return fromPackage;
   }
 

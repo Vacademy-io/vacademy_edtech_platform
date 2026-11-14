@@ -3,6 +3,8 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { getAiProductName } from '@/config/branding';
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
     Accordion,
@@ -571,6 +573,7 @@ const SortableSessionItem = ({
     onDelete,
     children,
 }: SortableSessionItemProps) => {
+    const { t } = useTranslation('studyLibraryCourseOutline');
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(session.title);
     const {
@@ -635,7 +638,7 @@ const SortableSessionItem = ({
                                 />
                             ) : (
                                 <h3 className="text-base font-semibold text-neutral-900">
-                                    Session {index + 1}: {session.title}
+                                    {t('session.label', { number: index + 1, title: session.title })}
                                 </h3>
                             )}
                         </div>
@@ -648,7 +651,7 @@ const SortableSessionItem = ({
                                             handleSaveEdit();
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                        title="Save"
+                                        title={t('actions.save')}
                                     >
                                         <CheckCircle className="h-3.5 w-3.5" />
                                     </button>
@@ -658,7 +661,7 @@ const SortableSessionItem = ({
                                             handleCancelEdit();
                                         }}
                                         className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                        title="Cancel"
+                                        title={t('actions.cancel')}
                                     >
                                         <X className="h-3.5 w-3.5" />
                                     </button>
@@ -671,7 +674,7 @@ const SortableSessionItem = ({
                                             setIsEditing(true);
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Edit"
+                                        title={t('actions.edit')}
                                     >
                                         <Edit2 className="h-3.5 w-3.5" />
                                     </button>
@@ -681,7 +684,7 @@ const SortableSessionItem = ({
                                             onDelete(session.id);
                                         }}
                                         className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Delete"
+                                        title={t('actions.delete')}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </button>
@@ -706,6 +709,7 @@ interface SortableSlideItemProps {
 }
 
 const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt }: SortableSlideItemProps) => {
+    const { t } = useTranslation('studyLibraryCourseOutline');
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(slide.title);
     const [showPromptDialog, setShowPromptDialog] = useState(false);
@@ -857,14 +861,14 @@ const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt 
                         <button
                             onClick={handleSaveEdit}
                             className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                            title="Save"
+                            title={t('actions.save')}
                         >
                             <CheckCircle className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={handleCancelEdit}
                             className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                            title="Cancel"
+                            title={t('actions.cancel')}
                         >
                             <X className="h-3.5 w-3.5" />
                         </button>
@@ -874,14 +878,14 @@ const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt 
                         <button
                             onClick={() => setIsEditing(true)}
                             className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Edit"
+                            title={t('actions.edit')}
                         >
                             <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                             onClick={() => onDelete(slide.id)}
                             className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Delete"
+                            title={t('actions.delete')}
                         >
                             <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -899,14 +903,14 @@ const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt 
             }}>
                 <DialogContent className="w-[80vw] max-w-[80vw] max-h-[90vh] flex flex-col p-0">
                     <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                        <DialogTitle>AI Generation Prompt</DialogTitle>
+                        <DialogTitle>{t('aiPromptDialog.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-6 py-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <Textarea
                             ref={promptTextareaRef}
                             value={promptValue}
                             onChange={(e) => setPromptValue(e.target.value)}
-                            placeholder="Enter a prompt that describes what this page should contain..."
+                            placeholder={t('aiPromptDialog.placeholder')}
                             className="min-h-[120px] text-sm"
                         />
                     </div>
@@ -918,7 +922,7 @@ const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt 
                                 setShowPromptDialog(false);
                             }}
                         >
-                            Save
+                            {t('actions.save')}
                         </MyButton>
                     </div>
                 </DialogContent>
@@ -928,6 +932,7 @@ const SortableSlideItem = ({ slide, sessionId, onEdit, onDelete, onUpdatePrompt 
 };
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryCourseOutline');
     const navigate = useNavigate();
     const initialData = initializeMockData();
     const [courseData, setCourseData] = useState<CourseData>(initialData);
@@ -1148,7 +1153,7 @@ function RouteComponent() {
     const handleConfirmRegenerate = () => {
         // Only course goal is required
         if (!regenerateCourseGoal.trim()) {
-            alert('Please enter a course goal');
+            alert(t('errors.courseGoalRequired'));
             return;
         }
         setRegenerateDialogOpen(false);
@@ -1439,29 +1444,29 @@ function RouteComponent() {
     const getDefaultSlideTitle = (type: SlideType): string => {
         switch (type) {
             case 'doc':
-                return 'Document';
+                return t('defaultSlideTitle.doc');
             case 'pdf':
-                return 'PDF Document';
+                return t('defaultSlideTitle.pdf');
             case 'video':
-                return 'Video';
+                return t('defaultSlideTitle.video');
             case 'image':
-                return 'Image';
+                return t('defaultSlideTitle.image');
             case 'jupyter':
-                return 'Jupyter Notebook';
+                return t('defaultSlideTitle.jupyter');
             case 'code-editor':
-                return 'Code Editor';
+                return t('defaultSlideTitle.codeEditor');
             case 'scratch':
-                return 'Scratch Programming';
+                return t('defaultSlideTitle.scratch');
             case 'video-jupyter':
-                return 'Video + Jupyter Notebook';
+                return t('defaultSlideTitle.videoJupyter');
             case 'video-code-editor':
-                return 'Video + Code Editor';
+                return t('defaultSlideTitle.videoCodeEditor');
             case 'video-scratch':
-                return 'Video + Scratch Programming';
+                return t('defaultSlideTitle.videoScratch');
             case 'assignment':
-                return 'Assignment';
+                return t('defaultSlideTitle.assignment');
             default:
-                return 'New Page';
+                return t('defaultSlideTitle.newPage');
         }
     };
 
@@ -1617,14 +1622,14 @@ function RouteComponent() {
         return (
             <LayoutContainer>
                 <Helmet>
-                    <title>Generating Course Outline...</title>
+                    <title>{t('pageMeta.loadingTitle')}</title>
                 </Helmet>
                 <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-center gap-2 py-20">
                             <RefreshCw className="h-5 w-5 animate-spin text-indigo-600" />
                             <span className="text-sm font-medium text-indigo-600">
-                                {getAiProductName()} is generating your outline...
+                                {t('loading', { product: getAiProductName() })}
                             </span>
                         </div>
                     </div>
@@ -1636,8 +1641,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>AI-Generated Course Outline</title>
-                <meta name="description" content="Review and save your AI-generated course outline." />
+                <title>{t('pageMeta.title')}</title>
+                <meta name="description" content={t('pageMeta.description')} />
             </Helmet>
 
             <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50">
@@ -1654,16 +1659,16 @@ function RouteComponent() {
                             className="mb-4 flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-indigo-600"
                         >
                             <ArrowLeft className="h-4 w-4" />
-                            Back to Create Course
+                            {t('backToCreateCourse')}
                         </button>
 
                         <div className="mb-6 flex items-start justify-between">
                             <div>
                                 <h1 className="mb-2 text-3xl font-semibold text-neutral-900">
-                                    Step 1: Review Your Course Outline
+                                    {t('stepHeading')}
                                 </h1>
                                 <p className="text-base text-gray-600">
-                                    Review the course outline, topics, and objectives generated for your course. Once everything looks right, click Generate to begin creating your course materials.
+                                    {t('stepDescription')}
                                 </p>
                             </div>
                             <MyButton
@@ -1673,7 +1678,7 @@ function RouteComponent() {
                                 className="min-w-[140px] bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                             >
                                 <Sparkles className="h-4 w-4" />
-                                Generate Page Content
+                                {t('generatePageContent')}
                             </MyButton>
                         </div>
                     </motion.div>
@@ -1690,7 +1695,7 @@ function RouteComponent() {
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="flex items-center gap-2 text-2xl font-semibold text-neutral-900">
                                     <Layers className="h-6 w-6 text-indigo-600" />
-                                    Course Outline
+                                    {t('courseOutline')}
                                 </h2>
                                 <div className="flex gap-2">
                                     <MyButton
@@ -1701,12 +1706,12 @@ function RouteComponent() {
                                         {isAllExpanded ? (
                                             <>
                                                 <ChevronsUp className="h-3 w-3" />
-                                                Collapse All
+                                                {t('collapseAll')}
                                             </>
                                         ) : (
                                             <>
                                                 <ChevronsDown className="h-3 w-3" />
-                                                Expand All
+                                                {t('expandAll')}
                                             </>
                                         )}
                                     </MyButton>
@@ -1787,19 +1792,19 @@ function RouteComponent() {
                                                                         <DialogTrigger asChild>
                                                                             <button className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-600 transition-colors hover:border-indigo-400 hover:bg-indigo-50">
                                                                                 <Plus className="h-4 w-4" />
-                                                                                Add Page
+                                                                                {t('addPage')}
                                                                             </button>
                                                                         </DialogTrigger>
                                                                         <DialogContent className="w-[80vw] max-w-[80vw] max-h-[90vh] flex flex-col p-0">
                                                                             <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                                                                                <DialogTitle>Select Page Type</DialogTitle>
+                                                                                <DialogTitle>{t('selectPageType')}</DialogTitle>
                                                                                 <DialogDescription>
-                                                                                    Choose the type of page you want to add to this session.
+                                                                                    {t('selectPageTypeDescription')}
                                                                                 </DialogDescription>
                                                                             </DialogHeader>
                                                                             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                                                                                 <div>
-                                                                                    <Label className="mb-3 block text-sm font-medium">Page Type</Label>
+                                                                                    <Label className="mb-3 block text-sm font-medium">{t('pageType')}</Label>
                                                                                     <div className="grid grid-cols-3 gap-3">
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'doc')}
@@ -1811,7 +1816,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <FileText className="h-6 w-6 text-blue-600" />
-                                                                                            <span className="text-sm font-medium">Document</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.doc')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'pdf')}
@@ -1823,7 +1828,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <File className="h-6 w-6 text-red-600" />
-                                                                                            <span className="text-sm font-medium">PDF</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.pdf')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'video')}
@@ -1835,7 +1840,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <Video className="h-6 w-6 text-red-600" />
-                                                                                            <span className="text-sm font-medium">Video</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.video')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'image')}
@@ -1847,7 +1852,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <ImageIcon className="h-6 w-6 text-blue-600" />
-                                                                                            <span className="text-sm font-medium">Image</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.image')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'jupyter')}
@@ -1859,7 +1864,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <Notebook className="h-6 w-6 text-orange-600" />
-                                                                                            <span className="text-sm font-medium">Jupyter</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.jupyter')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'code-editor')}
@@ -1871,7 +1876,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <Code className="h-6 w-6 text-green-600" />
-                                                                                            <span className="text-sm font-medium">Code Editor</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.codeEditor')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'scratch')}
@@ -1883,7 +1888,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <Puzzle className="h-6 w-6 text-purple-600" />
-                                                                                            <span className="text-sm font-medium">Scratch</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.scratch')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'video-jupyter')}
@@ -1898,7 +1903,7 @@ function RouteComponent() {
                                                                                                 <Video className="h-5 w-5 text-red-600" />
                                                                                                 <Notebook className="h-5 w-5 text-orange-600" />
                                                                                             </div>
-                                                                                            <span className="text-sm font-medium">Video + Jupyter</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.videoJupyter')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'video-code-editor')}
@@ -1913,7 +1918,7 @@ function RouteComponent() {
                                                                                                 <Video className="h-5 w-5 text-red-600" />
                                                                                                 <Code className="h-5 w-5 text-green-600" />
                                                                                             </div>
-                                                                                            <span className="text-sm font-medium">Video + Code</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.videoCodeEditor')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'video-scratch')}
@@ -1928,7 +1933,7 @@ function RouteComponent() {
                                                                                                 <Video className="h-5 w-5 text-red-600" />
                                                                                                 <Puzzle className="h-5 w-5 text-purple-600" />
                                                                                             </div>
-                                                                                            <span className="text-sm font-medium">Video + Scratch</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.videoScratch')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'quiz')}
@@ -1940,7 +1945,7 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <FileQuestion className="h-6 w-6 text-purple-600" />
-                                                                                            <span className="text-sm font-medium">Quiz</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.quiz')}</span>
                                                                                         </button>
                                                                                         <button
                                                                                             onClick={() => handleSelectSlideType(session.id, 'assignment')}
@@ -1952,14 +1957,14 @@ function RouteComponent() {
                                                                                             )}
                                                                                         >
                                                                                             <ClipboardList className="h-6 w-6 text-orange-600" />
-                                                                                            <span className="text-sm font-medium">Assignment</span>
+                                                                                            <span className="text-sm font-medium">{t('slideTypeOption.assignment')}</span>
                                                                                         </button>
                                                                                     </div>
                                                                                 </div>
 
                                                                                 <div>
                                                                                     <Label htmlFor="slideTitle" className="mb-2 block text-sm font-medium">
-                                                                                        Page Title
+                                                                                        {t('pageTitle')}
                                                                                     </Label>
                                                                                     <Input
                                                                                         id="slideTitle"
@@ -1970,7 +1975,7 @@ function RouteComponent() {
                                                                                                 [`${session.id}-${selectedSlideType[session.id] || ''}`]: e.target.value,
                                                                                             }))
                                                                                         }
-                                                                                        placeholder={selectedSlideType[session.id] ? `Enter page title (e.g., ${getDefaultSlideTitle(selectedSlideType[session.id]!)})` : "Select a page type first"}
+                                                                                        placeholder={selectedSlideType[session.id] ? t('pageTitlePlaceholder', { example: getDefaultSlideTitle(selectedSlideType[session.id]!) }) : t('selectPageTypeFirst')}
                                                                                         className="w-full"
                                                                                         disabled={!selectedSlideType[session.id]}
                                                                                         onKeyDown={(e) => {
@@ -1987,7 +1992,7 @@ function RouteComponent() {
                                                                                     onClick={() => handleConfirmAddSlide(session.id)}
                                                                                     disabled={!selectedSlideType[session.id] || !slideTitle[`${session.id}-${selectedSlideType[session.id]}`]?.trim()}
                                                                                 >
-                                                                                    Add Page
+                                                                                    {t('addPage')}
                                                                                 </MyButton>
                                                                             </div>
                                                                         </DialogContent>
@@ -2030,13 +2035,13 @@ function RouteComponent() {
                             {/* Course Name */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">Course name</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('courseName')}</label>
                                     <div className="flex gap-2">
                                         {editingField !== 'title' && (
                                             <button
                                                 onClick={() => handleEditField('title', courseData.title)}
                                                 className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                                title="Edit"
+                                                title={t('actions.edit')}
                                             >
                                                 <Edit2 className="h-3 w-3" />
                                             </button>
@@ -2056,14 +2061,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('title')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2075,7 +2080,7 @@ function RouteComponent() {
                             {/* Description */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">Description</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('description')}</label>
                                     <div className="flex gap-2">
                                         {editingField !== 'subtitle' && (
                                             <button
@@ -2100,14 +2105,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('subtitle')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2119,7 +2124,7 @@ function RouteComponent() {
                             {/* Level */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">Level</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('level')}</label>
                                 </div>
                                 <Select
                                     value={courseData.level}
@@ -2128,7 +2133,7 @@ function RouteComponent() {
                                     }}
                                 >
                                     <SelectTrigger className="w-full text-sm">
-                                        <SelectValue placeholder="Select level" />
+                                        <SelectValue placeholder={t('selectLevel')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {instituteLevels.length > 0 ? (
@@ -2139,10 +2144,10 @@ function RouteComponent() {
                                             ))
                                         ) : (
                                             <>
-                                                <SelectItem value="Beginner">Beginner</SelectItem>
-                                                <SelectItem value="Basic">Basic</SelectItem>
-                                                <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                                <SelectItem value="Advanced">Advanced</SelectItem>
+                                                <SelectItem value="Beginner">{t('levelOption.beginner')}</SelectItem>
+                                                <SelectItem value="Basic">{t('levelOption.basic')}</SelectItem>
+                                                <SelectItem value="Intermediate">{t('levelOption.intermediate')}</SelectItem>
+                                                <SelectItem value="Advanced">{t('levelOption.advanced')}</SelectItem>
                                             </>
                                         )}
                                     </SelectContent>
@@ -2152,7 +2157,7 @@ function RouteComponent() {
                             {/* Course Tags */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">Course tags</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('courseTags')}</label>
                                     <div className="flex gap-2">
                                         {editingField !== 'tags' && (
                                             <button
@@ -2169,7 +2174,7 @@ function RouteComponent() {
                                         <Textarea
                                             value={editValues.tags || ''}
                                             onChange={(e) => setEditValues({ tags: e.target.value })}
-                                            placeholder="Enter tags separated by commas"
+                                            placeholder={t('tagsPlaceholder')}
                                             className="min-h-[60px] text-sm"
                                         />
                                         <div className="flex gap-2">
@@ -2178,14 +2183,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('tags')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2209,10 +2214,10 @@ function RouteComponent() {
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course preview image
+                                            {t('coursePreviewImage.label')}
                                         </label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Thumbnail shown on course cards
+                                            {t('coursePreviewImage.hint')}
                                         </p>
                                     </div>
                                 </div>
@@ -2221,7 +2226,7 @@ function RouteComponent() {
                                         <div className="relative">
                                             <img
                                                 src={courseData.previewImage}
-                                                alt="Course preview"
+                                                alt={t('coursePreviewImage.alt')}
                                                 className="h-32 w-full rounded-lg object-cover"
                                             />
                                             <button
@@ -2229,7 +2234,7 @@ function RouteComponent() {
                                                     setCourseData((prev) => ({ ...prev, previewImage: undefined }))
                                                 }
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove image"
+                                                title={t('removeImage')}
                                             >
                                                 <X className="h-3 w-3" />
                                             </button>
@@ -2248,7 +2253,7 @@ function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('actions.upload')}
                                                 </label>
                                             </div>
                                         </div>
@@ -2268,10 +2273,10 @@ function RouteComponent() {
                                             />
                                             <ImageIcon className="mb-2 h-8 w-8 text-neutral-400" />
                                             <span className="text-sm font-medium text-neutral-600">
-                                                Click to upload preview image
+                                                {t('coursePreviewImage.uploadHint')}
                                             </span>
                                             <span className="mt-1 text-xs text-neutral-500">
-                                                Thumbnail for course card
+                                                {t('coursePreviewImage.uploadSubHint')}
                                             </span>
                                         </label>
                                     )}
@@ -2283,10 +2288,10 @@ function RouteComponent() {
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
                                         <label className="text-base font-bold text-neutral-900">
-                                            Course banner image
+                                            {t('courseBannerImage.label')}
                                         </label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Wide header image on course detail page
+                                            {t('courseBannerImage.hint')}
                                         </p>
                                     </div>
                                 </div>
@@ -2295,7 +2300,7 @@ function RouteComponent() {
                                         <div className="relative">
                                             <img
                                                 src={courseData.bannerImage}
-                                                alt="Course banner"
+                                                alt={t('courseBannerImage.alt')}
                                                 className="h-32 w-full rounded-lg object-cover"
                                             />
                                             <button
@@ -2303,7 +2308,7 @@ function RouteComponent() {
                                                     setCourseData((prev) => ({ ...prev, bannerImage: undefined }))
                                                 }
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove image"
+                                                title={t('removeImage')}
                                             >
                                                 <X className="h-3 w-3" />
                                             </button>
@@ -2322,7 +2327,7 @@ function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('actions.upload')}
                                                 </label>
                                             </div>
                                         </div>
@@ -2342,10 +2347,10 @@ function RouteComponent() {
                                             />
                                             <ImageIcon className="mb-2 h-8 w-8 text-neutral-400" />
                                             <span className="text-sm font-medium text-neutral-600">
-                                                Click to upload banner image
+                                                {t('courseBannerImage.uploadHint')}
                                             </span>
                                             <span className="mt-1 text-xs text-neutral-500">
-                                                Wide background image for course detail page
+                                                {t('courseBannerImage.uploadSubHint')}
                                             </span>
                                         </label>
                                     )}
@@ -2356,9 +2361,9 @@ function RouteComponent() {
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
                                     <div>
-                                        <label className="text-base font-bold text-neutral-900">Course Media</label>
+                                        <label className="text-base font-bold text-neutral-900">{t('courseMedia.label')}</label>
                                         <p className="mt-1 text-xs text-neutral-500">
-                                            Featured image or video for course page
+                                            {t('courseMedia.hint')}
                                         </p>
                                     </div>
                                 </div>
@@ -2381,7 +2386,7 @@ function RouteComponent() {
                                             ) : (
                                                 <img
                                                     src={courseData.courseMedia}
-                                                    alt="Course media"
+                                                    alt={t('courseMedia.alt')}
                                                     className="h-32 w-full rounded-lg object-cover"
                                                 />
                                             )}
@@ -2394,7 +2399,7 @@ function RouteComponent() {
                                                     }))
                                                 }
                                                 className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                                title="Remove media"
+                                                title={t('courseMedia.removeMedia')}
                                             >
                                                 <X className="h-3 w-3" />
                                             </button>
@@ -2418,14 +2423,14 @@ function RouteComponent() {
                                                             }
                                                         }}
                                                     />
-                                                    Upload
+                                                    {t('actions.upload')}
                                                 </label>
                                                 <button
                                                     onClick={() => setMediaEditMode((prev) => ({ ...prev, courseMedia: 'youtube' }))}
                                                     className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                                                 >
                                                     <Video className="h-3 w-3" />
-                                                    YouTube Link
+                                                    {t('courseMedia.youtubeLink')}
                                                 </button>
                                             </div>
                                         </div>
@@ -2434,7 +2439,7 @@ function RouteComponent() {
                                             {mediaEditMode.courseMedia === 'youtube' ? (
                                                 <div className="space-y-2">
                                                     <Input
-                                                        placeholder="Paste YouTube URL here"
+                                                        placeholder={t('courseMedia.youtubeUrlPlaceholder')}
                                                         className="text-sm"
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
@@ -2476,14 +2481,14 @@ function RouteComponent() {
                                                                 }
                                                             }}
                                                         >
-                                                            Save
+                                                            {t('actions.save')}
                                                         </MyButton>
                                                         <MyButton
                                                             buttonType="secondary"
                                                             scale="small"
                                                             onClick={() => setMediaEditMode((prev) => ({ ...prev, courseMedia: null }))}
                                                         >
-                                                            Cancel
+                                                            {t('actions.cancel')}
                                                         </MyButton>
                                                     </div>
                                                 </div>
@@ -2509,10 +2514,10 @@ function RouteComponent() {
                                                         />
                                                         <ImageIcon className="mb-2 h-8 w-8 text-neutral-400" />
                                                         <span className="text-sm font-medium text-neutral-600">
-                                                            Click to upload image or video
+                                                            {t('courseMedia.uploadHint')}
                                                         </span>
                                                         <span className="mt-1 text-xs text-neutral-500">
-                                                            Featured media block for course page
+                                                            {t('courseMedia.uploadSubHint')}
                                                         </span>
                                                     </label>
                                                     <button
@@ -2520,7 +2525,7 @@ function RouteComponent() {
                                                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                                                     >
                                                         <Video className="h-4 w-4" />
-                                                        Add YouTube Link
+                                                        {t('courseMedia.addYoutubeLink')}
                                                     </button>
                                                 </>
                                             )}
@@ -2533,7 +2538,7 @@ function RouteComponent() {
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
                                     <label className="text-base font-bold text-neutral-900">
-                                        What Learners Will Gain
+                                        {t('whatLearnersGain.label')}
                                     </label>
                                     <div className="flex gap-2">
                                         {editingField !== 'whatLearnersGain' && (
@@ -2556,7 +2561,7 @@ function RouteComponent() {
                                         <Textarea
                                             value={editValues.whatLearnersGain || ''}
                                             onChange={(e) => setEditValues({ whatLearnersGain: e.target.value })}
-                                            placeholder="Enter one item per line"
+                                            placeholder={t('whatLearnersGain.placeholder')}
                                             className="min-h-[120px] text-sm"
                                         />
                                         <div className="flex gap-2">
@@ -2565,14 +2570,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('whatLearnersGain')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2590,7 +2595,7 @@ function RouteComponent() {
                             {/* Who Should Join */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">Who Should Join</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('whoShouldJoin')}</label>
                                     <div className="flex gap-2">
                                         {editingField !== 'whoShouldJoin' && (
                                             <button
@@ -2615,14 +2620,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('whoShouldJoin')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2634,7 +2639,7 @@ function RouteComponent() {
                             {/* About the Course */}
                             <div className="rounded-xl bg-white p-4 shadow-md">
                                 <div className="mb-3 flex items-center justify-between">
-                                    <label className="text-base font-bold text-neutral-900">About the Course</label>
+                                    <label className="text-base font-bold text-neutral-900">{t('aboutCourse')}</label>
                                     <div className="flex gap-2">
                                         {editingField !== 'aboutCourse' && (
                                             <button
@@ -2661,14 +2666,14 @@ function RouteComponent() {
                                                 scale="small"
                                                 onClick={() => handleSaveEdit('aboutCourse')}
                                             >
-                                                Save
+                                                {t('actions.save')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType="secondary"
                                                 scale="small"
                                                 onClick={handleCancelEdit}
                                             >
-                                                Cancel
+                                                {t('actions.cancel')}
                                             </MyButton>
                                         </div>
                                     </div>
@@ -2690,38 +2695,38 @@ function RouteComponent() {
             }}>
                 <DialogContent className="w-[80vw] max-w-[80vw] max-h-[90vh] flex flex-col p-0">
                     <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                        <DialogTitle>Regenerate Course Outline</DialogTitle>
+                        <DialogTitle>{t('regenerateDialog.title')}</DialogTitle>
                     </DialogHeader>
 
                     <div className="flex-1 overflow-y-auto px-6 py-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="space-y-6">
                             {/* 1. Course Goal and Learning Outcome */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-neutral-900">1. Course Goal and Learning Outcome</h3>
+                                <h3 className="text-lg font-semibold text-neutral-900">{t('regenerateDialog.section1Heading')}</h3>
 
                                 <div className="space-y-4">
                                     <div>
                                         <Label htmlFor="regenerateCourseGoal" className="mb-2 block">
-                                            Course Goal / Prompt <span className="text-red-500">*</span>
+                                            {t('regenerateDialog.courseGoalLabel')} <span className="text-red-500">*</span>
                                         </Label>
                                         <Textarea
                                             id="regenerateCourseGoal"
                                             value={regenerateCourseGoal}
                                             onChange={(e) => setRegenerateCourseGoal(e.target.value)}
-                                            placeholder="Describe the main purpose of the course..."
+                                            placeholder={t('regenerateDialog.courseGoalPlaceholder')}
                                             className="min-h-[100px] w-full"
                                         />
                                     </div>
 
                                     <div>
                                         <Label htmlFor="regenerateLearningOutcome" className="mb-2 block">
-                                            Learning Outcome
+                                            {t('regenerateDialog.learningOutcomeLabel')}
                                         </Label>
                                         <Textarea
                                             id="regenerateLearningOutcome"
                                             value={regenerateLearningOutcome}
                                             onChange={(e) => setRegenerateLearningOutcome(e.target.value)}
-                                            placeholder="What should learners achieve by the end of the course?"
+                                            placeholder={t('regenerateDialog.learningOutcomePlaceholder')}
                                             className="min-h-[100px] w-full"
                                         />
                                     </div>
@@ -2730,29 +2735,29 @@ function RouteComponent() {
 
                             {/* 2. Learner Profile */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-neutral-900">2. Learner Profile</h3>
+                                <h3 className="text-lg font-semibold text-neutral-900">{t('regenerateDialog.section2Heading')}</h3>
 
                                 <div className="space-y-4">
                                     <div>
                                         <Label htmlFor="regenerateAgeRange" className="mb-2 block">
-                                            Age Range
+                                            {t('regenerateDialog.ageRangeLabel')}
                                         </Label>
                                         <Input
                                             id="regenerateAgeRange"
                                             value={regenerateAgeRange}
                                             onChange={(e) => setRegenerateAgeRange(e.target.value)}
-                                            placeholder="e.g., 18-25, 25-35, etc."
+                                            placeholder={t('regenerateDialog.ageRangePlaceholder')}
                                             className="w-full"
                                         />
                                     </div>
 
                                     <div>
                                         <Label htmlFor="regenerateSkillLevel" className="mb-2 block">
-                                            Skill Level
+                                            {t('regenerateDialog.skillLevelLabel')}
                                         </Label>
                                         <Select value={regenerateSkillLevel} onValueChange={setRegenerateSkillLevel}>
                                             <SelectTrigger id="regenerateSkillLevel" className="w-full">
-                                                <SelectValue placeholder="Select skill level" />
+                                                <SelectValue placeholder={t('regenerateDialog.selectSkillLevel')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {instituteLevels.length > 0 ? (
@@ -2763,9 +2768,9 @@ function RouteComponent() {
                                                     ))
                                                 ) : (
                                                     <>
-                                                        <SelectItem value="beginner">Beginner</SelectItem>
-                                                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                                                        <SelectItem value="advanced">Advanced</SelectItem>
+                                                        <SelectItem value="beginner">{t('levelOption.beginner')}</SelectItem>
+                                                        <SelectItem value="intermediate">{t('levelOption.intermediate')}</SelectItem>
+                                                        <SelectItem value="advanced">{t('levelOption.advanced')}</SelectItem>
                                                     </>
                                                 )}
                                             </SelectContent>
@@ -2773,7 +2778,7 @@ function RouteComponent() {
                                     </div>
 
                                     <div>
-                                        <Label className="mb-2 block">Prerequisite Courses</Label>
+                                        <Label className="mb-2 block">{t('regenerateDialog.prerequisiteCoursesLabel')}</Label>
                                         <div className="space-y-3">
                                             <div className="flex gap-2">
                                                 <Input
@@ -2785,7 +2790,7 @@ function RouteComponent() {
                                                             handleRegenerateAddPrerequisiteUrl();
                                                         }
                                                     }}
-                                                    placeholder="Enter URL (e.g., https://example.com/course)"
+                                                    placeholder={t('regenerateDialog.urlPlaceholder')}
                                                     className="flex-1"
                                                 />
                                                 <MyButton
@@ -2793,8 +2798,8 @@ function RouteComponent() {
                                                     onClick={handleRegenerateAddPrerequisiteUrl}
                                                     disabled={!regenerateNewPrerequisiteUrl.trim()}
                                                 >
-                                                    <Link className="h-4 w-4 mr-1" />
-                                                    Add URL
+                                                    <Link className="h-4 w-4 me-1" />
+                                                    {t('regenerateDialog.addUrl')}
                                                 </MyButton>
                                             </div>
 
@@ -2831,7 +2836,7 @@ function RouteComponent() {
                                                 <input {...getRegeneratePrerequisiteInputProps()} className="hidden" />
                                                 <Upload className={cn('h-5 w-5', isRegeneratePrerequisiteDragActive ? 'text-indigo-600' : 'text-neutral-500')} />
                                                 <span className="text-xs font-medium text-neutral-600">
-                                                    Attach PDF or DOCX files
+                                                    {t('regenerateDialog.attachFilesHint')}
                                                 </span>
                                             </div>
 
@@ -2862,12 +2867,12 @@ function RouteComponent() {
 
                             {/* 3. Duration, Format, and Structure */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-neutral-900">3. Duration, Format, and Structure</h3>
+                                <h3 className="text-lg font-semibold text-neutral-900">{t('regenerateDialog.section3Heading')}</h3>
 
                                 <div className="space-y-4">
                                     <div>
                                         <Label htmlFor="regenerateCourseNumberOfSessions" className="mb-2 block">
-                                            Number of {getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters)}
+                                            {t('regenerateDialog.numberOfSessions', { term: getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters) })}
                                         </Label>
                                         <Input
                                             id="regenerateCourseNumberOfSessions"
@@ -2875,25 +2880,25 @@ function RouteComponent() {
                                             min="1"
                                             value={regenerateCourseNumberOfSessions}
                                             onChange={(e) => setRegenerateCourseNumberOfSessions(e.target.value)}
-                                            placeholder="e.g., 8"
+                                            placeholder={t('regenerateDialog.numberOfSessionsPlaceholder')}
                                             className="w-full"
                                         />
                                     </div>
 
                                     <div>
                                         <Label htmlFor="regenerateCourseSessionLength" className="mb-2 block">
-                                            Session Length
+                                            {t('regenerateDialog.sessionLengthLabel')}
                                         </Label>
                                         <div className="space-y-2">
                                             <Select value={regenerateCourseSessionLength} onValueChange={handleRegenerateCourseSessionLengthChange}>
                                                 <SelectTrigger id="regenerateCourseSessionLength" className="w-full">
-                                                    <SelectValue placeholder="Select session length" />
+                                                    <SelectValue placeholder={t('regenerateDialog.selectSessionLength')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="45">45 minutes</SelectItem>
-                                                    <SelectItem value="60">60 minutes</SelectItem>
-                                                    <SelectItem value="90">90 minutes</SelectItem>
-                                                    <SelectItem value="custom">Custom</SelectItem>
+                                                    <SelectItem value="45">{t('sessionLengthOption.45')}</SelectItem>
+                                                    <SelectItem value="60">{t('sessionLengthOption.60')}</SelectItem>
+                                                    <SelectItem value="90">{t('sessionLengthOption.90')}</SelectItem>
+                                                    <SelectItem value="custom">{t('sessionLengthOption.custom')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             {regenerateCourseSessionLength === 'custom' && (
@@ -2902,7 +2907,7 @@ function RouteComponent() {
                                                     min="1"
                                                     value={regenerateCourseCustomSessionLength}
                                                     onChange={(e) => setRegenerateCourseCustomSessionLength(e.target.value)}
-                                                    placeholder="Enter custom length in minutes"
+                                                    placeholder={t('regenerateDialog.customSessionLengthPlaceholder')}
                                                     className="w-full"
                                                 />
                                             )}
@@ -2910,7 +2915,7 @@ function RouteComponent() {
                                     </div>
 
                                     <div>
-                                        <Label className="mb-2 block">What to include</Label>
+                                        <Label className="mb-2 block">{t('regenerateDialog.whatToIncludeLabel')}</Label>
                                         <div className="grid grid-cols-3 gap-4">
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
@@ -2919,7 +2924,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeDiagrams(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeDiagrams" className="cursor-pointer">
-                                                    Include diagrams
+                                                    {t('regenerateDialog.includeDiagrams')}
                                                 </Label>
                                             </div>
 
@@ -2930,7 +2935,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeCodeSnippets(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeCodeSnippets" className="cursor-pointer">
-                                                    Include code snippets
+                                                    {t('regenerateDialog.includeCodeSnippets')}
                                                 </Label>
                                             </div>
 
@@ -2941,7 +2946,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludePracticeProblems(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludePracticeProblems" className="cursor-pointer">
-                                                    Include practice problems
+                                                    {t('regenerateDialog.includePracticeProblems')}
                                                 </Label>
                                             </div>
 
@@ -2952,7 +2957,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeQuizzes(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeQuizzes" className="cursor-pointer">
-                                                    Include quizzes
+                                                    {t('regenerateDialog.includeQuizzes')}
                                                 </Label>
                                             </div>
 
@@ -2963,7 +2968,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeHomework(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeHomework" className="cursor-pointer">
-                                                    Include assignments
+                                                    {t('regenerateDialog.includeAssignments')}
                                                 </Label>
                                             </div>
 
@@ -2974,7 +2979,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeSolutions(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeSolutions" className="cursor-pointer">
-                                                    Include solutions
+                                                    {t('regenerateDialog.includeSolutions')}
                                                 </Label>
                                             </div>
 
@@ -2985,7 +2990,7 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeYouTubeVideo(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeYouTubeVideo" className="cursor-pointer">
-                                                    Include YouTube video
+                                                    {t('regenerateDialog.includeYoutubeVideo')}
                                                 </Label>
                                             </div>
 
@@ -2996,33 +3001,33 @@ function RouteComponent() {
                                                     onCheckedChange={(checked) => setRegenerateCourseIncludeAIGeneratedVideo(checked === true)}
                                                 />
                                                 <Label htmlFor="regenerateCourseIncludeAIGeneratedVideo" className="cursor-pointer">
-                                                    Include AI generated video
+                                                    {t('regenerateDialog.includeAiVideo')}
                                                 </Label>
                                             </div>
                                         </div>
                                         {regenerateCourseIncludeCodeSnippets && (
                                             <div className="mt-4">
                                                 <Label htmlFor="regenerateCourseProgrammingLanguage" className="mb-2 block">
-                                                    Programming Language
+                                                    {t('regenerateDialog.programmingLanguageLabel')}
                                                 </Label>
                                                 <Select value={regenerateCourseProgrammingLanguage} onValueChange={setRegenerateCourseProgrammingLanguage}>
                                                     <SelectTrigger id="regenerateCourseProgrammingLanguage" className="w-full">
-                                                        <SelectValue placeholder="Select programming language" />
+                                                        <SelectValue placeholder={t('regenerateDialog.selectProgrammingLanguage')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="python">Python</SelectItem>
-                                                        <SelectItem value="javascript">JavaScript</SelectItem>
-                                                        <SelectItem value="java">Java</SelectItem>
-                                                        <SelectItem value="cpp">C++</SelectItem>
-                                                        <SelectItem value="csharp">C#</SelectItem>
-                                                        <SelectItem value="go">Go</SelectItem>
-                                                        <SelectItem value="rust">Rust</SelectItem>
-                                                        <SelectItem value="typescript">TypeScript</SelectItem>
-                                                        <SelectItem value="php">PHP</SelectItem>
-                                                        <SelectItem value="ruby">Ruby</SelectItem>
-                                                        <SelectItem value="swift">Swift</SelectItem>
-                                                        <SelectItem value="kotlin">Kotlin</SelectItem>
-                                                        <SelectItem value="other">Other</SelectItem>
+                                                        <SelectItem value="python">{t('programmingLanguage.python')}</SelectItem>
+                                                        <SelectItem value="javascript">{t('programmingLanguage.javascript')}</SelectItem>
+                                                        <SelectItem value="java">{t('programmingLanguage.java')}</SelectItem>
+                                                        <SelectItem value="cpp">{t('programmingLanguage.cpp')}</SelectItem>
+                                                        <SelectItem value="csharp">{t('programmingLanguage.csharp')}</SelectItem>
+                                                        <SelectItem value="go">{t('programmingLanguage.go')}</SelectItem>
+                                                        <SelectItem value="rust">{t('programmingLanguage.rust')}</SelectItem>
+                                                        <SelectItem value="typescript">{t('programmingLanguage.typescript')}</SelectItem>
+                                                        <SelectItem value="php">{t('programmingLanguage.php')}</SelectItem>
+                                                        <SelectItem value="ruby">{t('programmingLanguage.ruby')}</SelectItem>
+                                                        <SelectItem value="swift">{t('programmingLanguage.swift')}</SelectItem>
+                                                        <SelectItem value="kotlin">{t('programmingLanguage.kotlin')}</SelectItem>
+                                                        <SelectItem value="other">{t('programmingLanguage.other')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -3031,7 +3036,7 @@ function RouteComponent() {
 
                                     <div>
                                         <Label htmlFor="regenerateCourseTopicsPerSession" className="mb-2 block">
-                                            Topics per Session
+                                            {t('regenerateDialog.topicsPerSessionLabel')}
                                         </Label>
                                         <Input
                                             id="regenerateCourseTopicsPerSession"
@@ -3039,13 +3044,13 @@ function RouteComponent() {
                                             min="1"
                                             value={regenerateCourseTopicsPerSession}
                                             onChange={(e) => setRegenerateCourseTopicsPerSession(e.target.value)}
-                                            placeholder="e.g., 2, 3, 4, etc."
+                                            placeholder={t('regenerateDialog.topicsPerSessionPlaceholder')}
                                             className="w-full"
                                         />
                                     </div>
 
                                     <div>
-                                        <Label className="mb-2 block">Topics (Optional)</Label>
+                                        <Label className="mb-2 block">{t('regenerateDialog.topicsLabel')}</Label>
                                         <div className="space-y-3">
                                             <div className="flex gap-2">
                                                 <Input
@@ -3057,7 +3062,7 @@ function RouteComponent() {
                                                             handleRegenerateAddTopic();
                                                         }
                                                     }}
-                                                    placeholder="Enter a topic and press Enter"
+                                                    placeholder={t('regenerateDialog.topicPlaceholder')}
                                                     className="flex-1"
                                                 />
                                                 <MyButton
@@ -3065,7 +3070,7 @@ function RouteComponent() {
                                                     onClick={handleRegenerateAddTopic}
                                                     disabled={!regenerateCourseNewTopic.trim() || regenerateCourseTopics.includes(regenerateCourseNewTopic.trim())}
                                                 >
-                                                    Add
+                                                    {t('actions.add')}
                                                 </MyButton>
                                             </div>
 
@@ -3092,7 +3097,7 @@ function RouteComponent() {
                                     </div>
 
                                     <div>
-                                        <Label className="mb-2 block">References (Optional)</Label>
+                                        <Label className="mb-2 block">{t('regenerateDialog.referencesLabel')}</Label>
                                         <div className="space-y-3">
                                             <div className="flex gap-2">
                                                 <Input
@@ -3104,7 +3109,7 @@ function RouteComponent() {
                                                             handleRegenerateAddReferenceUrl();
                                                         }
                                                     }}
-                                                    placeholder="Enter URL (e.g., https://example.com/course)"
+                                                    placeholder={t('regenerateDialog.urlPlaceholder')}
                                                     className="flex-1"
                                                 />
                                                 <MyButton
@@ -3112,8 +3117,8 @@ function RouteComponent() {
                                                     onClick={handleRegenerateAddReferenceUrl}
                                                     disabled={!regenerateNewReferenceUrl.trim()}
                                                 >
-                                                    <Link className="h-4 w-4 mr-1" />
-                                                    Add URL
+                                                    <Link className="h-4 w-4 me-1" />
+                                                    {t('regenerateDialog.addUrl')}
                                                 </MyButton>
                                             </div>
 
@@ -3150,7 +3155,7 @@ function RouteComponent() {
                                                 <input {...getRegenerateReferenceInputProps()} className="hidden" />
                                                 <Upload className={cn('h-5 w-5', isRegenerateReferenceDragActive ? 'text-indigo-600' : 'text-neutral-500')} />
                                                 <span className="text-xs font-medium text-neutral-600">
-                                                    Attach PDF or DOCX files
+                                                    {t('regenerateDialog.attachFilesHint')}
                                                 </span>
                                             </div>
 
@@ -3187,7 +3192,7 @@ function RouteComponent() {
                             onClick={handleConfirmRegenerate}
                             disabled={!regenerateCourseGoal.trim()}
                         >
-                            Regenerate
+                            {t('regenerateDialog.regenerate')}
                         </MyButton>
                     </div>
                 </DialogContent>
@@ -3207,13 +3212,13 @@ function RouteComponent() {
                     <div className="space-y-4 py-4">
                         <div>
                             <Label htmlFor="addSessionName" className="mb-2 block">
-                                {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} Name
+                                {t('addSessionDialog.nameLabel', { term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters) })}
                             </Label>
                             <Input
                                 id="addSessionName"
                                 value={addSessionName}
                                 onChange={(e) => setAddSessionName(e.target.value)}
-                                placeholder={`Enter ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase()} name`}
+                                placeholder={t('addSessionDialog.namePlaceholder', { term: getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLowerCase() })}
                                 className="w-full"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && addSessionName.trim()) {
@@ -3228,7 +3233,7 @@ function RouteComponent() {
                             buttonType="secondary"
                             onClick={() => setAddSessionDialogOpen(false)}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -3250,15 +3255,15 @@ function RouteComponent() {
                                 <AlertTriangle className="h-5 w-5 text-amber-600" />
                             </div>
                             <DialogTitle className="text-xl font-semibold text-neutral-900">
-                                Review Course Outline
+                                {t('generateConfirmDialog.title')}
                             </DialogTitle>
                         </div>
                         <DialogDescription className="text-sm text-neutral-600 pt-2">
                             <p className="mb-2">
-                                Please review your course outline below. After this step, AI will start generating the actual page content in text format.
+                                {t('generateConfirmDialog.description1')}
                             </p>
                             <p>
-                                The course outline cannot be changed after this step.
+                                {t('generateConfirmDialog.description2')}
                             </p>
                         </DialogDescription>
                     </DialogHeader>
@@ -3268,29 +3273,29 @@ function RouteComponent() {
                         <div className="space-y-4 py-4">
                             {/* Course Basic Info */}
                             <div>
-                                <h4 className="text-sm font-semibold text-neutral-900 mb-2">Course Information</h4>
+                                <h4 className="text-sm font-semibold text-neutral-900 mb-2">{t('generateConfirmDialog.courseInformation')}</h4>
                                 <div className="space-y-2">
                                     <div>
-                                        <span className="text-xs font-medium text-neutral-500">Title:</span>
+                                        <span className="text-xs font-medium text-neutral-500">{t('generateConfirmDialog.titleLabel')}</span>
                                         <p className="text-sm text-neutral-700 font-medium">{courseData.title}</p>
                                     </div>
                                     {courseData.subtitle && (
                                         <div>
-                                            <span className="text-xs font-medium text-neutral-500">Subtitle:</span>
+                                            <span className="text-xs font-medium text-neutral-500">{t('generateConfirmDialog.subtitleLabel')}</span>
                                             <p className="text-sm text-neutral-600">{courseData.subtitle}</p>
                                         </div>
                                     )}
                                     <div className="grid grid-cols-3 gap-4 mt-3">
                                         <div>
-                                            <span className="text-xs font-medium text-neutral-500">Level</span>
+                                            <span className="text-xs font-medium text-neutral-500">{t('generateConfirmDialog.levelLabel')}</span>
                                             <p className="text-sm text-neutral-700 font-medium">{courseData.level}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-medium text-neutral-500">Total Sessions</span>
+                                            <span className="text-xs font-medium text-neutral-500">{t('generateConfirmDialog.totalSessionsLabel')}</span>
                                             <p className="text-sm text-neutral-700 font-medium">{courseData.totalSessions}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-medium text-neutral-500">Duration</span>
+                                            <span className="text-xs font-medium text-neutral-500">{t('generateConfirmDialog.durationLabel')}</span>
                                             <p className="text-sm text-neutral-700 font-medium">{courseData.totalDuration}</p>
                                         </div>
                                     </div>
@@ -3299,7 +3304,7 @@ function RouteComponent() {
 
                             {/* Sessions Summary */}
                             <div>
-                                <h4 className="text-sm font-semibold text-neutral-900 mb-3">Sessions Overview</h4>
+                                <h4 className="text-sm font-semibold text-neutral-900 mb-3">{t('generateConfirmDialog.sessionsOverview')}</h4>
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
                                     {courseData.sessions.map((session, index) => (
                                         <div
@@ -3310,7 +3315,7 @@ function RouteComponent() {
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                                                            Session {index + 1}
+                                                            {t('session.shortLabel', { number: index + 1 })}
                                                         </span>
                                                         <span className="text-sm font-semibold text-neutral-900">
                                                             {session.title}
@@ -3320,29 +3325,29 @@ function RouteComponent() {
                                             </div>
                                             <div className="grid grid-cols-3 gap-3 mt-2 text-xs">
                                                 <div>
-                                                    <span className="text-neutral-500">Topics:</span>
-                                                    <span className="ml-1 font-medium text-neutral-700">{session.topics.length}</span>
+                                                    <span className="text-neutral-500">{t('generateConfirmDialog.topicsLabel')}</span>
+                                                    <span className="ms-1 font-medium text-neutral-700">{session.topics.length}</span>
                                                 </div>
                                                 <div>
                                                     <span className="text-neutral-500">{getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides)}:</span>
-                                                    <span className="ml-1 font-medium text-neutral-700">{session.slides.length}</span>
+                                                    <span className="ms-1 font-medium text-neutral-700">{session.slides.length}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {session.hasQuiz && (
                                                         <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
-                                                            Quiz
+                                                            {t('generateConfirmDialog.quizBadge')}
                                                         </span>
                                                     )}
                                                     {session.hasHomework && (
                                                         <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">
-                                                            Homework
+                                                            {t('generateConfirmDialog.homeworkBadge')}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
                                             {session.topics.length > 0 && (
                                                 <div className="mt-2 pt-2 border-t border-neutral-200">
-                                                    <span className="text-xs text-neutral-500">Topics:</span>
+                                                    <span className="text-xs text-neutral-500">{t('generateConfirmDialog.topicsLabel')}</span>
                                                     <div className="flex flex-wrap gap-1.5 mt-1">
                                                         {session.topics.map((topic, topicIndex) => (
                                                             <span
@@ -3362,14 +3367,14 @@ function RouteComponent() {
 
                             {/* Total Statistics */}
                             <div className="bg-indigo-50 rounded-md p-3 border border-indigo-200">
-                                <h4 className="text-sm font-semibold text-indigo-900 mb-2">Total Content</h4>
+                                <h4 className="text-sm font-semibold text-indigo-900 mb-2">{t('generateConfirmDialog.totalContent')}</h4>
                                 <div className="grid grid-cols-4 gap-4 text-xs">
                                     <div>
-                                        <span className="text-indigo-600 font-medium">Sessions:</span>
+                                        <span className="text-indigo-600 font-medium">{t('generateConfirmDialog.sessionsLabel')}</span>
                                         <p className="text-sm font-semibold text-indigo-900">{courseData.sessions.length}</p>
                                     </div>
                                     <div>
-                                        <span className="text-indigo-600 font-medium">Topics:</span>
+                                        <span className="text-indigo-600 font-medium">{t('generateConfirmDialog.topicsLabel')}</span>
                                         <p className="text-sm font-semibold text-indigo-900">
                                             {courseData.sessions.reduce((sum, s) => sum + s.topics.length, 0)}
                                         </p>
@@ -3381,7 +3386,7 @@ function RouteComponent() {
                                         </p>
                                     </div>
                                     <div>
-                                        <span className="text-indigo-600 font-medium">Quizzes:</span>
+                                        <span className="text-indigo-600 font-medium">{t('generateConfirmDialog.quizzesLabel')}</span>
                                         <p className="text-sm font-semibold text-indigo-900">
                                             {courseData.sessions.filter(s => s.hasQuiz).length}
                                         </p>
@@ -3396,13 +3401,13 @@ function RouteComponent() {
                             buttonType="secondary"
                             onClick={() => setShowGenerateConfirmDialog(false)}
                         >
-                            Go back and Edit
+                            {t('generateConfirmDialog.goBack')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleConfirmGenerate}
                         >
-                            Continue
+                            {t('generateConfirmDialog.continue')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>

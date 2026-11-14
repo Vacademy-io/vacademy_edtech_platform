@@ -1,11 +1,11 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StudentListTab } from './StudentListTab';
-import testAccessSchema from '../-utils/add-participants-schema';
-import { z } from 'zod';
+import type { TestAccessFormValues } from '../-utils/add-participants-schema';
 import { UseFormReturn } from 'react-hook-form';
 import { CheckCircle } from '@phosphor-icons/react';
 import { Route } from '..';
@@ -19,7 +19,7 @@ import {
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
-type TestAccessFormType = z.infer<typeof testAccessSchema>;
+type TestAccessFormType = TestAccessFormValues;
 
 type BatchItem = {
     id: string;
@@ -48,6 +48,7 @@ export function AddingParticipantsTab({
     setSelectedSection: React.Dispatch<React.SetStateAction<string | undefined>>;
     sectionsInfo: SectionInfoInterface[];
 }) {
+    const { t } = useTranslation('homeworkCreationAddingParticipantsTab');
     const [selectedTab, setSelectedTab] = useState(
         form.getValues('select_individually.checked') === true ? 'Individually' : 'Batch'
     );
@@ -81,7 +82,7 @@ export function AddingParticipantsTab({
                             <CheckCircle size={18} className="text-teal-800 dark:text-teal-400" />
                         )}
                         <span className={`${selectedTab === 'Batch' ? 'text-neutral-600' : ''}`}>
-                            Select Batch
+                            {t('tabs.selectBatch')}
                         </span>
                     </TabsTrigger>
                     <Separator className="!h-9 bg-neutral-600" orientation="vertical" />
@@ -101,7 +102,7 @@ export function AddingParticipantsTab({
                                 selectedTab === 'Individually' ? 'text-neutral-600' : ''
                             }`}
                         >
-                            Select Individually
+                            {t('tabs.selectIndividually')}
                         </span>
                     </TabsTrigger>
                 </TabsList>
@@ -138,6 +139,7 @@ const Step3BatchList = ({
     setSelectedSection: React.Dispatch<React.SetStateAction<string | undefined>>;
     sectionsInfo: SectionInfoInterface[];
 }) => {
+    const { t } = useTranslation('homeworkCreationAddingParticipantsTab');
     const params = Route.useParams();
     const assessmentId = params.assessmentId ?? '';
     const { setValue, watch } = form;
@@ -195,8 +197,8 @@ const Step3BatchList = ({
             <div className="flex items-center gap-2">
                 <span>{getTerminology(ContentTerms.Session, SystemTerms.Session)}</span>
                 <Select value={selectedSection} onValueChange={setSelectedSection}>
-                    <SelectTrigger className="w-[180px] text-[1rem]">
-                        <SelectValue placeholder="Select Section" />
+                    <SelectTrigger className="w-44 text-subtitle">
+                        <SelectValue placeholder={t('batchList.selectSectionPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                         {sectionsInfo?.map((section) => (

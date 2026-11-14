@@ -1,0 +1,255 @@
+{
+    "common": {
+        "back": "Back",
+        "previous": "Previous",
+        "next": "Next",
+        "free": "Free",
+        "total": "Total",
+        "processing": "Processing...",
+        "securedPayment": "Secured payment",
+        "proceedToCheckout": "Proceed to Checkout",
+        "freeEnrollment": "Free enrollment",
+        "addToCart": "Add to Cart",
+        "peopleAlsoBuy": "People also buy",
+        "addSuggested": "+ Add",
+        "removeSuggested": "− Remove",
+        "couponAppliedLabel": "Coupon ({{code}})",
+        "orderSummaryTitle": "Order Summary",
+        "courseFallbackWithIndex": "{{course}} {{index}}",
+        "genericPaymentFailed": "Payment failed. Please try again.",
+        "couldNotInitiatePayment": "Could not initiate payment.",
+        "pay": "Pay {{currency}} {{amount}}",
+        "logoAlt": "logo",
+        "itemsSelected": "{{count}} {{course}} selected",
+        "basketSaved": "saved {{amount}}",
+        "basketSavedWithPercent": "saved {{amount}} · {{percent}}%",
+        "basketNextTierAmount": "Add {{count}} more {{course}} to get {{amount}} off.",
+        "basketNextTierAmountMore": "Add {{count}} more {{course}} to get {{amount}} more off.",
+        "basketNextTierPercent": "Add {{count}} more {{course}} to get {{percent}}% off.",
+        "priceChangedReload": "The price of a course in your cart has changed. Please review your cart and try again."
+    },
+    "errors": {
+        "pageNotAvailable": {
+            "title": "Page Not Available",
+            "defaultMessage": "Something went wrong loading this page."
+        },
+        "instituteNotFound": {
+            "title": "Institute Not Found",
+            "message": "Unable to determine the institute for this page. Please use a valid link."
+        }
+    },
+    "catalogStep": {
+        "selectPrompt": "Select the {{courses}} you'd like to enroll in"
+    },
+    "courseFinder": {
+        "continueToRegister": "Continue to register",
+        "dialogHeading": "Select your class",
+        "showCourses": "Show my {{courses}}",
+        "defaultSubheading": "Pick yours to see the {{courses}} available for you",
+        "courseCount": "{{count}} {{courses}}",
+        "view": "View",
+        "skip": "Show all {{courses}}",
+        "change": "Change selection"
+    },
+    "cartStep": {
+        "basket": {
+            "spendForTier": "Spend {{amount}} more to get {{offer}} the whole basket.",
+            "cartItems": "{{courses}} in your cart",
+            "emptyTitle": "Nothing in your cart yet",
+            "emptyBody": "Choose at least one {{course}} to continue to checkout.",
+            "browse": "Browse {{courses}}",
+            "addAnother": "Add another {{course}}",
+            "included": "Included",
+            "groupCount_one": "{{count}} {{course}}",
+            "groupCount_other": "{{count}} {{courses}}",
+            "oneMoreForGroup": "One more {{course}} for {{group}} adds only {{amount}}.",
+            "addForTier": "Add {{count}} more {{courses}} to get {{offer}} the whole basket.",
+            "addForTier_other": "Add {{count}} more {{courses}} to get {{offer}} the whole basket.",
+            "addForTier_one": "Add {{count}} more {{course}} to get {{offer}} the whole basket.",
+            "offersHeading": "Offers for you",
+            "offersLabel": "Available offers",
+            "offerApplied": "Applied to your order",
+            "offerReady": "Ready to apply",
+            "offerAddAmount": "Add {{amount}} more to unlock",
+            "offerAddCourses_one": "Add {{count}} more {{course}} to unlock",
+            "offerAddCourses_other": "Add {{count}} more {{courses}} to unlock",
+            "emptyCart": "Your cart is empty",
+            "emptyCartBody": "Pick a {{course}} to see your total here.",
+            "selectedLabel": "Selected",
+            "thisSelection": "this selection",
+            "removeAll": "Remove all",
+            "priceDetails": "Price details",
+            "itemTotal_one": "Item total ({{count}} {{course}})",
+            "itemTotal_other": "Item total ({{count}} {{courses}})",
+            "basketDiscount": "Basket discount",
+            "percentOff": "({{percent}}% off)",
+            "planSavings": "Plan savings",
+            "offerLine": "Offer · {{label}}",
+            "pricedPerGroup": "Each class is priced on its own, so {{courses}} for different children don't combine.",
+            "totalPayable": "Total Payable",
+            "inclusiveTaxes": "Inclusive of all taxes",
+            "youSave": "You save {{amount}}",
+            "youSaveWithPercent": "You save {{amount}} ({{percent}}%)",
+            "securePayment": "100% secure payment",
+            "viewSummary": "View order summary",
+            "addOneMore": "Add one more {{course}} for {{amount}}.",
+            "addAnotherGroup": "Add another {{group}} {{course}} for {{amount}}."
+        },
+        "heading": {
+            "title": "Review your cart",
+            "subtitlePlanChoice": "Check your selection and pick the plan that suits you before continuing.",
+            "subtitleDefault": "Check your subjects and remove anything you did not mean to add."
+        },
+        "backToCourses": "Back to courses",
+        "couponChanged": "Cart changed — please re-apply your coupon.",
+        "orderSummary": {
+            "subtitle": "Review your order before proceeding to payment"
+        },
+        "item": {
+            "removeTooltip": "Remove"
+        },
+        "subtotalItems_one": "Subtotal ({{count}} item)",
+        "subtotalItems_other": "Subtotal ({{count}} items)",
+        "couponCard": {
+            "errors": {
+                "belowMinItems": "This code needs more courses in your cart.",
+                "expired": "This code has expired.",
+                "notStarted": "This code is not active yet.",
+                "limitReached": "This code has been fully used.",
+                "emailRestricted": "This code is not available for your email.",
+                "notApplicable": "This code does not apply to these courses."
+            },
+            "title": "Coupon Code",
+            "placeholder": "Enter coupon code",
+            "apply": "Apply",
+            "invalidCoupon": "Invalid coupon",
+            "failedToValidate": "Failed to validate coupon. Please try again.",
+            "discountOff": "− {{amount}} off"
+        }
+    },
+    "combinedPaymentStep": {
+        "title": "Payment",
+        "subtotal": "Subtotal",
+        "allPricesIn": "All prices in {{currency}}",
+        "completeEnrollmentFor": "Complete your enrollment for {{count}} {{course}}",
+        "amountPayable": "{{currency}} {{amount}} payable",
+        "completingEnrollment": "Completing your enrollment…",
+        "retryEnrollment": "Retry Enrollment",
+        "openingPayment": "Opening payment...",
+        "courseDescriptionForGateway": "Enrollment for {{count}} {{course}}"
+    },
+    "cpoInstallments": {
+        "noCpoOptionFoundInSelection": "No CPO payment option found in selection.",
+        "noCpoOptionFound": "No CPO payment option found.",
+        "enrollmentDataMissingRetryLater": "Enrollment data missing — please go back and retry.",
+        "enrollmentDataMissingRetry": "Enrollment data missing. Please try again.",
+        "noPendingInstallmentsFound": "No pending installments found after enrollment.",
+        "paymentConfirmationFailed": "Payment confirmation failed.",
+        "loadingSchedule": "Loading installment schedule...",
+        "failedToLoadSchedule": "Failed to load installment schedule.",
+        "selectInstallments": {
+            "title": "Select Installments",
+            "subtitle": "Choose which installments you'd like to pay now"
+        },
+        "installmentPaymentDescription": "Installment payment"
+    },
+    "multiEnrollForm": {
+        "title": "Registration Details",
+        "subtitle": "Fill in the details below to complete your enrollment",
+        "enrollingFor": "Enrolling for:",
+        "fieldRequired": "{{fieldName}} is required",
+        "tncRequired": "Please accept the terms and conditions to continue",
+        "enterPlaceholder": "Enter {{fieldName}}",
+        "readOurTnc": "Please read our",
+        "termsAndConditionsLink": "Terms & Conditions",
+        "tncAgreeCheckbox": "I have read and agree to the Terms & Conditions",
+        "submissionFailed": "Submission failed. Please try again.",
+        "saving": "Saving...",
+        "continueToPayment": "Continue to Payment"
+    },
+    "pageRenderer": {
+        "filterBar": {
+            "filterLabel": "Filter"
+        },
+        "courseDetailSheet": {
+            "viewLess": "View less",
+            "viewMore": "View more",
+            "priceLabel": "Price",
+            "ratingLabel": "Rating",
+            "accessLabel": "Access",
+            "oneYear": "1 year",
+            "whatYoullLearn": "What you'll learn",
+            "aboutThisCourse": "About this {{course}}",
+            "whoShouldJoin": "Who should join",
+            "removeFromCart": "Remove from Cart"
+        },
+        "courseCard": {
+            "noDescriptionAvailable": "No description available",
+            "percentOff": "{{percent}}% OFF",
+            "viewCourse": "View course",
+            "addedToCart": "Added to Cart"
+        },
+        "courseGrid": {
+            "filtersTitle": "Filters",
+            "clearAll": "Clear all",
+            "showMore": "Show {{count}} more",
+            "showLess": "Show less",
+            "priceRangeTitle": "Price Range",
+            "min": "Min",
+            "max": "Max",
+            "popularLabel": "Popular",
+            "clear": "Clear",
+            "searchPlaceholder": "Search {{courses}}…",
+            "noCoursesFound": "No {{courses}} found",
+            "clearFilters": "Clear filters",
+            "coursePagesAriaLabel": "{{courses}} pages",
+            "previousPageAriaLabel": "Previous page",
+            "nextPageAriaLabel": "Next page",
+            "pageAriaLabel": "Page {{page}}",
+            "resultsAvailable": "{{count}} {{course}} available",
+            "resultsFound": "{{count}} {{course}} found",
+            "pageSuffix": " · page {{page}} of {{total}}"
+        },
+        "videoEmbed": {
+            "addUrlPlaceholder": "Add a video URL in properties",
+            "defaultTitle": "Video"
+        }
+    },
+    "stepRail": {
+        "secureTitle": "Secure & Safe",
+        "secureNote": "Your data is protected"
+    },
+    "stepProgress": {
+        "ariaLabel": "Enrollment progress",
+        "steps": {
+            "catalog": "Select {{courses}}",
+            "cart": "Cart",
+            "details": "Details",
+            "payment": "Payment",
+            "installments": "Installments"
+        }
+    },
+    "success": {
+        "title": "You're enrolled!",
+        "defaultMessage": "Successfully enrolled in {{count}} {{course}}. Start learning right away.",
+        "totalPaid": "Total paid",
+        "youSaved": "You saved {{amount}}",
+        "access": {
+            "oneYear": "1 year access",
+            "months_one": "{{count}} month access",
+            "months_other": "{{count}} months access",
+            "days_one": "{{count}} day access",
+            "days_other": "{{count}} days access"
+        },
+        "goToMyCourses": "Go to My {{courses}}",
+        "redirecting": "Taking you to the next page…",
+        "redirectNow": "Continue now",
+        "loggingIn": "Logging you in…",
+        "existingAccountHint": "You already have an account. Log in to open your {{courses}}.",
+        "logInToContinue": "Log In"
+    },
+    "planTiles": {
+        "coursesIncluded": "{{count}} {{courses}} included",
+        "oneCourse": "1 {{course}}"
+    }
+}

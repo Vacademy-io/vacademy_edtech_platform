@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.entity.RecipientMessage;
 import vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus;
+import vacademy.io.notification_service.features.announcements.enums.MediumType;
 import vacademy.io.notification_service.features.announcements.enums.MessageStatus;
 import vacademy.io.notification_service.features.announcements.enums.ModeType;
 import vacademy.io.notification_service.features.announcements.repository.*;
@@ -18,7 +19,10 @@ import vacademy.io.notification_service.features.announcements.event.Announcemen
 import java.util.ArrayList;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -153,6 +157,21 @@ public class AnnouncementProcessingService {
         
         // Fetch active mediums once and create per-medium delivery records
         var activeMediums = announcementMediumRepository.findByAnnouncementIdAndIsActive(announcement.getId(), true);
+
+        // Duplicate guard: load the pending rows ONCE. Re-querying them for every user x mode x medium
+        // made this quadratic: 3,113 recipients took 122s, inside the admin's create request.
+        Set<DeliveryKey> existing = new HashSet<>();
+        for (RecipientMessage rm : recipientMessageRepository
+                .findByAnnouncementIdAndStatus(announcement.getId(), MessageStatus.PENDING)) {
+            existing.add(new DeliveryKey(rm.getUserId(), rm.getModeType(), rm.getMediumType()));
+        }
+
+        List<RecipientMessage> toCreate = new ArrayList<>();
+        // Rows are built in a tight loop now, so now() per row would hand many rows the same microsecond.
+        // Recipient lists and the learner feed page on created_at alone, and ties there let a row repeat or
+        // vanish across pages. Stepping 1 microsecond per row keeps every timestamp distinct and in creation
+        // order, as the old one-save-per-row loop did.
+        LocalDateTime base = LocalDateTime.now();
         for (String userId : userIds) {
             for (ModeType modeType : modeTypes) {
                 if (activeMediums.isEmpty()) {
@@ -161,49 +180,41 @@ public class AnnouncementProcessingService {
                     // this branch the triple-loop below produces zero rows, so the bell endpoint
                     // returns empty even though Announcement + mode entity exist. medium_type is
                     // nullable on recipient_message for exactly this case.
-                    boolean exists = recipientMessageRepository
-                            .findByAnnouncementIdAndStatus(announcement.getId(), MessageStatus.PENDING)
-                            .stream()
-                            .anyMatch(rm -> rm.getUserId().equals(userId)
-                                    && rm.getModeType().equals(modeType)
-                                    && rm.getMediumType() == null);
-                    if (!exists) {
-                        RecipientMessage recipientMessage = new RecipientMessage();
-                        recipientMessage.setAnnouncementId(announcement.getId());
-                        recipientMessage.setUserId(userId);
-                        recipientMessage.setModeType(modeType);
-                        recipientMessage.setMediumType(null);
-                        recipientMessage.setStatus(MessageStatus.PENDING);
-                        recipientMessage.setCreatedAt(LocalDateTime.now());
-                        recipientMessage.setUpdatedAt(LocalDateTime.now());
-                        recipientMessageRepository.save(recipientMessage);
+                    if (existing.add(new DeliveryKey(userId, modeType, null))) {
+                        toCreate.add(newPendingMessage(announcement.getId(), userId, modeType, null,
+                                base.plus(toCreate.size(), ChronoUnit.MICROS)));
                     }
                     continue;
                 }
                 for (var medium : activeMediums) {
-                    // Avoid duplicates: check any pending existing for same user+mode+medium
-                    boolean exists = recipientMessageRepository
-                            .findByAnnouncementIdAndStatus(announcement.getId(), MessageStatus.PENDING)
-                            .stream()
-                            .anyMatch(rm -> rm.getUserId().equals(userId)
-                                    && rm.getModeType().equals(modeType)
-                                    && rm.getMediumType() == medium.getMediumType());
-                    if (!exists) {
-                        RecipientMessage recipientMessage = new RecipientMessage();
-                        recipientMessage.setAnnouncementId(announcement.getId());
-                        recipientMessage.setUserId(userId);
-                        recipientMessage.setModeType(modeType);
-                        recipientMessage.setMediumType(medium.getMediumType());
-                        recipientMessage.setStatus(MessageStatus.PENDING);
-                        recipientMessage.setCreatedAt(LocalDateTime.now());
-                        recipientMessage.setUpdatedAt(LocalDateTime.now());
-                        recipientMessageRepository.save(recipientMessage);
+                    // Avoid duplicates: skip if a pending row already exists for same user+mode+medium
+                    if (existing.add(new DeliveryKey(userId, modeType, medium.getMediumType()))) {
+                        toCreate.add(newPendingMessage(announcement.getId(), userId, modeType, medium.getMediumType(),
+                                base.plus(toCreate.size(), ChronoUnit.MICROS)));
                     }
                 }
             }
         }
+        // Flush here so an insert failure surfaces in this method, as the old per-row saves did,
+        // not later inside the SSE try/catch that only logs a warning
+        recipientMessageRepository.saveAllAndFlush(toCreate);
 
-        log.debug("Created recipient messages for {} users and {} modes", userIds.size(), modeTypes.size());
+        log.debug("Created {} recipient messages for {} users and {} modes", toCreate.size(), userIds.size(), modeTypes.size());
+    }
+
+    private record DeliveryKey(String userId, ModeType modeType, MediumType mediumType) {}
+
+    private static RecipientMessage newPendingMessage(String announcementId, String userId, ModeType modeType,
+                                                      MediumType mediumType, LocalDateTime createdAt) {
+        RecipientMessage recipientMessage = new RecipientMessage();
+        recipientMessage.setAnnouncementId(announcementId);
+        recipientMessage.setUserId(userId);
+        recipientMessage.setModeType(modeType);
+        recipientMessage.setMediumType(mediumType);
+        recipientMessage.setStatus(MessageStatus.PENDING);
+        recipientMessage.setCreatedAt(createdAt);
+        recipientMessage.setUpdatedAt(createdAt);
+        return recipientMessage;
     }
 
     /**

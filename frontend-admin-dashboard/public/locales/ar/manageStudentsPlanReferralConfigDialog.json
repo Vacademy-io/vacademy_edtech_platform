@@ -1,0 +1,65 @@
+{
+    "dialog": {
+        "titleSelectPlan": "اختيار خطة الدفع",
+        "titleConfigureReferral": "تهيئة الإحالة لـ {{planName}}",
+        "descriptionSelectPlan": "اختر خطة الدفع التي تريد تهيئة إعدادات الإحالة لها",
+        "descriptionSelectReferral": "اختر برنامج إحالة لخطة الدفع هذه"
+    },
+    "planList": {
+        "empty": "لا توجد خطط دفع متاحة",
+        "noReferralConfigured": "لم يتم تكوين أي إحالة"
+    },
+    "currentReferral": {
+        "configuredLabel": "التهيئة الحالية: {{name}}",
+        "changeHint": "انقر على إحالة مختلفة أدناه للتغيير، أو أزل الإحالة الحالية",
+        "remove": "إزالة"
+    },
+    "referralList": {
+        "empty": "لا توجد برامج إحالة متاحة",
+        "currentBadge": "الحالي"
+    },
+    "refereeBenefit": {
+        "label": "يحصل المُحال عليه على:",
+        "freeDays_zero": "لا أيام مجانية ({{count}})",
+        "freeDays_one": "يوم مجاني واحد ({{count}})",
+        "freeDays_two": "يومان مجانيان ({{count}})",
+        "freeDays_few": "{{count}} أيام مجانية",
+        "freeDays_many": "{{count}} يومًا مجانيًا",
+        "freeDays_other": "{{count}} يوم مجاني",
+        "bonusContentDefaultTitle": "محتوى إضافي",
+        "contentTypePrefix": "النوع:",
+        "contentTypeLink": "رابط خارجي",
+        "contentTypeFile": "رفع ملف",
+        "templatePrefix": "القالب:",
+        "discountPercentage": "خصم {{value}}%",
+        "discountFixed": "خصم ₹{{value}}",
+        "pointsSystemTitle": "نظام النقاط",
+        "pointsPerReferral_zero": "لا نقاط لكل إحالة ({{count}})",
+        "pointsPerReferral_one": "نقطة واحدة لكل إحالة ({{count}})",
+        "pointsPerReferral_two": "نقطتان لكل إحالة ({{count}})",
+        "pointsPerReferral_few": "{{count}} نقاط لكل إحالة",
+        "pointsPerReferral_many": "{{count}} نقطة لكل إحالة",
+        "pointsPerReferral_other": "{{count}} نقطة لكل إحالة",
+        "genericOff": "خصم {{value}}"
+    },
+    "referrerBenefit": {
+        "label": "يحصل المُحيل على:",
+        "refCount_zero": "لا إحالات ({{count}})",
+        "refCount_one": "إحالة واحدة ({{count}})",
+        "refCount_two": "إحالتان ({{count}})",
+        "refCount_few": "{{count}} إحالات",
+        "refCount_many": "{{count}} إحالة",
+        "refCount_other": "{{count}} إحالة",
+        "typePoints": "نقاط",
+        "typeContent": "محتوى",
+        "typeReward": "مكافأة",
+        "noRewards": "لا مكافآت",
+        "moreCount": "+{{count}} أخرى"
+    },
+    "vesting": {
+        "label": "{{count}} يوم استحقاق"
+    },
+    "actions": {
+        "addNewReferral": "+ إضافة برنامج إحالة جديد"
+    }
+}

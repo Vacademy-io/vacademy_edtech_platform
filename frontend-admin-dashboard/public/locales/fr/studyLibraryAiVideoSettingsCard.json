@@ -1,0 +1,31 @@
+{
+    "title": "Paramètres vidéo IA",
+    "appliesTo": "s'applique aux pages Vidéo IA, Diapositives IA et Livre d'histoires",
+    "language": "Langue",
+    "videoModel": "Modèle vidéo",
+    "autoRecommended": "Auto (recommandé)",
+    "loading": "Chargement...",
+    "audioQuality": "Qualité audio",
+    "audioQualityStandard": "Standard (inclus)",
+    "audioQualityPremium": "Premium (2x crédits)",
+    "voiceGender": "Genre de la voix",
+    "genderFemale": "Féminin",
+    "genderMale": "Masculin",
+    "voice": "Voix",
+    "auto": "Auto",
+    "autoBestForLanguage": "Auto (meilleur pour la langue)",
+    "videoDuration": "Durée de la vidéo",
+    "qualityTierLabel": "Niveau de qualité",
+    "durationLabel": {
+        "oneToTwoMinutes": "1 à 2 minutes",
+        "twoToThreeMinutes": "2 à 3 minutes",
+        "threeToFiveMinutes": "3 à 5 minutes",
+        "fiveToEightMinutes": "5 à 8 minutes"
+    },
+    "qualityTier": {
+        "free": "Gratuit (le plus rapide, qualité de base)",
+        "standard": "Standard",
+        "premium": "Premium",
+        "ultra": "Ultra (meilleure qualité)"
+    }
+}

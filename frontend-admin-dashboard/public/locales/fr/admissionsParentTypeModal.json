@@ -1,0 +1,8 @@
+{
+    "title": "Sélectionner le type de parent",
+    "description": "Précisez si les coordonnées appartiennent au père ou à la mère",
+    "father": "Père",
+    "fatherDescription": "Associer les détails aux informations du père",
+    "mother": "Mère",
+    "motherDescription": "Associer les détails aux informations de la mère"
+}

@@ -1,0 +1,24 @@
+{
+    "heading": "Assign a shift",
+    "cancel": "Cancel",
+    "assignShift": "Assign shift",
+    "assigning": "Assigning…",
+    "assignedToast_one": "{{count}} employee assigned",
+    "assignedToast_other": "{{count}} employees assigned",
+    "assignErrorFallback": "Could not assign the shift.",
+    "infoNote": "Assigning closes any shift these employees are already on from the effective date onwards — an employee is only ever on one shift at a time. Days before that date keep being judged against their old shift.",
+    "shiftLabel": "Shift",
+    "selectShiftPlaceholder": "Select a shift",
+    "employeesLabel": "Employees",
+    "loadingEmployees": "Loading employees…",
+    "employeesUnavailable": "Employees unavailable",
+    "selectEmployeesPlaceholder": "Select employees",
+    "employeesLoadError": "Could not load employees. Close this and try again.",
+    "showingFirstOfTotal": "Showing the first {{count}} of {{total}} active employees.",
+    "effectiveFromLabel": "Effective from",
+    "validation": {
+        "shiftRequired": "Pick the shift to assign.",
+        "employeeRequired": "Pick at least one employee.",
+        "dateRequired": "Pick the date the assignment starts from."
+    }
+}

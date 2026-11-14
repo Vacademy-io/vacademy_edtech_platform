@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "Modifier les détails du compte",
+    "signOutNote": "Vous serez déconnecté après la mise à jour et devrez vous reconnecter avec vos nouveaux identifiants.",
+    "username": {
+        "sectionTitle": "Nom d'utilisateur",
+        "label": "Nom d'utilisateur*",
+        "placeholder": "Entrez votre nom d'utilisateur",
+        "current": "Actuel : {{username}}"
+    },
+    "password": {
+        "sectionTitle": "Changer le mot de passe",
+        "newLabel": "Nouveau mot de passe*",
+        "newPlaceholder": "Entrez votre nouveau mot de passe",
+        "confirmLabel": "Confirmer le nouveau mot de passe*",
+        "confirmPlaceholder": "Confirmez votre nouveau mot de passe",
+        "minLengthHint": "Au moins 4 caractères",
+        "match": "Les mots de passe correspondent",
+        "mismatch": "Les mots de passe ne correspondent pas"
+    },
+    "validation": {
+        "usernameMin": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+        "usernameMax": "Le nom d'utilisateur doit contenir moins de 50 caractères",
+        "newPasswordMin": "Le nouveau mot de passe doit contenir au moins 4 caractères",
+        "confirmPasswordRequired": "Veuillez confirmer votre mot de passe"
+    },
+    "toast": {
+        "loadUserFailed": "Échec du chargement des détails de l'utilisateur",
+        "userIdMissing": "ID utilisateur introuvable. Veuillez réessayer.",
+        "updateSuccess": "Détails du compte mis à jour avec succès !",
+        "usernameExists": "Ce nom d'utilisateur existe déjà. Veuillez choisir un autre nom d'utilisateur.",
+        "updateFailed": "Échec de la mise à jour des détails du compte. Veuillez réessayer."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "update": "Mettre à jour les détails",
+        "updating": "Mise à jour..."
+    }
+}

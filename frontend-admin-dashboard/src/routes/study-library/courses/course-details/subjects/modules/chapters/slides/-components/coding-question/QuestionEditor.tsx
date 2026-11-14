@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TipTapEditor } from '@/components/tiptap/TipTapEditor';
 import { TestCaseList } from './TestCaseList';
@@ -18,6 +19,8 @@ interface Props {
 }
 
 export function QuestionEditor({ question, onChange, disabled, slideId }: Props) {
+    const { t } = useTranslation('studyLibraryQuestionEditor');
+
     const setProblemHtml = useCallback(
         (html: string) => {
             onChange({ ...question, problemHtml: html });
@@ -36,13 +39,13 @@ export function QuestionEditor({ question, onChange, disabled, slideId }: Props)
         <div className="border-t bg-muted/30 p-3">
             <Tabs defaultValue="problem">
                 <TabsList>
-                    <TabsTrigger value="problem">Problem</TabsTrigger>
+                    <TabsTrigger value="problem">{t('tabs.problem')}</TabsTrigger>
                     <TabsTrigger value="testcases">
-                        Test Cases ({question.testCases.length})
+                        {t('tabs.testCases', { count: question.testCases.length })}
                     </TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
-                    <TabsTrigger value="starter">Starter Code</TabsTrigger>
-                    {slideId && <TabsTrigger value="submissions">Submissions</TabsTrigger>}
+                    <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
+                    <TabsTrigger value="starter">{t('tabs.starterCode')}</TabsTrigger>
+                    {slideId && <TabsTrigger value="submissions">{t('tabs.submissions')}</TabsTrigger>}
                 </TabsList>
 
                 <TabsContent value="problem" className="mt-3">
@@ -50,7 +53,7 @@ export function QuestionEditor({ question, onChange, disabled, slideId }: Props)
                         <TipTapEditor
                             value={question.problemHtml}
                             onChange={setProblemHtml}
-                            placeholder="Describe the problem. Include constraints, input/output format, and examples."
+                            placeholder={t('problemPlaceholder')}
                             minHeight={200}
                             editable={!disabled}
                         />

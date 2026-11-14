@@ -1,0 +1,18 @@
+{
+    "untitledMeeting": "Meeting",
+    "today": "Today",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "dayAriaLabel_one": "View {{count}} meeting on {{date}}",
+    "dayAriaLabel_other": "View {{count}} meetings on {{date}}",
+    "moreCount": "+{{count}} more",
+    "joinMeeting": "Join meeting",
+    "status": {
+        "confirmed": "Confirmed",
+        "pending": "Pending",
+        "completed": "Completed",
+        "noShow": "No-show",
+        "cancelled": "Cancelled",
+        "rescheduled": "Rescheduled"
+    }
+}

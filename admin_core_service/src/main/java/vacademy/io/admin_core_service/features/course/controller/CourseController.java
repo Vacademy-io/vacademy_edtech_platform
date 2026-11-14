@@ -10,7 +10,11 @@ import vacademy.io.admin_core_service.features.course.dto.CopyCourseContentRespo
 import vacademy.io.admin_core_service.features.course.dto.CourseBatchDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseRequestDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseResponseDTO;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureRequestDTO;
+import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureResponseDTO;
 import vacademy.io.admin_core_service.features.course.service.BulkCourseService;
+import vacademy.io.admin_core_service.features.course.service.CourseRestructureService;
 import vacademy.io.admin_core_service.features.course.service.CourseContentCopyService;
 import vacademy.io.admin_core_service.features.course.service.CourseService;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
@@ -26,6 +30,8 @@ public class CourseController {
     private final CourseService courseService;
     private final BulkCourseService bulkCourseService;
     private final CourseContentCopyService courseContentCopyService;
+    private final CourseRestructureService courseRestructureService;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     @PostMapping("/add-course/{instituteId}")
     @Auditable(
@@ -136,5 +142,28 @@ public class CourseController {
     public ResponseEntity<CopyContentLineageResponse> getCopyLineage(
             @PathVariable("packageSessionId") String packageSessionId) {
         return ResponseEntity.ok(courseContentCopyService.getLineage(packageSessionId));
+    }
+
+    /**
+     * Change a course's depth (2-5) and/or regroup its content into a new tree of existing
+     * slides, atomically and for every batch. dry_run validates and reports the outcome
+     * (created / renamed / removed containers, drip-rule changes, learners affected) and
+     * writes nothing. Institute staff only. See CourseRestructureService.
+     */
+    @PostMapping("/restructure/{instituteId}/{courseId}")
+    @Auditable(
+            entityType = "COURSE",
+            action = "UPDATE",
+            entityIdExpr = "#courseId",
+            conditionExpr = "#result?.body != null and !#result.body.dryRun",
+            descriptionExpr = "'restructured course to depth ' + #request?.targetDepth")
+    public ResponseEntity<CourseRestructureResponseDTO> restructureCourse(
+            @PathVariable("instituteId") String instituteId,
+            @PathVariable("courseId") String courseId,
+            @RequestBody CourseRestructureRequestDTO request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
+        return ResponseEntity.ok(courseRestructureService.restructure(instituteId, courseId, request,
+                userDetails.getUserId()));
     }
 }

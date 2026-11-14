@@ -78,7 +78,9 @@ ROLE_RULES: Dict[str, Dict[str, Any]] = {
         "max_duration": 8.0,
     },
     "ui_chime": {
-        "categories": {"Chime", "Notifications", "Musical", "Musical Chime", "Bell",
+        # Not the whole "Musical" category: it is stings, stabs and horror
+        # accents; musical chimes still match on the keywords below.
+        "categories": {"Chime", "Notifications", "Musical Chime", "Bell",
                        "Alarm & Chime"},
         "keywords": ["chime", "bell", "ding", "notification", "twinkle", "sparkle"],
         "min_duration": 0.2,
@@ -127,6 +129,41 @@ ROLE_RULES: Dict[str, Dict[str, Any]] = {
         "max_duration": 999.0,
     },
 }
+
+
+# Never in a learning video, whatever role a file would otherwise fill. A
+# "HORROR, MUSICAL, ACCENT, CATHEDRAL, ORGAN, STAB, DISSONANT" file sat in the
+# Musical category, counted as a ui_chime, and played on every reveal of a
+# parenting lesson (video feadce4b, 2026-10-27). Whole words of `description`.
+EXCLUDE_KEYWORDS: frozenset = frozenset({
+    "horror", "dissonant", "scary", "creepy", "sinister", "evil", "scream",
+    "screams", "ominous", "terror", "haunted", "zombie", "gore", "demonic",
+    "spooky", "nightmare",
+})
+
+# Words that say nothing about a sound; dropped before keyword scoring so a
+# query's "a" / "the" / "with" can't match (as substrings) almost every file.
+_STOPWORDS: frozenset = frozenset({
+    "this", "that", "with", "from", "into", "your", "their", "they", "them",
+    "what", "when", "where", "which", "while", "will", "would", "could", "should",
+    "have", "been", "were", "about", "over", "under", "more", "most", "some",
+    "than", "then", "there", "these", "those", "each", "every", "just", "only",
+    "also", "very", "context", "brief", "soft", "gentle",
+})
+
+
+def _words(text: str) -> Set[str]:
+    return set(re.findall(r"[a-z0-9]+", (text or "").lower()))
+
+
+def topic_terms(words: List[str]) -> List[str]:
+    """Distinct lower-case terms worth matching: 4+ letters, not stopwords."""
+    out: List[str] = []
+    for w in words:
+        for t in re.findall(r"[a-z0-9]+", str(w or "").lower()):
+            if len(t) >= 4 and t not in _STOPWORDS and t not in out:
+                out.append(t)
+    return out
 
 
 # Volume hints per role (0.0 – 1.0). The Sound Planner can override per-cue
@@ -187,6 +224,8 @@ class SoundCatalog:
                 self._by_id[fid] = idx
             category = str(entry.get("category", "") or "")
             description = str(entry.get("description", "") or "").lower()
+            if _words(description) & EXCLUDE_KEYWORDS:
+                continue
             try:
                 duration = float(entry.get("duration_seconds", 0) or 0)
             except (TypeError, ValueError):
@@ -235,6 +274,7 @@ class SoundCatalog:
         role: str,
         used_ids: Optional[Set[str]] = None,
         seed_key: Optional[str] = None,
+        exclude_urls: Optional[Set[str]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Pick a concrete sound file for a role.
 
@@ -247,12 +287,16 @@ class SoundCatalog:
             seed_key: optional stable key (e.g. "{video_id}:{shot_idx}:{role}")
                       — if provided, picks are deterministic for the same key.
                       If None, picks are random.
+            exclude_urls: files (by public_url) never to return — None when
+                      every file in the bucket is excluded.
 
         Returns:
             dict with {file_id, url, duration, category, description, role,
                        volume_hint} or None if the role bucket is empty.
         """
         indices = self._by_role.get(role, [])
+        if exclude_urls:
+            indices = [i for i in indices if self.sounds[i].get("public_url") not in exclude_urls]
         if not indices:
             return None
 
@@ -288,6 +332,7 @@ class SoundCatalog:
         role: str,
         topic_keywords: List[str],
         seed_key: Optional[str] = None,
+        exclude_urls: Optional[Set[str]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Pick a sound file biased toward topic keywords.
 
@@ -301,17 +346,21 @@ class SoundCatalog:
         identical to resolve().
         """
         indices = self._by_role.get(role, [])
+        if exclude_urls:
+            indices = [i for i in indices if self.sounds[i].get("public_url") not in exclude_urls]
         if not indices:
             return None
 
-        if not topic_keywords:
-            return self.resolve(role, seed_key=seed_key)
+        # Whole words of 4+ letters: substring matching let "a" / "the" hit
+        # nearly every description, so the longest one won every pick.
+        terms = topic_terms(topic_keywords)
+        if not terms:
+            return self.resolve(role, seed_key=seed_key, exclude_urls=exclude_urls)
 
-        lowered = [kw.lower() for kw in topic_keywords]
         scored: List[tuple] = []  # (score, idx)
         for idx in indices:
-            desc = str(self.sounds[idx].get("description", "") or "").lower()
-            score = sum(1 for kw in lowered if kw in desc)
+            desc = _words(str(self.sounds[idx].get("description", "") or ""))
+            score = sum(1 for t in terms if t in desc)
             scored.append((score, idx))
 
         # Sort by score descending, then by index for stability.
@@ -320,7 +369,7 @@ class SoundCatalog:
         best_score = scored[0][0]
         if best_score == 0:
             # No topic overlap — fall back to generic pick.
-            return self.resolve(role, seed_key=seed_key)
+            return self.resolve(role, seed_key=seed_key, exclude_urls=exclude_urls)
 
         # Shortlist = all files sharing the top score (usually 1-5 files).
         shortlist = [idx for sc, idx in scored if sc == best_score]
@@ -488,6 +537,7 @@ def find_by_intent(
     used_ids: Optional[Set[str]] = None,
     top_k: int = 1,
     fallback_seed_salt: str = "",
+    exclude_urls: Optional[Set[str]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Semantic-search for a sound matching `query`, optionally within `role`.
 
@@ -509,13 +559,16 @@ def find_by_intent(
         if not role:
             return None
         seed = f"{query}|{fallback_seed_salt}" if fallback_seed_salt else query
-        return self.resolve_for_topic(role, query.split(), seed_key=seed)
+        return self.resolve_for_topic(role, query.split(), seed_key=seed, exclude_urls=exclude_urls)
 
     # Role pre-filter — empty role means search across the whole library.
     if role:
         candidate_indices = self._by_role.get(role, [])
     else:
         candidate_indices = list(range(len(self.sounds)))
+    if exclude_urls:
+        candidate_indices = [ci for ci in candidate_indices
+                             if self.sounds[ci].get("public_url") not in exclude_urls]
     if not candidate_indices:
         return None
 

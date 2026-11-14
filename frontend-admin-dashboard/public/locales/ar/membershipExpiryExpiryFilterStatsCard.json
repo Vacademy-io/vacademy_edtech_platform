@@ -1,0 +1,11 @@
+{
+    "title": "إحصائيات النطاق المحدد",
+    "subtitle": "استنادًا إلى عوامل التصفية الحالية",
+    "membershipsFound_zero": "لم يتم العثور على أي اشتراكات",
+    "membershipsFound_one": "تم العثور على اشتراك واحد",
+    "membershipsFound_two": "تم العثور على اشتراكين",
+    "membershipsFound_few": "تم العثور على {{count}} اشتراكات",
+    "membershipsFound_many": "تم العثور على {{count}} اشتراكًا",
+    "membershipsFound_other": "تم العثور على {{count}} اشتراك",
+    "viewList": "عرض القائمة"
+}

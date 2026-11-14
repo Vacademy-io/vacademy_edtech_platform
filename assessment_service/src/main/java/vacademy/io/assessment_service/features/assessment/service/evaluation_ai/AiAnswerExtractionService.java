@@ -77,10 +77,12 @@ public class AiAnswerExtractionService {
 
                 Map<String, ExtractedAnswerDto> results = new HashMap<>();
 
-                // CODING answers come from the live browser editor, not from PDF/HTML answer sheets.
+                // CODING and CBE (spreadsheet / document) answers come from the live browser
+                // editor, not from PDF/HTML answer sheets.
                 List<QuestionWiseMarks> filtered = marksList.stream()
                         .filter(m -> m.getQuestion() == null
-                                || !QuestionTypes.CODING.name().equals(m.getQuestion().getQuestionType()))
+                                || (!QuestionTypes.CODING.name().equals(m.getQuestion().getQuestionType())
+                                        && !QuestionTypes.CBE_RESPONSE.name().equals(m.getQuestion().getQuestionType())))
                         .collect(Collectors.toList());
 
                 if (studentPdfContent == null || studentPdfContent.isEmpty() || filtered.isEmpty()) {

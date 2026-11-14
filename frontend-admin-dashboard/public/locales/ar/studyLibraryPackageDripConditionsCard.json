@@ -1,0 +1,20 @@
+{
+    "heading": "شروط التقطير",
+    "add": "إضافة",
+    "emptyTitle": "لا توجد شروط تقطير",
+    "emptyHint": "أضف شروطًا للتحكم في وقت إتاحة المحتوى للمتعلمين.",
+    "target": {
+        "chapter": "الفصل",
+        "slide": "الشريحة"
+    },
+    "behavior": {
+        "lock": "قفل",
+        "hide": "إخفاء"
+    },
+    "disabled": "معطّل",
+    "deleteCondition": "حذف الشرط",
+    "alerts": {
+        "cannotDeleteEnabled": "لا يمكن حذف شرط مفعّل. يرجى تعطيل شرط تقطير {{target}} أولاً.",
+        "confirmDelete": "هل أنت متأكد أنك تريد حذف شرط تقطير {{target}} هذا؟"
+    }
+}

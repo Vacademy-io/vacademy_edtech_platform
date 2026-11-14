@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "Provide Reattempt",
+        "confirmMessage": "Are you sure you want to provide reattempt to selected <highlight>{{name}}</highlight>?"
+    },
+    "doneButton": "Done",
+    "toasts": {
+        "reattemptSuccess": "Reattempt has been provided to the selected participant(s)."
+    }
+}

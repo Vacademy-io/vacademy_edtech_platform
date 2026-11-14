@@ -13,11 +13,13 @@
  */
 import type { ReactNode } from 'react';
 import { Buildings } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { isSubOrgModuleDenied } from '@/lib/display-settings/sub-org-module';
 
 export function SubOrgModuleGate({ children }: { children: ReactNode }) {
+    const { t } = useTranslation('manageCustomTeamsSubOrgModuleGate');
     const term = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
 
     // Deny only when settings are resolved AND the module is off — never while
@@ -30,12 +32,9 @@ export function SubOrgModuleGate({ children }: { children: ReactNode }) {
             <Buildings className="size-8 text-neutral-400" />
             <div>
                 <p className="text-subtitle font-semibold text-neutral-700">
-                    {term} aren&apos;t enabled for your role
+                    {t('notEnabled', { term })}
                 </p>
-                <p className="text-caption text-neutral-500">
-                    Ask an institute admin to turn on the {term} module for your role in Settings →
-                    Display Settings.
-                </p>
+                <p className="text-caption text-neutral-500">{t('notEnabledHint', { term })}</p>
             </div>
         </div>
     );

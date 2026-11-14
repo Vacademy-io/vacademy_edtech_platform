@@ -1,4 +1,5 @@
 import { Check, X } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface StatusChipProps {
   mark: number | string;
@@ -11,6 +12,7 @@ export const StatusChip = ({
   status,
   showText = true,
 }: StatusChipProps) => {
+  const { t } = useTranslation("testRecords");
   const getStatusConfig = () => {
     switch (status) {
       case "CORRECT":
@@ -55,7 +57,7 @@ export const StatusChip = ({
   const config = getStatusConfig();
   const markValue = parseFloat(mark.toString());
   const markPrefix = markValue > 0 ? "+" : "";
-  const markText = markValue === 1 ? "Mark" : "Marks";
+  const markText = t("marksChip.markLabel", { count: markValue });
 
   // Render two variations based on showText prop
   if (showText) {

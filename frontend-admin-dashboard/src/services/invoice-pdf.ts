@@ -10,6 +10,9 @@
  */
 
 import { getInvoiceDownloadUrl } from '@/services/invoice-service';
+import { BASE_URL } from '@/constants/urls';
+import { TokenKey } from '@/constants/auth/tokens';
+import { getTokenFromCookie } from '@/lib/auth/sessionUtility';
 
 /** The subset of an invoice any of the list/summary shapes can supply. */
 export interface InvoicePdfSource {
@@ -38,6 +41,24 @@ export function buildInvoiceFilename(invoice: InvoicePdfSource): string {
     return `Invoice-${safe}.pdf`;
 }
 
+
+/**
+ * Auth header for a PDF fetch, but only when the URL is our own API.
+ *
+ * An invoice with a stored file resolves to a storage URL, which is already presigned and
+ * must be fetched clean — S3 rejects a presigned request that also carries an
+ * Authorization header. An invoice with no stored file instead resolves to
+ * `/v1/invoices/{id}/download`, which is authenticated and regenerates the PDF server-side;
+ * fetching that one without a token returns 403, so the preview failed and the PDF was
+ * never generated. The endpoint 302s on to storage, and the browser drops Authorization on
+ * that cross-origin hop, so the token never reaches S3.
+ */
+function pdfAuthHeaders(url: string): Record<string, string> {
+    if (!url.startsWith(BASE_URL)) return {};
+    const token = getTokenFromCookie(TokenKey.accessToken);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 /**
  * Best URL to fetch this invoice's PDF from. Prefers a directly-supplied `pdf_url`;
  * otherwise falls back to the canonical `/v1/invoices/{id}/download` endpoint, which
@@ -63,7 +84,7 @@ export function resolveInvoicePdfUrl(invoice: InvoicePdfSource): string {
  */
 export async function fetchInvoicePdfObjectUrl(invoice: InvoicePdfSource): Promise<string> {
     const url = resolveInvoicePdfUrl(invoice);
-    const resp = await fetch(url, { credentials: 'omit' });
+    const resp = await fetch(url, { credentials: 'omit', headers: pdfAuthHeaders(url) });
     if (!resp.ok) throw new Error(`Invoice PDF fetch failed (${resp.status})`);
     const blob = await resp.blob();
     // Force the PDF media type — some storage backends serve octet-stream, which the
@@ -148,7 +169,7 @@ export async function shareInvoiceOnWhatsApp(
     try {
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
             const url = resolveInvoicePdfUrl(details.invoice);
-            const resp = await fetch(url, { credentials: 'omit' });
+            const resp = await fetch(url, { credentials: 'omit', headers: pdfAuthHeaders(url) });
             if (resp.ok) {
                 const blob = await resp.blob();
                 const file = new File([blob], buildInvoiceFilename(details.invoice), {

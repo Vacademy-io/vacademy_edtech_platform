@@ -1,0 +1,152 @@
+{
+  "shelf": {
+    "title": "Vos compagnons d'étude",
+    "stats": "{{done}} sur {{total}} thèmes · {{mastery}} % maîtrisé",
+    "statsEmpty": "Les thèmes arrivent bientôt",
+    "continueTopic": "Continuer : {{title}}",
+    "nextTopic": "Suivant : {{title}}",
+    "startTopic": "Commencer : {{title}}",
+    "start": "Commencer à apprendre",
+    "review": "Revoir vos thèmes",
+    "openAria": "Ouvrir {{name}}"
+  },
+  "modes": {
+    "learn": "Apprendre",
+    "practice": "S'entraîner",
+    "ask": "Demander"
+  },
+  "room": {
+    "navHeading": "Compagnon d'étude",
+    "modes": "Modes d'étude",
+    "masteredShort": "maîtrisé",
+    "greeting": "Bonjour {{name}} ! 👋",
+    "greetingNoName": "Bonjour ! 👋",
+    "pickToLearn": "Choisissez un thème de {{kb}} et apprenez-le avec des images, des tableaux et des exemples.",
+    "pickToPractise": "Choisissez un thème pour vous entraîner. Chaque question est corrigée immédiatement.",
+    "pickFromMap": "Choisissez un thème sur la carte pour commencer.",
+    "breadcrumb": "Thème en cours",
+    "closeTopic": "Fermer ce thème",
+    "backHome": "Retour à l'accueil"
+  },
+  "map": {
+    "title": "Thèmes",
+    "open": "Afficher les thèmes",
+    "empty": "Pas encore de thèmes. Revenez bientôt.",
+    "topicDone": "{{done}}/{{total}} terminés",
+    "page": "p. {{page}}",
+    "pages": "p. {{start}}-{{end}}",
+    "readyHint": "Leçon prête — s'ouvre instantanément",
+    "status": {
+      "notStarted": "Pas commencé",
+      "inProgress": "{{percent}} % parcouru",
+      "mastery": "Terminé · {{mastery}} % de maîtrise"
+    }
+  },
+  "continue": {
+    "title": "Reprendre là où vous vous êtes arrêté",
+    "upNext": "À suivre",
+    "cta": "Continuer",
+    "startCta": "Commencer",
+    "allDoneTitle": "Vous avez terminé tous les thèmes !",
+    "allDoneBody": "Revoyez n'importe quel thème depuis la carte, ou entraînez-vous pour améliorer votre maîtrise."
+  },
+  "kinds": {
+    "hook": "Mise en route",
+    "concept": "Idée clé",
+    "figure": "Regardez bien",
+    "compare": "Comparer",
+    "process": "Étape par étape",
+    "example": "Exemple résolu",
+    "flashcards": "Cartes mémoire",
+    "check": "Vérification rapide",
+    "recap": "Récapitulatif"
+  },
+  "lesson": {
+    "preparing": "Préparation de votre leçon",
+    "cardPreparing": "Cette carte est encore en préparation",
+    "buildingCard": "Création de la carte {{current}} sur {{total}}",
+    "firstTimeHint": "La première ouverture d'un thème prend une minute ou deux. Ensuite, il s'ouvre instantanément.",
+    "cardOf": "Carte {{current}} sur {{total}}",
+    "prev": "Retour",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "goToCard": "Aller à la carte {{number}}",
+    "askAboutCard": "Poser une question sur cette carte",
+    "completeTitle": "Thème terminé !",
+    "mastery": "Maîtrise",
+    "checksScore": "{{right}} vérifications rapides réussies sur {{total}}",
+    "practiceThis": "S'entraîner sur ce thème",
+    "nextTopic": "Thème suivant : {{title}}",
+    "allTopicsDone": "C'était le dernier thème — bravo !",
+    "reviewAgain": "Revoir depuis le début"
+  },
+  "check": {
+    "correct": "Correct ! 🎉",
+    "incorrect": "Pas tout à fait — la bonne réponse est {{letter}}."
+  },
+  "practice": {
+    "preparing": "Préparation des questions d'entraînement",
+    "questionOf": "Question {{current}} sur {{total}}",
+    "runningScore": "{{correct}} correctes",
+    "nextQuestion": "Question suivante",
+    "seeScore": "Voir mon score",
+    "score": "{{correct}} bonnes réponses sur {{total}}",
+    "tryAgain": "Réessayer",
+    "backToLesson": "Retour à la leçon",
+    "difficulty": {
+      "easy": "Facile",
+      "medium": "Moyen",
+      "hard": "Difficile"
+    },
+    "tier": {
+      "great": "Excellent travail !",
+      "good": "C'est bien parti !",
+      "keepGoing": "Continuez à vous entraîner !"
+    }
+  },
+  "ask": {
+    "emptyTitle": "Demandez ce que vous voulez à {{name}}",
+    "emptyBody": "Les réponses viennent directement de {{kb}}, avec les pages et les images sur lesquelles elles s'appuient.",
+    "placeholder": "Écrivez votre question…",
+    "capReached": "Vous avez utilisé vos questions du jour. Revenez demain !",
+    "send": "Envoyer",
+    "thinking": "Je cherche dans votre livre…",
+    "quota": "{{used}} questions sur {{cap}} aujourd'hui",
+    "aboutTopic": "À propos de : {{title}}",
+    "clearContext": "Poser une question sur autre chose",
+    "aboutCardPrefill": "Peux-tu expliquer « {{title}} » plus simplement ?",
+    "figure": "Figure de votre livre",
+    "enlarge": "Agrandir l'image",
+    "page": "page {{page}}",
+    "pageShort": "p.",
+    "starters": {
+      "explain": "Explique {{topic}} simplement",
+      "example": "Donne-moi un exemple de {{topic}}",
+      "keyPoints": "Quels sont les points clés de {{topic}} ?"
+    },
+    "errors": {
+      "limit": "Vous avez posé beaucoup de questions. Réessayez un peu plus tard.",
+      "failed": "Je n'ai pas pu répondre pour l'instant. Veuillez réessayer.",
+      "thread": "Impossible de charger vos questions. Veuillez réessayer."
+    }
+  },
+  "voice": {
+    "readAloud": "Lire à voix haute",
+    "stop": "Arrêter"
+  },
+  "actions": {
+    "retry": "Réessayer",
+    "dismiss": "Fermer"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "credits": "Votre établissement n'a plus de crédits IA. Prévenez votre enseignant.",
+    "forbidden": "Ce contenu n'est pas disponible pour le moment.",
+    "notFound": "Nous n'avons pas trouvé ce thème.",
+    "lesson": "Impossible de préparer cette leçon. Réessayez dans une minute.",
+    "emptyLesson": "Le livre ne contient pas encore assez de contenu pour créer une leçon sur ce thème.",
+    "practice": "Impossible de préparer les questions d'entraînement. Réessayez dans une minute.",
+    "emptyPractice": "Il n'y a pas encore de questions d'entraînement pour ce thème.",
+    "companionUnavailable": "Ce compagnon d'étude n'est pas disponible pour vous pour le moment."
+  }
+}

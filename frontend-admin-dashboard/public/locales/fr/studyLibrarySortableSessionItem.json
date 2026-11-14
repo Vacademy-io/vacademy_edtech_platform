@@ -1,0 +1,9 @@
+{
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "pagesCount_one": "{{completed}}/{{count}} page",
+    "pagesCount_many": "{{completed}}/{{count}} pages",
+    "pagesCount_other": "{{completed}}/{{count}} pages"
+}

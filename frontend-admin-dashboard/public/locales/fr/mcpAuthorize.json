@@ -1,0 +1,27 @@
+{
+    "title": "Connecter une application d'IA",
+    "subtitle": "Cette application souhaite accéder à {{institute}} en votre nom.",
+    "loading": "Vérification de la demande…",
+    "unknownApp": "Une application d'IA",
+    "request": "{{app}} demande à se connecter à {{institute}}.",
+    "willReturnTo": "Vous serez redirigé vers {{host}} après votre décision.",
+    "instituteLabel": "Établissement auquel accorder l'accès",
+    "grants": {
+        "title": "Si vous approuvez, cette application pourra :",
+        "readOnly": "N'utilise que ce que les paramètres MCP de votre établissement autorisent. Toute modification du site web est enregistrée en brouillon que vous publiez vous-même.",
+        "sameAsYou": "Voir exactement ce que vous voyez, et rien de plus.",
+        "revocable": "Être déconnectée à tout moment depuis Paramètres → Serveur MCP."
+    },
+    "approve": "Approuver",
+    "approving": "Approbation…",
+    "deny": "Refuser",
+    "denying": "Refus…",
+    "signIn": "Connectez-vous pour continuer",
+    "errors": {
+        "noTxn": "Ce lien est incomplet. Relancez la connexion depuis votre application d'IA.",
+        "expired": "Cette demande a expiré ou a déjà été traitée. Relancez la connexion depuis votre application d'IA.",
+        "generic": "Une erreur est survenue. Veuillez réessayer.",
+        "wrongInstitute": "Vous êtes connecté à un autre établissement. Connectez-vous avec un compte de {{institute}} pour approuver cette connexion."
+    },
+    "yourInstitute": "votre établissement"
+}

@@ -1,0 +1,57 @@
+{
+    "dialog": {
+        "title": "اختر خطة دفع",
+        "description": "اختر خطة دفع لهذه الدورة"
+    },
+    "sections": {
+        "freePlans": "الخطط المجانية",
+        "paidPlans": "الخطط المدفوعة"
+    },
+    "badge": {
+        "default": "افتراضي",
+        "cpo": "CPO"
+    },
+    "common": {
+        "currency": "العملة: {{currency}}"
+    },
+    "cpo": {
+        "totalAmount": "المبلغ الإجمالي: {{amount}}",
+        "installmentsLabel": "الأقساط",
+        "installmentsLoading": "جارٍ التحميل…"
+    },
+    "donation": {
+        "suggestedAmounts": "المبالغ المقترحة: {{amount}}",
+        "minimumAmount": "الحد الأدنى للمبلغ: {{amount}}"
+    },
+    "freePlan": {
+        "days_zero": "مجاني لمدة {{count}} يوم",
+        "days_one": "مجاني لمدة {{count}} يوم",
+        "days_two": "مجاني لمدة {{count}} يومين",
+        "days_few": "مجاني لمدة {{count}} أيام",
+        "days_many": "مجاني لمدة {{count}} يومًا",
+        "days_other": "مجاني لمدة {{count}} يوم"
+    },
+    "upfront": {
+        "fullPrice": "السعر الكامل: {{amount}}"
+    },
+    "actions": {
+        "addNewPaymentPlan": "+ إضافة خطة دفع جديدة"
+    },
+    "search": {
+        "placeholder": "ابحث عن الخطط بالاسم…",
+        "noResults": "لا توجد خطط تطابق بحثك أو الفلتر.",
+        "clear": "مسح"
+    },
+    "filters": {
+        "all": "الكل",
+        "FREE": "مجاني",
+        "ONE_TIME": "دفعة واحدة",
+        "DONATION": "تبرع",
+        "SUBSCRIPTION": "اشتراك",
+        "CPO": "CPO"
+    },
+    "meta": {
+        "created": "أُنشئ في {{date}}",
+        "createdBy": "بواسطة {{name}}"
+    }
+}

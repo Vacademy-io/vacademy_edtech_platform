@@ -1,0 +1,32 @@
+{
+    "emptyHint": {
+        "default": "لا توجد بيانات في هذا النطاق الزمني."
+    },
+    "skeleton": {
+        "ariaLabel": "جارٍ تحميل التقرير"
+    },
+    "errorState": {
+        "deployPendingTitle": "يحتاج هذا التقرير إلى أحدث نسخة من الخادم الخلفي — النشر معلّق",
+        "genericTitle": "تعذّر تحميل هذا التقرير",
+        "deployPendingBody": "نقطة النهاية التي تشغّل هذا التبويب غير متوفرة بعد في هذه البيئة. ستعمل تلقائيًا بعد عملية النشر التالية للخادم الخلفي.",
+        "genericBody": "حدث خطأ أثناء جلب البيانات. تحقق من اتصالك وحاول مرة أخرى.",
+        "retry": "إعادة المحاولة"
+    },
+    "export": {
+        "defaultLabel": "تصدير CSV",
+        "dialogTitle": "اختر أعمدة التصدير",
+        "selectAll": "تحديد الكل",
+        "deselectAll": "إلغاء تحديد الكل",
+        "columnsSelected": "{{selected}} / {{total}} عمود",
+        "cancel": "إلغاء",
+        "export": "تصدير"
+    },
+    "breakdownBar": {
+        "converted_zero": "({{count}} تحويل)",
+        "converted_one": "({{count}} تحويل)",
+        "converted_two": "({{count}} تحويلان)",
+        "converted_few": "({{count}} تحويلات)",
+        "converted_many": "({{count}} تحويلًا)",
+        "converted_other": "({{count}} تحويل)"
+    }
+}

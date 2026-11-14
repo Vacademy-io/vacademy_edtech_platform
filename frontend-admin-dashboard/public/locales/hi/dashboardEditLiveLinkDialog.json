@@ -1,0 +1,10 @@
+{
+    "heading": "लाइव क्लास लिंक संपादित करें",
+    "currentLinkLabel": "वर्तमान लिंक",
+    "newLinkLabel": "नया लिंक",
+    "newLinkPlaceholder": "नया लिंक दर्ज करें",
+    "actions": {
+        "cancel": "रद्द करें",
+        "update": "अपडेट करें"
+    }
+}

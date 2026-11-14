@@ -1,0 +1,42 @@
+{
+    "title": "Submissions",
+    "loading": "Loading submissions…",
+    "noSubmissionsYet": "No submissions yet.",
+    "learnerFallback": "Learner",
+    "submittedAt": "Submitted {{date}}",
+    "pageOfTotal": "Page {{page}} of {{total}}",
+    "status": {
+        "evaluated": "Evaluated",
+        "evaluating": "Evaluating",
+        "pending": "Pending"
+    },
+    "actions": {
+        "reEvaluate": "Re-evaluate",
+        "quickEvaluate": "Quick evaluate",
+        "tool": "Tool"
+    },
+    "errors": {
+        "couldNotLoadSubmissions": "Could not load submissions. Open “View Submissions” to see them.",
+        "couldNotLoadQuestion": "Could not load the assessment question. Please try the full tool.",
+        "enterMarks": "Please enter marks.",
+        "submitFailed": "Failed to submit evaluation. Please try again."
+    },
+    "toast": {
+        "evaluationSubmitted": "Evaluation submitted",
+        "evaluationSubmittedDescription": "{{name}}'s submission has been evaluated."
+    },
+    "dialog": {
+        "heading": "Evaluate — {{name}}",
+        "marks": "Marks",
+        "outOfMarks": " (out of {{max}})",
+        "remarks": "Remarks",
+        "optional": "(optional)",
+        "remarksPlaceholder": "Add remarks the learner will see…",
+        "evaluatedPdf": "Evaluated PDF",
+        "choosePdf": "Choose PDF",
+        "noFileChosen": "No file chosen",
+        "cancel": "Cancel",
+        "submitting": "Submitting…",
+        "submitEvaluation": "Submit evaluation"
+    }
+}

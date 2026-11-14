@@ -1,0 +1,32 @@
+{
+    "navHeading": "प्रवेश डैशबोर्ड",
+    "filterBar": {
+        "title": "प्रवेश पाइपलाइन",
+        "allClasses": "सभी कक्षाएं"
+    },
+    "kpi": {
+        "totalEnquiries": "कुल पूछताछ",
+        "totalApplications": "कुल आवेदन",
+        "totalAdmissions": "कुल प्रवेश"
+    },
+    "conversion": {
+        "enquiryToApplication": "पूछताछ → आवेदन",
+        "applicationToAdmission": "आवेदन → प्रवेश",
+        "overall": "समग्र रूपांतरण दर"
+    },
+    "breakdown": {
+        "title": "प्रवेश विवरण",
+        "fromEnquiry": {
+            "label": "पूछताछ से",
+            "description": "पूरा फ़नल: पूछताछ → आवेदन → प्रवेश"
+        },
+        "fromApplicationOnly": {
+            "label": "केवल आवेदन से",
+            "description": "आवेदन चरण से शुरू हुआ"
+        },
+        "direct": {
+            "label": "सीधा (वॉक-इन)",
+            "description": "बिना पूछताछ या आवेदन के"
+        }
+    }
+}

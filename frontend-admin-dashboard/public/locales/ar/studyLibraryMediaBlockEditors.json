@@ -1,0 +1,20 @@
+{
+    "uploading": "جارٍ الرفع…",
+    "noImage": "لا توجد صورة",
+    "uploadImage": "رفع صورة",
+    "imageUploadFailed": "فشل رفع الصورة",
+    "altTextPlaceholder": "النص البديل (اختياري)",
+    "noVideo": "لا يوجد فيديو",
+    "uploadVideo": "رفع فيديو",
+    "videoUploadFailed": "فشل رفع الفيديو",
+    "noFile": "لا يوجد ملف",
+    "uploadFile": "رفع ملف",
+    "fileUploadFailed": "فشل رفع الملف",
+    "downloadFile": "تنزيل الملف",
+    "noEmbed": "لا يوجد محتوى مضمّن",
+    "embedUrlPlaceholder": "الصق رابط YouTube / Vimeo / Loom / أي رابط",
+    "embed": "تضمين",
+    "embeddedContentTitle": "محتوى مضمّن",
+    "calloutPlaceholder": "اكتب ملاحظة…",
+    "themeAriaLabel": "سمة {{theme}}"
+}

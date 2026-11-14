@@ -364,6 +364,109 @@ public class LearnerLLMAnalyticsController {
         }
 
         /**
+         * Every learner's processed analysis for one assessment, in one call.
+         *
+         * <p>Exists so assessment_service can build a CLASS-level AI report by
+         * aggregating analyses that already exist, instead of spending a fresh
+         * LLM call (and the institute's credits) per assessment. One row per
+         * learner — their latest.
+         *
+         * <p>Deliberately returns only {@code user_id} + {@code processed_json}:
+         * the caller aggregates and never needs the rest, and the payload for a
+         * 600-learner assessment is large enough already.
+         */
+        @GetMapping("/internal/processed-logs/by-source")
+        @Operation(summary = "Internal: every learner's processed analysis for one source (HMAC auth, no JWT)")
+        public ResponseEntity<Map<String, Object>> getProcessedLogsBySource(
+                        @RequestParam("sourceId") String sourceId) {
+                if (sourceId == null || sourceId.isBlank()) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "error",
+                                        "message", "sourceId is required"));
+                }
+                try {
+                        List<ActivityLog> logs = activityLogRepository.findProcessedBySourceId(sourceId);
+                        List<Map<String, Object>> items = logs.stream()
+                                        .map(a -> {
+                                                Map<String, Object> row = new LinkedHashMap<>();
+                                                row.put("user_id", a.getUserId());
+                                                row.put("processed_json", a.getProcessedJson());
+                                                return row;
+                                        })
+                                        .collect(Collectors.toList());
+                        Map<String, Object> body = new LinkedHashMap<>();
+                        body.put("source_id", sourceId);
+                        body.put("count", items.size());
+                        body.put("analyses", items);
+                        return ResponseEntity.ok(body);
+                } catch (Exception e) {
+                        log.error("[LLM-Analytics-Internal] Failed to read analyses for source {}", sourceId, e);
+                        return ResponseEntity.internalServerError().body(Map.of(
+                                        "status", "error",
+                                        "message", e.getMessage()));
+                }
+        }
+
+        /**
+         * Internal (HMAC, no JWT) sibling of {@link #processOnDemand}.
+         *
+         * <p>Exists for the admin-side "Download AI Report" action in
+         * assessment_service: the teacher's copy of the report has to be generatable
+         * on the spot rather than waiting for the hourly scheduler, and
+         * assessment_service talks to admin_core over HMAC, so it cannot reach the
+         * JWT-bound {@code /process-on-demand} above.
+         *
+         * <p>Unlike the client endpoint, this one reports the row's <b>real</b> status
+         * instead of hiding a non-processed row behind an empty list. The caller needs
+         * to tell an admin "this institute is out of AI credits"
+         * ({@code skipped_no_credits}) apart from "the model call failed"
+         * ({@code failed}) and "this learner never submitted" ({@code not_found}).
+         */
+        @PostMapping("/internal/process-on-demand")
+        @Operation(summary = "Internal: generate the AI report for one user + source on demand (HMAC auth, no JWT)")
+        public ResponseEntity<Map<String, Object>> processOnDemandInternal(
+                        @RequestParam("userId") String userId,
+                        @RequestParam("sourceId") String sourceId) {
+
+                if (userId == null || userId.isBlank() || sourceId == null || sourceId.isBlank()) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                        "status", "error",
+                                        "message", "userId and sourceId are required"));
+                }
+
+                log.info("[LLM-Analytics-Internal] On-demand processing requested for user: {}, sourceId: {}",
+                                userId, sourceId);
+
+                try {
+                        ActivityLog activityLog = activityLogProcessorService.processOnDemand(userId, sourceId);
+
+                        if (activityLog == null) {
+                                Map<String, Object> body = new LinkedHashMap<>();
+                                body.put("status", "not_found");
+                                body.put("processed_json", null);
+                                return ResponseEntity.ok(body);
+                        }
+
+                        Map<String, Object> body = new LinkedHashMap<>();
+                        body.put("status", activityLog.getStatus());
+                        body.put("activity_log_id", activityLog.getId());
+                        body.put("processed_json",
+                                        "processed".equalsIgnoreCase(activityLog.getStatus())
+                                                        ? activityLog.getProcessedJson()
+                                                        : null);
+                        return ResponseEntity.ok(body);
+
+                } catch (Exception e) {
+                        log.error("[LLM-Analytics-Internal] On-demand processing failed for user: {}, sourceId: {}",
+                                        userId, sourceId, e);
+                        Map<String, Object> body = new LinkedHashMap<>();
+                        body.put("status", "error");
+                        body.put("message", e.getMessage());
+                        return ResponseEntity.internalServerError().body(body);
+                }
+        }
+
+        /**
          * Receive assessment submission data from assessment_service
          * This is called when a student submits an assessment
          * 

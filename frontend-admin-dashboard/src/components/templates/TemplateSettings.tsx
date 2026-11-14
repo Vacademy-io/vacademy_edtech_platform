@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Mail } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/ui/whatsapp-icon';
 import { EmailTemplatesTab } from './email';
+import { EmailBrandKit } from './email/EmailBrandKit';
 import { WhatsAppTemplatesTab } from './whatsapp';
 
 export default function TemplateSettings() {
@@ -36,7 +37,8 @@ export default function TemplateSettings() {
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="email" className="mt-4 sm:mt-6 w-full">
+                <TabsContent value="email" className="mt-4 sm:mt-6 w-full space-y-4 sm:space-y-6">
+                    <EmailBrandKit />
                     <EmailTemplatesTab />
                 </TabsContent>
 

@@ -3,12 +3,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MagnifyingGlass, Star, UserPlus, UsersThree } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { reportApiError } from "@/lib/report-api-error";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { MyButton } from "@/components/design-system/button";
 import { MyInput } from "@/components/design-system/input";
 import { EmptyState, ErrorState, LoadingState } from "@/components/design-system/states";
 import { getInstituteId } from "@/constants/helper";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import {
     cancelMentorRequest,
     handleGetMentorDirectory,
@@ -45,6 +48,8 @@ function MyMentorsRoute() {
 type TabKey = "mine" | "sessions" | "find" | "requests";
 
 function MyMentorsPage() {
+    const { t } = useTranslation("miscRoutesA");
+    const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
     const [instituteId, setInstituteId] = useState<string | undefined>();
     const [tab, setTab] = useState<TabKey>("mine");
     const [search, setSearch] = useState("");
@@ -90,25 +95,29 @@ function MyMentorsPage() {
     };
 
     const tabs: { key: TabKey; label: string; badge?: number }[] = [
-        { key: "mine", label: "My mentors", badge: mentors.length || undefined },
+        { key: "mine", label: t("myMentors.tabs.mine"), badge: mentors.length || undefined },
         // Always offered, even at zero: "where are my sessions?" is the question this
         // tab answers, and hiding it when empty is what sent learners hunting through
         // their inbox for the booking confirmation.
-        { key: "sessions", label: "My sessions", badge: upcomingCount || undefined },
-        ...(directoryAvailable ? [{ key: "find" as const, label: "Find a mentor" }] : []),
+        { key: "sessions", label: t("myMentors.tabs.sessions"), badge: upcomingCount || undefined },
+        ...(directoryAvailable ? [{ key: "find" as const, label: t("myMentors.tabs.find") }] : []),
         ...(directoryAvailable || requests.length
-            ? [{ key: "requests" as const, label: "My requests", badge: pendingCount || undefined }]
+            ? [
+                  {
+                      key: "requests" as const,
+                      label: t("myMentors.tabs.requests"),
+                      badge: pendingCount || undefined,
+                  },
+              ]
             : []),
     ];
 
     return (
-        <div className="flex flex-col gap-6 p-4 sm:p-6">
+        <div className="flex flex-col gap-section p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col">
-                    <h1 className="text-h3 font-semibold text-neutral-700">My Mentors</h1>
-                    <p className="text-body text-neutral-500">
-                        Book sessions and message your assigned mentors.
-                    </p>
+                    <h1 className="text-h3 font-semibold text-neutral-700">{t("myMentors.page.title")}</h1>
+                    <p className="text-body text-neutral-500">{t("myMentors.page.subtitle")}</p>
                 </div>
                 {directoryAvailable && tab !== "find" && (
                     <MyButton
@@ -117,7 +126,7 @@ function MyMentorsPage() {
                         scale="medium"
                         onClick={() => setTab("find")}
                     >
-                        <UserPlus size={16} /> Find a mentor
+                        <UserPlus size={16} /> {t("myMentors.page.findMentor")}
                     </MyButton>
                 )}
             </div>
@@ -154,11 +163,12 @@ function MyMentorsPage() {
                         </span>
                         <div className="flex flex-col">
                             <span className="text-body font-medium text-neutral-700">
-                                How was your session with{" "}
-                                {sessionToRate.mentor_name || "your mentor"}?
+                                {t("myMentors.rateBanner.question", {
+                                    mentor: sessionToRate.mentor_name || t("myMentors.common.yourMentor"),
+                                })}
                             </span>
                             <span className="text-caption text-neutral-500">
-                                A quick rating helps your institute keep mentoring useful.
+                                {t("myMentors.rateBanner.helper")}
                             </span>
                         </div>
                     </div>
@@ -168,7 +178,7 @@ function MyMentorsPage() {
                         scale="medium"
                         onClick={() => setRateSession(sessionToRate)}
                     >
-                        Rate session
+                        {t("myMentors.rateBanner.cta")}
                     </MyButton>
                 </div>
             )}
@@ -211,7 +221,7 @@ function MyMentorsPage() {
                                     setSearch(e.target.value)
                                 }
                                 inputType="text"
-                                inputPlaceholder="Search by name or topic"
+                                inputPlaceholder={t("myMentors.find.searchPlaceholder")}
                                 className="w-full ps-9"
                             />
                         </div>
@@ -220,9 +230,9 @@ function MyMentorsPage() {
                             buttonType="secondary"
                             scale="medium"
                             onClick={() => openRequest(null)}
-                            title="Let your admin pick a mentor for you"
+                            title={t("myMentors.find.askAnyTitle", { admin })}
                         >
-                            Not sure? Ask for any mentor
+                            {t("myMentors.find.askAnyCta")}
                         </MyButton>
                     </div>
 
@@ -230,21 +240,28 @@ function MyMentorsPage() {
                         <LoadingState variant="list" count={3} />
                     ) : directoryQuery.isError ? (
                         <ErrorState
-                            message="Couldn't load mentors."
+                            message={t("myMentors.find.loadError")}
                             onRetry={() => directoryQuery.refetch()}
                         />
                     ) : filteredDirectory.length === 0 ? (
                         <EmptyState
                             icon={MagnifyingGlass}
-                            title={query ? "No mentors match your search" : "No mentors listed yet"}
+                            title={
+                                query
+                                    ? t("myMentors.find.empty.searchTitle")
+                                    : t("myMentors.find.empty.noneTitle")
+                            }
                             description={
                                 query
-                                    ? "Try a different topic, or ask your admin to match you with any mentor."
-                                    : "Your institute hasn't listed any mentors for browsing yet."
+                                    ? t("myMentors.find.empty.searchDescription", { admin })
+                                    : t("myMentors.find.empty.noneDescription")
                             }
                             action={
                                 query
-                                    ? { label: "Clear search", onClick: () => setSearch("") }
+                                    ? {
+                                          label: t("myMentors.find.empty.clearSearch"),
+                                          onClick: () => setSearch(""),
+                                      }
                                     : undefined
                             }
                         />
@@ -312,21 +329,22 @@ function MyMentorsTab({
     canFind: boolean;
     onFind: () => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     if (isLoading || !instituteId) return <LoadingState variant="list" count={3} />;
     if (isError) {
-        return <ErrorState message="Couldn't load your mentors." onRetry={onRetry} />;
+        return <ErrorState message={t("myMentors.mine.loadError")} onRetry={onRetry} />;
     }
     if (mentors.length === 0) {
         return (
             <EmptyState
                 icon={UsersThree}
-                title="No mentors yet"
+                title={t("myMentors.mine.empty.title")}
                 description={
                     canFind
-                        ? "Browse the mentors your institute offers and request the one that fits."
-                        : "Once a mentor is assigned to you, they'll appear here."
+                        ? t("myMentors.mine.empty.descriptionCanFind")
+                        : t("myMentors.mine.empty.descriptionNoFind")
                 }
-                action={canFind ? { label: "Find a mentor", onClick: onFind } : undefined}
+                action={canFind ? { label: t("myMentors.page.findMentor"), onClick: onFind } : undefined}
             />
         );
     }
@@ -360,12 +378,13 @@ function MyRequestsTab({
     onRetry: () => void;
     onBrowse: () => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const queryClient = useQueryClient();
     const cancel = useMutation({
         mutationFn: (requestId: string) =>
             cancelMentorRequest({ instituteId: instituteId ?? "", requestId }),
         onSuccess: () => {
-            toast.success("Request withdrawn");
+            toast.success(t("myMentors.requests.toast.withdrawn"));
             queryClient.invalidateQueries({ queryKey: ["GET_MY_MENTOR_REQUESTS"] });
             queryClient.invalidateQueries({ queryKey: ["GET_MENTOR_DIRECTORY"] });
         },
@@ -373,25 +392,26 @@ function MyRequestsTab({
             reportApiError(error, {
                 feature: "mentorship",
                 tags: { "mentorship.action": "withdraw-request" },
-                fallbackMessage: "Couldn't withdraw the request.",
+                fallbackMessage: t("myMentors.requests.toast.withdrawFailed"),
             }),
     });
 
     if (isLoading) return <LoadingState variant="list" count={2} />;
-    if (isError) return <ErrorState message="Couldn't load your requests." onRetry={onRetry} />;
+    if (isError)
+        return <ErrorState message={t("myMentors.requests.loadError")} onRetry={onRetry} />;
     if (requests.length === 0) {
         return (
             <EmptyState
                 icon={UserPlus}
-                title="No requests yet"
-                description="Ask for a mentor and you'll be able to track the request here."
-                action={{ label: "Find a mentor", onClick: onBrowse }}
+                title={t("myMentors.requests.empty.title")}
+                description={t("myMentors.requests.empty.description")}
+                action={{ label: t("myMentors.page.findMentor"), onClick: onBrowse }}
             />
         );
     }
 
     return (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-stack">
             {requests.map((r) => (
                 <div
                     key={r.id}
@@ -405,13 +425,13 @@ function MyRequestsTab({
                         />
                         <div className="flex min-w-0 flex-col gap-0.5">
                             <span className="text-body font-medium text-neutral-700">
-                                {r.mentor_name || "Any available mentor"}
+                                {r.mentor_name || t("myMentors.common.anyAvailableMentor")}
                             </span>
                             {r.message && (
                                 <span className="text-caption text-neutral-500">{r.message}</span>
                             )}
                             <span className="text-caption text-neutral-400">
-                                Requested {fmtDate(r.created_at)}
+                                {t("myMentors.requests.requestedOn", { date: fmtDate(r.created_at) })}
                             </span>
                             {r.status === "DECLINED" && r.decision_note && (
                                 <span className="mt-1 rounded-md bg-neutral-50 p-2 text-caption text-neutral-600">
@@ -430,7 +450,7 @@ function MyRequestsTab({
                                 onClick={() => cancel.mutate(r.id)}
                                 disable={cancel.isPending}
                             >
-                                Withdraw
+                                {t("myMentors.requests.withdraw")}
                             </MyButton>
                         )}
                     </div>
@@ -441,16 +461,23 @@ function MyRequestsTab({
 }
 
 function RequestStatusBadge({ status }: { status: string }) {
+    const { t } = useTranslation("miscRoutesA");
     const tones: Record<string, string> = {
         PENDING: "bg-warning-50 text-warning-600",
         APPROVED: "bg-success-50 text-success-600",
         DECLINED: "bg-danger-50 text-danger-600",
         CANCELLED: "bg-neutral-100 text-neutral-500",
     };
+    const labels: Record<string, string> = {
+        PENDING: t("myMentors.requests.status.pending"),
+        APPROVED: t("myMentors.requests.status.approved"),
+        DECLINED: t("myMentors.requests.status.declined"),
+        CANCELLED: t("myMentors.requests.status.cancelled"),
+    };
     const tone = tones[status] ?? "bg-neutral-100 text-neutral-500";
     return (
         <span className={`rounded-full px-2.5 py-1 text-caption ${tone}`}>
-            {requestStatusLabel(status)}
+            {labels[status] ?? requestStatusLabel(status)}
         </span>
     );
 }

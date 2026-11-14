@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import i18n from '@/i18n';
+
+// Module-scope constant (imported as a default across the app before any component
+// mounts), so it cannot call useTranslation(); uses the i18next singleton instead.
 
 /** Per-type default-assignee routing block (mirrors the backend QueryTypeAssignee). */
 export interface QueryTypeAssignee {
@@ -25,7 +29,9 @@ const SETTING_KEY = 'DOUBT_MANAGEMENT_SETTING';
 /** The built-in academic type that always exists, even before an admin configures anything. */
 export const SYSTEM_DOUBT_TYPE: QueryTypeConfig = {
     key: 'DOUBT',
-    label: 'Doubt',
+    get label() {
+        return i18n.t('studyLibraryDoubtManagementUseDoubtQueryTypes:doubt');
+    },
     enabled: true,
     is_system: true,
     learner_selectable: true,
@@ -75,7 +81,7 @@ export const useDoubtQueryTypes = () => {
     const isKnownType = (key?: string | null): boolean =>
         !!key && queryTypes.some((t) => t.key?.toUpperCase() === key.toUpperCase());
     const labelByKey = (key?: string | null): string => {
-        if (!key) return 'Doubt';
+        if (!key) return i18n.t('studyLibraryDoubtManagementUseDoubtQueryTypes:doubt');
         const match = queryTypes.find((t) => t.key?.toUpperCase() === key.toUpperCase());
         // A doubt whose type was removed from settings falls back to a humanized key
         // (TECHNICAL_ISSUE → "Technical Issue") rather than the raw upper-snake key.

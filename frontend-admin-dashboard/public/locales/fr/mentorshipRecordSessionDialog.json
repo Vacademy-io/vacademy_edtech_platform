@@ -1,0 +1,21 @@
+{
+    "heading": "Enregistrer la session",
+    "cancel": "Annuler",
+    "pickOutcomeFirst": "Choisissez d'abord un résultat",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "sessionRecorded": "Session enregistrée",
+    "markedNoShow": "Marquée comme absence",
+    "saveFailed": "Impossible d'enregistrer cette session. Veuillez réessayer.",
+    "sessionFallback": "Session",
+    "menteeFallback": "votre mentoré",
+    "withMentee": "avec",
+    "whatHappened": "Que s'est-il passé ?",
+    "outcomeWentAhead": "La session a eu lieu",
+    "outcomeNoShow": "Absence de la personne",
+    "topicLabel": "Sujet abordé (facultatif)",
+    "topicPlaceholder": "ex. Mouvement de rotation",
+    "notesLabel": "Notes (facultatif)",
+    "notesPlaceholder": "Progrès, points de blocage, à faire avant la prochaine session…",
+    "notesHelp": "Visible par vous et vos administrateurs. Jamais montré à l'apprenant."
+}

@@ -1,0 +1,58 @@
+{
+    "filter": {
+        "all": "सभी क्विज़",
+        "attempted": "प्रयास किए गए",
+        "notStarted": "शुरू नहीं हुए",
+        "needsAttention": "ध्यान देने योग्य"
+    },
+    "sort": {
+        "courseOrder": "कोर्स क्रम",
+        "lowestAvgScore": "सबसे कम औसत स्कोर",
+        "highestAvgScore": "सबसे अधिक औसत स्कोर",
+        "lowestParticipation": "सबसे कम सहभागिता",
+        "mostRecentActivity": "हाल की गतिविधि"
+    },
+    "header": {
+        "quiz": "क्विज़",
+        "questions": "प्रश्न",
+        "attempted": "प्रयास किए गए",
+        "avgScore": "औसत स्कोर",
+        "passed": "उत्तीर्ण",
+        "lastActivity": "अंतिम गतिविधि"
+    },
+    "untitledQuiz": "शीर्षक रहित क्विज़",
+    "marks_one": "{{count}} अंक",
+    "marks_other": "{{count}} अंक",
+    "noAttemptsYet": "अभी तक कोई प्रयास नहीं",
+    "passLabel": "उत्तीर्ण {{percent}}%",
+    "noPassMark": "कोई उत्तीर्णांक नहीं",
+    "error": {
+        "title": "क्विज़ परिणाम लोड नहीं हो सके",
+        "subtitle": "अनुरोध विफल रहा। अपना कनेक्शन जाँचें और पुनः प्रयास करें।"
+    },
+    "retry": "पुनः प्रयास करें",
+    "stat": {
+        "quizzes": "क्विज़",
+        "quizzesHintNotStarted_one": "{{count}} अभी शुरू नहीं हुई",
+        "quizzesHintNotStarted_other": "{{count}} अभी शुरू नहीं हुईं",
+        "quizzesHintAllAttempts": "सभी में प्रयास हो चुके हैं",
+        "learnersStarted": "शुरुआत करने वाले शिक्षार्थी",
+        "learnersStartedHint": "कम से कम एक क्विज़ पूरी की",
+        "avgScore": "औसत स्कोर",
+        "avgScoreHint": "सभी प्रयासों में",
+        "needsAttention": "ध्यान देने योग्य",
+        "needsAttentionHint": "50% से कम औसत वाली क्विज़"
+    },
+    "search": {
+        "placeholder": "क्विज़ या अध्याय खोजें"
+    },
+    "filterGroupAriaLabel": "क्विज़ फ़िल्टर करें",
+    "refreshAriaLabel": "क्विज़ परिणाम रीफ़्रेश करें",
+    "empty": {
+        "noneTitle": "इस कोर्स में अभी तक कोई क्विज़ नहीं है",
+        "filteredTitle": "इन फ़िल्टर से कोई क्विज़ मेल नहीं खाती",
+        "noneSubtitle": "किसी अध्याय में क्विज़ स्लाइड जोड़ें और शिक्षार्थियों के प्रयास करते ही परिणाम यहाँ दिखेंगे।",
+        "filteredSubtitle": "कोई अलग खोज शब्द आज़माएँ या फ़िल्टर हटाएँ।"
+    },
+    "clearFilters": "फ़िल्टर हटाएँ"
+}

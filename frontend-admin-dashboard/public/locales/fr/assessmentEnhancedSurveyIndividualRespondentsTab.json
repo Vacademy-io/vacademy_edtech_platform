@@ -1,0 +1,42 @@
+{
+    "questionType": {
+        "mcqs": "Choix unique",
+        "mcqm": "Choix multiple",
+        "trueFalse": "Vrai/Faux",
+        "numeric": "Numérique",
+        "oneWord": "Un mot",
+        "longAnswer": "Réponse longue"
+    },
+    "response": {
+        "noResponse": "Aucune réponse",
+        "unknownAnswerFormat": "Format de réponse inconnu",
+        "noCorrectAnswerAvailable": "Aucune réponse correcte disponible",
+        "noCorrectOptionsAvailable": "Aucune option correcte disponible",
+        "unknownCorrectAnswerFormat": "Format de réponse correcte inconnu"
+    },
+    "states": {
+        "loading": "Chargement des données du sondage amélioré...",
+        "errorPrefix": "Erreur :",
+        "noRespondentsFound": "Aucun répondant trouvé.",
+        "noResponsesAvailable": "Aucune réponse disponible pour ce répondant."
+    },
+    "header": {
+        "batch": "Lot :",
+        "correctCount": "{{correct}}/{{total}} correctes",
+        "accuracy": "{{value}} % de précision"
+    },
+    "navigation": {
+        "previous": "Précédent",
+        "of": "sur {{total}}",
+        "next": "Suivant"
+    },
+    "question": {
+        "numberedTitle": "Q{{order}}. {{content}}",
+        "userAnswer": "Réponse de l'utilisateur :",
+        "markedForReview": "Marqué pour révision",
+        "correctAnswer": "Réponse correcte :",
+        "allOptions": "Toutes les options :",
+        "timeTakenSeconds": "{{count}} s",
+        "questionNumber": "Question n° {{order}}"
+    }
+}

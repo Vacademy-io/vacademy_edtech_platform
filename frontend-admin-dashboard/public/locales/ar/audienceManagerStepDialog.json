@@ -1,0 +1,52 @@
+{
+    "heading": {
+        "add": "إضافة خطوة",
+        "edit": "تعديل الخطوة"
+    },
+    "fields": {
+        "stepName": {
+            "label": "اسم الخطوة",
+            "placeholder": "مثال: تعبئة نموذج التسجيل"
+        },
+        "coursePool": {
+            "label": "الدورة (الدورات) التي يمكن لهذه الخطوة التسجيل فيها",
+            "loadingPlaceholder": "جارٍ تحميل الدورات…",
+            "emptyPlaceholder": "اتركه فارغًا للسماح للمسؤول باختيار أي دورة…",
+            "helperText": "اتركه فارغًا ليختار المسؤول المُنفِّذ أي دورة عند التسجيل — لا تحتاج الرحلة لإعادة بناء عند إضافة دورة جديدة. اختر دورة (دورات) محددة لحصر الاختيار على تلك فقط."
+        }
+    },
+    "switches": {
+        "optional": "خطوة اختيارية (يمكن تخطيها)",
+        "grantsStudentRole": "منح دور الطالب عند الإتمام",
+        "sendsLoginCredentials": "إرسال بيانات تسجيل الدخول عند الإتمام",
+        "createStudent": "إنشاء طالب من هذا النموذج عند الإتمام",
+        "skipIfAlreadyEnrolled": "إكمال هذه الخطوة تلقائيًا إذا كان الطالب مسجلاً بالفعل في دورة"
+    },
+    "sections": {
+        "stepAccess": "صلاحية الوصول للخطوة (من يمكنه عرض/تعديل هذه الخطوة)",
+        "formFields": "حقول النموذج",
+        "loadingFields": "جارٍ تحميل الحقول الحالية…",
+        "step": "Step",
+        "formFieldsHint": "Attach existing custom fields or create new ones."
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveStep": "حفظ الخطوة",
+        "addStep": "إضافة خطوة"
+    },
+    "toasts": {
+        "stepUpdated": "تم تحديث الخطوة",
+        "stepAdded": "تمت إضافة الخطوة",
+        "saveError": "تعذّر حفظ الخطوة. يُرجى المحاولة مرة أخرى.",
+        "pendingFieldSelection": "لقد اخترت حقلاً ولكنك لم تنقر بعد على \"إرفاق\" — قم بإرفاقه (أو امسح التحديد) قبل الحفظ، وإلا سيُفقد."
+    },
+    "schema": {
+        "stepNameRequired": "اسم الخطوة مطلوب",
+        "stepNameMaxLength": "يجب ألا يتجاوز 150 حرفًا"
+    },
+    "switchHints": {
+        "optional": "Admins can skip it with a reason.",
+        "createStudent": "Shows the {{course}} choice and the auto-complete option."
+    }
+}

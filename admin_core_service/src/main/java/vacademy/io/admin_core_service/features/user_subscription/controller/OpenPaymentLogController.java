@@ -16,6 +16,15 @@ public class OpenPaymentLogController {
 
     @GetMapping
     public ResponseEntity<PaymentLogDTO> getPaymentLog(String paymentLogId) {
-        return ResponseEntity.ok(paymentLogService.getPaymentLog(paymentLogId));
+        PaymentLogDTO dto = paymentLogService.getPaymentLog(paymentLogId);
+        // No login here: keep out how an offline payment was recorded (option labels can name
+        // bank accounts; payer, notes and proof are the institute's business).
+        if (dto != null) {
+            dto.setPaymentSubMode(null);
+            dto.setPaymentReference(null);
+            dto.setPaymentDetailsJson(null);
+            dto.setRecordedByUserId(null);
+        }
+        return ResponseEntity.ok(dto);
     }
 }

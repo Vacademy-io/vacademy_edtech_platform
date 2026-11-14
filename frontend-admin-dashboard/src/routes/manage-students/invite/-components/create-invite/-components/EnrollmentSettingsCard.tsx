@@ -1,4 +1,5 @@
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormItem, FormControl } from '@/components/ui/form';
@@ -18,10 +19,11 @@ interface DiscountSettingsDialogProps {
 }
 
 const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
+    const { t } = useTranslation('manageStudentsEnrollmentSettingsCard');
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-2xl font-bold">Enrollment Settings</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent>
                 <FormField
@@ -33,13 +35,10 @@ const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="w-full">
                                         <div className="text-base font-semibold">
-                                            Require Approval
+                                            {t('requireApproval.label')}
                                         </div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>
-                                                Enable if you want to review and approve enrollment
-                                                requests
-                                            </span>
+                                            <span>{t('requireApproval.description')}</span>
                                             <Switch
                                                 id="require-approval-switch"
                                                 checked={field.value}
@@ -51,10 +50,9 @@ const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
                                             <div className="mt-4 flex flex-col">
                                                 <div className="mb-2 flex items-center gap-2 rounded-xl border p-3 text-xs font-medium">
                                                     <WarningCircle size={18} />
-                                                    Students will see your message while their
-                                                    enrollment request is pending approval.
+                                                    {t('warning')}
                                                 </div>
-                                                <span>Message Template</span>
+                                                <span>{t('messageTemplate.label')}</span>
                                                 <FormField
                                                     control={form.control}
                                                     name="messageTemplate"
@@ -77,25 +75,37 @@ const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
                                                             >
                                                                 <FormControl>
                                                                     <SelectTrigger className="mt-2 w-full">
-                                                                        <SelectValue placeholder="Select message template" />
+                                                                        <SelectValue
+                                                                            placeholder={t(
+                                                                                'messageTemplate.placeholder'
+                                                                            )}
+                                                                        />
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
                                                                     <SelectItem value="standard">
-                                                                        Standard Approval Message
+                                                                        {t(
+                                                                            'messageTemplate.options.standard'
+                                                                        )}
                                                                     </SelectItem>
                                                                     <SelectItem value="review">
-                                                                        Custom Review Process
+                                                                        {t(
+                                                                            'messageTemplate.options.review'
+                                                                        )}
                                                                     </SelectItem>
                                                                     <SelectItem value="custom">
-                                                                        Custom Message
+                                                                        {t(
+                                                                            'messageTemplate.options.custom'
+                                                                        )}
                                                                     </SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                         </FormItem>
                                                     )}
                                                 />
-                                                <span className="mt-2">Approval Message</span>
+                                                <span className="mt-2">
+                                                    {t('approvalMessage.label')}
+                                                </span>
                                                 <FormField
                                                     control={form.control}
                                                     name="customMessage"
@@ -106,19 +116,21 @@ const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
                                                         let value = msgField.value;
                                                         let disabled = false;
                                                         if (template === 'standard') {
-                                                            value =
-                                                                'Thank you for your interest in our course. Your enrollment request is being reviewed by our team. We will notify you once your request has been approved.';
+                                                            value = t(
+                                                                'approvalMessage.templates.standard'
+                                                            );
                                                             disabled = true;
                                                         } else if (template === 'review') {
-                                                            value =
-                                                                'Your enrollment request has been received. Our team will review your application within 2 business days. You will receive an email notification with the decision.';
+                                                            value = t(
+                                                                'approvalMessage.templates.review'
+                                                            );
                                                             disabled = true;
                                                         } else if (template === 'custom') {
                                                             disabled = false;
                                                         }
                                                         return (
                                                             <Textarea
-                                                                className="mt-3 min-h-[90px]"
+                                                                className="mt-3 min-h-24"
                                                                 value={value || ''}
                                                                 onChange={(e) =>
                                                                     msgField.onChange(
@@ -126,13 +138,15 @@ const EnrollmentSettingsCard = ({ form }: DiscountSettingsDialogProps) => {
                                                                     )
                                                                 }
                                                                 disabled={disabled}
-                                                                placeholder="Enter your custom message..."
+                                                                placeholder={t(
+                                                                    'approvalMessage.placeholder'
+                                                                )}
                                                             />
                                                         );
                                                     }}
                                                 />
                                                 <span className="-mb-2 mt-3 text-xs text-neutral-500">
-                                                    You can use markdown formatting in your message.
+                                                    {t('markdownHint')}
                                                 </span>
                                             </div>
                                         )}

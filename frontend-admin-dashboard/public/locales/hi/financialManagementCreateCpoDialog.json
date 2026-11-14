@@ -1,0 +1,89 @@
+{
+    "dialog": {
+        "eyebrow": "योजना बनाएं",
+        "title": "नई फीस योजना"
+    },
+    "summary": {
+        "feeTypes": "फीस प्रकार",
+        "totalAmount": "कुल राशि",
+        "paymentDates": "भुगतान तिथियां"
+    },
+    "classSelect": {
+        "label": "कक्षा चुनें",
+        "placeholder": "कक्षाएं चुनें...",
+        "searchPlaceholder": "कक्षाएं खोजें...",
+        "noClasses": "कोई कक्षा उपलब्ध नहीं है",
+        "noMatch": "आपकी खोज से कोई कक्षा मेल नहीं खाती",
+        "selectedBadge_one": "{{count}} कक्षा चुनी गई",
+        "selectedBadge_other": "{{count}} कक्षाएं चुनी गईं",
+        "selectedSummary_one": "{{count}} कक्षा चुनी गई",
+        "selectedSummary_other": "{{count}} कक्षाएं चुनी गईं"
+    },
+    "packageName": {
+        "label": "पैकेज नाम",
+        "placeholder": "उदा. 2026 एलीट फीस योजना"
+    },
+    "status": {
+        "label": "स्थिति",
+        "active": "सक्रिय",
+        "draft": "ड्राफ्ट"
+    },
+    "approval": {
+        "label": "स्वीकृति पर शिक्षार्थियों को नामांकित करें",
+        "description": "चालू होने पर, इस योजना के माध्यम से नामांकन करने वाले शिक्षार्थियों को कोर्स एक्सेस मिलने से पहले व्यवस्थापक की स्वीकृति का इंतज़ार करना होगा।"
+    },
+    "feeType": {
+        "remove": "हटाएं",
+        "defaultName": "फीस प्रकार {{index}}",
+        "installmentCount_one": "{{count}} किश्त",
+        "installmentCount_other": "{{count}} किश्तें",
+        "nameLabel": "फीस का नाम",
+        "namePlaceholder": "उदा. ट्यूशन फीस",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "संक्षिप्त विवरण",
+        "totalAmountLabel": "कुल राशि (₹)",
+        "amountPlaceholder": "उदा. 50000",
+        "hasInstallments": "किश्तों में भुगतान",
+        "refundable": "वापसी योग्य",
+        "latePenalty": "विलंब शुल्क",
+        "penaltyPlaceholder": "%",
+        "paymentFrequency": "भुगतान आवृत्ति",
+        "presetMultiplier": "({{count}}x)",
+        "installmentCountPlaceholder": "किश्तों की संख्या",
+        "columnIndex": "#",
+        "columnAmount": "राशि (₹)",
+        "columnStartDate": "प्रारंभ तिथि",
+        "columnEndDate": "समाप्ति तिथि",
+        "columnDueDate": "देय तिथि",
+        "remainingToAllocate": "₹{{amount}} आवंटित करना शेष है",
+        "exceedsTotal": "कुल से ₹{{amount}} अधिक है",
+        "total": "कुल"
+    },
+    "presets": {
+        "installment": {
+            "annual": "वार्षिक",
+            "halfYearly": "अर्ध-वार्षिक",
+            "quarterly": "त्रैमासिक",
+            "monthly": "मासिक",
+            "custom": "अनुकूलित"
+        },
+        "feeType": {
+            "tuitionLabel": "ट्यूशन फीस",
+            "tuitionDescription": "शैक्षणिक वर्ष के लिए नियमित ट्यूशन शुल्क",
+            "examLabel": "परीक्षा शुल्क",
+            "examDescription": "परीक्षा और मूल्यांकन शुल्क",
+            "libraryLabel": "पुस्तकालय शुल्क",
+            "libraryDescription": "पुस्तकालय पहुंच और संसाधन शुल्क",
+            "transportLabel": "परिवहन शुल्क",
+            "transportDescription": "स्कूल परिवहन शुल्क",
+            "hostelLabel": "छात्रावास शुल्क",
+            "hostelDescription": "छात्रावास आवास शुल्क",
+            "labLabel": "प्रयोगशाला शुल्क",
+            "labDescription": "प्रयोगशाला उपयोग और सामग्री शुल्क"
+        }
+    },
+    "addFeeType": "फीस प्रकार जोड़ें",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है...",
+    "savePackage": "पैकेज सहेजें"
+}

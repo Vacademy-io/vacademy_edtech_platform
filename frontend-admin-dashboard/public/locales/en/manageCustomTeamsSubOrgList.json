@@ -1,0 +1,46 @@
+{
+    "filters": {
+        "noPlanOption": "No plan",
+        "searchAriaLabel": "Search",
+        "searchPlaceholder": "Search by name, email or phone",
+        "clearSearchAriaLabel": "Clear search",
+        "search": "Search",
+        "status": "Status",
+        "statusSearchPlaceholder": "Search status…",
+        "city": "City",
+        "citySearchPlaceholder": "Search city…",
+        "state": "State",
+        "stateSearchPlaceholder": "Search state…",
+        "pincodeAriaLabel": "Pincode",
+        "pincodePlaceholder": "Pincode",
+        "clearAll": "Clear all"
+    },
+    "actions": {
+        "export": "Export",
+        "create": "Create {{term}}"
+    },
+    "toasts": {
+        "inviteLinkCopied": "Invite link copied",
+        "nothingToExport": "Nothing to export.",
+        "exported_one": "Exported {{count}} {{term}}.",
+        "exported_other": "Exported {{count}} {{term}}."
+    },
+    "summary": {
+        "filteredCount": "{{filtered}} of {{total}} {{term}}"
+    },
+    "error": {
+        "title": "Couldn't load {{term}}",
+        "forbidden": "Your role does not have access to this data. Ask an institute admin to check the Display Settings for your role.",
+        "generic": "Something went wrong fetching the list. Please retry in a moment."
+    },
+    "empty": {
+        "filtered": "No {{term}} match your filters.",
+        "none": "No {{term}} found."
+    },
+    "table": {
+        "sortBy": "Sort by {{label}}"
+    },
+    "planCounts": {
+        "all": "All"
+    }
+}

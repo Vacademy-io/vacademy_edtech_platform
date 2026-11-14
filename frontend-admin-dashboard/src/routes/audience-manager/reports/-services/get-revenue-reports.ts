@@ -87,6 +87,54 @@ export async function fetchRevenue(p: CrmReportParams): Promise<RevenueReport> {
     };
 }
 
+// ── GET /v1/reports/revenue/payments ───────────────────────────────────
+
+/** One payment behind a Collected number (same rows the Revenue tab sums). */
+export interface RevenuePaymentRow {
+    payment_id: string;
+    user_id: string;
+    student_name: string | null;
+    phone: string | null;
+    /** yyyy-MM-dd — the day the payment counts on. */
+    payment_date: string;
+    /** yyyy-MM-dd — the day it was entered. */
+    entered_on: string | null;
+    amount: number;
+    payment_mode: string | null;
+    payment_sub_mode: string | null;
+    payment_reference: string | null;
+    receipt_number: string | null;
+    courses: string | null;
+    source_type: string | null;
+    counsellor_id: string | null;
+    counsellor_name: string | null;
+}
+
+export interface RevenuePayments {
+    currency: string;
+    total: number;
+    count: number;
+    truncated: boolean;
+    payments: RevenuePaymentRow[];
+}
+
+export const revenuePaymentsQueryKey = (p: CrmReportParams) =>
+    ['crm-reports-revenue-payments', ...paramsKey(p)] as const;
+
+/** Pass the clicked counsellor as counsellorUserId to list exactly that row's payments. */
+export async function fetchRevenuePayments(p: CrmReportParams): Promise<RevenuePayments> {
+    const { data } = await authenticatedAxiosInstance.get(`${REVENUE_URL}/payments`, {
+        params: toRequestParams(p),
+    });
+    return {
+        currency: data?.currency ?? 'INR',
+        total: data?.total ?? 0,
+        count: data?.count ?? 0,
+        truncated: !!data?.truncated,
+        payments: Array.isArray(data?.payments) ? data.payments : [],
+    };
+}
+
 // ── GET /v1/reports/cohort-analysis ────────────────────────────────────
 
 export interface CohortRow {

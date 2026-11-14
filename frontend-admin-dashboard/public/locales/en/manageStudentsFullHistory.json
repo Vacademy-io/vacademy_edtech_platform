@@ -1,0 +1,42 @@
+{
+    "hero": {
+        "eyebrow": "LEARNER HISTORY",
+        "eventCount_one": "{{count}} event",
+        "eventCount_other": "{{count}} events"
+    },
+    "filters": {
+        "all": "All",
+        "admission": "Admission",
+        "enrollment": "Enrollment",
+        "payment": "Payment",
+        "learning": "Learning",
+        "communication": "Communication",
+        "ariaLabel": "Filter history events by category"
+    },
+    "buckets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "earlier": "Earlier"
+    },
+    "error": {
+        "title": "Couldn't load activity history",
+        "hint": "Something went wrong while fetching the timeline. Please try again."
+    },
+    "empty": {
+        "title": "No history yet",
+        "hint": "Events from all stages will appear here"
+    },
+    "filteredEmpty": {
+        "title": "No events match this filter",
+        "hint": "Try selecting a different category above"
+    },
+    "timeline": {
+        "actorPrefix": "by {{name}}"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    }
+}

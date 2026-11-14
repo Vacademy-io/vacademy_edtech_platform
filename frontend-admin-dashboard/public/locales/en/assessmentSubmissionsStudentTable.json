@@ -1,0 +1,9 @@
+{
+    "states": {
+        "loading": "Loading...",
+        "error": "Error loading data",
+        "errorHint": "Refresh the page to try again.",
+        "emptyTitle": "No submissions to show",
+        "emptyHint": "Try clearing the search or filters above."
+    }
+}

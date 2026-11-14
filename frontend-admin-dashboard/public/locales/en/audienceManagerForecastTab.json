@@ -1,0 +1,24 @@
+{
+    "title": "Revenue forecast",
+    "calculationTitle": "How this is calculated",
+    "empty": {
+        "noHistory": "Not enough history to forecast yet."
+    },
+    "horizon": {
+        "label_one": "Next {{count}} day",
+        "label_other": "Next {{count}} days",
+        "blendedEstimate": "Blended estimate",
+        "runRate": "Run-rate",
+        "pipelineWeighted": "Pipeline-weighted"
+    },
+    "assumptions": {
+        "revenueLastDays": "Revenue (last {{days}}d)",
+        "avgDailyRevenue": "Avg daily revenue",
+        "leadsLastDays": "Leads (last {{days}}d)",
+        "conversionsLastDays": "Conversions (last {{days}}d)",
+        "historicalConvRate": "Historical conv. rate",
+        "avgDealValue": "Avg deal value",
+        "openPipelineLeads": "Open pipeline leads",
+        "footnote": "Run-rate = average daily revenue × horizon. Pipeline-weighted = open leads × historical conversion rate × avg deal value, ramped in by horizon. Blended is the average of the two. The forecast uses a fixed trailing window, not the page date filter."
+    }
+}

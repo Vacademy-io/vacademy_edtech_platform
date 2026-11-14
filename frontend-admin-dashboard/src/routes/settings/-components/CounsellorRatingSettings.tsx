@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
@@ -21,6 +23,7 @@ import {
  * /counsellor-workbench/config endpoint — no dedicated table.
  */
 export function CounsellorRatingSettings() {
+    const { t } = useTranslation('settingsCounsellorRating');
     const instituteId = getInstituteId();
     const [draft, setDraft] = useState<WorkbenchConfig | null>(null);
     const [saving, setSaving] = useState(false);
@@ -37,11 +40,13 @@ export function CounsellorRatingSettings() {
         if (query.data) setDraft({ ...query.data });
     }, [query.data]);
 
+    const presets = useMemo(() => buildPresets(t), [t]);
+
     if (!draft) {
         return (
             <section className="rounded-lg border border-neutral-200 bg-white p-4">
-                <h3 className="text-h4 font-medium text-neutral-900">How counsellors are scored</h3>
-                <p className="text-subtitle text-neutral-500">Loading…</p>
+                <h3 className="text-h4 font-medium text-neutral-900">{t('header.title')}</h3>
+                <p className="text-subtitle text-neutral-500">{t('loading')}</p>
             </section>
         );
     }
@@ -51,10 +56,10 @@ export function CounsellorRatingSettings() {
         setSaving(true);
         try {
             await updateWorkbenchConfig({ ...draft });
-            toast.success('Saved');
+            toast.success(t('toasts.saved'));
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Save failed');
+            toast.error(msg ?? t('toasts.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -67,12 +72,10 @@ export function CounsellorRatingSettings() {
             const { data } = await authenticatedAxiosInstance.post<{ affected: number }>(
                 COUNSELLOR_RATING_RECOMPUTE(instituteId)
             );
-            toast.success(
-                `Refreshed scores for ${data.affected} counsellor${data.affected === 1 ? '' : 's'}`
-            );
+            toast.success(t('toasts.recomputed', { count: data.affected }));
         } catch (e) {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Recompute failed');
+            toast.error(msg ?? t('toasts.recomputeFailed'));
         } finally {
             setRecomputing(false);
         }
@@ -101,15 +104,14 @@ export function CounsellorRatingSettings() {
             <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                     <h3 className="text-h4 font-medium text-neutral-900">
-                        How counsellors are scored
+                        {t('header.title')}
                     </h3>
                     <p className="text-caption text-neutral-500">
-                        The score is what shows up on every counsellor card and dropdown.
-                        Pick a preset, or use Advanced to tune it yourself.
+                        {t('header.subtitle')}
                     </p>
                 </div>
                 <MyButton buttonType="secondary" onClick={handleRecompute} disable={recomputing}>
-                    {recomputing ? 'Refreshing…' : 'Refresh scores'}
+                    {recomputing ? t('actions.refreshing') : t('actions.refreshScores')}
                 </MyButton>
             </div>
 
@@ -118,14 +120,14 @@ export function CounsellorRatingSettings() {
                 <RadioRow
                     selected={isAutomatic}
                     onSelect={() => setDraft({ ...draft, strategy_type: 'STRATEGY_BASED' })}
-                    title="Score them automatically based on performance"
-                    description="The system looks at how many leads they close and how fast, and gives them a score from 0 to 100. Recomputed nightly and after every conversion."
+                    title={t('strategy.automatic.title')}
+                    description={t('strategy.automatic.description')}
                 />
                 <RadioRow
                     selected={!isAutomatic}
                     onSelect={() => setDraft({ ...draft, strategy_type: 'STATIC' })}
-                    title="I’ll set each counsellor’s score manually"
-                    description="No automatic calculation. Use the inputs in Settings → Workbench team to set or update scores by hand."
+                    title={t('strategy.manual.title')}
+                    description={t('strategy.manual.description')}
                 />
             </div>
 
@@ -134,10 +136,10 @@ export function CounsellorRatingSettings() {
                     {/* ── Presets ───────────────────────────────────── */}
                     <div className="mb-4">
                         <div className="mb-2 text-caption font-medium text-neutral-700">
-                            Quick presets
+                            {t('presets.heading')}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {PRESETS.map((p) => (
+                            {presets.map((p) => (
                                 <button
                                     key={p.id}
                                     type="button"
@@ -153,7 +155,7 @@ export function CounsellorRatingSettings() {
 
                     {/* ── Sentence-style controls ───────────────────── */}
                     <div className="space-y-4 rounded-md border border-neutral-100 bg-neutral-50 p-3">
-                        <SentenceField label="Everyone starts at score">
+                        <SentenceField label={t('fields.startingScore.label')}>
                             <NumberInline
                                 value={draft.starting_rating ?? 0}
                                 min={0}
@@ -162,17 +164,19 @@ export function CounsellorRatingSettings() {
                             />
                         </SentenceField>
 
-                        <SentenceField label="Look at the last">
+                        <SentenceField label={t('fields.windowDays.label')}>
                             <NumberInline
                                 value={draft.window_days ?? 90}
                                 min={1}
                                 max={365}
                                 onChange={(v) => setDraft({ ...draft, window_days: v })}
                             />
-                            <span className="text-body text-neutral-700">days of work</span>
+                            <span className="text-body text-neutral-700">
+                                {t('fields.windowDays.suffix')}
+                            </span>
                         </SentenceField>
 
-                        <SentenceField label="A counsellor needs at least">
+                        <SentenceField label={t('fields.minSample.label')}>
                             <NumberInline
                                 value={draft.min_sample_size ?? 5}
                                 min={1}
@@ -180,7 +184,7 @@ export function CounsellorRatingSettings() {
                                 onChange={(v) => setDraft({ ...draft, min_sample_size: v })}
                             />
                             <span className="text-body text-neutral-700">
-                                assigned leads before they get a real score
+                                {t('fields.minSample.suffix')}
                             </span>
                         </SentenceField>
 
@@ -197,9 +201,9 @@ export function CounsellorRatingSettings() {
 
                         <div className="space-y-1">
                             <div className="text-caption font-medium text-neutral-700">
-                                What counts as “fast” in your team?
+                                {t('fields.fastHeading')}
                             </div>
-                            <SentenceField label="Closes within">
+                            <SentenceField label={t('fields.idealVelocity.label')}>
                                 <NumberInline
                                     value={draft.ideal_velocity_hours ?? 24}
                                     min={1}
@@ -207,10 +211,10 @@ export function CounsellorRatingSettings() {
                                     onChange={(v) => setDraft({ ...draft, ideal_velocity_hours: v })}
                                 />
                                 <span className="text-body text-neutral-700">
-                                    hours = full speed credit
+                                    {t('fields.idealVelocity.suffix')}
                                 </span>
                             </SentenceField>
-                            <SentenceField label="Slower than">
+                            <SentenceField label={t('fields.worstVelocity.label')}>
                                 <NumberInline
                                     value={
                                         Math.round((draft.worst_velocity_hours ?? 720) / 24)
@@ -222,7 +226,7 @@ export function CounsellorRatingSettings() {
                                     }
                                 />
                                 <span className="text-body text-neutral-700">
-                                    days = no speed credit
+                                    {t('fields.worstVelocity.suffix')}
                                 </span>
                             </SentenceField>
                         </div>
@@ -232,13 +236,13 @@ export function CounsellorRatingSettings() {
                             className="text-caption font-medium text-primary-600 hover:underline"
                             onClick={() => setAdvanced((v) => !v)}
                         >
-                            {advanced ? 'Hide advanced numbers' : 'Show advanced numbers'}
+                            {advanced ? t('actions.hideAdvanced') : t('actions.showAdvanced')}
                         </button>
 
                         {advanced && (
                             <div className="grid grid-cols-2 gap-3 rounded-md border border-neutral-200 bg-white p-3">
                                 <AdvancedNum
-                                    label="w_conversion (0–1)"
+                                    label={t('advanced.wConversion')}
                                     value={draft.w_conversion ?? 0.6}
                                     step={0.05}
                                     onChange={(v) =>
@@ -250,7 +254,7 @@ export function CounsellorRatingSettings() {
                                     }
                                 />
                                 <AdvancedNum
-                                    label="w_velocity (0–1)"
+                                    label={t('advanced.wVelocity')}
                                     value={draft.w_velocity ?? 0.4}
                                     step={0.05}
                                     onChange={(v) =>
@@ -262,14 +266,14 @@ export function CounsellorRatingSettings() {
                                     }
                                 />
                                 <AdvancedNum
-                                    label="ideal_velocity_hours"
+                                    label={t('advanced.idealVelocityHours')}
                                     value={draft.ideal_velocity_hours ?? 24}
                                     onChange={(v) =>
                                         setDraft({ ...draft, ideal_velocity_hours: v })
                                     }
                                 />
                                 <AdvancedNum
-                                    label="worst_velocity_hours"
+                                    label={t('advanced.worstVelocityHours')}
                                     value={draft.worst_velocity_hours ?? 720}
                                     onChange={(v) =>
                                         setDraft({ ...draft, worst_velocity_hours: v })
@@ -283,7 +287,7 @@ export function CounsellorRatingSettings() {
 
             <div className="mt-4 flex justify-end">
                 <MyButton buttonType="primary" onClick={handleSave} disable={saving}>
-                    {saving ? 'Saving…' : 'Save'}
+                    {saving ? t('actions.saving') : t('actions.save')}
                 </MyButton>
             </div>
         </section>
@@ -375,15 +379,16 @@ function BalanceSlider({
     value: number;
     onChange: (closingPct: number) => void;
 }) {
+    const { t } = useTranslation('settingsCounsellorRating');
     const closing = value;
     const speed = 100 - value;
     return (
         <div className="space-y-2">
             <div className="text-caption font-medium text-neutral-700">
-                What matters more to your team?
+                {t('balance.heading')}
             </div>
             <div className="flex items-center gap-3">
-                <span className="text-caption text-neutral-500">Closing</span>
+                <span className="text-caption text-neutral-500">{t('balance.closing')}</span>
                 <input
                     type="range"
                     min={0}
@@ -392,13 +397,15 @@ function BalanceSlider({
                     value={value}
                     onChange={(e) => onChange(parseInt(e.target.value, 10))}
                     className="flex-1 accent-primary-500"
-                    aria-label="Closing vs speed balance"
+                    aria-label={t('balance.ariaLabel')}
                 />
-                <span className="text-caption text-neutral-500">Speed</span>
+                <span className="text-caption text-neutral-500">{t('balance.speed')}</span>
             </div>
             <div className="text-center text-caption text-neutral-500">
-                <span className="font-semibold text-neutral-700">{closing}%</span> closing ·{' '}
-                <span className="font-semibold text-neutral-700">{speed}%</span> speed
+                <span className="font-semibold text-neutral-700">{closing}%</span>{' '}
+                {t('balance.closingLower')} ·{' '}
+                <span className="font-semibold text-neutral-700">{speed}%</span>{' '}
+                {t('balance.speedLower')}
             </div>
         </div>
     );
@@ -442,35 +449,37 @@ interface Preset {
     worstHours: number;
 }
 
-const PRESETS: Preset[] = [
-    {
-        id: 'balanced',
-        label: 'Balanced',
-        description: 'Closing rate and speed weighted evenly.',
-        windowDays: 90,
-        minSample: 5,
-        wConversion: 0.5,
-        idealHours: 24,
-        worstHours: 720,
-    },
-    {
-        id: 'closers',
-        label: 'Reward closers',
-        description: 'Closing rate matters more than speed.',
-        windowDays: 90,
-        minSample: 5,
-        wConversion: 0.75,
-        idealHours: 24,
-        worstHours: 720,
-    },
-    {
-        id: 'fast',
-        label: 'Reward fast callers',
-        description: 'Speed of close matters more than closing rate.',
-        windowDays: 60,
-        minSample: 3,
-        wConversion: 0.3,
-        idealHours: 12,
-        worstHours: 240,
-    },
-];
+function buildPresets(t: TFunction): Preset[] {
+    return [
+        {
+            id: 'balanced',
+            label: t('presets.balanced.label'),
+            description: t('presets.balanced.description'),
+            windowDays: 90,
+            minSample: 5,
+            wConversion: 0.5,
+            idealHours: 24,
+            worstHours: 720,
+        },
+        {
+            id: 'closers',
+            label: t('presets.closers.label'),
+            description: t('presets.closers.description'),
+            windowDays: 90,
+            minSample: 5,
+            wConversion: 0.75,
+            idealHours: 24,
+            worstHours: 720,
+        },
+        {
+            id: 'fast',
+            label: t('presets.fast.label'),
+            description: t('presets.fast.description'),
+            windowDays: 60,
+            minSample: 3,
+            wConversion: 0.3,
+            idealHours: 12,
+            worstHours: 240,
+        },
+    ];
+}

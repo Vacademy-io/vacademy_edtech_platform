@@ -1,0 +1,50 @@
+{
+    "toast": {
+        "allAlreadySelected": "इस फ़िल्टर से मेल खाने वाले सभी पहले से ही चुने हुए थे",
+        "selectedMore_one": "{{count}} और छात्र चुना गया",
+        "selectedMore_other": "{{count}} और छात्र चुने गए",
+        "selectAllFailed": "हर मेल खाने वाला छात्र लोड नहीं हो सका"
+    },
+    "searchPlaceholder": "नाम से खोजें",
+    "batchFilter": {
+        "label": "बैच",
+        "placeholder": "बैच खोजें…"
+    },
+    "selectedSummary": {
+        "count_one": "{{count}} छात्र चुना गया",
+        "count_other": "{{count}} छात्र चुने गए",
+        "clearAll": "सभी साफ़ करें",
+        "removeAria": "{{name}} हटाएँ",
+        "more_one": "+{{count}} और",
+        "more_other": "+{{count}} और"
+    },
+    "pageSelection": {
+        "selectAllAria": "इस पेज पर हर छात्र चुनें",
+        "selectAll": "इस पेज पर सभी चुनें",
+        "deselectAll": "इस पेज पर सभी अचयनित करें",
+        "selectAllCount": "इस पेज पर सभी चुनें ({{count}})",
+        "deselectAllCount": "इस पेज पर सभी अचयनित करें ({{count}})"
+    },
+    "selectAllMatching": {
+        "selecting": "चुना जा रहा है…",
+        "button_one": "सभी {{count}} मेल खाने वाले चुनें",
+        "button_other": "सभी {{count}} मेल खाने वाले चुनें",
+        "blocked_one": "{{count}} मेल — उन सभी को एक साथ चुनने के लिए बैच से फ़िल्टर करें (अधिकतम {{max}})",
+        "blocked_other": "{{count}} मेल — उन सभी को एक साथ चुनने के लिए बैच से फ़िल्टर करें (अधिकतम {{max}})"
+    },
+    "results": {
+        "loading": "छात्र लोड हो रहे हैं…",
+        "loadError": "छात्र लोड नहीं हो सके।",
+        "retry": "पुनः प्रयास करें",
+        "emptyFiltered": "इस फ़िल्टर से कोई नामांकित छात्र मेल नहीं खाता",
+        "emptyAll": "अभी तक कोई नामांकित छात्र नहीं",
+        "selectRowAria": "{{name}} चुनें"
+    },
+    "pagination": {
+        "range": "{{total}} में से {{start}}–{{end}}",
+        "updating": "अपडेट हो रहा है…",
+        "previousAria": "पिछला पेज",
+        "nextAria": "अगला पेज",
+        "pageOf": "{{page}} / {{total}}"
+    }
+}

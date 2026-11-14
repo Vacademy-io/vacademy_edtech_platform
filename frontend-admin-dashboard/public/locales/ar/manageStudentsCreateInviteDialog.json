@@ -1,0 +1,38 @@
+{
+    "dialog": {
+        "heading": "دعوة متعلم"
+    },
+    "inviteLink": {
+        "label": "اسم رابط الدعوة",
+        "placeholder": "أدخل اسم رابط الدعوة"
+    },
+    "activeStatus": {
+        "label": "حالة التفعيل"
+    },
+    "batchSelection": {
+        "label": "اختيار الدفعة",
+        "createBatch": "إنشاء دفعة",
+        "assignBatches": "أريد تعيين الدفعات",
+        "learnersChooseBatches": "أريد أن يختار {{term}} الدفعات",
+        "maxBatchesLabel": "أدخل الحد الأقصى لعدد الدفعات التي يمكن للطالب اختيارها"
+    },
+    "linkExpiration": {
+        "label": "أيام انتهاء صلاحية الرابط",
+        "days": "أيام"
+    },
+    "inviteeEmail": {
+        "label": "أدخل البريد الإلكتروني للمدعو",
+        "placeholder": "you@email.com",
+        "addButton": "إضافة"
+    },
+    "validation": {
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+        "duplicateEmail": "تمت إضافة هذا البريد الإلكتروني بالفعل"
+    },
+    "toast": {
+        "batchCreateSuccess": "تم إنشاء الدفعة بنجاح",
+        "batchCreateError": "فشل إنشاء الدفعة",
+        "inviteError": "خطأ في تحديث/إنشاء الدعوة",
+        "formErrors": "يرجى تصحيح أخطاء النموذج قبل الإرسال"
+    }
+}

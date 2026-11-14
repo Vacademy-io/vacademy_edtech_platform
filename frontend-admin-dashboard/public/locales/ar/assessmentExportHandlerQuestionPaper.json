@@ -1,0 +1,18 @@
+{
+    "export": {
+        "exporting": "جارٍ التصدير...",
+        "button": "تصدير {{format}}"
+    },
+    "setLabel": " (المجموعة {{letter}})",
+    "fileName": {
+        "base": "ورقة الأسئلة",
+        "withSet": "ورقة الأسئلة {{letter}}",
+        "answerKeySuffix": "(مفتاح الإجابة)"
+    },
+    "progress": {
+        "title": "جارٍ إنشاء ملف PDF",
+        "subtitle": "قد يستغرق هذا بعض الوقت",
+        "cancelAriaLabel": "إلغاء إنشاء ملف PDF",
+        "percentComplete": "اكتمل {{progress}}٪"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "timeLimit": "⏱ समय सीमा",
+    "minutesAbbrev": "मिनट",
+    "marksPerQuestion": "★ अंक/प्रश्न",
+    "negativeMarking": "− नकारात्मक अंकन",
+    "partialMarking": "½ आंशिक अंक",
+    "partialMarkingHint": "एक से अधिक सही विकल्प वाले प्रश्न: केवल कुछ सही विकल्प चुनने पर (कोई गलत नहीं) उतने हिस्से के अंक मिलेंगे",
+    "passPercentage": "🎯 उत्तीर्ण %",
+    "attempts": "प्रयास",
+    "savingEllipsis": "सेव हो रहा है…",
+    "saveSettings": "सेटिंग्स सेव करें"
+}

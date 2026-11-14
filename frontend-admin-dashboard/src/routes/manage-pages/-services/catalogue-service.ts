@@ -71,10 +71,18 @@ export const getCatalogueConfig = async (
 };
 
 /** Catalogue with its id — the revision endpoints are keyed by catalogueId. */
+export interface CatalogueMeta {
+    id: string;
+    catalogue_json: string;
+    status: string;
+    /** When the live JSON last changed — only when the API sends it. */
+    updated_at?: string;
+}
+
 export const getCatalogueMeta = async (
     instituteId: string,
     tagName: string
-): Promise<{ id: string; catalogue_json: string; status: string }> => {
+): Promise<CatalogueMeta> => {
     const response = await authenticatedAxiosInstance.get<CatalogueResponse>(
         GET_CATALOGUE_BY_TAG(instituteId, tagName)
     );
@@ -82,6 +90,7 @@ export const getCatalogueMeta = async (
         id: response.data.id,
         catalogue_json: response.data.catalogue_json,
         status: response.data.status,
+        ...(response.data.updated_at ? { updated_at: response.data.updated_at } : {}),
     };
 };
 
@@ -97,7 +106,14 @@ export interface CatalogueRevision {
     created_at?: string;
     updated_at?: string;
     catalogue_json?: string | null;
+    /** Draft only, from servers that compare the draft with the live site:
+     *  true when the live site changed after this draft was started. */
+    live_changed_since_draft?: boolean;
+    live_revision_no?: number;
+    live_updated_at?: string;
 }
+
+export type DraftSource = 'MANUAL' | 'AI_WIZARD' | 'AI_COPILOT';
 
 /** Latest draft revision, or null when none exists (backend returns 204). */
 export const getDraftRevision = async (catalogueId: string): Promise<CatalogueRevision | null> => {
@@ -110,20 +126,45 @@ export const getDraftRevision = async (catalogueId: string): Promise<CatalogueRe
 export const saveDraftRevision = async (
     catalogueId: string,
     config: CatalogueConfig,
-    source: 'MANUAL' | 'AI_WIZARD' | 'AI_COPILOT' = 'MANUAL',
-    aiRunId?: string
+    /** null = keep the draft's current source (the server defaults a new draft to MANUAL). */
+    source: DraftSource | null = 'MANUAL',
+    aiRunId?: string,
+    /** "Keep my draft": the live site changed after the draft began and the
+     *  admin keeps the draft — the server re-bases it, so it is no longer
+     *  reported stale (nor refused by the AI tools) until live moves again.
+     *  An older server ignores the field. */
+    options?: { acknowledgeLive?: boolean }
 ): Promise<CatalogueRevision> => {
     const response = await authenticatedAxiosInstance.post<CatalogueRevision>(
         CATALOGUE_REVISION_SAVE_DRAFT(catalogueId),
-        { catalogue_json: JSON.stringify(config), source, ai_run_id: aiRunId }
+        {
+            catalogue_json: JSON.stringify(config),
+            ...(source ? { source } : {}),
+            ai_run_id: aiRunId,
+            ...(options?.acknowledgeLive ? { acknowledge_live: true } : {}),
+        }
     );
     return response.data;
 };
 
-export const publishDraftRevision = async (catalogueId: string): Promise<CatalogueRevision> => {
-    const response = await authenticatedAxiosInstance.post<CatalogueRevision>(
-        CATALOGUE_REVISION_PUBLISH(catalogueId)
-    );
+/**
+ * `overrideStale` publishes a draft even though the live site changed after it
+ * was started. `expectedLiveRevisionNo` is the live version the editor loaded:
+ * the server refuses (409) when the live site has moved on since.
+ */
+export const publishDraftRevision = async (
+    catalogueId: string,
+    {
+        overrideStale = false,
+        expectedLiveRevisionNo,
+    }: { overrideStale?: boolean; expectedLiveRevisionNo?: number | null } = {}
+): Promise<CatalogueRevision> => {
+    let url = CATALOGUE_REVISION_PUBLISH(catalogueId);
+    if (overrideStale) url += '&overrideStale=true';
+    if (typeof expectedLiveRevisionNo === 'number') {
+        url += `&expectedLiveRevisionNo=${expectedLiveRevisionNo}`;
+    }
+    const response = await authenticatedAxiosInstance.post<CatalogueRevision>(url);
     return response.data;
 };
 

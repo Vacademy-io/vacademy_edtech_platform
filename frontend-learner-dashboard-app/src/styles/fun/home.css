@@ -1,0 +1,1122 @@
+/* Fun skin: Home (dashboard): hero, today cards, course tiles, bottom nav, laptop sidebar and rail.
+   Owned by the home lane. Every selector starts with html.ui-fun.
+   Tokens and shared primitives live in base.css; ask for a change there
+   instead of editing it.
+
+   Boards: Main, A-New, A-Empty, A-Done, A-HideProgress, A-LiveNow, A-Hindi,
+   A-BigText (phone, 390 wide) and A-Laptop (1280 wide). Sizes are in rem where
+   they are type (so they follow the reader's text size) and in px where they are
+   the boards' fixed geometry. */
+
+html.ui-fun {
+  /* Lane-local values the boards use that base.css has no token for. */
+  --fun-home-gutter: 20px;
+  --fun-home-live-deco: #F43F5E;     /* the deco circle on the live card */
+  --fun-home-done-deco: #16A34A;     /* the deco circle on the finished card */
+  --fun-home-done-text: #DCFCE7;     /* body text on the finished card, 4.52 on #15803D */
+  --fun-home-empty-art: #FFF7D6;     /* the empty card's art strip (test tint) */
+  --fun-home-note-bg: #F4F5F9;
+  --fun-home-note-text: #4A5163;     /* 7.6 on the note background */
+  --fun-home-tile-gap: 12px;
+}
+
+/* ── Page frame ──────────────────────────────────────────────────────── */
+/* The layout gives 16px and the dashboard 12px; the boards' phone gutter is 20. */
+html.ui-fun .fun-home { background: var(--fun-ground); color: var(--fun-ink); }
+html.ui-fun .fun-home__inner { padding: 2px 4px 24px; }
+html.ui-fun .fun-home .fun-home-top { display: flex; flex-direction: column; gap: var(--fun-space-4); }
+/* The columns stack with a gap, not margins: a widget that draws nothing (display:
+   none) still took a margin from space-y, which put 32px where the boards have 16. */
+html.ui-fun .fun-home__inner > .grid > div { display: flex; flex-direction: column; gap: var(--fun-space-4); }
+html.ui-fun .fun-home__inner > .grid > div > * { margin-block: 0; }
+html.ui-fun .fun-home .fun-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+html.ui-fun .fun-home .fun-section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: calc(1.625rem * var(--fun-leading));
+  font-weight: 900;
+  color: var(--fun-ink);
+}
+html.ui-fun .fun-home .fun-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--fun-touch);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--fun-brand);
+  text-decoration: none;
+  white-space: nowrap;
+}
+html.ui-fun .fun-home :is(a, button):focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+html.ui-fun .fun-home .fun-on-colour :is(a, button):focus-visible { outline-color: var(--fun-ground); }
+
+/* ── Greeting row ────────────────────────────────────────────────────── */
+html.ui-fun .fun-home-header { display: flex; flex-direction: column; gap: var(--fun-space-1); }
+html.ui-fun .fun-home-header__row { display: flex; align-items: center; gap: var(--fun-space-3); }
+html.ui-fun .fun-home-header__words { flex: 1; min-width: 0; }
+html.ui-fun .fun-home-header__greet {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: calc(1.1875rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-home-header__name {
+  margin: 0;
+  font-size: 1.625rem;
+  line-height: calc(2rem * var(--fun-leading));
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+html.ui-fun .fun-home-header__laptop-line { display: none; }
+html.ui-fun .fun-home-header__sk-greet { display: block; width: 7rem; height: 0.875rem; margin-block: 3px 6px; border-radius: 7px; }
+html.ui-fun .fun-home-header__sk-name { display: block; width: 9rem; height: 1.625rem; border-radius: 13px; }
+html.ui-fun .fun-home-header__prompt {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: calc(1.0625rem * var(--fun-leading));
+  font-weight: 800;
+  color: var(--fun-streak-text);
+}
+html.ui-fun .fun-streak {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: var(--fun-streak-bg);
+  font-size: 1rem;
+  line-height: 1.25rem;
+  font-weight: 900;
+  color: var(--fun-streak-text);
+}
+html.ui-fun .fun-streak__flame { flex: none; width: 18px; height: 20px; }
+html.ui-fun .fun-streak__flame .fun-flame__outer { fill: var(--fun-flame); }
+html.ui-fun .fun-streak__flame .fun-flame__core { fill: var(--fun-flame-core); }
+html.ui-fun .fun-streak--at-risk .fun-flame__outer { fill: var(--fun-line-control); }
+html.ui-fun .fun-streak--at-risk .fun-flame__core { fill: var(--fun-line-button); }
+/* The word "day streak" is spoken on a phone and shown on a laptop or in big text. */
+html.ui-fun .fun-streak__unit {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+html.ui-fun .fun-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border: 0;
+  border-radius: 50%;
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+html.ui-fun .fun-avatar__icon { width: 22px; height: 22px; }
+
+/* The greeting row inside the app's top bar (the home only, see use-fun-header-slot):
+   one bar, as on the boards, with the bar's own account button as the profile button.
+   The bar keeps its place in the page but not its look: no fill, no line, not pinned,
+   and the boards' 18px above the row and 20px gutter. */
+html.ui-fun .fun-navbar__slot { flex: 1 1 auto; min-width: 0; }
+html.ui-fun .fun-navbar__slot:empty { display: none; }
+html.ui-fun .navbar.fun-navbar {
+  position: relative;
+  top: auto;
+  height: auto;
+  align-items: center;
+  column-gap: var(--fun-space-3);
+  padding: 18px var(--fun-home-gutter) 0;
+  border-bottom: 0;
+  background: var(--fun-ground);
+  backdrop-filter: none;
+  overflow: visible;
+  font-family: var(--fun-font-family);
+  color: var(--fun-ink);
+}
+html.ui-fun .fun-navbar .fun-home-header { flex: 1 1 auto; min-width: 0; }
+html.ui-fun .fun-navbar [data-sidebar="trigger"] { width: var(--fun-touch); height: var(--fun-touch); }
+html.ui-fun .fun-navbar .fun-navbar__icon {
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border-radius: 50%;
+  color: var(--fun-ink-2);
+}
+html.ui-fun .fun-navbar .fun-navbar__icon > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-navbar .fun-navbar__account {
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font-size: 0.9375rem;
+  font-weight: 900;
+}
+html.ui-fun .fun-navbar .fun-navbar__account > span { width: var(--fun-touch); height: var(--fun-touch); }
+html.ui-fun .fun-navbar .fun-navbar__account > span > span {
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font: inherit;
+}
+html.ui-fun .fun-navbar .fun-navbar__lang > button {
+  min-height: var(--fun-touch);
+  gap: 6px;
+  padding: 0 14px;
+  border: 2px solid var(--fun-line-button);
+  border-radius: calc(var(--fun-touch) / 2);
+  background: var(--fun-ground);
+  color: var(--fun-ink-2);
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+html.ui-fun .fun-navbar :is(a, button):focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; box-shadow: none; }
+/* The bar already gives the row its top space; the page under it keeps the 16px. */
+html.ui-fun .fun-home__header-slot:empty { display: none; }
+html.ui-fun .fun-home__inner > .fun-home__header-slot:empty + * { margin-top: 0; }
+html.ui-fun .fun-home__inner:has(> .fun-home__header-slot:empty) { padding-top: 0; }
+
+/* ── Hero cards ──────────────────────────────────────────────────────── */
+html.ui-fun .fun-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--fun-radius-hero);
+  padding: var(--fun-space-5);
+}
+html.ui-fun .fun-hero > :not(.fun-hero__art):not(.fun-hero__done-deco) { position: relative; }
+html.ui-fun .fun-hero--course { background: var(--fc-solid); color: var(--fun-ground); }
+html.ui-fun .fun-hero--no-course { --fc-solid: var(--fun-ink-2); --fc-on-band: var(--fun-ground); --fc-text: var(--fun-ink-2); --fc-lip: var(--fun-ink); --fc-track: var(--fun-muted); --fc-deco: var(--fun-muted); }
+html.ui-fun .fun-hero__art {
+  position: absolute;
+  inset-block-start: -8px;
+  inset-inline-end: -14px;
+  width: 150px;
+  height: 150px;
+  pointer-events: none;
+}
+html.ui-fun .fun-hero__deco {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: -8px;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--fc-deco);
+}
+html.ui-fun .fun-hero__mark {
+  position: absolute;
+  inset-block-start: 30px;
+  inset-inline-end: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--fun-ground);
+  color: var(--fc-text);
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 900;
+}
+html.ui-fun .fun-hero__art--image {
+  inset-block-start: var(--fun-space-5);
+  inset-inline-end: var(--fun-space-5);
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  border-radius: var(--fun-radius-tile);
+  background: var(--fc-tint);
+}
+html.ui-fun .fun-hero__image { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Course and chapter wrap to two lines beside the picture (A-LiveNow, A-HideProgress)
+   rather than cutting the chapter off; past two lines the end is clipped. */
+html.ui-fun .fun-hero__eyebrow {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  /* Up to the drawn shape, which starts 62px in from the card's inner edge (Main:
+     one line); a course picture takes 76px and a 12px gap. */
+  max-width: calc(100% - 66px);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--fc-on-band);
+}
+html.ui-fun .fun-hero:has(> .fun-hero__art--image) .fun-hero__eyebrow { max-width: calc(100% - 88px); }
+html.ui-fun .fun-hero__eyebrow-row { display: flex; align-items: center; gap: var(--fun-space-2); }
+html.ui-fun .fun-hero__eyebrow-row .fun-hero__eyebrow { max-width: none; }
+html.ui-fun .fun-hero__eyebrow-row .fun-chip--new { min-height: 22px; padding: 0 9px; }
+html.ui-fun .fun-hero__title {
+  margin: var(--fun-space-2) 0 0;
+  max-width: 210px;
+  font-size: 1.625rem;
+  line-height: calc(1.875rem * var(--fun-leading));
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+html.ui-fun .fun-hero__title--start { margin-top: 10px; max-width: 200px; }
+html.ui-fun .fun-hero__count {
+  margin: var(--fun-space-1) 0 0;
+  font-size: 0.9375rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fc-on-band, var(--fun-ground));
+}
+html.ui-fun .fun-hero__note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  margin: var(--fun-space-3) 0 0;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--fc-lip);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--fun-ground);
+}
+html.ui-fun .fun-hero__note-icon { width: 10px; height: 11px; color: var(--fun-highlight); }
+html.ui-fun .fun-hero__progress { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+html.ui-fun .fun-hero__percent { flex: none; font-size: 0.875rem; line-height: calc(1.1875rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-hero__percent-long { display: none; }
+html.ui-fun .fun-hero__cta { margin-top: var(--fun-space-4); }
+html.ui-fun .fun-hero__cta--start { margin-top: var(--fun-space-5); }
+html.ui-fun .fun-hero__cta-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-fun .fun-hero .fun-btn > svg { width: 1rem; height: 1.125rem; }
+/* While Join is live, Continue is the outline button: white ring on the band. */
+html.ui-fun .fun-hero .fun-hero__cta--quiet {
+  font-size: 1.125rem;
+  border: 2px solid var(--fun-ground);
+  background: transparent;
+  color: var(--fun-ground);
+  box-shadow: none;
+}
+
+/* Skeleton at the resume card's own height, so nothing moves when it lands. */
+html.ui-fun .fun-hero--skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fun-space-3);
+  min-height: 14.0625rem; /* the resume card with its count and bar: 225px at 16px text */
+  border: 2px solid var(--fun-line-card);
+}
+html.ui-fun .fun-hero__sk { display: block; border-radius: 8px; }
+html.ui-fun .fun-hero__sk--eyebrow { width: 40%; height: 0.75rem; }
+html.ui-fun .fun-hero__sk--title { width: 70%; height: 1.75rem; border-radius: 12px; }
+html.ui-fun .fun-hero__sk--line { width: 45%; height: 0.9375rem; }
+html.ui-fun .fun-hero__sk--button { width: 100%; height: 3.375rem; margin-top: auto; border-radius: var(--fun-radius-control); }
+
+/* Progress but no lesson to offer: a way to the courses in the brand colour. */
+html.ui-fun .fun-hero--brand {
+  --fc-text: var(--fun-brand);
+  --fc-lip: var(--fun-brand-lip);
+  --fc-on-band: var(--fun-ground);
+  background: var(--fun-brand);
+  color: var(--fun-ground);
+}
+html.ui-fun .fun-hero--brand .fun-hero__title { max-width: none; margin-top: 0; }
+html.ui-fun .fun-hero--brand-quiet { --fc-on-band: var(--fun-ink-2); background: var(--fun-brand-tint); color: var(--fun-brand); }
+
+/* Every course finished, or all caught up (A-Done). */
+html.ui-fun .fun-hero--done { --fc-text: var(--fun-success-strong); --fc-lip: var(--fun-success-text-strong); background: var(--fun-success-strong); color: var(--fun-ground); }
+html.ui-fun .fun-hero__done-deco {
+  position: absolute;
+  inset-block-start: -30px;
+  inset-inline-end: -40px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: var(--fun-home-done-deco);
+}
+html.ui-fun .fun-done-art { display: block; width: 110px; height: 44px; }
+html.ui-fun .fun-done-art__disc { fill: var(--fun-ground); }
+html.ui-fun .fun-done-art__check { fill: none; stroke: var(--fun-success-strong); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+html.ui-fun .fun-hero__title--done { margin-top: var(--fun-space-3); max-width: 240px; }
+html.ui-fun .fun-hero__done-text {
+  margin: 6px 0 0;
+  font-size: 0.9375rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-home-done-text);
+}
+
+/* No course yet (A-Empty), and the error card. */
+html.ui-fun .fun-hero--empty { padding: 0; border: 2px solid var(--fun-line-card); border-radius: var(--fun-radius-band); }
+html.ui-fun .fun-hero__empty-art { height: 150px; overflow: hidden; background: var(--fun-home-empty-art); }
+html.ui-fun .fun-empty-art { display: block; width: 100%; height: 100%; }
+html.ui-fun .fun-empty-art__card { fill: var(--fun-ground); }
+html.ui-fun .fun-empty-art__band { fill: var(--fc-solid); }
+html.ui-fun .fun-empty-art__line { fill: var(--fc-tint); }
+html.ui-fun .fun-hero__empty-body { padding: 18px var(--fun-space-5) 22px; }
+html.ui-fun .fun-hero--error { border: 2px solid var(--fun-line-card); }
+html.ui-fun .fun-hero__empty-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: calc(1.875rem * var(--fun-leading));
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fun-ink);
+}
+html.ui-fun .fun-hero__empty-text {
+  margin: 6px 0 0;
+  font-size: 1rem;
+  line-height: calc(1.375rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-hero--empty .fun-hero__cta,
+html.ui-fun .fun-hero--error .fun-hero__cta { margin-top: 18px; min-height: 3.5rem; }
+
+html.ui-fun .fun-wait__title { margin: 6px 0 8px; font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-wait__list { display: flex; flex-direction: column; gap: var(--fun-space-2); margin: 0; padding: 0; list-style: none; }
+html.ui-fun .fun-home .fun-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fun-space-3);
+  min-height: 64px;
+  padding: var(--fun-space-2) var(--fun-space-3);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  color: var(--fun-ink);
+  text-decoration: none;
+}
+html.ui-fun .fun-row__icon { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--fun-radius-badge); }
+html.ui-fun .fun-row__icon > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-row__icon--tests { background: var(--fun-test-tint); color: var(--fun-test-text); }
+html.ui-fun .fun-row__icon--profile { background: var(--fun-info-tint); color: var(--fun-info-text); }
+html.ui-fun .fun-row__words { flex: 1; min-width: 0; }
+html.ui-fun .fun-row__title { display: block; font-size: 1rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-row__sub { display: block; font-size: 0.8125rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-row__chevron { flex: none; width: 18px; height: 18px; color: var(--fun-muted); }
+html.ui-fun .fun-home .fun-row--fold { min-height: 48px; border-radius: var(--fun-radius-control); }
+html.ui-fun .fun-row--fold .fun-row__title { font-size: 0.9375rem; font-weight: 800; }
+html.ui-fun .fun-row__link { min-height: 0; }
+html.ui-fun .fun-note {
+  margin: 0;
+  padding: 14px var(--fun-space-4);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-home-note-bg);
+  font-size: 0.875rem;
+  line-height: calc(1.25rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-home-note-text);
+}
+
+/* ── Class card above the hero (A-LiveNow) ───────────────────────────── */
+html.ui-fun .fun-live {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fun-space-3);
+  border-radius: var(--fun-radius-hero);
+  padding: 14px 14px 18px 16px;
+}
+html.ui-fun .fun-live > :not(.fun-live__deco) { position: relative; }
+html.ui-fun .fun-live--now { background: var(--fun-live); color: var(--fun-ground); }
+html.ui-fun .fun-live--soon { background: var(--fun-live-tint); color: var(--fun-live-tint-text); }
+html.ui-fun .fun-live__deco {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: -52px;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--fun-home-live-deco);
+  transform: translateY(-50%);
+}
+html.ui-fun .fun-live__words { flex: 1 1 160px; min-width: 0; }
+html.ui-fun .fun-live .fun-chip { min-height: 24px; padding: 0 10px; border-radius: 12px; }
+html.ui-fun .fun-live__title { margin: var(--fun-space-2) 0 0; font-size: 1.125rem; line-height: calc(1.375rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-live__when { margin: 3px 0 0; font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 700; }
+html.ui-fun .fun-live--soon .fun-live__when { color: var(--fun-live-tint-text-2); }
+html.ui-fun .fun-live__join { flex: none; min-width: 128px; padding: 0 var(--fun-space-3); gap: 8px; font-size: 1.0625rem; }
+html.ui-fun .fun-live__join > svg { width: 20px; height: 20px; }
+html.ui-fun .fun-live--now .fun-live__join { --fun-btn-lip: var(--fun-live-tint-text-2); background: var(--fun-ground); color: var(--fun-live-text); }
+html.ui-fun .fun-live--soon .fun-live__join { --fun-btn-lip: var(--fun-live-tint-text-2); background: var(--fun-live); color: var(--fun-ground); }
+
+/* ── Today cards ─────────────────────────────────────────────────────── */
+html.ui-fun .fun-today--grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fun-space-3); }
+html.ui-fun .fun-today--grid > :nth-child(3) { grid-column: 1 / -1; }
+html.ui-fun .fun-today--single { grid-template-columns: minmax(0, 1fr); }
+html.ui-fun .fun-today__card {
+  display: flex;
+  align-items: center;
+  gap: var(--fun-space-3);
+  min-height: var(--fun-touch);
+  min-width: 0;
+  padding: 14px;
+  border-radius: var(--fun-radius-tile);
+  text-decoration: none;
+}
+html.ui-fun .fun-today__card--stack { flex-direction: column; align-items: flex-start; gap: 6px; }
+html.ui-fun .fun-today--grid .fun-today__card--class { gap: var(--fun-space-1); }
+html.ui-fun .fun-today__card--goal { background: var(--fun-success-tint); }
+/* The goal card opens the plan's next task: a button that looks like the card. */
+html.ui-fun .fun-today__card--button {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+html.ui-fun .fun-today__card--class { background: var(--fun-live-tint); }
+html.ui-fun .fun-today__card--tests { background: var(--fun-test-tint); padding: var(--fun-space-3); gap: 10px; }
+html.ui-fun .fun-ring { flex: none; display: block; }
+html.ui-fun .fun-ring__track { fill: none; stroke: var(--fun-success-track); stroke-width: 6; }
+html.ui-fun .fun-ring__fill { fill: none; stroke: var(--fun-success); stroke-width: 6; stroke-linecap: round; }
+html.ui-fun .fun-today__text { display: flex; flex-direction: column; min-width: 0; }
+html.ui-fun .fun-today__big { font-size: 1.125rem; line-height: calc(1.375rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-today__small { font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; }
+html.ui-fun .fun-today__card--goal .fun-today__big { color: var(--fun-success-text-strong); }
+html.ui-fun .fun-today__card--goal .fun-today__small { color: var(--fun-success-text); }
+html.ui-fun .fun-today__card--tests .fun-today__big { color: var(--fun-test-text-strong); }
+html.ui-fun .fun-today__card--tests .fun-today__small { color: var(--fun-test-text); }
+html.ui-fun .fun-today__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border-radius: 14px;
+  background: var(--fun-test-icon-bg);
+  color: var(--fun-test-text);
+}
+html.ui-fun .fun-today__icon > svg { width: 24px; height: 24px; }
+html.ui-fun .fun-today__eyebrow { color: var(--fun-test-text); letter-spacing: 0.06em; }
+html.ui-fun .fun-today__eyebrow--icon { display: flex; align-items: center; gap: 6px; color: var(--fun-success-text); }
+html.ui-fun .fun-today__eyebrow--icon > svg { width: 16px; height: 16px; color: var(--fun-success-strong); }
+html.ui-fun .fun-today__title { font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 800; }
+html.ui-fun .fun-today__card--class .fun-today__title { color: var(--fun-live-tint-text); }
+html.ui-fun .fun-today__card--goal .fun-today__title { font-size: 0.9375rem; line-height: calc(1.1875rem * var(--fun-leading)); color: var(--fun-success-text-strong); }
+html.ui-fun .fun-today__card--tests .fun-today__title { color: var(--fun-test-text-strong); }
+html.ui-fun .fun-today__sub { font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 700; color: var(--fun-test-text-2); }
+
+/* What's next on the finished home (A-Done). */
+html.ui-fun .fun-next { display: flex; flex-direction: column; gap: 10px; margin-top: var(--fun-space-1); }
+html.ui-fun .fun-next__list { display: flex; flex-direction: column; gap: var(--fun-space-3); }
+html.ui-fun .fun-next__tests { padding: var(--fun-space-4); border-radius: var(--fun-radius-card); background: var(--fun-test-tint); }
+html.ui-fun .fun-next__tests-head { display: flex; align-items: center; gap: var(--fun-space-3); margin-bottom: 14px; }
+html.ui-fun .fun-next__tests-title { margin: 0; font-size: 1.25rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; color: var(--fun-test-text-strong); }
+html.ui-fun .fun-next__tests-body { margin-top: 2px; font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 700; color: var(--fun-test-text-2); }
+html.ui-fun .fun-next .fun-today__card--class { padding: 14px var(--fun-space-4); border-radius: var(--fun-radius-card); }
+html.ui-fun .fun-next .fun-today__card--goal { padding: 14px var(--fun-space-4); border-radius: var(--fun-radius-card); }
+/* The class chip's time is set in capitals, like every chip (12/16 900 caps). */
+html.ui-fun .fun-home .fun-chip--calendar { text-transform: uppercase; }
+
+/* The institute's own card (the custom widget). */
+html.ui-fun .fun-custom {
+  padding: var(--fun-space-4);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-custom__title { margin: 0; font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); overflow-wrap: anywhere; }
+html.ui-fun .fun-custom__text { margin: var(--fun-space-1) 0 0; font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); overflow-wrap: anywhere; }
+html.ui-fun .fun-custom__cta { margin-top: var(--fun-space-3); gap: var(--fun-space-1); }
+html.ui-fun .fun-custom__chevron { width: 16px; height: 16px; }
+html.ui-fun .fun-next .fun-today__card--class .fun-today__title { font-size: 1rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 900; }
+
+/* ── Course tiles ────────────────────────────────────────────────────── */
+html.ui-fun .fun-tiles { padding-top: 6px; }
+html.ui-fun .fun-tiles__head { display: flex; align-items: center; justify-content: space-between; gap: var(--fun-space-3); }
+html.ui-fun .fun-tiles__list {
+  display: flex;
+  gap: var(--fun-home-tile-gap);
+  margin: 6px calc(-1 * var(--fun-home-gutter)) 0;
+  padding: 0 var(--fun-home-gutter) 6px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--fun-home-gutter);
+  scrollbar-width: none;
+}
+html.ui-fun .fun-tiles__list::-webkit-scrollbar { display: none; }
+html.ui-fun .fun-tiles__item { flex: none; width: 154px; scroll-snap-align: start; }
+html.ui-fun .fun-tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+html.ui-fun .fun-tile--skeleton { flex: none; width: 154px; cursor: default; }
+/* Progress hidden: a taller picture, the level name and an arrow (A-HideProgress). */
+html.ui-fun .fun-tiles--quiet .fun-tile__art { height: 96px; }
+html.ui-fun .fun-tiles--quiet .fun-tile__body { flex-direction: row; align-items: center; gap: var(--fun-space-2); }
+html.ui-fun .fun-tiles--quiet .fun-tile__words { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html.ui-fun .fun-tile__sk-art { display: block; height: 84px; border-radius: 0; }
+html.ui-fun .fun-tile__sk-line { display: block; height: 0.9375rem; width: 80%; border-radius: 7px; }
+html.ui-fun .fun-tile__sk-line--short { width: 50%; margin-top: 8px; }
+html.ui-fun .fun-tile__art { flex: none; width: 100%; height: 84px; }
+html.ui-fun .fun-tile__body { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 10px 12px 12px; }
+html.ui-fun .fun-tile__name { font-size: 0.9375rem; line-height: calc(1.1875rem * var(--fun-leading)); font-weight: 900; }
+html.ui-fun .fun-tile__bar,
+html.ui-fun .fun-tile__track { flex: none; margin-top: 8px; }
+html.ui-fun .fun-tile__meta { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-tile__review { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); }
+html.ui-fun .fun-tile__held { display: block; height: 1.6875rem; }
+/* The line that tells two tiles of one course apart: up to two lines, so the part that differs
+   (it comes first) is not cut on a phone tile. */
+html.ui-fun .fun-tile__level { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 2px; min-width: 0; overflow: hidden; overflow-wrap: anywhere; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-tile__go { flex: none; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-inline-start: auto; border-radius: 50%; background: var(--fc-tint); color: var(--fc-solid); }
+html.ui-fun .fun-tile__go > svg { width: 14px; height: 14px; }
+/* The course's own colour shows on the art; with no image the first letter sits in a white square. */
+html.ui-fun .fun-tile .fun-course-art__mark { font-size: 1.375rem; }
+
+/* A new learner's other courses: two up (A-New). */
+html.ui-fun .fun-tiles--others .fun-tiles__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-inline: 0;
+  padding-inline: 0;
+  overflow: visible;
+}
+html.ui-fun .fun-tiles--others .fun-tiles__item { width: auto; }
+/* Everything finished: three small tiles with Review (A-Done). */
+html.ui-fun .fun-tiles--lookBack .fun-section-title { font-size: 1.125rem; }
+html.ui-fun .fun-tiles--lookBack .fun-tiles__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: var(--fun-space-1) 0 0;
+  padding: 0;
+  overflow: visible;
+}
+html.ui-fun .fun-tiles--lookBack .fun-tiles__item { width: auto; }
+html.ui-fun .fun-tiles--lookBack .fun-tile { border-radius: 18px; }
+html.ui-fun .fun-tiles--lookBack .fun-tile__art { height: 58px; }
+html.ui-fun .fun-tiles--lookBack .fun-tile__body { padding: 8px 10px 10px; }
+html.ui-fun .fun-tiles--lookBack .fun-tile__name { font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); }
+html.ui-fun .fun-tiles--lookBack .fun-tile__review { margin-top: 2px; }
+html.ui-fun .fun-tiles--lookBack .fun-course-art__mark { font-size: 1rem; }
+
+/* ── Other widgets on the Fun home ───────────────────────────────────── */
+/* Cards from the classic widgets sit on white with the board's 2px line, no shadow. */
+html.ui-fun .fun-home .rounded-xl.border.bg-card,
+html.ui-fun .fun-home .cp-card {
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  box-shadow: none;
+}
+
+/* ── Announcements (the institute's pinned messages) ─────────────────── */
+html.ui-fun .fun-pins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fun-space-3);
+  padding: var(--fun-space-4);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-pins__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: var(--fun-space-3); }
+html.ui-fun .fun-pins__head .fun-section-title { font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); }
+html.ui-fun .fun-pins__actions { display: flex; flex-wrap: wrap; gap: var(--fun-space-1); margin-inline-end: -8px; }
+html.ui-fun .fun-home .fun-pins__action { padding: 0 8px; border: 0; border-radius: var(--fun-radius-control); background: transparent; font-family: inherit; cursor: pointer; }
+html.ui-fun .fun-home .fun-pins__action--clear { color: var(--fun-live-text); }
+html.ui-fun .fun-home .fun-pins__action:disabled { cursor: default; opacity: 0.6; }
+html.ui-fun .fun-pins__error { margin: 0; padding: var(--fun-space-3); border-radius: var(--fun-radius-control); background: var(--fun-live-tint); color: var(--fun-live-tint-text); font-size: 0.875rem; font-weight: 700; }
+html.ui-fun .fun-pins__list { display: flex; flex-direction: column; gap: var(--fun-space-3); margin: 0; padding: 0; list-style: none; }
+html.ui-fun .fun-pins__item {
+  display: flex;
+  align-items: flex-start;
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-pins__item--unread { border-color: var(--fun-brand-tint); }
+html.ui-fun .fun-pins__open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fun-space-1);
+  min-width: 0;
+  min-height: var(--fun-touch);
+  padding-block: 14px;
+  padding-inline: 16px 4px;
+  border: 0;
+  border-radius: var(--fun-radius-tile);
+  background: transparent;
+  color: var(--fun-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+html.ui-fun .fun-pins__top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fun-space-2); }
+html.ui-fun .fun-pins__top:empty { display: none; }
+html.ui-fun .fun-pins__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  line-height: calc(1rem * var(--fun-leading));
+  font-weight: 900;
+}
+html.ui-fun .fun-pins__chip--high { background: var(--fun-live-tint); color: var(--fun-live-tint-text); }
+html.ui-fun .fun-pins__chip--medium { background: var(--fun-test-tint); color: var(--fun-test-text); }
+html.ui-fun .fun-pins__chip--low { background: var(--fun-info-tint); color: var(--fun-info-text); }
+html.ui-fun .fun-pins__chip--normal { background: var(--fun-home-note-bg); color: var(--fun-home-note-text); }
+html.ui-fun .fun-pins__new { display: inline-flex; align-items: center; gap: 5px; color: var(--fun-brand); font-size: 0.75rem; font-weight: 900; }
+html.ui-fun .fun-pins__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fun-brand); }
+html.ui-fun .fun-pins__title { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__body { margin: 0; font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 700; color: var(--fun-ink-2); overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__body :is(p, ul, ol) { margin: 0; }
+html.ui-fun .fun-pins__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--fun-space-2); margin: 0; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-pins__left { color: var(--fun-streak-text); }
+html.ui-fun .fun-pins__dismiss {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  margin: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fun-muted);
+  cursor: pointer;
+}
+html.ui-fun .fun-pins__dismiss > svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+html.ui-fun .fun-pins__dismiss:hover { background: var(--fun-home-note-bg); color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-pins__more { align-self: flex-start; padding: 0; border: 0; background: transparent; font-family: inherit; cursor: pointer; }
+/* The full message opens in a dialog, portalled outside the home. */
+html.ui-fun .fun-pins__dialog { border: 2px solid var(--fun-line-card); border-radius: var(--fun-radius-card); color: var(--fun-ink); font-family: var(--fun-font-family); }
+html.ui-fun .fun-pins__dialog-title { margin: 0; padding-inline-end: 40px; font-size: 1.25rem; line-height: calc(1.625rem * var(--fun-leading)); font-weight: 900; overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__expires { margin: 0; padding: var(--fun-space-3); border-radius: var(--fun-radius-control); background: var(--fun-streak-bg); color: var(--fun-streak-text); font-size: 0.875rem; font-weight: 700; }
+html.ui-fun .fun-pins__dialog > button:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border-radius: 50%;
+  color: var(--fun-muted);
+  opacity: 1;
+}
+html.ui-fun .fun-pins__dialog :is(a, button):focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; box-shadow: none; }
+
+/* ── Bottom nav (phone) ──────────────────────────────────────────────── */
+html.ui-fun nav.fun-nav {
+  min-height: 84px;
+  border-top: 2px solid var(--fun-line-nav);
+  box-shadow: none !important; /* the classic bar's inline shadow */
+}
+html.ui-fun .fun-nav > div { display: flex; gap: var(--fun-space-1); padding: var(--fun-space-2) var(--fun-space-3) 14px; }
+html.ui-fun .fun-nav .fun-nav__item {
+  min-height: 56px;
+  gap: 2px;
+  padding: 0;
+  border-radius: var(--fun-radius-control);
+  color: var(--fun-muted);
+  text-decoration: none;
+}
+html.ui-fun .fun-nav .fun-nav__item > div {
+  width: auto;
+  height: 24px;
+  background: transparent;
+  color: inherit;
+}
+html.ui-fun .fun-nav .fun-nav__item > span { font-size: 0.75rem; line-height: calc(1rem * var(--fun-leading)); font-weight: 800; color: inherit; }
+html.ui-fun .fun-nav .fun-nav__item--active { background: var(--fun-brand-tint); color: var(--fun-brand); }
+html.ui-fun .fun-nav .fun-nav__item--active > span { font-weight: 900; }
+html.ui-fun .fun-nav .fun-nav__item:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
+
+/* ── Laptop sidebar ──────────────────────────────────────────────────── */
+/* A-Laptop's sidebar is 221 wide (the app's is 17rem, 272): white, with the 2px nav
+   line. The fill goes on the whole panel (its footer sits outside the content box)
+   and the line on the fixed frame, in place of its 1px border. */
+html.ui-fun .group\/sidebar-wrapper { --sidebar-width: 13.8125rem !important; }
+html.ui-fun .fun-sidebar { background: var(--fun-ground); }
+html.ui-fun [data-sidebar="sidebar"]:has(> .fun-sidebar) { background: var(--fun-ground); }
+html.ui-fun .group\/sidebar-wrapper .fixed:has(> [data-sidebar="sidebar"] > .fun-sidebar) { border-inline-end: 2px solid var(--fun-line-nav); }
+html.ui-fun .fun-sidebar [data-sidebar="header"] { border-bottom: 0; padding: var(--fun-space-6) var(--fun-space-3) var(--fun-space-3); }
+html.ui-fun .fun-sidebar [data-sidebar="menu"] { gap: 6px; }
+html.ui-fun .fun-sidebar [data-sidebar="menu-button"] {
+  min-height: 48px;
+  padding-inline: 14px;
+  gap: var(--fun-space-3);
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--fun-ink-2);
+}
+html.ui-fun .fun-sidebar [data-sidebar="menu-button"][data-active="true"] { background: var(--fun-brand-tint); color: var(--fun-brand); font-weight: 900; }
+html.ui-fun .fun-sidebar [data-sidebar="menu-button"][data-active="true"] > span[aria-hidden]:first-child { display: none; }
+html.ui-fun .fun-sidebar [data-sidebar="menu-button"] > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-sidebar [data-sidebar="header"] [data-sidebar="menu-button"] { font-size: 1.0625rem; font-weight: 900; color: var(--fun-ink); }
+/* No logo: the institute's first letter on the brand solid, as on the board (the
+   classic pale tile is 2:1 or less for a light brand). */
+html.ui-fun .fun-sidebar [data-sidebar="header"] .size-8.bg-primary-50 {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fun-radius-badge);
+  background: var(--fun-brand);
+  color: var(--fun-ground);
+  font-size: 1.125rem;
+  font-weight: 900;
+}
+
+/* ── Tablet: the page sits 28px in (the layout's 24 and the home's 4); so does the row. ── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  html.ui-fun .navbar.fun-navbar { padding-inline: 28px; }
+}
+
+/* ── Laptop (the boards' 1280: sidebar, main column and the Today rail) ── */
+@media (min-width: 1024px) {
+  html.ui-fun .fun-home__inner { padding: 4px 6px 40px; }
+  html.ui-fun .fun-home__inner > .fun-home__header-slot + * { margin-top: var(--fun-space-6); }
+  html.ui-fun .fun-home__inner > .fun-home__header-slot:empty + * { margin-top: 0; }
+  /* The bar's row lines up with the page under it (the layout's 32px, the home's 6px,
+     centred once the page reaches its widest). */
+  html.ui-fun .navbar.fun-navbar { padding: 28px max(38px, calc((100% - 1280px) / 2 + 38px)) 0; }
+  html.ui-fun .fun-home__inner > .grid > div { gap: var(--fun-space-6); }
+  html.ui-fun .fun-home .fun-home-top { gap: var(--fun-space-6); }
+  html.ui-fun .fun-home .fun-section-title { font-size: 1.375rem; }
+  html.ui-fun .fun-home-header__row { flex-wrap: wrap; }
+  html.ui-fun .fun-home-header__greet { display: none; }
+  html.ui-fun .fun-home-header__phone-line { display: none; }
+  html.ui-fun .fun-home-header__laptop-line { display: inline; }
+  html.ui-fun .fun-home-header__name { font-size: 1.875rem; line-height: calc(2.25rem * var(--fun-leading)); }
+  html.ui-fun .fun-streak { padding: 0 14px; }
+  html.ui-fun .fun-streak__unit { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+
+  html.ui-fun .fun-hero { border-radius: var(--fun-radius-band); padding: 28px; }
+  html.ui-fun .fun-hero__eyebrow { max-width: none; font-size: 0.8125rem; }
+  html.ui-fun .fun-hero__title { max-width: none; font-size: 2.125rem; line-height: calc(2.5rem * var(--fun-leading)); }
+  html.ui-fun .fun-hero__count { font-size: 1rem; }
+  html.ui-fun .fun-hero__progress { margin-top: var(--fun-space-5); max-width: 420px; }
+  html.ui-fun .fun-hero__percent { font-size: 0.9375rem; }
+  html.ui-fun .fun-hero__percent-short { display: none; }
+  html.ui-fun .fun-hero__percent-long { display: inline; }
+  html.ui-fun .fun-hero .fun-hero__cta { display: inline-flex; width: 220px; margin-top: var(--fun-space-5); }
+  html.ui-fun .fun-hero--empty .fun-hero__cta,
+  html.ui-fun .fun-hero--error .fun-hero__cta { width: auto; min-width: 220px; }
+  html.ui-fun .fun-hero__skeleton,
+  html.ui-fun .fun-hero--skeleton { min-height: 246px; }
+  html.ui-fun .fun-hero__sk--button { width: 220px; }
+
+  html.ui-fun .fun-today--rail { display: flex; flex-direction: column; gap: var(--fun-space-4); }
+  html.ui-fun .fun-today--rail .fun-today__card { padding: 18px; border-radius: var(--fun-radius-card); }
+  html.ui-fun .fun-today--rail .fun-today__card--goal { gap: var(--fun-space-4); }
+  html.ui-fun .fun-today--rail .fun-today__card--stack { gap: var(--fun-space-2); }
+  html.ui-fun .fun-today--rail .fun-today__big { font-size: 1.375rem; line-height: calc(1.75rem * var(--fun-leading)); }
+  html.ui-fun .fun-today--rail .fun-today__small { font-size: 0.875rem; line-height: calc(1.25rem * var(--fun-leading)); }
+  html.ui-fun .fun-today--rail .fun-today__title { font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; }
+  html.ui-fun .fun-today--rail .fun-chip { min-height: 24px; padding: 0 10px; border-radius: 12px; }
+
+  html.ui-fun .fun-tiles { padding-top: 0; }
+  html.ui-fun .fun-tiles__list,
+  html.ui-fun .fun-tiles--others .fun-tiles__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: var(--fun-space-4);
+    margin: var(--fun-space-2) 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-tiles__item,
+  html.ui-fun .fun-tile--skeleton { width: auto; }
+  html.ui-fun .fun-tile__art,
+  html.ui-fun .fun-tile__sk-art { height: 96px; }
+  html.ui-fun .fun-tile__body { padding: var(--fun-space-3) 14px 14px; }
+  html.ui-fun .fun-tile__name { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); }
+}
+
+/* ── Laptop at the usual text size: the 280 rail beside the main column, and the course
+   picture beside the hero's words. Both are in px, so with a large text size (the screen
+   under 64em) they would leave the words a sliver: there the rail goes under the main
+   column and the hero keeps its phone layout, picture in the corner. ── */
+@media (min-width: 1024px) and (min-width: 64em) {
+  /* The Today rail is the boards' 280 wide; the main column takes the rest. */
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 { grid-template-columns: minmax(0, 1fr) 280px; }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:first-child { grid-column: 1; }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:last-child { grid-column: 2; }
+  html.ui-fun .fun-hero--course { min-height: 246px; padding-inline-end: 268px; }
+  html.ui-fun .fun-hero--course .fun-hero__art { inset-block-start: 50%; inset-inline-end: 28px; width: 220px; height: 190px; transform: translateY(-50%); }
+  html.ui-fun .fun-hero--course .fun-hero__deco { inset-block-start: 15px; inset-inline-end: 10px; width: 160px; height: 160px; }
+  html.ui-fun .fun-hero--course .fun-hero__mark { inset-block-start: 55px; inset-inline-end: 60px; width: 80px; height: 80px; border-radius: 22px; font-size: 2.5rem; }
+  html.ui-fun .fun-hero--course .fun-hero__art--image { width: 190px; height: 190px; inset-inline-end: 43px; border-radius: 28px; }
+}
+@media (min-width: 1024px) and (max-width: 63.99em) {
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 { grid-template-columns: minmax(0, 1fr); }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div { grid-column: 1; }
+}
+
+/* ── Big text (the reader's text size makes the phone under 18em wide: A-BigText) ── */
+@media (max-width: 18em) {
+  /* The layout's 1rem gutter doubles with the text; the board keeps 20px. */
+  html.ui-fun .fun-home__inner { width: auto; padding-inline: 0; margin-inline: calc(var(--fun-home-gutter) - 1rem); }
+  /* Likewise its 1rem top padding: the board keeps 16px between the row and the hero. */
+  html.ui-fun .fun-home__inner { margin-top: calc(var(--fun-space-4) - 1rem); }
+  html.ui-fun .fun-home-header__row { flex-wrap: wrap; align-items: flex-start; }
+  html.ui-fun .fun-home-header__words { flex: 1 1 60%; }
+  html.ui-fun .fun-home-header__words + .fun-streak { order: 3; }
+  html.ui-fun .fun-avatar { width: 64px; height: 64px; font-size: 26px; }
+  /* In the bar: the row's top, and the board's 64px profile button. */
+  html.ui-fun .navbar.fun-navbar { align-items: flex-start; }
+  html.ui-fun .fun-navbar .fun-navbar__account,
+  html.ui-fun .fun-navbar .fun-navbar__account > span { width: 64px; height: 64px; font-size: 26px; }
+  html.ui-fun .fun-streak { min-height: 56px; padding: 6px 18px; border-radius: 28px; }
+  html.ui-fun .fun-streak__flame { width: 28px; height: 32px; }
+  html.ui-fun .fun-streak__unit { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+
+  html.ui-fun .fun-hero__art { position: relative; float: inline-end; inset: auto; width: 76px; height: 76px; margin-inline-start: 10px; margin-bottom: 6px; overflow: hidden; border-radius: 20px; background: var(--fc-deco); }
+  html.ui-fun .fun-hero__deco { display: none; }
+  html.ui-fun .fun-hero__mark { inset: 0; margin: auto; width: 44px; height: 44px; border-radius: 12px; font-size: 1.5rem; }
+  /* Words flow round the floated picture, then take the full width under it. */
+  html.ui-fun .fun-hero__eyebrow { max-width: none; overflow: visible; white-space: normal; overflow-wrap: anywhere; letter-spacing: 0; text-transform: none; }
+  html.ui-fun .fun-hero__title { max-width: none; }
+  html.ui-fun .fun-hero__title.fun-clamp-2 { display: block; overflow: visible; -webkit-line-clamp: unset; }
+  html.ui-fun .fun-hero__progress { clear: both; }
+  html.ui-fun .fun-hero .fun-progress--band { height: 16px; border-radius: 8px; }
+  html.ui-fun .fun-hero .fun-btn { clear: both; min-height: 76px; padding-block: 12px; }
+  html.ui-fun .fun-hero__cta-label { white-space: normal; }
+  html.ui-fun .fun-live__join { flex: 1 1 100%; min-height: 76px; }
+
+  html.ui-fun .fun-today--grid { grid-template-columns: minmax(0, 1fr); }
+  html.ui-fun .fun-today__card { padding: 16px; }
+  html.ui-fun .fun-today__card--goal { flex-wrap: wrap; }
+  html.ui-fun .fun-today__card--goal .fun-ring { width: 64px; height: 64px; }
+
+  html.ui-fun .fun-tiles__head { flex-wrap: wrap; }
+  html.ui-fun .fun-tiles__list,
+  html.ui-fun .fun-tiles--others .fun-tiles__list,
+  html.ui-fun .fun-tiles--lookBack .fun-tiles__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fun-space-3);
+    margin: 10px 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-tiles__item { width: auto; }
+  html.ui-fun .fun-tile { flex-direction: row; align-items: center; gap: 14px; padding: var(--fun-space-3); }
+  html.ui-fun .fun-tile__art { width: 80px; height: 80px; border-radius: 16px; }
+  html.ui-fun .fun-tile__body { padding: 0; }
+  html.ui-fun .fun-tile__name.fun-clamp-2 { display: block; -webkit-line-clamp: unset; }
+  /* The picture keeps its 80px; its letter is decoration, so it keeps a size that fits. */
+  html.ui-fun .fun-tile .fun-course-art__mark { width: 48px; max-width: none; inset-inline-end: 16px; font-size: 24px; }
+  html.ui-fun .fun-tile .fun-course-art__deco { display: none; }
+
+  html.ui-fun .fun-nav > div { padding-inline: var(--fun-space-2); }
+  html.ui-fun .fun-nav .fun-nav__item { min-height: 76px; }
+}
+
+/* ── Hindi and other Indic scripts (A-Hindi): no capitals to set, so no tracking ── */
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-t-eyebrow { letter-spacing: 0; text-transform: none; font-size: 0.875rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home :is(.fun-hero__title, .fun-home-header__name, .fun-section-title, .fun-tile__name, .fun-today__big) { font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-nav .fun-nav__item > span { font-size: 0.8125rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home-header__greet { font-size: 0.9375rem; line-height: 1.5rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home-header__name { line-height: 2.25rem; letter-spacing: 0; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero__eyebrow { line-height: 1.375rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero__title { margin-top: 6px; line-height: 2.5rem; letter-spacing: 0; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero__count { margin-top: 2px; line-height: 1.625rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero .fun-btn { min-height: 3.5rem; font-size: 1.1875rem; line-height: 1.875rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-today__big { line-height: 1.625rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-today__small { font-size: 0.875rem; line-height: 1.375rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-today__title { font-size: 0.9375rem; line-height: 1.5rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-chip { min-height: 26px; font-size: 0.8125rem; line-height: 1.375rem; font-weight: 800; letter-spacing: 0; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-section-title { line-height: 2rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-link { line-height: 1.5rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-tile__name { line-height: 1.5rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-tile__meta { font-size: 0.875rem; line-height: 1.375rem; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-nav .fun-nav__item { gap: 0; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-nav .fun-nav__item > span { line-height: 1.25rem; font-weight: 700; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero__percent { line-height: 1.1875rem; }
+
+/* The app sidebar's footer (laptop): the learner's initials on the brand tint in the
+   brand solid, as on the Fun top bar, not the raw brand on its 50 shade. */
+html.ui-fun [data-sidebar="footer"] {
+  border-top: 2px solid var(--fun-line-nav);
+}
+html.ui-fun [data-sidebar="footer"] span.bg-primary-50.text-primary-500 {
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font-weight: 900;
+}
+/* The learner's name beside it in the skin's ink, not the classic zinc. */
+html.ui-fun [data-sidebar="footer"] button > span.flex-1.truncate { color: var(--fun-ink); font-weight: 800; }
+
+/* ── Study companions (the classic shelf, drawn as Fun tiles) ────────── */
+/* Each companion in a palette colour (course-palette.ts rule on its own id): the
+   course art, the name, the knowledge base, the mastery bar, and one lip button in
+   the companion's colour. Phone: a row that scrolls like the course tiles; one
+   companion takes the full width. Laptop: a grid. */
+html.ui-fun .fun-companions { display: flex; flex-direction: column; gap: 6px; }
+html.ui-fun .fun-companions__list {
+  display: flex;
+  gap: var(--fun-home-tile-gap);
+  margin: 0 calc(-1 * var(--fun-home-gutter));
+  padding: 0 var(--fun-home-gutter) 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--fun-home-gutter);
+  scrollbar-width: none;
+}
+html.ui-fun .fun-companions__list::-webkit-scrollbar { display: none; }
+html.ui-fun .fun-companions__item { flex: none; width: 248px; scroll-snap-align: start; }
+html.ui-fun .fun-companions--single .fun-companions__list { margin-inline: 0; padding-inline: 0; overflow: visible; }
+html.ui-fun .fun-companions--single .fun-companions__item { flex: 1 1 0; min-width: 0; width: auto; }
+html.ui-fun .fun-home .fun-companion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html.ui-fun .fun-companion__art { flex: none; display: block; width: 100%; height: 84px; }
+html.ui-fun .fun-companion__art .fun-course-art__mark { font-size: 1.375rem; }
+html.ui-fun .fun-companion__body { display: flex; flex: 1; flex-direction: column; min-width: 0; padding: 10px 12px 14px; }
+html.ui-fun .fun-companion__name { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); }
+html.ui-fun .fun-companion__kb {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  line-height: calc(1.0625rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-companion__progress { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+html.ui-fun .fun-companion__bar { flex: none; }
+html.ui-fun .fun-companion__stats { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-companion__progress .fun-companion__stats { margin-top: 0; }
+/* One filled button: the companion's colour (white on every palette colour is 4.99:1
+   or more) with its lip, pressed with the card. */
+html.ui-fun .fun-companion .fun-companion__cta {
+  --fun-btn-lip: var(--fc-lip);
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding-inline: 14px;
+  background: var(--fc-solid);
+  color: var(--fun-ground);
+  font-size: 0.9375rem;
+}
+html.ui-fun .fun-companion__body > :nth-last-child(2) { margin-bottom: 14px; }
+html.ui-fun .fun-companion .fun-companion__cta > svg { width: 0.875rem; height: 0.875rem; }
+html.ui-fun .fun-companion__cta-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-fun .fun-companion:active .fun-companion__cta { transform: translateY(var(--fun-lip)); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  html.ui-fun .fun-companion .fun-companion__cta { transition: none; }
+}
+
+/* ── Notes to revise (the classic link inside .fun-notebook-line) ────── */
+/* The app's global .bg-white.border.rounded-lg rule sets its border with !important,
+   so the Fun line has to as well. */
+html.ui-fun .fun-notebook-line:empty { display: none; }
+html.ui-fun .fun-home .fun-notebook-line > a {
+  min-height: 48px;
+  gap: var(--fun-space-3);
+  padding: var(--fun-space-2) var(--fun-space-4);
+  border-style: solid;
+  border-width: 2px !important;
+  border-color: var(--fun-line-card) !important;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  box-shadow: none;
+}
+html.ui-fun .fun-home .fun-notebook-line > a:hover { background: var(--fun-ground); border-color: var(--fun-line-button) !important; }
+html.ui-fun .fun-home .fun-notebook-line > a > span { font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 800; color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-notebook-line > a > svg:first-child { width: 20px; height: 20px; color: var(--fun-brand); }
+html.ui-fun .fun-home .fun-notebook-line > a > svg:last-child { width: 18px; height: 18px; color: var(--fun-muted); }
+
+/* ── Raise a query (FunQueryRow) ─────────────────────────────────────── */
+html.ui-fun .fun-home .fun-row--query { width: 100%; background: var(--fun-ground); font-family: inherit; text-align: start; cursor: pointer; }
+html.ui-fun .fun-row__icon--query { background: var(--fun-info-tint); color: var(--fun-info-text); }
+html.ui-fun .fun-row__count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  background: var(--fun-test-tint);
+  color: var(--fun-test-text);
+  font-size: 0.8125rem;
+  font-weight: 900;
+}
+
+@media (min-width: 1024px) {
+  html.ui-fun .fun-companions__list,
+  html.ui-fun .fun-companions--single .fun-companions__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--fun-space-4);
+    margin: var(--fun-space-2) 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-companions--single .fun-companions__list { grid-template-columns: minmax(0, 1fr); }
+  html.ui-fun .fun-companions__item { width: auto; }
+  html.ui-fun .fun-companion__art { height: 96px; }
+  html.ui-fun .fun-companion__body { padding: var(--fun-space-3) 14px 14px; }
+}
+@media (max-width: 18em) {
+  html.ui-fun .fun-companions__list {
+    flex-direction: column;
+    gap: var(--fun-space-3);
+    margin: 4px 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-companions__item { width: auto; }
+  html.ui-fun .fun-companion__name.fun-clamp-2 { display: block; -webkit-line-clamp: unset; }
+  html.ui-fun .fun-companion__kb { white-space: normal; overflow-wrap: anywhere; }
+  html.ui-fun .fun-companion .fun-companion__cta { min-height: 76px; padding-block: 12px; }
+  html.ui-fun .fun-companion__cta-label { white-space: normal; overflow-wrap: anywhere; }
+}
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-companion__name { line-height: 1.5rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-companion__stats { font-size: 0.875rem; line-height: 1.375rem; }

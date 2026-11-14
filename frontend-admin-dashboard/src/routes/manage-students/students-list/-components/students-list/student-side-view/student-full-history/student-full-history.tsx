@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { handleFetchStudentTimeline } from '@/routes/admissions/-services/timeline-services';
 import type { TimelineEvent } from '@/routes/admissions/-services/timeline-services';
 import { cn } from '@/lib/utils';
@@ -17,7 +19,9 @@ import {
     GitMerge,
     Buildings,
     BookOpen,
+    WhatsappLogo,
     type Icon as PhosphorIcon,
+    Repeat,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { ChipToggleGroup } from '@/components/design-system/chips';
@@ -36,14 +40,17 @@ import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 
 type Category = 'all' | 'admission' | 'enrollment' | 'payment' | 'learning' | 'communication';
 
-const FILTER_CHIPS: { id: Category; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'admission', label: 'Admission' },
-    { id: 'enrollment', label: 'Enrollment' },
-    { id: 'payment', label: 'Payment' },
-    { id: 'learning', label: 'Learning' },
-    { id: 'communication', label: 'Communication' },
+const CATEGORY_ORDER: Category[] = [
+    'all',
+    'admission',
+    'enrollment',
+    'payment',
+    'learning',
+    'communication',
 ];
+
+const buildFilterChips = (t: TFunction): { id: Category; label: string }[] =>
+    CATEGORY_ORDER.map((id) => ({ id, label: t(`filters.${id}`) }));
 
 // Map action_type → category
 const CATEGORY_MAP: Record<string, Category> = {
@@ -60,6 +67,8 @@ const CATEGORY_MAP: Record<string, Category> = {
     FOLLOW_UP: 'communication',
     MEETING: 'communication',
     DUPLICATE_MERGED: 'enrollment',
+    RE_ENQUIRY: 'communication',
+    REATTEMPT: 'communication',
     CAMPUS_VISIT: 'admission',
 };
 
@@ -94,6 +103,8 @@ const EVENT_STYLE_MAP: Record<string, EventStyle> = {
     PAYMENT_SUCCESS:         { icon: CurrencyCircleDollar, tone: 'success' },
     CAMPUS_VISIT:            { icon: Buildings,            tone: 'neutral' },
     DUPLICATE_MERGED:        { icon: GitMerge,             tone: 'neutral' },
+    RE_ENQUIRY:              { icon: WhatsappLogo,         tone: 'info' },
+    REATTEMPT:               { icon: Repeat,               tone: 'warning' },
 };
 const FALLBACK_STYLE: EventStyle = { icon: BookOpen, tone: 'neutral' };
 
@@ -118,6 +129,16 @@ const getBucket = (dateStr: string): Bucket => {
 
 const BUCKET_ORDER: Bucket[] = ['Today', 'Yesterday', 'This week', 'Earlier'];
 
+// Bucket values above are internal keys (used for grouping + as React keys) —
+// they must stay stable English literals. Only the rendered label is
+// translated, via this lookup built once per render with the live t().
+const buildBucketLabels = (t: TFunction): Record<Bucket, string> => ({
+    Today: t('buckets.today'),
+    Yesterday: t('buckets.yesterday'),
+    'This week': t('buckets.thisWeek'),
+    Earlier: t('buckets.earlier'),
+});
+
 // ── Date range formatting ─────────────────────────────────────────────────────
 
 const formatDateRange = (events: TimelineEvent[]): string => {
@@ -126,7 +147,7 @@ const formatDateRange = (events: TimelineEvent[]): string => {
         .map((e) => {
             try { return new Date(e.created_at).getTime(); } catch { return NaN; }
         })
-        .filter((t) => !isNaN(t));
+        .filter((ts) => !isNaN(ts));
     if (!dates.length) return '';
     const earliest = new Date(Math.min(...dates));
     const latest   = new Date(Math.max(...dates));
@@ -141,9 +162,13 @@ interface StudentFullHistoryProps {
 }
 
 export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) => {
+    const { t } = useTranslation('manageStudentsFullHistory');
     const [page, setPage] = useState(0);
     const [activeFilter, setActiveFilter] = useState<Category>('all');
     const pageSize = 20;
+
+    const filterChips = useMemo(() => buildFilterChips(t), [t]);
+    const bucketLabels = useMemo(() => buildBucketLabels(t), [t]);
 
     const { data, isLoading, error, refetch } = useQuery(
         handleFetchStudentTimeline(studentUserId, page, pageSize)
@@ -172,11 +197,13 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
                 tone,
                 title: event.title || event.action_type.replace(/_/g, ' '),
                 meta: metaStr || undefined,
-                body: event.actor_name ? `by ${event.actor_name}` : undefined,
+                body: event.actor_name
+                    ? t('timeline.actorPrefix', { name: event.actor_name })
+                    : undefined,
             });
         }
         return groups;
-    }, [filteredEvents]);
+    }, [filteredEvents, t]);
 
     // ── States ────────────────────────────────────────────────────────────────
 
@@ -185,8 +212,8 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
     if (error) {
         return (
             <ProfileError
-                title="Couldn't load activity history"
-                hint="Something went wrong while fetching the timeline. Please try again."
+                title={t('error.title')}
+                hint={t('error.hint')}
                 onRetry={() => refetch()}
             />
         );
@@ -196,8 +223,8 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
         return (
             <ProfileEmpty
                 icon={ClipboardText}
-                title="No history yet"
-                hint="Events from all stages will appear here"
+                title={t('empty.title')}
+                hint={t('empty.hint')}
             />
         );
     }
@@ -209,8 +236,8 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
         <div className="flex flex-col gap-3">
             {/* Hero */}
             <ProfileHero
-                eyebrow="LEARNER HISTORY"
-                title={`${totalCount} event${totalCount !== 1 ? 's' : ''}`}
+                eyebrow={t('hero.eyebrow')}
+                title={t('hero.eventCount', { count: totalCount })}
                 subtitle={dateRange || undefined}
                 icon={ClockCounterClockwise}
                 tone="primary"
@@ -220,16 +247,16 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
             <ChipToggleGroup<Category>
                 value={activeFilter}
                 onChange={setActiveFilter}
-                options={FILTER_CHIPS.map((c) => ({ value: c.id, label: c.label }))}
-                ariaLabel="Filter history events by category"
+                options={filterChips.map((c) => ({ value: c.id, label: c.label }))}
+                ariaLabel={t('filters.ariaLabel')}
             />
 
             {/* Timeline grouped by date bucket */}
             {filteredEvents.length === 0 ? (
                 <ProfileEmpty
                     icon={ClipboardText}
-                    title="No events match this filter"
-                    hint="Try selecting a different category above"
+                    title={t('filteredEmpty.title')}
+                    hint={t('filteredEmpty.hint')}
                 />
             ) : (
                 <div className="flex flex-col gap-4">
@@ -239,7 +266,7 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
                         return (
                             <div key={bucket} className="flex flex-col gap-2">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                                    {bucket}
+                                    {bucketLabels[bucket]}
                                 </span>
                                 <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                                     <ProfileTimeline items={items} />
@@ -254,7 +281,7 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
             {data.totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
                     <span className="text-xs text-neutral-400">
-                        Page {page + 1} of {data.totalPages}
+                        {t('pagination.pageOf', { current: page + 1, total: data.totalPages })}
                     </span>
                     <div className="flex gap-1.5">
                         <MyButton
@@ -263,7 +290,7 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
                             onClick={() => setPage((p) => Math.max(0, p - 1))}
                             disabled={page === 0}
                         >
-                            Previous
+                            {t('pagination.previous')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
@@ -271,7 +298,7 @@ export const StudentFullHistory = ({ studentUserId }: StudentFullHistoryProps) =
                             onClick={() => setPage((p) => Math.min(data.totalPages - 1, p + 1))}
                             disabled={page >= data.totalPages - 1}
                         >
-                            Next
+                            {t('pagination.next')}
                         </MyButton>
                     </div>
                 </div>

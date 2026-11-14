@@ -1,5 +1,6 @@
 import autoTable from 'jspdf-autotable';
 import dayjs from 'dayjs';
+import type { TFunction } from 'i18next';
 import {
     createReportDoc,
     drawCards,
@@ -49,7 +50,8 @@ const isDefaultLevel = (value: string | null | undefined) =>
 
 export async function exportSubjectProgressPdf(
     meta: SubjectProgressPdfMeta,
-    data: SubjectProgressResponse
+    data: SubjectProgressResponse,
+    t: TFunction
 ) {
     const isBatch = meta.variant === 'batch';
     const doc = createReportDoc();
@@ -58,10 +60,13 @@ export async function exportSubjectProgressPdf(
     const pageH = doc.internal.pageSize.getHeight();
 
     const title = isBatch
-        ? `${meta.batchTerm} ${meta.subjectTerm}-wise Progress`
-        : 'Learner Progress Report';
+        ? t('pdf.batchSubjectWiseProgress', {
+              batchTerm: meta.batchTerm,
+              subjectTerm: meta.subjectTerm,
+          })
+        : t('pdf.learnerProgressReport');
     let y = drawTitleAndInfo(doc, title, [
-        ...(isBatch ? [] : [{ label: 'Learner', value: meta.learnerName || '—' }]),
+        ...(isBatch ? [] : [{ label: t('pdf.learnerLabel'), value: meta.learnerName || '—' }]),
         { label: meta.courseTerm, value: meta.courseName || '—' },
         { label: meta.sessionTerm, value: meta.sessionName || '—' },
         { label: meta.levelTerm, value: meta.levelName || '—' },
@@ -104,22 +109,28 @@ export async function exportSubjectProgressPdf(
         isBatch
             ? [
                   {
-                      label: `${meta.courseTerm} Completed`,
+                      label: t('pdf.termCompleted', { term: meta.courseTerm }),
                       value: `${formatToTwoDecimalPlaces(overallCompletion)}%`,
                   },
-                  { label: `${meta.moduleTerm}s Tracked`, value: String(totalModules) },
+                  {
+                      label: t('pdf.termsTracked', { term: meta.moduleTerm }),
+                      value: String(totalModules),
+                  },
               ]
             : [
                   {
-                      label: `${meta.courseTerm} Completed`,
+                      label: t('pdf.termCompleted', { term: meta.courseTerm }),
                       value: `${formatToTwoDecimalPlaces(overallCompletion)}%`,
                       sub: `${meta.batchTerm} ${formatToTwoDecimalPlaces(overallBatch)}%`,
                   },
                   {
-                      label: `${meta.batchTerm} Completed`,
+                      label: t('pdf.termCompleted', { term: meta.batchTerm }),
                       value: `${formatToTwoDecimalPlaces(overallBatch)}%`,
                   },
-                  { label: `${meta.moduleTerm}s Tracked`, value: String(totalModules) },
+                  {
+                      label: t('pdf.termsTracked', { term: meta.moduleTerm }),
+                      value: String(totalModules),
+                  },
               ],
         y
     );
@@ -134,18 +145,18 @@ export async function exportSubjectProgressPdf(
         }
 
         const heading = isDefaultLevel(subject.subject_name)
-            ? `${meta.moduleTerm}-wise Progress`
-            : `${meta.subjectTerm}: ${subject.subject_name}`;
+            ? t('pdf.termWiseProgress', { term: meta.moduleTerm })
+            : t('pdf.termColonName', { term: meta.subjectTerm, name: subject.subject_name });
         y = sectionTitle(doc, heading, y, theme);
 
         const head = isBatch
-            ? [...(hideModuleColumn ? [] : [meta.moduleTerm]), 'Completed', 'Daily Time (Avg)']
+            ? [...(hideModuleColumn ? [] : [meta.moduleTerm]), t('pdf.completed'), t('pdf.dailyTimeAvg')]
             : [
                   ...(hideModuleColumn ? [] : [meta.moduleTerm]),
-                  'Completed',
-                  `${meta.batchTerm} Completed`,
-                  'Daily Time (Avg)',
-                  `${meta.batchTerm} Daily Time (Avg)`,
+                  t('pdf.completed'),
+                  t('pdf.termCompleted', { term: meta.batchTerm }),
+                  t('pdf.dailyTimeAvg'),
+                  t('pdf.termDailyTimeAvg', { term: meta.batchTerm }),
               ];
 
         // Right-align every column except the leading Module label (when shown).
@@ -184,7 +195,9 @@ export async function exportSubjectProgressPdf(
         meta.instituteName,
         logo,
         theme,
-        isBatch ? `${meta.subjectTerm}-wise Progress Report` : 'Learning Progress Report'
+        isBatch
+            ? t('pdf.termWiseProgressReport', { term: meta.subjectTerm })
+            : t('pdf.learningProgressReport')
     );
 
     const safeName = isBatch

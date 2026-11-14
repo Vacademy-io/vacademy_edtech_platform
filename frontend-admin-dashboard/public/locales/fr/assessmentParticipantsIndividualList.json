@@ -1,0 +1,31 @@
+{
+    "trigger": {
+        "viewList": "Voir la liste"
+    },
+    "dialog": {
+        "title": "Liste individuelle des apprenants"
+    },
+    "titles": {
+        "internal": "Participants internes",
+        "external": "Participants externes (inscription ouverte)"
+    },
+    "columns": {
+        "name": "Nom",
+        "email": "E-mail",
+        "phone": "Numéro de téléphone",
+        "registeredOn": "Inscrit le",
+        "status": "Statut",
+        "details": "Réponses au formulaire"
+    },
+    "actions": {
+        "viewResponses": "Voir",
+        "hideResponses": "Masquer"
+    },
+    "empty": {
+        "internal": "Aucun participant interne pour le moment.",
+        "external": "Personne ne s'est encore inscrit via le lien."
+    },
+    "states": {
+        "loadError": "Impossible de charger les participants."
+    }
+}

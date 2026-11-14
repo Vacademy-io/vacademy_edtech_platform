@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "Referral Settings",
+        "description": "Configure rewards for referrers and referees when referral codes are used"
+    },
+    "card": {
+        "defaultBadge": "Default",
+        "changeSettings": "Change Referral Settings"
+    },
+    "refereeBenefit": {
+        "label": "Referee Benefit",
+        "freeDays": "{{value}} free days",
+        "bonusContent": "Bonus Content",
+        "discountOff": "{{value}} off"
+    },
+    "referrerTiers": {
+        "label": "Referrer Tiers"
+    },
+    "programSettings": {
+        "label": "Program Settings",
+        "vestingPeriod": "Vesting Period",
+        "combineOffers": "Combine Offers",
+        "yes": "Yes",
+        "no": "No"
+    },
+    "types": {
+        "discountPercentage": "Percentage Discount",
+        "discountFixed": "Fixed Discount",
+        "bonusContent": "Bonus Content",
+        "freeDays": "Free Days",
+        "pointsSystem": "Points System"
+    }
+}

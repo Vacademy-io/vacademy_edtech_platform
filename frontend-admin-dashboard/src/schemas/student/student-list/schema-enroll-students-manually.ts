@@ -43,6 +43,9 @@ export const stepThreeSchema = z.object({
         payment_option_id: z.string().optional(), // Will be populated from API
         package_session_ids: z.array(z.string()).optional(), // Will be populated from API
         payment_plans: z.array(z.any()).optional(), // Payment plans from invite details
+        // Payment option type (ONE_TIME / SUBSCRIPTION / FREE / DONATION / CPO) — gates the
+        // admin-discount field in Step 4.
+        payment_option_type: z.string().optional(),
     }),
     enrollment_number: z.string().optional(),
     access_days: z.string().optional(),
@@ -56,6 +59,18 @@ export const stepFourSchema = z.object({
     currency: z.string().min(1, 'Currency is required'), // Auto-filled from plan
     file_id: z.string().optional(), // payment proof file (optional)
     transaction_id: z.string().optional(), // transaction ID (optional)
+    // Admin-granted discount (ONE_TIME / SUBSCRIPTION plans only). Sent as
+    // learner_package_session_enroll.admin_discount; shape = AdminDiscountRequest.
+    admin_discount: z
+        .object({
+            mode: z.enum(['PERCENTAGE', 'FLAT', 'COUPON', 'NONE']),
+            discount_value: z.number().optional(),
+            max_discount_value: z.number().optional(),
+            coupon_code: z.string().optional(),
+            reason: z.string().optional(),
+            apply_for_cycles: z.number().nullable().optional(),
+        })
+        .optional(),
 });
 
 // Step Five Schema - Credentials

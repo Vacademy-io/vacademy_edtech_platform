@@ -1,0 +1,83 @@
+{
+    "validation": {
+        "descriptionRequired": "La description est requise",
+        "minQuantity": "Min. 1",
+        "priceMustBePositive": "Doit être > 0",
+        "lineItemsRequired": "Au moins une ligne d'article est requise",
+        "dueDateRequired": "La date d'échéance est requise",
+        "currencyRequired": "La devise est requise"
+    },
+    "success": {
+        "copyFailed": "Impossible de copier dans le presse-papiers",
+        "invoiceUpdatedTitle": "Facture mise à jour !",
+        "invoiceCreatedTitle": "Facture créée !",
+        "totalLabel": "Total :",
+        "paymentLinkLabel": "Lien de paiement",
+        "copyPaymentLinkTitle": "Copier le lien de paiement",
+        "whatsappShared": "WhatsApp a été ouvert avec les liens de paiement et du PDF",
+        "shareOnWhatsapp": "Partager sur WhatsApp",
+        "preparingWhatsapp": "Préparation…",
+        "downloadPdf": "Télécharger le PDF",
+        "downloadingPdf": "Téléchargement…",
+        "close": "Fermer"
+    },
+    "review": {
+        "helperText": "Ces valeurs remplissent votre modèle de facture. Modifiez-les avant de créer — l'aperçu se met à jour en direct.",
+        "previewLabel": "Aperçu de la facture",
+        "previewTitle": "Aperçu de la facture",
+        "retry": "Réessayer",
+        "groups": {
+            "invoice": "Facture",
+            "billTo": "Facturé à",
+            "institute": "Établissement",
+            "tax": "Taxe",
+            "amounts": "Montants",
+            "notes": "Notes"
+        }
+    },
+    "items": {
+        "loadingSettings": "Chargement des paramètres…",
+        "heading": "Articles",
+        "table": {
+            "description": "Description",
+            "qty": "Qté",
+            "price": "Prix",
+            "amount": "Montant"
+        },
+        "descriptionPlaceholder": "ex. Frais de cours",
+        "removeItem": "Supprimer",
+        "addItem": "Ajouter un article"
+    },
+    "summary": {
+        "subtotal": "Sous-total",
+        "applyTax": "Appliquer {{taxLabel}}",
+        "taxRateAriaLabel": "Taux de {{taxLabel}} en pourcentage",
+        "taxIncludedNote": "Dont {{taxRate}} % {{taxLabel}} (prix déjà taxes comprises)",
+        "total": "Total",
+        "taxLabelFallback": "Taxe"
+    },
+    "emailNotice": "L'e-mail de facture sera envoyé automatiquement à l'apprenant après le paiement.",
+    "form": {
+        "dueDateLabel": "Date d'échéance",
+        "currencyLabel": "Devise"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "next": "Suivant : Vérifier et prévisualiser",
+        "loadingPreview": "Chargement de l'aperçu…",
+        "back": "Retour",
+        "saveChanges": "Enregistrer les modifications",
+        "createInvoice": "Créer la facture",
+        "saving": "Enregistrement…",
+        "creating": "Création…"
+    },
+    "errors": {
+        "previewFailed": "Impossible d'afficher l'aperçu de la facture. Veuillez réessayer."
+    },
+    "heading": {
+        "invoice": "Facture — {{userName}}",
+        "reviewInvoice": "Vérifier la facture — {{userName}}",
+        "editInvoice": "Modifier la facture {{invoiceNumber}} — {{userName}}",
+        "createInvoice": "Créer une facture — {{userName}}"
+    }
+}

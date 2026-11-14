@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.student_analysis.dto.*;
 import vacademy.io.admin_core_service.features.student_analysis.entity.StudentAnalysisProcess;
 import vacademy.io.admin_core_service.features.student_analysis.repository.StudentAnalysisProcessRepository;
@@ -22,6 +23,13 @@ import vacademy.io.admin_core_service.features.student_analysis.dto.UserLinkedDa
 import vacademy.io.admin_core_service.features.student_analysis.entity.UserLinkedData;
 import vacademy.io.admin_core_service.features.student_analysis.repository.UserLinkedDataRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ComprehensiveReportAggregator;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.ComprehensiveStudentReport;
@@ -47,8 +55,84 @@ public class StudentAnalysisController {
         private final UserLinkedDataRepository userLinkedDataRepository;
         private final StudentReportPdfService reportPdfService;
         private final vacademy.io.admin_core_service.core.security.GuardianAccessGuard guardianAccessGuard;
+        private final vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository studentRepository;
+        private final ComprehensiveReportAggregator comprehensiveReportAggregator;
+        private final InstituteAccessValidator instituteAccessValidator;
+        private final StudentSessionInstituteGroupMappingRepository mappingRepository;
+        private final vacademy.io.admin_core_service.features.student_analysis.service.ReportAiEstimateService reportAiEstimateService;
+        private final PackageSessionRepository packageSessionRepository;
+
+        /** Modules the side-view Reports tab summarises; the AI step never runs for these. */
+        private static final Set<String> SNAPSHOT_MODULES = Set.of(
+                        ReportModule.ACADEMICS.getKey(),
+                        ReportModule.LEARNING_INSIGHTS.getKey(),
+                        ReportModule.ATTENDANCE.getKey(),
+                        ReportModule.PROGRESS.getKey());
+        private static final long SNAPSHOT_MAX_RANGE_DAYS = 366;
+
+        /**
+         * The admin side-view Reports tab: one learner's marks by subject, topic mastery (the basis
+         * of the strengths / weaknesses it shows), attendance and course progress for a window —
+         * the deterministic layer of the comprehensive report, returned synchronously and without
+         * the AI narrative, so it costs no credits. {@code batchId} limits every section to that
+         * batch (assessments assigned to it, its slides, its classes); omit it for all of the
+         * learner's batches (progress then reports unavailable).
+         */
+        /**
+         * Credits the AI learner report is likely to use: the institute average per report over
+         * the last 90 days (platform average when it has too few), times {@code learners} (the
+         * batch AI analysis runs one report per learner), with the current balance. Read-only.
+         */
+        @GetMapping("/ai-estimate")
+        @Operation(summary = "AI report credit estimate", description = "Average credits per AI learner report times the learner count, with the balance.")
+        public ResponseEntity<java.util.Map<String, Object>> getAiEstimate(
+                        @RequestParam("instituteId") String instituteId,
+                        @RequestParam(value = "learners", defaultValue = "1") int learners,
+                        @RequestAttribute("user") CustomUserDetails userDetails) {
+                instituteAccessValidator.requireStaffAccess(userDetails, instituteId);
+                return ResponseEntity.ok(reportAiEstimateService.estimate(instituteId, learners));
+        }
+
+        @GetMapping("/snapshot")
+        @Operation(summary = "Learner report snapshot", description = "Subject marks, topic mastery, attendance and progress for one learner and window, without AI.")
+        public ResponseEntity<ComprehensiveStudentReport> getSnapshot(
+                        @RequestParam("userId") String userId,
+                        @RequestParam("instituteId") String instituteId,
+                        @RequestParam(value = "batchId", required = false) String batchId,
+                        @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+                        @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
+                        @RequestAttribute("user") CustomUserDetails userDetails) {
+                instituteAccessValidator.requireStaffAccess(userDetails, instituteId);
+                String dateError = validateWindow(startDate, endDate);
+                if (dateError != null) {
+                        throw new VacademyException(HttpStatus.BAD_REQUEST, dateError);
+                }
+                if (java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) > SNAPSHOT_MAX_RANGE_DAYS) {
+                        throw new VacademyException(HttpStatus.BAD_REQUEST,
+                                        "Pick a range of at most " + SNAPSHOT_MAX_RANGE_DAYS + " days.");
+                }
+                // The aggregator takes the institute on trust, so the learner must be enrolled in it
+                // and a named batch must belong to it.
+                if (mappingRepository.findLatestPackageSessionIdByUserIdAndInstituteId(userId, instituteId).isEmpty()) {
+                        return ResponseEntity.notFound().build();
+                }
+                String batch = (batchId == null || batchId.isBlank()) ? null : batchId;
+                if (batch != null && !instituteId.equals(
+                                packageSessionRepository.findInstituteIdByPackageSessionId(batch).orElse(null))) {
+                        return ResponseEntity.notFound().build();
+                }
+                return ResponseEntity.ok(comprehensiveReportAggregator.collect(
+                                userId, instituteId, batch, startDate, endDate, SNAPSHOT_MODULES, true));
+        }
 
         @PostMapping("/initiate")
+        @Auditable(
+                        entityType = "STUDENT_REPORT",
+                        action = "GENERATE",
+                        conditionExpr = "#result?.body?.processId != null",
+                        entityIdExpr = "#result?.body?.processId",
+                        descriptionExpr = "'generated progress report for ' + (#result?.body?.learnerName ?: #request.userId)"
+                                        + " + ' (' + #request.startDateIso + ' to ' + #request.endDateIso + ')'")
         @Operation(summary = "Initiate student analysis report generation", description = "Starts async processing of student analysis. Returns a process ID to check status later.")
         public ResponseEntity<StudentAnalysisInitiateResponse> initiateAnalysis(
                         @RequestBody StudentAnalysisRequest request,
@@ -106,13 +190,16 @@ public class StudentAnalysisController {
 
                         process = processRepository.save(process);
 
-                        // Start async processing
-                        processorService.processStudentAnalysis(process.getId());
+                        // Start async processing; the admin's id rides along so every AI credit charge
+                        // for this report is attributed to them.
+                        processorService.processStudentAnalysis(process.getId(), userDetails.getUserId());
 
                         return ResponseEntity.ok(StudentAnalysisInitiateResponse.builder()
                                         .processId(process.getId())
                                         .status("PENDING")
                                         .message("Student analysis processing initiated successfully")
+                                        // For the admin activity log description ("… for Anmol Agarwal").
+                                        .learnerName(learnerNameOf(request.getUserId()))
                                         .build());
 
                 } catch (Exception e) {
@@ -122,6 +209,19 @@ public class StudentAnalysisController {
                                                         .status("ERROR")
                                                         .message("Failed to initiate analysis: " + e.getMessage())
                                                         .build());
+                }
+        }
+
+        /** Best-effort learner name for the audit description — never fails the initiate call. */
+        private String learnerNameOf(String userId) {
+                try {
+                        return studentRepository.findByUserId(userId).stream()
+                                        .map(student -> student.getFullName())
+                                        .filter(n -> n != null && !n.isBlank())
+                                        .findFirst().orElse(null);
+                } catch (Exception e) {
+                        log.warn("[Student-Analysis-API] Could not resolve learner name for {}: {}", userId, e.getMessage());
+                        return null;
                 }
         }
 

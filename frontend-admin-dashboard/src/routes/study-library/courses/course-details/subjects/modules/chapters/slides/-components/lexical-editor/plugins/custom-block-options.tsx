@@ -1,4 +1,5 @@
 import { $insertNodes, $createParagraphNode, type LexicalEditor, type LexicalNode } from 'lexical';
+import type { TFunction } from 'i18next';
 import {
     Image,
     VideoCamera,
@@ -55,130 +56,130 @@ const insertBlock = (editor: LexicalEditor, create: () => LexicalNode) => {
     });
 };
 
-export function buildCustomBlockOptions(): SlashMenuOption[] {
+export function buildCustomBlockOptions(t: TFunction): SlashMenuOption[] {
     return [
-        new SlashMenuOption('Image', {
-            description: 'Upload an image',
+        new SlashMenuOption(t('customBlocks.image.title'), {
+            description: t('customBlocks.image.description'),
             menuIcon: Image,
             keywords: ['image', 'picture', 'photo'],
             onSelect: (editor) => insertBlock(editor, () => ImageBlock.$create()),
         }),
-        new SlashMenuOption('Video', {
-            description: 'Upload a video file',
+        new SlashMenuOption(t('customBlocks.video.title'), {
+            description: t('customBlocks.video.description'),
             menuIcon: VideoCamera,
             keywords: ['video', 'movie'],
             onSelect: (editor) => insertBlock(editor, () => VideoBlock.$create()),
         }),
-        new SlashMenuOption('Embed', {
-            description: 'YouTube, Vimeo, Loom or any URL',
+        new SlashMenuOption(t('customBlocks.embed.title'), {
+            description: t('customBlocks.embed.description'),
             menuIcon: Browser,
             keywords: ['embed', 'youtube', 'vimeo', 'loom', 'iframe'],
             onSelect: (editor) => insertBlock(editor, () => EmbedBlock.$create()),
         }),
-        new SlashMenuOption('File', {
-            description: 'Attach a downloadable file',
+        new SlashMenuOption(t('customBlocks.file.title'), {
+            description: t('customBlocks.file.description'),
             menuIcon: Paperclip,
             keywords: ['file', 'attachment', 'download'],
             onSelect: (editor) => insertBlock(editor, () => FileBlock.$create()),
         }),
-        new SlashMenuOption('Callout', {
-            description: 'Highlighted note box',
+        new SlashMenuOption(t('customBlocks.callout.title'), {
+            description: t('customBlocks.callout.description'),
             menuIcon: Megaphone,
             keywords: ['callout', 'note', 'alert', 'info'],
             onSelect: (editor) => insertBlock(editor, () => CalloutBlock.$create()),
         }),
-        new SlashMenuOption('Audio', {
-            description: 'Upload an audio clip',
+        new SlashMenuOption(t('customBlocks.audio.title'), {
+            description: t('customBlocks.audio.description'),
             menuIcon: MusicNotes,
             keywords: ['audio', 'sound', 'music', 'podcast'],
             onSelect: (editor) => insertBlock(editor, () => AudioBlock.$create()),
         }),
-        new SlashMenuOption('PDF viewer', {
-            description: 'Inline PDF for learners',
+        new SlashMenuOption(t('customBlocks.pdfViewer.title'), {
+            description: t('customBlocks.pdfViewer.description'),
             menuIcon: FilePdf,
             keywords: ['pdf', 'document'],
             onSelect: (editor) => insertBlock(editor, () => PdfBlock.$create()),
         }),
-        new SlashMenuOption('Math (LaTeX)', {
-            description: 'KaTeX-rendered formula',
+        new SlashMenuOption(t('customBlocks.math.title'), {
+            description: t('customBlocks.math.description'),
             menuIcon: FunctionIcon,
             keywords: ['math', 'latex', 'formula', 'equation', 'katex'],
             onSelect: (editor) => insertBlock(editor, () => MathBlock.$create()),
         }),
-        new SlashMenuOption('Mermaid diagram', {
-            description: 'Flowcharts, sequences & more',
+        new SlashMenuOption(t('customBlocks.mermaid.title'), {
+            description: t('customBlocks.mermaid.description'),
             menuIcon: GitBranch,
             keywords: ['mermaid', 'diagram', 'flowchart', 'chart'],
             onSelect: (editor) => insertBlock(editor, () => MermaidBlock.$create()),
         }),
-        new SlashMenuOption('Fill in the blanks', {
-            description: 'Interactive cloze exercise',
+        new SlashMenuOption(t('customBlocks.fillBlanks.title'), {
+            description: t('customBlocks.fillBlanks.description'),
             menuIcon: ListNumbers,
             keywords: ['fill', 'blanks', 'cloze', 'exercise'],
             onSelect: (editor) => insertBlock(editor, () => FillBlanksBlock.$create()),
         }),
-        new SlashMenuOption('Table of contents', {
-            description: 'Auto-generated from headings',
+        new SlashMenuOption(t('customBlocks.toc.title'), {
+            description: t('customBlocks.toc.description'),
             menuIcon: TextIndent,
             keywords: ['toc', 'contents', 'outline'],
             onSelect: (editor) => insertBlock(editor, () => TocBlock.$create()),
         }),
-        new SlashMenuOption('Jupyter notebook', {
-            description: 'Embed a notebook from GitHub',
+        new SlashMenuOption(t('customBlocks.jupyter.title'), {
+            description: t('customBlocks.jupyter.description'),
             menuIcon: BookOpen,
             keywords: ['jupyter', 'notebook', 'python'],
             onSelect: (editor) => insertBlock(editor, () => JupyterBlock.$create()),
         }),
-        new SlashMenuOption('Scratch project', {
-            description: 'Embed a Scratch project',
+        new SlashMenuOption(t('customBlocks.scratch.title'), {
+            description: t('customBlocks.scratch.description'),
             menuIcon: GameController,
             keywords: ['scratch', 'game', 'project'],
             onSelect: (editor) => insertBlock(editor, () => ScratchBlock.$create()),
         }),
-        new SlashMenuOption('Flashcard', {
-            description: 'Front/back flip card',
+        new SlashMenuOption(t('customBlocks.flashcard.title'), {
+            description: t('customBlocks.flashcard.description'),
             menuIcon: Cards,
             keywords: ['flashcard', 'card', 'flip'],
             onSelect: (editor) => insertBlock(editor, () => FlashcardBlock.$create()),
         }),
-        new SlashMenuOption('Tabs', {
-            description: 'Tabbed content sections',
+        new SlashMenuOption(t('customBlocks.tabs.title'), {
+            description: t('customBlocks.tabs.description'),
             menuIcon: Rows,
             keywords: ['tabs', 'tabbed', 'sections'],
             onSelect: (editor) => insertBlock(editor, () => TabsBlock.$create()),
         }),
-        new SlashMenuOption('Quiz', {
-            description: 'Inline MCQ or true/false',
+        new SlashMenuOption(t('customBlocks.quiz.title'), {
+            description: t('customBlocks.quiz.description'),
             menuIcon: Question,
             keywords: ['quiz', 'mcq', 'question', 'test'],
             onSelect: (editor) => insertBlock(editor, () => QuizBlock.$create()),
         }),
-        new SlashMenuOption('Timeline', {
-            description: 'Step-by-step timeline',
+        new SlashMenuOption(t('customBlocks.timeline.title'), {
+            description: t('customBlocks.timeline.description'),
             menuIcon: ListChecks,
             keywords: ['timeline', 'steps', 'process'],
             onSelect: (editor) => insertBlock(editor, () => TimelineBlock.$create()),
         }),
-        new SlashMenuOption('Columns', {
-            description: 'Side-by-side layout',
+        new SlashMenuOption(t('customBlocks.columns.title'), {
+            description: t('customBlocks.columns.description'),
             menuIcon: Columns,
             keywords: ['columns', 'layout', 'grid'],
             onSelect: (editor) => insertBlock(editor, () => ColumnsBlock.$create()),
         }),
-        new SlashMenuOption('Accordion', {
-            description: 'Collapsible sections — each supports rich content',
+        new SlashMenuOption(t('customBlocks.accordion.title'), {
+            description: t('customBlocks.accordion.description'),
             menuIcon: CaretCircleDown,
             keywords: ['accordion', 'collapse', 'expand', 'faq'],
             onSelect: (editor) => insertBlock(editor, () => AccordionBlock.$create()),
         }),
-        new SlashMenuOption('Code', {
-            description: 'Syntax-highlighted code snippet',
+        new SlashMenuOption(t('customBlocks.code.title'), {
+            description: t('customBlocks.code.description'),
             menuIcon: Code,
             keywords: ['code', 'snippet', 'pre'],
             onSelect: (editor) => insertBlock(editor, () => CodeBlock.$create()),
         }),
-        new SlashMenuOption('Code editor (runnable)', {
-            description: 'Interactive runner for learners',
+        new SlashMenuOption(t('customBlocks.codeEditor.title'), {
+            description: t('customBlocks.codeEditor.description'),
             menuIcon: Terminal,
             keywords: ['code', 'python', 'run', 'interactive', 'editor'],
             onSelect: (editor) => insertBlock(editor, () => MultiLangCodeBlock.$create()),

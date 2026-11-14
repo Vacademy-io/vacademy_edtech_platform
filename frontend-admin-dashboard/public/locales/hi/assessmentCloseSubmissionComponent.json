@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "सबमिशन बंद करें",
+        "confirmMessagePrefix": "क्या आप वाकई सबमिशन बंद करना चाहते हैं",
+        "doneButton": "पूर्ण"
+    }
+}

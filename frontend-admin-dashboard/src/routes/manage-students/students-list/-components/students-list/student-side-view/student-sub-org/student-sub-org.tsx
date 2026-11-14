@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BASE_URL_LEARNER_DASHBOARD } from '@/constants/urls';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
@@ -37,6 +38,7 @@ import {
 import { MyButton } from '@/components/design-system/button';
 
 export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
+    const { t } = useTranslation('manageStudentsSubOrg');
     const { selectedStudent } = useStudentSidebar();
     const { instituteDetails } = useInstituteDetailsStore();
     const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +94,9 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
             setCopiedPassword(true);
             setTimeout(() => setCopiedPassword(false), 2000);
         }
-        toast.success(`${type === 'username' ? 'Username' : 'Password'} copied!`);
+        toast.success(
+            type === 'username' ? t('credentials.usernameCopied') : t('credentials.passwordCopied')
+        );
     };
 
     const loadDetails = async () => {
@@ -118,7 +122,9 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
             console.error(error);
             setFetchError(true);
             toast.error(
-                `Failed to fetch ${getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase()} details`
+                t('error.toast', {
+                    term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg).toLowerCase(),
+                })
             );
         } finally {
             setIsLoading(false);
@@ -135,8 +141,8 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
         return (
             <ProfileEmpty
                 icon={Buildings}
-                title={`No ${subOrgTerm} Associated`}
-                hint={`This learner is not linked to any ${subOrgTerm.toLowerCase()}.`}
+                title={t('emptyState.title', { term: subOrgTerm })}
+                hint={t('emptyState.hint', { term: subOrgTerm.toLowerCase() })}
             />
         );
     }
@@ -146,7 +152,7 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
             packageSessionIds={enrollmentPsIds}
             value={selectedPsId}
             onChange={setSelectedPsId}
-            label={`${subOrgTerm} for`}
+            label={t('picker.label', { term: subOrgTerm })}
         />
     );
 
@@ -163,8 +169,8 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
             <div className="flex flex-col gap-3">
                 {picker}
                 <ProfileError
-                    title={`Couldn't load ${subOrgTerm.toLowerCase()} details`}
-                    hint={`Something went wrong while fetching this ${subOrgTerm.toLowerCase()}. Please try again.`}
+                    title={t('error.title', { term: subOrgTerm.toLowerCase() })}
+                    hint={t('error.hint', { term: subOrgTerm.toLowerCase() })}
                     onRetry={loadDetails}
                 />
             </div>
@@ -172,7 +178,7 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
 
     const isAdmin = isSubOrgAdmin();
     const heroTone = isAdmin ? 'primary' : 'neutral';
-    const roleLabel = isAdmin ? 'Admin' : 'Member';
+    const roleLabel = isAdmin ? t('role.admin') : t('role.member');
 
     // "Open Management Portal" must point at the institute's configured learner
     // portal (same source as enroll-invite / audience links), falling back to the
@@ -207,17 +213,17 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                             rel="noopener noreferrer"
                         >
                             <MyButton buttonType="primary" scale="small">
-                                Open Management Portal
+                                {t('actions.openManagementPortal')}
                                 <ArrowSquareOut className="size-4" />
                             </MyButton>
                         </a>
                     </ProfileActionBar>
 
                     {/* Admin credentials card */}
-                    <ProfileSectionCard icon={Key} heading="Admin Credentials">
+                    <ProfileSectionCard icon={Key} heading={t('credentials.heading')}>
                         <dl className="divide-y divide-neutral-100">
                             <ProfileFieldRow
-                                label="Username"
+                                label={t('credentials.usernameLabel')}
                                 value={
                                     <code className="rounded-sm bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">
                                         {credentials?.username ||
@@ -236,7 +242,7 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                                 }
                             />
                             <ProfileFieldRow
-                                label="Password"
+                                label={t('credentials.passwordLabel')}
                                 value={
                                     <code className="rounded-sm bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">
                                         {credentials?.password || '••••••••'}
@@ -255,7 +261,7 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                     {/* Managed members card */}
                     <ProfileSectionCard
                         icon={Users}
-                        heading={`Managed Members (${members?.length ?? 0})`}
+                        heading={t('members.heading', { count: members?.length ?? 0 })}
                     >
                         {members && members.length > 0 ? (
                             <div className="flex flex-col gap-2">
@@ -299,15 +305,15 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                         ) : (
                             <ProfileEmpty
                                 icon={Users}
-                                title="No members found"
-                                hint={`No learners are currently managed under this ${subOrgTerm.toLowerCase()}.`}
+                                title={t('members.emptyTitle')}
+                                hint={t('members.emptyHint', { term: subOrgTerm.toLowerCase() })}
                             />
                         )}
                     </ProfileSectionCard>
                 </>
             ) : (
                 /* Sub-org admins card (member view) */
-                <ProfileSectionCard icon={ShieldCheck} heading={`${subOrgTerm} Admins`}>
+                <ProfileSectionCard icon={ShieldCheck} heading={t('admins.heading', { term: subOrgTerm })}>
                     {admins && admins.length > 0 ? (
                         <div className="flex flex-col gap-2">
                             {admins.map((admin, idx) => (
@@ -335,8 +341,8 @@ export const StudentSubOrg = ({ isSubmissionTab }: { isSubmissionTab?: boolean }
                     ) : (
                         <ProfileEmpty
                             icon={ShieldCheck}
-                            title="No admins found"
-                            hint={`No administrators are linked to this ${subOrgTerm.toLowerCase()}.`}
+                            title={t('admins.emptyTitle')}
+                            hint={t('admins.emptyHint', { term: subOrgTerm.toLowerCase() })}
                         />
                     )}
                 </ProfileSectionCard>

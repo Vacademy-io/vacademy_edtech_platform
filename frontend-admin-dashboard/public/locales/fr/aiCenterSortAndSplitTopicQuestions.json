@@ -1,0 +1,64 @@
+{
+    "header": {
+        "title": "Extraire des questions spécifiques",
+        "subtitle": "Dites-nous ce que vous voulez, puis déposez un sujet d'examen. Nous extrairons exactement ces questions."
+    },
+    "sections": {
+        "step1Title": "Que souhaitez-vous extraire ?",
+        "step2Title": "Décrivez ce que vous voulez",
+        "step3Title": "Déposez votre fichier"
+    },
+    "filterOptions": {
+        "topic": {
+            "label": "Des thèmes précis",
+            "description": "Extrayez les questions associées aux thèmes que vous indiquez.",
+            "placeholder": "ex. questions portant sur la photosynthèse, les facteurs qui l'influencent et son importance pour l'écosystème"
+        },
+        "pages": {
+            "label": "Des pages précises",
+            "description": "Extrayez les questions d'une plage de pages que vous indiquez.",
+            "placeholder": "ex. questions des pages 5 à 10 portant sur la photosynthèse"
+        },
+        "questionNo": {
+            "label": "Un ensemble de numéros de questions",
+            "description": "Extrayez un ensemble précis de questions par thème ou par nombre.",
+            "placeholder": "ex. 10 questions centrées sur la photosynthèse"
+        }
+    },
+    "upload": {
+        "dropTitle": "Déposez votre fichier ici, ou cliquez pour le choisir",
+        "dropSubtitle": "Fichier PDF, Word ou PowerPoint contenant des questions.",
+        "removeAriaLabel": "Supprimer le fichier",
+        "statusUploading": "Envoi en cours…",
+        "statusProcessing": "Lecture en cours…",
+        "statusReady": "Prêt à extraire",
+        "statusGenerating": "Extraction en cours…",
+        "statusDone": "Terminé",
+        "workingUploading": "Lecture de votre fichier…",
+        "workingProcessing": "Préparation de votre document…",
+        "workingGenerating": "Extraction des questions demandées — généralement environ 30 secondes."
+    },
+    "generate": {
+        "ctaLabel": "Extraire les questions",
+        "doneHeading": "Vsmart Organizer",
+        "generatingTitle": "Extraction des questions demandées",
+        "generatingSubtitle": "Lecture et sélection des questions correspondantes. Environ 30 secondes en général."
+    },
+    "recentFiles": {
+        "title": "Vos extractions récentes",
+        "fallbackLabel": "Ensemble extrait",
+        "emptyHint": "Vos ensembles de questions extraits apparaîtront ici. Indiquez ce que vous voulez ci-dessus, puis déposez un fichier."
+    },
+    "tasksList": {
+        "heading": "Vsmart Organizer"
+    },
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas lire les fichiers .{{ext}}. Essayez PDF, Word ou PowerPoint.",
+        "missingPrompt": "Indiquez d'abord ce que vous voulez extraire, puis déposez votre fichier.",
+        "uploadIncomplete": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "readFailed": "Nous n'avons pas pu lire ce fichier. Essayer un autre fichier ?",
+        "genericFailure": "Un problème est survenu lors de la lecture de votre fichier. Réessayer ?",
+        "extractFailed": "Nous n'avons pas pu extraire ces questions. Voulez-vous préciser la description ?",
+        "pullFailed": "Nous n'avons pas pu terminer cette extraction. Voulez-vous réessayer ?"
+    }
+}

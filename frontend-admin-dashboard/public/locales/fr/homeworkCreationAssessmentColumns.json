@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "name": "Nom",
+        "batch": "Groupe",
+        "enrollmentNumber": "Numéro d'inscription",
+        "collegeSchool": "Collège/École",
+        "gender": "Genre",
+        "mobileNumber": "Numéro de mobile",
+        "emailId": "Adresse e-mail",
+        "city": "Ville",
+        "state": "État"
+    },
+    "sort": {
+        "ascending": "Croissant",
+        "descending": "Décroissant"
+    }
+}

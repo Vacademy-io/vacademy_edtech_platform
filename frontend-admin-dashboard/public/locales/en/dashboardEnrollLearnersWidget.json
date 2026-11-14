@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "Enroll {{term}}",
+        "description": "Manage {{term}} enrollment and invitations"
+    },
+    "badges": {
+        "learnerCount": "{{count}} {{term}}",
+        "batchCount": "{{count}} {{term}}"
+    },
+    "actions": {
+        "inviteNew": "Invite New {{term}}",
+        "manageList": "Manage {{term}} List",
+        "enrollmentRequests": "Enrollment Requests"
+    }
+}

@@ -1,0 +1,135 @@
+{
+    "actionMenus": {
+        "ai": {
+            "trigger": "Corriger avec l'IA",
+            "startSection": "Lancer une correction",
+            "trackSection": "Suivi et relecture",
+            "checkSubmitted": {
+                "title": "Corriger les copies déposées par les apprenants",
+                "description": "L'IA corrige chaque copie que les apprenants ont déposée eux-mêmes. Rien à téléverser."
+            },
+            "recheckSubmitted": {
+                "title": "Recorriger toutes les copies déposées",
+                "description": "L’IA corrige à nouveau chaque copie déposée, y compris celles déjà corrigées. Les nouvelles notes remplacent les anciennes."
+            },
+            "upload": {
+                "title": "Téléverser des copies scannées",
+                "description": "Téléversez vos PDF scannés, puis choisissez : les associer aux apprenants, ou seulement les corriger et télécharger un ZIP."
+            },
+            "progress": {
+                "title": "Afficher la progression",
+                "hideTitle": "Masquer la progression",
+                "description": "Corrections en masse en cours et terminées, copie par copie."
+            },
+            "results": {
+                "title": "Relire les évaluations IA",
+                "description": "Ouvrez les copies corrigées par l'IA pour voir et modifier les notes question par question."
+            }
+        },
+        "export": {
+            "trigger": "Exporter",
+            "csv": {
+                "title": "Feuille de résultats (CSV)",
+                "description": "Notes, rang et informations de chaque personne listée, en tableur."
+            },
+            "csvPending": {
+                "title": "Liste des apprenants (CSV)",
+                "description": "Coordonnées des apprenants qui n'ont pas encore rendu leur copie."
+            },
+            "zip": {
+                "title": "Bulletins (ZIP)",
+                "description": "Un rapport PDF par apprenant, regroupés dans un ZIP."
+            },
+            "aiReport": {
+                "title": "Rapport de classe IA",
+                "description": "Une analyse IA de toute l'évaluation : points faibles, erreurs fréquentes et plan d'action."
+            }
+        }
+    },
+    "tabs": {
+        "attempted": "Tentés",
+        "ongoing": "En cours",
+        "pending": "En attente"
+    },
+    "participantType": {
+        "internal": "Interne",
+        "external": "Externe"
+    },
+    "selectionMode": {
+        "batch": "Sélection par lot",
+        "individual": "Sélection individuelle"
+    },
+    "filters": {
+        "evaluationStatus": {
+            "label": "Statut d'évaluation",
+            "options": {
+                "pending": "En attente",
+                "evaluating": "En cours d'évaluation",
+                "evaluated": "Évalué"
+            }
+        },
+        "submissionStatus": {
+            "label": "Réponse",
+            "options": {
+                "submitted": "Soumis",
+                "notSubmitted": "Non soumis"
+            }
+        }
+    },
+    "buttons": {
+        "offlineEntry": "Saisie hors ligne",
+        "revaluate": "Réévaluer",
+        "aiEvaluations": "Évaluations IA",
+        "bulkAiCheck": "Vérification IA en masse",
+        "bulkAiCheckTooltip": "Téléversez de nombreuses copies ; les noms sont lus et associés, les corrections tournent en arrière-plan",
+        "bulkAiBatches": "Lots"
+    },
+    "dialogs": {
+        "revaluate": {
+            "title": "Réévaluer le résultat"
+        }
+    },
+    "aiReport": {
+        "title": "Rapport IA de l’évaluation",
+        "download": "Rapport IA",
+        "intro": "Une analyse rédigée par l’IA de toute cette évaluation, pour l’enseignant qui prendra cette classe ensuite.",
+        "bulletWeakness": "Faiblesses de la classe par section, thème et question — des plus faibles aux plus fortes",
+        "bulletMisconceptions": "Les erreurs commises par de nombreux élèves pour la même raison, et comment y remédier",
+        "bulletPlan": "Un plan d’action hiérarchisé et la liste complète des participants",
+        "checking": "Vérification de l’existence d’un rapport…",
+        "costs_one": "Générer ce rapport consomme {{count}} crédit IA. Facturé une seule fois — tous les téléchargements suivants sont gratuits.",
+        "costs_other": "Générer ce rapport consomme {{count}} crédits IA. Facturé une seule fois — tous les téléchargements suivants sont gratuits.",
+        "balance_one": "Solde : {{count}} crédit",
+        "balance_other": "Solde : {{count}} crédits",
+        "insufficient": "Votre établissement n’a pas assez de crédits IA pour ce rapport. Rechargez pour continuer.",
+        "ready": "Rapport prêt — généré le {{date}}. Le télécharger à nouveau est gratuit.",
+        "stale": "Généré le {{date}}, mais les résultats ont changé depuis. Vous pouvez télécharger cette version gratuitement ou l’actualiser au coût indiqué.",
+        "downloadFree": "Télécharger (gratuit)",
+        "generate_one": "Générer · {{count}} crédit",
+        "generate_other": "Générer · {{count}} crédits",
+        "refresh_one": "Actualiser · {{count}} crédit",
+        "refresh_other": "Actualiser · {{count}} crédits",
+        "generating": "Génération…",
+        "preparing": "Préparation…",
+        "cancel": "Annuler",
+        "failed": "Impossible de générer le rapport IA. Veuillez réessayer.",
+        "generateNoPrice": "Générer le rapport",
+        "refreshNoPrice": "Actualiser le rapport",
+        "costsUnavailable": "Générer ce rapport consomme des crédits IA. Le coût exact n’a pas pu être chargé — il est facturé une fois, et les téléchargements suivants sont gratuits.",
+        "historyTitle": "Générés précédemment",
+        "historyDownload": "Télécharger",
+        "missingAnalyses_one": "{{count}} copie corrigée n’a pas encore d’analyse IA : ce rapport la laisserait hors des thèmes faibles et des erreurs fréquentes. L’analyse d’une copie consomme des crédits IA.",
+        "missingAnalyses_other": "{{count}} copies corrigées n’ont pas encore d’analyse IA : ce rapport les laisserait hors des thèmes faibles et des erreurs fréquentes. L’analyse d’une copie consomme des crédits IA.",
+        "analyseCopies_one": "Analyser {{count}} copie",
+        "analyseCopies_other": "Analyser {{count}} copies",
+        "analysing_one": "Analyse en cours… {{count}} copie restante",
+        "analysing_other": "Analyse en cours… {{count}} copies restantes",
+        "analysisStarted": "Analyse lancée. Générez le rapport une fois les copies analysées.",
+        "analysesDone": "Toutes les copies corrigées sont analysées. Le rapport les inclura toutes.",
+        "analyseFailed": "Impossible de lancer l’analyse. Veuillez réessayer.",
+        "analyseMore": "Les premières copies sont lancées. Certaines copies sont encore en préparation — cliquez de nouveau sur Analyser dans une minute pour les autres."
+    },
+    "selectAll": {
+        "failed": "Impossible de sélectionner tous les apprenants en attente. Veuillez réessayer."
+    }
+}

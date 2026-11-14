@@ -1,0 +1,73 @@
+{
+    "loading": "पूछताछ विवरण लोड हो रहा है…",
+    "loadError": "पूछताछ विवरण लोड करने में विफल।",
+    "duplicateBanner": {
+        "message": "यह एक डुप्लिकेट लीड है।",
+        "primaryLabel": "प्राथमिक: {{id}}…"
+    },
+    "header": {
+        "trackingId": "ट्रैकिंग आईडी",
+        "copy": "कॉपी करें",
+        "copiedToast": "ट्रैकिंग आईडी कॉपी हो गई!",
+        "enquiryStatus": "पूछताछ स्थिति",
+        "overallStatus": "समग्र स्थिति"
+    },
+    "sections": {
+        "child": {
+            "title": "छात्र / बच्चा",
+            "name": "नाम",
+            "dob": "जन्म तिथि",
+            "gender": "लिंग",
+            "applyingForClass": "किस कक्षा के लिए आवेदन",
+            "academicYear": "शैक्षणिक वर्ष",
+            "previousSchool": "पिछला स्कूल"
+        },
+        "parent": {
+            "title": "अभिभावक",
+            "name": "नाम",
+            "email": "ईमेल",
+            "phone": "फ़ोन",
+            "address": "पता",
+            "city": "शहर",
+            "pinCode": "पिन कोड"
+        },
+        "enquiryInfo": {
+            "title": "पूछताछ जानकारी",
+            "mode": "माध्यम",
+            "referenceSource": "संदर्भ स्रोत",
+            "leadInterestScore": "लीड रुचि स्कोर",
+            "feeRangeExpectation": "अपेक्षित शुल्क सीमा",
+            "transportRequirement": "परिवहन आवश्यकता",
+            "currentStage": "वर्तमान चरण",
+            "createdAt": "बनाया गया",
+            "updatedAt": "अद्यतन किया गया",
+            "notes": "टिप्पणियाँ"
+        },
+        "campaign": {
+            "title": "पूछताछ",
+            "enquiry": "पूछताछ",
+            "source": "स्रोत",
+            "classLevel": "कक्षा / स्तर",
+            "session": "सत्र"
+        },
+        "applicationStatus": {
+            "title": "आवेदन स्थिति",
+            "applied": "आवेदन किया",
+            "applicantId": "आवेदक आईडी",
+            "assignedCounselor": "नियुक्त काउंसलर",
+            "yes": "हाँ",
+            "no": "नहीं"
+        },
+        "customFields": {
+            "title": "कस्टम फ़ील्ड"
+        }
+    },
+    "status": {
+        "NEW": "नया",
+        "CONTACTED": "संपर्क किया गया",
+        "QUALIFIED": "योग्य",
+        "NOT_ELIGIBLE": "अयोग्य",
+        "ENQUIRY": "पूछताछ",
+        "APPLICATION": "आवेदन"
+    }
+}

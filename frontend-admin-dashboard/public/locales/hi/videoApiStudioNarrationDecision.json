@@ -1,0 +1,20 @@
+{
+    "header": {
+        "title_one": "वर्णन ({{count}} शॉट)",
+        "title_other": "वर्णन ({{count}} शॉट्स)",
+        "wordsEstimate_one": "{{count}} शब्द · ≈ {{seconds}}s",
+        "wordsEstimate_other": "{{count}} शब्द · ≈ {{seconds}}s"
+    },
+    "hooks": {
+        "pickLabel": "शुरुआती पंक्ति — एक हुक चुनें:",
+        "draft": "ड्राफ़्ट"
+    },
+    "shot": {
+        "placeholder": "इस शॉट के लिए कोई वर्णन नहीं"
+    },
+    "actions": {
+        "letAiDecide": "AI को तय करने दें",
+        "saveAndContinue": "सहेजें और जारी रखें",
+        "approveAndContinue": "स्वीकृत करें और जारी रखें"
+    }
+}

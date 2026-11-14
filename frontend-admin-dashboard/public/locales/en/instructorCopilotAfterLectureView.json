@@ -1,0 +1,15 @@
+{
+    "backButton": "Back to Lecture Modes",
+    "heading": "After Lecture",
+    "subtitle": "Review and analysis",
+    "cards": {
+        "logs": {
+            "title": "Previous Lecture Logs",
+            "description": "View history of your recorded and transcribed sessions."
+        },
+        "analyse": {
+            "title": "Analyse your lecture",
+            "description": "Get deep insights and feedback on your teaching style."
+        }
+    }
+}

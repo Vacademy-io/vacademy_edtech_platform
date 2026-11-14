@@ -1,0 +1,29 @@
+{
+    "tabs": {
+        "selectBatch": "बैच चुनें",
+        "selectIndividually": "व्यक्तिगत रूप से चुनें"
+    },
+    "search": {
+        "placeholder": "कोर्स या बैच खोजें…",
+        "clearAriaLabel": "खोज साफ़ करें"
+    },
+    "emptyStates": {
+        "selectSessionFirst": "प्रतिभागियों को चुनने के लिए ऊपर एक सत्र चुनें।",
+        "noSearchMatches": "आपकी खोज से मेल खाने वाला कोई कोर्स या बैच नहीं मिला।",
+        "noCoursesAvailable": "इस सत्र के लिए कोई कोर्स उपलब्ध नहीं है।"
+    },
+    "actions": {
+        "clear": "साफ़ करें",
+        "selectAllInSession": "इस सत्र में सभी चुनें"
+    },
+    "summary": {
+        "selectedOfTotalBatches": "{{total}} में से {{selected}} बैच",
+        "courseCount_one": "{{count}} कोर्स",
+        "courseCount_other": "{{count}} कोर्स",
+        "withSelections_one": "{{count}} में चयन",
+        "withSelections_other": "{{count}} में चयन",
+        "batchCount_one": "{{count}} बैच",
+        "batchCount_other": "{{count}} बैच",
+        "footerSelected": "{{coursePart}} में {{batchPart}} चयनित"
+    }
+}

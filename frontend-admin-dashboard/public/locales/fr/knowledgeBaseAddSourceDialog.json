@@ -1,0 +1,90 @@
+{
+    "heading": "Ajouter à cette base de connaissances",
+    "cancelButton": "Annuler",
+    "addButton": "Ajouter",
+    "addingButton": "Ajout…",
+    "uploadingButton": "Envoi…",
+    "typedNotesFree": "Les notes tapées sont gratuites à ajouter.",
+    "tabs": {
+        "document": "Document",
+        "webPage": "Page web",
+        "youtube": "YouTube",
+        "note": "Note"
+    },
+    "pdf": {
+        "choosePdf": "Choisir un PDF",
+        "dropHint": "Manuels, notes, anciens sujets d'examen. Les livres scannés fonctionnent aussi.",
+        "uploaded": "Envoyé",
+        "uploading": "Envoi…",
+        "pagesRead_one": "{{formatted}} page",
+        "pagesRead_many": "{{formatted}} de pages",
+        "pagesRead_other": "{{formatted}} pages",
+        "pageCountOnServer": "le nombre de pages sera lu sur le serveur",
+        "titleLabel": "Titre",
+        "titlePlaceholder": "ex. Sciences 4e NCERT",
+        "untitledDocument": "Document sans titre",
+        "ocrNote": "Les pages qui contiennent déjà du texte sélectionnable sont lues gratuitement. Seules les pages scannées nécessitent un OCR payant, et toute page qui s'avère peu fiable vous est signalée plutôt que d'être utilisée silencieusement."
+    },
+    "url": {
+        "linkLabel": "Lien de la page web",
+        "linkPlaceholder": "https://…",
+        "titlePlaceholder": "Facultatif",
+        "hint": "Idéal pour les programmes et les avis. Les pages longues sont raccourcies, donc importez plutôt un livre en PDF.",
+        "showCostButton": "Afficher le coût"
+    },
+    "youtube": {
+        "linkLabel": "Lien YouTube",
+        "linkPlaceholder": "https://www.youtube.com/watch?v=…",
+        "hint": "Utilise les sous-titres de la vidéo, donc cela ne fonctionne que pour les vidéos qui en ont.",
+        "showCostButton": "Afficher le coût"
+    },
+    "text": {
+        "titlePlaceholder": "ex. politique de remboursement des frais",
+        "contentLabel": "Contenu",
+        "contentPlaceholder": "Tapez ou collez tout ce que l'IA doit savoir — politiques, horaires, règles d'examen, FAQ…"
+    },
+    "costPreview": {
+        "loading": "Calcul du coût…",
+        "pagesCount_one": "{{formatted}} page",
+        "pagesCount_many": "{{formatted}} de pages",
+        "pagesCount_other": "{{formatted}} pages",
+        "creditsApprox_one": "≈{{formatted}} crédit",
+        "creditsApprox_many": "≈{{formatted}} de crédits",
+        "creditsApprox_other": "≈{{formatted}} crédits",
+        "creditsAbout_one": "Environ {{formatted}} crédit",
+        "creditsAbout_many": "Environ {{formatted}} de crédits",
+        "creditsAbout_other": "Environ {{formatted}} crédits",
+        "balance_one": "Vous avez {{formatted}} crédit",
+        "balance_many": "Vous avez {{formatted}} de crédits",
+        "balance_other": "Vous avez {{formatted}} crédits",
+        "balanceAfter_one": " — il en restera {{formatted}} après cela.",
+        "balanceAfter_many": " — il en restera {{formatted}} après cela.",
+        "balanceAfter_other": " — il en restera {{formatted}} après cela.",
+        "balanceEnd": ".",
+        "notEnough": "Crédits insuffisants. Rechargez vos crédits IA avant d'ajouter ceci.",
+        "chargedNote": "Facturé une seule fois, sur les pages réellement lues. La réindexation ultérieure est gratuite."
+    },
+    "errors": {
+        "onlyPdf": "Seuls les fichiers PDF peuvent être ajoutés pour l'instant",
+        "tooManyPages_one": "Ce document comporte {{formatted}} page.",
+        "tooManyPages_many": "Ce document comporte {{formatted}} de pages.",
+        "tooManyPages_other": "Ce document comporte {{formatted}} pages.",
+        "pageLimit_one": "La limite par import est de {{formatted}} page — veuillez le diviser.",
+        "pageLimit_many": "La limite par import est de {{formatted}} de pages — veuillez le diviser.",
+        "pageLimit_other": "La limite par import est de {{formatted}} pages — veuillez le diviser.",
+        "identifyAccountFailed": "Impossible d'identifier votre compte. Veuillez vous reconnecter.",
+        "uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
+        "stillUploading": "Envoi toujours en cours — un instant",
+        "choosePdfFirst": "Choisissez d'abord un PDF",
+        "pasteLinkFirst": "Collez d'abord un lien",
+        "typeSomethingFirst": "Tapez ou collez d'abord quelque chose",
+        "notEnoughCredits": "Crédits insuffisants.",
+        "addFailed": "Impossible d'ajouter cette source"
+    },
+    "toasts": {
+        "alreadyAdded": "Déjà ajouté — rien n'a été facturé.",
+        "addedProcessing": "Ajouté. Lecture en cours — cela peut prendre quelques minutes.",
+        "addedProcessingShort": "Ajouté. Lecture en cours.",
+        "added": "Ajouté."
+    }
+}

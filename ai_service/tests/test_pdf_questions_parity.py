@@ -38,7 +38,7 @@ def test_start_from_file_id() -> None:
         captured["url"] = url
         return "pdf-abc"
 
-    def fake_cache_start(pdf_id, file_id):
+    def fake_cache_start(pdf_id, file_id, file_type=None):
         captured["cached"] = (pdf_id, file_id)
 
     PS.media_file_client.get_file_url = fake_url

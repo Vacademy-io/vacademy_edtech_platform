@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.workflow.dto.IdempotencySettings;
 import vacademy.io.admin_core_service.features.workflow.dto.WorkflowBuilderDTO;
+import vacademy.io.admin_core_service.features.workflow.enums.IdempotencyStrategy;
 import vacademy.io.admin_core_service.features.workflow.service.idempotency.IdempotencyStrategyFactory;
 
 import java.util.*;
@@ -18,6 +19,16 @@ public class WorkflowValidationService {
 
     private final ObjectMapper objectMapper;
     private final IdempotencyStrategyFactory idempotencyStrategyFactory;
+    private final TriggerContextKeyRegistry triggerContextKeyRegistry;
+
+    /**
+     * Node types that only consume the context. A workflow made solely of these (plus the
+     * TRIGGER) has no node that could add a key, so every {@code #ctx['x']} a send node reads
+     * must come from the trigger event itself.
+     */
+    private static final Set<String> NON_PRODUCING_NODE_TYPES = Set.of(
+            "TRIGGER", "SEND_EMAIL", "SEND_WHATSAPP", "COMBOT", "SEND_PUSH_NOTIFICATION",
+            "DELAY", "CONDITION", "SET_LEAD_STATUS");
 
     @lombok.Data
     @lombok.AllArgsConstructor
@@ -121,7 +132,195 @@ public class WorkflowValidationService {
             validateTriggerIdempotency(dto.getTrigger().getIdempotencyGenerationSetting(), errors);
         }
 
+        if ("EVENT_DRIVEN".equalsIgnoreCase(dto.getWorkflowType()) && dto.getTrigger() != null) {
+            validateTriggerContextKeys(dto, errors);
+        }
+
+        validateQueryResultKeyReads(dto, errors);
+        validateSendRecipientsAreNotSystemIds(dto, errors);
+
         return errors;
+    }
+
+    /** Send nodes whose {@code on} names the people to message, one item per recipient. */
+    private static final Set<String> RECIPIENT_SEND_NODE_TYPES = Set.of("SEND_EMAIL", "SEND_WHATSAPP");
+
+    /**
+     * Context keys that always hold one id or flag stamped by the engine, never a person or a
+     * list of people. ({@code workflowId} is not in {@link TriggerContextKeyRegistry#ENGINE_KEYS}
+     * but the engine sets it too, and the builder lists it as a global variable.)
+     */
+    private static final Set<String> NON_RECIPIENT_CTX_KEYS;
+    static {
+        Set<String> keys = new HashSet<>(TriggerContextKeyRegistry.ENGINE_KEYS);
+        keys.add("workflowId");
+        NON_RECIPIENT_CTX_KEYS = Set.copyOf(keys);
+    }
+
+    /**
+     * A send node whose {@code on} reads only engine ids ({@code #ctx['workflowId']},
+     * {@code #ctx['executionId']} ...) iterates a single id string, and when {@code forEach}
+     * passes the item through as the recipient there is no address to send to: the node logs
+     * "No email address found" and the person gets nothing. The builder offered those ids as
+     * the only "Send to" candidates for a send node behind a DELAY, which shipped a VetEd course
+     * welcome email (2026-11-13) that could never have been delivered. Always an ERROR: no
+     * trigger or upstream node can make an id string a person. A custom {@code forEach.eval}
+     * that builds its own request is left alone.
+     */
+    private void validateSendRecipientsAreNotSystemIds(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            String type = node.getNodeType() == null ? "" : node.getNodeType().toUpperCase();
+            if (!RECIPIENT_SEND_NODE_TYPES.contains(type) || !(node.getConfig() instanceof Map<?, ?> config)) {
+                continue;
+            }
+            if (!(config.get("on") instanceof String onExpr) || onExpr.isBlank()) continue;
+            if (!itemIsTheRecipient(config.get("forEach"))) continue;
+            Set<String> referenced = TriggerContextKeyRegistry.referencedCtxKeys(onExpr);
+            if (referenced.isEmpty() || !NON_RECIPIENT_CTX_KEYS.containsAll(referenced)) continue;
+            errors.add(new ValidationError(node.getId(), "config.on",
+                    "'Send to' is " + onExpr + ", which is a system id, not a person, so this node"
+                            + " would send to no one. Pick who to send to, e.g. {#ctx['user']} for the"
+                            + " learner who triggered the workflow, or a list from a query node.",
+                    "ERROR"));
+        }
+    }
+
+    /** True when forEach is absent or passes each item straight through ({@code #ctx['item']}). */
+    private static boolean itemIsTheRecipient(Object forEach) {
+        if (!(forEach instanceof Map<?, ?> fe)) return true;
+        Object eval = fe.get("eval");
+        if (!(eval instanceof String ev) || ev.isBlank()) return true;
+        return ev.replace(" ", "").replace("\"", "'").equals("#ctx['item']");
+    }
+
+    /**
+     * A QUERY node puts the query's own result keys on the context (e.g. {@code adminContacts})
+     * and never stores anything under its {@code resultKey}. A send node whose {@code on} reads
+     * that resultKey, or the default {@code queryResult}, therefore gets nothing and sends
+     * nothing while the run still reports success. The builder used to offer exactly that
+     * expression, which silently stopped an institute's new-lead team email. Flagged as an
+     * ERROR unless the trigger or a catalogued query in this graph really emits the key.
+     */
+    private void validateQueryResultKeyReads(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        Set<String> phantom = new LinkedHashSet<>();
+        Set<String> real = new LinkedHashSet<>();
+        List<String> hints = new ArrayList<>();
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!"QUERY".equalsIgnoreCase(node.getNodeType()) || !(node.getConfig() instanceof Map<?, ?> config)) {
+                continue;
+            }
+            phantom.add("queryResult");
+            phantom.add("queryResultCount");
+            if (config.get("resultKey") instanceof String rk && !rk.isBlank()) {
+                phantom.add(rk.trim());
+                phantom.add(rk.trim() + "Count");
+            }
+            if (config.get("prebuiltKey") instanceof String pk) {
+                PrebuiltQueryOutputs.keysOf(pk).ifPresent(keys -> {
+                    real.addAll(keys);
+                    hints.add(pk.trim() + " -> #ctx['" + keys.get(0) + "']");
+                });
+            }
+        }
+        if (phantom.isEmpty()) {
+            return;
+        }
+        if (dto.getTrigger() != null) {
+            Set<String> emitted = triggerContextKeyRegistry.emittedKeys(dto.getTrigger().getTriggerEventName());
+            if (emitted != null) real.addAll(emitted);
+        }
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!(node.getConfig() instanceof Map<?, ?> config)) continue;
+            if (!(config.get("on") instanceof String onExpr) || onExpr.isBlank()) continue;
+            List<String> bad = TriggerContextKeyRegistry.referencedCtxKeys(onExpr).stream()
+                    .filter(phantom::contains)
+                    .filter(k -> !real.contains(k))
+                    .toList();
+            if (!bad.isEmpty()) {
+                errors.add(new ValidationError(node.getId(), "config.on",
+                        "'on' reads #ctx" + bad + ", but a QUERY node never stores its result there"
+                                + " (resultKey is not used), so this node would send nothing."
+                                + (hints.isEmpty() ? " Read the query's own output key instead."
+                                        : " Use the query's own list: " + String.join(", ", hints)),
+                        "ERROR"));
+            }
+        }
+    }
+
+    /**
+     * A {@code #ctx['key']} that the trigger event never emits is the one mistake the engine
+     * cannot surface: in a CUSTOM_EXPRESSION idempotency key it throws inside SpEL and
+     * {@code WorkflowTriggerService} skips the trigger before any execution row exists; in a send
+     * node's {@code on} it yields {@code [null]} and the node sends nothing. Both were shipped by
+     * the AI drafter on 2026-09-11 ({@code #ctx['lead']} on AUDIENCE_LEAD_SUBMISSION). Checked
+     * only for events {@link TriggerContextKeyRegistry} knows — an uncatalogued event is skipped.
+     */
+    private void validateTriggerContextKeys(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        String event = dto.getTrigger().getTriggerEventName();
+        Set<String> emitted = triggerContextKeyRegistry.emittedKeys(event);
+        if (emitted == null) {
+            return;
+        }
+
+        // Idempotency expression: evaluated against the raw emitter context + triggerId/eventName/eventId,
+        // before any node runs — nothing upstream can supply a missing key, so this is an ERROR.
+        String customExpression = customIdempotencyExpression(dto.getTrigger().getIdempotencyGenerationSetting());
+        if (customExpression != null) {
+            Set<String> allowed = new LinkedHashSet<>(emitted);
+            allowed.addAll(TriggerContextKeyRegistry.IDEMPOTENCY_TIME_ENGINE_KEYS);
+            List<String> unknown = TriggerContextKeyRegistry.referencedCtxKeys(customExpression).stream()
+                    .filter(k -> !allowed.contains(k))
+                    .toList();
+            if (!unknown.isEmpty()) {
+                errors.add(new ValidationError(null, "trigger.idempotency_generation_setting",
+                        "customExpression references #ctx" + unknown + " but " + event
+                                + " never puts " + (unknown.size() == 1 ? "that key" : "those keys")
+                                + " on the context — the expression would throw and the trigger would be skipped"
+                                + " with no execution. Keys available here: " + String.join(", ", allowed),
+                        "ERROR"));
+            }
+        }
+
+        // Send-node 'on': only checkable when no node in the graph can add context keys.
+        boolean anyProducer = dto.getNodes().stream()
+                .map(WorkflowBuilderDTO.NodeDTO::getNodeType)
+                .anyMatch(t -> t == null || !NON_PRODUCING_NODE_TYPES.contains(t.toUpperCase()));
+        if (anyProducer) {
+            return;
+        }
+        Set<String> allowedOnKeys = new LinkedHashSet<>(emitted);
+        allowedOnKeys.addAll(TriggerContextKeyRegistry.ENGINE_KEYS);
+        allowedOnKeys.add("item"); // forEach iteration variable
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!(node.getConfig() instanceof Map<?, ?> config)) continue;
+            Object on = config.get("on");
+            if (!(on instanceof String onExpr) || onExpr.isBlank()) continue;
+            List<String> unknown = TriggerContextKeyRegistry.referencedCtxKeys(onExpr).stream()
+                    .filter(k -> !allowedOnKeys.contains(k))
+                    .toList();
+            if (!unknown.isEmpty()) {
+                errors.add(new ValidationError(node.getId(), "config.on",
+                        "'on' references #ctx" + unknown + " but " + event + " does not emit "
+                                + (unknown.size() == 1 ? "that key" : "those keys")
+                                + " and no upstream node produces it — the node would have no recipients."
+                                + " Keys available here: " + String.join(", ", allowedOnKeys),
+                        "WARNING"));
+            }
+        }
+    }
+
+    /** The customExpression of a CUSTOM_EXPRESSION idempotency setting (object or JSON string), else null. */
+    private String customIdempotencyExpression(Object provided) {
+        if (provided == null) return null;
+        try {
+            String json = provided instanceof String s ? s : objectMapper.writeValueAsString(provided);
+            if (json.isBlank() || "null".equals(json)) return null;
+            IdempotencySettings settings = objectMapper.readValue(json, IdempotencySettings.class);
+            if (settings.getStrategy() != IdempotencyStrategy.CUSTOM_EXPRESSION) return null;
+            return settings.getCustomExpression();
+        } catch (Exception e) {
+            return null; // malformed settings are reported by validateTriggerIdempotency
+        }
     }
 
     /**

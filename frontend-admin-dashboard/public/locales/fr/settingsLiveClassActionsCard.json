@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Actions sur les cours en direct",
+        "description": "Définissez ce que ce rôle peut faire avec les cours de la page Sessions en direct."
+    },
+    "rows": {
+        "allowDeletePastSessions": {
+            "label": "Autoriser la suppression des cours passés",
+            "hint": "Affiche « Supprimer » dans le menu « … » de chaque cours de l’onglet Passés. Activé par défaut pour les administrateurs et désactivé pour tous les autres rôles. Chaque suppression est enregistrée dans le journal d’activité avec le nom de la personne qui l’a faite."
+        }
+    }
+}

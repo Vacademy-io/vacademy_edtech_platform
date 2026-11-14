@@ -17,6 +17,8 @@ export interface QuestionPaperHeadingInterface {
     setCurrentQuestionIndex: Dispatch<SetStateAction<number>>;
     isDirectAdd?: boolean;
     handleSelect?: (tyep: string) => void;
+    /** Hides types the exam type cannot hold (CBE is not offered in surveys). */
+    examType?: string;
 }
 
 export interface QuestionTypeProps {

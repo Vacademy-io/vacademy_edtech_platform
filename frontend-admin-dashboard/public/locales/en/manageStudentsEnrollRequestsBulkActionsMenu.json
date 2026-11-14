@@ -1,0 +1,21 @@
+{
+    "menu": {
+        "shareCredentials": "Share Credentials",
+        "sendWhatsappMessage": "Send WhatsApp Message",
+        "sendEmail": "Send Email",
+        "acceptRequest": "Accept Request",
+        "declineRequest": "Decline Request"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} student",
+        "selectedStudents_other": "{{count}} students"
+    },
+    "errors": {
+        "noneEnrolled": "None of the selected contacts are enrolled in a batch, so this action can't run on them.",
+        "noneActionable": "None of the selected contacts have a user account yet, so nothing can be sent to them.",
+        "someNotEnrolled_one": "1 selected contact was left out — they aren't enrolled in a batch.",
+        "someNotEnrolled_other": "{{count}} selected contacts were left out — they aren't enrolled in a batch.",
+        "someNoAccount_one": "1 selected contact was left out — they don't have a user account yet.",
+        "someNoAccount_other": "{{count}} selected contacts were left out — they don't have user accounts yet."
+    }
+}

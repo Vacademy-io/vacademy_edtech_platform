@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.workflow.dto.execution_log.EmailE
 import vacademy.io.common.logging.SentryLogger;
 
 import vacademy.io.admin_core_service.features.workflow.service.NotificationRateLimitService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWorkflowSuppression;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +46,10 @@ public class SendEmailNodeHandler implements NodeHandler {
     private final TemplateRepository templateRepository;
     private final WorkflowExecutionLogger executionLogger;
     private final NotificationRateLimitService rateLimitService;
+
+    /** Holds lead nurture back from leads an engagement engine is working. Optional: absent = no hold. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EngagementWorkflowSuppression engagementSuppression;
     private final Map<String, Template> templateCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     // Throttling defaults — workflows that fan out to many recipients (e.g., a batch
@@ -189,8 +194,15 @@ public class SendEmailNodeHandler implements NodeHandler {
             int chunkSize = DEFAULT_CHUNK_SIZE;
             long throttleMs = DEFAULT_THROTTLE_MS;
             long chunkTimeoutMs = DEFAULT_CHUNK_TIMEOUT_MS;
+            // Optional, e.g. "PROMOTIONAL_EMAIL" on a marketing node so its mail carries the
+            // unsubscribe footer. Unset stays utility: most workflow mail is receipts and reminders,
+            // which an unsubscribed learner must still get.
+            String nodeLevelEmailType = null;
             try {
                 com.fasterxml.jackson.databind.JsonNode configRoot = objectMapper.readTree(nodeConfigJson);
+                if (configRoot.has("emailType") && !configRoot.get("emailType").asText("").isBlank()) {
+                    nodeLevelEmailType = configRoot.get("emailType").asText().trim().toUpperCase(java.util.Locale.ROOT);
+                }
                 if (configRoot.has("templateName") && !configRoot.get("templateName").asText("").isBlank()) {
                     nodeLevelTemplateName = configRoot.get("templateName").asText();
                 }
@@ -215,6 +227,7 @@ public class SendEmailNodeHandler implements NodeHandler {
             } catch (Exception e) {
                 log.warn("Failed to parse node-level template config", e);
             }
+            final String finalNodeEmailType = nodeLevelEmailType;
 
             for (Object item : items) {
                 Map<String, Object> itemContext = new HashMap<>(context);
@@ -272,6 +285,12 @@ public class SendEmailNodeHandler implements NodeHandler {
                 Set<String> sentLog = new HashSet<>();
                 List<String> emailResults = new ArrayList<>();
 
+                // Leads an engagement engine is working right now: the engine owns their outreach, so
+                // a nurture workflow skips them (transactional and learner sends are never held).
+                Set<String> engagedEmails = engagementSuppression != null
+                        && EngagementWorkflowSuppression.appliesTo(context)
+                        ? engagementSuppression.engagedLeadEmails(finalInstituteId) : Set.of();
+
                 // Map to store original items for failure tracking
                 Map<String, Object> recipientToItemMap = new HashMap<>();
 
@@ -294,8 +313,23 @@ public class SendEmailNodeHandler implements NodeHandler {
                         continue;
                     }
 
+                    if (!engagedEmails.isEmpty()
+                            && engagedEmails.contains(EngagementWorkflowSuppression.emailKey(recipient))) {
+                        log.info("Skipping email to {}: lead is inside an engagement engine, which owns its outreach.",
+                                recipient);
+                        skippedCount++;
+                        failedEmails.add(EmailExecutionDetails.FailedEmail.builder()
+                                .recipientEmail(recipient)
+                                .errorMessage("Lead is inside an engagement engine; the engine owns its outreach")
+                                .errorType("ENGAGEMENT_ENGINE")
+                                .failureReason("SKIPPED")
+                                .itemData(originalItem)
+                                .build());
+                        continue;
+                    }
+
                     // --- Deduplication Check ---
-                    String dedupeKey = recipient + "::" + subject;
+                    String dedupeKey = recipient.trim().toLowerCase(java.util.Locale.ROOT) + "::" + subject;
                     if (sentLog.contains(dedupeKey)) {
                         log.warn("Duplicate email request for {} with subject ''{}''. Skipping.", recipient, subject);
                         skippedCount++;
@@ -359,6 +393,7 @@ public class SendEmailNodeHandler implements NodeHandler {
 
                         NotificationDTO batchDTO = regularBatchMap.computeIfAbsent(groupingKey, k -> {
                             NotificationDTO newDto = new NotificationDTO();
+                            newDto.setEmailType(finalNodeEmailType);
                             newDto.setSubject(subject);
                             newDto.setBody(body);
                             newDto.setNotificationType("EMAIL");
@@ -1219,6 +1254,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                     chunkDto.setNotificationType(batch.getNotificationType());
                     chunkDto.setSource(batch.getSource());
                     chunkDto.setSourceId(batch.getSourceId());
+                    chunkDto.setEmailType(batch.getEmailType());
                     chunkDto.setUsers(new ArrayList<>(users.subList(i, end)));
                 }
                 int chunkUserCount = end - i;

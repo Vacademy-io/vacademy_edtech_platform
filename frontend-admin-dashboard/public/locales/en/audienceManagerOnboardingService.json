@@ -1,0 +1,7 @@
+{
+    "triggerEvents": {
+        "entered": "When a subject enters this step",
+        "completed": "When this step is completed",
+        "skipped": "When this step is skipped"
+    }
+}

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.dto.EmployeeBankDetailDTO;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeBankDetail;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfile;
@@ -24,13 +25,20 @@ public class EmployeeBankService {
     @Autowired
     private EmployeeProfileRepository employeeProfileRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     @Transactional
-    public String addBankDetail(String employeeId, EmployeeBankDetailDTO dto) {
+    public String addBankDetail(String employeeId, EmployeeBankDetailDTO dto, String instituteId) {
         EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
                 .orElseThrow(() -> new VacademyException("Employee not found"));
+        hrAccessGuard.requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
 
         if (!StringUtils.hasText(dto.getAccountNumber())) {
             throw new VacademyException("Account number is required");
+        }
+        if (dto.getAccountNumber().contains("*")) {
+            throw new VacademyException("Account number appears masked; please provide the full account number");
         }
 
         EmployeeBankDetail bankDetail = new EmployeeBankDetail();
@@ -67,9 +75,10 @@ public class EmployeeBankService {
     }
 
     @Transactional
-    public String updateBankDetail(String employeeId, String id, EmployeeBankDetailDTO dto) {
+    public String updateBankDetail(String employeeId, String id, EmployeeBankDetailDTO dto, String instituteId) {
         EmployeeBankDetail bankDetail = employeeBankDetailRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Bank detail not found"));
+        hrAccessGuard.requireInstituteMatch(bankDetail.getEmployee().getInstituteId(), instituteId, "Bank detail");
         if (!bankDetail.getEmployee().getId().equals(employeeId)) {
             throw new VacademyException("Bank detail does not belong to this employee");
         }
@@ -78,6 +87,9 @@ public class EmployeeBankService {
             bankDetail.setAccountHolderName(dto.getAccountHolderName());
         }
         if (StringUtils.hasText(dto.getAccountNumber())) {
+            if (dto.getAccountNumber().contains("*")) {
+                throw new VacademyException("Account number appears masked; please provide the full account number");
+            }
             bankDetail.setAccountNumber(dto.getAccountNumber());
         }
         if (dto.getBankName() != null) {
@@ -122,7 +134,11 @@ public class EmployeeBankService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmployeeBankDetailDTO> getBankDetails(String employeeId) {
+    public List<EmployeeBankDetailDTO> getBankDetails(String employeeId, String instituteId) {
+        EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
+                .orElseThrow(() -> new VacademyException("Employee not found"));
+        hrAccessGuard.requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
+
         List<EmployeeBankDetail> bankDetails = employeeBankDetailRepository.findByEmployeeId(employeeId);
 
         return bankDetails.stream()

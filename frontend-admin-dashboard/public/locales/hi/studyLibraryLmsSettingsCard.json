@@ -1,0 +1,41 @@
+{
+    "title": "एलएमएस इंटीग्रेशन",
+    "loading": "लोड हो रहा है…",
+    "builtInLms": "इनबिल्ट Vacademy एलएमएस",
+    "moodleCourseId": "Moodle कोर्स ID",
+    "courseIdInLms": "एलएमएस में कोर्स ID",
+    "enrolSyncNotice": {
+        "prefix": "जब शिक्षार्थी इस कोर्स में नामांकित होते हैं, तो वे यहाँ सेट अप हो जाते हैं",
+        "suffix": "।"
+    },
+    "noConnections": {
+        "prefix": "अभी तक कोई एलएमएस कनेक्शन नहीं है। इसके अंतर्गत एक जोड़ें",
+        "settingsPath": "सेटिंग्स → अपना एलएमएस कनेक्ट करें",
+        "suffix": ", फिर इसे यहाँ लागू करने के लिए वापस आएं।"
+    },
+    "setupHeading": "इस कोर्स का एलएमएस सेट अप करें",
+    "lmsConnectionLabel": "एलएमएस कनेक्शन",
+    "chooseConnectionPlaceholder": "एक कनेक्शन चुनें",
+    "moodleCourseIdPlaceholder": "जैसे 74",
+    "courseIdPlaceholder": "एलएमएस में कोर्स id",
+    "courseIdHelp": {
+        "prefix": "इस कोर्स की id",
+        "suffix": " में। साइट/टोकन कनेक्शन से आते हैं — केवल कोर्स id प्रति कोर्स बदलती है।"
+    },
+    "additionalFieldsLabel": "अतिरिक्त फ़ील्ड (वैकल्पिक)",
+    "fieldKeyPlaceholder": "key (जैसे roleId)",
+    "fieldValuePlaceholder": "value",
+    "removeFieldAriaLabel": "फ़ील्ड हटाएं",
+    "addFieldButton": "फ़ील्ड जोड़ें",
+    "additionalFieldsHelp": "कोई भी अतिरिक्त key-value जोड़े इस कोर्स की एलएमएस सेटिंग्स JSON में सहेजे जाते हैं (जैसे कोई कस्टम फ़ील्ड जिसे वर्कफ़्लो पढ़ता है)।",
+    "applyingButton": "लागू हो रहा है…",
+    "applyButton": "इस कोर्स के लिए यह एलएमएस उपयोग करें",
+    "errors": {
+        "loadFailed": "एलएमएस जानकारी लोड करने में विफल",
+        "pickConnection": "पहले एक एलएमएस कनेक्शन चुनें।",
+        "applyFailed": "एलएमएस कनेक्शन लागू करने में विफल"
+    },
+    "toasts": {
+        "applySuccess": "यह कोर्स अब {{lmsName}} के साथ सिंक होता है।"
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "Dailies — watch your filmed scenes",
+        "count": "· {{count}}"
+    },
+    "empty": "No clips to review — approve to continue.",
+    "qc": {
+        "passed": "QC passed",
+        "flagged": "QC flagged",
+        "flaggedWithIssue": "QC flagged: {{issue}}"
+    },
+    "clip": {
+        "keepIt": "Keep it",
+        "redo": "Redo",
+        "notePlaceholder": "What must the re-take fix? e.g. she should sound angrier, wrong prop on the desk…",
+        "durationSeconds": "{{value}}s"
+    },
+    "footer": {
+        "reTakeNote": "Re-takes are charged like the original clip.",
+        "reFilmSummary_one": "{{count}} scene will be re-filmed — a re-take is charged like the original clip.",
+        "reFilmSummary_other": "{{count}} scenes will be re-filmed — a re-take is charged like the original clip.",
+        "approveAll": "Approve all & continue",
+        "reFilmSubmit_one": "Re-film {{count}} scene & continue",
+        "reFilmSubmit_other": "Re-film {{count}} scenes & continue"
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "dialogs": {
+        "attentionLabel": "انتباه",
+        "yes": "نعم",
+        "provideReattempt": {
+            "title": "توفير محاولة إعادة",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد منح فرصة إعادة المحاولة لـ"
+        },
+        "releaseResult": {
+            "title": "إصدار النتيجة",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إصدار النتيجة لـ"
+        },
+        "revaluateEntireAssessment": {
+            "title": "إعادة تقييم التقييم بالكامل",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إعادة التقييم لـ",
+            "confirmMessageSuffix": "للتقييم بأكمله؟"
+        }
+    },
+    "dropdown": {
+        "provideReattempt": "توفير محاولة إعادة",
+        "revaluate": "إعادة التقييم",
+        "questionWise": "حسب السؤال",
+        "entireAssessment": "التقييم بالكامل",
+        "releaseResult": "إصدار النتيجة"
+    },
+    "toasts": {
+        "releaseResultSuccess": "تم إعادة تقييم محاولتك لهذا التقييم. يرجى التحقق من بريدك الإلكتروني!",
+        "revaluateSuccess": "تم إعادة تقييم محاولتك لهذا التقييم. يرجى التحقق من بريدك الإلكتروني!"
+    }
+}

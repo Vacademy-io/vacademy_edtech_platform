@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 // import { useEffect } from "react";
 // import { useNavigate } from "@tanstack/react-router";
 // import { z } from "zod";
@@ -8,6 +9,7 @@ export const Route = createFileRoute("/live-class-guest/")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation("liveClassGuest");
 //   const navigate = useNavigate();
 
 //   useEffect(() => {
@@ -17,5 +19,5 @@ function RouteComponent() {
 //     });
 //   }, [sessionId, guestId]);
 
-  return <div>Hello "/live-class-guest/"!</div>;
+  return <div>{t("guestHome.placeholder")}</div>;
 }

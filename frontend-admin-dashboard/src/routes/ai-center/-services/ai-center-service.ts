@@ -21,12 +21,44 @@ import {
     START_PROCESSING_FILE_AI_URL,
 } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import type {
+    AIPaperMarking,
+    AIPaperSection,
+} from '@/types/ai/generate-assessment/generate-complete-assessment';
 import axios from 'axios';
 
-export const handleStartProcessUploadedFile = async (fileId: string) => {
+/**
+ * Get an uploaded file ready for question work.
+ *
+ * `mode: 'extract'` (Vsmart Extract) reads a digital PDF on the server for
+ * free and sends only scans to MathPix — the response says which (`ocr`).
+ * Without it every file goes to MathPix, as the generate tools always have.
+ */
+export interface StartProcessResponse {
+    pdf_id: string;
+    /** extract mode: was OCR needed, page counts, the paper's question count and the credits it will cost */
+    ocr?: boolean | null;
+    pages?: number | null;
+    ocr_pages?: number | null;
+    question_count?: number | null;
+    estimated_credits?: number | null;
+    /** the paper's own sections (2+) and marking scheme, when it prints them */
+    sections?: AIPaperSection[] | null;
+    marking?: AIPaperMarking | null;
+    duration_minutes?: number | null;
+}
+
+export const handleStartProcessUploadedFile = async (
+    fileId: string,
+    mode?: 'extract',
+    options?: { fileName?: string }
+): Promise<StartProcessResponse> => {
     const response = await axios({
         method: 'POST',
         url: START_PROCESSING_FILE_AI_URL,
+        params: mode
+            ? { mode, instituteId: getInstituteId(), fileName: options?.fileName }
+            : undefined,
         data: {
             file_id: fileId,
         },
@@ -154,11 +186,24 @@ export const handleSortQuestionsPDF = async (
     return response?.data;
 };
 
+/**
+ * Start a PDF → questions task.
+ *
+ * `mode: 'extract'` digitises the paper's OWN questions verbatim (every
+ * question, options, passages, marks, printed answer key and solutions) —
+ * what Vsmart Extract promises. Without it the server GENERATES questions
+ * from the material, which is Vsmart Upload's job.
+ */
+export type SectionMode = 'split' | 'single';
+
 export const handleGenerateAssessmentQuestions = async (
     pdfId: string,
     userPrompt: string,
     taskName: string,
-    taskId: string
+    taskId: string,
+    mode?: 'extract',
+    /** extract only: one assessment section per paper section, or everything in one */
+    sectionMode?: SectionMode
 ) => {
     const instituteId = getInstituteId();
     const response = await axios({
@@ -170,6 +215,8 @@ export const handleGenerateAssessmentQuestions = async (
             taskName,
             instituteId,
             taskId,
+            ...(mode ? { mode } : {}),
+            ...(mode && sectionMode ? { sectionMode } : {}),
         },
     });
     return response?.data;

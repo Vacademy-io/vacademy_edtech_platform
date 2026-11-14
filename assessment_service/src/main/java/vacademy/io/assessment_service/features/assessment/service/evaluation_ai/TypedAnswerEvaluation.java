@@ -1,0 +1,217 @@
+package vacademy.io.assessment_service.features.assessment.service.evaluation_ai;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.assessment.entity.AiQuestionEvaluation;
+import vacademy.io.assessment_service.features.assessment.entity.Assessment;
+import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
+import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
+import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
+import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
+import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
+import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * AI evaluation of an ONLINE attempt: the learner typed an essay, letter or
+ * email in the test player instead of uploading an answer sheet.
+ *
+ * The copy-check pipeline grades an uploaded PDF and every question on it. An
+ * online attempt has no PDF, and its objective questions were already scored
+ * exactly on submit, so only the written answers go to the AI (as text, see
+ * ai_service copy_check/typed_answers.py) and the attempt total is those AI
+ * marks plus the auto-scored marks of everything else.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TypedAnswerEvaluation {
+
+    /** Question types the AI grades on an online attempt. */
+    public static final List<String> AI_GRADED_TYPES = List.of("LONG_ANSWER", CbeConfigRedactor.CBE_TYPE);
+
+    /**
+     * Question types that are never auto-scored (always 0 / PENDING on submit), so an
+     * attempt that answered one is held for the teacher even when the assessment's AI
+     * evaluation is off - otherwise the 0 would be auto-released as the result.
+     */
+    public static final List<String> TEACHER_GRADED_TYPES = List.of(CbeConfigRedactor.CBE_TYPE);
+
+    private final EvaluationUtilityService evaluationUtilityService;
+    private final QuestionAssessmentSectionMappingRepository questionMappingRepository;
+    private final QuestionWiseMarksRepository questionWiseMarksRepository;
+    private final ObjectMapper objectMapper;
+
+    /** Internal choice ("any 4 of 5"); null in unit tests that do not need it. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DashboardChoiceGroups choiceGroups;
+
+    public boolean hasAnswerSheet(StudentAttempt attempt) {
+        if (attempt == null || attempt.getAttemptData() == null) return false;
+        String fileId = evaluationUtilityService.extractFileId(attempt.getAttemptData());
+        return fileId != null && !fileId.isBlank();
+    }
+
+    /**
+     * An online attempt: typed in the player, no uploaded sheet. A MANUAL-evaluation
+     * assessment is the PDF-upload player - an attempt there without a file is a
+     * missing copy, not typed answers, and keeps its old handling.
+     */
+    public boolean isTypedAttempt(StudentAttempt attempt, Assessment assessment) {
+        return assessment != null
+                && !"MANUAL".equalsIgnoreCase(assessment.getEvaluationType())
+                && !hasAnswerSheet(attempt);
+    }
+
+    public static boolean isAiGraded(Question question) {
+        return question != null && question.getQuestionType() != null
+                && AI_GRADED_TYPES.contains(question.getQuestionType().toUpperCase());
+    }
+
+    /**
+     * An online attempt the AI will grade: the assessment opted in, nothing was
+     * uploaded, and the paper has a written question. Such an attempt is held
+     * for the teacher like a checked copy - its written answers carry only the
+     * word-overlap score until the AI (and then the teacher) has read them.
+     */
+    public boolean awaitsAiGrading(StudentAttempt attempt, Assessment assessment) {
+        if (attempt == null || assessment == null) return false;
+        if (!Boolean.TRUE.equals(assessment.getAiEvaluationEnabled())) return false;
+        if (!isTypedAttempt(attempt, assessment)) return false;
+        try {
+            return questionMappingRepository.existsQuestionOfTypesInAssessment(assessment.getId(), AI_GRADED_TYPES);
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] could not check written questions for assessment {}: {}",
+                    assessment.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * An online attempt that answered a question nobody auto-scores (CBE_RESPONSE). It
+     * is held - result PENDING, report not released - whether or not AI evaluation is on:
+     * its stored 0 is a placeholder, not a mark. Decided on the question's own type
+     * (question_wise_marks -> question), never on the type the client sent.
+     */
+    public boolean awaitsTeacherGrading(StudentAttempt attempt, Assessment assessment) {
+        if (attempt == null || assessment == null || attempt.getId() == null) return false;
+        if (!isTypedAttempt(attempt, assessment)) return false;
+        try {
+            if (!questionMappingRepository.existsQuestionOfTypesInAssessment(assessment.getId(), TEACHER_GRADED_TYPES)) {
+                return false;
+            }
+            for (QuestionWiseMarks marks : questionWiseMarksRepository.findByStudentAttemptId(attempt.getId())) {
+                Question q = marks.getQuestion();
+                if (q != null && q.getQuestionType() != null
+                        && TEACHER_GRADED_TYPES.contains(q.getQuestionType().toUpperCase())
+                        && typedAnswer(marks) != null) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] could not check teacher-graded answers for attempt {}: {}",
+                    attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * The text the learner typed, from question_wise_marks.response_json ({responseData: {answer}}).
+     * For a CBE_RESPONSE question the answer is an object ({parts: {...}}): it comes back as
+     * its JSON string, or null when every part is blank (nothing beyond the template).
+     */
+    public String typedAnswer(QuestionWiseMarks marks) {
+        if (marks == null || marks.getResponseJson() == null || marks.getResponseJson().isBlank()) return null;
+        if (isCbeQuestion(marks)) {
+            return cbeAnswer(marks);
+        }
+        try {
+            JsonNode answer = objectMapper.readTree(marks.getResponseJson()).path("responseData").path("answer");
+            return answer.isValueNode() && !answer.isNull() ? answer.asText() : null;
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] unreadable response_json on question_wise_marks {}: {}",
+                    marks.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean isCbeQuestion(QuestionWiseMarks marks) {
+        try {
+            Question q = marks.getQuestion();
+            return q != null && CbeConfigRedactor.isCbe(q.getQuestionType());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String cbeAnswer(QuestionWiseMarks marks) {
+        try {
+            JsonNode answer = CbeAnswers.answerFromResponseJson(marks.getResponseJson());
+            if (answer == null) return null;
+            JsonNode config = CbeAnswers.configData(marks.getQuestion().getAutoEvaluationJson());
+            if (!CbeAnswers.isAnswered(answer, config)) return null;
+            return objectMapper.writeValueAsString(answer);
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] unreadable CBE answer on question_wise_marks {}: {}",
+                    marks.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * The attempt total after an AI run: the AI's graded verdicts - exactly as before
+     * for an uploaded copy. For an online attempt the run covers only the written
+     * answers, so the stored marks of every other question (scored on submit) are
+     * added. Questions the AI could not grade count for nothing until a teacher
+     * grades them.
+     */
+    public double attemptTotal(StudentAttempt attempt, List<AiQuestionEvaluation> processRows) {
+        double total = 0.0;
+        Set<String> coveredByRun = new HashSet<>();
+        // Internal choice: the extra answers in an "any N of M" group are graded but
+        // not counted. Empty for an assessment without groups - the total as before.
+        Set<String> notCounted = notCounted(attempt, processRows);
+        for (AiQuestionEvaluation row : processRows) {
+            if (row.getQuestion() != null) {
+                coveredByRun.add(row.getQuestion().getId());
+                if (notCounted.contains(row.getQuestion().getId())) continue;
+            }
+            if ("COMPLETED".equals(row.getStatus()) && row.getMarksAwarded() != null) {
+                total += row.getMarksAwarded().doubleValue();
+            }
+        }
+        if (attempt == null || attempt.getId() == null) return total;
+        Assessment assessment = attempt.getRegistration() != null ? attempt.getRegistration().getAssessment() : null;
+        if (!isTypedAttempt(attempt, assessment)) return total;
+        for (QuestionWiseMarks marks : questionWiseMarksRepository.findByStudentAttemptId(attempt.getId())) {
+            if (marks.getQuestion() != null && !coveredByRun.contains(marks.getQuestion().getId())) {
+                total += marks.getMarks();
+            }
+        }
+        return total;
+    }
+
+    /**
+     * The questions an "any N of M" choice group leaves out of the total for these
+     * marks, exactly as {@link #attemptTotal} decides it. Empty without groups.
+     */
+    public Set<String> notCountedQuestionIds(StudentAttempt attempt, List<AiQuestionEvaluation> rows) {
+        return notCounted(attempt, rows);
+    }
+
+    private Set<String> notCounted(StudentAttempt attempt, List<AiQuestionEvaluation> rows) {
+        if (choiceGroups == null || attempt == null || attempt.getRegistration() == null
+                || attempt.getRegistration().getAssessment() == null) {
+            return Set.of();
+        }
+        return choiceGroups.notCounted(attempt.getRegistration().getAssessment().getId(), rows);
+    }
+}

@@ -44,6 +44,9 @@ class LiveSessionJoinAuthorizerTest {
     @Mock private LiveSessionRepository liveSessionRepository;
     @Mock private LiveSessionParticipantRepository participantRepository;
     @Mock private InstituteAccessValidator instituteAccessValidator;
+    // Added to LiveSessionJoinAuthorizer after this test was written; without the mock
+    // @InjectMocks leaves it null and the payment gate NPEs before any assertion runs.
+    @Mock private vacademy.io.admin_core_service.features.live_session.service.LiveSessionPaymentService paymentService;
 
     @InjectMocks private LiveSessionJoinAuthorizer authorizer;
 

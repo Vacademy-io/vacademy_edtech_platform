@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     BULK_ASSIGN_LEARNERS,
@@ -15,8 +15,20 @@ import type {
     EnrollInviteDTO,
 } from '@/routes/manage-students/students-list/-types/bulk-assign-types';
 
+// Every list that shows enrollment state. The learner list is cached for
+// 30s with refetchOnMount off, so without this an assign/de-assign only
+// shows up after a full page reload.
+const invalidateEnrollmentQueries = (queryClient: ReturnType<typeof useQueryClient>) => {
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+    queryClient.invalidateQueries({ queryKey: ['student-count'] });
+    queryClient.invalidateQueries({ queryKey: ['GET_LEARNER_PACKAGES'] });
+    queryClient.invalidateQueries({ queryKey: ['user-plans'] });
+};
+
 // ── Bulk Assign ──
 export const useBulkAssign = () => {
+    const queryClient = useQueryClient();
+
     return useMutation<BulkAssignResponse, Error, BulkAssignRequest>({
         mutationFn: async (request) => {
             const response = await authenticatedAxiosInstance.post<BulkAssignResponse>(
@@ -25,11 +37,18 @@ export const useBulkAssign = () => {
             );
             return response.data;
         },
+        onSuccess: (_data, request) => {
+            // Preview is a dry run — nothing was written.
+            if (request.options?.dry_run) return;
+            invalidateEnrollmentQueries(queryClient);
+        },
     });
 };
 
 // ── Bulk De-assign ──
 export const useBulkDeassign = () => {
+    const queryClient = useQueryClient();
+
     return useMutation<BulkDeassignResponse, Error, BulkDeassignRequest>({
         mutationFn: async (request) => {
             const response = await authenticatedAxiosInstance.post<BulkDeassignResponse>(
@@ -37,6 +56,10 @@ export const useBulkDeassign = () => {
                 request
             );
             return response.data;
+        },
+        onSuccess: (_data, request) => {
+            if (request.options?.dry_run) return;
+            invalidateEnrollmentQueries(queryClient);
         },
     });
 };

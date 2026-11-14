@@ -1,0 +1,23 @@
+{
+    "header": {
+        "progress_one": "आपकी कार्यान्वयन स्थिति · {{count}}% पूर्ण",
+        "progress_other": "आपकी कार्यान्वयन स्थिति · {{count}}% पूर्ण"
+    },
+    "empty": {
+        "message": "अभी तक कोई माइलस्टोन नहीं है।"
+    },
+    "status": {
+        "done": "पूर्ण",
+        "inProgress": "प्रगति पर",
+        "blocked": "रुका हुआ",
+        "notStarted": "शुरू नहीं हुआ"
+    },
+    "milestone": {
+        "eta": "अनुमानित तिथि {{date}}",
+        "confirmButton": "पुष्टि करें"
+    },
+    "comment": {
+        "placeholder": "टीम के लिए एक टिप्पणी जोड़ें…",
+        "sendButton": "भेजें"
+    }
+}

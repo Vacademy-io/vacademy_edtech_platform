@@ -13,10 +13,15 @@
   <true/>
   <key>com.apple.security.files.downloads.read-write</key>
   <true/>
-  <!-- Live classes (BBB) use camera + mic. Drop either key if the Mac build
-       is not meant to join classes — an unused entitlement invites rejection. -->
-  <key>com.apple.security.device.camera</key>
-  <true/>
+  <!-- Microphone ONLY, for the AI assistant's voice input (useVoiceRecorder ->
+       getUserMedia({audio}) in src/hooks/useVoiceRecorder.ts, reached from the
+       chatbot mic button). There is deliberately NO com.apple.security.device.camera:
+       nothing in this app opens a video stream — the webcam-proctoring hook
+       (src/hooks/proctoring/useCamDetection.ts) is commented out, and live classes
+       (BBB/Zoom) are handed to the default browser by setup.ts's
+       setWindowOpenHandler, so they never capture inside the app. Apple rejected
+       build 4 under Guideline 2.4.5(i) for exactly that unused camera key
+       (2026-08-26); do not add it back without shipping in-app video first. -->
   <key>com.apple.security.device.audio-input</key>
   <true/>
   <!-- Bundle id io.shikshanationapp.com on team 7XKD5M7288. The macOS platform

@@ -1,0 +1,29 @@
+{
+    "toast": {
+        "batchDeletedSuccess": "बैच सफलतापूर्वक हटाया गया",
+        "batchDeleteFailed": "बैच हटाने में विफल",
+        "inviteLinkCopied": "आमंत्रण लिंक क्लिपबोर्ड पर कॉपी किया गया"
+    },
+    "batchCard": {
+        "studentCount_one": "{{count}} {{term}}",
+        "studentCount_other": "{{count}} {{term}}",
+        "inviteCodeLabel": "आमंत्रण कोड:",
+        "enrollButton": "{{term}} नामांकित करें",
+        "viewBatchButton": "बैच देखें",
+        "startsOn": "{{date}} से शुरू",
+        "startedOn": "{{date}} को शुरू हुआ"
+    },
+    "deleteDialog": {
+        "heading": "बैच हटाएं",
+        "cancel": "रद्द करें",
+        "confirm": "हां, हटाएं",
+        "confirmMessage": "क्या आप वाकई बैच \"{{batchName}}\" को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।"
+    },
+    "section": {
+        "noBatches": "इस पैकेज के लिए कोई बैच नहीं मिला।",
+        "noBatchesInSession": "चयनित सत्र में इस पैकेज के लिए कोई बैच नहीं मिला।"
+    },
+    "course": {
+        "addBatch": "{{term}} जोड़ें"
+    }
+}

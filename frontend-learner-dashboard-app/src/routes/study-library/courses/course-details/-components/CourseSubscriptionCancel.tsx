@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ArrowsClockwise, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import {
   Dialog,
@@ -47,6 +48,7 @@ export const CourseSubscriptionCancel = ({
   // surface Apple flags under Guideline 3.1.1. Constant per session.
   if (shouldHidePaidPurchaseUI()) return null;
 
+  const { t } = useTranslation("courseDetailsA");
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -68,8 +70,8 @@ export const CourseSubscriptionCancel = ({
     mutationFn: (userPlanId: string) =>
       cancelSubscription(instituteId, userPlanId),
     onSuccess: () => {
-      toast.success("Autopay cancelled", {
-        description: "You keep access until the end of your current period.",
+      toast.success(t("subscriptionCancel.toast.successTitle"), {
+        description: t("subscriptionCancel.toast.successDescription"),
       });
       setConfirmOpen(false);
       queryClient.invalidateQueries({
@@ -77,8 +79,8 @@ export const CourseSubscriptionCancel = ({
       });
     },
     onError: () => {
-      toast.error("Couldn't cancel autopay", {
-        description: "Please try again in a moment.",
+      toast.error(t("subscriptionCancel.toast.errorTitle"), {
+        description: t("subscriptionCancel.toast.errorDescription"),
       });
     },
   });
@@ -95,12 +97,14 @@ export const CourseSubscriptionCancel = ({
           />
           <div>
             <p className="text-sm font-medium text-catalogue-text-primary">
-              Auto-renewing subscription
+              {t("subscriptionCancel.autoRenewing")}
             </p>
             <p className="text-xs text-catalogue-text-muted">
               {formatDate(subscription.next_charge_at)
-                ? `Renews on ${formatDate(subscription.next_charge_at)}`
-                : "Recurring subscription active"}
+                ? t("subscriptionCancel.renewsOn", {
+                    date: formatDate(subscription.next_charge_at),
+                  })
+                : t("subscriptionCancel.recurringActive")}
             </p>
           </div>
         </div>
@@ -111,7 +115,7 @@ export const CourseSubscriptionCancel = ({
           layoutVariant="default"
           onClick={() => setConfirmOpen(true)}
         >
-          Cancel subscription
+          {t("subscriptionCancel.cancelButton")}
         </MyButton>
       </div>
 
@@ -125,13 +129,14 @@ export const CourseSubscriptionCancel = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Warning className="size-5 text-danger-500" weight="fill" />
-              Cancel this subscription?
+              {t("subscriptionCancel.confirmTitle")}
             </DialogTitle>
             <DialogDescription>
-              Auto-renewal will stop. You&apos;ll keep access until{" "}
-              {formatDate(subscription.end_date) ??
-                "the end of your current period"}
-              , and won&apos;t be charged again.
+              {t("subscriptionCancel.confirmDescription", {
+                endDate:
+                  formatDate(subscription.end_date) ??
+                  t("subscriptionCancel.endOfCurrentPeriod"),
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -143,7 +148,7 @@ export const CourseSubscriptionCancel = ({
               onClick={() => setConfirmOpen(false)}
               disable={cancelMutation.isPending}
             >
-              Keep subscription
+              {t("subscriptionCancel.keepButton")}
             </MyButton>
             <MyButton
               type="button"
@@ -153,7 +158,9 @@ export const CourseSubscriptionCancel = ({
               onClick={() => cancelMutation.mutate(subscription.user_plan_id)}
               disable={cancelMutation.isPending}
             >
-              {cancelMutation.isPending ? "Cancelling..." : "Cancel subscription"}
+              {cancelMutation.isPending
+                ? t("subscriptionCancel.cancelling")
+                : t("subscriptionCancel.cancelButton")}
             </MyButton>
           </DialogFooter>
         </DialogContent>

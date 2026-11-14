@@ -31,6 +31,8 @@ export interface SelectChipsProps {
     clearable?: boolean; // New prop to allow clearing selections for multi-select
     hasClearFilter?: boolean; // New prop to control if filter can be cleared
     fullWidth?: boolean; // Stretch the trigger to fill its container (for grid/form layouts)
+    /** Render the list in a body portal (default). Pass false inside a Sheet/Dialog, whose scroll lock otherwise swallows the list's wheel scroll. */
+    portal?: boolean;
 }
 
 const SelectChips = ({
@@ -44,6 +46,7 @@ const SelectChips = ({
     clearable = true,
     hasClearFilter = true, // Default to true, existing behavior
     fullWidth = false,
+    portal = true,
 }: SelectChipsProps) => {
     const [open, setOpen] = useState(false);
 
@@ -134,7 +137,11 @@ const SelectChips = ({
                     </ChipsWrapper>
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+            <PopoverContent
+                className="w-[--radix-popover-trigger-width] p-0"
+                align="start"
+                portal={portal}
+            >
                 <Command>
                     <CommandInput placeholder="Search..." />
                     <CommandList>

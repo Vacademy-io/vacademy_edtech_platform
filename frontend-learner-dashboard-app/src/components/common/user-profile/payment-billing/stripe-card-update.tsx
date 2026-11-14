@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { SpinnerGap } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
 import {
@@ -24,6 +25,7 @@ export const StripeCardUpdate = ({
   onUpdated,
   onCancel,
 }: StripeCardUpdateProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const stripe = useStripe();
   const elements = useElements();
   const [isSaving, setIsSaving] = useState(false);
@@ -31,12 +33,12 @@ export const StripeCardUpdate = ({
 
   const handleSave = async () => {
     if (!stripe || !elements) {
-      toast.error("Payment form is not ready. Please refresh the page.");
+      toast.error(t("cardUpdate.stripe.formNotReady"));
       return;
     }
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
-      toast.error("Card form not found. Please refresh the page.");
+      toast.error(t("cardUpdate.stripe.cardFormNotFound"));
       return;
     }
 
@@ -48,7 +50,7 @@ export const StripeCardUpdate = ({
       });
 
       if (result.error) {
-        toast.error(result.error.message || "Card verification failed");
+        toast.error(result.error.message || t("cardUpdate.stripe.verificationFailed"));
         return;
       }
       const paymentMethodId =
@@ -56,16 +58,16 @@ export const StripeCardUpdate = ({
           ? result.setupIntent.payment_method
           : result.setupIntent.payment_method?.id;
       if (result.setupIntent.status !== "succeeded" || !paymentMethodId) {
-        toast.error("Card could not be verified. Please try again.");
+        toast.error(t("cardUpdate.stripe.verificationRetry"));
         return;
       }
 
       await confirmStripeCardUpdate(instituteId, paymentMethodId);
-      toast.success("Your card has been updated");
+      toast.success(t("cardUpdate.success"));
       onUpdated();
     } catch (error) {
       console.error("Stripe card update failed:", error);
-      toast.error("Failed to update card. Please try again.");
+      toast.error(t("cardUpdate.genericError"));
     } finally {
       setIsSaving(false);
     }
@@ -87,8 +89,7 @@ export const StripeCardUpdate = ({
         />
       </div>
       <p className="text-xs text-gray-500">
-        Your new card replaces the one used for subscription renewals. You will
-        not be charged now.
+        {t("cardUpdate.stripe.note")}
       </p>
       <div className="flex items-center justify-end gap-3">
         <MyButton
@@ -99,7 +100,7 @@ export const StripeCardUpdate = ({
           onClick={onCancel}
           disabled={isSaving}
         >
-          Cancel
+          {t("common.cancel")}
         </MyButton>
         <MyButton
           type="button"
@@ -112,10 +113,10 @@ export const StripeCardUpdate = ({
           {isSaving ? (
             <>
               <SpinnerGap className="me-2 size-4 animate-spin" />
-              Saving...
+              {t("common.saving")}
             </>
           ) : (
-            "Save Card"
+            t("common.saveCard")
           )}
         </MyButton>
       </div>

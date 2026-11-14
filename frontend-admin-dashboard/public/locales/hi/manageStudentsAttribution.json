@@ -1,0 +1,25 @@
+{
+    "heading": "अभियान स्रोत",
+    "labels": {
+        "firstTouch": "पहला संपर्क",
+        "latestTouch": "सबसे हालिया ({{count}} संपर्क)"
+    },
+    "fields": {
+        "source": "स्रोत",
+        "medium": "माध्यम",
+        "campaign": "अभियान",
+        "content": "कंटेंट",
+        "term": "कीवर्ड",
+        "capturedOn": "कहाँ दर्ज हुआ",
+        "referrer": "रेफ़रर",
+        "date": "तारीख़"
+    },
+    "surface": {
+        "AUDIENCE": "ऑडियंस फ़ॉर्म",
+        "LIVE_SESSION": "लाइव सत्र",
+        "ASSESSMENT": "मूल्यांकन",
+        "ENROLL_INVITE": "नामांकन आमंत्रण",
+        "PRODUCT_PAGE": "प्रोडक्ट पेज",
+        "CATALOGUE": "कैटलॉग साइट"
+    }
+}

@@ -37,6 +37,8 @@ public class SendTemplateNodeExecutor implements ChatbotNodeExecutor {
     @Override
     public NodeExecutionResult execute(ChatbotFlowNode node, ChatbotFlowSession session,
                                         String userText, FlowExecutionContext context) {
+        // Never let this node's Inbox row describe an earlier node's template.
+        context.setLastTemplateSend(null);
         Map<String, Object> config = parseConfig(node.getConfig());
         if (config == null) {
             return NodeExecutionResult.builder().success(false).errorMessage("Invalid template config").build();
@@ -87,9 +89,13 @@ public class SendTemplateNodeExecutor implements ChatbotNodeExecutor {
                 templatePayload.put("buttonConfig", resolveButtonConfig(buttonConfig, variables, context));
             }
 
-            // Send via provider
-            provider.sendTemplate(context.getPhoneNumber(), templatePayload,
-                    context.getInstituteId(), context.getBusinessChannelId());
+            // Recorded before the send so a refused attempt still shows which template it was.
+            context.setLastTemplateSend(inboxRecord(templatePayload));
+
+            // Send via provider, keeping the message id the status webhooks join on.
+            context.setLastProviderMessageId(
+                    provider.sendTemplate(context.getPhoneNumber(), templatePayload,
+                            context.getInstituteId(), context.getBusinessChannelId()));
 
             log.info("Template sent: template={}, phone={}", templateName, context.getPhoneNumber());
             return NodeExecutionResult.builder().success(true).build();
@@ -144,6 +150,49 @@ public class SendTemplateNodeExecutor implements ChatbotNodeExecutor {
             resolved.add(resolvedBtn);
         }
         return resolved;
+    }
+
+    /**
+     * The send, re-keyed for the Inbox renderer: body params by {@code {{N}}} position, the header
+     * media under {@code headerParams.link}, and URL-button suffixes by button index.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> inboxRecord(Map<String, Object> templatePayload) {
+        Map<String, Object> record = new LinkedHashMap<>();
+        record.put("templateName", templatePayload.get("templateName"));
+        record.put("languageCode", templatePayload.get("languageCode"));
+
+        Map<String, String> bodyParams = new LinkedHashMap<>();
+        List<String> values = (List<String>) templatePayload.get("bodyParams");
+        for (int i = 0; values != null && i < values.size(); i++) {
+            bodyParams.put(String.valueOf(i + 1), values.get(i));
+        }
+        record.put("bodyParams", bodyParams);
+
+        Map<String, Object> header = (Map<String, Object>) templatePayload.get("headerConfig");
+        Object headerType = header != null ? header.get("type") : null;
+        if (headerType != null && !"none".equalsIgnoreCase(headerType.toString())) {
+            record.put("headerType", headerType.toString());
+            Object url = header.get("url");
+            if (url != null && !url.toString().isBlank()) {
+                record.put("headerParams", Map.of("link", url.toString()));
+            }
+        }
+
+        List<Map<String, Object>> buttons = (List<Map<String, Object>>) templatePayload.get("buttonConfig");
+        if (buttons != null) {
+            Map<String, String> buttonParams = new LinkedHashMap<>();
+            for (Map<String, Object> btn : buttons) {
+                Object suffix = btn.get("urlSuffix");
+                if ("url".equals(btn.get("type")) && suffix != null) {
+                    Object index = btn.get("index");
+                    buttonParams.put(index instanceof Number ? String.valueOf(((Number) index).intValue()) : "0",
+                            suffix.toString());
+                }
+            }
+            if (!buttonParams.isEmpty()) record.put("buttonParams", buttonParams);
+        }
+        return record;
     }
 
     private ChatbotMessageProvider findProvider(String channelType) {

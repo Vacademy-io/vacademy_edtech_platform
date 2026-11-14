@@ -1,0 +1,20 @@
+{
+    "trigger": {
+        "inviteUsers": "उपयोगकर्ताओं को आमंत्रित करें"
+    },
+    "dialog": {
+        "title": "उपयोगकर्ता को आमंत्रित करें",
+        "fullNamePlaceholder": "पूरा नाम (पहला और अंतिम)",
+        "fullNameLabel": "पूरा नाम",
+        "emailPlaceholder": "ईमेल दर्ज करें",
+        "emailLabel": "ईमेल",
+        "roleTypeLabel": "भूमिका प्रकार",
+        "submitButton": "उपयोगकर्ता को आमंत्रित करें"
+    },
+    "validation": {
+        "nameRequired": "पूरा नाम आवश्यक है",
+        "emailRequired": "ईमेल आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल प्रारूप",
+        "roleTypeRequired": "कम से कम एक भूमिका प्रकार आवश्यक है"
+    }
+}

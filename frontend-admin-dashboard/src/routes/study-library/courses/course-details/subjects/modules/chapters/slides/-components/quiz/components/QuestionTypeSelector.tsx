@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { QuestionTypeProps } from '../types';
@@ -16,6 +17,7 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
     onOpenChange,
     onSelectQuestionType,
 }) => {
+    const { t } = useTranslation('studyLibraryQuestionTypeSelector');
     const QuestionType = ({ icon, text, type = QuestionTypeList.MCQS }: QuestionTypeProps) => (
         <div
             className="flex w-full cursor-pointer flex-row items-center gap-4 rounded-md border px-4 py-3"
@@ -33,32 +35,32 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="size-[500px] p-0">
                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Add Question
+                    {t('addQuestion')}
                 </h1>
                 <div className="overflow-auto p-4">
                     <div className="flex flex-col gap-4">
-                        <div className="text-subtitle font-semibold">Quick Access</div>
+                        <div className="text-subtitle font-semibold">{t('quickAccess')}</div>
                         <QuestionType
                             icon={<MCQS />}
-                            text="MCQ (Single correct)"
+                            text={t('mcqSingleCorrect')}
                             type={QuestionTypeList.MCQS}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<MCQM />}
-                            text="MCQ (Multiple correct)"
+                            text={t('mcqMultipleCorrect')}
                             type={QuestionTypeList.MCQM}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<Numerical />}
-                            text="Numerical"
+                            text={t('numerical')}
                             type={QuestionTypeList.NUMERIC}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<TrueFalse />}
-                            text="True False"
+                            text={t('trueFalse')}
                             type={QuestionTypeList.TRUE_FALSE}
                             handleAddQuestion={onSelectQuestionType}
                         />
@@ -67,16 +69,16 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
                     <Separator className="my-6" />
 
                     <div className="flex flex-col gap-4">
-                        <div className="text-subtitle font-semibold">Writing Skills</div>
+                        <div className="text-subtitle font-semibold">{t('writingSkills')}</div>
                         <QuestionType
                             icon={<LongAnswer />}
-                            text="Long Answer"
+                            text={t('longAnswer')}
                             type={QuestionTypeList.LONG_ANSWER}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<SingleWord />}
-                            text="Single Word"
+                            text={t('singleWord')}
                             type={QuestionTypeList.ONE_WORD}
                             handleAddQuestion={onSelectQuestionType}
                         />
@@ -85,22 +87,22 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
                     <Separator className="my-6" />
 
                     <div className="flex flex-col gap-4">
-                        <div className="text-subtitle font-semibold">Reading Skills</div>
+                        <div className="text-subtitle font-semibold">{t('readingSkills')}</div>
                         <QuestionType
                             icon={<CMCQS />}
-                            text="Comprehension MCQ (Single correct)"
+                            text={t('comprehensionMcqSingleCorrect')}
                             type={QuestionTypeList.CMCQS}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<CMCQM />}
-                            text="Comprehension MCQ (Multiple correct)"
+                            text={t('comprehensionMcqMultipleCorrect')}
                             type={QuestionTypeList.CMCQM}
                             handleAddQuestion={onSelectQuestionType}
                         />
                         <QuestionType
                             icon={<Numerical />}
-                            text="Comprehension Numeric"
+                            text={t('comprehensionNumeric')}
                             type={QuestionTypeList.CNUMERIC}
                             handleAddQuestion={onSelectQuestionType}
                         />

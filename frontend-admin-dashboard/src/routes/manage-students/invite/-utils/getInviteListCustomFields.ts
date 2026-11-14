@@ -1,5 +1,10 @@
+import {
+    isBuiltInRegistrationField,
+    withBuiltInRegistrationFields,
+} from '@/components/common/custom-fields/builtin-registration-fields';
 import { fetchInstituteDefaultFields } from '@/services/custom-field-mappings';
 import { getInstituteId } from '@/constants/helper';
+import type { TFunction } from 'i18next';
 
 /**
  * Interface for invite form custom field
@@ -64,13 +69,18 @@ export const getInviteListCustomFields = (): InviteFormCustomField[] => {
 
 /**
  * Get default invite fields (fallback)
+ *
+ * `t` is required so the field labels shown to the admin (column headers /
+ * form labels rendered elsewhere from `name`) are translated. Callers get
+ * `t` from their own `useTranslation()` — see getInviteListCustomFieldsAsync
+ * below.
  */
-const getDefaultInviteFields = (): InviteFormCustomField[] => {
+const getDefaultInviteFields = (t: TFunction): InviteFormCustomField[] => {
     return [
         {
             id: '0',
             type: 'text',
-            name: 'Full Name',
+            name: t('manageStudentsGetInviteListCustomFields:defaultFields.fullName'),
             oldKey: true,
             isRequired: true,
             key: 'full_name',
@@ -80,7 +90,7 @@ const getDefaultInviteFields = (): InviteFormCustomField[] => {
         {
             id: '1',
             type: 'text',
-            name: 'Email',
+            name: t('manageStudentsGetInviteListCustomFields:defaultFields.email'),
             oldKey: true,
             isRequired: true,
             key: 'email',
@@ -90,7 +100,7 @@ const getDefaultInviteFields = (): InviteFormCustomField[] => {
         {
             id: '2',
             type: 'text',
-            name: 'Phone Number',
+            name: t('manageStudentsGetInviteListCustomFields:defaultFields.phoneNumber'),
             oldKey: true,
             isRequired: true,
             key: 'phone_number',
@@ -123,13 +133,15 @@ function isSeededField(field: { name: string; id: string; canBeDeleted?: boolean
  * This bypasses the stale settings JSON blob entirely, so newly-added
  * DEFAULT fields from Settings always appear immediately.
  */
-export const getInviteListCustomFieldsAsync = async (): Promise<InviteFormCustomField[]> => {
+export const getInviteListCustomFieldsAsync = async (
+    t: TFunction
+): Promise<InviteFormCustomField[]> => {
     try {
         const instituteId = getInstituteId();
-        if (!instituteId) return getDefaultInviteFields();
+        if (!instituteId) return getDefaultInviteFields(t);
 
         const defaults = await fetchInstituteDefaultFields(instituteId);
-        if (!defaults || defaults.length === 0) return getDefaultInviteFields();
+        if (!defaults || defaults.length === 0) return getDefaultInviteFields(t);
 
         // Alias groups for dedup — old-style (`name`, `phone`) and new-style
         // (`full_name`, `phone_number`) should not both appear.
@@ -159,7 +171,11 @@ export const getInviteListCustomFieldsAsync = async (): Promise<InviteFormCustom
             if (seenKeys.has(key)) return;
             markSeen(key);
 
-            const seeded = isSeededField({ name: cf.fieldName, id: cf.id });
+            // Built-in by ROLE, not by a label/key list: institutes that call it "Name" or
+            // "E-mail" must get the same default-on Required.
+            const seeded =
+                isSeededField({ name: cf.fieldName, id: cf.id }) ||
+                isBuiltInRegistrationField({ key, label: cf.fieldName, type: fieldType });
             const transformed: InviteFormCustomField = {
                 id: String(index),
                 type: fieldType,
@@ -196,10 +212,27 @@ export const getInviteListCustomFieldsAsync = async (): Promise<InviteFormCustom
             result.push(transformed);
         });
 
-        return result.sort((a, b) => a.order - b.order);
+        // An institute whose DEFAULT set is missing one of the three (or dropped it from
+        // Settings) still gets it here, required to start with — same top-up the campaign
+        // builder already does.
+        const sorted = result.sort((a, b) => a.order - b.order);
+        return withBuiltInRegistrationFields(
+            sorted,
+            (field) => ({ key: field.key, label: field.name, type: field.type }),
+            (builtIn, index) => ({
+                id: String(index),
+                type: 'text',
+                name: builtIn.label,
+                oldKey: true,
+                isRequired: true,
+                key: builtIn.key,
+                order: index,
+                status: 'ACTIVE' as const,
+            })
+        );
     } catch (err) {
         console.error('[getInviteListCustomFieldsAsync] API call failed, using fallback defaults:', err);
-        return getDefaultInviteFields();
+        return getDefaultInviteFields(t);
     }
 };
 

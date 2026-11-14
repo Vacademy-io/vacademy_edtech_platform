@@ -1,4 +1,6 @@
 import { ArrowCounterClockwise, Palette, TextT } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import type {
     BuiltinCertificateTemplate,
@@ -23,27 +25,27 @@ interface FieldDef {
     group: 'colors' | 'text' | 'layout';
 }
 
-const FIELDS: FieldDef[] = [
-    { key: 'primaryColor', label: 'Primary Color', type: 'color', group: 'colors' },
-    { key: 'secondaryColor', label: 'Secondary Color', type: 'color', group: 'colors' },
-    { key: 'backgroundColor', label: 'Background', type: 'color', group: 'colors' },
-    { key: 'titleText', label: 'Main Title', type: 'text', group: 'text' },
-    { key: 'subtitleText', label: 'Subtitle', type: 'text', group: 'text' },
-    { key: 'presentedText', label: 'Presented-to Line', type: 'text', group: 'text' },
+const buildFields = (t: TFunction): FieldDef[] => [
+    { key: 'primaryColor', label: t('fields.primaryColor'), type: 'color', group: 'colors' },
+    { key: 'secondaryColor', label: t('fields.secondaryColor'), type: 'color', group: 'colors' },
+    { key: 'backgroundColor', label: t('fields.backgroundColor'), type: 'color', group: 'colors' },
+    { key: 'titleText', label: t('fields.titleText'), type: 'text', group: 'text' },
+    { key: 'subtitleText', label: t('fields.subtitleText'), type: 'text', group: 'text' },
+    { key: 'presentedText', label: t('fields.presentedText'), type: 'text', group: 'text' },
     {
         key: 'forCompletionText',
-        label: 'Completion Line',
+        label: t('fields.forCompletionText'),
         type: 'text',
         group: 'text',
     },
     {
         key: 'borderWidth',
-        label: 'Border / Accent Width',
+        label: t('fields.borderWidth.label'),
         type: 'number',
         min: 0,
         max: 30,
         group: 'layout',
-        hint: 'Border thickness (or accent-stripe width for Modern Minimal).',
+        hint: t('fields.borderWidth.hint'),
     },
 ];
 
@@ -54,8 +56,10 @@ export const TemplateCustomizationPanel = ({
     onResetToDefaults,
     disabled,
 }: TemplateCustomizationPanelProps) => {
+    const { t } = useTranslation('settingsTemplateCustomizationPanel');
+    const FIELDS = buildFields(t);
     const hiddenKeys = new Set(template.hiddenCustomizationKeys ?? []);
-    const visibleFields = FIELDS.filter((f) => !hiddenKeys.has(f.key));
+    const visibleFields = FIELDS.filter((fld) => !hiddenKeys.has(fld.key));
 
     const setField = <K extends keyof TemplateCustomizations>(
         key: K,
@@ -65,9 +69,9 @@ export const TemplateCustomizationPanel = ({
     };
 
     const groups: { id: FieldDef['group']; label: string; icon: JSX.Element }[] = [
-        { id: 'colors', label: 'Colors', icon: <Palette size={14} /> },
-        { id: 'text', label: 'Text', icon: <TextT size={14} /> },
-        { id: 'layout', label: 'Layout', icon: <Palette size={14} /> },
+        { id: 'colors', label: t('groups.colors'), icon: <Palette size={14} /> },
+        { id: 'text', label: t('groups.text'), icon: <TextT size={14} /> },
+        { id: 'layout', label: t('groups.layout'), icon: <Palette size={14} /> },
     ];
 
     return (
@@ -75,11 +79,9 @@ export const TemplateCustomizationPanel = ({
             <div className="mb-3 flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-semibold text-neutral-800">
-                        Customize "{template.name}"
+                        {t('header.title', { name: template.name })}
                     </h3>
-                    <p className="text-xs text-neutral-500">
-                        Edit colors and text on the template. The canvas updates live.
-                    </p>
+                    <p className="text-xs text-neutral-500">{t('header.subtitle')}</p>
                 </div>
                 <button
                     type="button"
@@ -89,20 +91,20 @@ export const TemplateCustomizationPanel = ({
                         'flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50',
                         disabled && 'cursor-not-allowed opacity-50'
                     )}
-                    title="Restore this template's default colors and text"
+                    title={t('header.resetTooltip')}
                 >
                     <ArrowCounterClockwise size={12} />
-                    Reset
+                    {t('header.resetButton')}
                 </button>
             </div>
 
             <div className="space-y-4">
                 {groups.map((group) => {
-                    const fieldsInGroup = visibleFields.filter((f) => f.group === group.id);
+                    const fieldsInGroup = visibleFields.filter((fld) => fld.group === group.id);
                     if (fieldsInGroup.length === 0) return null;
                     return (
                         <div key={group.id}>
-                            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                            <div className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-neutral-500">
                                 {group.icon}
                                 {group.label}
                             </div>
@@ -118,7 +120,7 @@ export const TemplateCustomizationPanel = ({
                                                     type="color"
                                                     value={
                                                         (customizations[field.key] as string) ||
-                                                        '#000000'
+                                                        '#000000' // design-lint-ignore: native <input type="color"> value must be a literal #rrggbb hex string, no CSS token/rgb() is accepted here
                                                     }
                                                     onChange={(e) =>
                                                         setField(field.key, e.target.value as never)
@@ -133,7 +135,7 @@ export const TemplateCustomizationPanel = ({
                                                         setField(field.key, e.target.value as never)
                                                     }
                                                     disabled={disabled}
-                                                    placeholder="#000000"
+                                                    placeholder={t('fields.hexPlaceholder')}
                                                     className="flex-1 rounded border border-neutral-200 bg-white px-2 py-1 font-mono text-xs"
                                                 />
                                             </div>
@@ -172,7 +174,7 @@ export const TemplateCustomizationPanel = ({
                                             />
                                         )}
                                         {field.hint && (
-                                            <p className="mt-1 text-[10px] text-neutral-400">
+                                            <p className="mt-1 text-2xs text-neutral-400">
                                                 {field.hint}
                                             </p>
                                         )}

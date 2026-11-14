@@ -1,0 +1,55 @@
+{
+    "header": {
+        "mcqSingleCorrect": "اختيار من متعدد (إجابة واحدة):",
+        "mcqMultipleCorrect": "اختيار من متعدد (إجابات متعددة):",
+        "total": "الإجمالي:"
+    },
+    "sectionDescription": {
+        "title": "وصف القسم"
+    },
+    "duration": {
+        "sectionDuration": "مدة القسم:",
+        "minutes_zero": "{{count}} دقيقة",
+        "minutes_one": "{{count}} دقيقة واحدة",
+        "minutes_two": "{{count}} دقيقتان",
+        "minutes_few": "{{count}} دقائق",
+        "minutes_many": "{{count}} دقيقة",
+        "minutes_other": "{{count}} دقيقة"
+    },
+    "markingScheme": {
+        "marksPerQuestionDefault": "الدرجات لكل سؤال (افتراضي):",
+        "negativeMarking": "الدرجات السالبة:",
+        "partialMarking": "التقييم الجزئي:",
+        "cutoffMarking": "الحد الأدنى للدرجات:"
+    },
+    "randomization": {
+        "problemRandomization": "عشوائية الأسئلة:"
+    },
+    "table": {
+        "surveyQuestionsTitle": "أسئلة الاستبيان",
+        "adaptiveMarkingRulesTitle": "قواعد التقييم التكيفي",
+        "headers": {
+            "qno": "رقم السؤال",
+            "question": "السؤال",
+            "questionType": "نوع السؤال",
+            "marks": "الدرجات",
+            "penalty": "الخصم",
+            "time": "الوقت"
+        },
+        "questionTypeLabels": {
+            "MCQS": "اختيار من متعدد (إجابة واحدة)",
+            "MCQM": "اختيار من متعدد (إجابات متعددة)",
+            "NUMERIC": "رقمي",
+            "CMCQS": "استيعاب نصي - اختيار من متعدد (إجابة واحدة)",
+            "CMCQM": "استيعاب نصي - اختيار من متعدد (إجابات متعددة)",
+            "CNUMERIC": "استيعاب نصي - رقمي",
+            "ONE_WORD": "كلمة واحدة",
+            "LONG_ANSWER": "إجابة طويلة",
+            "TRUE_FALSE": "صواب/خطأ",
+            "CODING": "برمجة"
+        }
+    },
+    "totalMarks": {
+        "label": "إجمالي الدرجات"
+    }
+}

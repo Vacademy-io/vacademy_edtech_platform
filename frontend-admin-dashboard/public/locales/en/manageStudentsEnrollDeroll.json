@@ -1,0 +1,59 @@
+{
+    "hero": {
+        "eyebrow": "ACTIVE MEMBERSHIP",
+        "noActiveMembership": "No active membership",
+        "statusExpiry": "{{status}} · Expires {{date}}",
+        "noExpiry": "No expiry",
+        "status": {
+            "active": "Active",
+            "pending": "Pending"
+        }
+    },
+    "newEnrollment": {
+        "heading": "Enroll in something new",
+        "purchaseMembership": "Purchase Membership",
+        "rentBook": "Rent Book",
+        "buyBook": "Buy Book"
+    },
+    "cancelMembership": {
+        "heading": "Cancel Membership",
+        "dateLabel": "Active since",
+        "actionLabel": "Cancel",
+        "dialogLabel": "Cancel Membership",
+        "empty": {
+            "title": "No active membership",
+            "hint": "This learner has no current subscription."
+        }
+    },
+    "returnBook": {
+        "heading": "Return a Rent Book",
+        "dateLabel": "Rented on",
+        "actionLabel": "Return",
+        "dialogLabel": "Return Rent Book",
+        "empty": {
+            "title": "No rented books",
+            "hint": "This learner has not rented any books."
+        }
+    },
+    "planRow": {
+        "activeBadge": "Active",
+        "defaultPlanName": "Active Plan"
+    },
+    "compliance": {
+        "heading": "Compliance",
+        "note": "This action is audit-protected. All enrollment changes are logged with timestamps and administrator details for compliance tracking."
+    },
+    "dialog": {
+        "aboutToProceed": "You are about to proceed with",
+        "forStudent": "for",
+        "terminationNote": "Termination is immediate and access will be revoked.",
+        "cancel": "Cancel",
+        "confirmAction": "Confirm Action",
+        "processing": "Processing…"
+    },
+    "toasts": {
+        "actionSuccess": "Action completed successfully",
+        "cancelFailed": "Failed to cancel plan",
+        "noStudentSelected": "No student selected"
+    }
+}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface PaymentModeProps {
@@ -6,14 +7,15 @@ interface PaymentModeProps {
 }
 
 export const PaymentModeInsights: React.FC<PaymentModeProps> = ({ pieData }) => {
+    const { t } = useTranslation('financialManagementPaymentModeInsights');
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full">
             <h2 className="text-sm font-bold text-gray-800 mb-2 border-b border-gray-100 pb-2 uppercase tracking-wide">
-                Payment Insights
+                {t('heading')}
             </h2>
             {pieData.length === 0 ? (
                  <div className="flex-1 flex items-center justify-center text-gray-400 text-sm italic font-medium">
-                    No data available for payment modes
+                    {t('noData')}
                  </div>
             ) : (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-hidden">

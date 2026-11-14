@@ -1,10 +1,19 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Award, Target, Info, BookOpen, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
-import { Check, Eye, GraduationCap, X } from '@phosphor-icons/react';
+import {
+    ArrowCounterClockwise,
+    BookOpen,
+    Check,
+    Eye,
+    GraduationCap,
+    Info,
+    Medal,
+    Target,
+    X,
+} from '@phosphor-icons/react';
 import { FormProvider, useForm, UseFormReturn } from 'react-hook-form';
 import { InviteLinkFormValues } from './GenerateInviteLinkSchema';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
@@ -22,6 +31,7 @@ import { useEffect, useMemo } from 'react';
 import { getCurrencySymbol, getPaymentPlanIcon } from './PaymentPlansDialog';
 import { getAllUniqueFeatures } from './-components/PaymentPlanCard';
 import { formatPlanPrice } from '@/utils/finance-utils';
+import { useTranslation } from 'react-i18next';
 
 export interface PreviewInviteLinkProps {
     form: UseFormReturn<InviteLinkFormValues>;
@@ -37,6 +47,7 @@ const extractYouTubeVideoId = (url: string): string | null => {
 };
 
 const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLinkProps) => {
+    const { t } = useTranslation('manageStudentsPreviewInviteLink');
     // Watch custom_fields for changes
     // Get all unique features across all payment options
     const selectedPlan = form.watch('selectedPlan');
@@ -142,17 +153,17 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                         className="mr-4 p-4 py-5"
                     >
                         <Eye size={32} />
-                        Preview Invite
+                        {t('previewButton')}
                     </MyButton>
                 </DialogTrigger>
-                <DialogContent className="mx-auto max-h-[90vh] space-y-8 overflow-y-auto">
+                <DialogContent className="mx-auto max-h-dialog-tall space-y-8 overflow-y-auto">
                     <Card className="w-full overflow-hidden border-0 bg-white/80 shadow-xl backdrop-blur-sm">
                         {/* Instiute Logo */}
                         {instituteLogo && (
                             <div className="flex items-center justify-center rounded-lg pt-8">
                                 <img
                                     src={instituteLogo}
-                                    alt="Institute Logo"
+                                    alt={t('instituteLogoAlt')}
                                     className="size-12 rounded-full"
                                 />
                             </div>
@@ -163,7 +174,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                 <div className="relative h-32 w-full overflow-hidden rounded-xl sm:h-56 lg:h-72">
                                     <img
                                         src={form.getValues('courseBannerBlob')}
-                                        alt="Course Banner"
+                                        alt={t('courseBannerAlt')}
                                         className="size-full object-contain"
                                     />
                                 </div>
@@ -204,12 +215,12 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
 
                             {/* Level Badge */}
                             <div className="mb-8 flex items-start gap-2">
-                                <Award className="mt-0.5 size-5 shrink-0 text-amber-500" />
+                                <Medal className="mt-0.5 size-5 shrink-0 text-amber-500" />
                                 <Badge
                                     variant="outline"
                                     className="border-amber-200 px-3 py-1 text-sm font-medium text-amber-700"
                                 >
-                                    Level:&nbsp;{levelName}
+                                    {t('levelLabel')}:&nbsp;{levelName}
                                 </Badge>
                             </div>
 
@@ -221,7 +232,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                     <div className="mb-4 flex items-start gap-2 sm:gap-3">
                                         <Target className="mt-0.5 size-5 shrink-0 text-green-600 sm:size-6" />
                                         <h2 className="text-lg font-semibold leading-tight text-gray-900 sm:text-xl md:text-2xl">
-                                            What Learners Will Gain
+                                            {t('learnersGainHeading')}
                                         </h2>
                                     </div>
                                     <div className="grid gap-3">
@@ -239,7 +250,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                 <div className="flex items-center justify-center rounded-lg pt-8">
                                     <img
                                         src={form.getValues('coursePreviewBlob')}
-                                        alt="Course Preview Image"
+                                        alt={t('coursePreviewAlt')}
                                         className="w-fit"
                                     />
                                 </div>
@@ -253,7 +264,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                     <div className="mb-4 flex items-start gap-2 sm:gap-3">
                                         <Info className="mt-0.5 size-5 shrink-0 text-blue-600 sm:size-6" />
                                         <h2 className="text-lg font-semibold leading-tight text-gray-900 sm:text-xl md:text-2xl">
-                                            About the Course
+                                            {t('aboutCourseHeading')}
                                         </h2>
                                     </div>
                                     <p
@@ -276,7 +287,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                                 width="100%"
                                                 height="100%"
                                                 src={`https://www.youtube.com/embed/${extractYouTubeVideoId(form.getValues('courseMedia')?.id || '')}`}
-                                                title="YouTube video player"
+                                                title={t('youtubePlayerTitle')}
                                                 frameBorder="0"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                 allowFullScreen
@@ -303,7 +314,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                                     );
                                                 }}
                                             >
-                                                Your browser does not support the video tag.
+                                                {t('videoNotSupported')}
                                             </video>
                                         </div>
                                     </div>
@@ -314,7 +325,7 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                         <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
                                             <img
                                                 src={form.getValues('courseMediaBlob')}
-                                                alt="Course Banner"
+                                                alt={t('courseBannerAlt')}
                                                 className="size-full object-contain"
                                             />
                                         </div>
@@ -521,10 +532,10 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-semibold leading-tight text-gray-900 sm:text-xl md:text-2xl">
-                                        Registration Details
+                                        {t('registrationHeading')}
                                     </h2>
                                     <p className="mt-1 text-sm text-gray-600">
-                                        Fill in your details to enroll in the course
+                                        {t('registrationSubheading')}
                                     </p>
                                 </div>
                             </div>
@@ -556,8 +567,12 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                                                 <FormItem>
                                                                     <FormControl>
                                                                         <PhoneInputField
-                                                                            label="Phone Number"
-                                                                            placeholder="123 456 7890"
+                                                                            label={t(
+                                                                                'phoneNumberLabel'
+                                                                            )}
+                                                                            placeholder={t(
+                                                                                'phoneNumberPlaceholder'
+                                                                            )}
                                                                             name={`${key}.value`}
                                                                             control={
                                                                                 registrationForm.control
@@ -636,15 +651,15 @@ const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLink
                                                     className="w-full rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:from-green-700 hover:to-green-800 hover:shadow-xl md:w-fit"
                                                 >
                                                     <GraduationCap className="mr-2 size-5" />
-                                                    Register
+                                                    {t('registerButton')}
                                                 </MyButton>
                                                 <button
                                                     type="button"
                                                     className="mb-2 flex cursor-pointer items-center gap-2 text-sm text-gray-500 transition-colors duration-200 hover:text-gray-700"
                                                     onClick={() => registrationForm.reset()}
                                                 >
-                                                    <RotateCcw className="size-4" />
-                                                    Reset Form
+                                                    <ArrowCounterClockwise className="size-4" />
+                                                    {t('resetFormButton')}
                                                 </button>
                                             </div>
                                         </form>

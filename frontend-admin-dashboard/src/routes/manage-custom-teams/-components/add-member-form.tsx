@@ -41,18 +41,22 @@ import { fetchPaginatedBatches } from '../../admin-package-management/-services/
 import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDebounce } from 'use-debounce';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const memberSchema = z.object({
-    fullName: z.string().min(1, 'Full Name is required'),
-    email: z.string().email('Invalid email address'),
-    mobileNumber: phoneSchema({ required: true, label: 'Phone number' }),
-    roleId: z.string().optional(),
-    hasFacultyAssigned: z.boolean().default(false),
-    linkageType: z.enum(['DIRECT', 'INHERITED', 'PARTNERSHIP']).optional(),
-    accessPermission: z.string().default('FULL'),
-});
+function buildMemberSchema(t: TFunction) {
+    return z.object({
+        fullName: z.string().min(1, t('validation.fullNameRequired')),
+        email: z.string().email(t('validation.invalidEmail')),
+        mobileNumber: phoneSchema({ required: true, label: t('form.phoneLabel') }),
+        roleId: z.string().optional(),
+        hasFacultyAssigned: z.boolean().default(false),
+        linkageType: z.enum(['DIRECT', 'INHERITED', 'PARTNERSHIP']).optional(),
+        accessPermission: z.string().default('FULL'),
+    });
+}
 
-type MemberFormValues = z.infer<typeof memberSchema>;
+type MemberFormValues = z.infer<ReturnType<typeof buildMemberSchema>>;
 
 interface AddMemberFormProps {
     open: boolean;
@@ -65,6 +69,7 @@ interface AddMemberFormProps {
 }
 
 export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute', subOrgId }: AddMemberFormProps) {
+    const { t } = useTranslation('manageCustomTeamsAddMemberForm');
     const queryClient = useQueryClient();
     const [isCustomRole, setIsCustomRole] = useState(false);
     const [customRoleName, setCustomRoleName] = useState('');
@@ -76,6 +81,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
     const [sessionPage, setSessionPage] = useState(0);
     const SESSION_PAGE_SIZE = 10;
 
+    const memberSchema = buildMemberSchema(t);
     const form = useForm<MemberFormValues>({
         resolver: zodResolver(memberSchema),
         defaultValues: {
@@ -291,7 +297,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
             return { userId, roleId, success: true };
         },
         onSuccess: () => {
-            toast.success('Member added successfully');
+            toast.success(t('toast.addSuccess'));
             queryClient.invalidateQueries({ queryKey: ['custom-teams'] });
             queryClient.invalidateQueries({ queryKey: ['custom-roles'] });
             queryClient.invalidateQueries({ queryKey: ['roles'] });
@@ -313,18 +319,18 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                 error?.response?.data?.ex ||
                     error?.response?.data?.message ||
                     error?.message ||
-                    'Failed to add member'
+                    t('toast.addFailed')
             );
         },
     });
 
     const onSubmit = (data: MemberFormValues) => {
         if (!isCustomRole && !data.roleId) {
-            form.setError('roleId', { type: 'manual', message: 'Role is required' });
+            form.setError('roleId', { type: 'manual', message: t('validation.roleRequired') });
             return;
         }
         if (isCustomRole && !customRoleName.trim()) {
-            toast.error('Please enter a custom role name');
+            toast.error(t('toast.customRoleNameRequired'));
             return;
         }
         mutation.mutate(data);
@@ -334,10 +340,8 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden sm:max-w-[640px]">
                 <DialogHeader>
-                    <DialogTitle>Add New Member</DialogTitle>
-                    <DialogDescription>
-                        Create a new user and assign them to a team/role with specific access.
-                    </DialogDescription>
+                    <DialogTitle>{t('title')}</DialogTitle>
+                    <DialogDescription>{t('description')}</DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
@@ -346,15 +350,15 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                             {/* User Details Section */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-semibold text-gray-700">
-                                    User Details
+                                    {t('sections.userDetails')}
                                 </h3>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label htmlFor="fullName">Full Name *</Label>
+                                        <Label htmlFor="fullName">{t('form.fullNameLabel')}</Label>
                                         <Input
                                             id="fullName"
                                             {...register('fullName')}
-                                            placeholder="John Doe"
+                                            placeholder={t('form.fullNamePlaceholder')}
                                         />
                                         {errors.fullName && (
                                             <p className="text-xs text-red-500">
@@ -364,12 +368,12 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="email">Email *</Label>
+                                        <Label htmlFor="email">{t('form.emailLabel')}</Label>
                                         <Input
                                             id="email"
                                             type="email"
                                             {...register('email')}
-                                            placeholder="john@example.com"
+                                            placeholder={t('form.emailPlaceholder')}
                                         />
                                         {errors.email && (
                                             <p className="text-xs text-red-500">
@@ -380,16 +384,16 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
 
                                     <div className="space-y-2">
                                         <PhoneInputField
-                                            label="Phone"
+                                            label={t('form.phoneLabel')}
                                             name="mobileNumber"
-                                            placeholder="123 456 7890"
+                                            placeholder={t('form.phonePlaceholder')}
                                             control={control}
                                             required={true}
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="role">Role *</Label>
+                                        <Label htmlFor="role">{t('form.roleLabel')}</Label>
                                         {!isCustomRole ? (
                                             <Controller
                                                 control={control}
@@ -407,7 +411,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                         value={field.value}
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select Role" />
+                                                            <SelectValue placeholder={t('form.selectRolePlaceholder')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <ScrollArea className="h-[200px]">
@@ -421,7 +425,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                                 ))}
                                                                 <SelectItem value="CUSTOM">
                                                                     <span className="font-semibold text-blue-600">
-                                                                        + Custom Role
+                                                                        {t('form.customRoleOption')}
                                                                     </span>
                                                                 </SelectItem>
                                                             </ScrollArea>
@@ -437,7 +441,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                     onChange={(e) =>
                                                         setCustomRoleName(e.target.value)
                                                     }
-                                                    placeholder="Enter custom role name"
+                                                    placeholder={t('form.customRoleNamePlaceholder')}
                                                     className="flex-1"
                                                 />
                                                 <Button
@@ -450,7 +454,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                         form.clearErrors('roleId');
                                                     }}
                                                 >
-                                                    Cancel
+                                                    {t('actions.cancel')}
                                                 </Button>
                                             </div>
                                         )}
@@ -479,7 +483,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                             htmlFor="hasFacultyAssigned"
                                             className="cursor-pointer font-normal"
                                         >
-                                            Has Faculty Assigned Permission?
+                                            {t('form.hasFacultyAssignedLabel')}
                                         </Label>
                                     </div>
                                 )}
@@ -488,20 +492,20 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                             {/* Access Mapping Section - Multi-select Package Sessions */}
                             <div className="space-y-4 border-t pt-4">
                                 <h3 className="text-sm font-semibold text-gray-700">
-                                    User Access Mapping
+                                    {t('sections.userAccessMapping')}
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
-                                    Select one or more package sessions to grant access to.
+                                    {t('sections.userAccessMappingHint')}
                                 </p>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     {/* Package Sessions multi-select with search + pagination */}
                                     <div className="space-y-2 md:col-span-2">
-                                        <Label>Package Sessions</Label>
+                                        <Label>{t('form.packageSessionsLabel')}</Label>
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                             <Input
-                                                placeholder="Search package sessions..."
+                                                placeholder={t('form.packageSessionsSearchPlaceholder')}
                                                 value={sessionSearch}
                                                 onChange={(e) => {
                                                     setSessionSearch(e.target.value);
@@ -518,11 +522,11 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                 {isLoadingSessions ? (
                                                     <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                                        Loading sessions...
+                                                        {t('form.loadingSessions')}
                                                     </div>
                                                 ) : !paginatedSessions?.content?.length ? (
                                                     <p className="py-8 text-center text-sm text-muted-foreground">
-                                                        No package sessions found.
+                                                        {t('form.noSessionsFound')}
                                                     </p>
                                                 ) : (
                                                     paginatedSessions.content.map((ps) => {
@@ -551,7 +555,11 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                             {paginatedSessions && paginatedSessions.total_pages > 1 && (
                                                 <div className="flex items-center justify-between border-t px-3 py-2">
                                                     <span className="text-xs text-muted-foreground">
-                                                        Page {sessionPage + 1} of {paginatedSessions.total_pages} ({paginatedSessions.total_elements} total)
+                                                        {t('form.sessionsPageInfo', {
+                                                            page: sessionPage + 1,
+                                                            totalPages: paginatedSessions.total_pages,
+                                                            count: paginatedSessions.total_elements,
+                                                        })}
                                                     </span>
                                                     <div className="flex gap-1">
                                                         <Button
@@ -578,14 +586,16 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                         </div>
                                         {selectedPackageSessionIds.length > 0 && (
                                             <p className="text-xs text-muted-foreground">
-                                                {selectedPackageSessionIds.length} session(s) selected
+                                                {t('form.sessionsSelected', {
+                                                    count: selectedPackageSessionIds.length,
+                                                })}
                                             </p>
                                         )}
                                     </div>
 
                                     {mode !== 'subOrg' && (
                                         <div className="space-y-2">
-                                            <Label>Linkage Type</Label>
+                                            <Label>{t('form.linkageTypeLabel')}</Label>
                                             <Controller
                                                 control={control}
                                                 name="linkageType"
@@ -595,17 +605,17 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                                                         value={field.value}
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Select Linkage Type" />
+                                                            <SelectValue placeholder={t('form.selectLinkageTypePlaceholder')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="DIRECT">
-                                                                Direct
+                                                                {t('form.linkageDirect')}
                                                             </SelectItem>
                                                             <SelectItem value="INHERITED">
-                                                                Inherited
+                                                                {t('form.linkageInherited')}
                                                             </SelectItem>
                                                             <SelectItem value="PARTNERSHIP">
-                                                                Partnership
+                                                                {t('form.linkagePartnership')}
                                                             </SelectItem>
                                                         </SelectContent>
                                                     </Select>
@@ -626,7 +636,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                         onClick={() => onOpenChange(false)}
                         disabled={mutation.isPending}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -636,7 +646,7 @@ export function AddMemberForm({ open, onOpenChange, onSuccess, mode = 'institute
                         {mutation.isPending && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Add Member
+                        {t('actions.addMember')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

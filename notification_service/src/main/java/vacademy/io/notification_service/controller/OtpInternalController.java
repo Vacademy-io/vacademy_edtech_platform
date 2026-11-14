@@ -17,7 +17,7 @@ public class OtpInternalController {
 
     @PostMapping("/send-email-otp")
     public ResponseEntity<String> sendEmailOtp(@RequestBody EmailOTPRequest request, @RequestParam(name = "instituteId",required = false)String instituteId) {
-        otpService.sendEmailOtp(request.getTo(), request.getSubject(), request.getService(), request.getName(),instituteId);
+        otpService.sendEmailOtp(request.getTo(), request.getSubject(), request.getService(), request.getName(),instituteId, request.getProduct());
         return ResponseEntity.ok("Email OTP sent successfully");
     }
 

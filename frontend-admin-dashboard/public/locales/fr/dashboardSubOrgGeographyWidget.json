@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "{{term}} par emplacement",
+        "subtitle": "Où se trouvent vos {{term}}"
+    },
+    "groupBy": {
+        "ariaLabel": "Regrouper par"
+    },
+    "dims": {
+        "state": "État",
+        "city": "Ville",
+        "pincode": "Code postal"
+    },
+    "manage": "Gérer",
+    "registered": "Inscrit",
+    "dateRange": {
+        "ariaLabel": "Période d'inscription",
+        "all": "Tout",
+        "last24h": "24h",
+        "last3d": "3j",
+        "last7d": "7j",
+        "custom": "Personnalisé",
+        "fromDate": "Date de début",
+        "toDate": "Date de fin",
+        "to": "à"
+    },
+    "stats": {
+        "states": "États",
+        "cities": "Villes",
+        "pincodes": "Codes postaux",
+        "located": "Localisés"
+    },
+    "topLocations": {
+        "state": "Meilleurs états",
+        "city": "Meilleures villes",
+        "pincode": "Meilleurs codes postaux"
+    },
+    "table": {
+        "active": "Actifs",
+        "seats": "Places"
+    },
+    "notSpecified": "Non précisé"
+}

@@ -1,0 +1,17 @@
+{
+    "tabsAriaLabel": "علامات التبويب",
+    "tabFatherDetails": "بيانات الأب",
+    "tabMotherDetails": "بيانات الأم",
+    "tabGuardianDetails": "بيانات ولي الأمر",
+    "roleFather": "الأب",
+    "roleMother": "الأم",
+    "roleGuardian": "ولي الأمر",
+    "selectPlaceholder": "اختر",
+    "fullNameLabel": "الاسم الكامل",
+    "fullNamePlaceholder": "الاسم الكامل لـ{{title}}",
+    "mobileNumberLabel": "رقم الجوال",
+    "mobileNumberPlaceholder": "أدخل رقم الجوال",
+    "emailAddressLabel": "البريد الإلكتروني",
+    "emailPlaceholderExample": "example@email.com",
+    "emailValidationError": "أدخل بريدًا إلكترونيًا صالحًا"
+}

@@ -1,0 +1,37 @@
+---
+title: "Queue and limits"
+description: "When your calls are dialled, and the guards that protect your contacts and your bill."
+---
+
+Calls are not dialled the instant you create them. Each one joins your account's **call queue**, and Telleo dials it when:
+
+1. one of your **lines is free** (your plan sets how many calls run at the same time);
+2. it is inside your **calling hours**; and
+3. no **limit** below holds it back.
+
+A single call (`POST /v1/calls`) goes to the front of the queue and is dialled straight away when a line is free. Calls from a [batch](/guides/bulk-calling) wait their turn behind single calls, so a large batch never delays the lead who just filled your form.
+
+While a call waits, it is `queued`. When something is holding it, `status_reason` says what in plain words and `scheduled_for` says when it will be tried next.
+
+## Calling hours
+
+Calls are only dialled inside the calling windows set in your AI calling settings. A call created outside them stays `queued`, with `status_reason` *Outside this institute's calling hours.* and `scheduled_for` set to the next window, and goes out then. You do not need to schedule anything yourself.
+
+## Limits
+
+| Guard | What happens |
+|---|---|
+| **Daily limit for your account** | Calls beyond your account's AI-call limit for the last 24 hours wait (`queued`) until the limit allows more. |
+| **Calls per number per day** | A number is called at most 3 times in 24 hours, unless your settings say otherwise. A call over the limit ends `canceled` with the reason *Already called the maximum number of times today.* |
+| **Gap between calls to one number** | Two calls to the same number are kept at least an hour apart. A call that comes too soon waits (`queued`) and goes out after the gap. |
+| **One waiting call per number** | A number with a call already waiting in the queue cannot get another: `409 call_already_queued`. |
+| **Time in the queue** | A call that is still waiting 48 hours after it was created ends `expired`. |
+| **Credits** | Without credits, new calls are refused with `402 insufficient_credits`. Calls already queued wait, and resume after a top-up. |
+
+These guards apply to every call made through the API. [Test calls](/concepts/test-mode) skip them.
+
+Your team's controls in the dashboard's **Call Queue** apply too: **Pause queue** holds API calls (they stay `queued`), and **Cancel** cancels them (`canceled`). See [Your dashboard](/dashboard#call-queue).
+
+## Throughput
+
+How fast a batch completes depends on how many lines your plan runs at once and how long conversations last. As a rule of thumb, `lines × 20` calls an hour with three-minute conversations. Ask us to raise the number of lines for large campaigns.

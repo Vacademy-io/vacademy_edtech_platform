@@ -3,11 +3,13 @@ package vacademy.io.admin_core_service.features.common.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
+import vacademy.io.admin_core_service.features.common.listener.CustomFieldValueSyncListener;
 import vacademy.io.common.common.dto.CustomFieldValueDTO;
 
 import java.sql.Timestamp;
 
 @Entity
+@EntityListeners(CustomFieldValueSyncListener.class)
 @Table(name = "custom_field_values")
 @Getter
 @Setter

@@ -1,0 +1,40 @@
+{
+    "page": {
+        "title": "التحكم في الوصول",
+        "updateButton": "تحديث",
+        "saveButton": "حفظ",
+        "publishButton": "نشر"
+    },
+    "sections": {
+        "creationAccess": "صلاحية إنشاء التقييم",
+        "liveAssessmentNotification": "إشعار التقييم المباشر",
+        "submissionAndReportAccess": "صلاحية تسليم التقييم والتقارير",
+        "evaluationProcess": "عملية التقييم"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث تقييمك بنجاح!",
+        "saveSuccess": "تم حفظ تقييمك بنجاح!",
+        "updateAndPublishSuccess": "تم تحديث تقييمك ونشره بنجاح!",
+        "publishSuccess": "تم نشر تقييمك بنجاح!",
+        "cancelInvitationSuccess": "تم إلغاء دعوة هذا المستخدم بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ إعدادات التحكم في الوصول.",
+        "publishFailed": "فشل نشر التقييم."
+    },
+    "addUserDialog": {
+        "addButton": "إضافة",
+        "title": "إضافة مستخدم",
+        "roleTypeFilterLabel": "نوع الدور",
+        "selectAllLabel": "تحديد الكل",
+        "doneButton": "تم"
+    },
+    "cancelInvitationDialog": {
+        "trigger": "إلغاء الدعوة",
+        "title": "إلغاء الدعوة",
+        "attention": "تنبيه",
+        "confirmMessagePrefix": "هل أنت متأكد أنك تريد إلغاء الدعوة الخاصة بـ",
+        "confirmMessageSuffix": "؟",
+        "confirmButton": "نعم"
+    }
+}

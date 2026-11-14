@@ -1,0 +1,26 @@
+{
+    "tabs": {
+        "instituteWide": {
+            "label": "Établissement entier",
+            "description": "Tout {{learner}} s'inscrivant dans cet établissement peut utiliser ce coupon."
+        },
+        "specificBatches": {
+            "label": "{{batch}} spécifiques",
+            "description": "Seuls les {{learner}} s'inscrivant dans les {{batch}} sélectionnées peuvent utiliser ce coupon."
+        },
+        "specificInvites": {
+            "label": "{{invite}} spécifiques",
+            "description": "Seuls les {{learner}} s'inscrivant via les liens d'invitation listés peuvent utiliser ce coupon."
+        }
+    },
+    "sessions": {
+        "pickLabel": "Choisissez un ou plusieurs {{sessions}}"
+    },
+    "invites": {
+        "pasteLabel": "Coller les identifiants {{invite}}",
+        "placeholder": "Identifiants d'invitation séparés par des virgules ou des retours à la ligne",
+        "captured_one": "{{count}} identifiant capturé",
+        "captured_many": "{{count}} identifiants capturés",
+        "captured_other": "{{count}} identifiants capturés"
+    }
+}

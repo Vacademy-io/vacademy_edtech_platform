@@ -1,0 +1,11 @@
+{
+    "ratingTooltip_one": "Average of {{count}} rated session — click to read the feedback",
+    "ratingTooltip_other": "Average of {{count}} rated sessions — click to read the feedback",
+    "noCapTooltip": "Students currently assigned to this mentor (no limit set)",
+    "atCapacityTooltip": "At capacity — no new students can be assigned until the limit is raised or a mentee is unassigned",
+    "placesOpenTooltip_one": "{{count}} of {{cap}} place still open",
+    "placesOpenTooltip_other": "{{count}} of {{cap}} places still open",
+    "fullSuffix": "full",
+    "studentsSuffix_one": "student",
+    "studentsSuffix_other": "students"
+}

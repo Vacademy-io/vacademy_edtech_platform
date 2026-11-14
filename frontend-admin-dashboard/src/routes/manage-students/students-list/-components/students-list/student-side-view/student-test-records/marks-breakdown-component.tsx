@@ -1,4 +1,6 @@
 import React, { Suspense } from 'react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 const PieChart = React.lazy(() => import('recharts').then(module => ({ default: module.PieChart })));
 const Pie = React.lazy(() => import('recharts').then(module => ({ default: module.Pie as unknown as React.ComponentType<any> })));
 import {
@@ -15,24 +17,26 @@ interface MarksResponseDataInterface {
     skipped: number;
 }
 
-const chartConfig = {
-    correct: {
-        label: 'Correct',
-        color: 'hsl(var(--chart-1))',
-    },
-    partiallyCorrect: {
-        label: 'Partially Correct',
-        color: 'hsl(var(--chart-2))',
-    },
-    wrongResponse: {
-        label: 'Wrong Response',
-        color: 'hsl(var(--chart-3))',
-    },
-    skipped: {
-        label: 'Skipped',
-        color: 'hsl(var(--chart-4))',
-    },
-} satisfies ChartConfig;
+function buildChartConfig(t: TFunction) {
+    return {
+        correct: {
+            label: t('legend.correct'),
+            color: 'hsl(var(--chart-1))',
+        },
+        partiallyCorrect: {
+            label: t('legend.partiallyCorrect'),
+            color: 'hsl(var(--chart-2))',
+        },
+        wrongResponse: {
+            label: t('legend.wrongResponse'),
+            color: 'hsl(var(--chart-3))',
+        },
+        skipped: {
+            label: t('legend.skipped'),
+            color: 'hsl(var(--chart-4))',
+        },
+    } satisfies ChartConfig;
+}
 
 // Recharts fill values use CSS variables so hex is not needed in JSX class strings.
 const MARKS_CHART_FILLS = {
@@ -43,6 +47,8 @@ const MARKS_CHART_FILLS = {
 } as const;
 
 export function MarksBreakdownComponent({ marksData }: { marksData: MarksResponseDataInterface }) {
+    const { t } = useTranslation('manageStudentsMarksBreakdownComponent');
+    const chartConfig = buildChartConfig(t);
     const chartData = [
         {
             responseType: 'correct',

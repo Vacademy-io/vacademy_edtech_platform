@@ -1,0 +1,66 @@
+{
+    "dialogTitle": "Prolonger l'accès aux cours",
+    "unlimitedLabel": "Illimité",
+    "modes": {
+        "extend": {
+            "label": "Prolonger de plusieurs jours",
+            "hint": "Chaque apprenant est prolongé à partir de sa propre date d'expiration actuelle, afin que personne ne perde le temps déjà acquis. Les apprenants déjà expirés sont comptés à partir d'aujourd'hui."
+        },
+        "setDate": {
+            "label": "Définir la même date d'expiration pour tous",
+            "hint": "Chaque apprenant sélectionné se termine à cette date exacte, quelle que soit sa situation actuelle."
+        },
+        "unlimited": {
+            "label": "Accorder un accès illimité",
+            "hint": "Supprime totalement l'expiration pour chaque apprenant sélectionné."
+        }
+    },
+    "config": {
+        "changePrompt_one": "Modifier l'accès aux cours pour <strong>{{count}}</strong> apprenant sélectionné.",
+        "changePrompt_many": "Modifier l'accès aux cours pour <strong>{{count}}</strong> apprenants sélectionnés.",
+        "changePrompt_other": "Modifier l'accès aux cours pour <strong>{{count}}</strong> apprenants sélectionnés.",
+        "whatToChange": "Que modifier",
+        "daysToAdd": "Jours à ajouter",
+        "negativeHint": "Utilisez un nombre négatif pour raccourcir l'accès.",
+        "newExpiryDate": "Nouvelle date d'expiration",
+        "applyToEveryCourse": "Appliquer à <strong>tous les cours</strong> auxquels ces apprenants sont inscrits",
+        "batchesHint_one": "Désactivé par défaut — seul le {{count}} batch affiché dans cette liste est modifié.",
+        "batchesHint_many": "Désactivé par défaut — seuls les {{count}} batchs affichés dans cette liste sont modifiés.",
+        "batchesHint_other": "Désactivé par défaut — seuls les {{count}} batchs affichés dans cette liste sont modifiés.",
+        "reasonLabel": "Motif (facultatif)",
+        "reasonPlaceholder": "ex. Prolongation de tous après le changement d'emploi du temps",
+        "reasonHint": "Enregistré sur chaque ligne d'historique d'accès que cette modification écrit."
+    },
+    "resultList": {
+        "daysDelta_one": "({{sign}}{{count}} jour)",
+        "daysDelta_many": "({{sign}}{{count}} jours)",
+        "daysDelta_other": "({{sign}}{{count}} jours)"
+    },
+    "preview": {
+        "summaryLine_one": "{{count}} inscription va changer, {{skipped}} ignorée, {{failed}} échouée.",
+        "summaryLine_many": "{{count}} inscriptions vont changer, {{skipped}} ignorées, {{failed}} échouées.",
+        "summaryLine_other": "{{count}} inscriptions vont changer, {{skipped}} ignorées, {{failed}} échouées.",
+        "notSaved": "Rien n'a encore été enregistré."
+    },
+    "results": {
+        "summaryLine_one": "{{count}} inscription mise à jour, {{skipped}} ignorée, {{failed}} échouée.",
+        "summaryLine_many": "{{count}} inscriptions mises à jour, {{skipped}} ignorées, {{failed}} échouées.",
+        "summaryLine_other": "{{count}} inscriptions mises à jour, {{skipped}} ignorées, {{failed}} échouées."
+    },
+    "footer": {
+        "checking": "Vérification…",
+        "previewChanges": "Aperçu des modifications",
+        "back": "Retour",
+        "applying": "Application en cours…",
+        "applyChanges": "Appliquer les modifications",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "previewFailed": "Échec de l'aperçu",
+        "accessChangeFailed": "Échec de la modification de l'accès",
+        "accessUpdated_one": "Accès mis à jour pour {{count}} inscription",
+        "accessUpdated_many": "Accès mis à jour pour {{count}} inscriptions",
+        "accessUpdated_other": "Accès mis à jour pour {{count}} inscriptions",
+        "noChanges": "Aucune inscription n'a été modifiée."
+    }
+}

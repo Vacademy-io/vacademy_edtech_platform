@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
+import vacademy.io.admin_core_service.features.platform_billing.enums.PlatformPaymentItemKind;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -97,4 +99,31 @@ public class PlatformInvoice {
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // ── V590 ─────────────────────────────────────────────────────────
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_kind", nullable = false, length = 16)
+    private PlatformPaymentItemKind sourceKind = PlatformPaymentItemKind.CREDIT_PACK;
+
+    /** 'I' for a v2-series number (VT/{FY}/I#####); NULL for legacy INV-AICRED-* numbers. */
+    @Column(name = "series_key", length = 8)
+    private String seriesKey;
+
+    /** Financial year of the v2 number, e.g. "2627"; NULL for legacy numbers. */
+    @Column(name = "fy", length = 4)
+    private String fy;
+
+    @Column(name = "service_period_start")
+    private Instant servicePeriodStart;
+
+    @Column(name = "service_period_end")
+    private Instant servicePeriodEnd;
+
+    /** The instant of issue; the printed date and the FY are taken from it in Asia/Kolkata. NULL on legacy rows. */
+    @Column(name = "issued_at_tz")
+    private Instant issuedAtTz;
+
+    /** BrandMode name the document was rendered for; NULL on legacy rows. */
+    @Column(name = "brand_mode", length = 10)
+    private String brandMode;
 }

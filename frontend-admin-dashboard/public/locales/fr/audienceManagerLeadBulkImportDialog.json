@@ -1,0 +1,119 @@
+{
+    "dialog": {
+        "title": "Import CSV en masse — {{campaignName}}",
+        "description": "Importez un fichier CSV pour ajouter plusieurs prospects en une seule fois."
+    },
+    "steps": {
+        "upload": "Importer",
+        "preview": "Aperçu",
+        "results": "Résultats"
+    },
+    "loading": {
+        "campaignFields": "Chargement des champs de la campagne..."
+    },
+    "noCustomFields": {
+        "title": "Aucun champ personnalisé configuré",
+        "description": "Ajoutez des champs personnalisés à cette campagne avant d'importer des prospects."
+    },
+    "upload": {
+        "downloadTemplateButton": "Télécharger le modèle",
+        "fieldsCount_one": "CSV avec {{count}} champ + ligne d'exemple",
+        "fieldsCount_many": "CSV avec {{count}} champs + ligne d'exemple",
+        "fieldsCount_other": "CSV avec {{count}} champs + ligne d'exemple",
+        "dropzone": {
+            "cta": "Cliquez pour importer votre fichier CSV",
+            "maxRows": "Maximum {{count}} lignes"
+        },
+        "expectedColumns": {
+            "title": "Colonnes attendues",
+            "leadOwnerChip": "Propriétaire du prospect (e-mail du conseiller)",
+            "leadStatusChip": "Statut du prospect",
+            "leadOwnerLabel": "Propriétaire du prospect",
+            "leadStatusLabel": "Statut du prospect",
+            "andConnector": "et",
+            "hintSuffix": "sont facultatifs. Le propriétaire accepte l'e-mail d'un conseiller (ou un nom unique) ; le statut accepte un libellé comme {{statusExamples}}. Un statut vide utilise {{defaultStatus}} par défaut.",
+            "defaultStatusExamples": "Nouveau, Contacté, Intéressé",
+            "defaultStatusFallback": "votre statut par défaut"
+        }
+    },
+    "preview": {
+        "statTiles": {
+            "totalRows": "Lignes totales",
+            "valid": "Valides",
+            "errors": "Erreurs",
+            "duplicates": "Doublons"
+        },
+        "blocked": {
+            "reason_one": "colonne obligatoire manquante : {{columns}}",
+            "reason_many": "colonnes obligatoires manquantes : {{columns}}",
+            "reason_other": "colonnes obligatoires manquantes : {{columns}}",
+            "title": "Import bloqué — {{reason}}",
+            "descriptionPrefix": "Votre fichier ne contient aucune colonne correspondant à",
+            "descriptionSuffix_one": ". Cela affecte chaque ligne, donc rien ne peut être importé — chaque prospect serait enregistré avec ce champ vide. Ajoutez la colonne à votre CSV (l'en-tête doit correspondre au nom du champ) et réimportez-le.",
+            "descriptionSuffix_many": ". Cela affecte chaque ligne, donc rien ne peut être importé — chaque prospect serait enregistré avec ces champs vides. Ajoutez la colonne à votre CSV (l'en-tête doit correspondre au nom du champ) et réimportez-le.",
+            "descriptionSuffix_other": ". Cela affecte chaque ligne, donc rien ne peut être importé — chaque prospect serait enregistré avec ces champs vides. Ajoutez la colonne à votre CSV (l'en-tête doit correspondre au nom du champ) et réimportez-le."
+        },
+        "invalidRows": {
+            "count_one": "{{formatted}} ligne ne sera pas importée",
+            "count_many": "{{formatted}} lignes ne seront pas importées",
+            "count_other": "{{formatted}} lignes ne seront pas importées",
+            "downloadReportButton": "Télécharger le rapport d'erreurs",
+            "note": "Ces lignes sont ignorées — les lignes valides restantes sont importées normalement. Le rapport répertorie chaque ligne ignorée avec sa raison, afin que vous puissiez corriger uniquement celles-ci et les importer séparément.",
+            "duplicateReasonLabel": "Doublon (même e-mail déjà présent plus haut dans le fichier)",
+            "reportColumnHeader": "Erreur d'import"
+        },
+        "columnMapping": {
+            "title": "Correspondance des colonnes",
+            "mappedCount": "({{mapped}}/{{total}} associées)"
+        },
+        "table": {
+            "rowNumberHeader": "#",
+            "statusHeader": "Statut",
+            "ownerColumnHeader": "Propriétaire →",
+            "statusColumnHeader": "Statut →",
+            "duplicateEmailTooltip": "E-mail en double",
+            "showingFirst100_one": "Affichage de la {{shown}} première ligne sur {{formatted}}",
+            "showingFirst100_many": "Affichage des {{shown}} premières lignes sur {{formatted}}",
+            "showingFirst100_other": "Affichage des {{shown}} premières lignes sur {{formatted}}"
+        },
+        "footer": {
+            "backButton": "Retour",
+            "submittingBatch": "Envoi en cours… lot {{done}}/{{total}}",
+            "submittingRows_one": "Envoi de {{count}} ligne...",
+            "submittingRows_many": "Envoi de {{count}} lignes...",
+            "submittingRows_other": "Envoi de {{count}} lignes...",
+            "submitButton_one": "Envoyer {{count}} ligne valide",
+            "submitButton_many": "Envoyer {{count}} lignes valides",
+            "submitButton_other": "Envoyer {{count}} lignes valides"
+        }
+    },
+    "results": {
+        "summary": {
+            "total": "Total",
+            "success": "Réussi",
+            "failed": "Échoué",
+            "skipped": "Ignoré"
+        },
+        "showDetailsButton": "Afficher les détails",
+        "hideDetailsButton": "Masquer les détails",
+        "rowLabel": "Ligne {{number}}",
+        "statusLabel": {
+            "FAILED": "Échoué",
+            "SKIPPED": "Ignoré"
+        },
+        "doneButton": "Terminé"
+    },
+    "toasts": {
+        "csvEmpty": "Le fichier CSV est vide",
+        "tooManyRows": "Le fichier CSV contient {{count}} lignes. Le maximum autorisé est {{max}}.",
+        "missingMandatoryColumns": "Colonnes obligatoires manquantes : {{columns}}. Ajoutez-les au fichier et réimportez-le.",
+        "parseFailed": "Échec de l'analyse du CSV : {{message}}",
+        "cannotImport": "Import impossible — {{reason}}. Corrigez le fichier et réimportez-le.",
+        "noValidRows": "Aucune ligne valide à envoyer",
+        "allImportedSuccess_one": "{{count}} prospect importé avec succès !",
+        "allImportedSuccess_many": "Les {{count}} prospects ont tous été importés avec succès !",
+        "allImportedSuccess_other": "Les {{count}} prospects ont tous été importés avec succès !",
+        "importComplete": "Import terminé : {{success}} réussis, {{failed}} échoués, {{skipped}} ignorés",
+        "submitFailed": "Échec de l'envoi des prospects"
+    }
+}

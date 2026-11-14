@@ -88,9 +88,12 @@ public class WorkflowCatalogController {
             CatalogItemDTO.builder()
                 .key("fetchPackageLMSSetting")
                 .label("Fetch Package LMS Settings")
-                .description("Get LMS configuration for a specific package")
+                .description("Get LMS configuration for a specific package. Also returns courseDescription "
+                        + "(the course's rich-text description) so a shared welcome-email template can render "
+                        + "per-course copy; pass defaultCourseDescriptionHtml for courses that have none.")
                 .category("Settings")
                 .requiredParams(List.of("packageId", "settingKey"))
+                .optionalParams(List.of("defaultCourseDescriptionHtml"))
                 .build(),
             CatalogItemDTO.builder()
                 .key("upsertUserCustomField")
@@ -208,6 +211,9 @@ public class WorkflowCatalogController {
         eventMeta.put("SEND_LEARNER_CREDENTIALS", new String[]{"Send Learner Credentials", "Fires when credentials need to be sent to learners", "Notification", "PACKAGE_SESSION"});
         eventMeta.put("SUB_ORG_MEMBER_ENROLLMENT", new String[]{"Sub-Org Member Enrollment", "Fires when a member is enrolled in a sub-organization", "Enrollment", "PACKAGE_SESSION"});
         eventMeta.put("SUB_ORG_MEMBER_TERMINATION", new String[]{"Sub-Org Member Termination", "Fires when a member is removed from a sub-organization", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_ADMIN_TERMINATED", new String[]{"Sub-Org Admin Terminated", "Fires when someone ends a sub-org admin's access. Not fired on expiry", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_STAFF_REMOVED", new String[]{"Sub-Org Staff Removed", "Fires when a single non-admin member is removed from a sub-org. Not fired on expiry", "Enrollment", "PACKAGE_SESSION"});
+        eventMeta.put("SUB_ORG_STAFF_CASCADE_TERMINATED", new String[]{"Sub-Org Staff Terminated With Admin", "Fires for each member removed because their sub-org admin left", "Enrollment", "PACKAGE_SESSION"});
         eventMeta.put("AUDIENCE_LEAD_SUBMISSION", new String[]{"Audience Lead Submission", "Fires when a new lead is submitted via audience form", "CRM", "AUDIENCE"});
         eventMeta.put("INSTALLMENT_DUE_REMINDER", new String[]{"Installment Due Reminder", "Fires when a fee installment is approaching its due date", "Fee Management", "INSTITUTE"});
         // Live Session
@@ -228,6 +234,8 @@ public class WorkflowCatalogController {
         eventMeta.put("COURSE_CREATED", new String[]{"Course Created", "Fires when a new course / package is published in the institute", "Course", "PACKAGE_SESSION"});
         eventMeta.put("DOUBT_RAISED", new String[]{"Doubt Raised", "Fires when a learner posts a new doubt", "Engagement", "PACKAGE_SESSION"});
         eventMeta.put("ASSIGNMENT_SUBMITTED", new String[]{"Assignment Submitted", "Fires when a learner submits an assignment slide for the first time", "Engagement", "PACKAGE_SESSION"});
+        // Website
+        eventMeta.put("REVIEW_SUBMITTED", new String[]{"Site Review Submitted", "Fires when a visitor sends a review through a website's Reviews & feedback section (it waits for approval)", "Website", "INSTITUTE"});
         // Invites
         eventMeta.put("INVITE_CREATE", new String[]{"Invite Created", "Fires when a new enroll invite is created", "Invites", "ENROLL_INVITE"});
         eventMeta.put("INVITE_FORM_FILL", new String[]{"Invite Form Filled", "Fires when a learner completes an invite enrollment form", "Invites", "ENROLL_INVITE"});
@@ -240,6 +248,7 @@ public class WorkflowCatalogController {
         eventMeta.put("LEAD_TAT_OVERDUE", new String[]{"Lead TAT Overdue", "Fires when the counselor has not acted on a lead by its TAT/SLA deadline", "CRM", "AUDIENCE"});
         eventMeta.put("FOLLOW_UP_DUE", new String[]{"Follow-up Due", "Fires when a lead follow-up is approaching its SLA deadline", "CRM", "AUDIENCE"});
         eventMeta.put("FOLLOW_UP_OVERDUE", new String[]{"Follow-up Overdue", "Fires when a lead follow-up has crossed its SLA deadline", "CRM", "AUDIENCE"});
+        eventMeta.put("LEAD_REATTEMPT", new String[]{"Lead Enquired Again (Reattempt)", "Fires when an existing lead sends a new enquiry, a repeat or duplicate from any source; the counselor keys are the lead's owner", "CRM", "AUDIENCE"});
         eventMeta.put("LEAD_STATUS_CHANGED", new String[]{"Lead Status Changed", "Fires when a lead's status/tier changes (carries oldStatus and newStatus)", "CRM", "AUDIENCE"});
         // Assessment
         eventMeta.put("ASSESSMENT_CREATE", new String[]{"Assessment Created", "Fires when a new assessment is saved as a draft", "Assessment", "ASSESSMENT"});
@@ -251,6 +260,7 @@ public class WorkflowCatalogController {
         eventMeta.put("ASSESSMENT_REMINDER_BEFORE_START", new String[]{"Assessment Starting Soon", "Fires for each registered learner shortly before an assessment opens", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_REATTEMPT_GRANTED", new String[]{"Assessment Reattempt Granted", "Fires for each learner an admin grants extra attempts to", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_REATTEMPT_REQUESTED", new String[]{"Assessment Reattempt Requested", "Fires when a learner asks for another attempt or more time — notify staff", "Assessment", "ASSESSMENT"});
+        eventMeta.put("ASSESSMENT_AI_EVALUATION_COMPLETED", new String[]{"AI Copy Check Completed", "Fires when a bulk AI check of uploaded answer copies finishes — notify the coordinator, with counts of checked / failed / copies needing review", "Assessment", "ASSESSMENT"});
 
         List<CatalogItemDTO> events = new ArrayList<>();
         for (WorkflowTriggerEvent event : WorkflowTriggerEvent.values()) {
@@ -320,8 +330,9 @@ public class WorkflowCatalogController {
                 ctxVar("leadName", "Lead name"),
                 ctxVar("leadEmail", "Lead email"),
                 ctxVar("leadMobile", "Lead mobile"),
-                ctxVar("tat", "Configured TAT (human-readable, e.g. '24 hours')"),
-                ctxVar("tatHours", "Configured TAT in hours (raw integer)"),
+                ctxVar("tat", "Configured TAT (human-readable, e.g. '1 hour 30 minutes')"),
+                ctxVar("tatMinutes", "Configured TAT in minutes (exact integer)"),
+                ctxVar("tatHours", "Configured TAT in whole hours, rounded up (integer)"),
                 // Same values as lead-* above, kept for backward compat with older templates.
                 ctxVar("parentName", "Parent name (alias of leadName)"),
                 ctxVar("parentEmail", "Parent email (alias of leadEmail)"),
@@ -336,12 +347,28 @@ public class WorkflowCatalogController {
                 ctxVar("dueAt", "Deadline (ISO timestamp)"),
                 ctxVar("minutesToBreach", "Minutes until breach")));
 
+        // A repeat enquiry: the lead + its owner (base), where audienceId / campaignName /
+        // poolId are the list the new enquiry came in on, plus what that enquiry carried.
+        List<Map<String, String>> reattempt = new ArrayList<>(base);
+        reattempt.addAll(List.of(
+                ctxVar("reattemptSource", "Where the new enquiry came from (e.g. Website form, Meta Lead Ads)"),
+                ctxVar("reattemptEmail", "Email the new enquiry came with (may differ from leadEmail)"),
+                ctxVar("reattemptMobile", "Mobile the new enquiry came with (may differ from leadMobile)"),
+                ctxVar("reattemptResponseId", "ID of the new enquiry"),
+                ctxVar("previousResponseId", "ID of the earlier enquiry it repeats"),
+                ctxVar("previousStatus", "Status of the earlier enquiry before this one (e.g. NEW, LOST)"),
+                ctxVar("sameListRepeat", "true when the lead enquired again in the same list")));
+
         // Status changes add the old/new status keys.
         List<Map<String, String>> status = new ArrayList<>(base);
         status.addAll(List.of(
                 ctxVar("changeType", "Change type (CONVERSION_STATUS / TIER / ENQUIRY_STATUS / LEAD_STATUS)"),
                 ctxVar("oldStatus", "Previous status"),
                 ctxVar("newStatus", "New status"),
+                // Only emitted by the per-lead LEAD_STATUS path (LeadStatusService); the
+                // profile-level conversion/tier emitters don't set them.
+                ctxVar("statusChangeSource", "Who changed it: MANUAL | MANUAL_DISPOSITION | AI_CALLING | AI_WORKFLOW"),
+                ctxVar("statusChangedByUserId", "User ID of whoever changed it (blank for system changes)"),
                 ctxVar("conversionStatus", "Conversion status")));
 
         // Assessment events. Emitted cross-service by assessment_service's
@@ -462,12 +489,30 @@ public class WorkflowCatalogController {
         assessmentPublished.add(ctxVar("publishedBy", "User ID of the admin who published it"));
 
         Map<String, List<Map<String, String>>> out = new LinkedHashMap<>();
+        // Website reviews: ReviewSubmittedWorkflowNotifier.context.
+        out.put(WorkflowTriggerEvent.REVIEW_SUBMITTED.name(), List.of(
+                ctxVar("instituteId", "Institute ID"),
+                ctxVar("reviewId", "Review ID"),
+                ctxVar("rating", "Stars given (1-5)"),
+                ctxVar("ratingStars", "Stars as text, e.g. ★★★★☆"),
+                ctxVar("reviewerName", "Reviewer name"),
+                ctxVar("reviewText", "Written review (may be empty)"),
+                ctxVar("courseName", "Course the reviewer named (may be empty)"),
+                ctxVar("city", "City (may be empty)"),
+                ctxVar("designation", "Occupation / designation (may be empty)"),
+                ctxVar("answersText", "Answers to the form's own questions, one 'Label: value' per line"),
+                ctxVar("answers", "Answers to the form's own questions, as a list of {key, label, value}"),
+                ctxVar("siteTag", "Website the review came from"),
+                ctxVar("pageRoute", "Page of that website"),
+                ctxVar("reviewStatus", "PENDING (reviews always wait for approval)"),
+                ctxVar("submittedAt", "When it was sent (ISO time)")));
         out.put(WorkflowTriggerEvent.LEAD_ASSIGNED_TO_COUNSELOR.name(), base);
         out.put(WorkflowTriggerEvent.LEAD_TAT_REMINDER_BEFORE.name(), sla);
         out.put(WorkflowTriggerEvent.LEAD_TAT_OVERDUE.name(), sla);
         out.put(WorkflowTriggerEvent.FOLLOW_UP_DUE.name(), sla);
         out.put(WorkflowTriggerEvent.FOLLOW_UP_OVERDUE.name(), sla);
         out.put(WorkflowTriggerEvent.LEAD_STATUS_CHANGED.name(), status);
+        out.put(WorkflowTriggerEvent.LEAD_REATTEMPT.name(), reattempt);
         out.put(WorkflowTriggerEvent.ASSESSMENT_CREATE.name(), assessmentCreated);
         out.put(WorkflowTriggerEvent.ASSESSMENT_PUBLISHED.name(), assessmentPublished);
         out.put(WorkflowTriggerEvent.ASSESSMENT_START.name(), attemptStart);
@@ -477,6 +522,16 @@ public class WorkflowCatalogController {
         out.put(WorkflowTriggerEvent.ASSESSMENT_REMINDER_BEFORE_START.name(), reminder);
         out.put(WorkflowTriggerEvent.ASSESSMENT_REATTEMPT_GRANTED.name(), reattemptGranted);
         out.put(WorkflowTriggerEvent.ASSESSMENT_REATTEMPT_REQUESTED.name(), reattemptRequested);
+        List<Map<String, String>> aiBatch = new ArrayList<>(assessment);
+        aiBatch.addAll(List.of(
+                ctxVar("batchId", "ID of the bulk upload, for the results link"),
+                ctxVar("totalCopies", "Copies in the upload"),
+                ctxVar("checkedCopies", "Copies the AI checked"),
+                ctxVar("failedCopies", "Copies that could not be checked"),
+                ctxVar("copiesNeedingReview", "Copies waiting for an admin to pick the student"),
+                ctxVar("batchStatus", "COMPLETED or NEEDS_REVIEW"),
+                ctxVar("startedBy", "User ID of the admin who uploaded the copies")));
+        out.put(WorkflowTriggerEvent.ASSESSMENT_AI_EVALUATION_COMPLETED.name(), aiBatch);
         return ResponseEntity.ok(out);
     }
 

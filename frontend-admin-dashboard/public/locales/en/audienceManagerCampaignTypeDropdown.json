@@ -1,0 +1,14 @@
+{
+    "placeholder": "Select {{term}}",
+    "optionWebsite": "Website",
+    "optionGoogleAds": "Google Ads",
+    "optionFacebook": "Facebook",
+    "optionInstagram": "Instagram",
+    "optionSocialMedia": "Social Media",
+    "addCustomType": "Add custom Enquiry type",
+    "customInputPlaceholder": "Enter {{term}}",
+    "cancel": "Cancel",
+    "save": "Save",
+    "searchPlaceholder": "Search…",
+    "noMatches": "No match for “{{query}}”"
+}

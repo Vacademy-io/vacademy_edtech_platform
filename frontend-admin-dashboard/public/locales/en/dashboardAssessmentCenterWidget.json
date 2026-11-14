@@ -1,0 +1,16 @@
+{
+    "heading": {
+        "title": "Assessment Center",
+        "description": "Create, manage, and evaluate assessments"
+    },
+    "badges": {
+        "tests": "Tests",
+        "papers": "Papers"
+    },
+    "features": {
+        "createAssessment": "Create Assessment",
+        "viewAssessments": "View Assessments",
+        "questionPapers": "Question Papers",
+        "evaluationCenter": "Evaluation Center"
+    }
+}

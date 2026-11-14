@@ -1,0 +1,5 @@
+{
+    "validation": {
+        "questionNameRequired": "Le nom de la question est requis"
+    }
+}

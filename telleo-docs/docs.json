@@ -1,0 +1,157 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Telleo API",
+  "description": "Start AI phone calls from your CRM, website or automation tool and get each call's outcome back.",
+  "colors": {
+    "primary": "#0A8656",
+    "light": "#14C47C",
+    "dark": "#0A8656"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://telleo.ai"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "family": "Plus Jakarta Sans"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "telleo.ai",
+        "href": "https://telleo.ai"
+      },
+      {
+        "label": "Support",
+        "href": "mailto:hello@telleo.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Book a demo",
+      "href": "https://telleo.ai/demo/"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "getting-api-access",
+              "authentication",
+              "dashboard"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/calls",
+              "concepts/human-calls",
+              "concepts/counsellors",
+              "concepts/agents-and-variables",
+              "concepts/managing-agents",
+              "concepts/outcomes",
+              "concepts/queue-and-limits",
+              "concepts/test-mode"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "webhooks/overview",
+              "webhooks/verify-signatures",
+              "webhooks/events"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/crm-integration",
+              "guides/click-to-call",
+              "guides/manage-agents-and-counsellors",
+              "guides/website-forms",
+              "guides/no-code",
+              "guides/bulk-calling",
+              "guides/going-live"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "platform/errors",
+              "platform/rate-limits",
+              "platform/idempotency",
+              "platform/pagination",
+              "platform/credits-and-usage",
+              "platform/billing",
+              "platform/changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "api-reference/openapi.json"
+          }
+        ]
+      }
+    ]
+  },
+  "api": {
+    "playground": {
+      "display": "simple"
+    },
+    "examples": {
+      "languages": [
+        "curl",
+        "python",
+        "javascript"
+      ],
+      "defaults": "required"
+    },
+    "mdx": {
+      "server": "https://api.telleo.ai/v1",
+      "auth": {
+        "method": "key",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://telleo.ai"
+    }
+  },
+  "seo": {
+    "indexing": "navigable"
+  }
+}

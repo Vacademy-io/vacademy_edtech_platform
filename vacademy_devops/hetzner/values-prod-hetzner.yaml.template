@@ -368,6 +368,24 @@ secrets:
     fal: REPLACE_WITH_FAL_API_KEY
     whatsappToken: REPLACE_WITH_WHATSAPP_ACCESS_TOKEN
 
+  # YouTube captions for ai-service (services/youtube_captions). Optional: leave
+  # blank to keep the proxy off. Keys -> env in templates/secret-env.yaml:
+  #   proxyMode        -> YT_CAPTIONS_PROXY            (webshare | generic | off)
+  #   webshareUsername -> WEBSHARE_PROXY_USERNAME      (Rotating Residential plan)
+  #   websharePassword -> WEBSHARE_PROXY_PASSWORD
+  #   proxyHttpUrl     -> YT_CAPTIONS_PROXY_HTTP_URL   (generic mode; carries creds)
+  #   proxyHttpsUrl    -> YT_CAPTIONS_PROXY_HTTPS_URL
+  #   supadataApiKey   -> SUPADATA_API_KEY
+  # Fill real values only in the gitignored values file, never here. Blank keys
+  # are not rendered (an out-of-band value in the Secret is left alone).
+  youtubeCaptions:
+    proxyMode: ""
+    webshareUsername: ""
+    websharePassword: ""
+    proxyHttpUrl: ""
+    proxyHttpsUrl: ""
+    supadataApiKey: ""
+
   # Sentry error reporting. The chart reads `secrets.sentry.dsn` (NOT
   # `secrets.api.sentryDsn`); using the wrong key sends an empty DSN to the
   # pods and Sentry init silently no-ops.

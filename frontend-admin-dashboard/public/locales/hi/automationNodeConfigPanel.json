@@ -1,0 +1,282 @@
+{
+    "panel": {
+        "selectNode": "कॉन्फ़िगर करने के लिए एक नोड चुनें",
+        "nodeNamePlaceholder": "नोड का नाम"
+    },
+    "common": {
+        "variableMappings": "वेरिएबल मैपिंग",
+        "filename": "फ़ाइल का नाम",
+        "filenamePlaceholder": "brochure.pdf"
+    },
+    "trigger": {
+        "sectionLabel": "ट्रिगर सेटिंग्स",
+        "typeLabel": "ट्रिगर प्रकार",
+        "type": {
+            "keywordMatch": "कीवर्ड मिलान",
+            "firstContact": "पहला संपर्क (नया उपयोगकर्ता)",
+            "buttonReply": "बटन रिप्लाई"
+        },
+        "keywordsLabel": "कीवर्ड (कॉमा से अलग करें)",
+        "keywordsPlaceholder": "hello, hi, start",
+        "matchTypeLabel": "मिलान प्रकार",
+        "matchType": {
+            "exact": "सटीक मिलान",
+            "contains": "इसमें शामिल है",
+            "regex": "रेगेक्स पैटर्न"
+        },
+        "priorityLabel": "प्राथमिकता (अधिक संख्या = पहले जाँची जाएगी)"
+    },
+    "sendMessage": {
+        "sectionLabel": "सत्र संदेश",
+        "noTemplateNotice": "टेम्पलेट की आवश्यकता नहीं है — यह 24 घंटे की सत्र विंडो के भीतर सीधे भेजा जाता है।",
+        "typeLabel": "संदेश प्रकार",
+        "type": {
+            "text": "टेक्स्ट संदेश",
+            "image": "छवि",
+            "video": "वीडियो",
+            "document": "दस्तावेज़ (PDF आदि)",
+            "audio": "ऑडियो"
+        },
+        "textLabel": "संदेश टेक्स्ट",
+        "textPlaceholder": "नमस्ते {{example}}! 👋\n\nहमारी सेवा में आपका स्वागत है। मैं आज आपकी कैसे मदद कर सकता हूँ?",
+        "formattingHint": "WhatsApp फ़ॉर्मेटिंग समर्थित है: *बोल्ड*, _इटैलिक_, ~स्ट्राइकथ्रू~, ```कोड```",
+        "variableHint": {
+            "prefix": "गतिशील मानों के लिए उपयोग करें",
+            "suffix": ":"
+        },
+        "mediaUrlLabel": "मीडिया URL",
+        "mediaUrlPlaceholder": "https://example.com/image.jpg",
+        "mediaUrlHint": {
+            "prefix": "यह सार्वजनिक रूप से सुलभ HTTPS URL होना चाहिए। गतिशील URL के लिए उपयोग करें",
+            "suffix": "।"
+        },
+        "captionLabel": "कैप्शन (वैकल्पिक)",
+        "captionPlaceholder": "इस छवि को देखें!",
+        "variableMappingsHint": {
+            "prefix": "ऊपर उपयोग किए गए",
+            "suffix": "को फ़ॉलबैक डिफ़ॉल्ट के साथ सिस्टम या कस्टम फ़ील्ड में मैप करें।"
+        }
+    },
+    "sendTemplate": {
+        "sectionLabel": "टेम्पलेट",
+        "searchLabel": "टेम्पलेट खोजें और चुनें",
+        "searchPlaceholder": "टेम्पलेट खोजें...",
+        "loading": "टेम्पलेट लोड हो रहे हैं...",
+        "noResults": "कोई टेम्पलेट नहीं मिला। नीचे नाम मैन्युअल रूप से टाइप करें।",
+        "nameLabel": "टेम्पलेट का नाम",
+        "namePlaceholder": "welcome_message",
+        "languageLabel": "भाषा",
+        "languagePlaceholder": "en",
+        "previewLabel": "पूर्वावलोकन",
+        "previewHeader": "हेडर: [{{type}}]",
+        "headerSectionLabel": "हेडर ({{type}})",
+        "headerUrlLabelDocument": "दस्तावेज़ URL",
+        "headerUrlLabelGeneric": "{{type}} URL",
+        "headerUrlPlaceholder": "https://...",
+        "bodyParamsLabel": "बॉडी पैरामीटर",
+        "bodyParamsHint": {
+            "prefix": "उपयोग करें",
+            "suffix": "सिंटैक्स या स्थिर मान टाइप करें"
+        },
+        "bodyParamPlaceholder": "{{example}} या स्थिर टेक्स्ट",
+        "addParameter": "पैरामीटर जोड़ें",
+        "buttonParamsLabel": "बटन पैरामीटर",
+        "buttonFallbackLabel": "बटन {{index}}",
+        "urlSuffixLabel": "URL सफ़िक्स",
+        "payloadLabel": "पेलोड",
+        "variableMappingsHint": {
+            "prefix": "बॉडी पैरामीटर, हेडर URL, या बटन URL सफ़िक्स में",
+            "suffix": "का फ़ॉलबैक डिफ़ॉल्ट के साथ उपयोगकर्ता या कस्टम फ़ील्ड में मैप करें।"
+        }
+    },
+    "sendInteractive": {
+        "sectionLabel": "इंटरैक्टिव संदेश",
+        "sessionNotice": "24 घंटे की सत्र विंडो आवश्यक है। नीचे एक फ़ॉलबैक टेम्पलेट कॉन्फ़िगर करें।",
+        "typeLabel": "प्रकार",
+        "type": {
+            "button": "रिप्लाई बटन (अधिकतम 3)",
+            "list": "लिस्ट मेनू"
+        },
+        "bodyLabel": "बॉडी टेक्स्ट",
+        "bodyPlaceholder": "कृपया एक विकल्प चुनें...",
+        "footerLabel": "फ़ुटर (वैकल्पिक)",
+        "footerPlaceholder": "द्वारा संचालित...",
+        "buttonsLabel": "बटन",
+        "buttonTitlePlaceholder": "बटन शीर्षक",
+        "addButton": "बटन जोड़ें",
+        "listButtonLabel": "मेनू बटन टेक्स्ट",
+        "listButtonPlaceholder": "विकल्प देखें",
+        "sectionsLabel": "सेक्शन",
+        "sectionTitlePlaceholder": "सेक्शन शीर्षक",
+        "rowTitlePlaceholder": "पंक्ति शीर्षक",
+        "rowIdPlaceholder": "पंक्ति ID (शर्तों के लिए)",
+        "rowDescriptionPlaceholder": "विवरण (वैकल्पिक)",
+        "addRow": "पंक्ति जोड़ें",
+        "addSection": "सेक्शन जोड़ें",
+        "fallbackTemplateLabel": "फ़ॉलबैक टेम्पलेट (यदि 24 घंटे की विंडो समाप्त हो गई हो)"
+    },
+    "condition": {
+        "sectionLabel": "शर्त शाखाएँ",
+        "hint": "प्रत्येक शाखा एक आउटगोइंग एज बनाती है। उन्हें कैनवास पर अगले नोड्स से जोड़ें।",
+        "typeLabel": "शर्त प्रकार",
+        "type": {
+            "userResponse": "उपयोगकर्ता टेक्स्ट प्रतिक्रिया",
+            "buttonReply": "इंटरैक्टिव बटन रिप्लाई",
+            "listReply": "लिस्ट चयन रिप्लाई"
+        },
+        "importButton_one": "जुड़े हुए इंटरैक्टिव नोड से {{count}} विकल्प आयात करें",
+        "importButton_other": "जुड़े हुए इंटरैक्टिव नोड से {{count}} विकल्प आयात करें",
+        "defaultBranchLabel": "डिफ़ॉल्ट",
+        "branchLabelPlaceholder": "शाखा लेबल",
+        "defaultCheckboxLabel": "डिफ़ॉल्ट (फ़ॉलबैक)",
+        "matchType": {
+            "exact": "सटीक",
+            "contains": "इसमें शामिल है",
+            "regex": "रेगेक्स",
+            "buttonId": "बटन ID",
+            "listId": "लिस्ट पंक्ति ID",
+            "payload": "पेलोड"
+        },
+        "matchValuePlaceholder": "मिलान मान...",
+        "addBranch": "शाखा जोड़ें"
+    },
+    "delay": {
+        "sectionLabel": "विलंब सेटिंग्स",
+        "durationLabel": "अवधि",
+        "unit": {
+            "seconds": "सेकंड",
+            "minutes": "मिनट",
+            "hours": "घंटे",
+            "days": "दिन"
+        }
+    },
+    "workflow": {
+        "sectionLabel": "वर्कफ़्लो एक्शन",
+        "idLabel": "वर्कफ़्लो ID",
+        "contextHint": "वर्कफ़्लो को संदर्भ के रूप में phone, instituteId, userId, और messageText प्राप्त होंगे।"
+    },
+    "webhook": {
+        "sectionLabel": "HTTP वेबहुक",
+        "urlLabel": "URL",
+        "methodLabel": "मेथड",
+        "resultVariableLabel": "परिणाम वेरिएबल का नाम",
+        "resultHint": {
+            "prefix": "प्रतिक्रिया संग्रहीत की गई",
+            "suffix": "बाद के नोड्स में उपयोग के लिए।"
+        }
+    },
+    "aiCredits": {
+        "outOfCreditsTitle": "AI क्रेडिट समाप्त हो गए हैं।",
+        "outOfCreditsBody": "यह चरण मॉडल को कॉल नहीं करेगा — जो बातचीत यहाँ पहुँचती है, वह संस्थान के टॉप-अप करने तक WhatsApp इनबॉक्स में किसी व्यक्ति को सौंप दी जाती है।",
+        "spendNotice": "हर रिप्लाई AI क्रेडिट खर्च करती है",
+        "balance": "· शेष {{balance}}"
+    },
+    "aiResponse": {
+        "sectionLabel": "AI बातचीत",
+        "modelLabel": "मॉडल",
+        "model": {
+            "platformDefault": "प्लेटफ़ॉर्म डिफ़ॉल्ट (GLM 5.3 Flash)",
+            "gemini20Flash": "Gemini 2.0 Flash (तेज़)",
+            "gemini25Flash": "Gemini 2.5 Flash",
+            "gemini25Pro": "Gemini 2.5 Pro",
+            "claude35Sonnet": "Claude 3.5 Sonnet",
+            "gpt4oMini": "GPT-4o Mini",
+            "deepseekV32": "DeepSeek V3.2"
+        },
+        "systemPromptLabel": "सिस्टम प्रॉम्प्ट",
+        "systemPromptPlaceholder": "आप {{example}} के लिए एक सहायक सहायक हैं। पाठ्यक्रमों और नामांकन के बारे में प्रश्नों के उत्तर दें...",
+        "maxTokensLabel": "अधिकतम टोकन",
+        "maxTurnsLabel": "अधिकतम बारी",
+        "temperatureLabel": "तापमान",
+        "exitKeywordsLabel": "एग्ज़िट कीवर्ड (कॉमा से अलग करें)",
+        "fallbackMessageLabel": "फ़ॉलबैक संदेश (त्रुटि/अधिकतम बारी पर)",
+        "fallbackMessagePlaceholder": "मुझे आपको एक मानव एजेंट से जोड़ने दें।",
+        "unsureSectionLabel": "जब AI को नहीं पता",
+        "escalateCheckboxLabel": "अनुमान लगाने के बजाय किसी एडमिन को सौंपें",
+        "handoverMessageLabel": "हैंड-ओवर संदेश",
+        "handoverMessagePlaceholder": "मेरे पास अभी वह जानकारी नहीं है। मुझे अपनी टीम से जाँच करके जल्द ही आपसे संपर्क करने दें।",
+        "escalationNotice": {
+            "prefix": "जब उत्तर AI के संदर्भ में नहीं होता, तो यह अनुमान लगाने के बजाय यह संदेश भेजता है। बातचीत को तब चिह्नित किया जाता है",
+            "unanswered": "अनुत्तरित",
+            "middle": "WhatsApp इनबॉक्स में, और",
+            "flowSettings": "फ़्लो सेटिंग्स",
+            "suffix": "के तहत सूचीबद्ध लोगों को ईमेल और/या WhatsApp द्वारा बताया जाता है कि एक शिक्षार्थी प्रतीक्षा कर रहा है। इनबॉक्स से रिप्लाई करने पर यह साफ़ हो जाता है।"
+        },
+        "interactiveSectionLabel": "इंटरैक्टिव प्रतिक्रियाएँ",
+        "interactiveCheckboxLabel": "AI को रिप्लाई बटन और लिस्ट मेनू भेजने की अनुमति दें",
+        "interactiveNotice": "अब AI विकल्प प्रस्तुत करते समय रिप्लाई बटन (अधिकतम 3) या लिस्ट मेनू शामिल कर सकता है। यदि फ़ॉर्मैट अमान्य है या 24 घंटे का सत्र समाप्त हो गया है, तो यह सादे टेक्स्ट पर वापस चला जाता है।"
+    },
+    "crmLeadCheck": {
+        "sectionLabel": "CRM लीड जांचें",
+        "hint": "इस WhatsApp नंबर को आपके पूरे CRM में खोजता है। नया नंबर तुरंत “WhatsApp Leads” सूची में जोड़ दिया जाता है। मौजूदा लीड की कभी डुप्लिकेट नहीं बनती — संपर्क उनकी मौजूदा लीड पर दर्ज किया जाता है।",
+        "outputsLabel": "आउटपुट",
+        "branchNew": "नई लीड",
+        "branchExisting": "मौजूदा लीड",
+        "connected": "जुड़ा हुआ",
+        "notConnected": "जुड़ा नहीं",
+        "connectBothNotice": "जो आउटपुट जुड़ा नहीं है, वहां उस तरह की लीड के लिए फ़्लो खत्म हो जाता है। जोड़ने के लिए नोड के नीचे संबंधित बिंदु से खींचें।",
+        "existingSectionLabel": "अगर लीड पहले से मौजूद है",
+        "existingMessageLabel": "भेजा जाने वाला संदेश",
+        "existingMessagePlaceholder": "उदा. फिर से स्वागत है! हमारी टीम जल्द ही आपसे संपर्क करेगी।",
+        "blankSendsNothing": "कुछ न भेजने के लिए खाली छोड़ें।",
+        "notifyTeamLabel": "टीम को अलर्ट करें",
+        "notifyTeamHint": "WhatsApp इनबॉक्स में चैट को जवाब के इंतज़ार में चिह्नित करता है और इस फ़्लो की सेटिंग्स में दिए गए लोगों को सूचित करता है।"
+    },
+    "askField": {
+        "sectionLabel": "फ़ील्ड पूछें और सेव करें",
+        "hint": "एक सवाल पूछता है, जवाब का इंतज़ार करता है, जांचता है कि वह फ़ील्ड के अनुरूप है और उसे लीड पर सेव करता है।",
+        "fieldLabel": "फ़ील्ड",
+        "fieldPlaceholder": "एक फ़ील्ड चुनें…",
+        "leadDetailsGroup": "लीड विवरण",
+        "customFieldsGroup": "कस्टम फ़ील्ड",
+        "systemFields": {
+            "fullName": "पूरा नाम",
+            "email": "ईमेल"
+        },
+        "loadingFields": "कस्टम फ़ील्ड लोड हो रहे हैं…",
+        "loadFieldsFailed": "कस्टम फ़ील्ड लोड नहीं हो सके।",
+        "retry": "फिर से कोशिश करें",
+        "noCustomFields": "अभी कोई कस्टम फ़ील्ड नहीं है — इन्हें सेटिंग्स → कस्टम फ़ील्ड में जोड़ें।",
+        "missingFieldOption": "{{field}} (अब मौजूद नहीं)",
+        "missingFieldNotice": "यह फ़ील्ड अब आपके कस्टम फ़ील्ड में मौजूद नहीं है। कोई दूसरा चुनें।",
+        "typeWithChoices": "प्रकार: {{type}} · {{total}} विकल्प",
+        "typeOnly": "प्रकार: {{type}}",
+        "noChoicesNotice": "इस फ़ील्ड में अभी कोई विकल्प नहीं है। इन्हें सेटिंग्स → कस्टम फ़ील्ड में जोड़ें।",
+        "choicesChangedNotice": "चुने जाने के बाद से इस फ़ील्ड के विकल्प बदल गए हैं।",
+        "refreshChoices": "नवीनतम विकल्प इस्तेमाल करें",
+        "defaultQuestion": "कृपया अपना {{field}} बताएं।",
+        "questionLabel": "सवाल",
+        "questionPlaceholder": "बॉट क्या पूछे?",
+        "retryMessageLabel": "दोबारा पूछने का संदेश",
+        "retryMessagePlaceholder": "माफ़ करें, यह सही नहीं लग रहा। कृपया फिर से कोशिश करें।",
+        "retryMessageHint": "तब भेजा जाता है जब जवाब फ़ील्ड के अनुरूप न हो — जैसे अमान्य ईमेल, या विकल्पों में से न हो।",
+        "maxRetriesLabel": "अधिकतम दोबारा प्रयास",
+        "allowSkipLabel": "इस सवाल को छोड़ने दें",
+        "listButtonLabel": "सूची बटन का टेक्स्ट",
+        "noSaveStepNotice": "लीड का स्टेटस सेट करने और लीड वर्कफ़्लो चलाने के लिए अपने सवालों के बाद “Save Lead to CRM” स्टेप जोड़ें।",
+        "preview": {
+            "sectionLabel": "पूर्वावलोकन",
+            "noQuestion": "आपका सवाल यहां दिखेगा",
+            "modeText": "वे अपना जवाब टाइप करते हैं।",
+            "modeButtons": "जवाब बटनों के रूप में भेजा जाता है।",
+            "modeList": "सूची के रूप में भेजा जाता है, जिसे वे बटन से खोलते हैं।",
+            "modeNumbered": "10 से ज़्यादा विकल्प — क्रमांकित सूची के रूप में भेजा जाता है; वे नंबर से जवाब देते हैं।",
+            "modeMultiSelect": "मल्टी-सेलेक्ट — क्रमांकित सूची के रूप में भेजा जाता है; वे कई नंबरों से जवाब दे सकते हैं।",
+            "longChoiceNotice": "कुछ विकल्प यहां WhatsApp की सीमा ({{max}} अक्षर) से लंबे हैं और छोटे किए जा सकते हैं।"
+        }
+    },
+    "saveToCrm": {
+        "sectionLabel": "लीड को CRM में सेव करें",
+        "hint": "इस फ़्लो में इकट्ठा किए गए सभी जवाब लीड पर सेव करता है — लीड मौजूद न हो तो उसे बनाता है — और आपके लीड-सबमिशन वर्कफ़्लो चलाता है।",
+        "statusLabel": "लीड स्टेटस सेट करें",
+        "dontChange": "न बदलें",
+        "loadingStatuses": "स्टेटस लोड हो रहे हैं…",
+        "missingStatusOption": "{{status}} (अब मौजूद नहीं)",
+        "missingStatusNotice": "यह स्टेटस अब मौजूद नहीं है। कोई दूसरा चुनें, या “न बदलें”।",
+        "successMessageLabel": "सेव होने के बाद का संदेश",
+        "successMessagePlaceholder": "उदा. धन्यवाद! हमारी टीम जल्द ही आपसे संपर्क करेगी।",
+        "blankSendsNothing": "कुछ न भेजने के लिए खाली छोड़ें।",
+        "fireWorkflowsLabel": "लीड वर्कफ़्लो चलाएँ",
+        "fireWorkflowsHint": "जवाब सेव होने के बाद नई लीड के लिए इस संस्थान के \"लीड सबमिट\" वर्कफ़्लो (जैसे कन्फ़र्मेशन संदेश, एडमिन अलर्ट) चलाता है। अगर वे वर्कफ़्लो व्यक्ति को दूसरा स्वागत संदेश भेजेंगे तो इसे बंद करें। पहले से मौजूद लीड के लिए कभी नहीं चलता।"
+    }
+}

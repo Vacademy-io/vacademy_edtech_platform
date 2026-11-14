@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { ImageTemplate, FieldMapping, AvailableField } from '@/types/certificate/certificate-types';
 import { MyButton } from '@/components/design-system/button';
@@ -31,6 +32,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
     availableFields,
     isLoading = false,
 }) => {
+    const { t } = useTranslation('certificateGenerationPdfAnnotationEditor');
     const containerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -363,13 +365,15 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                 {/* Editor Controls */}
                 <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium text-neutral-700">Image Editor</h3>
+                        <h3 className="text-sm font-medium text-neutral-700">
+                            {t('toolbar.title')}
+                        </h3>
                         <span className="text-xs text-neutral-500">
-                            {fieldMappings.length} fields mapped
+                            {t('toolbar.fieldsMapped', { count: fieldMappings.length })}
                         </span>
                         {fieldMappings.length > 0 && (
                             <span className="text-xs italic text-blue-600">
-                                • Click to select • Double-click to edit
+                                {t('toolbar.hint')}
                             </span>
                         )}
                     </div>
@@ -407,8 +411,8 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             onClick={handleSaveTemplate}
                             className="text-xs"
                         >
-                            <FloppyDisk className="mr-1 size-3" />
-                            Save
+                            <FloppyDisk className="me-1 size-3" />
+                            {t('toolbar.save')}
                         </MyButton>
 
                         <MyButton
@@ -418,8 +422,8 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             disabled={fieldMappings.length === 0}
                             className="text-xs text-red-600 hover:text-red-700"
                         >
-                            <Trash className="mr-1 size-3" />
-                            Clear All
+                            <Trash className="me-1 size-3" />
+                            {t('toolbar.clearAll')}
                         </MyButton>
                     </div>
                 </div>
@@ -464,7 +468,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             <img
                                 ref={imageRef}
                                 src={imageTemplate.imageDataUrl}
-                                alt="Certificate template"
+                                alt={t('canvas.imageAlt')}
                                 onLoad={handleImageLoad}
                                 className="block max-h-full max-w-full rounded border border-neutral-300 object-contain"
                                 style={{
@@ -502,8 +506,8 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                             onMouseDown={(e) => handleFieldMouseDown(field, e)}
                                             title={
                                                 editingFieldId === field.id
-                                                    ? 'Press Enter or Escape to finish editing'
-                                                    : 'Click to select, double-click to edit text'
+                                                    ? t('canvas.editingTitle')
+                                                    : t('canvas.selectTitle')
                                             }
                                         >
                                             {/* Field Content with Applied Styles */}
@@ -592,8 +596,8 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                                                 e.stopPropagation();
                                                                 handleDeleteField(field.id);
                                                             }}
-                                                            className="absolute -right-2 -top-2 ml-1 rounded border bg-white p-1 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700"
-                                                            title="Delete field"
+                                                            className="absolute -right-2 -top-2 ms-1 rounded border bg-white p-1 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700"
+                                                            title={t('canvas.deleteFieldTitle')}
                                                         >
                                                             <Trash className="size-3" />
                                                         </button>
@@ -622,7 +626,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
                                 <div className="mx-auto mb-3 size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-blue-600" />
-                                <p className="text-sm text-neutral-600">Loading template...</p>
+                                <p className="text-sm text-neutral-600">{t('canvas.loading')}</p>
                             </div>
                         </div>
                     )}
@@ -634,10 +638,10 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                 <div className="mx-auto mb-3 rounded-full bg-blue-100 p-4">
                                     <Eye className="size-8 text-blue-600" />
                                 </div>
-                                <p className="text-lg font-medium text-blue-800">Drop field here</p>
-                                <p className="text-sm text-blue-600">
-                                    Position the field on your certificate template
+                                <p className="text-lg font-medium text-blue-800">
+                                    {t('canvas.dropHere')}
                                 </p>
+                                <p className="text-sm text-blue-600">{t('canvas.dropHint')}</p>
                             </div>
                         </div>
                     )}
@@ -647,7 +651,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                 {fieldMappings.length > 0 && (
                     <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                         <h4 className="mb-3 text-sm font-medium text-neutral-700">
-                            Field Mappings ({fieldMappings.length})
+                            {t('summary.title', { count: fieldMappings.length })}
                         </h4>
                         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
                             {fieldMappings.map((mapping) => (
@@ -665,8 +669,10 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                         {mapping.displayName}
                                     </div>
                                     <div className="text-neutral-500">
-                                        x:{Math.round(mapping.position.x)}, y:
-                                        {Math.round(mapping.position.y)}
+                                        {t('summary.position', {
+                                            x: Math.round(mapping.position.x),
+                                            y: Math.round(mapping.position.y),
+                                        })}
                                     </div>
                                 </div>
                             ))}
@@ -695,7 +701,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             </div>
                             <div>
                                 <h3 className="text-sm font-medium text-neutral-700">
-                                    Field Properties
+                                    {t('properties.title')}
                                 </h3>
                                 <p className="text-xs text-neutral-500">
                                     {selectedField.displayName}
@@ -709,13 +715,13 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                 onClick={() => handleDeleteField(selectedField.id)}
                                 className="text-red-600 hover:bg-red-50 hover:text-red-700"
                             >
-                                <Trash className="mr-1 size-3" />
-                                Remove
+                                <Trash className="me-1 size-3" />
+                                {t('properties.removeButton')}
                             </MyButton>
                             <button
                                 onClick={() => setSelectedFieldId(null)}
                                 className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                                title="Close properties"
+                                title={t('properties.closeTitle')}
                             >
                                 ✕
                             </button>
@@ -728,7 +734,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             {/* Font Size */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Font Size
+                                    {t('properties.fontSize.label')}
                                 </label>
                                 <input
                                     type="range"
@@ -743,18 +749,20 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                     className="w-full"
                                 />
                                 <div className="flex justify-between text-xs text-neutral-500">
-                                    <span>8px</span>
+                                    <span>{t('properties.fontSize.pxValue', { value: 8 })}</span>
                                     <span className="font-medium">
-                                        {selectedField.style.fontSize}px
+                                        {t('properties.fontSize.pxValue', {
+                                            value: selectedField.style.fontSize,
+                                        })}
                                     </span>
-                                    <span>72px</span>
+                                    <span>{t('properties.fontSize.pxValue', { value: 72 })}</span>
                                 </div>
                             </div>
 
                             {/* Font Family */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Font Family
+                                    {t('properties.fontFamily.label')}
                                 </label>
                                 <select
                                     value={selectedField.style.fontFamily}
@@ -778,7 +786,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             {/* Font Weight */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Font Weight
+                                    {t('properties.fontWeight.label')}
                                 </label>
                                 <select
                                     value={selectedField.style.fontWeight}
@@ -789,15 +797,17 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                     }
                                     className="w-full rounded-md border border-neutral-200 p-2 text-sm"
                                 >
-                                    <option value="normal">Normal</option>
-                                    <option value="bold">Bold</option>
+                                    <option value="normal">
+                                        {t('properties.fontWeight.normal')}
+                                    </option>
+                                    <option value="bold">{t('properties.fontWeight.bold')}</option>
                                 </select>
                             </div>
 
                             {/* Text Color */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Text Color
+                                    {t('properties.textColor.label')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -827,7 +837,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             {/* Text Alignment */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Text Alignment
+                                    {t('properties.textAlignment.label')}
                                 </label>
                                 <div className="flex gap-1">
                                     {(['left', 'center', 'right'] as const).map((align) => (
@@ -845,7 +855,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                                     : 'border-neutral-200 hover:border-neutral-300'
                                             )}
                                         >
-                                            {align.charAt(0).toUpperCase() + align.slice(1)}
+                                            {t(`properties.textAlignment.${align}`)}
                                         </button>
                                     ))}
                                 </div>
@@ -854,7 +864,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             {/* Background Color */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Background Color
+                                    {t('properties.backgroundColor.label')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -881,23 +891,27 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                         }
                                         className="rounded-md border border-neutral-200 px-3 py-2 text-xs hover:bg-neutral-50"
                                     >
-                                        Clear
+                                        {t('properties.backgroundColor.clear')}
                                     </button>
                                 </div>
                                 <p className="mt-1 text-xs text-neutral-500">
-                                    Current: {selectedField.style.backgroundColor || 'transparent'}
+                                    {t('properties.backgroundColor.current', {
+                                        value:
+                                            selectedField.style.backgroundColor ||
+                                            t('properties.backgroundColor.transparent'),
+                                    })}
                                 </p>
                             </div>
 
                             {/* Field Position */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Position
+                                    {t('properties.position.label')}
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="mb-1 block text-xs text-neutral-500">
-                                            X Position
+                                            {t('properties.position.x')}
                                         </label>
                                         <input
                                             type="number"
@@ -914,7 +928,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs text-neutral-500">
-                                            Y Position
+                                            {t('properties.position.y')}
                                         </label>
                                         <input
                                             type="number"
@@ -935,12 +949,12 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                             {/* Field Size */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Field Size
+                                    {t('properties.size.label')}
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="mb-1 block text-xs text-neutral-500">
-                                            Width
+                                            {t('properties.size.width')}
                                         </label>
                                         <input
                                             type="number"
@@ -957,7 +971,7 @@ export const ImageAnnotationEditor: React.FC<ImageAnnotationEditorProps> = ({
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs text-neutral-500">
-                                            Height
+                                            {t('properties.size.height')}
                                         </label>
                                         <input
                                             type="number"

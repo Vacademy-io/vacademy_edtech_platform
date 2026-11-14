@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
-import { PaperPlaneTilt, Warning } from '@phosphor-icons/react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { useTranslation } from 'react-i18next';
+import { ArrowBendUpLeft, PaperPlaneTilt, Trash, Warning } from '@phosphor-icons/react';
 import {
     Select,
     SelectContent,
@@ -17,9 +10,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MyButton } from '@/components/design-system/button';
 import {
     getEmailConfigurations,
     type EmailConfiguration,
@@ -28,27 +19,35 @@ import { sendEmailReply, type EmailMessage } from '../../-services/email-inbox-a
 import { toast } from 'sonner';
 
 interface Props {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
     instituteId: string;
-    toEmail: string | null;
+    toEmail: string;
+    /** Display name of the recipient, when known. */
+    toName?: string;
     /** Default subject (e.g. "Re: <last received subject>"). Empty string = no prefill. */
     defaultSubject?: string;
     onSent: (msg: EmailMessage) => void;
+    /** Close without sending (the draft is discarded). */
+    onDiscard: () => void;
 }
 
+/**
+ * Gmail's inline reply: a card under the thread with the recipient, the sender to reply from,
+ * the subject, and the message. Sends through one of the institute's configured senders.
+ */
 export function EmailReplyComposer({
-    open,
-    onOpenChange,
     instituteId,
     toEmail,
+    toName,
     defaultSubject = '',
     onSent,
+    onDiscard,
 }: Props) {
+    const { t } = useTranslation('communicationEmailReplyComposer');
     const [senders, setSenders] = useState<EmailConfiguration[]>([]);
     const [loadingSenders, setLoadingSenders] = useState(false);
     const [from, setFrom] = useState<string>('');
-    const [subject, setSubject] = useState('');
+    const [subject, setSubject] = useState(defaultSubject);
+    const [editSubject, setEditSubject] = useState(false);
     const [body, setBody] = useState('');
     const [sending, setSending] = useState(false);
 
@@ -70,7 +69,7 @@ export function EmailReplyComposer({
                 );
                 setSenders(real);
                 const first = real[0];
-                if (first && !from) setFrom(first.email);
+                if (first) setFrom((prev) => prev || first.email);
             })
             .catch((err) => console.error('Failed to load email senders', err))
             .finally(() => {
@@ -81,27 +80,24 @@ export function EmailReplyComposer({
         };
     }, [instituteId]);
 
-    // Reset draft on each open so opening the dialog for a different conversation doesn't
-    // surface a previous draft (or leak a partial reply across recipients).
+    // A different conversation starts a fresh draft (never leak a reply across recipients).
     useEffect(() => {
-        if (open) {
-            setSubject(defaultSubject);
-            setBody('');
-        }
-    }, [open, defaultSubject]);
+        setSubject(defaultSubject);
+        setEditSubject(false);
+        setBody('');
+    }, [toEmail, defaultSubject]);
 
     const disabled = senders.length === 0;
 
     const handleSend = async () => {
         if (!body.trim()) {
-            toast.error('Body cannot be empty');
+            toast.error(t('bodyEmpty'));
             return;
         }
         if (!from) {
-            toast.error('Pick a sender');
+            toast.error(t('pickSender'));
             return;
         }
-        if (!toEmail) return;
 
         setSending(true);
         try {
@@ -113,109 +109,114 @@ export function EmailReplyComposer({
                 body,
             });
             onSent(sent);
-            setSubject('');
             setBody('');
-            toast.success('Reply sent');
-            onOpenChange(false);
-        } catch (err: any) {
+            toast.success(sent.deliveryStatus === 'DEFERRED' ? t('replyQueued') : t('replySent'));
+        } catch (err: unknown) {
             console.error('Send reply failed', err);
-            toast.error(
-                err?.response?.data?.message ||
-                    err?.response?.data?.error ||
-                    'Failed to send reply'
-            );
+            const data = (err as { response?: { data?: { message?: string; error?: string } } })
+                ?.response?.data;
+            toast.error(data?.message || data?.error || t('failedToSendReply'));
         } finally {
             setSending(false);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[640px] max-w-[92vw] p-0 gap-0">
-                <DialogHeader className="px-5 pt-5 pb-3 border-b">
-                    <DialogTitle className="text-base">Reply</DialogTitle>
-                    <DialogDescription className="text-xs">
-                        Send a reply through one of your institute's configured senders.
-                    </DialogDescription>
-                </DialogHeader>
-
-                {disabled ? (
-                    <div className="p-5">
-                        <Alert variant="default" className="border-amber-200 bg-amber-50 text-amber-900">
-                            <Warning className="h-4 w-4 text-amber-600" />
-                            <AlertDescription className="text-xs">
-                                {loadingSenders
-                                    ? 'Loading senders…'
-                                    : 'No configured sender for this institute. Add one in Settings → Notification Settings → Email Settings to enable replies.'}
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                ) : (
-                    <div className="px-5 py-4 space-y-3">
-                        <div className="grid grid-cols-[64px_1fr] gap-x-3 gap-y-3 items-center">
-                            <Label className="text-xs text-muted-foreground">From</Label>
-                            <Select value={from} onValueChange={setFrom}>
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {senders.map((s) => (
-                                        <SelectItem
-                                            key={s.email}
-                                            value={s.email}
-                                            className="text-sm"
-                                        >
-                                            {s.name ? `${s.name} <${s.email}>` : s.email}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Label className="text-xs text-muted-foreground">To</Label>
-                            <div className="text-sm text-foreground bg-muted/60 rounded px-3 py-2 truncate">
-                                {toEmail || ''}
-                            </div>
-
-                            <Label className="text-xs text-muted-foreground">Subject</Label>
+        <section
+            className="rounded-lg border border-neutral-200 bg-white shadow-md"
+            aria-label={t('reply')}
+        >
+            <div className="space-y-1 border-b border-neutral-100 px-4 py-2.5 text-sm">
+                <div className="flex items-center gap-2 text-neutral-600">
+                    <ArrowBendUpLeft size={16} className="shrink-0 text-neutral-500" />
+                    <span className="truncate">
+                        {toName && toName !== toEmail ? `${toName} <${toEmail}>` : toEmail}
+                    </span>
+                </div>
+                {!disabled && (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 ps-6">
+                        <span className="text-xs text-neutral-500">{t('from')}</span>
+                        <Select value={from} onValueChange={setFrom}>
+                            <SelectTrigger className="h-7 w-auto min-w-0 max-w-full border-0 bg-neutral-50 px-2 text-xs shadow-none">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {senders.map((s) => (
+                                    <SelectItem key={s.email} value={s.email} className="text-xs">
+                                        {s.name ? `${s.name} <${s.email}>` : s.email}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {editSubject ? (
                             <Input
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
-                                placeholder="(optional)"
-                                className="h-9 text-sm"
+                                placeholder={t('subject')}
+                                aria-label={t('subject')}
+                                className="h-7 min-w-0 flex-1 px-2 text-xs"
+                                autoFocus
                             />
-                        </div>
-
-                        <Textarea
-                            value={body}
-                            onChange={(e) => setBody(e.target.value)}
-                            placeholder="Write a reply…"
-                            rows={8}
-                            className="text-sm resize-none"
-                            autoFocus
-                        />
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setEditSubject(true)}
+                                className="min-w-0 truncate text-xs text-neutral-500 hover:text-neutral-800 hover:underline"
+                                title={t('editSubject')}
+                            >
+                                {subject || t('noSubject')}
+                            </button>
+                        )}
                     </div>
                 )}
+            </div>
 
-                <DialogFooter className="px-5 py-3 border-t bg-muted/30">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onOpenChange(false)}
-                        disabled={sending}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSend}
-                        disabled={sending || disabled || !body.trim()}
-                        size="sm"
-                        className="gap-1.5"
-                    >
-                        <PaperPlaneTilt size={12} weight="fill" />
-                        {sending ? 'Sending…' : 'Send reply'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            {disabled ? (
+                <p className="flex items-start gap-2 p-4 text-xs text-warning-700">
+                    <Warning size={16} weight="fill" className="shrink-0 text-warning-600" />
+                    {loadingSenders ? t('loadingSenders') : t('noSenderConfigured')}
+                </p>
+            ) : (
+                <Textarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    onKeyDown={(e) => {
+                        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !sending) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                    placeholder={t('writeReplyPlaceholder')}
+                    rows={8}
+                    className="resize-y rounded-none border-0 px-4 py-3 text-sm shadow-none focus-visible:ring-0"
+                    autoFocus
+                />
+            )}
+
+            <footer className="flex items-center justify-between gap-2 px-3 py-2.5">
+                <MyButton
+                    buttonType="primary"
+                    scale="medium"
+                    onClick={handleSend}
+                    disabled={sending || disabled || !body.trim()}
+                    className="gap-1.5 rounded-full px-5"
+                    title={t('sendShortcut')}
+                >
+                    <PaperPlaneTilt size={14} weight="fill" />
+                    {sending ? t('sending') : t('send')}
+                </MyButton>
+                <MyButton
+                    buttonType="text"
+                    scale="small"
+                    layoutVariant="icon"
+                    onClick={onDiscard}
+                    disabled={sending}
+                    title={t('discard')}
+                    aria-label={t('discard')}
+                >
+                    <Trash size={16} />
+                </MyButton>
+            </footer>
+        </section>
     );
 }

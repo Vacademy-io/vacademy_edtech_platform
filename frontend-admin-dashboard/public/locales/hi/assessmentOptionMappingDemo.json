@@ -1,0 +1,45 @@
+{
+    "title": "ऑप्शन ID मैपिंग डेमो",
+    "subtitle": "ऑप्शन ID को पढ़ने-योग्य कंटेंट में कैसे मैप किया जाता है",
+    "common": {
+        "questionLabel": "प्रश्न:",
+        "responseLabel": "रिस्पॉन्स:"
+    },
+    "before": {
+        "title": "पहले (कच्ची ऑप्शन ID)",
+        "selectedOptions": "चयनित ऑप्शन: {{ids}}"
+    },
+    "after": {
+        "title": "बाद में (मैप किया गया कंटेंट)",
+        "selected": "चयनित: {{options}}"
+    },
+    "allOptions": {
+        "title": "सभी उपलब्ध ऑप्शन",
+        "selectedBadge": "चयनित"
+    },
+    "process": {
+        "title": "मैपिंग प्रक्रिया:",
+        "steps": {
+            "fetchQuestions": {
+                "label": "प्रश्न API फ़ेच करें:",
+                "description": "बैकएंड से ऑप्शन सहित प्रश्न प्राप्त करें"
+            },
+            "createOptionsMap": {
+                "label": "ऑप्शन मैप बनाएं:",
+                "description": "ऑप्शन ID को उनके कंटेंट टेक्स्ट से मैप करें"
+            },
+            "parseResponse": {
+                "label": "रिस्पॉन्स पार्स करें:",
+                "description": "यूज़र रिस्पॉन्स से चयनित ऑप्शन ID निकालें"
+            },
+            "mapIdsToContent": {
+                "label": "ID को कंटेंट से मैप करें:",
+                "description": "ऑप्शन ID को पढ़ने-योग्य टेक्स्ट से बदलें"
+            },
+            "displayEnhancedUi": {
+                "label": "एन्हांस्ड UI दिखाएं:",
+                "description": "वास्तविक प्रश्न कंटेंट और चयनित ऑप्शन दिखाएं"
+            }
+        }
+    }
+}

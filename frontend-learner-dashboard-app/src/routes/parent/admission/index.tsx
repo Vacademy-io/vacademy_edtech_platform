@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   useSuspenseQuery,
   useMutation,
@@ -188,7 +189,7 @@ function Section({
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <h3 className="font-semibold text-sm">{title}</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{children}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">{children}</div>
     </div>
   );
 }
@@ -196,6 +197,7 @@ function Section({
 // ─── Main Form Component ──────────────────────────────────────────────────────
 
 function AdmissionFormInner() {
+  const { t } = useTranslation("parent");
   const selectedChild = useParentPortalStore((s) => s.selectedChild);
   const { data: instituteData } = useSuspenseQuery(
     handleFetchCompleteInstituteDetails(),
@@ -210,11 +212,14 @@ function AdmissionFormInner() {
     const batch = instituteData.batches_for_sessions.find(
       (b: any) => b.id === destinationPackageSessionId,
     );
-    if (!batch) return destinationPackageSessionId ? "Selected Session" : "";
+    if (!batch)
+      return destinationPackageSessionId
+        ? t("admissionPortal.applicationForm.selectedSession")
+        : "";
     const pkgName = batch.package_dto?.package_name || "";
     const levelName = batch.level?.level_name || "";
     return levelName ? `${pkgName} - ${levelName}` : pkgName;
-  }, [instituteData, destinationPackageSessionId]);
+  }, [instituteData, destinationPackageSessionId, t]);
 
   const sessionId = useMemo(() => {
     if (!instituteData?.batches_for_sessions) return "";
@@ -326,13 +331,14 @@ function AdmissionFormInner() {
 
     setShowParentTypePrompt(false);
     setParentTypeToPrefill(null);
-    toast.success("Enquiry data loaded");
+    toast.success(t("admissionPortal.applicationForm.enquiryLoaded"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentTypeToPrefill]);
 
   // Load from application ID
   const handleLoadFromApplication = async () => {
-    if (!applicationId) return toast.error("Enter application ID");
+    if (!applicationId)
+      return toast.error(t("admissionPortal.admissionForm.enterApplicationId"));
     setLoadingApp(true);
     try {
       const resp = await authenticatedAxiosInstance.get(
@@ -358,9 +364,9 @@ function AdmissionFormInner() {
         current_locality: parent.city || f.current_locality,
         current_pin_code: parent.pin_code || f.current_pin_code,
       }));
-      toast.success("Application data loaded");
+      toast.success(t("admissionPortal.admissionForm.applicationLoaded"));
     } catch {
-      toast.error("Could not load application data. Please fill manually.");
+      toast.error(t("admissionPortal.admissionForm.applicationLoadFailed"));
     } finally {
       setLoadingApp(false);
     }
@@ -383,17 +389,18 @@ function AdmissionFormInner() {
       return resp.data;
     },
     onSuccess: () => {
-      toast.success("Admission submitted successfully!");
+      toast.success(t("admissionPortal.admissionForm.submitSuccess"));
       queryClient.invalidateQueries({ queryKey: ["parent-portal"] });
     },
     onError: () => {
-      toast.error("Failed to submit admission");
+      toast.error(t("admissionPortal.admissionForm.submitFailed"));
     },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.institute_id) return toast.error("Institute context not found");
+    if (!form.institute_id)
+      return toast.error(t("admissionPortal.applicationForm.instituteNotFound"));
     try {
       setSubmitting(true);
       await submitMutation.mutateAsync(form);
@@ -411,11 +418,14 @@ function AdmissionFormInner() {
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <h2 className="text-2xl font-bold tracking-tight">Admission Form</h2>
+        <h2 className="text-2xl font-bold tracking-tight">
+          {t("admissionPortal.admissionForm.heading")}
+        </h2>
         <p className="text-muted-foreground text-sm">
-          Submit a new admission for{" "}
+          {t("admissionPortal.admissionForm.submitForPrefix")}{" "}
           <span className="font-medium text-foreground">
-            {selectedChild?.full_name ?? "the student"}
+            {selectedChild?.full_name ??
+              t("admissionPortal.admissionForm.theStudent")}
           </span>
           .
         </p>
@@ -424,7 +434,7 @@ function AdmissionFormInner() {
       {/* Source Selector – compact dropdown */}
       <div className="flex items-center gap-3">
         <label className="text-sm font-medium whitespace-nowrap">
-          Applying from
+          {t("admissionPortal.admissionForm.applyingFrom")}
         </label>
         <Select
           value={source ?? ""}
@@ -437,12 +447,20 @@ function AdmissionFormInner() {
           }}
         >
           <SelectTrigger className="w-56">
-            <SelectValue placeholder="Select source…" />
+            <SelectValue
+              placeholder={t("admissionPortal.admissionForm.selectSource")}
+            />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="enquiry">Enquiry Tracking ID</SelectItem>
-            <SelectItem value="application">Application ID</SelectItem>
-            <SelectItem value="direct">Direct (manual entry)</SelectItem>
+            <SelectItem value="enquiry">
+              {t("admissionPortal.admissionForm.enquiryTrackingId")}
+            </SelectItem>
+            <SelectItem value="application">
+              {t("admissionPortal.admissionForm.applicationIdOption")}
+            </SelectItem>
+            <SelectItem value="direct">
+              {t("admissionPortal.admissionForm.directManualEntry")}
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -450,10 +468,14 @@ function AdmissionFormInner() {
       {/* Lookup panel – Enquiry */}
       {source === "enquiry" && (
         <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-          <p className="text-sm font-medium">Enter Enquiry Tracking ID</p>
+          <p className="text-sm font-medium">
+            {t("admissionPortal.admissionForm.enterEnquiryTrackingId")}
+          </p>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g. ENQ-2024-00123"
+              placeholder={t(
+                "admissionPortal.admissionForm.enquiryTrackingIdPlaceholder",
+              )}
               value={enquiryTrackingId}
               onChange={(e) => setEnquiryTrackingId(e.target.value)}
             />
@@ -461,17 +483,22 @@ function AdmissionFormInner() {
               type="button"
               disabled={enquiryQuery.isFetching}
               onClick={() => {
-                if (!enquiryTrackingId) return toast.error("Enter tracking ID");
+                if (!enquiryTrackingId)
+                  return toast.error(
+                    t("admissionPortal.admissionForm.enterTrackingId"),
+                  );
                 setSearching(true);
               }}
             >
-              {enquiryQuery.isFetching ? "Loading…" : "Load"}
+              {enquiryQuery.isFetching
+                ? t("admissionPortal.applicationForm.loading")
+                : t("admissionPortal.admissionForm.load")}
             </Button>
           </div>
           {showParentTypePrompt && (
             <div className="border rounded-lg p-4 bg-background space-y-3">
               <p className="text-sm font-medium">
-                Is the enquiry parent the Father or Mother?
+                {t("admissionPortal.applicationForm.parentTypePrompt")}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -479,14 +506,14 @@ function AdmissionFormInner() {
                   type="button"
                   onClick={() => setParentTypeToPrefill("FATHER")}
                 >
-                  Father
+                  {t("admissionPortal.applicationForm.father")}
                 </Button>
                 <Button
                   variant="outline"
                   type="button"
                   onClick={() => setParentTypeToPrefill("MOTHER")}
                 >
-                  Mother
+                  {t("admissionPortal.applicationForm.mother")}
                 </Button>
               </div>
             </div>
@@ -497,10 +524,14 @@ function AdmissionFormInner() {
       {/* Lookup panel – Application */}
       {source === "application" && (
         <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-          <p className="text-sm font-medium">Enter Application ID</p>
+          <p className="text-sm font-medium">
+            {t("admissionPortal.admissionForm.enterApplicationId")}
+          </p>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g. APP-2024-00456"
+              placeholder={t(
+                "admissionPortal.admissionForm.applicationIdPlaceholder",
+              )}
               value={applicationId}
               onChange={(e) => setApplicationId(e.target.value)}
             />
@@ -509,7 +540,9 @@ function AdmissionFormInner() {
               disabled={loadingApp}
               onClick={handleLoadFromApplication}
             >
-              {loadingApp ? "Loading…" : "Load"}
+              {loadingApp
+                ? t("admissionPortal.applicationForm.loading")
+                : t("admissionPortal.admissionForm.load")}
             </Button>
           </div>
         </div>
@@ -521,43 +554,56 @@ function AdmissionFormInner() {
           {/* Locked: Applying For Class */}
           <div className="border rounded-lg p-4 bg-primary/5 space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              Applying For Class
+              {t("admissionPortal.admissionForm.fields.applyingForClass")}
             </p>
             <div className="flex items-center gap-2 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-medium">
               <span className="flex-1 truncate">
-                {packageSessionLabel || "Not assigned"}
+                {packageSessionLabel ||
+                  t("admissionPortal.admissionForm.notAssigned")}
               </span>
             </div>
           </div>
 
           {/* Student Information */}
-          <Section title="Student Information">
-            <Field label="First Name">
+          <Section title={t("admissionPortal.admissionForm.sections.student")}>
+            <Field label={t("admissionPortal.admissionForm.fields.firstName")}>
               <Input
                 value={form.first_name}
                 onChange={set("first_name")}
                 required
               />
             </Field>
-            <Field label="Last Name">
+            <Field label={t("admissionPortal.admissionForm.fields.lastName")}>
               <Input value={form.last_name} onChange={set("last_name")} />
             </Field>
-            <Field label="Gender">
+            <Field label={t("admissionPortal.admissionForm.fields.gender")}>
               <Select
                 value={form.gender}
                 onValueChange={(v) => setForm((f) => ({ ...f, gender: v }))}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Gender" />
+                  <SelectValue
+                    placeholder={t(
+                      "admissionPortal.applicationForm.fields.selectGender",
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MALE">Male</SelectItem>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="MALE">
+                    {t("admissionPortal.applicationForm.genderOptions.male")}
+                  </SelectItem>
+                  <SelectItem value="FEMALE">
+                    {t("admissionPortal.applicationForm.genderOptions.female")}
+                  </SelectItem>
+                  <SelectItem value="OTHER">
+                    {t("admissionPortal.applicationForm.genderOptions.other")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Date of Birth">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.dateOfBirth")}
+            >
               <Input
                 type="date"
                 value={form.date_of_birth}
@@ -565,37 +611,49 @@ function AdmissionFormInner() {
                 required
               />
             </Field>
-            <Field label="Mobile Number">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.mobileNumber")}
+            >
               <Input
                 value={form.mobile_number}
                 onChange={set("mobile_number")}
               />
             </Field>
-            <Field label="Student Aadhaar">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.studentAadhaar")}
+            >
               <Input
                 value={form.student_aadhaar}
                 onChange={set("student_aadhaar")}
               />
             </Field>
-            <Field label="Blood Group">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.bloodGroup")}
+            >
               <Input value={form.blood_group} onChange={set("blood_group")} />
             </Field>
-            <Field label="Mother Tongue">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.motherTongue")}
+            >
               <Input
                 value={form.mother_tongue}
                 onChange={set("mother_tongue")}
               />
             </Field>
-            <Field label="Nationality">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.nationality")}
+            >
               <Input value={form.nationality} onChange={set("nationality")} />
             </Field>
-            <Field label="Religion">
+            <Field label={t("admissionPortal.admissionForm.fields.religion")}>
               <Input value={form.religion} onChange={set("religion")} />
             </Field>
-            <Field label="Caste">
+            <Field label={t("admissionPortal.admissionForm.fields.caste")}>
               <Input value={form.caste} onChange={set("caste")} />
             </Field>
-            <Field label="How Did You Know">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.howDidYouKnow")}
+            >
               <Input
                 value={form.how_did_you_know}
                 onChange={set("how_did_you_know")}
@@ -604,27 +662,41 @@ function AdmissionFormInner() {
           </Section>
 
           {/* Admission Details */}
-          <Section title="Admission Details">
-            <Field label="Section">
+          <Section
+            title={t("admissionPortal.admissionForm.sections.admission")}
+          >
+            <Field label={t("admissionPortal.admissionForm.fields.section")}>
               <Input value={form.section} onChange={set("section")} />
             </Field>
-            <Field label="Admission No">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.admissionNo")}
+            >
               <Input value={form.admission_no} onChange={set("admission_no")} />
             </Field>
-            <Field label="Date of Admission">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.dateOfAdmission",
+              )}
+            >
               <Input
                 type="date"
                 value={form.date_of_admission}
                 onChange={set("date_of_admission")}
               />
             </Field>
-            <Field label="Student Type">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.studentType")}
+            >
               <Input value={form.student_type} onChange={set("student_type")} />
             </Field>
-            <Field label="Class Group">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.classGroup")}
+            >
               <Input value={form.class_group} onChange={set("class_group")} />
             </Field>
-            <Field label="Admission Type">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.admissionType")}
+            >
               <Input
                 value={form.admission_type}
                 onChange={set("admission_type")}
@@ -642,44 +714,66 @@ function AdmissionFormInner() {
                 htmlFor="has_transport"
                 className="text-xs text-muted-foreground"
               >
-                Has Transport
+                {t("admissionPortal.admissionForm.fields.hasTransport")}
               </label>
             </div>
           </Section>
 
           {/* Previous School */}
-          <Section title="Previous School">
-            <Field label="School Name">
+          <Section
+            title={t("admissionPortal.admissionForm.sections.previousSchool")}
+          >
+            <Field
+              label={t("admissionPortal.admissionForm.fields.schoolName")}
+            >
               <Input
                 value={form.previous_school_name}
                 onChange={set("previous_school_name")}
               />
             </Field>
-            <Field label="Previous Class">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.previousClass",
+              )}
+            >
               <Input
                 value={form.previous_class}
                 onChange={set("previous_class")}
               />
             </Field>
-            <Field label="Previous Board">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.previousBoard",
+              )}
+            >
               <Input
                 value={form.previous_board}
                 onChange={set("previous_board")}
               />
             </Field>
-            <Field label="Year of Passing">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.yearOfPassing",
+              )}
+            >
               <Input
                 value={form.year_of_passing}
                 onChange={set("year_of_passing")}
               />
             </Field>
-            <Field label="Percentage">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.percentage")}
+            >
               <Input
                 value={form.previous_percentage}
                 onChange={set("previous_percentage")}
               />
             </Field>
-            <Field label="Previous Admission No">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.previousAdmissionNo",
+              )}
+            >
               <Input
                 value={form.previous_admission_no}
                 onChange={set("previous_admission_no")}
@@ -688,36 +782,54 @@ function AdmissionFormInner() {
           </Section>
 
           {/* Father Information */}
-          <Section title="Father Information">
-            <Field label="Father Name">
+          <Section
+            title={t("admissionPortal.admissionForm.sections.father")}
+          >
+            <Field
+              label={t("admissionPortal.applicationForm.fields.fatherName")}
+            >
               <Input value={form.father_name} onChange={set("father_name")} />
             </Field>
-            <Field label="Father Mobile">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.fatherMobile")}
+            >
               <Input
                 value={form.father_mobile}
                 onChange={set("father_mobile")}
               />
             </Field>
-            <Field label="Father Email">
+            <Field
+              label={t("admissionPortal.applicationForm.fields.fatherEmail")}
+            >
               <Input
                 type="email"
                 value={form.father_email}
                 onChange={set("father_email")}
               />
             </Field>
-            <Field label="Father Aadhaar">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.fatherAadhaar")}
+            >
               <Input
                 value={form.father_aadhaar}
                 onChange={set("father_aadhaar")}
               />
             </Field>
-            <Field label="Father Qualification">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.fatherQualification",
+              )}
+            >
               <Input
                 value={form.father_qualification}
                 onChange={set("father_qualification")}
               />
             </Field>
-            <Field label="Father Occupation">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.fatherOccupation",
+              )}
+            >
               <Input
                 value={form.father_occupation}
                 onChange={set("father_occupation")}
@@ -726,36 +838,54 @@ function AdmissionFormInner() {
           </Section>
 
           {/* Mother Information */}
-          <Section title="Mother Information">
-            <Field label="Mother Name">
+          <Section
+            title={t("admissionPortal.admissionForm.sections.mother")}
+          >
+            <Field
+              label={t("admissionPortal.applicationForm.fields.motherName")}
+            >
               <Input value={form.mother_name} onChange={set("mother_name")} />
             </Field>
-            <Field label="Mother Mobile">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.motherMobile")}
+            >
               <Input
                 value={form.mother_mobile}
                 onChange={set("mother_mobile")}
               />
             </Field>
-            <Field label="Mother Email">
+            <Field
+              label={t("admissionPortal.applicationForm.fields.motherEmail")}
+            >
               <Input
                 type="email"
                 value={form.mother_email}
                 onChange={set("mother_email")}
               />
             </Field>
-            <Field label="Mother Aadhaar">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.motherAadhaar")}
+            >
               <Input
                 value={form.mother_aadhaar}
                 onChange={set("mother_aadhaar")}
               />
             </Field>
-            <Field label="Mother Qualification">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.motherQualification",
+              )}
+            >
               <Input
                 value={form.mother_qualification}
                 onChange={set("mother_qualification")}
               />
             </Field>
-            <Field label="Mother Occupation">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.motherOccupation",
+              )}
+            >
               <Input
                 value={form.mother_occupation}
                 onChange={set("mother_occupation")}
@@ -764,14 +894,20 @@ function AdmissionFormInner() {
           </Section>
 
           {/* Guardian */}
-          <Section title="Guardian (Optional)">
-            <Field label="Guardian Name">
+          <Section
+            title={t("admissionPortal.admissionForm.sections.guardian")}
+          >
+            <Field
+              label={t("admissionPortal.admissionForm.fields.guardianName")}
+            >
               <Input
                 value={form.guardian_name}
                 onChange={set("guardian_name")}
               />
             </Field>
-            <Field label="Guardian Mobile">
+            <Field
+              label={t("admissionPortal.admissionForm.fields.guardianMobile")}
+            >
               <Input
                 value={form.guardian_mobile}
                 onChange={set("guardian_mobile")}
@@ -780,32 +916,52 @@ function AdmissionFormInner() {
           </Section>
 
           {/* Address */}
-          <Section title="Address">
-            <Field label="Current Address">
+          <Section title={t("admissionPortal.admissionForm.sections.address")}>
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.currentAddress",
+              )}
+            >
               <Input
                 value={form.current_address}
                 onChange={set("current_address")}
               />
             </Field>
-            <Field label="Current Locality">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.currentLocality",
+              )}
+            >
               <Input
                 value={form.current_locality}
                 onChange={set("current_locality")}
               />
             </Field>
-            <Field label="Current PIN Code">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.currentPinCode",
+              )}
+            >
               <Input
                 value={form.current_pin_code}
                 onChange={set("current_pin_code")}
               />
             </Field>
-            <Field label="Permanent Address">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.permanentAddress",
+              )}
+            >
               <Input
                 value={form.permanent_address}
                 onChange={set("permanent_address")}
               />
             </Field>
-            <Field label="Permanent Locality">
+            <Field
+              label={t(
+                "admissionPortal.admissionForm.fields.permanentLocality",
+              )}
+            >
               <Input
                 value={form.permanent_locality}
                 onChange={set("permanent_locality")}
@@ -816,10 +972,12 @@ function AdmissionFormInner() {
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Submitting…" : "Submit Admission"}
+              {submitting
+                ? t("admissionPortal.admissionForm.submitting")
+                : t("admissionPortal.admissionForm.submitAdmission")}
             </Button>
             <Button type="button" variant="outline" onClick={handleReset}>
-              Reset
+              {t("admissionPortal.applicationForm.reset")}
             </Button>
           </div>
         </form>

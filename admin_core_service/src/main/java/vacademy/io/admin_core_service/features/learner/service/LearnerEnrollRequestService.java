@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -12,6 +13,7 @@ import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollInviteSet
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.enums.EnrollInviteTag;
 import vacademy.io.admin_core_service.features.enroll_invite.service.EnrollInviteService;
+import vacademy.io.admin_core_service.features.enroll_invite.service.InviteFormAdminNotificationService;
 import vacademy.io.admin_core_service.features.enroll_invite.service.SubOrgService;
 import vacademy.io.admin_core_service.features.faculty.dto.AddUserAccessDTO;
 import vacademy.io.admin_core_service.features.faculty.service.FacultyService;
@@ -28,6 +30,12 @@ import vacademy.io.admin_core_service.features.learner_payment_option_operation.
 import vacademy.io.admin_core_service.features.notification.service.DynamicNotificationService;
 import vacademy.io.admin_core_service.features.notification.enums.NotificationEventType;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.regional_pricing.dto.RegionalQuote;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceResolver;
+import vacademy.io.admin_core_service.features.stock_hold.entity.StockHold;
+import vacademy.io.admin_core_service.features.stock_hold.enums.StockHoldKind;
+import vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService;
 import vacademy.io.admin_core_service.features.user_subscription.dto.coupon.CouponValidateRequestDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.coupon.CouponValidateResponseDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount;
@@ -43,12 +51,14 @@ import vacademy.io.admin_core_service.features.user_subscription.service.Payment
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
 import vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponValidationService;
 import vacademy.io.admin_core_service.features.enrollment_policy.service.ReenrollmentGapValidationService;
+import vacademy.io.admin_core_service.features.enroll_invite.service.PhoneIdentifierInviteSubmissionGuard;
 import vacademy.io.admin_core_service.features.institute_learner.service.LearnerEnrollmentEntryService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
 import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
 import vacademy.io.common.common.dto.CustomFieldValueDTO;
+import vacademy.io.common.exceptions.EnrollmentConflictException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceFactory;
 import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceStrategy;
@@ -63,11 +73,21 @@ import vacademy.io.common.logging.SentryLogger;
 
 import java.text.SimpleDateFormat;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityDedupeKeys;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityRecorder;
+import vacademy.io.admin_core_service.features.live_activity.dto.LiveActivityEvent;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityAction;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityActorType;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityCategory;
 
 @Slf4j
 @Service
@@ -75,6 +95,13 @@ public class LearnerEnrollRequestService {
 
     @Autowired
     private EnrollInviteService enrollInviteService;
+
+    @Autowired
+    private RegionalPriceResolver regionalPriceResolver;
+
+
+    @Autowired
+    private LiveActivityRecorder liveActivityRecorder;
 
     @Autowired
     private vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository enrollInviteRepository;
@@ -98,6 +125,9 @@ public class LearnerEnrollRequestService {
     private LearnerCouponService learnerCouponService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.product_page.service.ProductPageAutoLoginService autoLoginService;
+
+    @Autowired
     private CouponValidationService couponValidationService;
 
     @Autowired
@@ -110,6 +140,9 @@ public class LearnerEnrollRequestService {
     private SubOrgService subOrgService;
 
     @Autowired
+    private InviteFormAdminNotificationService inviteFormAdminNotificationService;
+
+    @Autowired
     private PackageSessionRepository packageSessionRepository;
 
     @Autowired
@@ -117,6 +150,9 @@ public class LearnerEnrollRequestService {
 
     @Autowired
     private ReenrollmentGapValidationService reenrollmentGapValidationService;
+
+    @Autowired
+    private PhoneIdentifierInviteSubmissionGuard phoneIdentifierInviteSubmissionGuard;
 
     @Autowired
     private LearnerEnrollmentEntryService learnerEnrollmentEntryService;
@@ -135,6 +171,13 @@ public class LearnerEnrollRequestService {
 
     @Autowired
     private vacademy.io.admin_core_service.features.suborg.service.SubOrgSubscriptionService subOrgSubscriptionService;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver seatCapResolver;
+
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgPartnerOnboardingService subOrgPartnerOnboardingService;
 
     @Autowired
     private FacultyService facultyService;
@@ -164,10 +207,29 @@ public class LearnerEnrollRequestService {
     private vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository userPlanRepository;
 
     @Autowired
-    private vacademy.io.admin_core_service.features.packages.service.PackageSessionService packageSessionService;
+    private vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService instituteSettingService;
 
     @Autowired
-    private vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService instituteSettingService;
+    private StockHoldService stockHoldService;
+
+    /**
+     * extraData flag: reject the enrollment when the invite is not currently available
+     * (status / date window). Set by the public learner endpoint; internal callers
+     * (sub-org registration, admin MANUAL) leave it off.
+     */
+    public static final String ENFORCE_INVITE_AVAILABILITY = "ENFORCE_INVITE_AVAILABILITY";
+
+    /** extraData (Integer): copies bought on this line, stored as user_plan.quantity. Absent = 1. */
+    public static final String LINE_QUANTITY = "LINE_QUANTITY";
+
+    /**
+     * extraData flag: the caller (a multi-item v2 order) already held stock for the whole order,
+     * so this request must not hold any itself.
+     */
+    public static final String STOCK_HELD_BY_ORDER = "STOCK_HELD_BY_ORDER";
+
+    /** extraData (List&lt;StockHold&gt;): the order's holds for this item, linked to its plan here. */
+    public static final String STOCK_HOLDS = "STOCK_HOLDS";
 
     @Transactional
     public LearnerEnrollResponseDTO recordLearnerRequest(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
@@ -200,6 +262,10 @@ public class LearnerEnrollRequestService {
                         learnerEnrollRequestDTO.getInstituteId(), integrityInvite.getId(),
                         integrityInvite.getInstituteId());
                 learnerEnrollRequestDTO.setInstituteId(integrityInvite.getInstituteId());
+                // The public door allowed TEACHER on the strength of the request's institute;
+                // the role is written in the invite's, so that institute's setting decides.
+                PublicEnrollRoleGuard.dropTeacherUnlessInstituteAllows(learnerEnrollRequestDTO.getUser(),
+                        integrityInvite.getInstituteId(), instituteRepository);
             }
         }
 
@@ -217,6 +283,24 @@ public class LearnerEnrollRequestService {
                 && gatewayStrategy.isClientPaymentConfirmation(enrollDTO.getPaymentInitiationRequest())) {
             return completeGatewayPaymentConfirmation(learnerEnrollRequestDTO,
                     enrollDTO.getPaymentInitiationRequest(), gatewayStrategy);
+        }
+
+        // ── Invite availability guard ─────────────────────────────────────────────
+        // The open invite endpoint shows an expired / not-started / deactivated link's
+        // "unavailable" message, but nothing stopped a direct POST from enrolling through
+        // it. Enforced only for callers that opt in (the public learner endpoint), and
+        // only after the phase-2 branch above: a payment that was already taken must
+        // still complete even if the link closed in between.
+        if (Boolean.TRUE.equals(extraData.get(ENFORCE_INVITE_AVAILABILITY))
+                && StringUtils.hasText(enrollDTO.getEnrollInviteId())) {
+            EnrollInvite availabilityInvite = getValidatedEnrollInvite(enrollDTO.getEnrollInviteId());
+            if (!vacademy.io.admin_core_service.features.enroll_invite.util.EnrollInviteAvailabilityUtil
+                    .isAvailable(availabilityInvite)) {
+                throw new VacademyException("This enrollment link is not accepting enrollments ("
+                        + vacademy.io.admin_core_service.features.enroll_invite.util.EnrollInviteAvailabilityUtil
+                                .compute(availabilityInvite)
+                        + ").");
+            }
         }
 
         if (!StringUtils.hasText(learnerEnrollRequestDTO.getUser().getId())) {
@@ -289,8 +373,18 @@ public class LearnerEnrollRequestService {
 
             String learndashBaseUrl = resolveLearnerPortalUrl(
                     enrollDTO.getPackageSessionIds(), learnerEnrollRequestDTO.getInstituteId());
+            if (learnerEnrollRequestDTO.getUser() != null) {
+                // Lets the institute's username strategy use a custom field (e.g. roll number).
+                learnerEnrollRequestDTO.getUser().setUsernameFieldValues(
+                        CustomFieldValueDTO.toValueMap(enrollDTO.getCustomFieldValues()));
+            }
+            List<String> askedRoles = learnerEnrollRequestDTO.getUser().getRoles();
             UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(learnerEnrollRequestDTO.getUser(),
                     learnerEnrollRequestDTO.getInstituteId(), sendCredentials, learndashBaseUrl);
+            // The answer lists the account's roles in every institute, and this user is posted
+            // to auth-service again further on: only what was asked for goes with it.
+            user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(),
+                    learnerEnrollRequestDTO.getInstituteId()));
             learnerEnrollRequestDTO.setUser(user);
             EnrollInvite enrollInvite = getValidatedEnrollInvite(enrollDTO.getEnrollInviteId());
             // Generate coupon code for new learner enrollment
@@ -308,6 +402,13 @@ public class LearnerEnrollRequestService {
         // for the per-rule rationale.
         validateEnrollmentReferences(enrollInvite, paymentOption, paymentPlan,
                 enrollDTO.getPackageSessionIds());
+
+        // Defense in depth for clients that skip form-submit: the same phone-based
+        // account cannot create another plan/payment for this exact invite.
+        phoneIdentifierInviteSubmissionGuard.validateNotAlreadySubmitted(
+                enrollInvite,
+                learnerEnrollRequestDTO.getUser().getId(),
+                learnerEnrollRequestDTO.getInstituteId());
 
         // Determine if this is a SubOrg enrollment and create SubOrg if needed
         String userPlanSource = UserPlanSourceEnum.USER.name();
@@ -372,8 +473,9 @@ public class LearnerEnrollRequestService {
                 ReenrollmentGapValidationService.GapBlockedPackageSession blocked = gapValidationResult
                         .getBlockedPackageSessions().get(0);
                 String retryDateStr = new SimpleDateFormat("yyyy-MM-dd").format(blocked.getRetryDate());
-                throw new VacademyException(
-                        new String("You are already enrolled in this demo. Please complete your current trial first."));
+                throw new EnrollmentConflictException(
+                        EnrollmentConflictException.ConflictType.ALREADY_ENROLLED,
+                        "You are already enrolled in this demo. Please complete your current trial first.");
             } else {
                 // Multiple package sessions - check if at least one is allowed
                 if (gapValidationResult.getAllowedPackageSessionIds().isEmpty()) {
@@ -384,7 +486,8 @@ public class LearnerEnrollRequestService {
                             .min(java.util.Date::compareTo)
                             .orElse(new java.util.Date());
                     String retryDateStr = new SimpleDateFormat("yyyy-MM-dd").format(earliestRetryDate);
-                    throw new VacademyException(
+                    throw new EnrollmentConflictException(
+                            EnrollmentConflictException.ConflictType.ALREADY_ENROLLED,
                             String.format("You can retry operation on %s", retryDateStr));
                 } else {
                     // At least one is allowed - filter out blocked ones
@@ -413,9 +516,19 @@ public class LearnerEnrollRequestService {
         if (EnrollInviteTag.SUBORG_LEARNER.name().equals(enrollInvite.getTag())
                 && enrollInvite.getSubOrgId() != null) {
             for (String psId : enrollDTO.getPackageSessionIds()) {
-                validateSubOrgSeatLimit(enrollInvite.getSubOrgId(), psId);
+                validateSubOrgSeatLimit(enrollInvite.getSubOrgId(), enrollInvite.getInstituteId(), psId);
             }
         }
+
+        int lineQuantity = lineQuantity(extraData);
+
+        // Books picked at rent checkout are held before the gateway is called, so two learners
+        // can't both pay for the last copy (409 "Only N left" when short). A multi-item v2
+        // order (the storefront cart) holds for the whole order up front (STOCK_HELD_BY_ORDER)
+        // and hands each item its holds in STOCK_HOLDS; everything else takes stock on activation.
+        List<StockHold> requestHolds = shouldHoldStockForRequest(enrollDTO, extraData)
+                ? holdStockForRequest(learnerEnrollRequestDTO.getInstituteId(), enrollDTO)
+                : List.of();
 
         UserPlan userPlan = createUserPlan(
                 learnerEnrollRequestDTO.getUser().getId(),
@@ -426,7 +539,16 @@ public class LearnerEnrollRequestService {
                 paymentOption,
                 paymentPlan,
                 userPlanSource,
-                subOrgId);
+                subOrgId,
+                lineQuantity);
+
+        // Link the holds to their plan BEFORE enrollLearnerToBatch: a free, forced-paid or
+        // instantly-paid order activates inside it, and activation finds holds by plan.
+        List<StockHold> planHolds = new ArrayList<>(requestHolds);
+        planHolds.addAll(orderStockHolds(extraData));
+        if (!planHolds.isEmpty()) {
+            stockHoldService.attach(planHolds, learnerEnrollRequestDTO.getUser().getId(), userPlan.getId(), null);
+        }
 
         // B2B: After org-level UserPlan creation, create scoped FREE invites
         // For FREE plans (status=ACTIVE), do it now. For PAID plans, webhook handles
@@ -448,6 +570,24 @@ public class LearnerEnrollRequestService {
                 userPlan,
                 extraData);
 
+        // This request's own holds belong to its gateway payment log, the one the storefront
+        // polls and releases by. (An order's holds are linked by MultiPackageLearnerEnrollService.)
+        if (!requestHolds.isEmpty() && response != null && response.getPaymentResponse() != null
+                && StringUtils.hasText(response.getPaymentResponse().getOrderId())) {
+            stockHoldService.attach(requestHolds, null, null, response.getPaymentResponse().getOrderId());
+        }
+
+        // Invite-form team notification for FREE invites only. The learner FE skips the
+        // /open/v1/enrollment/form-submit step when the invite is FREE, so this is the
+        // only place their submission is observed; every other payment type is notified
+        // from EnrollmentFormService, which keeps it exactly-once either way.
+        if (PaymentOptionType.FREE.name().equals(paymentOption.getType())) {
+            inviteFormAdminNotificationService.notifyAdminsOnFormFill(
+                    enrollInvite,
+                    learnerEnrollRequestDTO.getUser(),
+                    enrollDTO.getCustomFieldValues());
+        }
+
         // B2B: Post-processing for SUB_ORG invite enrollment
         // Creates ROOT_ADMIN mappings, StudentSubOrg entry, and faculty mappings
         if (EnrollInviteTag.SUB_ORG.name().equals(enrollInvite.getTag())
@@ -457,6 +597,14 @@ public class LearnerEnrollRequestService {
                     enrollDTO.getPackageSessionIds(),
                     enrollInvite,
                     userPlan);
+
+            // A FREE partner plan is active right here; paid ones become active in the payment
+            // webhook (UserPlanService.applyOperationsOnFirstPayment), which runs the same
+            // onboarding there. Best-effort by contract: the service never throws.
+            if (UserPlanStatusEnum.ACTIVE.name().equals(userPlan.getStatus())) {
+                subOrgPartnerOnboardingService.onPartnerActivated(
+                        enrollInvite.getSubOrgId(), enrollInvite.getInstituteId(), userPlan);
+            }
         }
 
         // Send enrollment notifications ONLY for FREE enrollments (status = ACTIVE)
@@ -464,16 +612,16 @@ public class LearnerEnrollRequestService {
         // payment
         if (UserPlanStatusEnum.ACTIVE.name().equals(userPlan.getStatus())) {
 
-            // Decrement inventory (available slots) for each enrolled package session
-            // For FREE enrollments, decrement immediately since no payment webhook follows
-            for (String packageSessionId : enrollDTO.getPackageSessionIds()) {
-                try {
-                    packageSessionService.decrementAvailability(packageSessionId, 1);
-                } catch (Exception e) {
-                    log.warn("Failed to decrement inventory for packageSession {} on free enrollment: {}",
-                            packageSessionId, e.getMessage());
-                    // Don't block enrollment if inventory update fails
-                }
+            // Take stock for the activated package sessions. For FREE enrollments this is the
+            // only activation (no payment webhook follows); a plan that already activated
+            // inside enrollLearnerToBatch (forced-paid / instant gateway) is a no-op, as
+            // onPlanActivated is idempotent per plan — the old decrement loop took a second copy.
+            try {
+                stockHoldService.onPlanActivated(userPlan, enrollDTO.getPackageSessionIds());
+            } catch (Exception e) {
+                log.warn("Failed to take stock for plan {} on free enrollment: {}",
+                        userPlan.getId(), e.getMessage());
+                // Don't block enrollment if inventory update fails
             }
             // Check if workflow is configured for the package session
             // If workflow exists, skip notifications - workflow will handle them
@@ -605,7 +753,69 @@ public class LearnerEnrollRequestService {
         }
 
         response.setUserPlanId(userPlan.getId());
+
+        // Live activity feed. This completes the enrolment funnel that FORM_NEXT starts:
+        //   PENDING_FOR_PAYMENT -> REACHED_PAYMENT ("got to the gateway and stopped")
+        //   ACTIVE              -> ENROLLED
+        // The distinction matters because "filled the form and vanished" and "reached the
+        // payment page and bailed" are very different follow-ups.
+        //
+        // ACTIVE here is also the ONLY invite-funnel signal a FREE course produces -- those
+        // skip /form-submit entirely, so they never emit FORM_NEXT.
+        recordEnrolmentLiveActivity(learnerEnrollRequestDTO, enrollDTO, userPlan);
+
         return response;
+    }
+
+    /**
+     * Mirror the enrolment outcome onto the live activity feed. Best-effort and never
+     * throws -- an enrolment must not fail because a feed row could not be written.
+     */
+    private void recordEnrolmentLiveActivity(LearnerEnrollRequestDTO learnerEnrollRequestDTO,
+                                             LearnerPackageSessionsEnrollDTO enrollDTO,
+                                             UserPlan userPlan) {
+        try {
+            String planStatus = userPlan.getStatus();
+            LiveActivityAction action;
+            if (UserPlanStatusEnum.ACTIVE.name().equals(planStatus)) {
+                action = LiveActivityAction.ENROLLED;
+            } else if (UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(planStatus)
+                    || UserPlanStatusEnum.PENDING.name().equals(planStatus)) {
+                // Both mean "money not in yet". PENDING_FOR_PAYMENT is the gateway flow and
+                // PENDING is the stacked-enrolment flow -- matching only the first is why a
+                // pending enrolment showed as a form fill and then went quiet.
+                action = LiveActivityAction.REACHED_PAYMENT;
+            } else {
+                log.debug("No live activity action for user plan status {}", planStatus);
+                return;
+            }
+
+            // Fall back to the plan when no invite is attached rather than dropping the
+            // event. An enrolment with no invite is still an enrolment, and silently
+            // skipping it made the feed look broken rather than incomplete.
+            String enrollInviteId = enrollDTO != null ? enrollDTO.getEnrollInviteId() : null;
+            String funnelKey = StringUtils.hasText(enrollInviteId) ? enrollInviteId : userPlan.getId();
+
+            var user = learnerEnrollRequestDTO.getUser();
+            liveActivityRecorder.recordAfterCommit(LiveActivityEvent.builder()
+                    .instituteId(learnerEnrollRequestDTO.getInstituteId())
+                    .occurredAtEpochMillis(System.currentTimeMillis())
+                    .category(LiveActivityCategory.INVITE_FORM)
+                    .action(action)
+                    .actorType(action == LiveActivityAction.ENROLLED
+                            ? LiveActivityActorType.LEARNER
+                            : LiveActivityActorType.PROSPECT)
+                    .dedupeKey(LiveActivityDedupeKeys.forInviteForm(
+                            funnelKey, user != null ? user.getId() : userPlan.getId(), action))
+                    .subjectId(user != null ? user.getId() : null)
+                    .subjectName(user != null ? user.getFullName() : null)
+                    .subjectEmail(user != null ? user.getEmail() : null)
+                    .subjectMobile(user != null ? user.getMobileNumber() : null)
+                    .entityId(funnelKey)
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to record live activity for enrolment: {}", e.getMessage());
+        }
     }
 
     private void sendDynamicNotificationForEnrollment(
@@ -752,12 +962,12 @@ public class LearnerEnrollRequestService {
 
     /**
      * Validates seat limit for SUBORG_LEARNER enrollments.
-     * Finds ROOT_ADMIN's UserPlan → PaymentPlan.memberCount for the sub-org + PS.
+     * The cap comes from {@link vacademy.io.admin_core_service.features.suborg.service.SubOrgSeatCapResolver}.
      * Counts active learner members (excluding ROOT_ADMIN) and rejects if at
      * capacity.
      * Each PS is validated independently.
      */
-    private void validateSubOrgSeatLimit(String subOrgId, String packageSessionId) {
+    private void validateSubOrgSeatLimit(String subOrgId, String instituteId, String packageSessionId) {
         Optional<StudentSessionInstituteGroupMapping> rootAdminOpt = ssigmRepository
                 .findRootAdminMappingBySubOrgAndPackageSession(subOrgId, packageSessionId);
         if (rootAdminOpt.isEmpty() || rootAdminOpt.get().getUserPlanId() == null) {
@@ -771,7 +981,7 @@ public class LearnerEnrollRequestService {
             return;
         }
 
-        Integer memberCount = userPlanOpt.get().getPaymentPlan().getMemberCount();
+        Integer memberCount = seatCapResolver.resolve(subOrgId, instituteId, userPlanOpt.get().getPaymentPlan());
         if (memberCount == null) {
             return; // No limit set — unlimited
         }
@@ -784,6 +994,21 @@ public class LearnerEnrollRequestService {
                     "Seat limit reached for this organization. Current members: %d, Maximum allowed: %d.",
                     currentCount, memberCount));
         }
+    }
+
+    /**
+     * Whether this request is a gateway's "phase 2" payment confirmation of an enrollment the
+     * first call already created ({@link #recordLearnerRequest} completes it and enrolls nothing
+     * new). Read-only; lets the public endpoint skip its pre-enrollment checks for a payment
+     * that was already taken.
+     */
+    public boolean isClientPaymentConfirmation(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
+        LearnerPackageSessionsEnrollDTO enrollDTO = learnerEnrollRequestDTO != null
+                ? learnerEnrollRequestDTO.getLearnerPackageSessionEnroll()
+                : null;
+        PaymentServiceStrategy gatewayStrategy = resolvePaymentStrategy(enrollDTO);
+        return gatewayStrategy != null
+                && gatewayStrategy.isClientPaymentConfirmation(enrollDTO.getPaymentInitiationRequest());
     }
 
     /**
@@ -874,7 +1099,39 @@ public class LearnerEnrollRequestService {
         response.setUser(user);
         response.setPaymentResponse(paymentResponse);
         response.setUserPlanId(paymentLog.getUserPlan().getId());
+        response.setLoginCode(issueInviteLoginCode(
+                learnerEnrollRequestDTO.getLearnerPackageSessionEnroll(), paymentLog, instituteId));
         return response;
+    }
+
+    /**
+     * One-time login code so the buyer lands inside the course instead of on "check your
+     * email" (invite setting postformfillConfiguration.autoLoginAfterPayment). The account is
+     * read from auth by the payment log's user, never from the request, so the never-logged-in
+     * check sees the real account. Never throws: the payment is already taken.
+     */
+    private String issueInviteLoginCode(LearnerPackageSessionsEnrollDTO enrollDTO,
+            vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog paymentLog,
+            String instituteId) {
+        try {
+            if (enrollDTO == null || !StringUtils.hasText(enrollDTO.getEnrollInviteId())
+                    || !StringUtils.hasText(paymentLog.getUserId())) {
+                return null;
+            }
+            EnrollInvite invite = enrollInviteRepository.findById(enrollDTO.getEnrollInviteId()).orElse(null);
+            if (invite == null || !vacademy.io.admin_core_service.features.product_page.service
+                    .ProductPageAutoLoginService.isInviteEnabled(invite.getSettingJson())) {
+                return null;
+            }
+            List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(paymentLog.getUserId()));
+            if (users == null || users.isEmpty()) {
+                return null;
+            }
+            return autoLoginService.issueForInvite(invite, paymentLog.getId(), users.get(0), instituteId);
+        } catch (Exception e) {
+            log.warn("Invite auto-login code not issued for payment log {}: {}", paymentLog.getId(), e.getMessage());
+            return null;
+        }
     }
 
     private EnrollInvite getValidatedEnrollInvite(String enrollInviteId) {
@@ -959,7 +1216,8 @@ public class LearnerEnrollRequestService {
             PaymentOption paymentOption,
             PaymentPlan paymentPlan,
             String source,
-            String subOrgId) {
+            String subOrgId,
+            int quantity) {
         // For CPO, fall back to the mirror's synthetic ACTIVE plan when the caller did
         // not pass an explicit one. Keeps userPlan.paymentPlan non-null for downstream
         // readers (analytics, multi-package summer, renewal checks).
@@ -989,6 +1247,9 @@ public class LearnerEnrollRequestService {
         AppliedCouponDiscount appliedCouponDiscount = resolveAppliedCoupon(
                 enrollDTO, instituteId, userEmail, paymentPlan);
 
+        RegionalQuote regionalQuote = resolveRegionalQuote(
+                enrollDTO, enrollInvite, paymentOption, paymentPlan, source, appliedCouponDiscount, quantity);
+
         return userPlanService.createUserPlan(
                 userId,
                 paymentPlan,
@@ -999,7 +1260,104 @@ public class LearnerEnrollRequestService {
                 userPlanStatus,
                 source,
                 subOrgId,
-                enrollDTO.getStartDate());
+                enrollDTO.getStartDate(),
+                regionalQuote,
+                quantity);
+    }
+
+    /** {@link #LINE_QUANTITY} from extraData; 1 when absent or not a positive number. */
+    private static int lineQuantity(Map<String, Object> extraData) {
+        Object raw = extraData != null ? extraData.get(LINE_QUANTITY) : null;
+        return raw instanceof Number n && n.intValue() > 0 ? n.intValue() : 1;
+    }
+
+    /** The order's holds for this item ({@link #STOCK_HOLDS}), or none. */
+    @SuppressWarnings("unchecked")
+    private static List<StockHold> orderStockHolds(Map<String, Object> extraData) {
+        Object raw = extraData != null ? extraData.get(STOCK_HOLDS) : null;
+        return raw instanceof List<?> list && !list.isEmpty() ? (List<StockHold>) list : List.of();
+    }
+
+    /**
+     * A single-request (v1) paid checkout holds its rent picks: payment is about to be
+     * initiated for it, nobody holds for it already (a v2 order holds for every item up
+     * front), and it is not an admin / skipped-payment enrollment, which takes stock when the
+     * plan activates. The phase-2 gateway confirmation never reaches here (it returned above).
+     */
+    private static boolean shouldHoldStockForRequest(LearnerPackageSessionsEnrollDTO enrollDTO,
+                                                     Map<String, Object> extraData) {
+        return !Boolean.TRUE.equals(extraData.get(STOCK_HELD_BY_ORDER))
+                && enrollDTO.getPaymentInitiationRequest() != null
+                && !Boolean.TRUE.equals(extraData.get("SKIP_PAYMENT_INITIATION"))
+                && !Boolean.TRUE.equals(extraData.get("IS_MANUAL_ENROLLMENT"));
+    }
+
+    /**
+     * Holds 1 of each book picked at rent checkout (RENT_PREFERENCE: not enrolled now, held
+     * until an admin assigns it). The package sessions the request enrolls are not held: only
+     * the storefront cart holds what it sells (the v2 order, and these rent picks), so a
+     * single-course checkout keeps its old behaviour — no 409, and its plan takes stock when it
+     * activates (flagged oversold if none is left). Unlimited sessions are skipped by
+     * StockHoldService. Throws 409 when a picked book is short.
+     */
+    private List<StockHold> holdStockForRequest(String instituteId, LearnerPackageSessionsEnrollDTO enrollDTO) {
+        Set<String> enrolled = enrollDTO.getPackageSessionIds() != null
+                ? new HashSet<>(enrollDTO.getPackageSessionIds())
+                : Set.of();
+        Map<String, Integer> rentPreference = new LinkedHashMap<>();
+        if (enrollDTO.getRequestedBookPackageSessionIds() != null) {
+            for (String packageSessionId : enrollDTO.getRequestedBookPackageSessionIds()) {
+                if (StringUtils.hasText(packageSessionId) && !enrolled.contains(packageSessionId)) {
+                    rentPreference.putIfAbsent(packageSessionId, 1);
+                }
+            }
+        }
+        return rentPreference.isEmpty()
+                ? List.of()
+                : stockHoldService.hold(instituteId, rentPreference, StockHoldKind.RENT_PREFERENCE);
+    }
+
+    /**
+     * Regional price for this checkout, resolved server-side from the viewer's country —
+     * never from what the client sends. Only a learner's own paid ONE_TIME / SUBSCRIPTION
+     * purchase is regionally priced; sub-org seats and CPO fee structures stay on base price.
+     * When a price applies, the payment request is rewritten to it (currency + net amount of
+     * the whole line, unit price × {@code quantity}) so the ledger accrual and the gateway
+     * order agree with what the learner was shown.
+     */
+    private RegionalQuote resolveRegionalQuote(LearnerPackageSessionsEnrollDTO enrollDTO, EnrollInvite enrollInvite,
+                                               PaymentOption paymentOption, PaymentPlan paymentPlan, String source,
+                                               AppliedCouponDiscount appliedCouponDiscount, int quantity) {
+        String type = paymentOption.getType();
+        boolean regionalEligible = (source == null || UserPlanSourceEnum.USER.name().equals(source))
+                && (PaymentOptionType.ONE_TIME.name().equals(type) || PaymentOptionType.SUBSCRIPTION.name().equals(type));
+        if (!regionalEligible) {
+            return null;
+        }
+        RegionalQuote quote;
+        try {
+            quote = regionalPriceResolver
+                    .quote(paymentPlan, enrollInvite != null ? enrollInvite.getVendor() : null)
+                    .orElse(null);
+        } catch (Exception e) {
+            // Never fail an enrolment over regional pricing: fall back to the base-price flow.
+            log.warn("Regional pricing skipped for plan {}: {}",
+                    paymentPlan != null ? paymentPlan.getId() : null, e.getMessage());
+            return null;
+        }
+        PaymentInitiationRequestDTO payReq = enrollDTO.getPaymentInitiationRequest();
+        if (quote != null && payReq != null) {
+            payReq.setCurrency(quote.currency());
+            double regionalLine = quantity > 1
+                    ? Math.round(quote.actualPrice().doubleValue() * quantity * 100.0) / 100.0
+                    : quote.actualPrice().doubleValue();
+            payReq.setAmount(RegionalPriceLock.applyDiscount(regionalLine,
+                    RegionalPriceLock.scale(quote, paymentPlan), appliedCouponDiscount));
+            log.info("Regional price {} {} ({}) applied to plan {} for viewer in {}",
+                    quote.currency(), quote.actualPrice(), quote.priceSource(), paymentPlan.getId(),
+                    quote.countryCode());
+        }
+        return quote;
     }
 
     /**

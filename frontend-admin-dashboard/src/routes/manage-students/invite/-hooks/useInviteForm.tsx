@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { inviteFormSchema, InviteForm, defaultFormValues } from '../-schema/InviteFormSchema';
+import { useTranslation } from 'react-i18next';
+import { buildInviteFormSchema, InviteForm, defaultFormValues } from '../-schema/InviteFormSchema';
 import { DropdownOption } from '../-components/create-invite/AddCustomFieldDialog';
 import type { CustomFieldConfig } from '@/components/common/custom-fields/AddCustomFieldDialog';
 import { getCachedInstituteBranding } from '@/services/domain-routing';
 
 export const useInviteForm = (initialValues?: InviteForm) => {
     const [copySuccess, setCopySuccess] = useState<string | null>(null);
+    const { t } = useTranslation('manageStudentsInviteFormSchema');
+    const inviteFormSchema = useMemo(() => buildInviteFormSchema(t), [t]);
 
     const domainRouting = getCachedInstituteBranding();
     const isPhoneAuth = domainRouting?.allowPhoneAuth === true;

@@ -1,0 +1,23 @@
+{
+    "toast": {
+        "sessionEditedSuccess": "{{term}} सफलतापूर्वक संपादित किया गया",
+        "sessionEditFailed": "{{term}} संपादित करने में विफल"
+    },
+    "button": {
+        "saveChanges": "परिवर्तन सहेजें"
+    },
+    "card": {
+        "startDate": "आरंभ तिथि",
+        "editButton": "{{term}} संपादित करें",
+        "deleteButton": "{{term}} हटाएं",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "courseCount_one": "{{count}} {{term}}",
+        "courseCount_other": "{{count}} {{term}}",
+        "batchCount_one": "{{count}} सक्रिय {{term}}",
+        "batchCount_other": "{{count}} सक्रिय {{term}}",
+        "moreActions": "और विकल्प",
+        "hiddenLevel": "इस सत्र में छिपा हुआ",
+        "noCourses": "इस सत्र में अभी कोई {{term}} नहीं है।"
+    }
+}

@@ -4,8 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Shared, deterministic subject resolver used by the v2 report collectors
@@ -93,12 +97,21 @@ public class SubjectResolver {
         m.put("literature", "English");
         m.put("comprehension", "English");
 
+        // Commerce stream (Class 11/12). Economics is its own subject here, not Social Studies —
+        // folding it in mislabelled every Economics test of a commerce batch.
+        m.put("accountancy", "Accountancy");
+        m.put("accounts", "Accountancy");
+        m.put("accounting", "Accountancy");
+        m.put("business studies", "Business Studies");
+        m.put("business", "Business Studies");
+        m.put("economics", "Economics");
+        m.put("entrepreneurship", "Entrepreneurship");
+
         // Social studies
         m.put("social", "Social Studies");
         m.put("history", "Social Studies");
         m.put("geography", "Social Studies");
         m.put("civics", "Social Studies");
-        m.put("economics", "Social Studies");
         m.put("political", "Social Studies");
 
         // Computers
@@ -137,6 +150,42 @@ public class SubjectResolver {
         return null;
     }
 
+    /**
+     * Like {@link #resolve(String, String)}, but when neither the hint nor the name gives a
+     * subject, falls back to the assessment's section name — offline/imported papers usually
+     * carry a single section named after the subject ("IED - 21 Jul 2026" / section "IED").
+     * The section name is only trusted when the assessment's own name contains it, and generic
+     * labels ("Section A", "Part 1", "MCQ", "Theory") are never used as a subject.
+     */
+    public String resolve(String dbSubjectHint, String itemName, List<String> sectionNames) {
+        String resolved = resolve(dbSubjectHint, itemName);
+        if (resolved != null || sectionNames == null) return resolved;
+        Set<String> distinct = new LinkedHashSet<>();
+        for (String name : sectionNames) {
+            String c = clean(name);
+            if (c != null) distinct.add(c);
+        }
+        if (distinct.size() != 1) return null;
+        String section = distinct.iterator().next();
+        String inferred = inferFromName(section);
+        if (inferred != null) return inferred;
+        String name = normalize(itemName);
+        // Whole-word match, so section "IED" does not match inside "Applied …".
+        boolean namedAfterSection = name != null && Pattern
+                .compile("(^|\\W)" + Pattern.quote(section.toLowerCase(Locale.ROOT)) + "($|\\W)")
+                .matcher(name).find();
+        return namedAfterSection && !isGenericSectionLabel(section) ? section : null;
+    }
+
+    private boolean isGenericSectionLabel(String label) {
+        if (isPlaceholder(label)) return true;
+        String lower = label.toLowerCase(Locale.ROOT);
+        return lower.matches("^(section|part|paper|set|sec|default|question|questions|q)\\b.*")
+                || lower.matches("^[a-z0-9]$")
+                || lower.matches(".*\\b(mcq|mcqs|objective|subjective|theory|practical|descriptive|"
+                        + "short answer|long answer|very short|case study|assertion|reasoning based)\\b.*");
+    }
+
     /** Keyword inference from a free-text name. Returns null if nothing matches. */
     public String inferFromName(String itemName) {
         String norm = normalize(itemName);
@@ -159,7 +208,8 @@ public class SubjectResolver {
         String lower = c.toLowerCase(Locale.ROOT);
         return lower.equals("unknown") || lower.equals("other") || lower.equals("others")
                 || lower.equals("n/a") || lower.equals("na") || lower.equals("general")
-                || lower.equals("misc") || lower.equals("miscellaneous") || lower.equals("-");
+                || lower.equals("misc") || lower.equals("miscellaneous") || lower.equals("-")
+                || lower.equals("default");   // placeholder subject of a course without subjects
     }
 
     private String clean(String s) {

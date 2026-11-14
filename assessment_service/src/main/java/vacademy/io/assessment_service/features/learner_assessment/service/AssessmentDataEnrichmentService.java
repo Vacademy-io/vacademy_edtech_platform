@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
 import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
@@ -36,6 +38,14 @@ public class AssessmentDataEnrichmentService {
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
     private final LearnerReportService learnerReportService;
     private final ObjectMapper objectMapper;
+
+    /**
+     * Off = the payload carries no class context. Each comparison scans every attempt of the
+     * assessment, once per submission, so a big exam's submit wave saturates the database
+     * (see application.properties).
+     */
+    @Value("${assessment.llm-analytics.class-context-enabled:true}")
+    private boolean classContextEnabled;
 
     /**
      * Build enriched assessment data with full text content for LLM analysis
@@ -99,7 +109,9 @@ public class AssessmentDataEnrichmentService {
             enrichedData.put("summary", summary);
 
             // Comparison context (rank, percentile, class avg) — for AI comparative insights
-            addComparisonContext(enrichedData, studentAttempt, assessmentId, instituteId);
+            if (classContextEnabled) {
+                addComparisonContext(enrichedData, studentAttempt, assessmentId, instituteId);
+            }
 
             // Question-wise marks (status per question — CORRECT/INCORRECT/PARTIAL_CORRECT)
             Map<String, QuestionWiseMarks> qwmMap = buildQuestionWiseMarksMap(assessmentId, studentAttempt.getId());
@@ -111,6 +123,14 @@ public class AssessmentDataEnrichmentService {
             if (submitDataJson != null) {
                 List<Map<String, Object>> enrichedSections = enrichSubmitData(submitDataJson, assessmentId, qwmMap);
                 enrichedData.put("sections", enrichedSections);
+            }
+
+            // An AI-checked copy: a scanned answer sheet carries no typed responses, so the
+            // questions come from the marks rows the copy check wrote, with what the AI read,
+            // its feedback and where marks were cut. Attempts without a copy check are
+            // untouched.
+            if (hasCopyCheckVerdicts(qwmMap)) {
+                addCopyCheckContext(enrichedData, qwmMap, totalMarks);
             }
 
         } catch (Exception e) {
@@ -346,7 +366,8 @@ public class AssessmentDataEnrichmentService {
             }
 
             // Student's selected answer as readable text
-            String studentAnswer = extractStudentAnswer(questionNode.get("responseData"), options);
+            String studentAnswer = extractStudentAnswer(questionNode.get("responseData"), options,
+                    question != null ? question.getAutoEvaluationJson() : null);
             eq.put("student_answer", studentAnswer);
 
             // Marks status from question_wise_marks
@@ -354,6 +375,7 @@ public class AssessmentDataEnrichmentService {
             if (qwm != null) {
                 eq.put("status", qwm.getStatus()); // CORRECT, INCORRECT, PARTIAL_CORRECT, PENDING
                 eq.put("marks_obtained", qwm.getMarks());
+                addCopyCheckVerdict(eq, qwm, marksPerQuestion);
             } else {
                 // No marks row at all: unanswered, or not yet evaluated. Say so rather than
                 // leaving the field out, which reads as a wrong answer to the model.
@@ -361,7 +383,8 @@ public class AssessmentDataEnrichmentService {
                 eq.put("marks_obtained", 0);
             }
             if (marksPerQuestion != null) {
-                eq.put("marks", marksPerQuestion);
+                // A copy check's own maximum (set above) wins over the section's.
+                eq.putIfAbsent("marks", marksPerQuestion);
             }
 
             eq.put("time_taken_seconds",
@@ -374,6 +397,170 @@ public class AssessmentDataEnrichmentService {
         }
 
         return eq;
+    }
+
+    // ---- AI copy check -------------------------------------------------------------
+
+    /** Caps on what one copy-checked answer adds to the payload the model reads. */
+    private static final int MAX_READ_ANSWER_CHARS = 1200;
+    private static final int MAX_FEEDBACK_CHARS = 600;
+    private static final int MAX_REASON_CHARS = 300;
+
+    private static boolean hasCopyCheckVerdicts(Map<String, QuestionWiseMarks> qwmMap) {
+        return qwmMap.values().stream().anyMatch(q -> hasText(q.getAiEvaluationDetailsJson()));
+    }
+
+    /**
+     * What the copy check said about one answer, on top of the usual fields: the marks it
+     * was out of, what the AI read from the sheet, the checker's feedback (the teacher's,
+     * once they edited it) and every criterion that lost marks, with why. The status is
+     * re-derived from the final marks, which a teacher's review may have changed.
+     */
+    private void addCopyCheckVerdict(Map<String, Object> eq, QuestionWiseMarks qwm, Double marksPerQuestion) {
+        if (!hasText(qwm.getAiEvaluationDetailsJson())) {
+            return;
+        }
+        try {
+            JsonNode verdict = objectMapper.readTree(qwm.getAiEvaluationDetailsJson());
+            Double max = verdict.hasNonNull("max_marks") ? verdict.get("max_marks").asDouble() : marksPerQuestion;
+            if (max != null && max > 0) {
+                eq.put("marks", max);
+                double got = qwm.getMarks();
+                eq.put("status", got >= max ? "CORRECT" : got <= 0 ? "INCORRECT" : "PARTIAL_CORRECT");
+            }
+            String read = verdict.path("extracted_answer").asText("");
+            Object current = eq.get("student_answer");
+            if (hasText(read) && (current == null || current.toString().isBlank())) {
+                eq.put("student_answer", clip(read, MAX_READ_ANSWER_CHARS));
+            }
+            String feedback = hasText(qwm.getEvaluatorFeedback()) ? qwm.getEvaluatorFeedback()
+                    : verdict.path("feedback").asText("");
+            if (hasText(feedback)) {
+                eq.put("checker_feedback", clip(feedback, MAX_FEEDBACK_CHARS));
+            }
+            List<Map<String, Object>> lost = new ArrayList<>();
+            for (JsonNode c : verdict.path("criteria_breakdown")) {
+                double cMax = c.path("max_marks").asDouble(0);
+                double cGot = c.path("marks").asDouble(0);
+                if (cMax - cGot <= 0.0001) {
+                    continue;
+                }
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("criterion", c.path("criteria_name").asText(""));
+                item.put("marks_lost", Math.round((cMax - cGot) * 100.0) / 100.0);
+                String reason = c.path("reason").asText("");
+                if (hasText(reason)) {
+                    item.put("reason", clip(reason, MAX_REASON_CHARS));
+                }
+                lost.add(item);
+            }
+            if (!lost.isEmpty()) {
+                eq.put("marks_lost", lost);
+            }
+            eq.put("checked_by", "AI_REVIEWED".equals(qwm.getMarksSource()) ? "AI, reviewed by teacher" : "AI");
+        } catch (Exception e) {
+            log.warn("[DataEnrichment] Could not read the copy-check verdict of {}: {}", qwm.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * The paper's questions from the marks rows when the attempt's own data lists none (a
+     * copy uploaded as a scan), the total out of which the copy was marked, and a note on
+     * how it was evaluated.
+     */
+    private void addCopyCheckContext(Map<String, Object> enrichedData, Map<String, QuestionWiseMarks> qwmMap,
+                                     Integer totalMarks) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> sections = (List<Map<String, Object>>) enrichedData.get("sections");
+        boolean listsQuestions = sections != null && sections.stream()
+                .anyMatch(sec -> sec.get("questions") instanceof List<?> l && !l.isEmpty());
+        if (!listsQuestions) {
+            enrichedData.put("sections", sectionsFromMarks(qwmMap));
+        }
+
+        // The total is filled in only for a scanned copy, whose questions all came from the
+        // copy check; an online attempt's summary stays exactly as it was.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> summary = (Map<String, Object>) enrichedData.get("summary");
+        if (!listsQuestions && summary != null && (totalMarks == null || totalMarks <= 0)) {
+            // Only when every question's maximum is known: a test whose objective
+            // questions carry no per-question maximum here would otherwise get a total of
+            // just its AI-checked answers, and a percentage over 100.
+            double outOf = 0;
+            boolean everyMaxKnown = true;
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> all = (List<Map<String, Object>>) enrichedData.get("sections");
+            for (Map<String, Object> sec : all == null ? List.<Map<String, Object>>of() : all) {
+                if (sec.get("questions") instanceof List<?> qs) {
+                    for (Object q : qs) {
+                        if (q instanceof Map<?, ?> m && m.get("marks") instanceof Number n) {
+                            outOf += n.doubleValue();
+                        } else {
+                            everyMaxKnown = false;
+                        }
+                    }
+                }
+            }
+            if (everyMaxKnown && outOf > 0) {
+                double scored = summary.get("scored_marks") instanceof Number n ? n.doubleValue() : 0;
+                summary.put("total_marks", outOf);
+                summary.put("percentage", Math.round((scored / outOf) * 1000.0) / 10.0);
+            }
+        }
+        enrichedData.put("evaluation_note", "Written answers in this attempt were marked by AI (and may have been "
+                + "reviewed by a teacher). For an answer copy uploaded as a scan, student_answer is what the AI read "
+                + "from it. checker_feedback is the checker's remark and marks_lost lists every criterion that lost "
+                + "marks and why. Base strengths and weaknesses on these.");
+    }
+
+    private List<Map<String, Object>> sectionsFromMarks(Map<String, QuestionWiseMarks> qwmMap) {
+        Map<String, List<String>> questionsBySection = new LinkedHashMap<>();
+        for (QuestionWiseMarks q : qwmMap.values()) {
+            if (q.getQuestion() == null) {
+                continue;
+            }
+            questionsBySection.computeIfAbsent(q.getSectionId() != null ? q.getSectionId() : "", k -> new ArrayList<>())
+                    .add(q.getQuestion().getId());
+        }
+        Map<String, Section> sectionMap = new HashMap<>();
+        Set<String> sectionIds = new HashSet<>(questionsBySection.keySet());
+        sectionIds.remove("");
+        if (!sectionIds.isEmpty()) {
+            sectionRepository.findAllById(sectionIds).forEach(sec -> sectionMap.put(sec.getId(), sec));
+        }
+        List<String> order = new ArrayList<>(questionsBySection.keySet());
+        order.sort(Comparator.comparing(id -> {
+            Section sec = sectionMap.get(id);
+            return sec != null && sec.getSectionOrder() != null ? sec.getSectionOrder() : Integer.MAX_VALUE;
+        }));
+        List<Map<String, Object>> sections = new ArrayList<>();
+        for (String sectionId : order) {
+            Section section = sectionMap.get(sectionId);
+            Map<String, Object> enrichedSection = new LinkedHashMap<>();
+            if (section != null) {
+                enrichedSection.put("section_name", section.getName());
+                enrichedSection.put("total_marks", section.getTotalMarks());
+                enrichedSection.put("cut_off_marks", section.getCutOffMarks());
+                enrichedSection.put("marks_per_question", section.getMarksPerQuestion());
+            }
+            com.fasterxml.jackson.databind.node.ArrayNode nodes = objectMapper.createArrayNode();
+            for (String questionId : questionsBySection.get(sectionId)) {
+                nodes.addObject().put("questionId", questionId);
+            }
+            enrichedSection.put("questions", enrichQuestions(nodes, qwmMap,
+                    section != null ? section.getMarksPerQuestion() : null));
+            sections.add(enrichedSection);
+        }
+        return sections;
+    }
+
+    private static boolean hasText(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    private static String clip(String s, int max) {
+        String flat = s.strip();
+        return flat.length() <= max ? flat : flat.substring(0, max) + "...";
     }
 
     /**
@@ -424,7 +611,7 @@ public class AssessmentDataEnrichmentService {
      * NUMERIC responses (which use {@code validAnswer}) and CODING submissions reached the
      * model as no answer at all — indistinguishable from a skipped question.
      */
-    private String extractStudentAnswer(JsonNode responseData, List<Option> options) {
+    private String extractStudentAnswer(JsonNode responseData, List<Option> options, String autoEvaluationJson) {
         if (responseData == null || responseData.isNull()) {
             return "";
         }
@@ -438,6 +625,11 @@ public class AssessmentDataEnrichmentService {
             }
             if ("CODING".equals(type)) {
                 return summariseCodingAnswer(responseData);
+            }
+            if ("CBE_RESPONSE".equals(type)) {
+                // Spreadsheet / document parts: a short summary, never the raw sheet JSON.
+                return CbeAnswers.summary(CbeAnswers.answerObject(responseData.path("answer")),
+                        CbeAnswers.configData(autoEvaluationJson));
             }
             return stripForAI(responseData.path("answer").asText(""));
         } catch (Exception e) {

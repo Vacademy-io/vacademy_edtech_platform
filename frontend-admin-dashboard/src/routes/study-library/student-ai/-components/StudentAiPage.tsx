@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import { ChartLineUp, Gear } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { StudentAiSettingsSection } from '@/routes/settings/-components/StudentAiSettingsSection';
@@ -19,10 +20,11 @@ export const StudentAiPage = () => {
     const { setNavHeading } = useNavHeadingStore();
     const { tab } = routeApi.useSearch();
     const navigate = useNavigate();
+    const { t } = useTranslation('studyLibraryStudentAiPage');
 
     useEffect(() => {
-        setNavHeading('Student AI');
-    }, [setNavHeading]);
+        setNavHeading(t('studentAi'));
+    }, [setNavHeading, t]);
 
     return (
         <Tabs
@@ -40,11 +42,11 @@ export const StudentAiPage = () => {
             <TabsList className="w-fit">
                 <TabsTrigger value="settings" className="gap-1.5">
                     <Gear className="size-4" />
-                    Student AI settings
+                    {t('studentAiSettings')}
                 </TabsTrigger>
                 <TabsTrigger value="analysis" className="gap-1.5">
                     <ChartLineUp className="size-4" />
-                    Chatbot Analysis
+                    {t('chatbotAnalysis')}
                 </TabsTrigger>
             </TabsList>
 

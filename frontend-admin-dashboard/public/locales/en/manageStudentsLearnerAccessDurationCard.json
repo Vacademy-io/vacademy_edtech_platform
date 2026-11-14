@@ -1,0 +1,7 @@
+{
+  "title": "Learner Access Duration",
+  "durationLabel": "Access Duration (Days)",
+  "durationPlaceholder": "Leave blank for unlimited access",
+  "planControlledHelpText": "This plan sets its own access duration, which takes priority over this field. Change it on the payment plan instead.",
+  "freeFormHelpText": "How long learners keep access after enrolling. Leave blank for unlimited. Admins can extend it later from the learner’s profile."
+}

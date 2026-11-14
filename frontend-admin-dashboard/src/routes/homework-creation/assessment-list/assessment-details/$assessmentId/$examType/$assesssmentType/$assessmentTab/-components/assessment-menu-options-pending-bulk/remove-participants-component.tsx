@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStorePending } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStorePending';
@@ -10,6 +11,7 @@ interface ProvideDialogDialogProps {
 }
 
 const RemoveParticipantsDialogContent = () => {
+    const { t } = useTranslation('homeworkCreationRemoveParticipantsComponent');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStorePending();
 
@@ -27,8 +29,12 @@ const RemoveParticipantsDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to remove participants for&nbsp;
-                <span className="text-primary-500">{displayText}</span>&nbsp;?
+                <Trans
+                    t={t}
+                    i18nKey="confirmText"
+                    values={{ name: displayText }}
+                    components={{ highlight: <span className="text-primary-500" /> }}
+                />
             </h1>
             <MyButton
                 buttonType="primary"
@@ -36,7 +42,7 @@ const RemoveParticipantsDialogContent = () => {
                 layoutVariant="default"
                 onClick={handleSubmit}
             >
-                Done
+                {t('doneButton')}
             </MyButton>
         </div>
     );
@@ -47,11 +53,12 @@ export const RemoveParticipantsDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('homeworkCreationRemoveParticipantsComponent');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Remove Participants"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('heading')}
+            dialogWidth="w-96 max-w-sm"
             content={<RemoveParticipantsDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

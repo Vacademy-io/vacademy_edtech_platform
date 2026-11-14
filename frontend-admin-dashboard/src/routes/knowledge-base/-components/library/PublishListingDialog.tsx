@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Image as ImageIcon, Spinner, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -15,24 +17,29 @@ import { saveListing } from '../../-services/library-service';
 import type { PublisherListingRow } from '../../-types/library';
 import { LibraryCover } from './LibraryCover';
 
-const schema = z.object({
-    title: z.string().trim().min(1, 'Give this library a title').max(200),
-    // Capped to match the column so a catalogue card never truncates mid-word.
-    summary: z
-        .string()
-        .trim()
-        .min(1, 'Write one line describing what this is')
-        .max(280, 'Keep the summary under 280 characters'),
-    description: z.string().max(4000).optional(),
-    subject: z.string().trim().min(1, 'Subject is needed for filtering'),
-    level: z.string().trim().min(1, 'Class or exam is needed for filtering'),
-    board: z.string().optional(),
-    language: z.string().optional(),
-    tagsText: z.string().optional(),
-    coverAlt: z.string().max(300).optional(),
-});
+const buildSchema = (t: TFunction) =>
+    z.object({
+        title: z
+            .string()
+            .trim()
+            .min(1, t('validation.titleRequired'))
+            .max(200),
+        // Capped to match the column so a catalogue card never truncates mid-word.
+        summary: z
+            .string()
+            .trim()
+            .min(1, t('validation.summaryRequired'))
+            .max(280, t('validation.summaryMax')),
+        description: z.string().max(4000).optional(),
+        subject: z.string().trim().min(1, t('validation.subjectRequired')),
+        level: z.string().trim().min(1, t('validation.levelRequired')),
+        board: z.string().optional(),
+        language: z.string().optional(),
+        tagsText: z.string().optional(),
+        coverAlt: z.string().max(300).optional(),
+    });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface PublishListingDialogProps {
     row: PublisherListingRow | null;
@@ -53,11 +60,13 @@ export const PublishListingDialog = ({
     onOpenChange,
     onSaved,
 }: PublishListingDialogProps) => {
+    const { t } = useTranslation('knowledgeBasePublishListingDialog');
     const [coverFileId, setCoverFileId] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const fileInput = useRef<HTMLInputElement>(null);
     const { uploadFile } = useFileUpload();
+    const schema = useMemo(() => buildSchema(t), [t]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -94,7 +103,7 @@ export const PublishListingDialog = ({
         if (!file) return;
         const userId = getUserId();
         if (!userId) {
-            toast.error('Could not identify you. Please sign in again.');
+            toast.error(t('toast.identifyFailed'));
             return;
         }
         try {
@@ -107,7 +116,7 @@ export const PublishListingDialog = ({
             });
             if (uploaded) setCoverFileId(uploaded);
         } catch {
-            toast.error('Could not upload that image. Please try again.');
+            toast.error(t('toast.uploadFailed'));
         }
     };
 
@@ -131,11 +140,11 @@ export const PublishListingDialog = ({
                     .filter(Boolean),
                 sort_weight: row.sort_weight ?? 0,
             });
-            toast.success('Library details saved');
+            toast.success(t('toast.saveSuccess'));
             onSaved();
             onOpenChange(false);
         } catch {
-            toast.error('Could not save these details');
+            toast.error(t('toast.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -145,7 +154,7 @@ export const PublishListingDialog = ({
 
     return (
         <MyDialog
-            heading={row?.status ? 'Edit library details' : 'Describe this library'}
+            heading={row?.status ? t('heading.edit') : t('heading.create')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-2xl"
@@ -157,7 +166,7 @@ export const PublishListingDialog = ({
                         onClick={() => onOpenChange(false)}
                         disable={saving}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -165,17 +174,14 @@ export const PublishListingDialog = ({
                         onClick={form.handleSubmit(onSubmit)}
                         disable={saving || uploading}
                     >
-                        {saving ? 'Saving…' : 'Save details'}
+                        {saving ? t('saving') : t('save')}
                     </MyButton>
                 </div>
             }
         >
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5 p-6">
-                    <p className="text-body text-neutral-500">
-                        This is what an institute reads while deciding whether to spend credits.
-                        Write it for someone who has never seen the material.
-                    </p>
+                    <p className="text-body text-neutral-500">{t('intro')}</p>
 
                     {/* ---- Cover ---- */}
                     <div className="flex items-start gap-4">
@@ -183,7 +189,7 @@ export const PublishListingDialog = ({
                             <LibraryCover
                                 fileId={coverFileId}
                                 alt={form.watch('coverAlt')}
-                                title={title || 'Library'}
+                                title={title || t('cover.defaultTitle')}
                             />
                         </div>
                         <div className="flex flex-1 flex-col gap-2">
@@ -207,7 +213,7 @@ export const PublishListingDialog = ({
                                     ) : (
                                         <ImageIcon className="mr-1 size-3.5" />
                                     )}
-                                    {coverFileId ? 'Replace cover' : 'Add cover image'}
+                                    {coverFileId ? t('cover.replace') : t('cover.add')}
                                 </MyButton>
                                 {coverFileId && (
                                     <MyButton
@@ -217,7 +223,7 @@ export const PublishListingDialog = ({
                                         onClick={() => setCoverFileId(null)}
                                     >
                                         <X className="mr-1 size-3.5" />
-                                        Remove
+                                        {t('cover.remove')}
                                     </MyButton>
                                 )}
                             </div>
@@ -228,12 +234,12 @@ export const PublishListingDialog = ({
                                     <FormItem className="w-full">
                                         <FormControl>
                                             <MyInput
-                                                label="Describe the cover"
+                                                label={t('cover.altLabel')}
                                                 inputType="text"
                                                 input={field.value ?? ''}
                                                 onChangeFunction={field.onChange}
                                                 error={fieldState.error?.message}
-                                                inputPlaceholder="e.g. NCERT Physics Class 11 textbook cover"
+                                                inputPlaceholder={t('cover.altPlaceholder')}
                                                 className="w-full"
                                             />
                                         </FormControl>
@@ -241,10 +247,7 @@ export const PublishListingDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <p className="text-caption text-neutral-400">
-                                Read aloud to anyone using a screen reader, and shown if the image
-                                fails to load.
-                            </p>
+                            <p className="text-caption text-neutral-400">{t('cover.altHint')}</p>
                         </div>
                     </div>
 
@@ -255,13 +258,13 @@ export const PublishListingDialog = ({
                             <FormItem className="w-full">
                                 <FormControl>
                                     <MyInput
-                                        label="Title"
+                                        label={t('fields.titleLabel')}
                                         required
                                         inputType="text"
                                         input={field.value}
                                         onChangeFunction={field.onChange}
                                         error={fieldState.error?.message}
-                                        inputPlaceholder="e.g. NCERT Physics — Class 11"
+                                        inputPlaceholder={t('fields.titlePlaceholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -277,13 +280,13 @@ export const PublishListingDialog = ({
                             <FormItem className="w-full">
                                 <FormControl>
                                     <MyInput
-                                        label="One-line summary"
+                                        label={t('fields.summaryLabel')}
                                         required
                                         inputType="text"
                                         input={field.value}
                                         onChangeFunction={field.onChange}
                                         error={fieldState.error?.message}
-                                        inputPlaceholder="e.g. Full syllabus, both parts, with worked examples"
+                                        inputPlaceholder={t('fields.summaryPlaceholder')}
                                         className="w-full"
                                     />
                                 </FormControl>
@@ -294,11 +297,11 @@ export const PublishListingDialog = ({
 
                     <div className="flex flex-col gap-2">
                         <span className="text-caption font-medium text-neutral-600">
-                            Full description
+                            {t('fields.descriptionLabel')}
                         </span>
                         <Textarea
                             rows={4}
-                            placeholder="What it covers, who it suits, and anything a teacher should know before using it."
+                            placeholder={t('fields.descriptionPlaceholder')}
                             value={form.watch('description') ?? ''}
                             onChange={(e) => form.setValue('description', e.target.value)}
                             className="w-full"
@@ -313,13 +316,13 @@ export const PublishListingDialog = ({
                                 <FormItem className="w-full">
                                     <FormControl>
                                         <MyInput
-                                            label="Subject"
+                                            label={t('fields.subjectLabel')}
                                             required
                                             inputType="text"
                                             input={field.value}
                                             onChangeFunction={field.onChange}
                                             error={fieldState.error?.message}
-                                            inputPlaceholder="Physics"
+                                            inputPlaceholder={t('fields.subjectPlaceholder')}
                                             className="w-full"
                                         />
                                     </FormControl>
@@ -334,13 +337,13 @@ export const PublishListingDialog = ({
                                 <FormItem className="w-full">
                                     <FormControl>
                                         <MyInput
-                                            label="Class or exam"
+                                            label={t('fields.levelLabel')}
                                             required
                                             inputType="text"
                                             input={field.value}
                                             onChangeFunction={field.onChange}
                                             error={fieldState.error?.message}
-                                            inputPlaceholder="Class 11"
+                                            inputPlaceholder={t('fields.levelPlaceholder')}
                                             className="w-full"
                                         />
                                     </FormControl>
@@ -355,11 +358,11 @@ export const PublishListingDialog = ({
                                 <FormItem className="w-full">
                                     <FormControl>
                                         <MyInput
-                                            label="Board"
+                                            label={t('fields.boardLabel')}
                                             inputType="text"
                                             input={field.value ?? ''}
                                             onChangeFunction={field.onChange}
-                                            inputPlaceholder="CBSE"
+                                            inputPlaceholder={t('fields.boardPlaceholder')}
                                             className="w-full"
                                         />
                                     </FormControl>
@@ -373,11 +376,11 @@ export const PublishListingDialog = ({
                                 <FormItem className="w-full">
                                     <FormControl>
                                         <MyInput
-                                            label="Language"
+                                            label={t('fields.languageLabel')}
                                             inputType="text"
                                             input={field.value ?? ''}
                                             onChangeFunction={field.onChange}
-                                            inputPlaceholder="English"
+                                            inputPlaceholder={t('fields.languagePlaceholder')}
                                             className="w-full"
                                         />
                                     </FormControl>
@@ -393,11 +396,11 @@ export const PublishListingDialog = ({
                             <FormItem className="w-full">
                                 <FormControl>
                                     <MyInput
-                                        label="Tags"
+                                        label={t('fields.tagsLabel')}
                                         inputType="text"
                                         input={field.value ?? ''}
                                         onChangeFunction={field.onChange}
-                                        inputPlaceholder="mechanics, thermodynamics, solved examples"
+                                        inputPlaceholder={t('fields.tagsPlaceholder')}
                                         className="w-full"
                                     />
                                 </FormControl>

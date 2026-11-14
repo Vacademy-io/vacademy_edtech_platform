@@ -1,0 +1,19 @@
+{
+    "heading": "إزالة من {{term}}",
+    "descriptionPrefix": "إزالة",
+    "descriptionSuffix": "من هذا/هذه {{term}}. يبقى حسابه سليمًا؛ ولن يتأثر وصوله إلى {{termPlural}} الأخرى (إن وجدت).",
+    "removalMode": {
+        "label": "نمط الإزالة",
+        "hardTitle": "إزالة الآن",
+        "hardDescription": "— يتم إلغاء الوصول فورًا.",
+        "softTitle": "الاحتفاظ حتى تاريخ",
+        "softDescription": "— يستمر الوصول حتى تاريخ آخر وصول أدناه، ثم ينتهي تلقائيًا."
+    },
+    "lastAccessDate": {
+        "label": "تاريخ آخر وصول",
+        "missing": "اختر تاريخًا للاحتفاظ بالوصول حتى ذلك الوقت."
+    },
+    "cancel": "إلغاء",
+    "removing": "جارٍ الإزالة...",
+    "remove": "إزالة"
+}

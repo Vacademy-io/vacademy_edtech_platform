@@ -25,7 +25,9 @@ public class QuizSlideActivityLogController {
                                                                         String subjectId,
                                                                         String packageSessionId,
                                                                         String userId,
-                                                                        @RequestAttribute("user") CustomUserDetails user) {
+                                                                        @RequestAttribute("user") CustomUserDetails user,
+                                                                        @RequestHeader(value = "clientId", required = false) String clientId) {
+        quizSlideActivityLogService.requireLegacySubmitAllowed(activityLogDTO, slideId, user, clientId);
         return ResponseEntity.ok(quizSlideActivityLogService.addOrUpdateQuizSlideActivityLog(activityLogDTO, slideId,chapterId,moduleId,subjectId,packageSessionId, userId, user));
     }
 

@@ -1,0 +1,8 @@
+{
+    "qrCodeNotFound": "لم يتم العثور على رمز الاستجابة السريعة!",
+    "defaultRegistrationFields": {
+        "fullName": "الاسم الكامل",
+        "email": "البريد الإلكتروني",
+        "phoneNumber": "رقم الهاتف"
+    }
+}

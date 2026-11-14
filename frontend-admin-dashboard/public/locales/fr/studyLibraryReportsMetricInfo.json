@@ -1,0 +1,7 @@
+{
+    "whatIsThis": "Qu'est-ce que c'est ?",
+    "courseCompleted": "Pourcentage moyen de contenu du cours terminé — basé sur le temps de visionnage vidéo et les pages de documents consultées sur toutes les diapositives publiées de ce cours.",
+    "timeSpentAvg": "Temps moyen consacré à l'apprentissage par jour actif dans la période sélectionnée.",
+    "concentration": "Un score de concentration (0–100 %) enregistré pendant le visionnage des vidéos. Il démarre à 100 et diminue lors des changements d'onglet, des pauses et des questions de vérification manquées dans la vidéo — plus il est élevé, plus la concentration est grande.",
+    "leaderboard": "Apprenants classés par temps d'apprentissage total, le score de concentration servant de critère de départage."
+}

@@ -27,7 +27,8 @@ import java.util.Date;
 @Table(name = "app_registration", schema = "public",
         indexes = {
                 @Index(name = "idx_app_registration_package", columnList = "package_name"),
-                @Index(name = "idx_app_registration_archived", columnList = "archived")
+                @Index(name = "idx_app_registration_archived", columnList = "archived"),
+                @Index(name = "idx_app_registration_institute", columnList = "institute_id")
         })
 @Getter
 @Setter
@@ -50,6 +51,15 @@ public class AppRegistration {
 
     @Column(name = "package_name")
     private String packageName;
+
+    /**
+     * Owning institute, denormalised out of {@link #payload} the same way {@link #packageName} is —
+     * nullable, because apps registered before this field existed (and any ops-only tooling app with
+     * no single owning institute) have none. A null institute_id simply never matches an institute
+     * filter; it is not an error state.
+     */
+    @Column(name = "institute_id")
+    private String instituteId;
 
     @Column(name = "archived", nullable = false)
     private Boolean archived;

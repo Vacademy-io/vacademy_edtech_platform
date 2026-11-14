@@ -1,0 +1,67 @@
+{
+    "loading": "लोड हो रहा है…",
+    "view": "देखें",
+    "unnamedLearner": "अनाम {{learner}}",
+    "viewProgressBreakdownAriaLabel": "{{name}} के लिए प्रगति विवरण देखें",
+    "status": {
+        "completed": "पूर्ण",
+        "onTrack": "सही मार्ग पर",
+        "inProgress": "प्रगति पर",
+        "behind": "पीछे",
+        "notStarted": "शुरू नहीं हुआ"
+    },
+    "columns": {
+        "courseProgress": "{{course}} प्रगति",
+        "status": "स्थिति",
+        "chaptersDone": "पूर्ण अध्याय"
+    },
+    "emptyBatch": {
+        "selectBatch": "{{learner}} की प्रगति देखने के लिए {{batch}} चुनें।",
+        "multiHint": "कई {{batch}} चुनें ताकि उनके {{batch}} के शिक्षार्थी एक ही सूची में दिखें।"
+    },
+    "stats": {
+        "enrolled_one": "नामांकित {{learner}}",
+        "enrolled_other": "नामांकित {{learner}}",
+        "avgProgressThisPage": "औसत प्रगति (इस पृष्ठ पर)",
+        "completedThisPage": "पूर्ण (इस पृष्ठ पर)",
+        "notStartedThisPage": "शुरू नहीं हुआ (इस पृष्ठ पर)"
+    },
+    "search": {
+        "placeholder": "{{learner}} को नाम से खोजें",
+        "label": "खोजें",
+        "clear": "साफ़ करें",
+        "enrolledCount_one": "{{count}} नामांकित {{learner}}",
+        "enrolledCount_other": "{{count}} नामांकित {{learner}}"
+    },
+    "error": {
+        "loadFailed": "इस बैच के नामांकित {{learner}} लोड नहीं हो सके।",
+        "retry": "पुनः प्रयास करें"
+    },
+    "empty": {
+        "noMatch": "कोई {{learner}} “{{search}}” से मेल नहीं खाता।",
+        "noneEnrolled": "चुने गए {{batch}} में अभी कोई {{learner}} नामांकित नहीं है।",
+        "tryDifferentName": "कोई अलग नाम आज़माएं।",
+        "progressAppearsHere": "{{learner}} के नामांकित होते ही यहां प्रगति दिखाई देगी।"
+    },
+    "drawer": {
+        "percentComplete": "{{course}} का {{percent}}% पूर्ण"
+    },
+    "csv": {
+        "fileStem": "{{learner}}-progress",
+        "exportCsv": "CSV निर्यात करें",
+        "preparing": "तैयार हो रहा है…",
+        "exporting": "{{done}}/{{total}} निर्यात हो रहा है…",
+        "exportSuccess": "CSV निर्यात हो गया · {{count}} पंक्तियाँ",
+        "exportTruncated": "CSV निर्यात हो गया · केवल पहली {{count}}",
+        "exportFailed": "CSV निर्यात विफल",
+        "summaryTitle": "{{learner}} प्रगति",
+        "email": "ईमेल",
+        "username": "उपयोगकर्ता नाम",
+        "enrollmentNumber": "नामांकन संख्या",
+        "courseProgress": "{{course}} प्रगति (%)",
+        "chaptersDone": "पूर्ण अध्याय",
+        "chaptersTotal": "कुल अध्याय",
+        "subjectTitle": "विषय के अनुसार {{learner}} प्रगति",
+        "moduleProgress": "{{module}} प्रगति (%)"
+    }
+}

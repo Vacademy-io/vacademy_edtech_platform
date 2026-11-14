@@ -1,0 +1,15 @@
+{
+    "heading": "पढ़ाई जारी रखें",
+    "action": {
+        "viewProgress": "प्रगति देखें"
+    },
+    "course": {
+        "fallbackName": "सक्रिय कोर्स",
+        "session": "सत्र {{session}}"
+    },
+    "behindBadge_one": "{{count}} कोर्स में पीछे",
+    "behindBadge_other": "{{count}} कोर्सों में पीछे",
+    "ring": {
+        "complete": "पूर्ण"
+    }
+}

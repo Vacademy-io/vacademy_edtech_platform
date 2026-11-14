@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.invoice.dto.AdminCreateInvoiceRequestDTO;
 import vacademy.io.admin_core_service.features.invoice.dto.AdminInvoicePaymentLinkResponseDTO;
 import vacademy.io.admin_core_service.features.invoice.dto.InvoiceDTO;
+import vacademy.io.admin_core_service.features.invoice.service.InvoiceBulkExportService;
 import vacademy.io.admin_core_service.features.invoice.service.InvoiceService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.payment.dto.PaymentResponseDTO;
@@ -23,13 +24,22 @@ import java.util.List;
 public class InvoiceController {
 
     @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountPermissionService adminDiscountPermissionService;
+
+    @Autowired
     private InvoiceService invoiceService;
+
+    @Autowired
+    private InvoiceBulkExportService invoiceBulkExportService;
 
     @Autowired
     private vacademy.io.admin_core_service.features.invoice.service.ManualReminderService manualReminderService;
 
     @Autowired
     private vacademy.io.admin_core_service.core.security.InstituteAccessValidator instituteAccessValidator;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.user_subscription.service.PaymentDeletionService paymentDeletionService;
 
     /**
      * Get invoice by ID. Cross-tenant guard: fetch first (the id alone doesn't reveal the
@@ -67,6 +77,11 @@ public class InvoiceController {
      * (no body — the SFP id is enough to derive recipient/amount/dueDate).
      */
     @PostMapping("/sfp/{sfpId}/send-reminder")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "FEE_PLAN",
+            action = "SEND_MESSAGE",
+            entityIdExpr = "#sfpId",
+            descriptionExpr = "'sent a fee reminder for installment ' + #sfpId")
     public ResponseEntity<java.util.Map<String, Object>> sendManualReminder(
             @PathVariable String sfpId,
             @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {
@@ -113,6 +128,35 @@ public class InvoiceController {
     }
 
     /**
+     * Every invoice issued in a date window as one ZIP of PDFs plus an {@code invoices.csv}
+     * manifest — the "Invoices (ZIP)" export on Manage Payments. One invoice per payment;
+     * see {@link vacademy.io.admin_core_service.features.invoice.service.InvoiceBulkExportService}.
+     *
+     * <p>Written straight to the response rather than as a {@code StreamingResponseBody}: an
+     * async response would be cut off by the servlet async timeout on a large period. The plan
+     * is made first, so "nothing in this period" / "too many" come back as ordinary errors.
+     *
+     * <p>Usage: GET /admin-core-service/v1/invoices/institute/{instituteId}/bulk-download?startDate=...&endDate=...
+     */
+    @GetMapping("/institute/{instituteId}/bulk-download")
+    public void bulkDownloadInvoices(
+            @PathVariable String instituteId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            jakarta.servlet.http.HttpServletResponse response) {
+        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        InvoiceBulkExportService.ExportPlan plan = invoiceBulkExportService.plan(instituteId, startDate, endDate);
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=\"invoices.zip\"");
+        try {
+            invoiceBulkExportService.writeZip(plan, response.getOutputStream());
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException("Failed to write invoice archive", e);
+        }
+    }
+
+    /**
      * Bulk "which invoice covers each of these payments?" lookup, for the Invoice column on
      * the Manage Payments table.
      *
@@ -147,12 +191,22 @@ public class InvoiceController {
      * POST /admin-core-service/v1/invoices/admin/create
      */
     @PostMapping("/admin/create")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "CREATE",
+            descriptionExpr = "'created ' + (#result?.body?.size() ?: 0) + ' invoice(s)'")
     public ResponseEntity<List<AdminInvoicePaymentLinkResponseDTO>> createAdminInvoices(
             @Valid @RequestBody AdminCreateInvoiceRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
         // Cross-tenant guard: the caller must belong to the institute they are billing under.
         instituteAccessValidator.validateUserAccess(userDetails, request.getInstituteId());
-        List<AdminInvoicePaymentLinkResponseDTO> result = invoiceService.createAdminInvoices(request);
+        // Only roles allowed to by Display Settings (learnerManagement.canApplyDiscounts).
+        if (vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService
+                .isRequested(request.getAdminDiscount())) {
+            adminDiscountPermissionService.requireCanApplyDiscounts(userDetails, request.getInstituteId());
+        }
+        List<AdminInvoicePaymentLinkResponseDTO> result =
+                invoiceService.createAdminInvoices(request, userDetails.getUserId());
         return ResponseEntity.ok(result);
     }
 
@@ -201,6 +255,12 @@ public class InvoiceController {
      * <p>{@code PUT /v1/invoices/{invoiceId}?instituteId=xxx}
      */
     @PutMapping("/{invoiceId}")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "UPDATE",
+            entityIdExpr = "#invoiceId",
+            captureBefore = "@paymentDeletionService.invoiceAuditSnapshot(#invoiceId)",
+            descriptionExpr = "'edited invoice ' + (#result?.body?.invoiceNumber ?: #invoiceId)")
     public ResponseEntity<InvoiceDTO> updateAdminInvoice(
             @PathVariable String invoiceId,
             @RequestParam String instituteId,
@@ -223,6 +283,12 @@ public class InvoiceController {
      * <p>{@code POST /v1/invoices/{invoiceId}/reject?instituteId=xxx}
      */
     @PostMapping("/{invoiceId}/reject")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "CANCEL",
+            entityIdExpr = "#invoiceId",
+            captureBefore = "@paymentDeletionService.invoiceAuditSnapshot(#invoiceId)",
+            descriptionExpr = "'cancelled invoice ' + (#result?.body?.invoiceNumber ?: #invoiceId) + (#request?.reason != null ? ': ' + #request.reason : '')")
     public ResponseEntity<InvoiceDTO> rejectInvoice(
             @PathVariable String invoiceId,
             @RequestParam String instituteId,
@@ -234,6 +300,24 @@ public class InvoiceController {
     }
 
     /**
+     * Permanently deletes an invoice. OFF unless the caller's role has Display Settings →
+     * Learner Management → "delete payments & invoices" switched on (checked server-side). Refused
+     * while a live payment is recorded against it and for live-class invoices; a bill's own
+     * ledger obligation goes with it. Kept in the admin activity log (before-snapshot).
+     *
+     * <p>{@code DELETE /v1/invoices/{invoiceId}?instituteId=xxx}
+     */
+    @DeleteMapping("/{invoiceId}")
+    public ResponseEntity<java.util.Map<String, Object>> deleteInvoice(
+            @PathVariable String invoiceId,
+            @RequestParam String instituteId,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        return ResponseEntity.ok(paymentDeletionService.deleteInvoice(
+                invoiceId, instituteId, userDetails != null ? userDetails.getUserId() : null));
+    }
+
+    /**
      * Record an offline / manual payment against a PENDING_PAYMENT admin invoice.
      * Creates a MANUAL PaymentLog (no UserPlan), links it to the invoice, flips
      * status to PAID, and sends a best-effort confirmation email.
@@ -241,6 +325,12 @@ public class InvoiceController {
      * <p>Body: {@code {"transaction_id": "...", "notes": "..."}} (both optional).
      */
     @PostMapping("/{invoiceId}/mark-paid-manual")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "STATUS_CHANGE",
+            entityIdExpr = "#invoiceId",
+            captureBefore = "@paymentDeletionService.invoiceAuditSnapshot(#invoiceId)",
+            descriptionExpr = "'marked invoice ' + (#result?.body?.invoiceNumber ?: #invoiceId) + ' as paid (offline payment)'")
     public ResponseEntity<InvoiceDTO> markInvoicePaidManually(
             @PathVariable String invoiceId,
             @RequestBody(required = false) vacademy.io.admin_core_service.features.invoice.dto.ManualInvoicePaymentRequestDTO request,
@@ -258,6 +348,11 @@ public class InvoiceController {
      * <p>{@code POST /v1/invoices/{invoiceId}/send-reminder}
      */
     @PostMapping("/{invoiceId}/send-reminder")
+    @vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable(
+            entityType = "INVOICE",
+            action = "SEND_MESSAGE",
+            entityIdExpr = "#invoiceId",
+            descriptionExpr = "'sent a payment reminder for invoice ' + #invoiceId")
     public ResponseEntity<java.util.Map<String, Object>> sendInvoiceReminder(
             @PathVariable String invoiceId,
             @RequestAttribute(value = "user", required = false) CustomUserDetails userDetails) {

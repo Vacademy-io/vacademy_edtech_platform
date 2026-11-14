@@ -10,6 +10,7 @@ import {
 import { MyInput } from "./input";
 import { useState, useMemo } from "react";
 import { KeyReturn, XCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface PaginationProps {
     currentPage: number;
@@ -18,6 +19,7 @@ interface PaginationProps {
 }
 
 export function MyPagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+    const { t } = useTranslation("uiAtomsA");
     const [pageInput, setPageInput] = useState("");
     const [submittedPage, setSubmittedPage] = useState("");
     // Compute page numbers for pagination control
@@ -113,7 +115,7 @@ export function MyPagination({ currentPage, totalPages, onPageChange }: Paginati
             </Pagination>
 
             <div className="flex items-center gap-2">
-                <div>Go to</div>
+                <div>{t("pagination.goTo")}</div>
                 <div className="relative">
                     <MyInput
                         inputType="text"

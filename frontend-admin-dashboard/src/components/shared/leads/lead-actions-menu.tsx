@@ -19,19 +19,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { LeadCardVM } from './lead-view-model';
-import type { LeadActionHandlers, LeadTier, LeadStatus } from './lead-actions';
+import type { LeadActionHandlers, LeadStatus } from './lead-actions';
+import { useLeadTiers } from '@/hooks/use-lead-tiers';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 
 /**
  * LeadActionsMenu — the overflow (⋮) menu shared by the list rows and board
  * cards. Items degrade gracefully: tier/note/assign actions only appear when the
  * lead system is on (`showOps`) and the lead has a linked user id.
  */
-
-const TIERS: { value: LeadTier; label: string }[] = [
-    { value: 'HOT', label: 'Hot' },
-    { value: 'WARM', label: 'Warm' },
-    { value: 'COLD', label: 'Cold' },
-];
 
 const STATUSES: { value: LeadStatus; label: string }[] = [
     { value: 'LEAD', label: 'Lead' },
@@ -57,6 +53,9 @@ export function LeadActionsMenu({
     className,
 }: LeadActionsMenuProps) {
     const { userId, name } = vm;
+    // Tier options come from the institute catalog (custom tiers included).
+    const { tiers } = useLeadTiers();
+    const terminology = useLeadTerminology();
     const canOps = showOps && !!userId;
     const extra = actions.renderExtraActions?.(vm);
 
@@ -81,19 +80,22 @@ export function LeadActionsMenu({
                     Open details
                 </DropdownMenuItem>
 
-                {canOps && actions.onCallLead && actions.canCall && (() => {
-                    const gate = actions.canCall(vm);
-                    return (
-                        <DropdownMenuItem
-                            disabled={!gate.allowed}
-                            title={gate.allowed ? undefined : gate.reason}
-                            onClick={() => actions.onCallLead!(vm)}
-                        >
-                            <Phone className="mr-2 size-4" />
-                            Call lead
-                        </DropdownMenuItem>
-                    );
-                })()}
+                {canOps &&
+                    actions.onCallLead &&
+                    actions.canCall &&
+                    (() => {
+                        const gate = actions.canCall(vm);
+                        return (
+                            <DropdownMenuItem
+                                disabled={!gate.allowed}
+                                title={gate.allowed ? undefined : gate.reason}
+                                onClick={() => actions.onCallLead!(vm)}
+                            >
+                                <Phone className="mr-2 size-4" />
+                                Call lead
+                            </DropdownMenuItem>
+                        );
+                    })()}
                 {canOps && actions.onAddNote && (
                     <DropdownMenuItem
                         onClick={() => actions.onAddNote!(userId!, name, vm.responseId)}
@@ -136,17 +138,21 @@ export function LeadActionsMenu({
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger>
                             <Flame className="mr-2 size-4" />
-                            Set tier
+                            Set {terminology.tier.toLowerCase()}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
-                            {TIERS.map((t) => (
+                            {tiers.map((t) => (
                                 <DropdownMenuItem
-                                    key={t.value}
-                                    disabled={(currentTier ?? '').toUpperCase() === t.value}
-                                    onClick={() => actions.onSetTier!(userId!, name, t.value)}
+                                    key={t.tier_key}
+                                    disabled={(currentTier ?? '').toUpperCase() === t.tier_key}
+                                    onClick={() => actions.onSetTier!(userId!, name, t.tier_key)}
                                 >
+                                    <span
+                                        className="mr-2 size-2 shrink-0 rounded-full"
+                                        style={{ backgroundColor: t.color }}
+                                    />
                                     {t.label}
-                                    {(currentTier ?? '').toUpperCase() === t.value && (
+                                    {(currentTier ?? '').toUpperCase() === t.tier_key && (
                                         <span className="ml-auto text-xs text-neutral-400">
                                             Current
                                         </span>

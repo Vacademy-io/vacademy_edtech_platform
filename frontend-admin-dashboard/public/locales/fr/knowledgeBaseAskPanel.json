@@ -1,0 +1,29 @@
+{
+    "title": "Interroger cette base de connaissances",
+    "subtitle": "Les réponses proviennent uniquement de {{kbName}}, avec la page d'origine.",
+    "emptyState": {
+        "noContent": "Ajoutez d'abord un document, puis posez des questions ici pour vérifier ce que l'IA a compris.",
+        "prompt": "Essayez de poser une question dont vous connaissez déjà la réponse — c'est le moyen le plus rapide de vérifier que le contenu a bien été lu."
+    },
+    "status": {
+        "searching": "Recherche dans le contenu en cours…",
+        "notGrounded": "Rien dans cette base de connaissances ne couvre cela."
+    },
+    "citations": {
+        "heading": "Extrait de votre contenu",
+        "figureAlt": "Figure issue de la source"
+    },
+    "actions": {
+        "clear": "Effacer",
+        "ask": "Demander",
+        "asking": "Envoi en cours…"
+    },
+    "input": {
+        "placeholder": "Posez n'importe quelle question sur ce contenu…",
+        "ariaLabel": "Votre question"
+    },
+    "errors": {
+        "default": "Impossible de répondre à cela. Veuillez réessayer.",
+        "insufficientCredits": "Crédits insuffisants."
+    }
+}

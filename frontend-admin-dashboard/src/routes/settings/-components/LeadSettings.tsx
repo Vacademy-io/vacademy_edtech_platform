@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -12,9 +13,12 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import LeadStatusesManager from './LeadStatusesManager';
+import LeadTiersManager from './LeadTiersManager';
 import LeadSlaSettings from './LeadSlaSettings';
 import LeadReportSettings from './LeadReportSettings';
 import LeadDedupSettings from './LeadDedupSettings';
+import LeadFollowUpFieldsSettings from './LeadFollowUpFieldsSettings';
+import LeadLookupSettings from './LeadLookupSettings';
 import PoolsList from './pools/PoolsList';
 import AudienceFormSettings from './AudienceFormSettings';
 // LOCAL ONLY — these power the Workbench tab where admins pick the leads team
@@ -44,6 +48,17 @@ export interface LeadSettingsData {
     showScoreInEnquiryTable: boolean;
     showScoreInContactsTable: boolean;
     showScoreInStudentsTable: boolean;
+    /** Hide converted leads from the unfiltered "All leads" view (Recent Leads + Lead List). */
+    hideConvertedInAllLeads: boolean;
+    showConvertedFilterOption: boolean;
+    /** Keep LOST leads out of every Follow-ups bucket, Completed included. On by default. */
+    hideLostInFollowUps: boolean;
+    /**
+     * Institute-specific names for the built-in lead attributes (e.g. Tier → "Interest
+     * Level", Lead status → "Action Label"). Blank = platform default. Read everywhere
+     * through useLeadTerminology().
+     */
+    labels?: { tier?: string; leadStatus?: string; campaignType?: string };
 }
 
 const DEFAULT_LEAD_SETTINGS: LeadSettingsData = {
@@ -58,6 +73,10 @@ const DEFAULT_LEAD_SETTINGS: LeadSettingsData = {
     showScoreInEnquiryTable: true,
     showScoreInContactsTable: true,
     showScoreInStudentsTable: true,
+    hideConvertedInAllLeads: false,
+    showConvertedFilterOption: true,
+    hideLostInFollowUps: true,
+    labels: {},
 };
 
 const SETTING_KEY = 'LEAD_SETTING';
@@ -80,6 +99,8 @@ const fetchLeadSettings = async (): Promise<LeadSettingsData> => {
         ...DEFAULT_LEAD_SETTINGS,
         ...saved,
         scoringWeights: { ...DEFAULT_LEAD_SETTINGS.scoringWeights, ...saved.scoringWeights },
+        // On unless explicitly switched off - older blobs have no key.
+        hideLostInFollowUps: saved.hideLostInFollowUps !== false,
     };
 };
 
@@ -99,6 +120,7 @@ function weightsSum(w: LeadSettingsData['scoringWeights']): number {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function LeadSettings() {
+    const { t } = useTranslation('settingsLead');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<LeadSettingsData>(DEFAULT_LEAD_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
@@ -119,18 +141,23 @@ export default function LeadSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveLeadSettings,
         onSuccess: () => {
-            toast.success('Lead settings saved');
+            toast.success(t('toasts.saved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['lead-settings'] });
             queryClient.invalidateQueries({ queryKey: ['lead-settings-config'] });
         },
         onError: () => {
-            toast.error('Failed to save lead settings');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
     const update = (patch: Partial<LeadSettingsData>) => {
         setSettings((prev) => ({ ...prev, ...patch }));
+        setHasChanges(true);
+    };
+
+    const updateLabel = (key: 'tier' | 'leadStatus' | 'campaignType', value: string) => {
+        setSettings((prev) => ({ ...prev, labels: { ...(prev.labels ?? {}), [key]: value } }));
         setHasChanges(true);
     };
 
@@ -145,7 +172,7 @@ export default function LeadSettings() {
     const handleSave = () => {
         const total = weightsSum(settings.scoringWeights);
         if (total !== 100) {
-            toast.error(`Scoring weights must sum to 100 (current: ${total})`);
+            toast.error(t('toasts.weightsSumError', { total }));
             return;
         }
         save(settings);
@@ -158,19 +185,20 @@ export default function LeadSettings() {
         <div className="p-6">
             <Tabs defaultValue="config" className="w-full">
                 <TabsList className="mb-4">
-                    <TabsTrigger value="config">Configuration</TabsTrigger>
-                    <TabsTrigger value="pools">Pools</TabsTrigger>
-                    <TabsTrigger value="forms">Forms</TabsTrigger>
-                    <TabsTrigger value="workbench">Workbench</TabsTrigger>
+                    <TabsTrigger value="config">{t('tabs.config')}</TabsTrigger>
+                    <TabsTrigger value="pools">{t('tabs.pools')}</TabsTrigger>
+                    <TabsTrigger value="forms">{t('tabs.forms')}</TabsTrigger>
+                    <TabsTrigger value="workbench">{t('tabs.workbench')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="config" className="space-y-6">
                     {isLoading ? (
-                        <div className="text-sm text-muted-foreground">Loading lead settings…</div>
+                        <div className="text-sm text-muted-foreground">{t('loading')}</div>
                     ) : (
                         <ConfigSection
                             settings={settings}
                             update={update}
+                            updateLabel={updateLabel}
                             updateWeight={updateWeight}
                             weightTotal={weightTotal}
                             weightError={weightError}
@@ -203,6 +231,7 @@ export default function LeadSettings() {
 interface ConfigSectionProps {
     settings: LeadSettingsData;
     update: (patch: Partial<LeadSettingsData>) => void;
+    updateLabel: (key: 'tier' | 'leadStatus' | 'campaignType', value: string) => void;
     updateWeight: (key: keyof LeadSettingsData['scoringWeights'], value: number) => void;
     weightTotal: number;
     weightError: boolean;
@@ -214,6 +243,7 @@ interface ConfigSectionProps {
 function ConfigSection({
     settings,
     update,
+    updateLabel,
     updateWeight,
     weightTotal,
     weightError,
@@ -221,16 +251,14 @@ function ConfigSection({
     saving,
     hasChanges,
 }: ConfigSectionProps) {
+    const { t } = useTranslation('settingsLead');
     return (
         <div className="space-y-6">
             {/* ── Enable / Disable Lead System ── */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Lead Management System</CardTitle>
-                    <CardDescription>
-                        Controls whether lead scoring, tier badges, and the lead sidebar tab are
-                        visible institute-wide. Disabling hides all lead UI without deleting data.
-                    </CardDescription>
+                    <CardTitle>{t('enableCard.title')}</CardTitle>
+                    <CardDescription>{t('enableCard.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-3">
@@ -240,7 +268,7 @@ function ConfigSection({
                             onCheckedChange={(v) => update({ enabled: v })}
                         />
                         <Label htmlFor="lead-enabled" className="cursor-pointer">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
+                            {settings.enabled ? t('enableCard.enabled') : t('enableCard.disabled')}
                         </Label>
                     </div>
                 </CardContent>
@@ -251,25 +279,23 @@ function ConfigSection({
                     {/* ── Score Badge Visibility ── */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Score Badge Visibility</CardTitle>
-                            <CardDescription>
-                                Choose where the HOT / WARM / COLD score badge appears.
-                            </CardDescription>
+                            <CardTitle>{t('visibilityCard.title')}</CardTitle>
+                            <CardDescription>{t('visibilityCard.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {(
                                 [
                                     [
                                         'showScoreInEnquiryTable',
-                                        'Enquiries table (Admissions → Enquiries)',
+                                        t('visibilityCard.options.enquiryTable'),
                                     ],
                                     [
                                         'showScoreInContactsTable',
-                                        'Contacts table (Manage Contacts)',
+                                        t('visibilityCard.options.contactsTable'),
                                     ],
                                     [
                                         'showScoreInStudentsTable',
-                                        'Students table (Manage Students)',
+                                        t('visibilityCard.options.studentsTable'),
                                     ],
                                 ] as [keyof LeadSettingsData, string][]
                             ).map(([key, label]) => (
@@ -287,37 +313,95 @@ function ConfigSection({
                         </CardContent>
                     </Card>
 
+                    {/* ── All leads view: hide converted leads from the unfiltered list ── */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('allLeadsCard.title')}</CardTitle>
+                            <CardDescription>{t('allLeadsCard.description')}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="hideConvertedInAllLeads"
+                                    checked={settings.hideConvertedInAllLeads}
+                                    onCheckedChange={(v) => update({ hideConvertedInAllLeads: v })}
+                                />
+                                <Label htmlFor="hideConvertedInAllLeads" className="cursor-pointer">
+                                    {t('allLeadsCard.hideConverted')}
+                                </Label>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="showConvertedFilterOption"
+                                    checked={settings.showConvertedFilterOption}
+                                    onCheckedChange={(v) =>
+                                        update({ showConvertedFilterOption: v })
+                                    }
+                                />
+                                <Label
+                                    htmlFor="showConvertedFilterOption"
+                                    className="cursor-pointer"
+                                >
+                                    {t('allLeadsCard.showConvertedFilter')}
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('allLeadsCard.showConvertedFilterHint')}
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Follow-ups: keep lost leads out of every bucket ── */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('followUpsCard.title')}</CardTitle>
+                            <CardDescription>{t('followUpsCard.description')}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="hideLostInFollowUps"
+                                    checked={settings.hideLostInFollowUps}
+                                    onCheckedChange={(v) => update({ hideLostInFollowUps: v })}
+                                />
+                                <Label htmlFor="hideLostInFollowUps" className="cursor-pointer">
+                                    {t('followUpsCard.hideLost')}
+                                </Label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('followUpsCard.hideLostHint')}
+                            </p>
+                        </CardContent>
+                    </Card>
+
                     {/* ── Scoring Weights ── */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Scoring Weights</CardTitle>
-                            <CardDescription>
-                                Each factor contributes its weight percentage to the final score
-                                (0–100). Weights must sum to exactly 100.
-                            </CardDescription>
+                            <CardTitle>{t('weightsCard.title')}</CardTitle>
+                            <CardDescription>{t('weightsCard.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {(
                                 [
                                     [
                                         'sourceQuality',
-                                        'Source Quality',
-                                        'Score based on how the lead came in (e.g. Walk-in > Google Ads > Manual)',
+                                        t('weightsCard.factors.sourceQuality.label'),
+                                        t('weightsCard.factors.sourceQuality.description'),
                                     ],
                                     [
                                         'profileCompleteness',
-                                        'Profile Completeness',
-                                        'Percentage of key fields filled (name, email, phone, class, etc.)',
+                                        t('weightsCard.factors.profileCompleteness.label'),
+                                        t('weightsCard.factors.profileCompleteness.description'),
                                     ],
                                     [
                                         'recency',
-                                        'Recency',
-                                        'Time decay — newer leads score higher, older ones decay',
+                                        t('weightsCard.factors.recency.label'),
+                                        t('weightsCard.factors.recency.description'),
                                     ],
                                     [
                                         'engagement',
-                                        'Engagement',
-                                        'Number of timeline notes and interactions recorded',
+                                        t('weightsCard.factors.engagement.label'),
+                                        t('weightsCard.factors.engagement.description'),
                                     ],
                                 ] as [keyof LeadSettingsData['scoringWeights'], string, string][]
                             ).map(([key, label, desc]) => (
@@ -348,7 +432,7 @@ function ConfigSection({
                             <Separator />
 
                             <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">Total</span>
+                                <span className="font-medium">{t('weightsCard.total')}</span>
                                 <span
                                     className={
                                         weightError
@@ -357,7 +441,7 @@ function ConfigSection({
                                     }
                                 >
                                     {weightTotal} / 100
-                                    {weightError && ' — must equal 100'}
+                                    {weightError && ` — ${t('weightsCard.mustEqual100')}`}
                                 </span>
                             </div>
                         </CardContent>
@@ -366,11 +450,11 @@ function ConfigSection({
                     {/* ── Recency Decay ── */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Recency Decay</CardTitle>
+                            <CardTitle>{t('recencyCard.title')}</CardTitle>
                             <CardDescription>
-                                Number of days before a lead&apos;s recency score starts to decay
-                                toward 0. A lead submitted today scores 100 for recency; one
-                                submitted {settings.recencyDecayDays} days ago scores ~50.
+                                {t('recencyCard.description', {
+                                    days: settings.recencyDecayDays,
+                                })}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -387,8 +471,59 @@ function ConfigSection({
                                     }
                                     className="w-24"
                                 />
-                                <span className="text-sm text-muted-foreground">days</span>
+                                <span className="text-sm text-muted-foreground">
+                                    {t('recencyCard.unit')}
+                                </span>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Terminology: what this institute calls Tier / Lead status / Campaign type ── */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{t('terminologyCard.title')}</CardTitle>
+                            <CardDescription>{t('terminologyCard.description')}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="lead-label-tier">
+                                    {t('terminologyCard.tierLabel')}
+                                </Label>
+                                <Input
+                                    id="lead-label-tier"
+                                    value={settings.labels?.tier ?? ''}
+                                    placeholder={t('terminologyCard.tierPlaceholder')}
+                                    maxLength={40}
+                                    onChange={(e) => updateLabel('tier', e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="lead-label-status">
+                                    {t('terminologyCard.leadStatusLabel')}
+                                </Label>
+                                <Input
+                                    id="lead-label-status"
+                                    value={settings.labels?.leadStatus ?? ''}
+                                    placeholder={t('terminologyCard.leadStatusPlaceholder')}
+                                    maxLength={40}
+                                    onChange={(e) => updateLabel('leadStatus', e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="lead-label-campaign-type">
+                                    {t('terminologyCard.campaignTypeLabel')}
+                                </Label>
+                                <Input
+                                    id="lead-label-campaign-type"
+                                    value={settings.labels?.campaignType ?? ''}
+                                    placeholder={t('terminologyCard.campaignTypePlaceholder')}
+                                    maxLength={40}
+                                    onChange={(e) => updateLabel('campaignType', e.target.value)}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground sm:col-span-2">
+                                {t('terminologyCard.hint')}
+                            </p>
                         </CardContent>
                     </Card>
 
@@ -400,7 +535,7 @@ function ConfigSection({
                             onClick={handleSave}
                             disable={saving || !hasChanges}
                         >
-                            {saving ? 'Saving…' : 'Save scoring settings'}
+                            {saving ? t('saveButton.saving') : t('saveButton.save')}
                         </MyButton>
                     </div>
 
@@ -413,8 +548,17 @@ function ConfigSection({
                     {/* ── TAT + Follow-up reminders (table-backed) ── */}
                     <LeadSlaSettings />
 
+                    {/* ── Follow-up form dropdowns (LEAD_SETTING.data.followUpFields subtree) ── */}
+                    <LeadFollowUpFieldsSettings />
+
+                    {/* ── Check Lead duplicate lookup (LEAD_SETTING.data.leadLookup subtree) ── */}
+                    <LeadLookupSettings />
+
                     {/* ── Lead Statuses (table-backed CRUD) ── */}
                     <LeadStatusesManager />
+
+                    {/* ── Lead Tiers (table-backed CRUD; Hot/Warm/Cold seeded, custom levels + score bands) ── */}
+                    <LeadTiersManager />
                 </>
             )}
         </div>

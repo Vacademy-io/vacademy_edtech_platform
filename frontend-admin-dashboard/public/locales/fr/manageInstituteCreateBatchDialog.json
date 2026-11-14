@@ -1,0 +1,21 @@
+{
+    "trigger": {
+        "createBatch": "Créer un lot"
+    },
+    "toast": {
+        "studyMaterialCopiedSuccess": "Matériel d'étude copié avec succès",
+        "studyMaterialCopyFailed": "Échec de la copie du matériel d'étude",
+        "batchCreatedSuccess": "Lot créé avec succès",
+        "batchCreateFailed": "Échec de la création du lot"
+    },
+    "button": {
+        "back": "Retour",
+        "nextStep": "Étape suivante"
+    },
+    "step": {
+        "selectTerm": "Sélectionner {{term}}"
+    },
+    "dialog": {
+        "heading": "Créer {{batchTerm}} - Étape {{step}} : {{title}}"
+    }
+}

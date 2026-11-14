@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.audience.repository.AudienceRepos
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
+import vacademy.io.admin_core_service.features.telephony.queue.AiCallQueueService;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.List;
@@ -33,17 +34,23 @@ import java.util.concurrent.RejectedExecutionException;
  * in an audience; each call's outcome (and the counsellor assignment that follows)
  * is driven by the end-of-call webhook + {@link AiCallOutcomeProcessor}.
  *
- * <p>Dispatch is <b>async + paced</b>: validation + counting run on the request
- * thread (so the caller gets an immediate "queued N" answer), then the per-lead
- * click-to-calls run on a bounded background pool ({@code aiCallDispatchExecutor})
- * with a small gap between calls so we don't burst Aavtaar's rate limit. Phone
- * numbers are resolved per lead at call time ({@code parent_mobile} → user profile),
- * so a lead with only a profile number still gets called.
+ * <p>Dispatch is <b>the shared AI call queue</b>: validation + counting run on the
+ * request thread, then every eligible lead is INSERTED into {@code ai_call_queue} in
+ * one batch and {@code AiCallQueueDrainJob} dials them as lines free up. Phone numbers
+ * are still resolved per lead at call time ({@code parent_mobile} → user profile), so a
+ * lead with only a profile number still gets called.
  *
- * <p>For very large lists the scalable alternative is Aavtaar's native
- * {@code /upload-contacts} (push the whole list, they dial) — pending vendor
- * confirmation of how an uploaded list actually starts dialing. This loop is the
- * proven path and dials for certain.
+ * <p>What that replaced: a background thread per campaign running its own
+ * completion-aware sliding window, sized by a {@code MAX_PARALLEL} constant. That
+ * window was per CAMPAIGN, so two institutes running campaigns put twice the intended
+ * number of calls on a voice box that carries a fixed few — the overflow came back to
+ * leads as a spoken "all lines busy". It also lived in one replica's heap, so a deploy
+ * mid-campaign dropped whatever had not dialled yet. The queue is fleet-wide, durable,
+ * visible and cancellable; fairness between institutes comes from the per-lane
+ * concurrency cap rather than from each campaign politely limiting itself.
+ *
+ * <p>{@code telephony.ai.queue.enabled=false} restores the old in-memory loop. That is
+ * a rollback lever, not a supported mode — it dials without a fleet-wide limit.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,12 +65,19 @@ public class AiCallCampaignService {
     private final vacademy.io.admin_core_service.features.telephony.persistence.repository
             .TelephonyCallLogRepository callLogRepo;
 
+    private final AiCallQueueService queueService;
+
     // Field-injected (not via @RequiredArgsConstructor) because there are multiple
     // Executor beans and this project's lombok.config doesn't copy @Qualifier onto
-    // the generated constructor — by-type injection would be ambiguous.
+    // the generated constructor — by-type injection would be ambiguous. Used by the
+    // legacy path only.
     @Autowired
     @Qualifier("aiCallDispatchExecutor")
     private Executor dispatchExecutor;
+
+    /** Rollback lever: false = the pre-queue background sliding window. */
+    @Value("${telephony.ai.queue.enabled:true}")
+    private boolean queueEnabled;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -79,9 +93,16 @@ public class AiCallCampaignService {
 
     public record StartResult(int total, int eligible, boolean dispatched, String message) {}
 
-    /** UI cap for calls-in-parallel. Bounded by the Mumbai voice box (1 vCPU — ~5
-     *  concurrent clean) and the bot's global MAX_CONCURRENT_CALLS=10 shared across
-     *  ALL institutes: one campaign must not starve everyone else's calls. */
+    /**
+     * Legacy cap for calls-in-parallel, and the upper bound still applied to the
+     * {@code parallel} request field.
+     *
+     * <p>Under the queue this number no longer decides anything: how many of this
+     * campaign's calls run at once is the institute's LANE capacity, which is a
+     * fleet-wide decision made in {@code AiCallCapacityService} rather than something a
+     * campaign gets to ask for. The field is accepted and ignored so existing clients
+     * keep working.
+     */
     public static final int MAX_PARALLEL = 3;
 
     /** Providers that place AI-agent calls — the dial the cooldown de-duplicates.
@@ -178,6 +199,34 @@ public class AiCallCampaignService {
             claimed = true;
         }
 
+        if (queueEnabled) {
+            int queued;
+            try {
+                queued = queueService.enqueueBatch(instituteId, toRequests(instituteId, callable,
+                                campaignId, preferredNumberId), CallTrigger.BULK_MANUAL,
+                        AiCallQueueService.SOURCE_BULK, audienceId, actorUserId);
+            } catch (RuntimeException e) {
+                // Nothing was queued, so the claim must not outlive the attempt —
+                // otherwise this list is locked for the full cooldown having placed no calls.
+                if (claimed) audienceRepository.releaseAiCampaignClaim(audienceId);
+                throw e;
+            }
+            // Honest up front: the fleet carries a fixed number of simultaneous calls, so
+            // a big list is hours of dialing. An admin who can see that can decide to
+            // trim the list or cancel; an admin told only "Queued 500" finds out by
+            // watching nothing happen.
+            long eta = queueService.etaMinutes(instituteId, settings.getProvider(), queued);
+            log.info("ai-call bulk: audience={} total={} eligible={} callable={} queued={} (eta ~{} min)",
+                    audienceId, leads.size(), refs.size(), callable.size(), queued, eta);
+            return new StartResult(leads.size(), queued, queued > 0,
+                    "Queued " + queued + " AI call" + (queued == 1 ? "" : "s")
+                    + (skippedRecent > 0
+                            ? " (" + skippedRecent + " skipped — already called in the last few minutes)"
+                            : "")
+                    + (eta > 0 ? "; roughly " + formatEta(eta) + " to work through the list" : "")
+                    + ". Outcomes arrive as each call finishes.");
+        }
+
         try {
             // The refs are plain records (snapshot) — safe to hand to another thread;
             // no managed JPA entities cross the boundary.
@@ -190,7 +239,7 @@ public class AiCallCampaignService {
             throw new VacademyException("Too many AI bulk campaigns are running right now — try again shortly.");
         }
 
-        log.info("ai-call bulk: audience={} total={} eligible={} callable={} dispatched async (pace={}ms)",
+        log.info("ai-call bulk (legacy): audience={} total={} eligible={} callable={} dispatched async (pace={}ms)",
                 audienceId, leads.size(), refs.size(), callable.size(), paceMs);
         return new StartResult(leads.size(), callable.size(), true,
                 "Queued " + callable.size() + " AI calls"
@@ -198,6 +247,31 @@ public class AiCallCampaignService {
                         ? " (" + skippedRecent + " skipped — already called in the last few minutes)"
                         : "")
                 + "; outcomes will arrive via the webhook.");
+    }
+
+    /** One queue request per eligible lead. Mirrors what the legacy loop built per call. */
+    private List<AiCallRequestDTO> toRequests(String instituteId, List<LeadRef> refs,
+                                              String campaignId, String preferredNumberId) {
+        List<AiCallRequestDTO> out = new ArrayList<>(refs.size());
+        for (LeadRef ref : refs) {
+            AiCallRequestDTO req = new AiCallRequestDTO();
+            req.setInstituteId(instituteId);
+            req.setUserId(ref.userId());
+            req.setPhoneNumber(ref.phone());   // may be blank → placeCall resolves from profile
+            req.setResponseId(ref.responseId());
+            req.setCampaignId(campaignId);
+            req.setPreferredNumberId(preferredNumberId);
+            out.add(req);
+        }
+        return out;
+    }
+
+    /** "2 h 40 min" reads better than "160 minutes" on a campaign confirmation. */
+    private static String formatEta(long minutes) {
+        if (minutes < 60) return minutes + " min";
+        long hours = minutes / 60;
+        long rest = minutes % 60;
+        return rest == 0 ? hours + " h" : hours + " h " + rest + " min";
     }
 
     /**

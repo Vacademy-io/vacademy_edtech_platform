@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.user_subscription.dto.ReferralOpt
 import vacademy.io.admin_core_service.features.user_subscription.entity.CouponCode;
 import vacademy.io.admin_core_service.features.user_subscription.entity.ReferralOption;
 import vacademy.io.admin_core_service.features.user_subscription.enums.CouponCodeSource;
+import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralOptionSource;
 import vacademy.io.admin_core_service.features.user_subscription.repository.CouponCodeRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.ReferralOptionRepository;
 
@@ -92,8 +93,36 @@ public class ReferralOptionService {
         return referralOptionRepository.findById(id);
     }
 
-    // NOTE: verify whether the coupon code belongs to the same institute for that
-    // package session
+    /**
+     * The member's referral code, when it can be used with this referral option; empty
+     * otherwise. The referrer is always the code's owner ({@code source_id}): nothing the
+     * client sends decides who gets the referrer reward.
+     *
+     * <p>Deliberately NOT checked: {@code usage_limit} (set to 1 when the code is generated)
+     * and the one-year {@code redeem_end_date}. A member shares one link with many friends
+     * for as long as they are a member; enforcing either would kill the link after one use
+     * or a year.
+     */
+    public Optional<CouponCode> findUsableReferralCode(String code, ReferralOption referralOption) {
+        return Optional.ofNullable(validateCouponCode(code))
+                .filter(coupon -> referralCodeProblem(coupon, referralOption) == null);
+    }
+
+    /** Why the code cannot be used with this option, or null when it can. */
+    private String referralCodeProblem(CouponCode coupon, ReferralOption referralOption) {
+        if (coupon.getStatus() != null && !StatusEnum.ACTIVE.name().equalsIgnoreCase(coupon.getStatus())) {
+            return "This referral code is no longer active";
+        }
+        // The referrer must be a member of the institute running the programme.
+        if (ReferralOptionSource.INSTITUTE.name().equalsIgnoreCase(referralOption.getSource())
+                && referralOption.getSourceId() != null
+                && !studentSessionMappingRepository.existsActiveLearnerInInstitute(
+                        coupon.getSourceId(), referralOption.getSourceId())) {
+            return "This referral code does not belong to a member of this institute";
+        }
+        return null;
+    }
+
     public CouponVerificationResponseDTO verifyCouponCode(
             String couponCode,
             String referralOptionId,
@@ -107,6 +136,11 @@ public class ReferralOptionService {
             Optional<ReferralOption> referralOption = getReferralOption(referralOptionId);
             if (referralOption.isEmpty()) {
                 return buildFailureResponse("Referral option not found");
+            }
+
+            String problem = referralCodeProblem(coupon, referralOption.get());
+            if (problem != null) {
+                return buildFailureResponse(problem);
             }
 
             ReferralOptionSettingDTO settingDTO = parseReferralOptionSettings(referralOption.get());

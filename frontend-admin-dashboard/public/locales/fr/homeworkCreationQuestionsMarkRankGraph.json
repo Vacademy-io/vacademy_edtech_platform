@@ -1,0 +1,12 @@
+{
+    "title": "Graphique notes-classement",
+    "chart": {
+        "rankAxisLabel": "Classement",
+        "marksAxisLabel": "Notes obtenues",
+        "markSeriesLabel": "Notes"
+    },
+    "export": {
+        "pdfSuccess": "Données de classement et de notes des étudiants exportées avec succès au format PDF",
+        "csvSuccess": "Données de classement et de notes des étudiants exportées avec succès au format CSV"
+    }
+}

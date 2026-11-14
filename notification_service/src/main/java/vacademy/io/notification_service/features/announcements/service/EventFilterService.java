@@ -24,6 +24,20 @@ public class EventFilterService {
      * Determine if a user should receive a specific event
      */
     public boolean shouldReceiveEvent(String userId, AnnouncementEvent event) {
+        return shouldReceiveEvent(userId, event, false);
+    }
+
+    /**
+     * Determine if a user should receive a specific event.
+     *
+     * @param recipientVerified pass {@code true} when the caller derived this user id from the
+     *   announcement's own recipient rows, so membership is already established. Every fan-out over
+     *   such a list MUST pass {@code true}: the membership lookup is one query per user, so leaving
+     *   it on turns a single broadcast into N round trips that re-read data the caller just loaded.
+     *   Pass {@code false} for user ids that came from anywhere else (an API request body, say),
+     *   where membership is still unproven. All other event-type filtering runs either way.
+     */
+    public boolean shouldReceiveEvent(String userId, AnnouncementEvent event, boolean recipientVerified) {
         try {
             // Basic validation
             if (userId == null || event == null || event.getType() == null) {
@@ -36,7 +50,7 @@ public class EventFilterService {
             }
             
             // Check if user is a recipient of the announcement
-            if (event.getAnnouncementId() != null) {
+            if (!recipientVerified && event.getAnnouncementId() != null) {
                 if (!isUserAnnouncementRecipient(userId, event.getAnnouncementId())) {
                     log.debug("User {} is not a recipient of announcement: {}", userId, event.getAnnouncementId());
                     return false;

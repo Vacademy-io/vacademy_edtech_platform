@@ -1,0 +1,20 @@
+{
+    "emptyState": "يرجى إضافة سؤال لعرض تفاصيل السؤال",
+    "header": {
+        "questionsSettings": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال"
+    },
+    "comprehensionText": "نص الاستيعاب",
+    "question": {
+        "label": "السؤال"
+    },
+    "answer": {
+        "label": "الإجابة:"
+    },
+    "explanation": {
+        "label": "الشرح:"
+    },
+    "optionLabelFormat": "({{letter}}.)",
+    "addOption": "إضافة خيار",
+    "removeOption": "إزالة الخيار"
+}

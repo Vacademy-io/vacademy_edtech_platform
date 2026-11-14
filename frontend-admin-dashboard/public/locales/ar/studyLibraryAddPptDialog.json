@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "reorderFailed": "تم إنشاء الشريحة لكن إعادة الترتيب فشلت",
+        "fileSelected": "تم تحديد ملف PPT بنجاح",
+        "selectFileFirst": "يرجى تحديد ملف أولاً",
+        "uploadSuccess": "تم رفع عرض PPT بنجاح!"
+    },
+    "errors": {
+        "onlyPptOrPptx": "يرجى رفع ملفات PPT أو PPTX فقط",
+        "uploadFailed": "فشل رفع العرض التقديمي للتحويل.",
+        "resolveUrlFailed": "فشل الحصول على رابط العرض التقديمي المرفوع.",
+        "conversionDidNotStart": "لم يبدأ التحويل.",
+        "lostContact": "انقطع الاتصال بخدمة التحويل.",
+        "serviceNotResponding": "خدمة التحويل لا تستجيب.",
+        "conversionFailed": "فشل تحويل العرض التقديمي.",
+        "conversionTimedOut": "انتهت مهلة تحويل العرض التقديمي.",
+        "uploadConvertedPdfFailed": "فشل رفع ملف PDF المحوَّل.",
+        "uploadFailedRetry": "فشل الرفع. يرجى المحاولة مرة أخرى."
+    },
+    "status": {
+        "uploadingPresentation": "جارٍ رفع العرض التقديمي…",
+        "convertingAnimated": "جارٍ التحويل (مع الحفاظ على الحركات)…",
+        "creatingSlide": "جارٍ إنشاء الشريحة…",
+        "convertingToPdf": "جارٍ تحويل PPT إلى PDF…",
+        "analyzingPdfPages": "جارٍ تحليل صفحات PDF…",
+        "uploadingConvertedPdf": "جارٍ رفع ملف PDF المحوَّل…",
+        "fallingBackToPdf": "جارٍ الرجوع إلى PDF…",
+        "processing": "جارٍ المعالجة..."
+    },
+    "dropzone": {
+        "title": "أفلت ملف PPT هنا، أو انقر للتصفح",
+        "subtitle": "يدعم ملفات .ppt و.pptx (حتى 20 ميجابايت)"
+    },
+    "actions": {
+        "uploadPpt": "رفع PPT"
+    }
+}

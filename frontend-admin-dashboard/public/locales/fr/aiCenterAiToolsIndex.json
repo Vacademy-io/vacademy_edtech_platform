@@ -1,0 +1,67 @@
+{
+    "navHeading": "Assistant pédagogique",
+    "greetingMorning": "Bonjour.",
+    "greetingMorningNamed": "Bonjour, {{name}}.",
+    "greetingAfternoon": "Bon après-midi.",
+    "greetingAfternoonNamed": "Bon après-midi, {{name}}.",
+    "greetingEvening": "Bonsoir.",
+    "greetingEveningNamed": "Bonsoir, {{name}}.",
+    "headerSubtitle": "Trouvons ensemble le bon outil en quelques clics.",
+    "step1Heading": "Qu'est-ce qui vous amène ici aujourd'hui ?",
+    "step1Subtitle": "Choisissez l'objectif général. Nous préciserons à l'étape suivante.",
+    "ctaOpen": "Ouvrir",
+    "ctaContinue": "Continuer",
+    "back": "Retour",
+    "step2HeadingFallback": "{{title}} — lequel ?",
+    "step2Subtitle": "Choisissez comment démarrer. L'écran suivant vous demandera les détails.",
+    "recentWorkHeading": "Votre travail récent",
+    "viewAll": "Tout afficher",
+    "topicBasedQuestionsFallback": "Questions basées sur un sujet",
+    "categories": {
+        "assessment": {
+            "title": "Créer une évaluation",
+            "subtitle": "Un sujet d'examen, un quiz ou un test — à partir de n'importe quelle source.",
+            "step2Heading": "Comment souhaitez-vous générer les questions ?"
+        },
+        "lecture-plan": {
+            "title": "Planifier un cours",
+            "subtitle": "Un plan minuté avec les points clés et des devoirs facultatifs."
+        },
+        "lecture-review": {
+            "title": "Évaluer mon enseignement",
+            "subtitle": "Obtenez un retour bienveillant et précis sur un cours enregistré."
+        }
+    },
+    "subOptions": {
+        "assessment": {
+            "fromTopic": {
+                "title": "À partir d'un sujet",
+                "subtitle": "Saisissez un sujet, nous rédigeons les questions."
+            },
+            "fromDocument": {
+                "title": "À partir d'un document",
+                "subtitle": "PDF, Word ou PowerPoint — de nouvelles questions sur son contenu."
+            },
+            "fromAudio": {
+                "title": "À partir d'un enregistrement audio",
+                "subtitle": "Importez un enregistrement — des questions basées sur ce qui a été dit."
+            },
+            "fromPhoto": {
+                "title": "À partir d'une photo d'un sujet papier",
+                "subtitle": "Photographiez un sujet imprimé — transformez-le en questions modifiables."
+            },
+            "fromExistingPaper": {
+                "title": "À partir d'un sujet d'examen existant",
+                "subtitle": "Numérisez un sujet d'examen que vous possédez déjà."
+            },
+            "fromQuestionBank": {
+                "title": "À partir de ma banque de questions",
+                "subtitle": "Tri automatique par sujet, ou sélection de questions précises."
+            },
+            "chatWithDocument": {
+                "title": "Discuter avec un document",
+                "subtitle": "Échangez à propos d'un PDF — demandez des questions ou des résumés."
+            }
+        }
+    }
+}

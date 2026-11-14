@@ -78,6 +78,14 @@ public class QuestionSlide {
     @Column(name = "source_type")
     private String sourceType;
 
+    /**
+     * CBE_RESPONSE only: the model solution, marking scheme and grading notes, kept out of
+     * {@link #autoEvaluationJson} (which learners receive). Never selected by the native
+     * slide JSON queries; see QuestionSlideEvaluationSecretService.
+     */
+    @Column(name = "evaluation_secret_json", columnDefinition = "TEXT")
+    private String evaluationSecretJson;
+
     public QuestionSlide(QuestionSlideDTO dto) {
         this.id = dto.getId();
 
@@ -103,6 +111,7 @@ public class QuestionSlide {
         this.reAttemptCount = dto.getReAttemptCount();
         this.points = dto.getPoints();
         this.sourceType = dto.getSourceType();
+        this.evaluationSecretJson = dto.getEvaluationSecretJson();
 
         if (dto.getOptions() != null) {
             this.options = dto.getOptions().stream()

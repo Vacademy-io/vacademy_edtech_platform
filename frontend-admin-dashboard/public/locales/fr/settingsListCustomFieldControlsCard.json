@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "Filtres et tri de liste — Champs personnalisés",
+        "description": "Choisissez les champs personnalisés qui apparaissent comme filtres sur chaque page de liste (s'applique à tout le monde). Chaque champ activé ajoute une sélection multiple avec recherche à la barre de filtres de cette page ; le désactiver masque le filtre et arrête le chargement de ses valeurs. Le tri s'applique lorsque le tri des colonnes de champs personnalisés est disponible."
+    },
+    "surfaces": {
+        "leads": {
+            "label": "Prospects",
+            "pages": "Liste des prospects + Prospects récents"
+        },
+        "contacts": {
+            "label": "Tous les contacts",
+            "pages": "Gestion des étudiants → Tous les contacts"
+        },
+        "students": {
+            "label": "Étudiants",
+            "pages": "Gestion des étudiants → Liste des étudiants"
+        }
+    },
+    "appliesTo": "S'applique à : {{pages}}",
+    "loading": "Chargement des champs personnalisés…",
+    "emptyState": "Aucun champ personnalisé configuré pour cet établissement pour le moment.",
+    "columns": {
+        "filter": "Filtre",
+        "sort": "Tri"
+    },
+    "utm": {
+        "title": "Filtres de campagne (UTM)",
+        "description": "Filtrez cette liste selon la campagne, la source, le support et le canal qui ont amené chaque personne. S'active automatiquement dès que les liens de campagne (UTM) sont activés dans les paramètres ; désactivez-le ici pour les listes qui n'en ont pas besoin.",
+        "disabledHint": "Les liens de campagne (UTM) sont désactivés pour cet établissement ; aucun filtre de campagne ne peut être affiché.",
+        "openSettings": "Ouvrir les paramètres des liens de campagne",
+        "autoHint": "(auto — affiché dès qu'il y a des données)"
+    },
+    "builtIn": {
+        "title": "Filtres intégrés",
+        "description": "Désactivez les filtres que cet établissement n'utilise pas. Ils disparaîtront de la barre de filtres.",
+        "counsellor": "Conseiller"
+    }
+}

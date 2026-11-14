@@ -1,0 +1,23 @@
+{
+    "trigger": {
+        "extracting": "Extracting…",
+        "extractCopiedQuestions": "Extract Copied Questions"
+    },
+    "header": {
+        "instituteLogoAlt": "Institute logo"
+    },
+    "generateMore": {
+        "triggerLabel": "Generate More",
+        "dialogTitle": "Generate more questions",
+        "inputPlaceholder": "Enter topics to generate questions",
+        "submitLabel": "Generate Questions"
+    },
+    "closeButton": "Close",
+    "pageActions": {
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+    },
+    "emptyState": {
+        "noQuestions": "No questions exist."
+    }
+}

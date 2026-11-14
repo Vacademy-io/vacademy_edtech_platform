@@ -1,0 +1,128 @@
+{
+    "channels": {
+        "EMAIL": "ईमेल",
+        "WHATSAPP": "व्हाट्सएप",
+        "PUSH": "पुश सूचना",
+        "SMS": "एसएमएस",
+        "CALL": "कॉल"
+    },
+    "statuses": {
+        "PENDING": "लंबित",
+        "SENT": "भेजा गया",
+        "DELIVERED": "पहुंचाया गया",
+        "READ": "पढ़ा गया",
+        "CLICKED": "क्लिक किया गया",
+        "FAILED": "विफल",
+        "BOUNCED": "बाउंस हुआ",
+        "COMPLAINT": "शिकायत",
+        "RECEIVED": "प्राप्त हुआ"
+    },
+    "filters": {
+        "all": "सभी"
+    },
+    "headerMedia": {
+        "viewDocument": "दस्तावेज़ देखें",
+        "attachmentAlt": "अनुलग्नक"
+    },
+    "expandedDetail": {
+        "senderFallback": "ईमेल",
+        "toRecipient": "{{recipient}} को",
+        "messageHeading": "संदेश",
+        "templateLabel": "टेम्पलेट:",
+        "fromLabel": "प्रेषक:",
+        "toLabel": "प्राप्तकर्ता:",
+        "sourceLabel": "स्रोत:",
+        "deliveryTimelineHeading": "डिलीवरी समयरेखा",
+        "collapse": "संक्षिप्त करें"
+    },
+    "direction": {
+        "received": "{{channel}} के ज़रिए प्राप्त हुआ",
+        "sent": "{{channel}} के ज़रिए भेजा गया"
+    },
+    "noSubject": "(कोई विषय नहीं)",
+    "emptyStates": {
+        "noContactTitle": "कोई संपर्क विवरण नहीं",
+        "noContactHint": "इनके संदेश देखने के लिए ईमेल या फ़ोन नंबर वाला कोई विद्यार्थी चुनें।",
+        "loadErrorTitle": "संदेश लोड नहीं हो सके",
+        "loadErrorHint": "संदेश लाते समय कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।",
+        "noCommunicationsTitle": "कोई संदेश नहीं मिला",
+        "noChannelMessages": "अभी तक कोई {{channel}} संदेश नहीं है। अन्य चैनल देखने के लिए \"{{allLabel}}\" चुनें।",
+        "noMessagesYet": "इस विद्यार्थी को अभी तक कोई संदेश भेजा या प्राप्त नहीं हुआ है।",
+        "sendFirstMessage": "पहला संदेश भेजें",
+        "noCalls": "इस छात्र के साथ अभी तक कोई कॉल नहीं। कॉल करने के लिए ओवरव्यू टैब पर कॉल बटन का उपयोग करें।"
+    },
+    "sendCard": {
+        "heading": "सूचना भेजें",
+        "subheading": "ईमेल या व्हाट्सएप संदेश"
+    },
+    "resend": {
+        "button": "फिर भेजें",
+        "buttonTooltip": "यह संदेश दोबारा भेजें",
+        "blocked": {
+            "noTemplate": "केवल टेम्पलेट संदेश दोबारा भेजे जा सकते हैं — यह इनबॉक्स में टाइप किया गया था",
+            "noBody": "मूल संदेश सहेजा नहीं गया था, इसलिए दोबारा भेजने के लिए कुछ नहीं है",
+            "unsupportedChannel": "यह चैनल यहाँ से दोबारा नहीं भेजा जा सकता"
+        },
+        "title": "यह {{channel}} संदेश दोबारा भेजें?",
+        "confirmQuestion": "क्या आप वाकई इसे {{recipient}} को दोबारा भेजना चाहते हैं?",
+        "subjectLabel": "विषय:",
+        "hasVariables_one": "इस टेम्पलेट में {{count}} वेरिएबल है।",
+        "hasVariables_other": "इस टेम्पलेट में {{count}} वेरिएबल हैं।",
+        "modeSame": "वही दोबारा भेजें",
+        "modeSameHint": "पहली बार भेजे गए मान वैसे ही रखें",
+        "modeSameBlockedHint": "संभव नहीं — पहला संदेश {{names}} के बिना गया था",
+        "modeEdit": "वेरिएबल बदलें",
+        "modeEditHint": "भेजने से पहले मान बदलें",
+        "variablePlaceholder": "{{name}} का मान",
+        "variableEmpty": "(खाली)",
+        "previewHeading": "पूर्वावलोकन",
+        "deliveryCaveat": "इससे शिक्षार्थी को वास्तविक संदेश जाएगा।",
+        "variablesRequired": "हर वेरिएबल भरें — कोई भी खाली रहने तक WhatsApp संदेश अस्वीकार कर देता है।",
+        "cancel": "रद्द करें",
+        "confirmSame": "दोबारा भेजें",
+        "confirmEdited": "नए मानों के साथ भेजें",
+        "emailSent": "ईमेल दोबारा भेजा गया",
+        "whatsappQueued": "व्हाट्सऐप संदेश प्रदाता को सौंप दिया गया",
+        "rejected": "प्रदाता ने दोबारा भेजने से इनकार कर दिया",
+        "rejectedWithReason": "प्रदाता ने दोबारा भेजने से इनकार कर दिया: {{reason}}",
+        "failed": "संदेश दोबारा नहीं भेजा जा सका",
+        "noInstitute": "कोई संस्थान चयनित नहीं है",
+        "noRecipient": "इस संदेश का कोई प्राप्तकर्ता नहीं है"
+    },
+    "pagination": {
+        "previous": "पिछला",
+        "next": "अगला",
+        "pageOf": "पृष्ठ {{current}} / {{total}}"
+    },
+    "totalCount_one": "कुल {{count}}",
+    "totalCount_other": "कुल {{count}}",
+    "call": {
+        "outbound": "आउटबाउंड कॉल",
+        "inbound": "इनबाउंड कॉल",
+        "aiCall": "AI कॉल",
+        "status": {
+            "COMPLETED": "उत्तर दिया",
+            "NO_ANSWER": "कोई उत्तर नहीं",
+            "BUSY": "व्यस्त",
+            "FAILED": "विफल",
+            "CANCELLED": "रद्द",
+            "IN_PROGRESS": "चल रही है",
+            "QUEUED": "लगाई गई",
+            "INITIATED": "लगाई गई",
+            "COUNSELLOR_RINGING": "घंटी बज रही है",
+            "COUNSELLOR_ANSWERED": "जोड़ा जा रहा है"
+        },
+        "duration": "{{minutes}} मि {{seconds}} से",
+        "outcome": "परिणाम",
+        "attempt": "प्रयास {{n}}",
+        "recordingHeading": "रिकॉर्डिंग",
+        "noRecording": "इस कॉल की कोई रिकॉर्डिंग नहीं",
+        "byCounsellor": "{{name}} द्वारा"
+    },
+    "origin": {
+        "workflow": "वर्कफ़्लो “{{name}}” द्वारा भेजा गया",
+        "workflowUnnamed": "एक वर्कफ़्लो द्वारा भेजा गया",
+        "chatbotFlow": "चैटबॉट फ़्लो “{{name}}” द्वारा भेजा गया",
+        "chatbotFlowUnnamed": "एक चैटबॉट फ़्लो द्वारा भेजा गया"
+    }
+}

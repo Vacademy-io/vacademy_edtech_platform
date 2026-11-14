@@ -1,19 +1,78 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Shield, ArrowLeft, Eye, Lock, Database, Users, Globe, Envelope } from "@phosphor-icons/react";
+import {
+  Shield,
+  ArrowLeft,
+  Eye,
+  Lock,
+  Database,
+  Users,
+  Globe,
+  Envelope,
+  IdentificationCard,
+  Clock,
+  Baby,
+  ArrowsClockwise,
+} from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Preferences } from "@capacitor/preferences";
+import { z } from "zod";
+import { useDomainRouting } from "@/hooks/use-domain-routing";
+import { peekDomainRouting } from "@/services/domain-routing";
+import {
+  APP_PUBLISHER,
+  PRIVACY_POLICY_LAST_UPDATED,
+  resolveCurrentAppIdentity,
+  urlPointsAtCurrentPage,
+  type AppIdentity,
+} from "@/utils/app-identity";
+
+const privacyPolicySearchSchema = z.object({
+  // Force a brand when the page is opened somewhere other than that brand's own
+  // portal, e.g. /privacy-policy?app=com.dumbee.app before its domain is live.
+  app: z.string().optional(),
+});
 
 export const Route = createFileRoute("/privacy-policy/")({
+  validateSearch: privacyPolicySearchSchema,
   component: PrivacyPolicy,
 });
 
 function PrivacyPolicy() {
+  const { t, i18n } = useTranslation("miscRoutesB");
   const navigate = useNavigate();
-  
-  // Redirect to institute-specific privacy policy if configured
+  const { app: appIdOverride } = Route.useSearch();
+  const domainRouting = useDomainRouting();
+
+  const [identity, setIdentity] = useState<AppIdentity | null>(null);
+  // Institute behind an explicit ?app= — may differ from the host we are on.
+  const [overrideInstituteName, setOverrideInstituteName] = useState<string | null>(null);
+
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveCurrentAppIdentity(appIdOverride);
+      if (cancelled) return;
+      setIdentity(resolved);
+      if (appIdOverride && resolved.domain) {
+        const routing = await peekDomainRouting(resolved.domain, resolved.subdomain ?? "*");
+        if (!cancelled && routing?.instituteName) {
+          setOverrideInstituteName(routing.instituteName);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [appIdOverride]);
+
+  // Redirect to institute-specific privacy policy if configured — unless that
+  // URL is this page (a portal pointing privacy_policy_url at its own
+  // /privacy-policy) or the caller asked for a specific brand.
+  useEffect(() => {
+    if (appIdOverride) return;
     (async () => {
       try {
         const instituteId = (await Preferences.get({ key: "InstituteId" })).value || "";
@@ -21,123 +80,211 @@ function PrivacyPolicy() {
         const stored = await Preferences.get({ key: `LEARNER_${instituteId}` });
         if (!stored?.value) return;
         const parsed = JSON.parse(stored.value);
-        if (parsed?.privacyPolicyUrl) {
+        if (parsed?.privacyPolicyUrl && !urlPointsAtCurrentPage(parsed.privacyPolicyUrl)) {
           window.location.assign(parsed.privacyPolicyUrl);
         }
       } catch {
         // Ignore and show internal policy page
       }
     })();
-  }, []);
+  }, [appIdOverride]);
+
+  const instituteName = overrideInstituteName ?? domainRouting.instituteName ?? null;
+  const appName = identity?.appName ?? instituteName ?? "Vacademy";
+  const portalHost = identity?.host ?? window.location.hostname;
+  const vars = { appName, publisher: APP_PUBLISHER.name, institute: instituteName ?? appName };
+  const lastUpdated = new Date(PRIVACY_POLICY_LAST_UPDATED).toLocaleDateString(i18n.language, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Store reviewers check these four lines against the listing: app name,
+  // package / bundle ids, developer name, developer address.
+  const identityRows: { label: string; value: ReactNode }[] = [
+    { label: t("privacyPolicy.identity.appNameLabel"), value: appName },
+    {
+      label: t("privacyPolicy.identity.appIdsLabel"),
+      value: identity?.appIds.length ? (
+        <ul className="space-y-0.5">
+          {identity.appIds.map((id) => (
+            <li key={id} className="font-mono text-sm">{id}</li>
+          ))}
+        </ul>
+      ) : (
+        t("privacyPolicy.identity.webOnly")
+      ),
+    },
+    { label: t("privacyPolicy.identity.publisherLabel"), value: APP_PUBLISHER.name },
+    {
+      label: t("privacyPolicy.identity.publisherAddressLabel"),
+      value: APP_PUBLISHER.addressLines.map((line) => (
+        <span key={line} className="block">{line}</span>
+      )),
+    },
+    ...(instituteName && instituteName !== appName
+      ? [{ label: t("privacyPolicy.identity.operatedForLabel"), value: instituteName }]
+      : []),
+    { label: t("privacyPolicy.identity.portalLabel"), value: portalHost },
+    { label: t("privacyPolicy.identity.contactLabel"), value: APP_PUBLISHER.email },
+  ];
 
   const sections = [
     {
       id: "information-we-collect",
-      title: "Information We Collect",
+      title: t("privacyPolicy.sections.informationWeCollect.title"),
       icon: Database,
       content: [
         {
-          subtitle: "Personal Information",
-          text: "We collect information you provide directly to us, such as when you create an account, enroll in courses, or contact us. This may include your name, email address, phone number, educational background, and payment information."
+          subtitle: t("privacyPolicy.sections.informationWeCollect.personalInformation.subtitle"),
+          text: t("privacyPolicy.sections.informationWeCollect.personalInformation.text")
         },
         {
-          subtitle: "Learning Data",
-          text: "We collect information about your learning activities, including course progress, assessment scores, time spent on materials, and interaction patterns to personalize your learning experience."
+          subtitle: t("privacyPolicy.sections.informationWeCollect.learningData.subtitle"),
+          text: t("privacyPolicy.sections.informationWeCollect.learningData.text")
         },
         {
-          subtitle: "Technical Information",
-          text: "We automatically collect certain technical information about your device and how you interact with our platform, including IP address, browser type, operating system, and usage analytics."
+          subtitle: t("privacyPolicy.sections.informationWeCollect.technicalInformation.subtitle"),
+          text: t("privacyPolicy.sections.informationWeCollect.technicalInformation.text")
+        },
+        {
+          subtitle: t("privacyPolicy.sections.informationWeCollect.devicePermissions.subtitle"),
+          text: t("privacyPolicy.sections.informationWeCollect.devicePermissions.text", vars)
         }
       ]
     },
     {
       id: "how-we-use-information",
-      title: "How We Use Your Information",
+      title: t("privacyPolicy.sections.howWeUse.title"),
       icon: Eye,
       content: [
         {
-          subtitle: "Educational Services",
-          text: "We use your information to provide, maintain, and improve our educational services, including delivering course content, tracking progress, and providing certifications."
+          subtitle: t("privacyPolicy.sections.howWeUse.educationalServices.subtitle"),
+          text: t("privacyPolicy.sections.howWeUse.educationalServices.text")
         },
         {
-          subtitle: "Personalization",
-          text: "We analyze your learning patterns to recommend relevant courses, customize content delivery, and optimize your learning experience."
+          subtitle: t("privacyPolicy.sections.howWeUse.personalization.subtitle"),
+          text: t("privacyPolicy.sections.howWeUse.personalization.text")
         },
         {
-          subtitle: "Communication",
-          text: "We may use your contact information to send you important updates about your courses, platform changes, and educational opportunities that may interest you."
+          subtitle: t("privacyPolicy.sections.howWeUse.communication.subtitle"),
+          text: t("privacyPolicy.sections.howWeUse.communication.text")
         }
       ]
     },
     {
       id: "information-sharing",
-      title: "Information Sharing and Disclosure",
+      title: t("privacyPolicy.sections.informationSharing.title"),
       icon: Users,
       content: [
         {
-          subtitle: "Educational Partners",
-          text: "We may share your learning progress and achievements with educational institutions or employers as authorized by you or required for certification purposes."
+          subtitle: t("privacyPolicy.sections.informationSharing.educationalPartners.subtitle"),
+          text: t("privacyPolicy.sections.informationSharing.educationalPartners.text", vars)
         },
         {
-          subtitle: "Service Providers",
-          text: "We may share information with trusted third-party service providers who assist us in operating our platform, conducting business, or serving our users."
+          subtitle: t("privacyPolicy.sections.informationSharing.serviceProviders.subtitle"),
+          text: t("privacyPolicy.sections.informationSharing.serviceProviders.text")
         },
         {
-          subtitle: "Legal Requirements",
-          text: "We may disclose your information when required by law, regulation, legal process, or governmental request, or to protect the rights, property, or safety of Vacademy, our users, or others."
+          subtitle: t("privacyPolicy.sections.informationSharing.thirdPartyServices.subtitle"),
+          text: t("privacyPolicy.sections.informationSharing.thirdPartyServices.text", vars)
+        },
+        {
+          subtitle: t("privacyPolicy.sections.informationSharing.legalRequirements.subtitle"),
+          text: t("privacyPolicy.sections.informationSharing.legalRequirements.text", vars)
         }
       ]
     },
     {
       id: "data-security",
-      title: "Data Security",
+      title: t("privacyPolicy.sections.dataSecurity.title"),
       icon: Lock,
       content: [
         {
-          subtitle: "Security Measures",
-          text: "We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+          subtitle: t("privacyPolicy.sections.dataSecurity.securityMeasures.subtitle"),
+          text: t("privacyPolicy.sections.dataSecurity.securityMeasures.text")
         },
         {
-          subtitle: "Encryption",
-          text: "We use industry-standard encryption protocols to protect sensitive data during transmission and storage, including SSL/TLS encryption for all data transfers."
+          subtitle: t("privacyPolicy.sections.dataSecurity.encryption.subtitle"),
+          text: t("privacyPolicy.sections.dataSecurity.encryption.text")
         },
         {
-          subtitle: "Access Controls",
-          text: "We maintain strict access controls and regularly audit our systems to ensure that only authorized personnel can access your personal information."
+          subtitle: t("privacyPolicy.sections.dataSecurity.accessControls.subtitle"),
+          text: t("privacyPolicy.sections.dataSecurity.accessControls.text")
         }
       ]
     },
     {
       id: "your-rights",
-      title: "Your Rights and Choices",
+      title: t("privacyPolicy.sections.yourRights.title"),
       icon: Shield,
       content: [
         {
-          subtitle: "Access and Correction",
-          text: "You have the right to access, update, or correct your personal information at any time through your account settings or by contacting us directly."
+          subtitle: t("privacyPolicy.sections.yourRights.accessAndCorrection.subtitle"),
+          text: t("privacyPolicy.sections.yourRights.accessAndCorrection.text")
         },
         {
-          subtitle: "Data Portability",
-          text: "You may request a copy of your personal information in a structured, commonly used, and machine-readable format for transfer to another service."
+          subtitle: t("privacyPolicy.sections.yourRights.dataPortability.subtitle"),
+          text: t("privacyPolicy.sections.yourRights.dataPortability.text")
         },
         {
-          subtitle: "Deletion",
-          text: "You may request deletion of your personal information, subject to certain exceptions where we may need to retain information for legal or legitimate business purposes."
+          subtitle: t("privacyPolicy.sections.yourRights.deletion.subtitle"),
+          text: t("privacyPolicy.sections.yourRights.deletion.text")
+        }
+      ]
+    },
+    {
+      id: "data-retention",
+      title: t("privacyPolicy.sections.dataRetention.title"),
+      icon: Clock,
+      content: [
+        {
+          subtitle: t("privacyPolicy.sections.dataRetention.retentionPeriod.subtitle"),
+          text: t("privacyPolicy.sections.dataRetention.retentionPeriod.text", vars)
+        },
+        {
+          subtitle: t("privacyPolicy.sections.dataRetention.accountDeletion.subtitle"),
+          text: t("privacyPolicy.sections.dataRetention.accountDeletion.text", {
+            ...vars,
+            email: APP_PUBLISHER.email,
+          })
+        }
+      ]
+    },
+    {
+      id: "childrens-privacy",
+      title: t("privacyPolicy.sections.childrensPrivacy.title"),
+      icon: Baby,
+      content: [
+        {
+          subtitle: t("privacyPolicy.sections.childrensPrivacy.learnersUnder18.subtitle"),
+          text: t("privacyPolicy.sections.childrensPrivacy.learnersUnder18.text", vars)
         }
       ]
     },
     {
       id: "international-transfers",
-      title: "International Data Transfers",
+      title: t("privacyPolicy.sections.internationalTransfers.title"),
       icon: Globe,
       content: [
         {
-          subtitle: "Global Operations",
-          text: "Vacademy operates globally, and your information may be transferred to and processed in countries other than your country of residence, including countries that may have different data protection laws."
+          subtitle: t("privacyPolicy.sections.internationalTransfers.globalOperations.subtitle"),
+          text: t("privacyPolicy.sections.internationalTransfers.globalOperations.text", vars)
         },
         {
-          subtitle: "Safeguards",
-          text: "When we transfer your information internationally, we implement appropriate safeguards to ensure your information receives adequate protection, including standard contractual clauses and adequacy decisions."
+          subtitle: t("privacyPolicy.sections.internationalTransfers.safeguards.subtitle"),
+          text: t("privacyPolicy.sections.internationalTransfers.safeguards.text")
+        }
+      ]
+    },
+    {
+      id: "changes",
+      title: t("privacyPolicy.sections.changes.title"),
+      icon: ArrowsClockwise,
+      content: [
+        {
+          subtitle: t("privacyPolicy.sections.changes.notification.subtitle"),
+          text: t("privacyPolicy.sections.changes.notification.text", vars)
         }
       ]
     }
@@ -147,18 +294,18 @@ function PrivacyPolicy() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle Background Pattern (gradients removed) */}
       <div className="absolute inset-0 -z-10" />
-      
+
       {/* Subtle Floating Background Elements */}
-      <motion.div 
-        animate={{ 
+      <motion.div
+        animate={{
           x: [0, 20, 0],
           y: [0, -10, 0],
-          rotate: [0, 2, 0] 
+          rotate: [0, 2, 0]
         }}
-        transition={{ 
+        transition={{
           duration: 12,
           repeat: Infinity,
-          ease: "easeInOut" 
+          ease: "easeInOut"
         }}
         className="absolute top-20 start-20 w-48 h-48 bg-muted/10 rounded-full blur-3xl"
       />
@@ -180,7 +327,7 @@ function PrivacyPolicy() {
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 mb-6 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
-            <span className="text-sm font-medium">Back to Login</span>
+            <span className="text-sm font-medium">{t("privacyPolicy.backToLogin")}</span>
           </motion.button>
 
           {/* Page Header */}
@@ -189,29 +336,59 @@ function PrivacyPolicy() {
               <Shield className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Privacy Policy
+              {t("privacyPolicy.header.title")}
             </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Your privacy is important to us. This policy explains how Vacademy collects, uses, and protects your personal information.
+              {t("privacyPolicy.header.description", vars)}
             </p>
             <p className="text-sm text-gray-500 mt-4">
-              Last updated: January 2024
+              {t("privacyPolicy.header.lastUpdated", { date: lastUpdated })}
             </p>
           </div>
         </motion.div>
+
+        {/* Who this policy covers — app / developer identity for store reviews */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          aria-labelledby="privacy-identity-title"
+          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mb-8 space-y-4"
+        >
+          <div className="flex items-center gap-x-3">
+            <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
+              <IdentificationCard className="w-5 h-5 text-white" />
+            </div>
+            <h2 id="privacy-identity-title" className="text-xl font-bold text-gray-900">
+              {t("privacyPolicy.identity.title")}
+            </h2>
+          </div>
+          <p className="text-gray-700 leading-relaxed">
+            {t(identity?.appIds.length ? "privacyPolicy.identity.intro" : "privacyPolicy.identity.introWeb", vars)}
+          </p>
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-[max-content_1fr]">
+            {identityRows.map((row) => (
+              <div key={row.label} className="contents">
+                <dt className="font-semibold text-gray-800">{row.label}</dt>
+                <dd className="text-gray-700 break-words">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-gray-700 leading-relaxed">
+            {t("privacyPolicy.identity.controller", vars)}
+          </p>
+        </motion.section>
 
         {/* Introduction */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mb-8"
+          className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 mb-8 space-y-4"
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Introduction</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t("privacyPolicy.introduction.title")}</h2>
           <p className="text-gray-700 leading-relaxed">
-            Welcome to Vacademy. We are committed to protecting your privacy and ensuring the security of your personal information. 
-            This Privacy Policy describes how we collect, use, disclose, and safeguard your information when you use our educational platform. 
-            By using our services, you agree to the collection and use of information in accordance with this policy.
+            {t("privacyPolicy.introduction.text", vars)}
           </p>
         </motion.div>
 
@@ -223,19 +400,19 @@ function PrivacyPolicy() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + index * 0.1 }}
-              className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8"
+              className="bg-white/90 backdrop-blur-xl rounded-xl shadow-xl border border-gray-200/50 p-6 lg:p-8 space-y-section"
             >
-              <div className="flex items-center space-x-3 mb-6">
+              <div className="flex items-center gap-x-3">
                 <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
                   <section.icon className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
               </div>
-              
+
               <div className="space-y-4">
                 {section.content.map((item, itemIndex) => (
-                  <div key={itemIndex}>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{item.subtitle}</h3>
+                  <div className="space-y-2" key={itemIndex}>
+                    <h3 className="text-lg font-semibold text-gray-800">{item.subtitle}</h3>
                     <p className="text-gray-700 leading-relaxed">{item.text}</p>
                   </div>
                 ))}
@@ -255,24 +432,29 @@ function PrivacyPolicy() {
             <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
               <Envelope className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Contact Us</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t("privacyPolicy.contact.title")}</h2>
           </div>
-          
+
           <p className="text-gray-700 leading-relaxed mb-4">
-            If you have any questions about this Privacy Policy or our data practices, please contact us:
+            {t("privacyPolicy.contact.intro")}
           </p>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Email</h3>
-              <p className="text-gray-600">privacy@vacademy.com</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Address</h3>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-800">{t("privacyPolicy.contact.emailLabel")}</h3>
               <p className="text-gray-600">
-                Vacademy Educational Services<br />
-                123 Learning Street<br />
-                Education City, EC 12345
+                <a href={`mailto:${APP_PUBLISHER.email}`} className="underline">
+                  {APP_PUBLISHER.email}
+                </a>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-800">{t("privacyPolicy.contact.addressLabel")}</h3>
+              <p className="text-gray-600">
+                {APP_PUBLISHER.name}<br />
+                {APP_PUBLISHER.addressLines.map((line) => (
+                  <span key={line}>{line}<br /></span>
+                ))}
               </p>
             </div>
           </div>
@@ -286,10 +468,10 @@ function PrivacyPolicy() {
           className="text-center mt-12 mb-8"
         >
           <p className="text-sm text-gray-500">
-            This privacy policy is effective as of January 2024 and will remain in effect except with respect to any changes in its provisions in the future.
+            {t("privacyPolicy.footer", { date: lastUpdated })}
           </p>
         </motion.div>
       </div>
     </div>
   );
-} 
+}

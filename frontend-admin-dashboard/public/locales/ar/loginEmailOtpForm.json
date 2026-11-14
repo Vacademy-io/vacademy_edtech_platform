@@ -1,0 +1,32 @@
+{
+    "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+    "emailPlaceholder": "أدخل عنوان بريدك الإلكتروني",
+    "emailLabel": "عنوان البريد الإلكتروني",
+    "sendingCode": "جاري إرسال الرمز...",
+    "sendVerificationCode": "إرسال رمز التحقق",
+    "checkYourEmail": "تحقق من بريدك الإلكتروني",
+    "codeSentTo": "لقد أرسلنا رمزًا مكونًا من 6 أرقام إلى",
+    "validOtpRequired": "يرجى إدخال رمز تحقق صالح مكوّن من 6 أرقام",
+    "verifying": "جارٍ التحقق...",
+    "verifyAndSignIn": "تحقق وسجّل الدخول",
+    "backToEmail": "العودة إلى البريد الإلكتروني",
+    "resendIn_zero": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendIn_one": "إعادة الإرسال خلال ثانية واحدة",
+    "resendIn_two": "إعادة الإرسال خلال ثانيتين",
+    "resendIn_few": "إعادة الإرسال خلال {{count}} ثوانٍ",
+    "resendIn_many": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendIn_other": "إعادة الإرسال خلال {{count}} ثانية",
+    "resendCode": "إعادة إرسال الرمز",
+    "preferUsernameLogin": "هل تفضل تسجيل الدخول باسم المستخدم؟",
+    "usePhoneOtpInstead": "استخدام رمز الهاتف بدلاً من ذلك؟",
+    "noAccount": "ليس لديك حساب؟",
+    "createOne": "أنشئ حسابًا",
+    "toast": {
+        "otpSent": "تم إرسال الرمز بنجاح",
+        "emailNotRegistered": "هذا البريد الإلكتروني غير مسجل",
+        "emailNotRegisteredDescription": "يرجى المحاولة مرة أخرى ببريد إلكتروني مسجل",
+        "invalidOtp": "رمز غير صالح",
+        "invalidOtpDescription": "يرجى التحقق من الرمز والمحاولة مرة أخرى",
+        "fillAllOtpFields": "يرجى ملء جميع حقول الرمز"
+    }
+}

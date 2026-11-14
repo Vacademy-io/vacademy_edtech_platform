@@ -1,0 +1,341 @@
+{
+    "common": {
+        "tryAgain": "फिर से प्रयास करें",
+        "download": "डाउनलोड करें",
+        "downloadImages": "इमेज डाउनलोड करें",
+        "imageN": "इमेज {{n}}",
+        "downloadAll": "सभी डाउनलोड करें"
+    },
+    "verification": {
+        "focusPrompt": "यह सुनिश्चित करने के लिए कि आप सक्रिय रूप से सीख रहे हैं, कृपया <2>{{seconds}}</2> सेकंड के भीतर संख्या <1>{{number}}</1> पर क्लिक करें।"
+    },
+    "documentViewer": {
+        "quiz": {
+            "badge": "क्विज़",
+            "checkAnswer": "उत्तर जांचें",
+            "explanationLabel": "व्याख्या:",
+            "optionFallback": "विकल्प {{letter}}"
+        },
+        "flashcard": {
+            "front": "आगे",
+            "clickToFlip": "पलटने के लिए क्लिक करें",
+            "back": "पीछे",
+            "clickToFlipBack": "वापस पलटने के लिए क्लिक करें"
+        },
+        "fillBlanks": {
+            "badge": "रिक्त स्थान भरें",
+            "blankPlaceholder": "रिक्त स्थान {{number}}",
+            "checkAnswers": "उत्तर जांचें",
+            "reset": "रीसेट करें",
+            "scoreLabel": "{{count}}/{{total}} सही"
+        },
+        "toc": {
+            "title": "विषय-सूची",
+            "hint": "किसी भाग पर जाने के लिए टैप करें।",
+            "empty": "इस दस्तावेज़ में अभी तक कोई शीर्षक नहीं है।"
+        },
+        "pdfViewer": {
+            "openInNewTab": "PDF को नए टैब में खोलें"
+        }
+    },
+    "quizReview": {
+        "title": "क्विज़ समीक्षा",
+        "attemptBadge": "प्रयास {{attemptNumber}}",
+        "attemptBadgeWithMax": "प्रयास {{attemptNumber}} / {{maxAttempts}}",
+        "reattempt": "पुनः प्रयास करें",
+        "noAttemptsRemaining": "कोई प्रयास शेष नहीं",
+        "attemptScoreLabel": "प्रयास स्कोर",
+        "yourScoreLabel": "आपका स्कोर",
+        "marksSuffix": "/ {{totalMarks}} अंक",
+        "correctLabel": "सही: {{count}}",
+        "wrongLabel": "गलत: {{count}}",
+        "partialLabel": "आंशिक: {{count}}",
+        "partiallyCorrect": "आंशिक रूप से सही · {{percent}}% अंक",
+        "skippedLabel": "छोड़े गए: {{count}}",
+        "attemptPassed": "प्रयास पास हुआ",
+        "youPassed": "आप पास हो गए!",
+        "requiredScoreLine": "आवश्यक: {{percentage}}% — स्कोर: {{score}}%",
+        "attemptFailed": "प्रयास पास नहीं हुआ",
+        "youFailed": "आप पास नहीं हुए",
+        "reattemptQuiz": "क्विज़ पुनः शुरू करें",
+        "hidePastAttempts": "▾ पिछले प्रयास छिपाएं ({{count}})",
+        "viewPastAttempts": "▸ पिछले प्रयास देखें ({{count}})",
+        "attemptNumberLabel": "प्रयास #{{number}}",
+        "notesCount_one": "{{count}} टिप्पणी",
+        "notesCount_other": "{{count}} टिप्पणियाँ",
+        "viewingPastAttempt": "पिछला प्रयास देखा जा रहा है।",
+        "noRecordedResponses": "इस प्रयास में कोई रिकॉर्ड की गई प्रतिक्रिया नहीं है — सभी प्रश्न छोड़े गए के रूप में दिखाए गए हैं।",
+        "backToLatest": "नवीनतम पर वापस जाएं",
+        "questionNumber": "प्रश्न {{number}}",
+        "questionMarks": "अंक: {{earned}} / {{max}}",
+        "passageLabel": "गद्यांश:",
+        "showLess": "कम दिखाएं",
+        "showMore": "अधिक दिखाएं",
+        "yourAnswerLabel": "आपका उत्तर",
+        "correctAnswerLabel": "सही उत्तर",
+        "explanationLabel": "व्याख्या",
+        "noAnswerSelected": "कोई उत्तर नहीं चुना गया",
+        "feedback": {
+            "label": "{{teacher}} की प्रतिक्रिया",
+            "viewAttachment": "अटैचमेंट देखें"
+        }
+    },
+    "quizTimeWarning": {
+        "title": "30 सेकंड शेष!",
+        "message": "जल्दी करें! समय समाप्त होने पर क्विज़ स्वतः सबमिट हो जाएगी।",
+        "gotIt": "समझ गया ({{countdown}})"
+    },
+    "assignmentSlide": {
+        "attachmentFallbackName": "अटैचमेंट",
+        "genericFileType": "फ़ाइल",
+        "loadingAttachment": "अटैचमेंट लोड हो रहा है…",
+        "attachmentUnavailable": "अटैचमेंट उपलब्ध नहीं है",
+        "couldNotLoadFile": "फ़ाइल लोड नहीं हो सकी",
+        "typeDocument": "{{type}} दस्तावेज़",
+        "preview": "पूर्वावलोकन",
+        "open": "खोलें",
+        "couldNotLoadFileUrlToast": "फ़ाइल URL लोड नहीं हो सका",
+        "failedToDownloadFileToast": "फ़ाइल डाउनलोड करने में विफल",
+        "questionType": {
+            "mcqs": "बहुविकल्पीय (एकल उत्तर)",
+            "mcqm": "बहुविकल्पीय (एकाधिक उत्तर)",
+            "oneWord": "एक-शब्द उत्तर",
+            "longAnswer": "दीर्घ उत्तर",
+            "numeric": "संख्यात्मक उत्तर",
+            "trueFalse": "सही/गलत"
+        },
+        "toast": {
+            "submitSuccess": "असाइनमेंट सफलतापूर्वक सबमिट हो गया!",
+            "submitFailed": "असाइनमेंट सबमिट करने में विफल",
+            "needsInternet": "इस असाइनमेंट को सबमिट करने के लिए इंटरनेट आवश्यक है। कृपया दोबारा कनेक्ट करें और पुनः प्रयास करें।"
+        },
+        "placeholder": {
+            "oneWord": "अपना एक-शब्द उत्तर लिखें",
+            "longAnswer": "अपना उत्तर लिखें...",
+            "decimal": "दशमलव मान दर्ज करें",
+            "integer": "पूर्णांक मान दर्ज करें"
+        },
+        "clear": "साफ़ करें",
+        "startLabel": "प्रारंभ:",
+        "dueLabel": "नियत तिथि:",
+        "attemptsAllowedLabel": "अनुमत प्रयास:",
+        "attemptsLabel": "प्रयास: {{value}}",
+        "unlimited": "असीमित",
+        "typeLabel": "प्रकार: {{type}}",
+        "reviewedBy": "{{teacher}} द्वारा समीक्षा की गई",
+        "gradedHeading": "आपका असाइनमेंट मूल्यांकित कर दिया गया है",
+        "yourScoreLabel": "आपका स्कोर",
+        "totalMarksSuffix": "/ {{total}}",
+        "passed": "पास",
+        "notPassed": "पास नहीं",
+        "teacherFeedbackLabel": "{{teacher}} की प्रतिक्रिया",
+        "checkedAnswerCopyLabel": "जांची गई उत्तर प्रति",
+        "markedCopyFallback": "{{teacher}} द्वारा जांची गई प्रति",
+        "filesHeading": "असाइनमेंट फ़ाइलें",
+        "tapPdfHint": "ऐप में पूर्वावलोकन के लिए PDF पर टैप करें",
+        "documentFallback": "दस्तावेज़ {{number}}",
+        "attachmentFallbackNumbered": "अटैचमेंट {{number}}",
+        "questionsHeading": "प्रश्न",
+        "answerAllHint": "कृपया नीचे दिए गए सभी प्रश्नों के उत्तर दें",
+        "submittedFilesHeading": "सबमिट की गई फ़ाइलें",
+        "lateBadge": "देर से",
+        "previousSubmissionHint": "आपकी पिछली सबमिशन की फ़ाइलें",
+        "submissionFileFallback": "सबमिशन फ़ाइल {{number}}",
+        "maxAttemptsReached": "अधिकतम प्रयास पूरे हो गए ({{count}}/{{max}})",
+        "opensOn": "यह असाइनमेंट {{date}} को खुलेगा",
+        "opensInCountdown": "{{countdown}} में खुलेगा",
+        "closesInCountdown": "{{countdown}} में बंद होगा",
+        "closedAgoLateAccepted": "{{ago}} पहले बंद हुआ — देर से सबमिशन स्वीकार्य है",
+        "openBadge": "खुला",
+        "uploadFilesHeading": "फ़ाइलें अपलोड करें",
+        "uploadHint": "इस असाइनमेंट के लिए आवश्यक कोई भी फ़ाइल अपलोड करें",
+        "attemptOfMax": "(प्रयास {{current}} / {{max}})",
+        "lateWindowNotice": "सबमिशन विंडो {{date}} को बंद हो गई। आपकी सबमिशन देर से चिह्नित की जाएगी।",
+        "uploadAtLeastOneFile": "सबमिट करने से पहले कम से कम एक फ़ाइल अपलोड करें",
+        "submitting": "सबमिट हो रहा है...",
+        "submitLate": "देर से सबमिट करें",
+        "submitAssignment": "असाइनमेंट सबमिट करें",
+        "documentPreviewTitle": "दस्तावेज़ पूर्वावलोकन",
+        "openInNewTab": "नए टैब में खोलें"
+    },
+    "audioPlayer": {
+        "loading": "ऑडियो लोड हो रहा है...",
+        "sourceUnavailable": "ऑडियो स्रोत उपलब्ध नहीं है",
+        "titleFallback": "ऑडियो ट्रैक",
+        "descriptionFallback": "इस ऑडियो पाठ को सुनें",
+        "transcriptLabel": "ट्रांसक्रिप्ट",
+        "failedToLoad": "ऑडियो लोड करने में विफल।",
+        "coverAlt": "ऑडियो कवर",
+        "speedPlaceholder": "गति"
+    },
+    "codeEditor": {
+        "pausedHeading": "कोड एडिटर रोका गया",
+        "pausedMessage": "आपने {{count}} बार टैब बदले हैं। कोडिंग फिर से शुरू करने के लिए नीचे क्लिक करें।",
+        "resumeCoding": "कोडिंग फिर से शुरू करें",
+        "headerTitle": "कोड एडिटर",
+        "editMode": "संपादन मोड",
+        "viewMode": "देखने का मोड",
+        "running": "चल रहा है...",
+        "run": "चलाएं",
+        "settings": "सेटिंग्स",
+        "switchToDark": "डार्क थीम पर स्विच करें",
+        "switchToLight": "लाइट थीम पर स्विच करें",
+        "copyCode": "कोड कॉपी करें",
+        "downloadCode": "कोड डाउनलोड करें",
+        "console": "कंसोल",
+        "showOutput": "आउटपुट दिखाएं"
+    },
+    "codeExecution": {
+        "noCodeToExecute": "चलाने के लिए कोई कोड नहीं है। कृपया पहले कुछ कोड लिखें।",
+        "loadingPythonEnv": "पायथन एनवायरनमेंट लोड हो रहा है...",
+        "loadingPythonEnvFirstRun": "पायथन एनवायरनमेंट लोड हो रहा है (पहली बार चलाने पर कुछ सेकंड लग सकते हैं)...",
+        "clickRunToSeeOutput": "यहाँ आउटपुट देखने के लिए \"Run Code\" पर क्लिक करें...",
+        "executedNoOutput": "कोड सफलतापूर्वक चला (कोई आउटपुट नहीं)",
+        "pyodideTimeoutError": "Pyodide लोड होने में 30 सेकंड बाद समय समाप्त हो गया। कृपया पेज रीफ़्रेश करें और पुनः प्रयास करें।",
+        "pyodideTimeoutHint": "Pyodide लोड होने का समय समाप्त हो गया। इसका कारण धीमा इंटरनेट कनेक्शन या CDN समस्या हो सकता है। कृपया पेज रीफ़्रेश करें और पुनः प्रयास करें।",
+        "pyodideDownloadFailed": "Pyodide डाउनलोड करने में विफल। कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।",
+        "pyodideErrorPrefix": "Pyodide त्रुटि: {{message}}",
+        "loadingErrorPrefix": "लोडिंग त्रुटि: {{message}}",
+        "unknownPyodideError": "Pyodide लोड करते समय अज्ञात त्रुटि हुई।",
+        "pyodideLoadingErrorFull": "Pyodide लोडिंग त्रुटि:\n{{errorMessage}}\n\nकृपया प्रयास करें:\n1. पेज रीफ़्रेश करें\n2. अपना इंटरनेट कनेक्शन जांचें\n3. कुछ देर बाद फिर से प्रयास करें",
+        "languageNotSupported": "भाषा '{{language}}' अभी समर्थित नहीं है। केवल पायथन निष्पादन उपलब्ध है।",
+        "timeLimitExceeded": "समय सीमा पार हो गई",
+        "runtimeError": "रनटाइम त्रुटि",
+        "compilationError": "कंपाइलेशन त्रुटि",
+        "memoryLimitExceeded": "मेमोरी सीमा पार हो गई",
+        "judge0ErrorHint": "Judge0 त्रुटि: {{message}}\n(ce.judge0.com दर-सीमित है; यदि आपको 429 त्रुटि मिले तो थोड़ा इंतज़ार करके पुनः प्रयास करें।)",
+        "executionServiceError": "निष्पादन सेवा त्रुटि",
+        "unexpectedError": "अप्रत्याशित त्रुटि",
+        "unknownStatus": "अज्ञात",
+        "compileErrorPrefix": "कंपाइल त्रुटि:\n{{output}}",
+        "noOutputWithStatus": "(कोई आउटपुट नहीं) — {{status}}"
+    },
+    "codingQuestion": {
+        "outputDiff": {
+            "acceptsMultiple": "यह टेस्ट {{count}} मान्य आउटपुट स्वीकार करता है; प्राथमिक आउटपुट के मुकाबले अंतर दिखाया जा रहा है।",
+            "yourOutput": "आपका आउटपुट",
+            "expected": "अपेक्षित",
+            "empty": "(खाली)",
+            "expectedMoreChars": "स्थिति {{position}} पर {{count}} और वर्ण अपेक्षित",
+            "extraChars": "स्थिति {{position}} पर {{count}} अतिरिक्त वर्ण",
+            "firstMismatch": "वर्ण {{index}} पर पहला अंतर: मिला {{got}}, अपेक्षित {{expected}}"
+        },
+        "sessionTimer": {
+            "tooltip": "सत्र टाइमर — समाप्ति पर स्वतः सबमिट हो जाता है"
+        },
+        "questionMode": {
+            "submit": "सबमिट करें",
+            "sessionEndedBanner": "सत्र समाप्त हो गया — आपका अंतिम सबमिशन रिकॉर्ड कर लिया गया है। एडिटर अब केवल पढ़ने के लिए है।",
+            "loadingPythonRuntime": "पायथन रनटाइम लोड हो रहा है…",
+            "sessionEndedTooltip": "सत्र समाप्त हो गया",
+            "runTooltip": "नमूना टेस्ट के विरुद्ध चलाएं (Ctrl/Cmd+Enter)",
+            "submitTooltip": "छिपे हुए सहित सभी टेस्ट के विरुद्ध सबमिट करें (Ctrl/Cmd+Shift+Enter)",
+            "noProblemStatement": "अभी तक समस्या विवरण उपलब्ध नहीं है।",
+            "statsPrefix": "अधिकतम अंक:",
+            "statsLine_one": "· {{count}} टेस्ट ({{visible}} दृश्य, {{hidden}} छिपा हुआ) · CPU {{cpu}}से. · मेमोरी {{mem}}MB",
+            "statsLine_other": "· {{count}} टेस्ट ({{visible}} दृश्य, {{hidden}} छिपे हुए) · CPU {{cpu}}से. · मेमोरी {{mem}}MB",
+            "testCasesTab": "टेस्ट केस",
+            "outputTab": "आउटपुट",
+            "submissionsTab": "मेरे सबमिशन",
+            "sampleLabel": "नमूना {{number}}",
+            "hiddenLabel": "छिपा हुआ {{number}}",
+            "sampleTag": "(नमूना)",
+            "hiddenTag": "(छिपा हुआ)",
+            "genericError": "त्रुटि",
+            "matchedAcceptedOutput": "{{count}} में से स्वीकृत आउटपुट {{index}} से मेल खाया",
+            "noSampleTests_one": "लेखक द्वारा कोई नमूना टेस्ट केस नहीं दिखाया गया। सबमिट करने पर {{count}} छिपा हुआ टेस्ट चलेगा।",
+            "noSampleTests_other": "लेखक द्वारा कोई नमूना टेस्ट केस नहीं दिखाया गया। सबमिट करने पर {{count}} छिपे हुए टेस्ट चलेंगे।",
+            "hitRunHint_one": "{{count}} नमूना टेस्ट के विरुद्ध मूल्यांकन के लिए Run दबाएं।",
+            "hitRunHint_other": "{{count}} नमूना टेस्ट के विरुद्ध मूल्यांकन के लिए Run दबाएं।",
+            "inputLabel": "इनपुट",
+            "expectedOutputLabel": "अपेक्षित आउटपुट",
+            "moreAcceptedOutputs_one": "+{{count}} और स्वीकृत आउटपुट",
+            "moreAcceptedOutputs_other": "+{{count}} और स्वीकृत आउटपुट",
+            "hitRunToSeeOutput": "यहाँ आउटपुट देखने के लिए \"Run\" दबाएं।",
+            "runErrorPrefix": "रन त्रुटि: {{message}}",
+            "submitFailedPrefix": "सबमिट विफल: {{message}}",
+            "passLabel": "सफल",
+            "failLabel": "विफल",
+            "noStdout": "(कोई stdout नहीं)",
+            "serviceError": "सेवा त्रुटि"
+        },
+        "submissionHistory": {
+            "verdict": {
+                "accepted": "स्वीकृत",
+                "partial": "आंशिक",
+                "rejected": "अस्वीकृत",
+                "error": "त्रुटि",
+                "timedOut": "समय समाप्त"
+            },
+            "emptyPrefix": "अभी तक कोई सबमिशन नहीं। एक रिकॉर्ड करने के लिए",
+            "emptySuffix": "दबाएं।",
+            "loadingDetails": "विवरण लोड हो रहा है…",
+            "totalTimeLabel": "कुल समय:",
+            "peakMemoryLabel": "अधिकतम मेमोरी:",
+            "submittedLabel": "सबमिट किया गया:",
+            "testLabel": "टेस्ट {{number}}",
+            "viewCode": "सबमिट किया गया कोड देखें",
+            "scoreLine": "{{score}} / {{maxPoints}} अंक",
+            "testsFraction": "{{passed}}/{{total}} टेस्ट"
+        }
+    },
+    "courseTree": {
+        "allCompletedAria": "सभी {{total}} {{unit}} पूर्ण",
+        "totalUnitTooltip": "{{total}} {{unit}}",
+        "doneOfTotalTooltip": "{{total}} में से {{done}} {{unit}} पूर्ण",
+        "toast": {
+            "loadModulesFailed": "उस विषय के मॉड्यूल लोड नहीं हो सके।",
+            "loadSlidesFailed": "उस अध्याय की स्लाइड लोड नहीं हो सकीं।"
+        },
+        "noUnit": "कोई {{unit}} नहीं",
+        "loading": "लोड हो रहा है…",
+        "lockedTooltip": "लॉक किया गया",
+        "treeAriaLabel": "{{course}} सामग्री"
+    },
+    "videoPlayer": {
+        "pause": "रोकें",
+        "play": "चलाएं",
+        "rewindSeconds": "{{seconds}} सेकंड पीछे करें",
+        "forwardSeconds": "{{seconds}} सेकंड आगे करें",
+        "unmute": "अनम्यूट करें",
+        "mute": "म्यूट करें",
+        "exitFullScreen": "फ़ुल स्क्रीन से बाहर निकलें",
+        "fullScreen": "फ़ुल स्क्रीन",
+        "moreOptions": "अधिक विकल्प",
+        "playbackSpeed": "प्लेबैक गति",
+        "normalSpeed": "सामान्य",
+        "verification": {
+            "focusCheckTitle": "सक्रिय फोकस जांच",
+            "selectToMaintainStreak": "अपनी सीखने की स्ट्रीक बनाए रखने के लिए <1>{{number}}</1> चुनें।",
+            "closingIn": "{{countdown}} सेकंड में बंद होगा"
+        },
+        "error": {
+            "loadingVideo": "वीडियो लोड करने में त्रुटि",
+            "aborted": "वीडियो प्लेबैक रद्द कर दिया गया",
+            "network": "वीडियो लोड करते समय नेटवर्क त्रुटि",
+            "formatNotSupported": "वीडियो फ़ॉर्मेट समर्थित नहीं है",
+            "sourceNotSupported": "वीडियो स्रोत समर्थित नहीं है",
+            "noUrlProvided": "कोई वीडियो URL प्रदान नहीं किया गया",
+            "failedFromFileId": "फ़ाइल ID से वीडियो URL प्राप्त करने में विफल"
+        },
+        "questionMarker": {
+            "titleAnswered": "प्रश्न {{number}} (उत्तर दिया गया): {{text}}",
+            "titleSkippable": "प्रश्न {{number}} (छोड़ा जा सकता है): {{text}}",
+            "titleRequired": "प्रश्न {{number}} (आवश्यक): {{text}}"
+        },
+        "unsupportedBrowser": "आपका ब्राउज़र वीडियो टैग या इस वीडियो फ़ॉर्मेट का समर्थन नहीं करता है।"
+    },
+    "deckPlayer": {
+        "noSlides": "इस प्रस्तुति में कोई स्लाइड नहीं है।",
+        "loadFailed": "प्रस्तुति लोड नहीं हो सकी।",
+        "previous": "पिछला",
+        "next": "अगला",
+        "playFullScreen": "फ़ुल स्क्रीन में चलाएं",
+        "slideAlt": "स्लाइड {{number}}"
+    },
+    "docViewer": {
+        "pausedHeading": "पढ़ना रोका गया",
+        "pausedMessage": "आपने {{count}} बार टैब बदले हैं। पढ़ना फिर से शुरू करने के लिए नीचे क्लिक करें।",
+        "resumeReading": "पढ़ना फिर से शुरू करें"
+    }
+}

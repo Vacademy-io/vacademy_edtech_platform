@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "required": "{{field}} est requis",
+        "requiredResolution": "Veuillez indiquer une valeur pour {{field}}",
+        "usernameNoSpaces": "Le nom d'utilisateur ne peut pas contenir d'espaces",
+        "usernameNoSpacesResolution": "Retirez les espaces du nom d'utilisateur",
+        "usernameNoSpacesFormat": "Aucun espace autorisé",
+        "invalidValue": "Valeur invalide pour {{field}}",
+        "invalidValueResolution": "La valeur doit être l'une des suivantes : {{options}}",
+        "invalidDateFormat": "Format de date invalide pour {{field}}",
+        "invalidDateFormatResolution": "La date doit être au format : {{format}}",
+        "invalidFormat": "Format invalide pour {{field}}",
+        "checkFormat": "Veuillez vérifier le format"
+    }
+}

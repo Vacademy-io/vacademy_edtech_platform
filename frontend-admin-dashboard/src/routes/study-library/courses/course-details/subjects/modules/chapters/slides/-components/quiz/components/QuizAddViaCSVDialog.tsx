@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { FileCsv, FileXls, DownloadSimple, UploadSimple, X } from '@phosphor-icons/react';
@@ -92,6 +93,7 @@ const QuizAddViaCSVDialog = ({
     onOpenChange,
     onQuestionsReady,
 }: QuizAddViaCSVDialogProps) => {
+    const { t } = useTranslation('studyLibraryQuizAddViaCSVDialog');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [parseErrors, setParseErrors] = useState<ParseError[]>([]);
@@ -217,7 +219,7 @@ const QuizAddViaCSVDialog = ({
         const errors: ParseError[] = [];
 
         if (rows.length === 0) {
-            return { questions, errors: [{ row: 0, message: 'File is empty.' }] };
+            return { questions, errors: [{ row: 0, message: t('errors.fileEmpty') }] };
         }
 
         const headerRow = rows[0]!.map((h) => h.trim().toLowerCase());
@@ -238,7 +240,12 @@ const QuizAddViaCSVDialog = ({
         if (missing.length > 0) {
             return {
                 questions,
-                errors: [{ row: 1, message: `Missing required column(s): ${missing.join(', ')}.` }],
+                errors: [
+                    {
+                        row: 1,
+                        message: t('errors.missingColumns', { columns: missing.join(', ') }),
+                    },
+                ],
             };
         }
 
@@ -255,7 +262,7 @@ const QuizAddViaCSVDialog = ({
                 errors: [
                     {
                         row: 1,
-                        message: 'No option columns found. Add option_a, option_b, ... at minimum.',
+                        message: t('errors.noOptionColumns'),
                     },
                 ],
             };
@@ -285,7 +292,7 @@ const QuizAddViaCSVDialog = ({
             const explanation = explIdx !== undefined ? (cols[explIdx] || '').trim() : '';
 
             if (!questionText) {
-                errors.push({ row: rowNum, message: 'question_text is empty.' });
+                errors.push({ row: rowNum, message: t('errors.questionTextEmpty') });
                 continue;
             }
 
@@ -315,7 +322,9 @@ const QuizAddViaCSVDialog = ({
             ) {
                 errors.push({
                     row: rowNum,
-                    message: `Unsupported question_type "${(cols[qTypeIdx!] || '').trim()}". Only MCQS, MCQM and TRUE_FALSE are allowed.`,
+                    message: t('errors.unsupportedQuestionType', {
+                        type: (cols[qTypeIdx!] || '').trim(),
+                    }),
                 });
                 continue;
             }
@@ -327,7 +336,10 @@ const QuizAddViaCSVDialog = ({
                 if (answerLetters.length === 0 || invalidLetters.length > 0) {
                     errors.push({
                         row: rowNum,
-                        message: `Invalid correct_answer "${correctAnswerRaw}". Use ${validLetters.join(', ')} (comma-separate for multiple correct answers).`,
+                        message: t('errors.invalidCorrectAnswer', {
+                            value: correctAnswerRaw,
+                            letters: validLetters.join(', '),
+                        }),
                     });
                     continue;
                 }
@@ -347,7 +359,11 @@ const QuizAddViaCSVDialog = ({
                         .join(', ');
                     errors.push({
                         row: rowNum,
-                        message: `correct_answer references ${emptyAnswerLetters.join(', ')} but ${emptyColumns} ${emptyAnswerLetters.length > 1 ? 'are' : 'is'} empty.`,
+                        message: t('errors.referencedOptionsEmpty', {
+                            count: emptyAnswerLetters.length,
+                            letters: emptyAnswerLetters.join(', '),
+                            columns: emptyColumns,
+                        }),
                     });
                     continue;
                 }
@@ -359,7 +375,7 @@ const QuizAddViaCSVDialog = ({
                 if (options.length < 2) {
                     errors.push({
                         row: rowNum,
-                        message: `${questionType} requires at least 2 options (option_a and option_b).`,
+                        message: t('errors.needsAtLeastTwoOptions', { questionType }),
                     });
                     continue;
                 }
@@ -393,7 +409,7 @@ const QuizAddViaCSVDialog = ({
                 if (correctAnswer !== 'A' && correctAnswer !== 'B') {
                     errors.push({
                         row: rowNum,
-                        message: `Invalid correct_answer "${correctAnswerRaw}" for TRUE_FALSE. Use A (True) or B (False).`,
+                        message: t('errors.invalidTrueFalseAnswer', { value: correctAnswerRaw }),
                     });
                     continue;
                 }
@@ -465,7 +481,7 @@ const QuizAddViaCSVDialog = ({
             <DialogContent className="no-scrollbar !m-0 flex h-auto !w-full !max-w-lg flex-col !gap-0 overflow-y-auto !rounded-lg !p-0">
                 {/* Header */}
                 <div className="flex items-center justify-between bg-primary-50 px-5 py-4">
-                    <h1 className="font-semibold text-primary-500">Upload Questions</h1>
+                    <h1 className="font-semibold text-primary-500">{t('uploadQuestions')}</h1>
                     <button
                         type="button"
                         className="text-neutral-500 hover:text-neutral-700"
@@ -480,10 +496,10 @@ const QuizAddViaCSVDialog = ({
                     <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
                         <div>
                             <p className="text-sm font-medium text-neutral-700">
-                                Download Template
+                                {t('downloadTemplate')}
                             </p>
                             <p className="text-xs text-neutral-500">
-                                Supports MCQS, MCQM and TRUE_FALSE question types
+                                {t('supportedQuestionTypes')}
                             </p>
                         </div>
                         <div className="flex gap-2">
@@ -495,7 +511,7 @@ const QuizAddViaCSVDialog = ({
                                 onClick={handleDownloadCSVTemplate}
                             >
                                 <DownloadSimple size={14} />
-                                CSV
+                                {t('csv')}
                             </MyButton>
                             <MyButton
                                 type="button"
@@ -505,32 +521,26 @@ const QuizAddViaCSVDialog = ({
                                 onClick={handleDownloadExcelTemplate}
                             >
                                 <DownloadSimple size={14} />
-                                Excel
+                                {t('excel')}
                             </MyButton>
                         </div>
                     </div>
 
                     {/* Column reference */}
                     <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
-                        <p className="mb-1 font-medium">Columns:</p>
+                        <p className="mb-1 font-medium">{t('columnsLabel')}</p>
                         <code className="block text-neutral-500">
                             question_text, question_type, option_a, option_b, option_c, option_d,
                             correct_answer, explanation
                         </code>
-                        <p className="mt-2 text-neutral-400">
-                            Add more options as needed (option_e, option_f, ...) — correct_answer
-                            must match an option letter (A, B, C, ...). For TRUE_FALSE, use A (True)
-                            or B (False).
-                        </p>
+                        <p className="mt-2 text-neutral-400">{t('columnsHelp')}</p>
                         <p className="mt-2 text-neutral-400">
                             <span className="font-medium text-neutral-500">
-                                Multiple correct answers:
+                                {t('multipleCorrectAnswersLabel')}
                             </span>{' '}
-                            list every correct letter in correct_answer, e.g.{' '}
-                            <code className="text-neutral-500">&quot;A,C&quot;</code> — the question
-                            is imported as MCQ (Multiple correct). In a CSV, wrap it in double
-                            quotes so the comma is not read as a new column. question_type can be
-                            left blank and it will be detected automatically.
+                            {t('multipleCorrectAnswersHelpBefore')}{' '}
+                            <code className="text-neutral-500">&quot;A,C&quot;</code>{' '}
+                            {t('multipleCorrectAnswersHelpAfter')}
                         </p>
                     </div>
 
@@ -555,10 +565,10 @@ const QuizAddViaCSVDialog = ({
                         ) : (
                             <div className="text-center">
                                 <p className="text-sm font-medium text-neutral-700">
-                                    Click to select a file
+                                    {t('clickToSelectFile')}
                                 </p>
                                 <p className="text-xs text-neutral-400">
-                                    .csv, .xlsx, or .xls files are supported
+                                    {t('supportedFileTypes')}
                                 </p>
                             </div>
                         )}
@@ -575,8 +585,8 @@ const QuizAddViaCSVDialog = ({
                     {parsedCount !== null && parsedCount > 0 && parseErrors.length > 0 && (
                         <div className="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2">
                             <p className="text-sm font-medium text-yellow-700">
-                                {parsedCount} question(s) added successfully, {parseErrors.length}{' '}
-                                row(s) skipped.
+                                {t('parseSummary.added', { count: parsedCount })}{' '}
+                                {t('parseSummary.skipped', { count: parseErrors.length })}
                             </p>
                         </div>
                     )}
@@ -585,16 +595,16 @@ const QuizAddViaCSVDialog = ({
                     {parseErrors.length > 0 && (
                         <div className="max-h-40 overflow-y-auto rounded-md border border-red-200 bg-red-50 px-3 py-2">
                             <p className="mb-1 text-sm font-medium text-red-700">
-                                Parse errors ({parseErrors.length}):
+                                {t('parseErrorsHeading', { count: parseErrors.length })}
                             </p>
                             {parseErrors.map((err, i) => (
                                 <p key={i} className="text-xs text-red-600">
-                                    Row {err.row}: {err.message}
+                                    {t('rowError', { row: err.row, message: err.message })}
                                 </p>
                             ))}
                             {parsedCount !== null && parsedCount === 0 && (
                                 <p className="mt-1 text-xs font-medium text-red-700">
-                                    No valid questions found. Fix the errors and try again.
+                                    {t('noValidQuestionsFound')}
                                 </p>
                             )}
                         </div>
@@ -610,7 +620,7 @@ const QuizAddViaCSVDialog = ({
                         layoutVariant="default"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -621,7 +631,7 @@ const QuizAddViaCSVDialog = ({
                         disabled={!selectedFile}
                     >
                         <UploadSimple size={16} />
-                        Parse & Preview
+                        {t('parseAndPreview')}
                     </MyButton>
                 </div>
             </DialogContent>

@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, ArrowRight, ArrowSquareOut } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { getCurrencySymbol } from "./payment-selection-step";
 import { getPaymentCompletionStatus } from "../-services/enroll-invite-services";
@@ -60,6 +61,7 @@ const PaymentPendingStep = ({
   selectedPayment,
   setCurrentStep,
 }: PaymentPendingStepProps) => {
+  const { t } = useTranslation("enrollmentA");
   const handleCompletePayment = (paymentUrl: string) => {
     // Reader mode (iOS / reader-mode institutes): never redirect to an external
     // payment gateway (Apple 3.1.1).
@@ -125,20 +127,20 @@ const PaymentPendingStep = ({
           </div>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Payment Pending
+          {t("paymentPending.title")}
         </h2>
         <p className="text-gray-600 text-lg">
-          Complete your payment to proceed
+          {t("paymentPending.subtitle")}
         </p>
       </div>
 
       {/* Order Details Card */}
       <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6 sm:p-8">
+        <CardContent className="p-card-lg sm:p-8">
           <div className="space-y-4">
             {/* Amount */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-gray-600 font-medium">Amount:</span>
+              <span className="text-gray-600 font-medium">{t("paymentPending.amount")}</span>
               <span className="text-gray-900 font-semibold">
                 {getCurrencySymbol(selectedPayment?.currency || "")}
                 {selectedPayment?.amount}
@@ -147,7 +149,7 @@ const PaymentPendingStep = ({
 
             {/* Status */}
             <div className="flex items-center justify-between py-2">
-              <span className="text-gray-600 font-medium">Status:</span>
+              <span className="text-gray-600 font-medium">{t("paymentPending.status")}</span>
               <span className="text-amber-600 font-semibold">
                 {
                   paymentCompletionResponse?.payment_response?.response_data
@@ -176,7 +178,7 @@ const PaymentPendingStep = ({
             }
             className="w-full sm:w-auto bg-primary-500 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            Complete Payment
+            {t("paymentPending.completePayment")}
             <ArrowRight className="w-5 h-5 ms-2" />
           </MyButton>
         )}
@@ -193,7 +195,7 @@ const PaymentPendingStep = ({
           }
           className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
         >
-          View Invoice
+          {t("paymentPending.viewInvoice")}
           <ArrowSquareOut className="w-5 h-5 ms-2" />
         </MyButton>
       </div>
@@ -202,9 +204,9 @@ const PaymentPendingStep = ({
       {!shouldHidePaidPurchaseUI() && (
         <div className="text-center space-y-2">
           <p className="text-gray-600 text-sm">
-            You will be redirected to a secure payment page
+            {t("paymentPending.redirectNotice")}
           </p>
-          <p className="text-gray-500 text-xs">Payments are processed securely</p>
+          <p className="text-gray-500 text-xs">{t("paymentPending.securityNotice")}</p>
         </div>
       )}
     </div>

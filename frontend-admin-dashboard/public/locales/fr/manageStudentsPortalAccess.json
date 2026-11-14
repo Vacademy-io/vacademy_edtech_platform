@@ -1,0 +1,43 @@
+{
+    "batchPicker": {
+        "openPortalForLabel": "Ouvrir le portail pour"
+    },
+    "credentials": {
+        "title": "Identifiants du compte",
+        "edit": "Modifier",
+        "share": "Partager",
+        "usernameLabel": "Nom d'utilisateur :",
+        "passwordLabel": "Mot de passe :",
+        "usernameFieldName": "Nom d'utilisateur",
+        "passwordFieldName": "Mot de passe",
+        "usernameNotFound": "N/D",
+        "loadingPlaceholder": "Chargement...",
+        "notFoundPlaceholder": "mot de passe introuvable"
+    },
+    "actions": {
+        "learnerPortal": {
+            "title": "Portail apprenant",
+            "description": "Accéder directement au portail apprenant",
+            "button": "Accéder au portail apprenant"
+        },
+        "resetPassword": {
+            "title": "Réinitialiser le mot de passe",
+            "description": "Envoyer un e-mail de réinitialisation du mot de passe",
+            "button": "Envoyer l'e-mail de réinitialisation"
+        }
+    },
+    "emptyState": {
+        "title": "Aucune fonctionnalité d'accès au portail activée",
+        "description": "Contactez un administrateur pour activer les paramètres d'accès au portail"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie de {{field}}",
+        "studentUserIdNotFound": "Identifiant utilisateur de l'élève introuvable",
+        "studentPackageIdNotFound": "Identifiant de forfait de l'élève introuvable",
+        "accessingPortal": "Accès au portail apprenant en cours...",
+        "portalOpened": "Portail apprenant ouvert dans un nouvel onglet",
+        "noRedirectUrl": "Aucune URL de redirection reçue",
+        "accessPortalFailed": "Échec de l'accès au portail apprenant. Veuillez réessayer."
+    }
+}

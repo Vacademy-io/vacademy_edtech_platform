@@ -133,12 +133,29 @@ function readJson(file, rel) {
 }
 
 /**
+ * Where an app keeps its catalogs. `public/locales` is checked first: the
+ * admin app serves them as static files (fetched at runtime) rather than
+ * bundling them, to keep ~3,200 JSON files out of the Rollup graph. Apps that
+ * still import them from `src/locales` keep working unchanged.
+ * Returns the locale root relative to the repo, or null if the app has neither.
+ */
+function localeRoot(app) {
+  for (const dir of ['public', 'src']) {
+    if (fs.existsSync(path.join(REPO_ROOT, app, dir, 'locales'))) {
+      return `${dir}/locales`;
+    }
+  }
+  return null;
+}
+
+/**
  * Discover catalogs for one app. Returns { locale: { namespace: flatKeys } }
- * or null when the app has no src/locales/ tree yet.
+ * or null when the app has no locales tree yet.
  */
 function loadApp(app) {
-  const base = path.join(REPO_ROOT, app, 'src', 'locales');
-  if (!fs.existsSync(base)) return null;
+  const root = localeRoot(app);
+  if (root === null) return null;
+  const base = path.join(REPO_ROOT, app, ...root.split('/'));
 
   const catalogs = {}; // locale -> namespace -> flat map
   for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
@@ -146,14 +163,14 @@ function loadApp(app) {
       const locale = entry.name;
       for (const f of fs.readdirSync(path.join(base, locale))) {
         if (!f.endsWith('.json')) continue;
-        const rel = `${app}/src/locales/${locale}/${f}`;
+        const rel = `${app}/${root}/${locale}/${f}`;
         const json = readJson(path.join(base, locale, f), rel);
         if (json === null) continue;
         (catalogs[locale] ??= {})[f] = flatten(json);
       }
     } else if (entry.name.endsWith('.json')) {
       const locale = entry.name.replace(/\.json$/, '');
-      const rel = `${app}/src/locales/${entry.name}`;
+      const rel = `${app}/${root}/${entry.name}`;
       const json = readJson(path.join(base, entry.name), rel);
       if (json === null) continue;
       (catalogs[locale] ??= {})['<flat>'] = flatten(json);
@@ -163,21 +180,22 @@ function loadApp(app) {
 }
 
 function checkApp(app) {
+  const root = localeRoot(app);
   const catalogs = loadApp(app);
   if (catalogs === null) {
-    console.log(`check-catalogs: ${app}/src/locales/ not found — skipping.`);
+    console.log(`check-catalogs: ${app} has no public/locales or src/locales — skipping.`);
     return;
   }
   const locales = Object.keys(catalogs);
   if (locales.length === 0) {
-    console.log(`check-catalogs: ${app}/src/locales/ is empty — skipping.`);
+    console.log(`check-catalogs: ${app}/${root}/ is empty — skipping.`);
     return;
   }
   console.log(`check-catalogs: ${app} (${locales.sort().join(', ')})`);
 
   const en = catalogs[REFERENCE];
   if (!en) {
-    error(`${app}: no "${REFERENCE}" reference catalog found in src/locales/`);
+    error(`${app}: no "${REFERENCE}" reference catalog found in ${root}/`);
     return;
   }
 
@@ -207,7 +225,13 @@ function checkApp(app) {
       // Plural families: a locale owes exactly the categories CLDR gives it,
       // so these are checked against Intl.PluralRules, never against en's keys.
       for (const [base, enCats] of families) {
-        const reference = enKeys[`${base}_other`];
+        // Vars the caller is known to supply for this family = every var en
+        // mentions in ANY of its forms. Deliberately not just `_other`:
+        // en itself varies them per form (e.g. "{{count}} {{course}}" in _one
+        // vs "{{count}} {{courses}}" in _other).
+        const supplied = new Set(
+          [...enCats].flatMap((c) => placeholders(enKeys[`${base}_${c}`] ?? ''))
+        );
         for (const category of needed) {
           const key = `${base}_${category}`;
           if (!(key in locKeys)) {
@@ -217,8 +241,20 @@ function checkApp(app) {
             );
             continue;
           }
-          // Every form interpolates the same count var as en's canonical _other.
-          comparePlaceholders(app, nsLabel, locale, key, reference, locKeys[key]);
+          // A form may legitimately use FEWER vars than en — languages often
+          // drop the numeral in the zero/one cases ("nothing selected", "تم
+          // اختيار {{course}} واحد"). What breaks rendering is the reverse: a
+          // var nobody passes, which interpolates to empty. So flag only vars
+          // en never supplies anywhere in the family.
+          const unknown = placeholders(locKeys[key]).filter((v) => !supplied.has(v));
+          if (unknown.length) {
+            error(
+              `${app}: ${nsLabel} key "${key}" uses placeholder(s) ` +
+                `[${unknown.join(', ')}] that en never supplies ` +
+                `(en supplies [${[...supplied].sort().join(', ')}]) — ` +
+                `these render empty at runtime`
+            );
+          }
         }
         for (const category of enCats) {
           if (!needed.includes(category) && `${base}_${category}` in locKeys) {

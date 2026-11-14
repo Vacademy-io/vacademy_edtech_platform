@@ -1,4 +1,5 @@
 import { RocketLaunch, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Full-screen "What's coming" viewer. The HTML is super-admin-authored (health-check → Roadmap),
@@ -21,6 +22,8 @@ export function RoadmapViewer({
     loading?: boolean;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('roadmapViewer');
+
     if (!open) return null;
 
     return (
@@ -38,12 +41,12 @@ export function RoadmapViewer({
                     <div className="flex items-center gap-2">
                         <RocketLaunch size={18} className="text-primary-500" />
                         <p className="text-subtitle font-semibold text-neutral-800">
-                            What&apos;s coming
+                            {t('title')}
                         </p>
                     </div>
                     <button
                         type="button"
-                        aria-label="Close roadmap"
+                        aria-label={t('closeAriaLabel')}
                         onClick={onClose}
                         className="flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
                     >
@@ -53,7 +56,7 @@ export function RoadmapViewer({
                 <div className="relative flex-1 bg-neutral-50">
                     {html ? (
                         <iframe
-                            title="Product roadmap"
+                            title={t('iframeTitle')}
                             srcDoc={html}
                             className="size-full border-0"
                             sandbox="allow-scripts allow-popups"
@@ -61,9 +64,7 @@ export function RoadmapViewer({
                     ) : (
                         <div className="flex h-full items-center justify-center px-6 text-center">
                             <p className="text-caption text-neutral-500">
-                                {loading
-                                    ? 'Loading…'
-                                    : 'Nothing published yet — check back soon.'}
+                                {loading ? t('loading') : t('empty')}
                             </p>
                         </div>
                     )}

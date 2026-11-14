@@ -1,0 +1,60 @@
+{
+    "trigger": "विवरण संपादित करें",
+    "dialogHeading": "लीड प्रोफ़ाइल संपादित करें",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है...",
+    "saveChanges": "परिवर्तन सहेजें",
+    "toast": {
+        "updateSuccess": "लीड प्रोफ़ाइल अपडेट कर दी गई",
+        "updateError": "लीड प्रोफ़ाइल अपडेट करने में विफल"
+    },
+    "validation": {
+        "required": "यह फ़ील्ड आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल पता",
+        "invalidEmailShort": "अमान्य ईमेल"
+    },
+    "sections": {
+        "identity": {
+            "title": "पहचान",
+            "helper": "उनका नाम और बुनियादी जानकारी।"
+        },
+        "contact": {
+            "title": "संपर्क",
+            "helper": "संपर्क करने के प्राथमिक माध्यम।"
+        },
+        "guardian": {
+            "title": "अभिभावक",
+            "helper": "माता-पिता / अभिभावक का संपर्क (वैकल्पिक)।"
+        },
+        "additional": {
+            "title": "अतिरिक्त विवरण",
+            "helper": "लीड फ़ॉर्म पर दर्ज किए गए उत्तर।"
+        }
+    },
+    "fields": {
+        "fullName": {
+            "label": "पूरा नाम",
+            "placeholder": "पूरा नाम"
+        },
+        "email": {
+            "label": "ईमेल",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "मोबाइल नंबर",
+            "placeholder": "123 456 7890"
+        },
+        "guardianName": {
+            "label": "अभिभावक का नाम",
+            "placeholder": "अभिभावक का नाम"
+        },
+        "guardianMobile": {
+            "label": "अभिभावक का मोबाइल",
+            "placeholder": "123 456 7890"
+        },
+        "guardianEmail": {
+            "label": "अभिभावक का ईमेल",
+            "placeholder": "guardian@example.com"
+        }
+    }
+}

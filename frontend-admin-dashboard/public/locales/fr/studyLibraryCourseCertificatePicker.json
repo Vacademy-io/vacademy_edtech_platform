@@ -1,0 +1,10 @@
+{
+    "theInstituteTemplate": "le modèle de l'établissement",
+    "whateverTheInstituteDefaultIs": "Le modèle par défaut de l'établissement, quel qu'il soit",
+    "instituteDefault": "Modèle par défaut",
+    "inUse": "Utilisé",
+    "savedTemplate": "Modèle enregistré",
+    "noSavedDesignsYet": "Cet établissement n'a encore aucun modèle de certificat enregistré. Ajoutez-en dans Paramètres → Certificats et ils apparaîtront ici pour chaque cours.",
+    "usingOwnUploadHint": "Ce cours utilise le HTML importé ci-dessous. Choisissez un modèle enregistré ci-dessus pour suivre plutôt le modèle de l'établissement.",
+    "savedDesignFollowsHint": "Choisir un modèle enregistré fait que ce cours le suit — modifiez ce modèle dans Paramètres et le certificat de ce cours change avec lui."
+}

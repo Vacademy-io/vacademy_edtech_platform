@@ -1,0 +1,122 @@
+{
+    "shareLink": {
+        "ready": "Campaign link ready to share"
+    },
+    "campaignName": {
+        "label": "Campaign Name",
+        "placeholder": "Enter campaign name"
+    },
+    "campaignType": {
+        "label": "{{term}}"
+    },
+    "campaignObjective": {
+        "label": "Campaign Objective",
+        "placeholder": "e.g., Engagement, Retention"
+    },
+    "subOrg": {
+        "label": "Sub-Org",
+        "placeholder": "Select sub-org (optional)",
+        "noneOption": "None"
+    },
+    "teamNotifications": {
+        "label": "Team Notifications",
+        "infoAriaLabel": "Information about sharing campaign analytics",
+        "tooltip": "Enter email addresses of team members who should receive campaign updates",
+        "placeholder": "Enter email addresses"
+    },
+    "shareAnalytics": {
+        "label": "Share Campaign Analytics with Team Members",
+        "infoAriaLabel": "Information about sharing campaign analytics",
+        "tooltip": "Allow team members to view campaign performance metrics and reports"
+    },
+    "description": {
+        "label": "Campaign Description",
+        "placeholder": "Describe the campaign's goals, target audience, and key messages"
+    },
+    "startDate": {
+        "label": "Start Date"
+    },
+    "endDate": {
+        "label": "End Date"
+    },
+    "status": {
+        "label": "Status",
+        "infoAriaLabel": "Information about sharing campaign analytics",
+        "tooltip": "To share the campaign link with Learners, please ensure the campaign status is set to Active."
+    },
+    "initialLeadScore": {
+        "label": "Initial Lead Score",
+        "infoAriaLabel": "Initial lead score info",
+        "tooltip": "A base score added to every lead captured through this campaign. Final score = initial score + calculated score (capped at 100)."
+    },
+    "customField": {
+        "newOptionDefault": "option {{number}}"
+    },
+    "postSubmit": {
+        "previewCampaignNameFallback": "Your Campaign",
+        "description": "What the respondent sees the moment this form is submitted. Prefilled from Settings → Lead Settings → Forms; changes here apply to this campaign only."
+    },
+    "errors": {
+        "instituteContextUnavailable": "Institute context unavailable. Please refresh and try again.",
+        "uploadImageFailed": "Failed to upload campaign image",
+        "customFieldsMustBeArray": "Custom fields JSON must be an array.",
+        "customFieldsInvalidJson": "Custom fields must be valid JSON.",
+        "startDateInPast": "Start date cannot be before today."
+    },
+    "actions": {
+        "reset": "Reset",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "create": "Create {{term}}",
+        "creating": "Creating..."
+    },
+    "formAppearance": {
+        "title": "Form Appearance",
+        "description": "How the public response form looks while it is being filled in — layout, colours and the wording around the fields. Applies to this campaign only."
+    },
+    "formTemplate": {
+        "title": "Form Template",
+        "description": "How the public form page looks when someone opens the link. Pick a look; your text and fields stay the same."
+    },
+    "formText": {
+        "title": "Form Heading & Text",
+        "description": "The heading at the top of the public form (defaults to this list’s name) and the text above the fields — with left, centre or right alignment."
+    },
+    "wizard": {
+        "ariaLabel": "Steps",
+        "steps": {
+            "basics": "Basics",
+            "fields": "Form fields",
+            "afterSubmit": "After submit",
+            "appearance": "Appearance",
+            "notify": "Notifications & scoring"
+        },
+        "stepOf": "Step {{current}} of {{total}}",
+        "back": "Back",
+        "next": "Next: {{step}}",
+        "hasErrors": "This step has errors"
+    },
+    "tags": {
+        "title": "Tags",
+        "description": "Label this list so reports can group its leads by tag, e.g. by state, course or channel. One value per tag.",
+        "keys": {
+            "state": "State",
+            "course": "Course",
+            "channel": "Channel"
+        },
+        "keyPlaceholder": "Tag name",
+        "valuePlaceholder": "Value",
+        "valueAriaLabel": "Value for {{label}}",
+        "newTag": "new tag",
+        "remove": "Remove {{label}}",
+        "add": "Add tag",
+        "loadError": "Couldn't load this list's tags. Saving will keep its current tags.",
+        "errors": {
+            "invalidKey": "Tag name \"{{key}}\" is not valid. Use up to 40 letters, numbers, spaces or underscores.",
+            "duplicateKey": "Tag \"{{key}}\" is used twice. A list can have one value per tag.",
+            "valueTooLong": "The value of \"{{key}}\" is too long. Use at most 60 characters.",
+            "invalidValue": "The value of \"{{key}}\" contains a line break or other control character.",
+            "tooMany": "A list can have at most 10 tags."
+        }
+    }
+}

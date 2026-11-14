@@ -4,11 +4,13 @@ import { formatISODateTimeReadable } from '@/helpers/formatISOTime';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { getPublicUrl } from '@/services/upload_file';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EnrollFormUploadImage } from '@/assets/svgs';
 import { getUserId } from '@/utils/userDetails';
 import { Trash } from '@phosphor-icons/react';
 
 export const Reply = ({ reply, refetch }: { reply: Doubt; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryReply');
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const userId = getUserId();
 
@@ -45,7 +47,7 @@ export const Reply = ({ reply, refetch }: { reply: Doubt; refetch: () => void })
                     </div>
                     <div>
                         <p className="text-xs font-semibold text-neutral-700">
-                            {userBasicDetails?.[0]?.name || 'Anonymous User'}
+                            {userBasicDetails?.[0]?.name || t('anonymousUser')}
                         </p>
                         <p className="text-xs text-neutral-500">
                             {formatISODateTimeReadable(reply.raised_time)}

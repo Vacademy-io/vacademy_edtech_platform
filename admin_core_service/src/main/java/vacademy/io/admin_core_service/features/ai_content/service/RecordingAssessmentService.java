@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,6 +31,7 @@ import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionPa
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionParticipantRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,6 +74,9 @@ public class RecordingAssessmentService {
     static final String SOURCE_TYPE_BBB_RECORDING = "BBB_RECORDING";
     static final String EXTRACTION_WHISPER_TRANSCRIBE_TRANSLATE = "WHISPER_TRANSCRIBE_TRANSLATE";
     static final String ARTIFACT_TYPE_ASSESSMENT = "ASSESSMENT";
+    /** HMAC-only (InternalAuthFilter). The old public path let anyone publish into any institute. */
+    static final String AI_PUBLISH_ROUTE = "/assessment-service/internal/evaluation-tool/assessment/ai-publish";
+    static final String LEGACY_AI_PUBLISH_ROUTE = "/assessment-service/evaluation-tool/assessment/ai-publish";
 
     private final AiContentSourceRepository sourceRepo;
     private final AiContentExtractionRepository extractionRepo;
@@ -80,6 +85,10 @@ public class RecordingAssessmentService {
     private final LiveSessionParticipantRepository liveSessionParticipantRepo;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
+    private final InternalClientUtils internalClientUtils;
+
+    @Value("${spring.application.name:admin_core_service}")
+    private String clientName;
 
     @Value("${ai.service.url:http://localhost:8077}")
     private String aiServiceUrl;
@@ -362,19 +371,18 @@ public class RecordingAssessmentService {
         body.set("questions", objectMapper.valueToTree(rawQuestions.stream().map(this::toPublishQuestion).collect(Collectors.toList())));
 
         // 5. POST.
-        String url = assessmentServiceUrl + "/assessment-service/evaluation-tool/assessment/ai-publish";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
         String assessmentId;
         try {
-            @SuppressWarnings({"rawtypes", "unchecked"})
-            ResponseEntity<Map> resp = restTemplate.exchange(
-                    url, HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
-            if (resp.getBody() == null || resp.getBody().get("assessmentId") == null) {
+            ResponseEntity<String> resp = postAiPublish(body);
+            JsonNode respJson = resp.getBody() == null ? null : objectMapper.readTree(resp.getBody());
+            if (respJson == null || !respJson.hasNonNull("assessmentId")) {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                         "assessment-service did not return assessmentId");
             }
-            assessmentId = resp.getBody().get("assessmentId").toString();
+            assessmentId = respJson.get("assessmentId").asText();
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "assessment-service returned an unreadable response");
         } catch (HttpStatusCodeException e) {
             log.error("[publish] assessment-service {} {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
@@ -403,6 +411,29 @@ public class RecordingAssessmentService {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Publishes through assessment_service's HMAC-authenticated internal route.
+     * Falls back to the legacy public route only while assessment_service is still
+     * on a build without the internal one (deploy-order window: the old build
+     * answers 401/403/404/405 there). Remove the fallback once both are deployed.
+     */
+    private ResponseEntity<String> postAiPublish(ObjectNode body) {
+        try {
+            return internalClientUtils.makeHmacRequest(clientName, "POST", assessmentServiceUrl,
+                    AI_PUBLISH_ROUTE, body);
+        } catch (HttpClientErrorException e) {
+            int status = e.getStatusCode().value();
+            if (status != 401 && status != 403 && status != 404 && status != 405) {
+                throw e;
+            }
+            log.warn("[publish] internal ai-publish answered {}; retrying legacy route", status);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            return restTemplate.exchange(assessmentServiceUrl + LEGACY_AI_PUBLISH_ROUTE,
+                    HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+        }
+    }
 
     private Map<String, Object> parseParamsJson(String json) {
         if (json == null || json.isBlank()) return Collections.emptyMap();

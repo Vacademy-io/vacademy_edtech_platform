@@ -1,15 +1,16 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     Plus,
     FileText,
     CreditCard,
     GraduationCap,
     ArrowRight,
-    UploadCloud,
+    UploadSimple,
     X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,8 +72,6 @@ interface AddStageForm {
     upi_payee_name: string;
 }
 
-const DEFAULT_PAYMENT_DISPLAY_TEXT = 'Please pay the application fee to proceed.';
-
 const DEFAULT_PAYMENT_CONFIG = (
     display_text: string,
     payment_option_id: string,
@@ -112,18 +111,17 @@ const addApplicationStage = async (payload: ApplicationStage): Promise<Applicati
 // ─── Empty State ────────────────────────────────────────────────────────────
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+    const { t } = useTranslation('settingsApplicationStage');
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 py-10 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary-50">
                 <GraduationCap className="size-6 text-primary-500" />
             </div>
-            <p className="mb-1 text-sm font-medium text-gray-700">No application stages yet</p>
-            <p className="mb-4 text-xs text-gray-500">
-                Create stages to define your admissions workflow
-            </p>
+            <p className="mb-1 text-sm font-medium text-gray-700">{t('emptyState.title')}</p>
+            <p className="mb-4 text-xs text-gray-500">{t('emptyState.description')}</p>
             <MyButton buttonType="primary" scale="small" onClick={onAdd}>
                 <Plus className="mr-1 size-3.5" />
-                Add First Stage
+                {t('emptyState.addFirstStage')}
             </MyButton>
         </div>
     );
@@ -132,6 +130,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 // ─── Stage Card ─────────────────────────────────────────────────────────────
 
 function StageCard({ stage, index }: { stage: ApplicationStage; index: number }) {
+    const { t } = useTranslation('settingsApplicationStage');
     const isPayment = stage.type === 'PAYMENT';
     let paymentOptionId: string | null = null;
     if (isPayment && stage.config_json) {
@@ -173,7 +172,7 @@ function StageCard({ stage, index }: { stage: ApplicationStage; index: number })
                             variant="outline"
                             className="border-green-200 bg-green-50 text-green-700"
                         >
-                            First
+                            {t('stageCard.first')}
                         </Badge>
                     )}
                     {stage.is_last && (
@@ -181,7 +180,7 @@ function StageCard({ stage, index }: { stage: ApplicationStage; index: number })
                             variant="outline"
                             className="border-purple-200 bg-purple-50 text-purple-700"
                         >
-                            Last
+                            {t('stageCard.last')}
                         </Badge>
                     )}
                     <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-700">
@@ -190,7 +189,7 @@ function StageCard({ stage, index }: { stage: ApplicationStage; index: number })
                 </div>
                 {isPayment && paymentOptionId && (
                     <p className="mt-0.5 text-xs text-gray-500">
-                        Payment Option ID:{' '}
+                        {t('stageCard.paymentOptionIdLabel')}{' '}
                         <span className="font-mono text-gray-600">{paymentOptionId}</span>
                     </p>
                 )}
@@ -217,7 +216,9 @@ function AddStageDialog({
     paymentOptions: PaymentOption[];
     isLoadingPaymentOptions: boolean;
 }) {
+    const { t } = useTranslation('settingsApplicationStage');
     const instituteId = getCurrentInstituteId() ?? '';
+    const defaultPaymentDisplayText = t('dialog.paymentSection.displayText.defaultValue');
 
     const [form, setForm] = useState<AddStageForm>({
         stage_name: '',
@@ -226,7 +227,7 @@ function AddStageDialog({
         sequence: '1',
         is_first: false,
         is_last: false,
-        display_text: DEFAULT_PAYMENT_DISPLAY_TEXT,
+        display_text: defaultPaymentDisplayText,
         payment_option_id: '',
         payment_qr_code_file_id: '',
         upi_vpa: '',
@@ -248,9 +249,9 @@ function AddStageDialog({
         );
         if (fileId) {
             update('payment_qr_code_file_id', fileId);
-            toast.success('QR code uploaded successfully');
+            toast.success(t('toast.qrUploadSuccess'));
         } else {
-            toast.error('Failed to upload QR code');
+            toast.error(t('toast.qrUploadError'));
             setQrPreviewUrl('');
         }
     };
@@ -260,13 +261,13 @@ function AddStageDialog({
     const mutation = useMutation({
         mutationFn: addApplicationStage,
         onSuccess: () => {
-            toast.success('Application stage added successfully');
+            toast.success(t('toast.stageAddedSuccess'));
             queryClient.invalidateQueries({ queryKey: ['application-stages', instituteId] });
             onSuccess();
             resetForm();
         },
         onError: (error: any) => {
-            toast.error(error?.response?.data?.message ?? 'Failed to add stage');
+            toast.error(error?.response?.data?.message ?? t('toast.stageAddError'));
         },
     });
 
@@ -278,7 +279,7 @@ function AddStageDialog({
             sequence: '1',
             is_first: false,
             is_last: false,
-            display_text: DEFAULT_PAYMENT_DISPLAY_TEXT,
+            display_text: defaultPaymentDisplayText,
             payment_option_id: '',
             payment_qr_code_file_id: '',
             upi_vpa: '',
@@ -294,15 +295,15 @@ function AddStageDialog({
 
     const handleSubmit = () => {
         if (!form.stage_name.trim()) {
-            toast.error('Please enter a stage name');
+            toast.error(t('toast.stageNameRequired'));
             return;
         }
         if (!form.sequence || isNaN(Number(form.sequence))) {
-            toast.error('Please enter a valid sequence number');
+            toast.error(t('toast.sequenceInvalid'));
             return;
         }
         if (form.type === 'PAYMENT' && !form.payment_option_id) {
-            toast.error('Please select a payment option');
+            toast.error(t('toast.paymentOptionRequired'));
             return;
         }
 
@@ -343,7 +344,7 @@ function AddStageDialog({
         <MyDialog
             open={open}
             onOpenChange={(o) => !o && handleClose()}
-            heading="Add Application Stage"
+            heading={t('dialog.heading')}
             dialogWidth="max-w-lg"
             footer={
                 <>
@@ -352,14 +353,14 @@ function AddStageDialog({
                         onClick={handleClose}
                         disabled={mutation.isPending}
                     >
-                        Cancel
+                        {t('dialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={handleSubmit}
                         disabled={mutation.isPending}
                     >
-                        {mutation.isPending ? 'Adding…' : 'Add Stage'}
+                        {mutation.isPending ? t('dialog.adding') : t('dialog.addStage')}
                     </MyButton>
                 </>
             }
@@ -368,11 +369,11 @@ function AddStageDialog({
                 {/* Stage Name */}
                 <div className="space-y-1.5">
                     <Label htmlFor="stage_name">
-                        Stage Name <span className="text-red-500">*</span>
+                        {t('dialog.stageName.label')} <span className="text-red-500">*</span>
                     </Label>
                     <Input
                         id="stage_name"
-                        placeholder="e.g. Application Form, Payment"
+                        placeholder={t('dialog.stageName.placeholder')}
                         value={form.stage_name}
                         onChange={(e) => update('stage_name', e.target.value)}
                     />
@@ -382,24 +383,24 @@ function AddStageDialog({
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="stage_type">
-                            Stage Type <span className="text-red-500">*</span>
+                            {t('dialog.stageType.label')} <span className="text-red-500">*</span>
                         </Label>
                         <Select
                             value={form.type}
                             onValueChange={(v) => update('type', v as 'FORM' | 'PAYMENT')}
                         >
                             <SelectTrigger id="stage_type">
-                                <SelectValue placeholder="Select type" />
+                                <SelectValue placeholder={t('dialog.stageType.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="FORM">
                                     <span className="flex items-center gap-1.5">
-                                        <FileText className="size-3.5" /> Form
+                                        <FileText className="size-3.5" /> {t('dialog.stageType.form')}
                                     </span>
                                 </SelectItem>
                                 <SelectItem value="PAYMENT">
                                     <span className="flex items-center gap-1.5">
-                                        <CreditCard className="size-3.5" /> Payment
+                                        <CreditCard className="size-3.5" /> {t('dialog.stageType.payment')}
                                     </span>
                                 </SelectItem>
                             </SelectContent>
@@ -408,13 +409,13 @@ function AddStageDialog({
 
                     <div className="space-y-1.5">
                         <Label htmlFor="sequence">
-                            Sequence <span className="text-red-500">*</span>
+                            {t('dialog.sequence.label')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="sequence"
                             type="number"
                             min={1}
-                            placeholder="1"
+                            placeholder={t('dialog.sequence.placeholder')}
                             value={form.sequence}
                             onChange={(e) => update('sequence', e.target.value)}
                         />
@@ -425,24 +426,24 @@ function AddStageDialog({
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="space-y-1.5">
                         <Label htmlFor="stage_type">
-                            Stage Type <span className="text-red-500">*</span>
+                            {t('dialog.stageType.label')} <span className="text-red-500">*</span>
                         </Label>
                         <Select
                             value={form.type}
                             onValueChange={(v) => update('type', v as 'FORM' | 'PAYMENT')}
                         >
                             <SelectTrigger id="stage_type">
-                                <SelectValue placeholder="Select type" />
+                                <SelectValue placeholder={t('dialog.stageType.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="FORM">
                                     <span className="flex items-center gap-1.5">
-                                        <FileText className="size-3.5" /> Form
+                                        <FileText className="size-3.5" /> {t('dialog.stageType.form')}
                                     </span>
                                 </SelectItem>
                                 <SelectItem value="PAYMENT">
                                     <span className="flex items-center gap-1.5">
-                                        <CreditCard className="size-3.5" /> Payment
+                                        <CreditCard className="size-3.5" /> {t('dialog.stageType.payment')}
                                     </span>
                                 </SelectItem>
                             </SelectContent>
@@ -451,7 +452,8 @@ function AddStageDialog({
 
                     <div className="space-y-1.5">
                         <Label htmlFor="workflow_type">
-                            Workflow Type <span className="text-red-500">*</span>
+                            {t('dialog.workflowType.label')}{' '}
+                            <span className="text-red-500">*</span>
                         </Label>
                         <Select
                             value={form.workflow_type}
@@ -460,7 +462,7 @@ function AddStageDialog({
                             }
                         >
                             <SelectTrigger id="workflow_type">
-                                <SelectValue placeholder="Select workflow type" />
+                                <SelectValue placeholder={t('dialog.workflowType.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="APPLICATION">APPLICATION</SelectItem>
@@ -471,20 +473,22 @@ function AddStageDialog({
 
                     <div className="space-y-1.5">
                         <Label htmlFor="sequence">
-                            Sequence <span className="text-red-500">*</span>
+                            {t('dialog.sequence.label')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="sequence"
                             type="number"
                             min={1}
-                            placeholder="1"
+                            placeholder={t('dialog.sequence.placeholder')}
                             value={form.sequence}
                             onChange={(e) => update('sequence', e.target.value)}
                         />
                     </div>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-                    <span className="text-sm font-medium text-gray-700">Last Stage</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {t('dialog.lastStage')}
+                    </span>
                     <Switch checked={form.is_last} onCheckedChange={(v) => update('is_last', v)} />
                 </div>
 
@@ -492,20 +496,22 @@ function AddStageDialog({
                 {form.type === 'PAYMENT' && (
                     <div className="space-y-4 rounded-lg border p-4">
                         <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                            Payment Configuration
+                            {t('dialog.paymentSection.heading')}
                         </p>
 
                         {/* Payment Option */}
                         <div className="space-y-1.5">
                             <Label htmlFor="payment_option">
-                                Payment Option <span className="text-red-500">*</span>
+                                {t('dialog.paymentSection.paymentOption.label')}{' '}
+                                <span className="text-red-500">*</span>
                             </Label>
                             {isLoadingPaymentOptions ? (
-                                <p className="text-sm text-gray-400">Loading payment options…</p>
+                                <p className="text-sm text-gray-400">
+                                    {t('dialog.paymentSection.paymentOption.loading')}
+                                </p>
                             ) : paymentOptions.length === 0 ? (
                                 <p className="text-sm text-amber-700">
-                                    No payment options found. Please create one in Payment Settings
-                                    first.
+                                    {t('dialog.paymentSection.paymentOption.empty')}
                                 </p>
                             ) : (
                                 <Select
@@ -513,7 +519,11 @@ function AddStageDialog({
                                     onValueChange={(v) => update('payment_option_id', v)}
                                 >
                                     <SelectTrigger id="payment_option">
-                                        <SelectValue placeholder="Select payment option" />
+                                        <SelectValue
+                                            placeholder={t(
+                                                'dialog.paymentSection.paymentOption.placeholder'
+                                            )}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {paymentOptions.map((opt) => (
@@ -528,11 +538,13 @@ function AddStageDialog({
 
                         {/* Display Text */}
                         <div className="space-y-1.5">
-                            <Label htmlFor="display_text">Display Text</Label>
+                            <Label htmlFor="display_text">
+                                {t('dialog.paymentSection.displayText.label')}
+                            </Label>
                             <Textarea
                                 id="display_text"
                                 rows={2}
-                                placeholder="Message shown to applicants before payment"
+                                placeholder={t('dialog.paymentSection.displayText.placeholder')}
                                 value={form.display_text}
                                 onChange={(e) => update('display_text', e.target.value)}
                             />
@@ -540,7 +552,7 @@ function AddStageDialog({
 
                         {/* QR Code Upload */}
                         <div className="space-y-1.5">
-                            <Label>Payment QR Code</Label>
+                            <Label>{t('dialog.paymentSection.qrCode.label')}</Label>
                             <input
                                 ref={qrInputRef}
                                 type="file"
@@ -555,7 +567,7 @@ function AddStageDialog({
                                 <div className="relative inline-block">
                                     <img
                                         src={qrPreviewUrl}
-                                        alt="QR Preview"
+                                        alt={t('dialog.paymentSection.qrCode.previewAlt')}
                                         className="h-32 w-32 rounded-lg border border-amber-200 bg-white object-contain p-1"
                                     />
                                     {isUploadingQr && (
@@ -584,18 +596,21 @@ function AddStageDialog({
                                     onClick={() => qrInputRef.current?.click()}
                                     className="flex w-full flex-col items-center gap-1.5 rounded-lg border-2 border-dashed border-amber-300 bg-white py-5 text-amber-600 transition hover:bg-amber-50"
                                 >
-                                    <UploadCloud className="size-6" />
+                                    <UploadSimple className="size-6" />
                                     <span className="text-xs font-medium">
-                                        Click to upload QR code
+                                        {t('dialog.paymentSection.qrCode.uploadCta')}
                                     </span>
-                                    <span className="text-[10px] text-amber-400">
-                                        PNG, JPG, SVG — max 5 MB
+                                    <span className="text-2xs text-amber-400">
+                                        {t('dialog.paymentSection.qrCode.uploadHint')}
                                     </span>
                                 </button>
                             )}
                             {form.payment_qr_code_file_id && (
-                                <p className="font-mono text-[10px] text-green-600">
-                                    ✓ File ID: {form.payment_qr_code_file_id}
+                                <p className="font-mono text-2xs text-green-600">
+                                    ✓{' '}
+                                    {t('dialog.paymentSection.qrCode.fileId', {
+                                        fileId: form.payment_qr_code_file_id,
+                                    })}
                                 </p>
                             )}
                         </div>
@@ -603,19 +618,23 @@ function AddStageDialog({
                         {/* UPI Details */}
                         <div className="space-y-3 rounded-lg border border-amber-200 bg-white p-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="upi_vpa">UPI ID (VPA)</Label>
+                                <Label htmlFor="upi_vpa">
+                                    {t('dialog.paymentSection.upi.vpaLabel')}
+                                </Label>
                                 <Input
                                     id="upi_vpa"
-                                    placeholder="e.g. school@oksbi"
+                                    placeholder={t('dialog.paymentSection.upi.vpaPlaceholder')}
                                     value={form.upi_vpa}
                                     onChange={(e) => update('upi_vpa', e.target.value)}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor="upi_payee_name">Payee Name</Label>
+                                <Label htmlFor="upi_payee_name">
+                                    {t('dialog.paymentSection.upi.payeeLabel')}
+                                </Label>
                                 <Input
                                     id="upi_payee_name"
-                                    placeholder="e.g. Vacademy School"
+                                    placeholder={t('dialog.paymentSection.upi.payeePlaceholder')}
                                     value={form.upi_payee_name}
                                     onChange={(e) => update('upi_payee_name', e.target.value)}
                                 />
@@ -631,6 +650,7 @@ function AddStageDialog({
 // ─── Main Export ─────────────────────────────────────────────────────────────
 
 export default function ApplicationStageSettings() {
+    const { t } = useTranslation('settingsApplicationStage');
     const instituteId = getCurrentInstituteId() ?? '';
     const fallbackInstituteId = getInstituteId() ?? instituteId;
     const effectiveInstituteId = fallbackInstituteId || instituteId;
@@ -677,11 +697,10 @@ export default function ApplicationStageSettings() {
                         <div>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <GraduationCap className="size-5 text-primary-500" />
-                                Application Settings
+                                {t('main.title')}
                             </CardTitle>
                             <CardDescription className="mt-1">
-                                Configure the stages applicants go through during the admissions
-                                process
+                                {t('main.description')}
                             </CardDescription>
                         </div>
                         <MyButton
@@ -691,7 +710,7 @@ export default function ApplicationStageSettings() {
                             disabled={isLoadingStages}
                         >
                             <Plus className="mr-1 size-3.5" />
-                            Add Stage
+                            {t('main.addStage')}
                         </MyButton>
                     </div>
                 </CardHeader>

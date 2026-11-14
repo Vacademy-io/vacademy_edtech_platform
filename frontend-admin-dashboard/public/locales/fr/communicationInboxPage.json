@@ -1,0 +1,12 @@
+{
+    "title": "Boîte de réception WhatsApp",
+    "subtitle": "Consultez et répondez aux conversations WhatsApp",
+    "refresh": "Actualiser",
+    "waitingCount_one": "{{count}} transmise par le bot",
+    "waitingCount_many": "{{count}} transmises par le bot",
+    "waitingCount_other": "{{count}} transmises par le bot",
+    "errors": {
+        "conversationsFallback": "Impossible de charger les conversations",
+        "messagesFallback": "Impossible de charger cette conversation"
+    }
+}

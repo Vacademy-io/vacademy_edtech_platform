@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
 import { truncateString } from '@/lib/reusable/truncateString';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
@@ -8,6 +10,7 @@ import {
     PlayCircle,
     ClipboardText,
     ListChecks,
+    ChatsCircle,
 } from '@phosphor-icons/react';
 import { Video, Sparkle } from '@phosphor-icons/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -42,11 +45,11 @@ interface FormValues {
 }
 
 // Function to get the display text for slide type
-const getSlideTypeDisplay = (slide: Slide): string => {
+const getSlideTypeDisplay = (slide: Slide, t: TFunction): string => {
     const sourceType = slide.source_type ?? '';
     // For HTML_VIDEO slides (AI Video, AI Slides, AI Storybook), show "AI Content"
     if (sourceType === 'HTML_VIDEO') {
-        return 'AI Content';
+        return t('slideType.aiContent');
     }
 
     // For DOCUMENT slides with specific sub-types, show just the sub-type.
@@ -69,11 +72,11 @@ const getSlideTypeDisplay = (slide: Slide): string => {
 
     // For SCORM slides
     if (sourceType === 'SCORM') {
-        return 'SCORM';
+        return t('slideType.scorm');
     }
 
     // For all other cases, show the main source_type
-    return sourceType ? sourceType.toLowerCase().replace('_', ' ') : 'Slide';
+    return sourceType ? sourceType.toLowerCase().replace('_', ' ') : t('slideType.slide');
 };
 
 export const getIcon = (
@@ -139,6 +142,8 @@ export const getIcon = (
             return <GameController className={`${iconClass} text-yellow-500`} />;
         case 'CODE':
             return <Code className={`${iconClass} text-green-500`} />;
+        case 'DISCUSSION':
+            return <ChatsCircle className={`${iconClass} text-primary-500`} />;
         case 'PRESENTATION':
             return <FileDoc className={`${iconClass} text-orange-500`} />;
         case 'AUDIO':
@@ -179,12 +184,18 @@ const SlideItem = ({
      */
     showNumbering?: boolean;
 }) => {
+    const { t } = useTranslation('studyLibrarySlidesSidebarSlides');
     const getSlideTitle = () => {
         // ASSESSMENT slides without a title fall back to "Assessment N" so
         // pre-existing rows that were saved before titles were enforced still
         // get a sensible label.
         if (slide.source_type === 'ASSESSMENT') {
-            return slide?.title || `Assessment ${assessmentOrdinal ?? ''}`.trim();
+            return (
+                slide?.title ||
+                t('slideTitle.assessmentFallback', {
+                    replace: { ordinal: assessmentOrdinal ?? '' },
+                }).trim()
+            );
         }
         return (
             (slide.source_type === 'DOCUMENT' && slide.document_slide?.title) ||
@@ -196,7 +207,7 @@ const SlideItem = ({
             (slide.source_type === 'QUIZ' && slide.title) || // Always use slide.title for QUIZ
             (slide.source_type === 'AUDIO' && slide?.title) ||
             (slide.source_type === 'SCORM' && slide?.title) ||
-            'Untitled'
+            t('slideTitle.untitled')
         );
     };
 
@@ -205,7 +216,7 @@ const SlideItem = ({
         if (status === 'DRAFT') {
             return (
                 <div className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-1 py-0.5 text-xs font-medium text-yellow-600">
-                    D
+                    {t('statusBadge.draft')}
                 </div>
             );
         }
@@ -221,14 +232,14 @@ const SlideItem = ({
         if (status === 'UNSYNC') {
             return (
                 <div className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-1 py-0.5 text-xs font-medium text-orange-600">
-                    U
+                    {t('statusBadge.unsync')}
                 </div>
             );
         }
         if (status === 'DELETED') {
             return (
                 <div className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-1 py-0.5 text-xs font-medium text-red-600">
-                    DEL
+                    {t('statusBadge.deleted')}
                 </div>
             );
         }
@@ -237,10 +248,11 @@ const SlideItem = ({
 
     return (
         <SortableItem value={slide.id} asChild className="group cursor-pointer">
+            {/* No hover scale here: a transform widens the row's scrollable
+                overflow inside the sidebar and blurs the text mid-transition.
+                The border/shadow change below carries the hover state. */}
             <div
-                className={`w-full transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-left-2 ${
-                    slide.status !== 'DELETED' ? 'hover:scale-[1.01]' : ''
-                }`}
+                className="w-full transition-all duration-300 ease-in-out animate-in fade-in ltr:slide-in-from-left-2 rtl:slide-in-from-right-2"
                 onClick={slide.status === 'DELETED' ? undefined : onClick}
             >
                 <div
@@ -306,7 +318,7 @@ const SlideItem = ({
                                             {truncateString(getSlideTitle(), 25)}
                                         </p>
                                         <p className="mt-0.5 text-xs capitalize leading-tight text-neutral-400">
-                                            {getSlideTypeDisplay(slide)}
+                                            {getSlideTypeDisplay(slide, t)}
                                         </p>
                                     </div>
 
@@ -317,7 +329,7 @@ const SlideItem = ({
                                     <div className="flex shrink-0 items-center gap-1.5">
                                         {isDirty && (
                                             <span
-                                                title="Unsaved changes"
+                                                title={t('unsavedChangesTitle')}
                                                 className="size-2 rounded-full bg-warning-500 ring-2 ring-warning-100"
                                             />
                                         )}
@@ -332,8 +344,8 @@ const SlideItem = ({
                                 <div className="space-y-1">
                                     <p className="font-medium">{getSlideTitle()}</p>
                                     <p className="text-xs capitalize text-neutral-500">
-                                        {(slide.source_type ?? '').toLowerCase().replace('_', ' ')} •{' '}
-                                        {(slide.status ?? '').toLowerCase()}
+                                        {(slide.source_type ?? '').toLowerCase().replace('_', ' ')}{' '}
+                                        • {(slide.status ?? '').toLowerCase()}
                                     </p>
                                 </div>
                             </TooltipContent>
@@ -365,6 +377,7 @@ export const ChapterSidebarSlides = ({
 }: {
     handleSlideOrderChange: (slideOrderPayloadType: slideOrderPayloadType) => void;
 }) => {
+    const { t } = useTranslation('studyLibrarySlidesSidebarSlides');
     const { setItems, activeItem, setActiveItem, items } = useContentStore();
     const { isLearnerView } = useLearnerViewStore();
 
@@ -525,9 +538,15 @@ export const ChapterSidebarSlides = ({
                 <div className="mb-3 flex size-12 animate-pulse items-center justify-center rounded-full bg-neutral-100">
                     <File className="size-6 text-neutral-400" />
                 </div>
-                <h3 className="mb-1 text-base font-medium text-neutral-600">{`No ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()} yet`}</h3>
+                <h3 className="mb-1 text-base font-medium text-neutral-600">
+                    {t('empty.heading', {
+                        term: getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase(),
+                    })}
+                </h3>
                 <p className="max-w-xs text-xs leading-relaxed text-neutral-400">
-                    {`Add your first ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()} to get started`}
+                    {t('empty.description', {
+                        term: getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase(),
+                    })}
                 </p>
             </div>
         );

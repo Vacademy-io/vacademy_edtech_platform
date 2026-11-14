@@ -1,0 +1,108 @@
+{
+    "history": {
+        "empty": "لا يوجد استخدام للذكاء الاصطناعي بعد",
+        "emptyFiltered": "لا يوجد استخدام يطابق عوامل التصفية هذه",
+        "error": "تعذّر تحميل سجل الاستخدام. يُرجى المحاولة لاحقًا.",
+        "prev": "السابق",
+        "next": "التالي",
+        "pageOf": "{{page}} / {{pages}}",
+        "balanceAfter": "الرصيد: {{balance}}",
+        "otherUsage": "استخدام الذكاء الاصطناعي",
+        "showDetails": "عرض التفاصيل",
+        "hideDetails": "إخفاء التفاصيل"
+    },
+    "filters": {
+        "allUsers": "كل المستخدمين",
+        "allRoles": "كل الأدوار",
+        "allFeatures": "كل الميزات",
+        "user": "المستخدم",
+        "role": "الدور",
+        "feature": "الميزة",
+        "clear": "مسح",
+        "export": "تصدير CSV",
+        "exporting": "جارٍ التصدير…",
+        "exportFailed": "تعذّر تصدير الاستخدام",
+        "exportFailedHint": "يُرجى المحاولة بعد قليل."
+    },
+    "amount": {
+        "included": "مُضمَّن",
+        "free": "مجاني",
+        "ownKey": "مفتاحك الخاص",
+        "notCharged": "لم يُحتسب (رصيد منخفض)",
+        "refunded": "تم استرداد {{credits}}",
+        "includedInPlan": "مُضمَّن في الخطة",
+        "fromAllowance": "من رصيد الخطة",
+        "splitAllowance": "{{credits}} من رصيد الخطة"
+    },
+    "details": {
+        "promptTokens": "رموز الإدخال",
+        "completionTokens": "رموز الإخراج",
+        "cachedTokens": "رموز مخزنة مؤقتًا",
+        "images": "الصور",
+        "seconds": "الثواني",
+        "minutes": "الدقائق",
+        "characters": "الأحرف",
+        "listCredits": "سعر القائمة",
+        "charged": "المحتسب",
+        "refundedCredits": "المسترد",
+        "batch": "الدفعة",
+        "model": "النموذج",
+        "onBehalfOf": "لصالح",
+        "byUser": "بواسطة",
+        "realCost": "تكلفة المزوّد (للفريق فقط)",
+        "status": "الحالة",
+        "fromAllowance": "من رصيد الخطة"
+    },
+    "ledger": {
+        "usage": "استخدام",
+        "grant": "منحة",
+        "adminGrant": "منحة المشرف",
+        "adminDeduction": "تعديل المشرف",
+        "refund": "استرداد",
+        "purchase": "شراء",
+        "transaction": "معاملة"
+    },
+    "roleClass": {
+        "ADMIN": "مشرف",
+        "TEACHER": "معلّم",
+        "STAFF": "موظف",
+        "PARENT": "وليّ أمر",
+        "LEARNER": "متعلّم",
+        "SYSTEM": "النظام",
+        "API_KEY": "مفتاح API",
+        "PUBLIC": "عام",
+        "UNKNOWN": "غير معروف"
+    },
+    "surface": {
+        "ADMIN_APP": "تطبيق المشرف",
+        "LEARNER_APP": "تطبيق المتعلّم",
+        "PUBLIC": "صفحة عامة",
+        "PARTNER_API": "واجهة API للشركاء",
+        "WHATSAPP": "WhatsApp",
+        "PHONE": "الهاتف",
+        "SCHEDULED": "مجدول",
+        "INTERNAL": "داخلي",
+        "UNKNOWN": "غير معروف"
+    },
+    "analytics": {
+        "byFeature": "حسب الميزة",
+        "byRole": "حسب الدور",
+        "topUsers": "أكثر المستخدمين",
+        "dailyTrend": "الاتجاه اليومي",
+        "charged": "المحتسب",
+        "list": "سعر القائمة",
+        "credits": "{{credits}} رصيد",
+        "events": "الاستخدامات: {{count}}",
+        "total": "{{credits}} رصيد · الاستخدامات: {{events}}",
+        "empty": "لا يوجد استخدام للذكاء الاصطناعي في هذه الفترة",
+        "error": "تعذّر تحميل التحليلات. يُرجى المحاولة لاحقًا.",
+        "dayTooltip": "{{date}}: {{credits}}"
+    },
+    "plan": {
+        "grace": "فترة السماح",
+        "periodEnds": "تنتهي الفترة في {{date}}",
+        "allowance": "رصيد الخطة",
+        "allowanceLeft": "متبقٍ {{remaining}} من {{total}}",
+        "includedCount": "الميزات المُضمَّنة: {{count}}"
+    }
+}

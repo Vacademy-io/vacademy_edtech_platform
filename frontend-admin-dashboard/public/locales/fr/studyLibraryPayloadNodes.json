@@ -1,0 +1,13 @@
+{
+    "flashcard": {
+        "front": "RECTO",
+        "back": "VERSO"
+    },
+    "quiz": {
+        "label": "QUIZ"
+    },
+    "multiLangCode": {
+        "editorHeading": "Éditeur de code {{language}}",
+        "outputLabel": "Résultat :"
+    }
+}

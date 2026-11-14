@@ -4,6 +4,7 @@ import PlayWithPDF from './-components/PlayWithPDF';
 import { CaretLeft } from '@phosphor-icons/react';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 
 export const Route = createLazyFileRoute('/ai-center/ai-tools/vsmart-chat/')({
@@ -11,18 +12,19 @@ export const Route = createLazyFileRoute('/ai-center/ai-tools/vsmart-chat/')({
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('aiCenterVsmartChatIndex');
     const { setNavHeading } = useNavHeadingStore();
 
     useEffect(() => {
         const heading = (
             <div className="flex items-center gap-4">
                 <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-                <div>Chat with a Document</div>
+                <div>{t('navHeading')}</div>
             </div>
         );
 
         setNavHeading(heading);
-    }, []);
+    }, [t]);
 
     return (
         <LayoutContainer>

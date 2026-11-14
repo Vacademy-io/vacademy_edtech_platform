@@ -1,0 +1,18 @@
+{
+    "title": "تكامل Google Meet",
+    "description": "قم بربط حساب Google Workspace حتى يتمكن المسؤولون من إنشاء جلسات Google Meet مباشرة من معالج الحصة المباشرة. ينضم المتعلمون بفتح رابط Meet (لا يوجد لدى Google Meet تضمين داخل التطبيق).",
+    "connectButton": "ربط Google Workspace",
+    "retry": "إعادة المحاولة",
+    "errors": {
+        "loadAccounts": "فشل تحميل حسابات Google.",
+        "connectionFailed": "فشل الاتصال بـ Google ({{errorCode}}).",
+        "connectionFailedWithReason": "فشل الاتصال بـ Google ({{errorCode}}): {{reason}}.",
+        "connectionStartFailed": "تعذر بدء الاتصال بـ Google. يرجى المحاولة مرة أخرى."
+    },
+    "toasts": {
+        "connected": "تم ربط Google Workspace بنجاح."
+    },
+    "recordingNotice": {
+        "text": "يتطلب هذا حساب <strong>Google Workspace</strong> — الربط وإنشاء الاجتماعات وانضمام المتعلمين/المضيف تعمل جميعها على <strong>أي خطة Workspace</strong> (لا يمكن لحساب @gmail.com الشخصي المجاني استخدام واجهة برمجة تطبيقات Meet). <strong>التسجيل التلقائي</strong> هو الميزة المدفوعة الوحيدة: يتطلب خطة Business Standard+ أو Enterprise أو Education Plus، بالإضافة إلى معلم مسجّل الدخول في Workspace. إذا قمت بتفعيله على خطة لا يمكنها التسجيل، فإننا ننشئ الاجتماع رغم ذلك (بدون تسجيل) ونعيد تعطيل المفتاح. تُحفظ التسجيلات في Google Drive الخاص بالحساب المرتبط (يظهر للمسؤولين)."
+    }
+}

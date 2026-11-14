@@ -1,37 +1,39 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useEffectiveCreditRatio } from '@/services/ai-credits/use-credit-rate';
 import { formatCredits, usdToCredits } from '../../-utils/credits';
 import {
-    AlignLeft,
+    TextAlignLeft,
     Camera,
     Check,
-    CheckCircle2,
-    Clapperboard,
+    CheckCircle,
+    FilmSlate,
     Clock,
     Copy,
-    ExternalLink,
-    Film,
+    ArrowSquareOut,
+    FilmStrip,
     FileText,
-    Layers,
-    ListOrdered,
-    Loader2,
-    Mic,
-    Music,
+    Stack,
+    ListNumbers,
+    CircleNotch,
+    Microphone,
+    MusicNote,
     Pause,
-    PenLine,
+    PencilLine,
     Play,
-    Sparkles,
-    UserSquare2,
-    Volume2,
-    VolumeX,
-    Wand2,
+    Sparkle,
+    UserSquare,
+    SpeakerHigh,
+    SpeakerX,
+    MagicWand,
     X,
     XCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import {
     fetchScriptText,
@@ -41,7 +43,7 @@ import {
 } from '../../-services/video-generation';
 import { LatexRenderer } from '../LatexRenderer';
 import { useSceneHtml } from './-utils/scenes-html-context';
-import { NODE_LABELS, type PipelineNodeId } from './-utils/stage-vocab';
+import { buildNodeLabels, type PipelineNodeId } from './-utils/stage-vocab';
 import type {
     NodeSlot,
     NodeState,
@@ -72,18 +74,18 @@ interface NodeDetailSheetProps {
 }
 
 const NODE_ICON: Record<PipelineNodeId, React.ReactNode> = {
-    pitch: <Sparkles className="size-4" />,
-    research: <ExternalLink className="size-4" />,
-    beats: <ListOrdered className="size-4" />,
+    pitch: <Sparkle className="size-4" />,
+    research: <ArrowSquareOut className="size-4" />,
+    beats: <ListNumbers className="size-4" />,
     screenplay: <FileText className="size-4" />,
-    narration: <Mic className="size-4" />,
-    storyboard: <Layers className="size-4" />,
-    shotPlanner: <Clapperboard className="size-4" />,
-    narrationWriter: <PenLine className="size-4" />,
+    narration: <Microphone className="size-4" />,
+    storyboard: <Stack className="size-4" />,
+    shotPlanner: <FilmSlate className="size-4" />,
+    narrationWriter: <PencilLine className="size-4" />,
     filming: <Camera className="size-4" />,
-    talent: <UserSquare2 className="size-4" />,
-    score: <Music className="size-4" />,
-    finalCut: <Film className="size-4" />,
+    talent: <UserSquare className="size-4" />,
+    score: <MusicNote className="size-4" />,
+    finalCut: <FilmStrip className="size-4" />,
 };
 
 export function NodeDetailSheet({ target, state, onOpenChange, apiKey }: NodeDetailSheetProps) {
@@ -106,9 +108,12 @@ function DetailSheetContents({
     state: PipelineState;
     apiKey?: string;
 }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     if (target.kind === 'scene') {
         const scene = state.scenes[target.sceneIndex];
-        const sceneLabel = `Scene ${String(target.sceneIndex + 1).padStart(2, '0')}`;
+        const sceneLabel = t('scene.label', {
+            index: String(target.sceneIndex + 1).padStart(2, '0'),
+        });
         return (
             <>
                 <SheetHeader className="space-y-1.5 border-b pb-3">
@@ -124,7 +129,9 @@ function DetailSheetContents({
                     {scene ? (
                         <SceneDetail scene={scene} state={state} apiKey={apiKey} />
                     ) : (
-                        <p className="text-sm text-muted-foreground">Scene data not available.</p>
+                        <p className="text-sm text-muted-foreground">
+                            {t('scene.dataNotAvailable')}
+                        </p>
                     )}
                 </div>
                 <RunSummaryFooter state={state} />
@@ -136,7 +143,7 @@ function DetailSheetContents({
             <SheetHeader className="space-y-1.5 border-b pb-3">
                 <SheetTitle className="flex items-center gap-2 text-base">
                     <span className="text-muted-foreground">{NODE_ICON[target.kind]}</span>
-                    {NODE_LABELS[target.kind]}
+                    {buildNodeLabels(t)[target.kind]}
                 </SheetTitle>
                 <NodeStateBadge kind={target.kind} state={state} />
             </SheetHeader>
@@ -162,6 +169,7 @@ function DetailSheetContents({
  *   - Artifact URLs (script / audio / words / timeline / mp4 / videoId)
  */
 function RunSummaryFooter({ state }: { state: PipelineState }) {
+    const { t } = useTranslation(['videoApiStudioNodeDetailSheet', 'videoApiStudioCredits']);
     // Backend reports cumulative cost in USD; convert to credits via the
     // live rate so all surfaces consistently use the credit denomination.
     const ratio = useEffectiveCreditRatio();
@@ -196,14 +204,16 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
     return (
         <div className="mt-6 space-y-4 border-t pt-3">
             <section>
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Production budget
+                <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('runSummary.productionBudget')}
                 </div>
                 {hasAnyTokenData ? (
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                         {totalTokens != null && (
                             <>
-                                <span className="text-muted-foreground">Total tokens</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.totalTokens')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-foreground">
                                     {totalTokens.toLocaleString()}
                                 </span>
@@ -211,7 +221,9 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                         {promptTokens != null && (
                             <>
-                                <span className="text-muted-foreground">· Prompt</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.promptTokens')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-muted-foreground">
                                     {promptTokens.toLocaleString()}
                                 </span>
@@ -219,7 +231,9 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                         {completionTokens != null && (
                             <>
-                                <span className="text-muted-foreground">· Completion</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.completionTokens')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-muted-foreground">
                                     {completionTokens.toLocaleString()}
                                 </span>
@@ -227,7 +241,9 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                         {imageCount != null && imageCount > 0 && (
                             <>
-                                <span className="text-muted-foreground">Images generated</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.imagesGenerated')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-foreground">
                                     {imageCount.toLocaleString()}
                                 </span>
@@ -235,7 +251,9 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                         {ttsChars != null && ttsChars > 0 && (
                             <>
-                                <span className="text-muted-foreground">TTS characters</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.ttsCharacters')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-foreground">
                                     {ttsChars.toLocaleString()}
                                 </span>
@@ -243,15 +261,22 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                         {cost != null && (
                             <>
-                                <span className="text-muted-foreground">Estimated cost</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.estimatedCost')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-foreground">
-                                    {formatCredits(usdToCredits(cost, ratio), { precision: 2 })}
+                                    {formatCredits(usdToCredits(cost, ratio), {
+                                        precision: 2,
+                                        t,
+                                    })}
                                 </span>
                             </>
                         )}
                         {elapsedMs != null && elapsedMs > 0 && (
                             <>
-                                <span className="text-muted-foreground">Elapsed</span>
+                                <span className="text-muted-foreground">
+                                    {t('runSummary.elapsed')}
+                                </span>
                                 <span className="text-right font-mono tabular-nums text-foreground">
                                     {formatElapsed(elapsedMs)}
                                 </span>
@@ -259,42 +284,55 @@ function RunSummaryFooter({ state }: { state: PipelineState }) {
                         )}
                     </div>
                 ) : (
-                    <p className="text-xs text-muted-foreground">
-                        Token + cost telemetry wasn&apos;t persisted for this run. (Older videos
-                        from before token accounting was added.)
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('runSummary.noTokenData')}</p>
                 )}
-                <p className="mt-2 text-[10px] text-muted-foreground">
-                    Cumulative for the whole run. Per-stage breakdown isn&apos;t available yet.
+                <p className="mt-2 text-2xs text-muted-foreground">
+                    {t('runSummary.cumulativeNote')}
                 </p>
             </section>
 
             {hasArtifacts && (
                 <section>
-                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Artifacts
+                    <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('runSummary.artifacts')}
                     </div>
                     <div className="space-y-1 text-xs">
-                        {artifacts.script && <ArtifactRow label="Script" url={artifacts.script} />}
-                        {artifacts.audio && <ArtifactRow label="Narration" url={artifacts.audio} />}
+                        {artifacts.script && (
+                            <ArtifactRow label={t('artifactLabel.script')} url={artifacts.script} />
+                        )}
+                        {artifacts.audio && (
+                            <ArtifactRow
+                                label={t('artifactLabel.narration')}
+                                url={artifacts.audio}
+                            />
+                        )}
                         {artifacts.words && (
-                            <ArtifactRow label="Word timings" url={artifacts.words} />
+                            <ArtifactRow
+                                label={t('artifactLabel.wordTimings')}
+                                url={artifacts.words}
+                            />
                         )}
                         {artifacts.timeline && (
-                            <ArtifactRow label="Timeline" url={artifacts.timeline} />
+                            <ArtifactRow
+                                label={t('artifactLabel.timeline')}
+                                url={artifacts.timeline}
+                            />
                         )}
                         {artifacts.videoMp4 && (
-                            <ArtifactRow label="Rendered MP4" url={artifacts.videoMp4} />
+                            <ArtifactRow
+                                label={t('artifactLabel.renderedMp4')}
+                                url={artifacts.videoMp4}
+                            />
                         )}
                     </div>
                 </section>
             )}
 
             <section>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Run
+                <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('runSummary.run')}
                 </div>
-                <p className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                <p className="font-mono text-2xs tabular-nums text-muted-foreground">
                     {state.videoId}
                 </p>
             </section>
@@ -310,36 +348,41 @@ function formatElapsed(ms: number): string {
     return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
-const STATE_BADGE: Record<NodeState, { label: string; cls: string; icon: React.ReactNode }> = {
-    wrapped: {
-        label: 'Wrapped',
-        cls: 'border-green-200 bg-green-50 text-green-700',
-        icon: <CheckCircle2 className="size-3" />,
-    },
-    in_production: {
-        label: 'In production',
-        cls: 'border-blue-200 bg-blue-50 text-blue-700',
-        icon: <Loader2 className="size-3 animate-spin" />,
-    },
-    scheduled: {
-        label: 'Scheduled',
-        cls: 'border-gray-200 bg-gray-50 text-gray-700',
-        icon: <Clock className="size-3" />,
-    },
-    cut: {
-        label: 'Cut from production',
-        cls: 'border-red-200 bg-red-50 text-red-700',
-        icon: <XCircle className="size-3" />,
-    },
-    reshoot: {
-        label: 'Reshoot needed',
-        cls: 'border-amber-200 bg-amber-50 text-amber-700',
-        icon: <Clock className="size-3" />,
-    },
-};
+function buildStateBadge(
+    t: TFunction
+): Record<NodeState, { label: string; cls: string; icon: React.ReactNode }> {
+    return {
+        wrapped: {
+            label: t('stateBadge.wrapped'),
+            cls: 'border-green-200 bg-green-50 text-green-700',
+            icon: <CheckCircle className="size-3" />,
+        },
+        in_production: {
+            label: t('stateBadge.inProduction'),
+            cls: 'border-blue-200 bg-blue-50 text-blue-700',
+            icon: <CircleNotch className="size-3 animate-spin" />,
+        },
+        scheduled: {
+            label: t('stateBadge.scheduled'),
+            cls: 'border-gray-200 bg-gray-50 text-gray-700',
+            icon: <Clock className="size-3" />,
+        },
+        cut: {
+            label: t('stateBadge.cut'),
+            cls: 'border-red-200 bg-red-50 text-red-700',
+            icon: <XCircle className="size-3" />,
+        },
+        reshoot: {
+            label: t('stateBadge.reshoot'),
+            cls: 'border-amber-200 bg-amber-50 text-amber-700',
+            icon: <Clock className="size-3" />,
+        },
+    };
+}
 
 function SceneStateBadge({ sceneState }: { sceneState: NodeState }) {
-    const v = STATE_BADGE[sceneState];
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
+    const v = buildStateBadge(t)[sceneState];
     return (
         <Badge variant="outline" className={`h-5 gap-1 ${v.cls}`}>
             {v.icon} {v.label}
@@ -348,9 +391,10 @@ function SceneStateBadge({ sceneState }: { sceneState: NodeState }) {
 }
 
 function NodeStateBadge({ kind, state }: { kind: PipelineNodeId; state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = (state as unknown as Record<string, NodeSlot<unknown>>)[kind];
     if (!slot) return null;
-    const v = STATE_BADGE[slot.state];
+    const v = buildStateBadge(t)[slot.state];
     return (
         <Badge variant="outline" className={`h-5 gap-1 ${v.cls}`}>
             {v.icon} {v.label}
@@ -390,28 +434,21 @@ function NodeDetailBody({ kind, state }: { kind: PipelineNodeId; state: Pipeline
 // ── v3 detail bodies ─────────────────────────────────────────────────────
 
 function ShotPlannerDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.shotPlanner;
     if (!slot) {
         return (
-            <div className="text-sm text-muted-foreground">
-                ShotPlanner didn&apos;t run for this video — this is a v2 (legacy) pipeline run.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('shotPlanner.legacyRun')}</div>
         );
     }
     if (slot.state === 'scheduled') {
         return (
-            <div className="text-sm text-muted-foreground">
-                Awaiting brief lock-in before planning shots.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('shotPlanner.awaitingBrief')}</div>
         );
     }
     if (slot.state === 'in_production') {
         return (
-            <div className="text-sm text-muted-foreground">
-                ShotPlanner is calling the LLM — emits the full shot list with intent_role,
-                audio_policy, background_treatment, transition_in, and any plan-level
-                recurring_motifs in a single hop.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('shotPlanner.inProduction')}</div>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -430,51 +467,55 @@ function ShotPlannerDetail({ state }: { state: PipelineState }) {
         <div className="space-y-4">
             {/* Summary */}
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Plan summary
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('shotPlanner.planSummary')}
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-foreground">
                             {shotCount}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">shots</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('shotPlanner.shots')}
+                        </div>
                     </div>
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-green-700">
                             {narratedCount}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">narrated</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('shotPlanner.narrated')}
+                        </div>
                     </div>
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-amber-700">
                             {intrinsicCount}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">intrinsic</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('shotPlanner.intrinsic')}
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Recurring motifs */}
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Recurring motifs
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('shotPlanner.recurringMotifs')}
                 </div>
                 {recurringMotifs.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                        Planner didn&apos;t register any cross-shot motifs for this video.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('shotPlanner.noMotifs')}</p>
                 ) : (
                     <ul className="space-y-1.5">
                         {recurringMotifs.map((m, i) => (
                             <li key={i} className="rounded-md border bg-card p-2 text-xs">
                                 <div className="font-medium text-foreground">{m.description}</div>
                                 {(m.screenPosition || m.whenVisible) && (
-                                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-muted-foreground">
                                         {m.screenPosition && (
                                             <span>
                                                 <span className="uppercase tracking-wider">
-                                                    Where:
+                                                    {t('shotPlanner.where')}
                                                 </span>{' '}
                                                 {m.screenPosition}
                                             </span>
@@ -482,7 +523,7 @@ function ShotPlannerDetail({ state }: { state: PipelineState }) {
                                         {m.whenVisible && (
                                             <span>
                                                 <span className="uppercase tracking-wider">
-                                                    When:
+                                                    {t('shotPlanner.when')}
                                                 </span>{' '}
                                                 {m.whenVisible}
                                             </span>
@@ -498,14 +539,14 @@ function ShotPlannerDetail({ state }: { state: PipelineState }) {
             {/* Intent role / background breakdown */}
             {(intentRoleBreakdown || backgroundBreakdown) && (
                 <section className="space-y-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Distribution
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('shotPlanner.distribution')}
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                         {intentRoleBreakdown && (
                             <div>
-                                <div className="mb-1 text-[10px] text-muted-foreground">
-                                    Intent roles
+                                <div className="mb-1 text-2xs text-muted-foreground">
+                                    {t('shotPlanner.intentRoles')}
                                 </div>
                                 <ul className="space-y-0.5">
                                     {Object.entries(intentRoleBreakdown).map(([role, n]) => (
@@ -524,8 +565,8 @@ function ShotPlannerDetail({ state }: { state: PipelineState }) {
                         )}
                         {backgroundBreakdown && (
                             <div>
-                                <div className="mb-1 text-[10px] text-muted-foreground">
-                                    Backgrounds (≤2 contract)
+                                <div className="mb-1 text-2xs text-muted-foreground">
+                                    {t('shotPlanner.backgrounds')}
                                 </div>
                                 <ul className="space-y-0.5">
                                     {Object.entries(backgroundBreakdown).map(([bg, n]) => (
@@ -555,47 +596,48 @@ function ShotPlannerDetail({ state }: { state: PipelineState }) {
 }
 
 function ShotPlannerShotList({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     if (state.scenes.length === 0) return null;
     return (
         <section className="space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Shot grid ({state.scenes.length})
+            <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('shotPlanner.shotGrid', { count: state.scenes.length })}
             </div>
             <ol className="space-y-1">
                 {state.scenes.map((s) => (
                     <li
                         key={s.index}
-                        className="flex items-start gap-1.5 rounded-md border bg-card p-2 text-[11px]"
+                        className="flex items-start gap-1.5 rounded-md border bg-card p-2 text-2xs"
                     >
                         <span className="font-mono tabular-nums text-muted-foreground">
                             {String(s.index + 1).padStart(2, '0')}
                         </span>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-                            <span className="rounded bg-muted px-1 text-[9px] font-medium uppercase tracking-wider text-foreground">
+                            <span className="rounded bg-muted px-1 text-2xs font-medium uppercase tracking-wider text-foreground">
                                 {s.shotType.replace(/_/g, ' ')}
                             </span>
                             {s.intentRole && (
-                                <span className="rounded bg-sky-50 px-1 text-[9px] font-medium uppercase tracking-wider text-sky-700">
+                                <span className="rounded bg-sky-50 px-1 text-2xs font-medium uppercase tracking-wider text-sky-700">
                                     {s.intentRole}
                                 </span>
                             )}
                             {s.backgroundTreatment && (
-                                <span className="rounded bg-slate-100 px-1 text-[9px] font-medium uppercase tracking-wider text-slate-700">
+                                <span className="rounded bg-slate-100 px-1 text-2xs font-medium uppercase tracking-wider text-slate-700">
                                     {s.backgroundTreatment.replace(/_/g, ' ')}
                                 </span>
                             )}
                             {s.transitionIn && (
-                                <span className="rounded bg-violet-50 px-1 text-[9px] font-medium uppercase tracking-wider text-violet-700">
+                                <span className="rounded bg-violet-50 px-1 text-2xs font-medium uppercase tracking-wider text-violet-700">
                                     ↗ {s.transitionIn.replace(/_/g, ' ')}
                                 </span>
                             )}
                             {s.audioPolicy === 'intrinsic_only' && (
-                                <span className="rounded bg-amber-100 px-1 text-[9px] font-semibold uppercase tracking-wider text-amber-700">
+                                <span className="rounded bg-amber-100 px-1 text-2xs font-semibold uppercase tracking-wider text-amber-700">
                                     🔇 INTR
                                 </span>
                             )}
                         </div>
-                        <span className="ml-auto shrink-0 font-mono text-[9px] tabular-nums text-muted-foreground">
+                        <span className="ml-auto shrink-0 font-mono text-2xs tabular-nums text-muted-foreground">
                             {s.durationS.toFixed(1)}s
                         </span>
                     </li>
@@ -606,29 +648,25 @@ function ShotPlannerShotList({ state }: { state: PipelineState }) {
 }
 
 function NarrationWriterDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.narrationWriter;
     if (!slot) {
         return (
             <div className="text-sm text-muted-foreground">
-                NarrationWriter didn&apos;t run — this is a v2 pipeline run (the monolithic
-                Narration node covers the same surface).
+                {t('narrationWriter.legacyRun')}
             </div>
         );
     }
     if (slot.state === 'scheduled') {
         return (
             <p className="text-sm text-muted-foreground">
-                Writers&apos; room is waiting for the shot plan.
+                {t('narrationWriter.waitingForShotPlan')}
             </p>
         );
     }
     if (slot.state === 'in_production') {
         return (
-            <p className="text-sm text-muted-foreground">
-                NarrationWriter is authoring per-shot narration in one LLM call. Each shot gets a
-                line budgeted at ~150 wpm × duration; intrinsic_only shots get an empty string and
-                skip per-shot TTS.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('narrationWriter.inProduction')}</p>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -649,46 +687,53 @@ function NarrationWriterDetail({ state }: { state: PipelineState }) {
     return (
         <div className="space-y-4">
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Authored copy
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('narrationWriter.authoredCopy')}
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-foreground">
                             {totalWords}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">total words</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('narrationWriter.totalWords')}
+                        </div>
                     </div>
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-foreground">
                             {writtenShots}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">shots voiced</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('narrationWriter.shotsVoiced')}
+                        </div>
                     </div>
                     <div className="rounded-md border bg-card p-2 text-center">
                         <div className="text-lg font-semibold tabular-nums text-foreground">
                             {avgWords}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">avg w/shot</div>
+                        <div className="text-2xs text-muted-foreground">
+                            {t('narrationWriter.avgWordsPerShot')}
+                        </div>
                     </div>
                 </div>
                 {skippedIntrinsicCount > 0 && (
-                    <p className="flex items-center gap-1.5 text-[11px] text-amber-700">
-                        <VolumeX className="size-3" />
-                        {skippedIntrinsicCount} shot{skippedIntrinsicCount === 1 ? '' : 's'} left
-                        silent (intrinsic_only — Veo audio / source clip plays alone).
+                    <p className="flex items-center gap-1.5 text-2xs text-amber-700">
+                        <SpeakerX className="size-3" />
+                        {t('narrationWriter.silentShots', { count: skippedIntrinsicCount })}
                     </p>
                 )}
             </section>
 
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Per-shot word count
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('narrationWriter.perShotWordCount')}
                 </div>
                 {perShotWordCounts.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No shots authored yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                        {t('narrationWriter.noShotsAuthored')}
+                    </p>
                 ) : (
-                    <ul className="space-y-0.5 text-[10px]">
+                    <ul className="space-y-0.5 text-2xs">
                         {perShotWordCounts.map((n, i) => (
                             <li key={i} className="flex items-center gap-1.5">
                                 <span className="w-5 shrink-0 font-mono tabular-nums text-muted-foreground">
@@ -718,8 +763,8 @@ function NarrationWriterDetail({ state }: { state: PipelineState }) {
 
             {(narrationMp3Url || narrationWordsUrl) && (
                 <section className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Master concat
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('narrationWriter.masterConcat')}
                     </div>
                     {narrationMp3Url && <ArtifactRow label="narration.mp3" url={narrationMp3Url} />}
                     {narrationWordsUrl && (
@@ -732,28 +777,21 @@ function NarrationWriterDetail({ state }: { state: PipelineState }) {
 }
 
 function BeatsDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.beats;
     if (!slot) {
         return (
-            <div className="text-sm text-muted-foreground">
-                BeatPlanner didn&apos;t run for this video.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('beats.noRun')}</div>
         );
     }
     if (slot.state === 'scheduled') {
         return (
-            <div className="text-sm text-muted-foreground">
-                The beat plan hasn&apos;t started yet.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('beats.notStarted')}</div>
         );
     }
     if (slot.state === 'in_production') {
         return (
-            <div className="text-sm text-muted-foreground">
-                BeatPlanner is outlining the story beats. The Director will use these as the
-                planning frame for shot boundaries — duration estimates are calibrated at
-                ~150&nbsp;words/minute.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('beats.inProduction')}</div>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -764,29 +802,31 @@ function BeatsDetail({ state }: { state: PipelineState }) {
     const count = slot.data.count ?? beats.length;
     return (
         <div className="space-y-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Beat plan
+            <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('beats.planHeading')}
             </div>
             <p className="text-xs text-muted-foreground">
-                {count > 0
-                    ? `${count} beat${count === 1 ? '' : 's'} feeding the Director's shot plan.`
-                    : 'Beat plan locked. The Director used these beats to scope shots before TTS.'}
-                {slot.data.wpm ? ` Duration estimates at ${slot.data.wpm.toFixed(0)} wpm.` : ''}
+                {count > 0 ? t('beats.summary', { count }) : t('beats.planLocked')}
+                {slot.data.wpm
+                    ? t('beats.wpmNote', { wpm: slot.data.wpm.toFixed(0) })
+                    : ''}
             </p>
             {beats.length > 0 && (
                 <ol className="space-y-2 text-xs">
                     {beats.slice(0, 12).map((b: NonNullable<typeof beats>[number], i: number) => (
                         <li key={i} className="rounded-md border bg-muted/20 px-3 py-2">
                             <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium">{b.label || `Beat ${i + 1}`}</span>
+                                <span className="font-medium">
+                                    {b.label || t('beats.beatFallbackLabel', { number: i + 1 })}
+                                </span>
                                 {typeof b.durationEstimateS === 'number' && (
-                                    <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                                    <span className="font-mono text-2xs tabular-nums text-muted-foreground">
                                         ~{b.durationEstimateS.toFixed(1)}s
                                     </span>
                                 )}
                             </div>
                             {(b.intentRole || b.visualTypeHint) && (
-                                <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <div className="mt-0.5 text-2xs uppercase tracking-wider text-muted-foreground">
                                     {[b.intentRole, b.visualTypeHint].filter(Boolean).join(' · ')}
                                 </div>
                             )}
@@ -806,6 +846,7 @@ function BeatsDetail({ state }: { state: PipelineState }) {
 // ── Per-node detail bodies ────────────────────────────────────────────────
 
 function PitchDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const pitchData = state.pitch.state === 'wrapped' ? state.pitch.data : undefined;
     const sel = pitchData?.userSelections;
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -815,8 +856,8 @@ function PitchDetail({ state }: { state: PipelineState }) {
         <div className="space-y-4">
             {/* ── Brief ──────────────────────────────────────────────── */}
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    The brief
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('pitch.brief')}
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-4">
                     {promptText ? (
@@ -826,43 +867,55 @@ function PitchDetail({ state }: { state: PipelineState }) {
                         />
                     ) : (
                         <p className="text-sm italic text-muted-foreground">
-                            Prompt text not available for this run.
+                            {t('pitch.promptUnavailable')}
                         </p>
                     )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                    The original prompt that drove this production.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('pitch.briefCaption')}</p>
             </section>
 
             {/* ── Configuration (always shown; falls back to message) ── */}
             <section className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Configuration
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('pitch.configuration')}
                 </div>
                 {sel ? (
                     <ConfigGrid
                         rows={[
-                            ['Content type', formatLabel(sel.content_type ?? state.contentType)],
-                            ['Quality tier', formatLabel(sel.quality_tier)],
-                            ['Orientation', formatLabel(sel.orientation ?? state.orientation)],
-                            ['Target duration', sel.target_duration],
-                            ['Target audience', sel.target_audience],
-                            ['Language', sel.language],
-                            ['Voice', formatVoice(sel.voice_gender, sel.tts_provider)],
-                            ['Voice ID', sel.voice_id || undefined],
-                            ['Captions', formatBool(sel.captions_enabled)],
-                            ['Background music', formatBool(sel.background_music_enabled)],
-                            ['Sound effects', formatBool(sel.sound_effects_enabled)],
-                            ['Host avatar', formatHost(sel)],
-                            ['Reference files', formatCount(sel.reference_files_count)],
-                            ['Target stage', sel.target_stage],
+                            [
+                                t('pitch.field.contentType'),
+                                formatLabel(sel.content_type ?? state.contentType),
+                            ],
+                            [t('pitch.field.qualityTier'), formatLabel(sel.quality_tier)],
+                            [
+                                t('pitch.field.orientation'),
+                                formatLabel(sel.orientation ?? state.orientation),
+                            ],
+                            [t('pitch.field.targetDuration'), sel.target_duration],
+                            [t('pitch.field.targetAudience'), sel.target_audience],
+                            [t('pitch.field.language'), sel.language],
+                            [t('pitch.field.voice'), formatVoice(sel.voice_gender, sel.tts_provider)],
+                            [t('pitch.field.voiceId'), sel.voice_id || undefined],
+                            [t('pitch.field.captions'), formatBool(t, sel.captions_enabled)],
+                            [
+                                t('pitch.field.backgroundMusic'),
+                                formatBool(t, sel.background_music_enabled),
+                            ],
+                            [
+                                t('pitch.field.soundEffects'),
+                                formatBool(t, sel.sound_effects_enabled),
+                            ],
+                            [t('pitch.field.hostAvatar'), formatHost(t, sel)],
+                            [
+                                t('pitch.field.referenceFiles'),
+                                formatCount(sel.reference_files_count),
+                            ],
+                            [t('pitch.field.targetStage'), sel.target_stage],
                         ]}
                     />
                 ) : (
                     <p className="text-xs text-muted-foreground">
-                        Configuration snapshot not persisted for this run. (Older videos predate the
-                        user_selections snapshot in /status.)
+                        {t('pitch.configUnavailable')}
                     </p>
                 )}
             </section>
@@ -873,39 +926,45 @@ function PitchDetail({ state }: { state: PipelineState }) {
                     <button
                         type="button"
                         onClick={() => setShowAdvanced((v) => !v)}
-                        className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                     >
-                        <span>{showAdvanced ? '▾' : '▸'}</span> Advanced
+                        <span>{showAdvanced ? '▾' : '▸'}</span> {t('pitch.advanced')}
                     </button>
                     {showAdvanced && (
                         <ConfigGrid
                             rows={[
-                                ['Model', sel.model],
-                                ['HTML quality', formatLabel(sel.html_quality)],
-                                ['Sub-shots enabled', formatBool(sel.sub_shots_enabled)],
+                                [t('pitch.field.model'), sel.model],
+                                [t('pitch.field.htmlQuality'), formatLabel(sel.html_quality)],
                                 [
-                                    'Routing overrides',
+                                    t('pitch.field.subShotsEnabled'),
+                                    formatBool(t, sel.sub_shots_enabled),
+                                ],
+                                [
+                                    t('pitch.field.routingOverrides'),
                                     formatRoutingOverrides(sel.routing_overrides),
                                 ],
                                 [
-                                    'Visual preferences',
+                                    t('pitch.field.visualPreferences'),
                                     formatVisualPreferences(sel.visual_preferences),
                                 ],
-                                ['Avatar image URL', sel.avatar_image_url || undefined],
-                                ['Input video IDs', formatList(sel.input_video_ids)],
-                                ['Input video audio', formatLabel(sel.input_video_audio)],
+                                [t('pitch.field.avatarImageUrl'), sel.avatar_image_url || undefined],
+                                [t('pitch.field.inputVideoIds'), formatList(sel.input_video_ids)],
                                 [
-                                    'Mute TTS on source clips',
-                                    formatBool(sel.mute_tts_on_source_clips_kwarg),
+                                    t('pitch.field.inputVideoAudio'),
+                                    formatLabel(sel.input_video_audio),
                                 ],
                                 [
-                                    'Background music volume',
+                                    t('pitch.field.muteTtsOnSourceClips'),
+                                    formatBool(t, sel.mute_tts_on_source_clips_kwarg),
+                                ],
+                                [
+                                    t('pitch.field.backgroundMusicVolume'),
                                     sel.background_music_volume != null
                                         ? sel.background_music_volume.toFixed(2)
                                         : undefined,
                                 ],
                             ]}
-                            emptyMessage="No advanced overrides recorded."
+                            emptyMessage={t('pitch.noAdvancedOverrides')}
                         />
                     )}
                 </section>
@@ -956,9 +1015,9 @@ function formatLabel(v: string | undefined | null): string | undefined {
     return v.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatBool(v: boolean | undefined | null): string | undefined {
+function formatBool(t: TFunction, v: boolean | undefined | null): string | undefined {
     if (v == null) return undefined;
-    return v ? 'On' : 'Off';
+    return v ? t('format.on') : t('format.off');
 }
 
 function formatCount(n: number | undefined | null): string | undefined {
@@ -972,15 +1031,15 @@ function formatVoice(gender: string | undefined, provider: string | undefined): 
     return parts.join(' · ');
 }
 
-function formatHost(sel: VideoStatusUserSelections): string | undefined {
+function formatHost(t: TFunction, sel: VideoStatusUserSelections): string | undefined {
     const generate = sel.generate_avatar;
     const hostType = sel.host?.type;
-    if (!generate && !hostType) return 'None';
+    if (!generate && !hostType) return t('format.none');
     if (hostType === 'avatar' || generate) {
         const id = (sel.host?.avatar as { saved_avatar_id?: string } | undefined)?.saved_avatar_id;
-        return id ? `Avatar (${id})` : 'Avatar';
+        return id ? t('format.avatarWithId', { id }) : t('format.avatar');
     }
-    if (hostType === 'raw') return 'Raw clips';
+    if (hostType === 'raw') return t('format.rawClips');
     return formatLabel(hostType);
 }
 
@@ -1009,12 +1068,11 @@ function formatVisualPreferences(
 }
 
 function ResearchDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.research;
     if (!slot) {
         return (
-            <p className="text-sm text-muted-foreground">
-                No external research was needed for this brief.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('research.notNeeded')}</p>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -1022,7 +1080,7 @@ function ResearchDetail({ state }: { state: PipelineState }) {
     }
     if (slot.state === 'scheduled') {
         return (
-            <p className="text-sm text-muted-foreground">Research desk hasn&apos;t opened yet.</p>
+            <p className="text-sm text-muted-foreground">{t('research.notOpened')}</p>
         );
     }
     // Both `wrapped` and `in_production` carry payload data — narrow once
@@ -1045,16 +1103,15 @@ function ResearchDetail({ state }: { state: PipelineState }) {
         <div className="space-y-4">
             {slot.state === 'in_production' && (
                 <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-                    <Loader2 className="mr-1.5 inline size-3 animate-spin" />
-                    Investigating sources… results will populate as the intent router finishes its
-                    sweep.
+                    <CircleNotch className="me-1.5 inline size-3 animate-spin" />
+                    {t('research.investigating')}
                 </div>
             )}
 
             {urlsAttempted.length > 0 && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        URLs scraped
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.urlsScraped')}
                     </div>
                     <ul className="space-y-1">
                         {urlsAttempted.map((u, i) => (
@@ -1062,7 +1119,7 @@ function ResearchDetail({ state }: { state: PipelineState }) {
                                 key={i}
                                 className="flex items-center gap-2 truncate rounded-md border bg-card px-2 py-1.5 text-xs"
                             >
-                                <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+                                <ArrowSquareOut className="size-3 shrink-0 text-muted-foreground" />
                                 <a
                                     href={u}
                                     target="_blank"
@@ -1079,8 +1136,8 @@ function ResearchDetail({ state }: { state: PipelineState }) {
 
             {screenshots.length > 0 && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Page captures
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.pageCaptures')}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         {screenshots.map((s, i) => (
@@ -1093,12 +1150,12 @@ function ResearchDetail({ state }: { state: PipelineState }) {
                             >
                                 <img
                                     src={s.url}
-                                    alt={s.name ?? `capture ${i + 1}`}
+                                    alt={s.name ?? t('research.captureAlt', { number: i + 1 })}
                                     loading="lazy"
                                     className="aspect-video w-full object-cover transition group-hover:opacity-90"
                                 />
                                 {s.name && (
-                                    <div className="truncate border-t bg-white px-2 py-1 text-[10px] text-muted-foreground">
+                                    <div className="truncate border-t bg-white px-2 py-1 text-2xs text-muted-foreground">
                                         {s.name}
                                     </div>
                                 )}
@@ -1110,8 +1167,8 @@ function ResearchDetail({ state }: { state: PipelineState }) {
 
             {scrapedExcerpt && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Scraped excerpt
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.scrapedExcerpt')}
                     </div>
                     <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border bg-muted/20 p-3 font-sans text-xs leading-relaxed text-foreground/80">
                         {scrapedExcerpt}
@@ -1121,8 +1178,8 @@ function ResearchDetail({ state }: { state: PipelineState }) {
 
             {searchQuery && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Web search query
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.webSearchQuery')}
                     </div>
                     <p className="rounded-md border bg-card px-2 py-1.5 font-mono text-xs text-foreground">
                         {searchQuery}
@@ -1132,8 +1189,8 @@ function ResearchDetail({ state }: { state: PipelineState }) {
 
             {searchAnswer && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Synthesized answer
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.synthesizedAnswer')}
                     </div>
                     <p className="rounded-lg border bg-muted/20 p-3 text-xs leading-relaxed text-foreground/80">
                         {searchAnswer}
@@ -1143,8 +1200,8 @@ function ResearchDetail({ state }: { state: PipelineState }) {
 
             {sources.length > 0 && (
                 <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Cited sources
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('research.citedSources')}
                     </div>
                     <ul className="space-y-1">
                         {sources.map((s, i) => (
@@ -1155,10 +1212,10 @@ function ResearchDetail({ state }: { state: PipelineState }) {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 rounded-md border bg-card px-2 py-1.5 text-xs hover:bg-muted/40"
                                 >
-                                    <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+                                    <ArrowSquareOut className="size-3 shrink-0 text-muted-foreground" />
                                     <span className="truncate">{s.title || s.host || s.url}</span>
                                     {s.host && s.title && (
-                                        <span className="ml-auto truncate text-[10px] text-muted-foreground">
+                                        <span className="ml-auto truncate text-2xs text-muted-foreground">
                                             {s.host}
                                         </span>
                                     )}
@@ -1174,16 +1231,14 @@ function ResearchDetail({ state }: { state: PipelineState }) {
                 sources.length === 0 &&
                 !scrapedExcerpt &&
                 !searchAnswer && (
-                    <p className="text-sm text-muted-foreground">
-                        Research wrapped, but the captured artifacts aren&apos;t available for this
-                        run.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t('research.noArtifacts')}</p>
                 )}
         </div>
     );
 }
 
 function ScreenplayDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.screenplay;
     // History-restored wrapped runs sometimes have `slot.data.scriptUrl`
     // unset (the History sidebar doesn't always hydrate it). Fall back to
@@ -1231,10 +1286,7 @@ function ScreenplayDetail({ state }: { state: PipelineState }) {
 
     if (slot.state !== 'wrapped') {
         return (
-            <div className="text-sm text-muted-foreground">
-                Screenplay isn&apos;t finished yet — sit tight while the writer&apos;s room drafts
-                the narration.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('screenplay.notFinished')}</div>
         );
     }
 
@@ -1248,8 +1300,8 @@ function ScreenplayDetail({ state }: { state: PipelineState }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 rounded-md border bg-white px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
                     >
-                        <ExternalLink className="size-3" />
-                        Open raw file
+                        <ArrowSquareOut className="size-3" />
+                        {t('screenplay.openRawFile')}
                     </a>
                 )}
                 <Button
@@ -1260,13 +1312,13 @@ function ScreenplayDetail({ state }: { state: PipelineState }) {
                     disabled={!text}
                 >
                     <Copy className="size-3" />
-                    {copied ? 'Copied!' : 'Copy script'}
+                    {copied ? t('screenplay.copied') : t('screenplay.copyScript')}
                 </Button>
             </div>
             <div className="rounded-lg border bg-muted/20 p-4">
                 {loading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin" /> Loading screenplay…
+                        <CircleNotch className="size-4 animate-spin" /> {t('screenplay.loading')}
                     </div>
                 ) : text ? (
                     <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
@@ -1274,24 +1326,26 @@ function ScreenplayDetail({ state }: { state: PipelineState }) {
                     </pre>
                 ) : !scriptUrl ? (
                     <p className="text-sm text-muted-foreground">
-                        Screenplay URL not available for this run. The narration audio + word
-                        timings are still accessible from the Narration node.
+                        {t('screenplay.urlUnavailable')}
                     </p>
                 ) : fetchFailed ? (
                     <div className="space-y-2 text-sm">
                         <p className="text-muted-foreground">
-                            Inline preview failed to load. Use{' '}
-                            <span className="font-medium text-foreground">Open raw file</span> above
-                            to view the screenplay directly.
+                            <Trans
+                                t={t}
+                                i18nKey="screenplay.previewFailed"
+                                components={{
+                                    bold: <span className="font-medium text-foreground" />,
+                                }}
+                            />
                         </p>
-                        <p className="text-[11px] text-muted-foreground">
-                            (S3 CORS, network drop, or the file is no longer present at the
-                            persisted URL.)
+                        <p className="text-2xs text-muted-foreground">
+                            {t('screenplay.previewFailedNote')}
                         </p>
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground">
-                        Could not load the screenplay text.
+                        {t('screenplay.couldNotLoad')}
                     </p>
                 )}
             </div>
@@ -1300,10 +1354,11 @@ function ScreenplayDetail({ state }: { state: PipelineState }) {
 }
 
 function NarrationDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.narration;
     if (slot.state !== 'wrapped') {
         return (
-            <div className="text-sm text-muted-foreground">Narration isn&apos;t recorded yet.</div>
+            <div className="text-sm text-muted-foreground">{t('narration.notRecorded')}</div>
         );
     }
     const { audioUrl, wordsUrl } = slot.data;
@@ -1311,8 +1366,8 @@ function NarrationDetail({ state }: { state: PipelineState }) {
         <div className="space-y-4">
             {audioUrl && (
                 <div className="space-y-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Voiceover
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('narration.voiceover')}
                     </div>
                     {/* Native controls give scrub / volume / playback rate. */}
                     <audio controls preload="none" className="w-full">
@@ -1324,8 +1379,8 @@ function NarrationDetail({ state }: { state: PipelineState }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
                     >
-                        <ExternalLink className="size-3" />
-                        Open audio file
+                        <ArrowSquareOut className="size-3" />
+                        {t('narration.openAudioFile')}
                     </a>
                 </div>
             )}
@@ -1335,6 +1390,7 @@ function NarrationDetail({ state }: { state: PipelineState }) {
 }
 
 function WordTimingsList({ wordsUrl }: { wordsUrl: string }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const [words, setWords] = useState<Array<{ word: string; start: number; end: number }> | null>(
         null
     );
@@ -1351,30 +1407,32 @@ function WordTimingsList({ wordsUrl }: { wordsUrl: string }) {
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-2">
-                <AlignLeft className="size-3 text-muted-foreground" />
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Word timings
+                <TextAlignLeft className="size-3 text-muted-foreground" />
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('wordTimings.heading')}
                 </div>
                 {words && (
-                    <span className="text-[11px] text-muted-foreground">{words.length} words</span>
+                    <span className="text-2xs text-muted-foreground">
+                        {t('wordTimings.count', { count: words.length })}
+                    </span>
                 )}
             </div>
             {loading ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="size-3 animate-spin" /> Loading timings…
+                    <CircleNotch className="size-3 animate-spin" /> {t('wordTimings.loading')}
                 </div>
             ) : !words ? (
-                <p className="text-xs text-muted-foreground">Could not load timings.</p>
+                <p className="text-xs text-muted-foreground">{t('wordTimings.couldNotLoad')}</p>
             ) : (
                 <div className="flex max-h-64 flex-wrap gap-1 overflow-y-auto rounded-md border bg-muted/20 p-3">
                     {words.map((w, i) => (
                         <span
                             key={i}
-                            className="inline-flex items-baseline gap-0.5 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-800"
+                            className="inline-flex items-baseline gap-0.5 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-2xs text-blue-800"
                             title={`${w.start.toFixed(2)}s – ${w.end.toFixed(2)}s`}
                         >
                             {w.word}
-                            <span className="text-[9px] text-blue-400">{w.start.toFixed(1)}s</span>
+                            <span className="text-2xs text-blue-400">{w.start.toFixed(1)}s</span>
                         </span>
                     ))}
                 </div>
@@ -1384,12 +1442,11 @@ function WordTimingsList({ wordsUrl }: { wordsUrl: string }) {
 }
 
 function StoryboardDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.storyboard;
     if (slot.state !== 'wrapped') {
         return (
-            <div className="text-sm text-muted-foreground">
-                Storyboard isn&apos;t mapped yet — director&apos;s still planning shots.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('storyboard.notMapped')}</div>
         );
     }
     // Storyboard's own scenes can be empty on history-restored wrapped
@@ -1410,16 +1467,13 @@ function StoryboardDetail({ state }: { state: PipelineState }) {
               }));
     if (scenes.length === 0) {
         return (
-            <div className="text-sm text-muted-foreground">
-                Shot plan finalized — scene details aren&apos;t available for this run, but each
-                scene still appears as its own node in the diagram.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('storyboard.noSceneDetails')}</div>
         );
     }
     return (
         <div className="space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {scenes.length} scenes mapped
+            <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('storyboard.scenesMapped', { count: scenes.length })}
             </div>
             <ol className="space-y-1.5">
                 {scenes.map((s) => (
@@ -1428,7 +1482,7 @@ function StoryboardDetail({ state }: { state: PipelineState }) {
                             <span className="font-mono tabular-nums text-muted-foreground">
                                 {String(s.index + 1).padStart(2, '0')}
                             </span>
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground">
+                            <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wider text-foreground">
                                 {s.shotType.replace(/_/g, ' ')}
                             </span>
                             <span className="ml-auto tabular-nums text-muted-foreground">
@@ -1449,6 +1503,7 @@ function StoryboardDetail({ state }: { state: PipelineState }) {
 }
 
 function FilmingDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.filming;
     if (slot.state === 'cut') {
         return <p className="text-sm text-red-700">{slot.error}</p>;
@@ -1477,8 +1532,8 @@ function FilmingDetail({ state }: { state: PipelineState }) {
         <div className="space-y-3">
             {total > 0 ? (
                 <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {isWrapped ? 'Scenes wrapped' : 'Scenes filmed'}
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {isWrapped ? t('filming.scenesWrapped') : t('filming.scenesFilmed')}
                     </div>
                     <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
                         {completed}{' '}
@@ -1487,15 +1542,12 @@ function FilmingDetail({ state }: { state: PipelineState }) {
                 </div>
             ) : isWrapped ? (
                 <p className="text-sm text-muted-foreground">
-                    Filming wrapped — per-scene counters aren&apos;t available for this run.
+                    {t('filming.wrappedNoCounters')}
                 </p>
             ) : (
-                <p className="text-sm text-muted-foreground">Filming hasn&apos;t started yet.</p>
+                <p className="text-sm text-muted-foreground">{t('filming.notStarted')}</p>
             )}
-            <p className="text-xs text-muted-foreground">
-                Each scene appears as its own node in the diagram on tier-Premium and above — click
-                any scene there to view its narration excerpt and stills.
-            </p>
+            <p className="text-xs text-muted-foreground">{t('filming.diagramHint')}</p>
         </div>
     );
 }
@@ -1509,6 +1561,7 @@ function SceneDetail({
     state: PipelineState;
     apiKey?: string;
 }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const timeline = state.artifactUrls.timeline;
     const html = useSceneHtml(scene.index);
     // `playKey` bumps every time the user hits "Play this beat" so the
@@ -1529,47 +1582,49 @@ function SceneDetail({
         <div className="space-y-4">
             {/* Header row: shot type + duration / time range + v3 chips */}
             <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-foreground">
+                <span className="rounded bg-muted px-2 py-1 text-2xs font-medium uppercase tracking-wider text-foreground">
                     {scene.shotType.replace(/_/g, ' ')}
                 </span>
                 {scene.intentRole && (
                     <span
-                        title={`Intent role: ${scene.intentRole}`}
-                        className="rounded bg-sky-50 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-sky-700"
+                        title={t('sceneDetail.intentRoleTitle', { value: scene.intentRole })}
+                        className="rounded bg-sky-50 px-2 py-1 text-2xs font-medium uppercase tracking-wider text-sky-700"
                     >
                         {scene.intentRole}
                     </span>
                 )}
                 {scene.backgroundTreatment && (
                     <span
-                        title={`Background treatment: ${scene.backgroundTreatment}`}
-                        className="rounded bg-slate-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-slate-700"
+                        title={t('sceneDetail.backgroundTreatmentTitle', {
+                            value: scene.backgroundTreatment,
+                        })}
+                        className="rounded bg-slate-100 px-2 py-1 text-2xs font-medium uppercase tracking-wider text-slate-700"
                     >
-                        bg · {scene.backgroundTreatment.replace(/_/g, ' ')}
+                        {t('sceneDetail.bgPrefix')} {scene.backgroundTreatment.replace(/_/g, ' ')}
                     </span>
                 )}
                 {scene.transitionIn && (
                     <span
-                        title={`Transition in: ${scene.transitionIn}`}
-                        className="rounded bg-violet-50 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-violet-700"
+                        title={t('sceneDetail.transitionInTitle', { value: scene.transitionIn })}
+                        className="rounded bg-violet-50 px-2 py-1 text-2xs font-medium uppercase tracking-wider text-violet-700"
                     >
                         ↗ {scene.transitionIn.replace(/_/g, ' ')}
                     </span>
                 )}
                 {isAiVideoScene && (
                     <span
-                        className="rounded bg-violet-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700"
-                        title="Generated by fal.ai Veo 3.1 Lite"
+                        className="rounded bg-violet-100 px-2 py-1 text-2xs font-semibold uppercase tracking-wider text-violet-700"
+                        title={t('sceneDetail.aiVideoTitle')}
                     >
-                        ✨ AI VIDEO
+                        ✨ {t('sceneDetail.aiVideoBadge')}
                     </span>
                 )}
                 {isIntrinsic && (
                     <span
-                        className="rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700"
-                        title="audio_policy=intrinsic_only — master narration is silenced in this window; the shot's own audio plays alone."
+                        className="rounded bg-amber-100 px-2 py-1 text-2xs font-semibold uppercase tracking-wider text-amber-700"
+                        title={t('sceneDetail.intrinsicAudioTitle')}
                     >
-                        🔇 INTRINSIC AUDIO
+                        🔇 {t('sceneDetail.intrinsicAudioBadge')}
                     </span>
                 )}
                 <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
@@ -1580,25 +1635,25 @@ function SceneDetail({
 
             {isAiVideoScene && (
                 <div className="rounded-md border border-violet-200 bg-violet-50/60 p-3 text-xs text-violet-900">
-                    <div className="mb-1 font-medium">AI-generated video shot</div>
-                    <div className="text-violet-700">
-                        This shot was generated with fal.ai Veo. Cost contributes to the per-video
-                        AI video cap. Editing inside the editor re-runs the Veo call.
-                    </div>
+                    <div className="mb-1 font-medium">{t('sceneDetail.aiVideoHeading')}</div>
+                    <div className="text-violet-700">{t('sceneDetail.aiVideoBody')}</div>
                 </div>
             )}
 
             {isIntrinsic && (
                 <div className="rounded-md border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900">
                     <div className="mb-1 flex items-center gap-1.5 font-medium">
-                        <VolumeX className="size-3.5" />
-                        Intrinsic-only audio policy
+                        <SpeakerX className="size-3.5" />
+                        {t('sceneDetail.intrinsicHeading')}
                     </div>
                     <div className="text-amber-800">
-                        Master narration is muted in this scene&apos;s [{scene.startTime.toFixed(1)}
-                        s, {scene.endTime.toFixed(1)}s] window. The shot plays its own audio (
-                        {isAiVideoScene ? 'Veo-generated audio' : 'source clip audio'}) alone.
-                        Per-shot TTS was skipped — re-narrate via the source asset, not this panel.
+                        {t('sceneDetail.intrinsicBody', {
+                            start: scene.startTime.toFixed(1),
+                            end: scene.endTime.toFixed(1),
+                            audioSource: isAiVideoScene
+                                ? t('sceneDetail.veoGeneratedAudio')
+                                : t('sceneDetail.sourceClipAudio'),
+                        })}
                     </div>
                 </div>
             )}
@@ -1610,29 +1665,33 @@ function SceneDetail({
             {scene.liveDetail && (
                 <div className="rounded-md border bg-gradient-to-b from-slate-50 to-white p-3 text-xs">
                     <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium text-foreground">Live progress</span>
+                        <span className="font-medium text-foreground">
+                            {t('sceneDetail.liveProgress')}
+                        </span>
                         {scene.liveDetail.elapsedS != null && (
                             <span className="font-mono tabular-nums text-muted-foreground">
-                                {scene.liveDetail.elapsedS.toFixed(1)}s elapsed
+                                {t('sceneDetail.elapsedSuffix', {
+                                    sec: scene.liveDetail.elapsedS.toFixed(1),
+                                })}
                             </span>
                         )}
                     </div>
                     {scene.liveDetail.substage && (
                         <div className="mb-2 text-foreground/80">
-                            Current substage:{' '}
+                            {t('sceneDetail.currentSubstage')}{' '}
                             <span className="font-mono">{scene.liveDetail.substage}</span>
                         </div>
                     )}
                     {scene.liveDetail.attempts && Object.keys(scene.liveDetail.attempts).length > 0 && (
                         <div className="mb-2">
-                            <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                                Regen attempts by gate
+                            <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                                {t('sceneDetail.regenAttempts')}
                             </div>
                             <div className="flex flex-wrap gap-1">
                                 {Object.entries(scene.liveDetail.attempts).map(([step, n]) => (
                                     <span
                                         key={step}
-                                        className="rounded bg-orange-50 px-1.5 py-0.5 font-mono text-[10px] text-orange-700"
+                                        className="rounded bg-orange-50 px-1.5 py-0.5 font-mono text-2xs text-orange-700"
                                     >
                                         {step.replace(/_regen$/, '')}: {n}
                                     </span>
@@ -1642,14 +1701,14 @@ function SceneDetail({
                     )}
                     {scene.liveDetail.regenLog && scene.liveDetail.regenLog.length > 0 && (
                         <div className="mb-2">
-                            <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                                Verdict log
+                            <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                                {t('sceneDetail.verdictLog')}
                             </div>
                             <ol className="space-y-1">
                                 {scene.liveDetail.regenLog.map((r, i) => (
                                     <li
                                         key={`${r.step}-${r.attempt}-${i}`}
-                                        className="flex items-start gap-2 text-[11px] leading-snug"
+                                        className="flex items-start gap-2 text-2xs leading-snug"
                                     >
                                         <span className="mt-0.5 font-mono text-muted-foreground">
                                             {r.step}#{r.attempt}
@@ -1657,13 +1716,17 @@ function SceneDetail({
                                         <span
                                             className={
                                                 r.verdict === 'pass'
-                                                    ? 'rounded bg-emerald-50 px-1 text-[10px] text-emerald-700'
+                                                    ? 'rounded bg-emerald-50 px-1 text-2xs text-emerald-700'
                                                     : r.verdict === 'shipped_original'
-                                                      ? 'rounded bg-amber-50 px-1 text-[10px] text-amber-700'
-                                                      : 'rounded bg-rose-50 px-1 text-[10px] text-rose-700'
+                                                      ? 'rounded bg-amber-50 px-1 text-2xs text-amber-700'
+                                                      : 'rounded bg-rose-50 px-1 text-2xs text-rose-700'
                                             }
                                         >
-                                            {r.verdict}
+                                            {r.verdict === 'pass'
+                                                ? t('sceneDetail.verdict.pass')
+                                                : r.verdict === 'shipped_original'
+                                                  ? t('sceneDetail.verdict.shippedOriginal')
+                                                  : r.verdict}
                                         </span>
                                         {r.reason && (
                                             <span className="flex-1 text-foreground/70">
@@ -1678,14 +1741,14 @@ function SceneDetail({
                     {scene.liveDetail.externalCalls &&
                         scene.liveDetail.externalCalls.length > 0 && (
                             <div>
-                                <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    External calls
+                                <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                                    {t('sceneDetail.externalCalls')}
                                 </div>
                                 <ul className="space-y-1">
                                     {scene.liveDetail.externalCalls.map((c) => (
                                         <li
                                             key={c.id}
-                                            className="flex items-center gap-2 text-[11px]"
+                                            className="flex items-center gap-2 text-2xs"
                                         >
                                             <span className="font-mono text-foreground/80">
                                                 {c.provider} · {c.op}
@@ -1693,13 +1756,19 @@ function SceneDetail({
                                             <span
                                                 className={
                                                     c.state === 'done'
-                                                        ? 'rounded bg-emerald-50 px-1 text-[10px] text-emerald-700'
+                                                        ? 'rounded bg-emerald-50 px-1 text-2xs text-emerald-700'
                                                         : c.state === 'failed'
-                                                          ? 'rounded bg-rose-50 px-1 text-[10px] text-rose-700'
-                                                          : 'rounded bg-blue-50 px-1 text-[10px] text-blue-700'
+                                                          ? 'rounded bg-rose-50 px-1 text-2xs text-rose-700'
+                                                          : 'rounded bg-blue-50 px-1 text-2xs text-blue-700'
                                                 }
                                             >
-                                                {c.state}
+                                                {c.state === 'done'
+                                                    ? t('sceneDetail.callState.done')
+                                                    : c.state === 'failed'
+                                                      ? t('sceneDetail.callState.failed')
+                                                      : c.state === 'polling'
+                                                        ? t('sceneDetail.callState.polling')
+                                                        : t('sceneDetail.callState.queued')}
                                                 {c.pollCount ? ` (${c.pollCount})` : ''}
                                             </span>
                                             {c.elapsedS != null && (
@@ -1718,7 +1787,7 @@ function SceneDetail({
                             </div>
                         )}
                     {scene.liveDetail.lastError && (
-                        <div className="mt-2 rounded bg-rose-50 p-2 text-[11px] text-rose-800">
+                        <div className="mt-2 rounded bg-rose-50 p-2 text-2xs text-rose-800">
                             {scene.liveDetail.lastError}
                         </div>
                     )}
@@ -1746,13 +1815,13 @@ function SceneDetail({
                 <div className="overflow-hidden rounded-lg border bg-gray-100">
                     <img
                         src={scene.imageUrl}
-                        alt={`Scene ${scene.index + 1}`}
+                        alt={t('sceneDetail.sceneAlt', { number: scene.index + 1 })}
                         className="aspect-video w-full object-cover"
                     />
                 </div>
             ) : (
                 <div className="flex aspect-video w-full items-center justify-center rounded-lg border bg-gray-50 text-xs text-muted-foreground">
-                    Text-driven scene — no still or B-roll on this beat
+                    {t('sceneDetail.textDrivenScene')}
                 </div>
             )}
 
@@ -1797,17 +1866,24 @@ function SceneDetail({
             {/* Asset links */}
             {(scene.imageUrl || scene.videoUrl) && (
                 <div className="space-y-1 text-xs">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Assets
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('sceneDetail.assets')}
                     </div>
-                    {scene.imageUrl && <ArtifactRow label="Still" url={scene.imageUrl} />}
-                    {scene.videoUrl && <ArtifactRow label="B-roll clip" url={scene.videoUrl} />}
+                    {scene.imageUrl && (
+                        <ArtifactRow label={t('sceneDetail.stillLabel')} url={scene.imageUrl} />
+                    )}
+                    {scene.videoUrl && (
+                        <ArtifactRow
+                            label={t('sceneDetail.brollClipLabel')}
+                            url={scene.videoUrl}
+                        />
+                    )}
                 </div>
             )}
 
             {scene.error && (
                 <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-                    <div className="mb-1 font-medium">Production error</div>
+                    <div className="mb-1 font-medium">{t('sceneDetail.productionError')}</div>
                     {scene.error}
                 </div>
             )}
@@ -1822,19 +1898,20 @@ function SceneDetail({
  * show an explanatory empty state instead of a blank box.
  */
 function SceneNarrationSection({ scene }: { scene: SceneSlot }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const isIntrinsic = scene.audioPolicy === 'intrinsic_only';
     const brief = scene.narrationBrief;
     const text = scene.narrationText ?? scene.narrationExcerpt;
     if (!brief && !text && !isIntrinsic) return null;
     return (
         <section className="space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Narration
+            <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('sceneNarration.heading')}
             </div>
             {brief && (
                 <div>
-                    <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Planner brief
+                    <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                        {t('sceneNarration.plannerBrief')}
                     </div>
                     <p className="rounded-lg border bg-sky-50/40 p-2.5 text-xs leading-relaxed text-foreground">
                         {brief}
@@ -1843,19 +1920,18 @@ function SceneNarrationSection({ scene }: { scene: SceneSlot }) {
             )}
             {isIntrinsic ? (
                 <div>
-                    <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Spoken narration
+                    <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                        {t('sceneNarration.spokenNarration')}
                     </div>
                     <p className="rounded-lg border border-dashed bg-muted/20 p-2.5 text-xs italic text-muted-foreground">
-                        Intrinsic-only shot — no per-shot narration was authored. The shot&apos;s
-                        own audio plays alone.
+                        {t('sceneNarration.intrinsicNote')}
                     </p>
                 </div>
             ) : (
                 text && (
                     <div>
-                        <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Spoken narration
+                        <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                            {t('sceneNarration.spokenNarration')}
                         </div>
                         <p className="rounded-lg border bg-muted/20 p-2.5 text-sm italic leading-relaxed text-foreground">
                             &ldquo;{text}&rdquo;
@@ -1874,12 +1950,13 @@ function SceneNarrationSection({ scene }: { scene: SceneSlot }) {
  * in isolation.
  */
 function ScenePerShotAudio({ scene }: { scene: SceneSlot }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     if (!scene.audioUrl) return null;
     return (
         <section className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <Volume2 className="size-3" />
-                Per-shot voiceover
+            <div className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <SpeakerHigh className="size-3" />
+                {t('perShotAudio.heading')}
                 {scene.audioDurationS != null && (
                     <span className="font-mono normal-case tracking-normal text-muted-foreground/70">
                         ({scene.audioDurationS.toFixed(2)}s)
@@ -1889,15 +1966,15 @@ function ScenePerShotAudio({ scene }: { scene: SceneSlot }) {
             <audio controls preload="none" className="w-full">
                 <source src={scene.audioUrl} type="audio/mpeg" />
             </audio>
-            <div className="flex flex-wrap items-center gap-2 text-[10px]">
+            <div className="flex flex-wrap items-center gap-2 text-2xs">
                 <a
                     href={scene.audioUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                 >
-                    <ExternalLink className="size-3" />
-                    mp3
+                    <ArrowSquareOut className="size-3" />
+                    {t('perShotAudio.mp3')}
                 </a>
                 {scene.audioWordsUrl && (
                     <a
@@ -1906,8 +1983,8 @@ function ScenePerShotAudio({ scene }: { scene: SceneSlot }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                     >
-                        <ExternalLink className="size-3" />
-                        word timings
+                        <ArrowSquareOut className="size-3" />
+                        {t('perShotAudio.wordTimings')}
                     </a>
                 )}
                 {scene.audioScriptUrl && (
@@ -1917,8 +1994,8 @@ function ScenePerShotAudio({ scene }: { scene: SceneSlot }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                     >
-                        <ExternalLink className="size-3" />
-                        script.txt
+                        <ArrowSquareOut className="size-3" />
+                        {t('perShotAudio.scriptTxt')}
                     </a>
                 )}
             </div>
@@ -1932,6 +2009,7 @@ function ScenePerShotAudio({ scene }: { scene: SceneSlot }) {
  * audio flag — everything the orchestrator wrote to the timeline entry.
  */
 function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
+    const { t } = useTranslation(['videoApiStudioNodeDetailSheet', 'videoApiStudioCredits']);
     const hasTelemetry =
         scene.aiVideoRequestId ||
         scene.aiVideoUrl ||
@@ -1941,10 +2019,10 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
     if (!hasTelemetry) return null;
     return (
         <section className="space-y-1.5">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                AI video telemetry
+            <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('aiVideoTelemetry.heading')}
             </div>
-            <div className="space-y-1 rounded-md border bg-violet-50/30 p-2.5 text-[11px]">
+            <div className="space-y-1 rounded-md border bg-violet-50/30 p-2.5 text-2xs">
                 {scene.aiVideoRequestId && (
                     <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">request_id</span>
@@ -1955,9 +2033,11 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                 )}
                 {scene.aiVideoCostCredits != null && (
                     <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">cost</span>
+                        <span className="text-muted-foreground">
+                            {t('aiVideoTelemetry.cost')}
+                        </span>
                         <span className="font-mono tabular-nums text-violet-700">
-                            {formatCredits(scene.aiVideoCostCredits, { precision: 1 })}
+                            {formatCredits(scene.aiVideoCostCredits, { precision: 1, t })}
                             {scene.aiVideoCostUsd != null && (
                                 <span className="ml-1 text-muted-foreground">
                                     (${scene.aiVideoCostUsd.toFixed(3)})
@@ -1968,7 +2048,9 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                 )}
                 {scene.aiVideoElapsedS != null && (
                     <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">elapsed</span>
+                        <span className="text-muted-foreground">
+                            {t('aiVideoTelemetry.elapsed')}
+                        </span>
                         <span className="font-mono tabular-nums text-foreground">
                             {scene.aiVideoElapsedS.toFixed(1)}s
                         </span>
@@ -1976,8 +2058,14 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                 )}
                 {scene.aiVideoOn != null && (
                     <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Veo audio</span>
-                        <span className="text-foreground">{scene.aiVideoOn ? 'on' : 'off'}</span>
+                        <span className="text-muted-foreground">
+                            {t('aiVideoTelemetry.veoAudio')}
+                        </span>
+                        <span className="text-foreground">
+                            {scene.aiVideoOn
+                                ? t('aiVideoTelemetry.on')
+                                : t('aiVideoTelemetry.off')}
+                        </span>
                     </div>
                 )}
                 {scene.aiVideoUrl && (
@@ -1987,23 +2075,25 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                     >
-                        <ExternalLink className="size-3" />
-                        Open Veo output
+                        <ArrowSquareOut className="size-3" />
+                        {t('aiVideoTelemetry.openVeoOutput')}
                     </a>
                 )}
                 {scene.aiVideoSegments && scene.aiVideoSegments.length > 0 && (
                     <div className="mt-1.5 border-t border-violet-200/60 pt-1.5">
-                        <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Segments ({scene.aiVideoSegments.length})
+                        <div className="mb-1 text-2xs uppercase tracking-wider text-muted-foreground">
+                            {t('aiVideoTelemetry.segments', {
+                                count: scene.aiVideoSegments.length,
+                            })}
                         </div>
                         <ul className="space-y-0.5">
                             {scene.aiVideoSegments.map((seg) => (
                                 <li
                                     key={seg.segIdx}
-                                    className="flex items-center gap-2 text-[10px]"
+                                    className="flex items-center gap-2 text-2xs"
                                 >
                                     <span className="font-mono tabular-nums text-muted-foreground">
-                                        seg {seg.segIdx}
+                                        {t('aiVideoTelemetry.seg')} {seg.segIdx}
                                     </span>
                                     {seg.durationS != null && (
                                         <span className="font-mono tabular-nums text-foreground">
@@ -2011,8 +2101,8 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                                         </span>
                                     )}
                                     {seg.cacheHit && (
-                                        <span className="rounded bg-emerald-100 px-1 text-[9px] font-medium uppercase tracking-wider text-emerald-700">
-                                            cached
+                                        <span className="rounded bg-emerald-100 px-1 text-2xs font-medium uppercase tracking-wider text-emerald-700">
+                                            {t('aiVideoTelemetry.cached')}
                                         </span>
                                     )}
                                     {seg.videoUrl && (
@@ -2022,7 +2112,7 @@ function SceneAiVideoSection({ scene }: { scene: SceneSlot }) {
                                             rel="noopener noreferrer"
                                             className="ml-auto inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                                         >
-                                            <ExternalLink className="size-3" />
+                                            <ArrowSquareOut className="size-3" />
                                             mp4
                                         </a>
                                     )}
@@ -2061,6 +2151,7 @@ function RegenerateScenePanel({
     scene: SceneSlot;
     timelineUrl: string;
 }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [phase, setPhase] = useState<'idle' | 'loading' | 'preview'>('idle');
@@ -2083,7 +2174,7 @@ function RegenerateScenePanel({
     const handleGenerate = async () => {
         const trimmed = prompt.trim();
         if (!trimmed) {
-            toast.error('Describe what to change before regenerating.');
+            toast.error(t('regenerate.describeChangeError'));
             return;
         }
         setPhase('loading');
@@ -2096,7 +2187,9 @@ function RegenerateScenePanel({
             setPhase('preview');
         } catch (err) {
             setPhase('idle');
-            toast.error(err instanceof Error ? err.message : 'Regeneration failed');
+            toast.error(
+                err instanceof Error ? err.message : t('regenerate.regenerationFailedFallback')
+            );
         }
     };
 
@@ -2109,13 +2202,13 @@ function RegenerateScenePanel({
             // the new HTML reflects in the SceneDetail thumbnail too. The
             // queryKey shape mirrors `useTimelineJson`'s definition.
             queryClient.invalidateQueries({ queryKey: ['video-timeline', videoId, timelineUrl] });
-            toast.success('Scene regenerated. Re-render the MP4 to see the change.');
+            toast.success(t('regenerate.successToast'));
             setOpen(false);
             setPhase('idle');
             setResult(null);
         } catch (err) {
             setPhase('preview');
-            toast.error(err instanceof Error ? err.message : 'Failed to save');
+            toast.error(err instanceof Error ? err.message : t('regenerate.saveFailedFallback'));
         }
     };
 
@@ -2127,8 +2220,8 @@ function RegenerateScenePanel({
     if (!open) {
         return (
             <Button variant="default" size="sm" onClick={handleToggle} className="w-full gap-2">
-                <Wand2 className="size-3.5" />
-                Regenerate this scene with AI
+                <MagicWand className="size-3.5" />
+                {t('regenerate.cta')}
             </Button>
         );
     }
@@ -2136,16 +2229,18 @@ function RegenerateScenePanel({
     return (
         <div className="space-y-2 rounded-lg border bg-card p-3 shadow-sm">
             <div className="flex items-center gap-1.5">
-                <Wand2 className="size-3.5 text-indigo-600" />
+                <MagicWand className="size-3.5 text-indigo-600" />
                 <span className="text-xs font-medium text-foreground">
-                    Regenerate Scene {String(scene.index + 1).padStart(2, '0')}
+                    {t('regenerate.heading', {
+                        number: String(scene.index + 1).padStart(2, '0'),
+                    })}
                 </span>
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setOpen(false)}
                     className="ml-auto size-6"
-                    title="Close"
+                    title={t('regenerate.close')}
                     disabled={phase === 'loading'}
                 >
                     <X className="size-3.5" />
@@ -2155,33 +2250,31 @@ function RegenerateScenePanel({
                 rows={4}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what to change… e.g. 'Make the title green and add a subtle fade-in for the subtitle'"
+                placeholder={t('regenerate.placeholder')}
                 disabled={phase === 'loading'}
                 className="w-full resize-none rounded-md border bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-indigo-400 focus:outline-none disabled:opacity-60"
             />
 
             {phase === 'preview' ? (
                 <div className="space-y-1.5">
-                    <p className="text-[11px] text-green-700">
-                        ✓ New version ready. Accept to apply, or discard and try a different prompt.
-                    </p>
+                    <p className="text-2xs text-green-700">{t('regenerate.readyNotice')}</p>
                     <div className="flex gap-1.5">
                         <Button
                             size="sm"
                             onClick={handleAccept}
-                            className="h-7 flex-1 gap-1 bg-green-600 text-[11px] text-white hover:bg-green-700"
+                            className="h-7 flex-1 gap-1 bg-green-600 text-2xs text-white hover:bg-green-700"
                         >
                             <Check className="size-3" />
-                            Accept &amp; save
+                            {t('regenerate.acceptSave')}
                         </Button>
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={handleDiscard}
-                            className="h-7 flex-1 gap-1 text-[11px]"
+                            className="h-7 flex-1 gap-1 text-2xs"
                         >
                             <X className="size-3" />
-                            Discard
+                            {t('regenerate.discard')}
                         </Button>
                     </div>
                 </div>
@@ -2190,26 +2283,23 @@ function RegenerateScenePanel({
                     size="sm"
                     onClick={handleGenerate}
                     disabled={!prompt.trim() || phase === 'loading'}
-                    className="h-7 w-full gap-1.5 bg-indigo-600 text-[11px] text-white hover:bg-indigo-700 disabled:opacity-50"
+                    className="h-7 w-full gap-1.5 bg-indigo-600 text-2xs text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
                     {phase === 'loading' ? (
                         <>
-                            <Loader2 className="size-3 animate-spin" />
-                            Generating… (10–60s)
+                            <CircleNotch className="size-3 animate-spin" />
+                            {t('regenerate.generating')}
                         </>
                     ) : (
                         <>
-                            <Wand2 className="size-3" />
-                            Generate
+                            <MagicWand className="size-3" />
+                            {t('regenerate.generate')}
                         </>
                     )}
                 </Button>
             )}
 
-            <p className="text-[10px] text-muted-foreground">
-                The AI rewrites just this shot&apos;s HTML — narration, timing, and other shots stay
-                untouched. After accepting, re-render the MP4 to see the result.
-            </p>
+            <p className="text-2xs text-muted-foreground">{t('regenerate.footerNote')}</p>
         </div>
     );
 }
@@ -2236,6 +2326,7 @@ function SceneHtmlPreview({
     sceneIndex: number;
     playKey?: number;
 }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.3);
 
@@ -2259,7 +2350,7 @@ function SceneHtmlPreview({
         >
             <iframe
                 key={`${sceneIndex}-${playKey ?? 0}`}
-                title={`Scene ${sceneIndex + 1} HTML`}
+                title={t('htmlPreviewTitle', { number: sceneIndex + 1 })}
                 srcDoc={html}
                 sandbox="allow-scripts allow-same-origin"
                 allow="autoplay"
@@ -2297,6 +2388,7 @@ function SceneNarrationPlayer({
     endTime: number;
     onRestartIframe: () => void;
 }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const audioRef = useRef<HTMLAudioElement>(null);
     const rafRef = useRef<number | null>(null);
     const [playing, setPlaying] = useState(false);
@@ -2321,7 +2413,9 @@ function SceneNarrationPlayer({
             await audio.play();
         } catch (err) {
             // Likely autoplay-policy denial. Surface so the user can retry.
-            toast.error(err instanceof Error ? err.message : 'Could not start playback');
+            toast.error(
+                err instanceof Error ? err.message : t('narrationPlayer.playbackErrorFallback')
+            );
             return;
         }
         setPlaying(true);
@@ -2362,19 +2456,19 @@ function SceneNarrationPlayer({
                 <Button
                     size="sm"
                     onClick={playing ? handlePause : handlePlay}
-                    className="h-7 gap-1.5 text-[11px]"
+                    className="h-7 gap-1.5 text-2xs"
                 >
                     {playing ? (
                         <>
-                            <Pause className="size-3" /> Pause
+                            <Pause className="size-3" /> {t('narrationPlayer.pause')}
                         </>
                     ) : (
                         <>
-                            <Play className="size-3" /> Play this beat with narration
+                            <Play className="size-3" /> {t('narrationPlayer.play')}
                         </>
                     )}
                 </Button>
-                <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                <span className="font-mono text-2xs tabular-nums text-muted-foreground">
                     {startTime.toFixed(1)}s – {endTime.toFixed(1)}s
                 </span>
             </div>
@@ -2388,10 +2482,11 @@ function SceneNarrationPlayer({
 }
 
 function TalentDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.talent;
     if (!slot) {
         return (
-            <div className="text-sm text-muted-foreground">No host configured for this run.</div>
+            <div className="text-sm text-muted-foreground">{t('talent.noHost')}</div>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -2399,9 +2494,7 @@ function TalentDetail({ state }: { state: PipelineState }) {
     }
     if (slot.state === 'scheduled') {
         return (
-            <div className="text-sm text-muted-foreground">
-                Talent is on the call sheet — recording starts after the storyboard is locked.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('talent.onCallSheet')}</div>
         );
     }
     if (slot.state === 'in_production') {
@@ -2410,8 +2503,8 @@ function TalentDetail({ state }: { state: PipelineState }) {
         return (
             <div className="space-y-3">
                 <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Takes recorded
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('talent.takesRecorded')}
                     </div>
                     <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
                         {completed}{' '}
@@ -2420,11 +2513,7 @@ function TalentDetail({ state }: { state: PipelineState }) {
                         )}
                     </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                    Each take pairs a Seedream identity image with a slice of the narration audio,
-                    then fal.ai renders the lip-synced talking head. Per-take previews appear once
-                    the avatar batch wraps.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('talent.inProductionNote')}</p>
             </div>
         );
     }
@@ -2436,12 +2525,11 @@ function TalentDetail({ state }: { state: PipelineState }) {
     return (
         <div className="space-y-4">
             <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Takes in the can
+                <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('talent.takesInTheCan')}
                 </div>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
-                    {takes.length || total}{' '}
-                    <span className="text-base text-muted-foreground">takes</span>
+                    {t('talent.takesCount', { count: takes.length || total })}
                 </p>
             </div>
             {takes.length > 0 ? (
@@ -2465,19 +2553,23 @@ function TalentDetail({ state }: { state: PipelineState }) {
                                 ) : take.hostImageUrl ? (
                                     <img
                                         src={take.hostImageUrl}
-                                        alt={`Take ${take.shotIndex + 1}`}
+                                        alt={t('talent.takeAlt', {
+                                            number: take.shotIndex + 1,
+                                        })}
                                         className="size-full object-cover"
                                         loading="lazy"
                                     />
                                 ) : (
-                                    <div className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
-                                        No preview
+                                    <div className="flex size-full items-center justify-center text-2xs text-muted-foreground">
+                                        {t('talent.noPreview')}
                                     </div>
                                 )}
                             </div>
                             <div className="flex items-center gap-1.5 px-2 py-1.5">
                                 <span className="font-mono tabular-nums text-muted-foreground">
-                                    Take {String(take.shotIndex + 1).padStart(2, '0')}
+                                    {t('talent.takeLabel', {
+                                        number: String(take.shotIndex + 1).padStart(2, '0'),
+                                    })}
                                 </span>
                                 {take.durationS != null && (
                                     <span className="ml-auto tabular-nums text-muted-foreground">
@@ -2486,7 +2578,7 @@ function TalentDetail({ state }: { state: PipelineState }) {
                                 )}
                             </div>
                             {take.error && (
-                                <p className="border-t bg-red-50 px-2 py-1 text-[10px] text-red-700">
+                                <p className="border-t bg-red-50 px-2 py-1 text-2xs text-red-700">
                                     {take.error}
                                 </p>
                             )}
@@ -2495,7 +2587,7 @@ function TalentDetail({ state }: { state: PipelineState }) {
                 </div>
             ) : (
                 <p className="text-sm text-muted-foreground">
-                    Performance is wrapped — per-take previews aren&apos;t available for this run.
+                    {t('talent.wrappedNoPreviews')}
                 </p>
             )}
         </div>
@@ -2503,12 +2595,11 @@ function TalentDetail({ state }: { state: PipelineState }) {
 }
 
 function ScoreDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.score;
     if (!slot) {
         return (
-            <div className="text-sm text-muted-foreground">
-                No background score was generated for this run.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('score.noScore')}</div>
         );
     }
     if (slot.state === 'cut' || slot.state === 'reshoot') {
@@ -2516,9 +2607,7 @@ function ScoreDetail({ state }: { state: PipelineState }) {
     }
     if (slot.state === 'scheduled') {
         return (
-            <div className="text-sm text-muted-foreground">
-                Composer hasn&apos;t arrived on set yet.
-            </div>
+            <div className="text-sm text-muted-foreground">{t('score.notArrived')}</div>
         );
     }
     if (slot.state === 'in_production') {
@@ -2527,8 +2616,8 @@ function ScoreDetail({ state }: { state: PipelineState }) {
         return (
             <div className="space-y-3">
                 <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Chunks composed
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('score.chunksComposed')}
                     </div>
                     <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
                         {completed}{' '}
@@ -2537,10 +2626,7 @@ function ScoreDetail({ state }: { state: PipelineState }) {
                         )}
                     </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                    Google Lyria renders the score in chunks (~30s each), then a render worker
-                    concatenates them into the final track that lives alongside the narration.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('score.inProductionNote')}</p>
             </div>
         );
     }
@@ -2552,8 +2638,8 @@ function ScoreDetail({ state }: { state: PipelineState }) {
         <div className="space-y-4">
             {audioUrl ? (
                 <div className="space-y-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {label || 'Background Music'}
+                    <div className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {label || t('score.defaultLabel')}
                     </div>
                     <audio controls preload="none" className="w-full">
                         <source src={audioUrl} type="audio/mpeg" />
@@ -2564,18 +2650,16 @@ function ScoreDetail({ state }: { state: PipelineState }) {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
                     >
-                        <ExternalLink className="size-3" />
-                        Open audio file
+                        <ArrowSquareOut className="size-3" />
+                        {t('narration.openAudioFile')}
                     </a>
                 </div>
             ) : (
-                <p className="text-sm text-muted-foreground">
-                    Score wrapped — the merged track is mixed into the final cut.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('score.wrappedNote')}</p>
             )}
             {segmentsTotal != null && (
                 <p className="text-xs text-muted-foreground">
-                    Composed in {segmentsTotal} chunk{segmentsTotal === 1 ? '' : 's'} via Lyria.
+                    {t('score.composedIn', { count: segmentsTotal })}
                 </p>
             )}
         </div>
@@ -2583,23 +2667,29 @@ function ScoreDetail({ state }: { state: PipelineState }) {
 }
 
 function FinalCutDetail({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioNodeDetailSheet');
     const slot = state.finalCut;
     if (slot.state !== 'wrapped') {
-        return <div className="text-sm text-muted-foreground">Final cut not assembled yet.</div>;
+        return (
+            <div className="text-sm text-muted-foreground">{t('finalCut.notAssembled')}</div>
+        );
     }
     const { timelineUrl, audioUrl, wordsUrl } = slot.data;
     return (
         <div className="space-y-3">
             <p className="text-sm text-foreground">
-                The final cut is the assembled timeline + voiceover. The embedded player on the
-                Final Cut node has the same content; clicking{' '}
-                <span className="font-medium">Watch fullscreen</span> there opens the full-bleed
-                view.
+                <Trans
+                    t={t}
+                    i18nKey="finalCut.description"
+                    components={{ bold: <span className="font-medium" /> }}
+                />
             </p>
             <div className="space-y-1 text-xs">
-                <ArtifactRow label="Timeline" url={timelineUrl} />
-                {audioUrl && <ArtifactRow label="Audio" url={audioUrl} />}
-                {wordsUrl && <ArtifactRow label="Word timings" url={wordsUrl} />}
+                <ArtifactRow label={t('artifactLabel.timeline')} url={timelineUrl} />
+                {audioUrl && <ArtifactRow label={t('artifactLabel.audio')} url={audioUrl} />}
+                {wordsUrl && (
+                    <ArtifactRow label={t('artifactLabel.wordTimings')} url={wordsUrl} />
+                )}
             </div>
         </div>
     );
@@ -2613,9 +2703,9 @@ function ArtifactRow({ label, url }: { label: string; url: string }) {
             rel="noopener noreferrer"
             className="flex items-center gap-2 rounded border bg-muted/20 px-2 py-1.5 text-xs hover:bg-muted/40"
         >
-            <ExternalLink className="size-3 text-muted-foreground" />
+            <ArrowSquareOut className="size-3 text-muted-foreground" />
             <span className="font-medium text-foreground">{label}</span>
-            <span className="ml-auto truncate font-mono text-[10px] text-muted-foreground">
+            <span className="ml-auto truncate font-mono text-2xs text-muted-foreground">
                 {url.split('/').pop()}
             </span>
         </a>

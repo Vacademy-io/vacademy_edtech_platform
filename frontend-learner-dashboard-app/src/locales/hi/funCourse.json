@@ -1,0 +1,47 @@
+{
+  "learn": {
+    "count_one": "{{count}} {{course}}",
+    "count_other": "{{count}} {{courses}}",
+    "searchLabel": "अपने {{courses}} खोजें",
+    "retry": "फिर से कोशिश करें"
+  },
+  "course": {
+    "back": "वापस",
+    "progressLabel": "{{course}} की प्रगति",
+    "percentOfCourse": "{{course}} का {{percent}}%",
+    "sizeLabel": "{{course}} का आकार",
+    "countChip": "{{count}} {{term}}",
+    "doneOf": "{{total}} में से {{done}} {{slides}} पूरे",
+    "levelEyebrow": "{{level}} {{index}}",
+    "levelDone": "{{count}} {{term}} · पूरा",
+    "onlyUnfinished": "केवल अधूरे",
+    "expandAll": "सब खोलें",
+    "collapseAll": "सब बंद करें",
+    "searchSlides": "{{slides}} खोजें",
+    "noSlides": "यहाँ अभी कोई {{slides}} नहीं है",
+    "continue": "जारी रखें",
+    "locked": "बंद",
+    "quizTag": "क्विज़",
+    "pickUpEyebrow": "जहाँ छोड़ा था वहीं से शुरू करें",
+    "nextUpEyebrow": "आगे पढ़ें",
+    "pickUpCta": "जारी रखें",
+    "inProgress": "जारी है",
+    "stateLabel": "{{state}}: {{title}}"
+  },
+  "lesson": {
+    "position": "{{total}} में से {{index}}",
+    "positionLabel": "{{slide}} {{total}} में से {{index}}",
+    "chapterProgress": "{{chapter}} की प्रगति",
+    "upNext": "अगला: {{title}}",
+    "upNextShort": "अगला",
+    "upNextLocked": "अगला: {{title}} · बंद",
+    "chapterComplete": "{{chapter}} पूरा हुआ",
+    "dismiss": "बंद करें",
+    "navLabel": "{{slide}} नेविगेशन",
+    "close": "{{slide}} बंद करें",
+    "outline": "{{chapter}} की सूची",
+    "prevShort": "पिछला",
+    "nextChapterShort": "अगला: {{chapter}}",
+    "feedback": "प्रतिक्रिया"
+  }
+}

@@ -1,0 +1,22 @@
+{
+    "timestampLabel": "टाइमस्टैंप: {{time}}",
+    "correctBadge": "सही",
+    "questionsList": {
+        "timeStampLine": "{{index}}. टाइम स्टैंप - {{time}}"
+    },
+    "deleteDialog": {
+        "title": "प्रश्न हटाएं",
+        "confirmMessage": "क्या आप वाकई इस प्रश्न को हटाना चाहते हैं?",
+        "description": "यह इस टाइमस्टैंप पर मौजूद प्रश्न को स्थायी रूप से हटा देता है और इसे पूर्ववत नहीं किया जा सकता।",
+        "cancel": "रद्द करें",
+        "delete": "हटाएं"
+    },
+    "toasts": {
+        "questionDeleted": "प्रश्न हटाया गया",
+        "videoJumpedTo": "वीडियो {{time}} पर पहुंचा दिया गया"
+    },
+    "errors": {
+        "deleteQuestionFailed": "प्रश्न हटाने में विफल",
+        "seekFailed": "वीडियो सीक करने में विफल"
+    }
+}

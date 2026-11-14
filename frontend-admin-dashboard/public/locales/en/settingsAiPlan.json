@@ -1,0 +1,44 @@
+{
+    "heading": "AI plan",
+    "description": "What your AI plan covers this period. The plan is managed by {{brand}}; contact them to change it.",
+    "loading": "Loading…",
+    "none": "This institute has no AI plan. Every AI use is charged from credits.",
+    "period": "Current period: {{start}} – {{end}}",
+    "status": {
+        "trial": "Trial",
+        "grace": "Grace period"
+    },
+    "allowance": {
+        "title": "Monthly allowance",
+        "line": "{{used}} of {{total}} credits used · {{remaining}} left",
+        "hint": "Pays for features marked “From allowance”. Once it runs out they use credits. Unused allowance does not roll over.",
+        "none": "This plan has no monthly allowance."
+    },
+    "mode": {
+        "included": "Included",
+        "allowance": "From allowance",
+        "charged": "Uses credits"
+    },
+    "groups": {
+        "INCLUDED": {
+            "title": "Included in your plan",
+            "description": "No credits are used, within fair use. Past a fair-use limit, or with a model outside the plan, the use is charged from credits."
+        },
+        "ALLOWANCE": {
+            "title": "Paid from the plan allowance",
+            "description": "Drawn from this period's allowance first, then from credits."
+        },
+        "CHARGED": {
+            "title": "Uses credits",
+            "description": "Charged from your credits as usual."
+        }
+    },
+    "fairUse": {
+        "used": "{{pct}}% of fair use used this period",
+        "reached": "Fair-use limit reached: further uses are charged from credits until the next period."
+    },
+    "models": {
+        "included": "Included models: {{models}}",
+        "any": "Any model is included"
+    }
+}

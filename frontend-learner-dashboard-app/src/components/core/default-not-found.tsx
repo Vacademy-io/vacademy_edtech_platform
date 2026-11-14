@@ -1,39 +1,46 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Helmet } from "react-helmet";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 
 function RootNotFoundComponent() {
+    const { t } = useTranslation("courseComponentsExtra");
     const router = useRouter();
 
     return (
         <>
             <Helmet>
-                <title>{document?.title || "Page Not Found (404)"}</title>
+                <title>{document?.title || t("defaultNotFound.pageTitle")}</title>
                 <meta
                     name="description"
-                    content="Page not found. We couldn't find the page you were looking for. Please check the URL or try searching."
+                    content={t("defaultNotFound.metaDescription")}
                 />
             </Helmet>
 
-            <div className="grid h-screen select-none place-content-center bg-base-primary px-4 text-gray-700 dark:text-gray-800">
+            <div className="grid h-screen w-full select-none place-content-center bg-base-primary px-4 text-gray-700 dark:text-gray-800">
                 <div className="text-center">
                     <h1 className="text-9xl font-black">404</h1>
                     <p className="text-2xl font-bold tracking-tight sm:text-4xl">
-                        Oops! Page Not Found
+                        {t("defaultNotFound.heading")}
                     </p>
                     <p className="mt-4 text-gray-500">
-                        We couldn&apos;t find the page you were trying to access.
+                        {t("defaultNotFound.descriptionLine1")}
                         <br />
-                        This might be due to a typing error, a temporary issue, or the page may have
-                        been removed.
+                        {t("defaultNotFound.descriptionLine2")}
                     </p>
-                    <div className="mt-8 flex justify-center gap-5 text-base-white">
+                    <div className="mt-8 flex flex-wrap justify-center gap-3">
                         <Button asChild variant={"default"} className="h-10 min-w-32">
-                            <div>Return Home</div>
+                            <Link to="/">{t("common.returnHome")}</Link>
                         </Button>
-                        <Button asChild variant={"default"} className="h-10 min-w-32">
-                            <div onClick={() => router.history.back()}>Go Back</div>
-                        </Button>
+                        {router.history.canGoBack() && (
+                            <Button
+                                variant={"outline"}
+                                className="h-10 min-w-32"
+                                onClick={() => router.history.back()}
+                            >
+                                {t("common.goBack")}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { SpinnerGap } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
 import EwayCardForm from "@/components/common/enroll-by-invite/-components/eway-card-form";
@@ -31,6 +32,7 @@ export const EwayCardUpdate = ({
   onUpdated,
   onCancel,
 }: EwayCardUpdateProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const [encryptedCard, setEncryptedCard] = useState<EncryptedCard | null>(
     null
   );
@@ -38,7 +40,7 @@ export const EwayCardUpdate = ({
 
   const handleSave = async () => {
     if (!encryptedCard) {
-      toast.error("Please complete the card details first");
+      toast.error(t("cardUpdate.eway.incomplete"));
       return;
     }
     setIsSaving(true);
@@ -50,11 +52,11 @@ export const EwayCardUpdate = ({
         encryptedCardNumber: encryptedCard.encryptedNumber,
         encryptedCvn: encryptedCard.encryptedCVN,
       });
-      toast.success("Your card has been updated");
+      toast.success(t("cardUpdate.success"));
       onUpdated();
     } catch (error) {
       console.error("eWay card update failed:", error);
-      toast.error("Failed to update card. Please try again.");
+      toast.error(t("cardUpdate.genericError"));
     } finally {
       setIsSaving(false);
     }
@@ -76,7 +78,7 @@ export const EwayCardUpdate = ({
           onClick={onCancel}
           disabled={isSaving}
         >
-          Cancel
+          {t("common.cancel")}
         </MyButton>
         <MyButton
           type="button"
@@ -89,10 +91,10 @@ export const EwayCardUpdate = ({
           {isSaving ? (
             <>
               <SpinnerGap className="me-2 size-4 animate-spin" />
-              Saving...
+              {t("common.saving")}
             </>
           ) : (
-            "Save Card"
+            t("common.saveCard")
           )}
         </MyButton>
       </div>

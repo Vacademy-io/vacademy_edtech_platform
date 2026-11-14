@@ -1,0 +1,32 @@
+{
+    "validation": {
+        "urlRequired": "L'URL est requise",
+        "urlInvalid": "Veuillez saisir une URL valide",
+        "youtubeUrlInvalid": "Veuillez saisir une URL YouTube valide"
+    },
+    "defaults": {
+        "videoName": "Vidéo YouTube"
+    },
+    "fields": {
+        "urlPlaceholder": "https://www.youtube.com/watch?v=..."
+    },
+    "preview": {
+        "thumbnailAlt": "Miniature de la vidéo"
+    },
+    "toasts": {
+        "invalidYoutubeUrl": "URL YouTube invalide",
+        "durationReadFailed": "Impossible de lire la durée de la vidéo depuis YouTube. Veuillez réessayer.",
+        "youtubeLoading": "YouTube est encore en cours de chargement. Veuillez patienter un instant et réessayer.",
+        "updateSuccess": "Lien vidéo mis à jour avec succès !",
+        "addSuccess": "Vidéo ajoutée avec succès !",
+        "updateFailed": "Échec de la mise à jour du lien",
+        "addFailed": "Échec de l'ajout de la vidéo",
+        "reorderFailed": "Diapositive créée mais la réorganisation a échoué"
+    },
+    "actions": {
+        "updatingLink": "Mise à jour du lien...",
+        "addingVideo": "Ajout de la vidéo...",
+        "updateLink": "Mettre à jour le lien YouTube",
+        "addVideo": "Ajouter une vidéo YouTube"
+    }
+}

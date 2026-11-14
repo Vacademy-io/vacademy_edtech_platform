@@ -1,0 +1,37 @@
+{
+    "header": {
+        "title": "Creative direction"
+    },
+    "fields": {
+        "controlling_idea": {
+            "label": "Controlling idea",
+            "hint": "the one argument the video makes"
+        },
+        "tonal_register": {
+            "label": "Tone",
+            "hint": "e.g. confident, playful, documentary"
+        },
+        "emotional_arc": {
+            "label": "Emotional arc",
+            "hint": "from → to"
+        },
+        "visual_metaphor": {
+            "label": "Visual metaphor",
+            "hint": "the animatable idea"
+        },
+        "signature_device": {
+            "label": "Signature device",
+            "hint": "a recurring visual gesture"
+        }
+    },
+    "directions": {
+        "draftLabel": "Direction {{letter}} · draft",
+        "label": "Direction {{letter}}",
+        "draftWhyThisWorks": "The draft direction."
+    },
+    "actions": {
+        "letAiDecide": "Let AI decide",
+        "saveAndContinue": "Save & continue",
+        "approveDirection": "Approve direction"
+    }
+}

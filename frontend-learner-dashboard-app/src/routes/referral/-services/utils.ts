@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 export type BenefitType =
   | "POINTS"
   | "FREE_MEMBERSHIP_DAYS"
@@ -20,31 +22,31 @@ const parseBenefitLog = (benefit_value: string, type: string) => {
   }
 };
 
-const getBenefitText = (type: BenefitType) => {
+const getBenefitText = (type: BenefitType, t: TFunction) => {
   switch (type) {
     case "PERCENTAGE_DISCOUNT":
-      return `Get a discount on your next purchase`;
+      return t("referral.benefit.percentageDiscountText");
     case "FLAT_DISCOUNT":
-      return `Get a flat off your next purchase`;
+      return t("referral.benefit.flatDiscountText");
     case "CONTENT":
-      return `Exclusive content will be delivered to you`;
+      return t("referral.benefit.contentText");
     default:
-      return "Unknown benefit";
+      return t("referral.benefit.unknown");
   }
 };
 
-const getBenefitTypeLabel = (type: string) => {
+const getBenefitTypeLabel = (type: string, t: TFunction) => {
   switch (type) {
     case "PERCENTAGE_DISCOUNT":
-      return "Percentage Discount";
+      return t("referral.benefit.percentageDiscount");
     case "FLAT_DISCOUNT":
-      return "Flat Discount";
+      return t("referral.benefit.flatDiscount");
     case "FREE_MEMBERSHIP_DAYS":
-      return "Free Membership Days";
+      return t("referral.benefit.freeMembershipDays");
     case "CONTENT":
-      return "Content Benefit";
+      return t("referral.benefit.contentBenefit");
     case "POINTS":
-      return "Reward Points";
+      return t("referral.benefit.rewardPoints");
     default:
       return type;
   }

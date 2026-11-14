@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "अपलोड किए गए प्रश्नों की समीक्षा करें",
+        "summary_one": "{{count}} में से {{grouped}} प्रश्न पर ध्यान देने की आवश्यकता है",
+        "summary_other": "{{count}} में से {{grouped}} प्रश्नों पर ध्यान देने की आवश्यकता है",
+        "errorsCount_one": "— {{count}} में त्रुटियाँ हैं",
+        "errorsCount_other": "— {{count}} में त्रुटियाँ हैं",
+        "warningsCount_one": ", {{count}} में चेतावनियाँ हैं",
+        "warningsCount_other": ", {{count}} में चेतावनियाँ हैं"
+    },
+    "actionsBar": {
+        "summary": "{{skipCount}} छोड़े जाने हेतु चिह्नित · {{proceedCount}} फ़ॉर्म में जोड़े जाएंगे",
+        "skipAll": "सभी छोड़ें",
+        "skipNone": "कोई न छोड़ें"
+    },
+    "listItem": {
+        "questionNumber": "प्र{{number}}",
+        "errorBadge": "त्रुटि",
+        "warningBadge": "चेतावनी"
+    },
+    "footer": {
+        "copyDiagnostics": "डायग्नोस्टिक JSON कॉपी करें",
+        "cancel": "रद्द करें",
+        "keepAllAndEdit": "सभी रखें और संपादित करें",
+        "skipAndProceed": "छोड़ें और आगे बढ़ें ({{count}})"
+    },
+    "toasts": {
+        "copySuccess": "डायग्नोस्टिक जानकारी क्लिपबोर्ड पर कॉपी की गई",
+        "copyFailed": "क्लिपबोर्ड पर कॉपी नहीं की जा सकी"
+    }
+}

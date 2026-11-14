@@ -107,6 +107,9 @@ public class SubOrgTeamService {
     @Autowired
     private SubOrgAccessScopeService subOrgAccessScopeService;
 
+    @Autowired
+    private vacademy.io.admin_core_service.core.security.InstituteAccessValidator instituteAccessValidator;
+
     /** Resolves a sub-org invite's package sessions when an assign request doesn't name them. */
     @Autowired
     private vacademy.io.admin_core_service.features.enroll_invite.service
@@ -262,6 +265,12 @@ public class SubOrgTeamService {
                         "Role '" + roleName + "' is not in this sub-org's allowed roles. "
                                 + "Allowed: " + String.join(", ", allowed));
             }
+        }
+
+        // Only an ADMIN of the institute may create another ADMIN there. hasSystemRole reads
+        // authorities minted for the clientId institute, which need not be this one.
+        if ("ADMIN".equalsIgnoreCase(roleName)) {
+            instituteAccessValidator.requireInstituteAdmin(caller, request.getInstituteId());
         }
 
         // Validate package sessions are within caller's scope (sub-org admins only).

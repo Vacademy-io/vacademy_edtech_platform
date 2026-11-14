@@ -1,0 +1,42 @@
+{
+    "sectionTitle": "أداء الفريق",
+    "teamsBadge_zero": "{{count}} فريق",
+    "teamsBadge_one": "{{count}} فريق واحد",
+    "teamsBadge_two": "فريقان ({{count}})",
+    "teamsBadge_few": "{{count}} فرق",
+    "teamsBadge_many": "{{count}} فريقًا",
+    "teamsBadge_other": "{{count}} فريق",
+    "unassigned": "غير معيَّن",
+    "total": "الإجمالي",
+    "emptyHint": "لا يوجد نشاط للفرق في هذا النطاق الزمني.",
+    "breakdownTitle": "معدل التحويل حسب الفريق",
+    "footnote": "المستجيبون = العملاء المحتملون الذين تلقّوا استجابة واحدة على الأقل. نسبة التحويل % = التحويلات ÷ العملاء المحتملون. متوسط الاستجابة = متوسط الوقت حتى أول استجابة. نسبة الإنجاز % = التحويلات ÷ الهدف.",
+    "table": {
+        "team": "الفريق",
+        "head": "الرئيس",
+        "counsellors": "المستشارون",
+        "leads": "العملاء المحتملون",
+        "responded": "استجابوا",
+        "conversions": "التحويلات",
+        "convRate": "نسبة التحويل %",
+        "open": "مفتوح",
+        "overdue": "متأخر",
+        "avgResponse": "متوسط الاستجابة",
+        "target": "الهدف",
+        "attainmentPct": "نسبة الإنجاز %"
+    },
+    "csv": {
+        "team": "الفريق",
+        "head": "الرئيس",
+        "counsellors": "المستشارون",
+        "leads": "العملاء المحتملون",
+        "responded": "استجابوا",
+        "conversions": "التحويلات",
+        "conversionRatePct": "نسبة التحويل (%)",
+        "open": "مفتوح",
+        "overdue": "متأخر",
+        "avgResponseMinutes": "متوسط الاستجابة (بالدقائق)",
+        "target": "الهدف",
+        "attainmentPct": "نسبة الإنجاز (%)"
+    }
+}

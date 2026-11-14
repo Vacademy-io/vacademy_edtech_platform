@@ -1,0 +1,31 @@
+{
+    "edit": "Edit",
+    "sections": {
+        "profile": "Profile",
+        "emergencyContact": "Emergency contact",
+        "statutoryIdentifiers": "Statutory identifiers"
+    },
+    "fields": {
+        "employeeCode": "Employee code",
+        "name": "Name",
+        "employmentStatus": "Employment status",
+        "email": "Email",
+        "mobile": "Mobile",
+        "employmentType": "Employment type",
+        "department": "Department",
+        "designation": "Designation",
+        "reportingManager": "Reporting manager",
+        "joinDate": "Join date",
+        "noticePeriod": "Notice period",
+        "nationality": "Nationality",
+        "phone": "Phone",
+        "relation": "Relation",
+        "bloodGroup": "Blood group",
+        "maritalStatus": "Marital status",
+        "pan": "PAN",
+        "uan": "UAN"
+    },
+    "noticePeriodDays_one": "{{count}} day",
+    "noticePeriodDays_other": "{{count}} days",
+    "maskedNumbersHint": "Stored numbers are shown partly hidden. Editing replaces a number only when you type a new one."
+}

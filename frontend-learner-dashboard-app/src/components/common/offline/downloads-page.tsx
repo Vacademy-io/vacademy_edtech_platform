@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowClockwise, Bell, CaretRight, CloudCheck, CloudSlash, DeviceMobile, HardDrives, Trash, WifiHigh, WifiSlash, X } from "@phosphor-icons/react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import {
@@ -44,6 +45,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFreeDiskSpace } from "@/lib/offline/native/offline-media";
 import { handleDeviceRevoked, performCheckIn } from "@/lib/offline/lease/checkin";
 import { listDevices, selfRevokeDevice, type OfflineDeviceDTO } from "@/services/offline/device-service";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 /**
  * A manifest describes the whole course, not what this device actually holds,
@@ -87,10 +90,14 @@ const isPlaceholderName = (name: string | null | undefined): boolean =>
  * Best human label for a downloaded group: the subject when it's real,
  * otherwise walk up to the course name. Chapters keep their own (real) names.
  */
-const groupLabel = (subjectName: string | undefined, manifest: OfflineManifest): string => {
+const groupLabel = (
+  subjectName: string | undefined,
+  manifest: OfflineManifest,
+  fallbackLabel: string
+): string => {
   if (!isPlaceholderName(subjectName)) return subjectName as string;
   if (!isPlaceholderName(manifest.course_name)) return manifest.course_name as string;
-  return "Downloaded content";
+  return fallbackLabel;
 };
 
 /**
@@ -111,6 +118,8 @@ function formatBytes(bytes: number): string {
 }
 
 export const DownloadsPage = () => {
+  const { t } = useTranslation("layoutCommonB");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const userId = useOfflineUserId();
   const { storageUsedBytes, wifiOnly, leaseState, setWifiOnly, hydrate, nodeStatuses } =
     useOfflineStore();
@@ -209,10 +218,10 @@ export const DownloadsPage = () => {
       await downloadManager.applyManifestUpdate(userId, packageSessionId);
       await hydrate(userId);
       await loadManifests(userId);
-      toast.success("Updating — new content is downloading");
+      toast.success(t("offline.downloadsPage.toasts.updateStarted"));
     } catch (error) {
       console.error("[downloads] failed to apply update", error);
-      toast.error("Couldn't fetch the update — please try again");
+      toast.error(t("offline.downloadsPage.toasts.updateFetchFailed"));
     } finally {
       setUpdatingId(null);
     }
@@ -250,12 +259,12 @@ export const DownloadsPage = () => {
       await refreshDevices();
       toast.success(
         isThisDevice
-          ? "This device was removed. Downloaded content has been deleted."
-          : "Device removed from offline access."
+          ? t("offline.downloadsPage.toasts.thisDeviceRemoved")
+          : t("offline.downloadsPage.toasts.deviceRemoved")
       );
     } catch (error) {
       console.error("[offline] failed to revoke device", error);
-      toast.error("Couldn't remove that device. Please try again.");
+      toast.error(t("offline.downloadsPage.toasts.deviceRemoveFailed"));
     } finally {
       setRevokingId(null);
     }
@@ -277,10 +286,10 @@ export const DownloadsPage = () => {
       <div className="flex w-full max-w-2xl flex-col items-center gap-2 p-8 text-center">
         <CloudSlash size={28} className="text-neutral-300" />
         <p className="text-body font-medium text-neutral-600">
-          Offline downloads aren't available here
+          {t("offline.downloadsPage.unavailable.title")}
         </p>
         <p className="text-caption text-neutral-400">
-          Offline access works in the mobile app, and only when your institute has enabled it.
+          {t("offline.downloadsPage.unavailable.description")}
         </p>
       </div>
     );
@@ -316,7 +325,7 @@ export const DownloadsPage = () => {
       });
     } catch (error) {
       console.error("[downloads] failed to open chapter", error);
-      toast.error("Couldn't open this chapter — try opening it from the course");
+      toast.error(t("offline.downloadsPage.toasts.openChapterFailed", { course: course.toLocaleLowerCase() }));
     }
   };
 
@@ -329,10 +338,10 @@ export const DownloadsPage = () => {
       await downloadManager.deleteNode(userId, manifest.package_session_id, slideIds);
       await hydrate(userId);
       await loadManifests(userId);
-      toast.success("Removed from downloads");
+      toast.success(t("offline.downloadsPage.toasts.removedFromDownloads"));
     } catch (error) {
       console.error("[downloads] failed to delete subject", error);
-      toast.error("Couldn't remove that download — please try again");
+      toast.error(t("offline.downloadsPage.toasts.removeDownloadFailed"));
     } finally {
       setBusy(false);
     }
@@ -349,10 +358,10 @@ export const DownloadsPage = () => {
       }
       await hydrate(userId);
       await loadManifests(userId);
-      toast.success("All downloads cleared");
+      toast.success(t("offline.downloadsPage.toasts.allCleared"));
     } catch (error) {
       console.error("[downloads] failed to clear downloads", error);
-      toast.error("Couldn't clear downloads — please try again");
+      toast.error(t("offline.downloadsPage.toasts.clearFailed"));
     } finally {
       setBusy(false);
     }
@@ -399,8 +408,8 @@ export const DownloadsPage = () => {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-4 p-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-title font-semibold text-neutral-800">Downloads</h2>
-        <p className="text-body text-neutral-500">Manage what's saved to this device for offline use.</p>
+        <h2 className="text-title font-semibold text-neutral-800">{t("offline.downloadsPage.heading")}</h2>
+        <p className="text-body text-neutral-500">{t("offline.downloadsPage.subheading")}</p>
       </div>
 
       {/* Notices stay above the tabs: a revocation or expired lease must be seen
@@ -420,7 +429,7 @@ export const DownloadsPage = () => {
                 type="button"
                 onClick={() => void handleDismissNotice(notice.id)}
                 className="shrink-0 text-neutral-400 hover:text-neutral-600"
-                title="Dismiss"
+                title={t("offline.downloadsPage.dismiss")}
               >
                 <X size={14} />
               </button>
@@ -432,35 +441,37 @@ export const DownloadsPage = () => {
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="content">
-            Content{downloadedCount > 0 ? ` (${downloadedCount})` : ""}
+            {downloadedCount > 0
+              ? t("offline.downloadsPage.tabs.contentWithCount", { count: downloadedCount })
+              : t("offline.downloadsPage.tabs.content")}
           </TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="settings">{t("offline.downloadsPage.tabs.settings")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="flex flex-col gap-4">
           {/* Storage: what downloads take, and what the device has left — the
               second half is what tells a learner whether another download will
               even fit. */}
-          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4">
+          <div className="flex flex-col gap-stack rounded-lg border border-neutral-200 p-4">
             <div className="flex items-center gap-2">
               <HardDrives size={18} className="text-neutral-500" />
-              <span className="text-body font-medium text-neutral-700">Storage</span>
+              <span className="text-body font-medium text-neutral-700">{t("offline.downloadsPage.storage.title")}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-caption text-neutral-500">Used by downloads</span>
+              <span className="text-caption text-neutral-500">{t("offline.downloadsPage.storage.usedByDownloads")}</span>
               <span className="text-body font-medium text-neutral-700">
                 {formatBytes(storageUsedBytes)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-caption text-neutral-500">Available on device</span>
+              <span className="text-caption text-neutral-500">{t("offline.downloadsPage.storage.availableOnDevice")}</span>
               <span className="text-body font-medium text-neutral-700">
                 {freeBytes === null ? "—" : formatBytes(freeBytes)}
               </span>
             </div>
             {freeBytes !== null && freeBytes < LOW_SPACE_BYTES && (
               <p className="text-caption text-warning-600">
-                Storage is running low — new downloads may fail.
+                {t("offline.downloadsPage.storage.lowSpace")}
               </p>
             )}
           </div>
@@ -469,14 +480,14 @@ export const DownloadsPage = () => {
           <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
             <div className="flex items-center gap-2">
               <CloudCheck size={18} className="text-neutral-500" />
-              <span className="text-body font-medium text-neutral-700">Offline access</span>
+              <span className="text-body font-medium text-neutral-700">{t("offline.downloadsPage.offlineAccess.title")}</span>
             </div>
             <LeaseStatusLine leaseState={leaseState} />
           </div>
 
           {/* Download settings */}
           <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
-            <span className="text-body font-medium text-neutral-700">Download settings</span>
+            <span className="text-body font-medium text-neutral-700">{t("offline.downloadsPage.downloadSettings.title")}</span>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {wifiOnly ? (
@@ -485,9 +496,9 @@ export const DownloadsPage = () => {
                   <WifiSlash size={18} className="text-neutral-500" />
                 )}
                 <div className="flex flex-col">
-                  <span className="text-body text-neutral-700">Download over Wi-Fi only</span>
+                  <span className="text-body text-neutral-700">{t("offline.downloadsPage.downloadSettings.wifiOnly")}</span>
                   <span className="text-caption text-neutral-400">
-                    {wifiOnly ? "Downloads wait for Wi-Fi" : "Mobile data can be used"}
+                    {wifiOnly ? t("offline.downloadsPage.downloadSettings.waitsForWifi") : t("offline.downloadsPage.downloadSettings.mobileDataAllowed")}
                   </span>
                 </div>
               </div>
@@ -514,13 +525,13 @@ export const DownloadsPage = () => {
           <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4">
         <div className="flex items-center gap-2">
           <DeviceMobile size={18} />
-          <span className="text-body font-medium text-neutral-700">Offline devices</span>
+          <span className="text-body font-medium text-neutral-700">{t("offline.downloadsPage.devices.title")}</span>
         </div>
         {devicesLoading && devices.length === 0 && (
-          <p className="text-caption text-neutral-400">Loading…</p>
+          <p className="text-caption text-neutral-400">{t("offline.downloadsPage.devices.loading")}</p>
         )}
         {!devicesLoading && devices.length === 0 && (
-          <p className="text-caption text-neutral-400">No devices registered for offline access.</p>
+          <p className="text-caption text-neutral-400">{t("offline.downloadsPage.devices.none")}</p>
         )}
         {devices.map((device) => {
           const isThisDevice = device.id === thisDeviceRegistrationId;
@@ -528,10 +539,10 @@ export const DownloadsPage = () => {
             <div key={device.id} className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-body text-neutral-700">
-                  {device.device_name ?? "Unnamed device"}
-                  {isThisDevice && <span className="ml-1 text-caption text-primary-500">(this device)</span>}
+                  {device.device_name ?? t("offline.downloadsPage.devices.unnamedDevice")}
+                  {isThisDevice && <span className="ms-1 text-caption text-primary-500">{t("offline.downloadsPage.devices.thisDeviceSuffix")}</span>}
                 </span>
-                <span className="text-caption text-neutral-400">{device.platform ?? "unknown"}</span>
+                <span className="text-caption text-neutral-400">{device.platform ?? t("offline.downloadsPage.devices.unknownPlatform")}</span>
               </div>
               <button
                 type="button"
@@ -540,13 +551,13 @@ export const DownloadsPage = () => {
                   setPendingDelete({
                     kind: "device",
                     deviceId: device.id,
-                    label: device.device_name ?? "this device",
+                    label: device.device_name ?? t("offline.downloadsPage.devices.thisDeviceFallbackLabel"),
                     isThisDevice,
                   })
                 }
                 className="inline-flex items-center gap-1 text-caption text-danger-600 hover:underline disabled:opacity-50"
               >
-                <Trash size={14} /> Remove
+                <Trash size={14} /> {t("offline.downloadsPage.devices.remove")}
               </button>
             </div>
           );
@@ -554,13 +565,13 @@ export const DownloadsPage = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="content" className="flex flex-col gap-3">
+        <TabsContent value="content" className="flex flex-col gap-stack">
         {visibleManifests.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-200 px-4 py-10 text-center">
             <CloudSlash size={28} className="text-neutral-300" />
-            <p className="text-body font-medium text-neutral-600">Nothing downloaded yet</p>
+            <p className="text-body font-medium text-neutral-600">{t("offline.downloadsPage.content.emptyTitle")}</p>
             <p className="text-caption text-neutral-400">
-              Open a course and tap the download icon to save it for offline use.
+              {t("offline.downloadsPage.content.emptyDescription", { course: course.toLocaleLowerCase() })}
             </p>
           </div>
         )}
@@ -571,9 +582,9 @@ export const DownloadsPage = () => {
                 <div className="flex items-center gap-2">
                   <ArrowClockwise size={16} className="shrink-0 text-primary-600" />
                   <span className="text-caption text-neutral-700">
-                    New content in{" "}
+                    {t("offline.downloadsPage.content.newContentInPrefix")}{" "}
                     <span className="font-medium">
-                      {groupLabel(subjects[0]?.subject.subject_name, manifest)}
+                      {groupLabel(subjects[0]?.subject.subject_name, manifest, t("offline.downloadsPage.downloadedContent"))}
                     </span>
                   </span>
                 </div>
@@ -583,7 +594,7 @@ export const DownloadsPage = () => {
                   onClick={() => void handleApplyUpdate(manifest.package_session_id)}
                   className="shrink-0 rounded-md bg-primary-500 px-3 py-1 text-caption font-medium text-white hover:bg-primary-600 disabled:opacity-50"
                 >
-                  {updatingId === manifest.package_session_id ? "Updating…" : "Update"}
+                  {updatingId === manifest.package_session_id ? t("offline.downloadsPage.content.updating") : t("offline.downloadsPage.content.update")}
                 </button>
               </div>
             )}
@@ -591,7 +602,7 @@ export const DownloadsPage = () => {
               <div key={subject.subject_id} className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-body font-medium text-neutral-700">
-                    {groupLabel(subject.subject_name, manifest)}
+                    {groupLabel(subject.subject_name, manifest, t("offline.downloadsPage.downloadedContent"))}
                   </span>
                   <button
                     type="button"
@@ -601,12 +612,12 @@ export const DownloadsPage = () => {
                         kind: "subject",
                         manifest,
                         subjectId: subject.subject_id,
-                        label: groupLabel(subject.subject_name, manifest),
+                        label: groupLabel(subject.subject_name, manifest, t("offline.downloadsPage.downloadedContent")),
                       })
                     }
                     className="inline-flex items-center gap-1 text-caption text-danger-600 hover:underline disabled:opacity-50"
                   >
-                    <Trash size={14} /> Delete
+                    <Trash size={14} /> {t("offline.downloadsPage.content.delete")}
                   </button>
                 </div>
                 {entries.map(({ module, chapter }) => {
@@ -636,7 +647,7 @@ export const DownloadsPage = () => {
                         </span>
                         {chapterHasUpdate && (
                           <span className="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-3xs font-medium text-primary-700">
-                            Update available
+                            {t("offline.downloadsPage.content.updateAvailable")}
                           </span>
                         )}
                       </button>
@@ -649,7 +660,7 @@ export const DownloadsPage = () => {
                             className="inline-flex items-center gap-1 rounded-md bg-primary-500 px-2.5 py-1 text-caption font-medium text-white hover:bg-primary-600 disabled:opacity-50"
                           >
                             <ArrowClockwise size={12} />
-                            {updatingId === manifest.package_session_id ? "Updating…" : "Update"}
+                            {updatingId === manifest.package_session_id ? t("offline.downloadsPage.content.updating") : t("offline.downloadsPage.content.update")}
                           </button>
                         )}
                         <button
@@ -659,7 +670,7 @@ export const DownloadsPage = () => {
                           }
                           className="inline-flex items-center gap-1 text-caption font-medium text-primary-600"
                         >
-                          Open <CaretRight size={12} />
+                          {t("offline.downloadsPage.content.open")} <CaretRight size={12} />
                         </button>
                       </div>
                     </div>
@@ -672,7 +683,7 @@ export const DownloadsPage = () => {
 
         {visibleManifests.length > 0 && (
           <MyButton buttonType="secondary" disable={busy} onClick={() => setPendingDelete({ kind: "all" })}>
-            Clear all downloads
+            {t("offline.downloadsPage.content.clearAll")}
           </MyButton>
         )}
         </TabsContent>
@@ -690,31 +701,33 @@ export const DownloadsPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {pendingDelete?.kind === "all"
-                ? "Clear all downloads?"
+                ? t("offline.downloadsPage.confirmDialog.clearAllTitle")
                 : pendingDelete?.kind === "device"
                   ? pendingDelete.isThisDevice
-                    ? "Remove this device?"
-                    : `Remove "${pendingDelete.label}"?`
-                  : `Remove "${pendingDelete?.kind === "subject" ? pendingDelete.label : ""}"?`}
+                    ? t("offline.downloadsPage.confirmDialog.removeThisDeviceTitle")
+                    : t("offline.downloadsPage.confirmDialog.removeNamedTitle", { label: pendingDelete.label })
+                  : t("offline.downloadsPage.confirmDialog.removeNamedTitle", {
+                      label: pendingDelete?.kind === "subject" ? pendingDelete.label : "",
+                    })}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDelete?.kind === "all"
-                ? "Everything saved on this device will be removed. You'll need an internet connection to download it again."
+                ? t("offline.downloadsPage.confirmDialog.clearAllDescription")
                 : pendingDelete?.kind === "device"
                   ? pendingDelete.isThisDevice
-                    ? "This device will lose offline access and all downloaded content on it will be deleted. You can download again later."
-                    : "That device will lose offline access and its downloaded content will be removed the next time it connects."
-                  : "This content will be removed from this device. You'll need an internet connection to download it again."}
+                    ? t("offline.downloadsPage.confirmDialog.removeThisDeviceDescription")
+                    : t("offline.downloadsPage.confirmDialog.removeOtherDeviceDescription")
+                  : t("offline.downloadsPage.confirmDialog.removeContentDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("offline.downloadsPage.confirmDialog.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
               onClick={() => void runPendingDelete()}
               className="bg-danger-600 hover:bg-danger-700"
             >
-              {pendingDelete?.kind === "all" ? "Clear all" : "Remove"}
+              {pendingDelete?.kind === "all" ? t("offline.downloadsPage.confirmDialog.clearAllConfirm") : t("offline.downloadsPage.confirmDialog.removeConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -724,16 +737,21 @@ export const DownloadsPage = () => {
 };
 
 function LeaseStatusLine({ leaseState }: { leaseState: { kind: string; expiresAt?: number } }) {
+  const { t, i18n } = useTranslation("layoutCommonB");
   if (leaseState.kind === "valid") {
     return (
       <div className="flex items-center gap-1.5 text-caption text-neutral-500">
         <CloudCheck size={14} className="text-success-600" />
-        <span>Offline access valid until {new Date(leaseState.expiresAt ?? 0).toLocaleDateString()}</span>
+        <span>
+          {t("offline.downloadsPage.lease.validUntil", {
+            date: new Date(leaseState.expiresAt ?? 0).toLocaleDateString(i18n.language),
+          })}
+        </span>
       </div>
     );
   }
   if (leaseState.kind === "expired") {
-    return <div className="text-caption text-warning-600">Offline access needs to reconnect to renew.</div>;
+    return <div className="text-caption text-warning-600">{t("offline.downloadsPage.lease.expired")}</div>;
   }
   if (leaseState.kind === "revoked") {
     // Neutral wording: this state is reached both when the institute revokes the
@@ -741,9 +759,9 @@ function LeaseStatusLine({ leaseState }: { leaseState: { kind: string; expiresAt
     // tabs says which one it was.
     return (
       <div className="text-caption text-danger-600">
-        Offline access is turned off for this device.
+        {t("offline.downloadsPage.lease.revoked")}
       </div>
     );
   }
-  return <div className="text-caption text-neutral-400">No offline device registered yet.</div>;
+  return <div className="text-caption text-neutral-400">{t("offline.downloadsPage.lease.none")}</div>;
 }

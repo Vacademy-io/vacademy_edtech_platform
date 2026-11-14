@@ -61,6 +61,34 @@ describe('Live-session schedule — crash hardening (no "System Crashed" page)',
     });
 });
 
+describe('LiveSessionPreviewDialog — attendance-only notice', () => {
+    // Resolves to the English copy or, if the catalog isn't loaded, the raw key.
+    const notice = /attendance only|attendanceOnly\.title/i;
+    const renderDialog = (attendanceOnly?: boolean) =>
+        render(
+            <LiveSessionPreviewDialog
+                open
+                onOpenChange={() => {}}
+                submitting={false}
+                onConfirm={() => {}}
+                sessions={[]}
+                courses={[]}
+                sessionList={[]}
+                attendanceOnly={attendanceOnly}
+            />
+        );
+
+    it('shows the notice when the institute is in attendance-only mode', () => {
+        renderDialog(true);
+        expect(screen.queryByText(notice)).toBeTruthy();
+    });
+
+    it('hides the notice by default', () => {
+        renderDialog();
+        expect(screen.queryByText(notice)).toBeNull();
+    });
+});
+
 describe('Private class requires at least one batch (bulk schedule)', () => {
     const baseRow = {
         title: 'Algebra',

@@ -1,0 +1,8 @@
+{
+    "success": {
+        "createCampaign": "Campaign created successfully"
+    },
+    "errors": {
+        "createCampaign": "Failed to create campaign"
+    }
+}

@@ -1,0 +1,37 @@
+---
+title: "Going live"
+description: "A checklist before your integration calls real people."
+---
+
+## Your integration
+
+- [ ] **Key on the server only**, loaded from a secret store or environment variable. One key per system.
+- [ ] **Idempotency-Key** on every `POST /v1/calls`, derived from your record id, so retries never ring someone twice.
+- [ ] **external_id** on every call, so results find their record.
+- [ ] **Errors handled:** `409 call_already_queued` (fine, skip), `402 insufficient_credits` (alert someone), `429 rate_limited` (wait `Retry-After`), `5xx` (retry with backoff).
+- [ ] **Phone numbers** normalised to E.164 before sending.
+
+## Your webhook
+
+- [ ] Verifies **Telleo-Signature** and rejects old timestamps.
+- [ ] Answers **2xx within 10 seconds** and does the work afterwards.
+- [ ] Ignores **repeated event ids**.
+- [ ] Handles both **call.completed** and **call.not_connected**.
+- [ ] **Send test event** from the dashboard returns 2xx.
+
+## Your agent
+
+- [ ] Placed a real call to your own phone with the same `variables` you will send, and listened to it.
+- [ ] The opening line says who is calling and why, and mentions that the call is recorded if that applies where you operate.
+- [ ] Dispositions and extraction questions match what your CRM expects.
+
+## Your account
+
+- [ ] **Calling hours** set in AI calling settings, in your contacts' time zone.
+- [ ] **Credits** topped up for the expected volume.
+- [ ] **Telecom registration** is in place. In India we complete DLT registration with you during onboarding; declaring automated calls to your telecom provider, where the regulations require it, is yours to do.
+- [ ] You have **consent** to call the contacts you send. Do not use the API to call lists you have no relationship with.
+
+## Then
+
+Start with a small slice of real traffic, for example one source or one city, check the outcomes in your CRM for a day, then open it up.

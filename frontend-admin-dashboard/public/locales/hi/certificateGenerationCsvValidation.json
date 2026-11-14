@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "columnLabel": "कॉलम {{position}}",
+        "invalidHeader": "कॉलम {{position}} '{{expected}}' होना चाहिए, मिला '{{found}}'",
+        "missingValue": "गायब",
+        "duplicateHeader": "डुप्लिकेट हेडर '{{header}}' मिला। तीसरे कॉलम के बाद के सभी हेडर अद्वितीय होने चाहिए।",
+        "missingStudent": "चयनित छात्र '{{name}}' (आईडी: {{id}}) CSV में नहीं मिला",
+        "extraStudent": "छात्र '{{name}}' (आईडी: {{id}}) को प्रमाणपत्र निर्माण के लिए नहीं चुना गया था"
+    },
+    "warnings": {
+        "dataTypeMismatch": "कॉलम '{{column}}' में मान '{{value}}' {{actualType}} प्रतीत होता है, लेकिन यह कॉलम अधिकतर {{expectedType}} है",
+        "emptyCell": "आवश्यक फ़ील्ड '{{field}}' खाली है"
+    },
+    "format": {
+        "row": " (पंक्ति {{row}})",
+        "inColumn": " {{column}} में"
+    }
+}

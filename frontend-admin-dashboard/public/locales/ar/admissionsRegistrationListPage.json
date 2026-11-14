@@ -1,0 +1,77 @@
+{
+    "pageTitle": "الطلبات - القبول",
+    "navHeading": "إدارة الطلبات",
+    "search": {
+        "placeholder": "البحث برقم التتبع أو الاسم..."
+    },
+    "filters": {
+        "classLabel": "الصف",
+        "statusLabel": "الحالة"
+    },
+    "session": {
+        "placeholder": "اختر الفصل الدراسي",
+        "newGoTo": "New applications go to"
+    },
+    "buttons": {
+        "newApplication": "طلب جديد",
+        "bulkImport": "استيراد جماعي",
+        "previous": "السابق",
+        "next": "التالي"
+    },
+    "table": {
+        "loading": "جارٍ تحميل الطلبات...",
+        "empty": {
+            "title": "لم يتم العثور على طلبات",
+            "subtitle": "حاول تعديل عوامل التصفية"
+        },
+        "headers": {
+            "trackingId": "رقم التتبع",
+            "studentName": "اسم الطالب",
+            "class": "الصف",
+            "parentName": "اسم ولي الأمر",
+            "mobile": "الجوال",
+            "date": "التاريخ",
+            "status": "الحالة",
+            "actions": "الإجراءات"
+        },
+        "error": "Could not load applications. Please try again."
+    },
+    "status": {
+        "submitted": "تم الإرسال",
+        "admitted": "تم القبول",
+        "approved": "معتمد",
+        "pending": "قيد الانتظار",
+        "rejected": "مرفوض",
+        "admissionCompleted": "مكتمل"
+    },
+    "pagination": {
+        "showing_zero": "عرض {{from}} إلى {{to}} من أصل {{count}} إدخال",
+        "showing_one": "عرض {{from}} إلى {{to}} من أصل إدخال واحد ({{count}})",
+        "showing_two": "عرض {{from}} إلى {{to}} من أصل إدخالين ({{count}})",
+        "showing_few": "عرض {{from}} إلى {{to}} من أصل {{count}} إدخالات",
+        "showing_many": "عرض {{from}} إلى {{to}} من أصل {{count}} إدخالًا",
+        "showing_other": "عرض {{from}} إلى {{to}} من أصل {{count}} إدخال"
+    },
+    "modal": {
+        "title": "اختر نوع الطلب",
+        "subtitle": "اختر الطريقة التي تريد بها إنشاء طلب جديد",
+        "newApplication": {
+            "title": "طلب جديد",
+            "description": "ابدأ نموذج طلب جديد"
+        },
+        "fromEnquiry": {
+            "title": "من استفسار",
+            "description": "إنشاء طلب من استفسار موجود"
+        }
+    },
+    "toast": {
+        "enquiryAlreadyConverted": "تم بالفعل تحويل هذا الاستفسار إلى طلب."
+    },
+    "header": {
+        "title": "Applications",
+        "subtitle": "Review applications, collect the fee, then admit."
+    },
+    "quickViews": {
+        "all": "All applications"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "optionMarker": {
+        "fallback": "({{label}}.)"
+    },
+    "dropdownMenu": {
+        "duplicateSlide": "Dupliquer la diapositive",
+        "deleteSlide": "Supprimer la diapositive"
+    }
+}

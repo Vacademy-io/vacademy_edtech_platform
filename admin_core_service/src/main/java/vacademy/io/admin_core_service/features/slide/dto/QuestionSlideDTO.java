@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.slide.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
@@ -46,4 +47,12 @@ public class QuestionSlideDTO {
     private List<OptionDTO> options; // list of options for the slide
 
     private String sourceType;
+
+    /**
+     * CBE_RESPONSE only, write side: the secret half of the config (solution, marking
+     * scheme, grading notes). Never filled on a read; admins fetch it from the dedicated
+     * evaluation-secret endpoint.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String evaluationSecretJson;
 }

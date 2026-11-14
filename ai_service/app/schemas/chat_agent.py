@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 
 
@@ -224,7 +224,11 @@ class InitSessionRequest(BaseModel):
 
 class SendMessageRequest(BaseModel):
     """Request to send a message in an existing session."""
-    message: str = Field(..., description="The message content from the user", min_length=1)
+    message: str = Field(
+        "",
+        description="The message content from the user. May be empty only when attachments are sent.",
+        max_length=8000,
+    )
     intent: Optional[MessageIntent] = Field(
         None,
         description="Optional message intent (doubt/practice/general). If not provided, AI will classify automatically."
@@ -239,8 +243,17 @@ class SendMessageRequest(BaseModel):
     )
     attachments: Optional[List[Attachment]] = Field(
         None,
-        description="Optional image/video attachments for multimodal messages"
+        description="Optional image/video attachments for multimodal messages",
+        max_length=5,
     )
+
+    @model_validator(mode="after")
+    def _text_or_attachment(self):
+        # A photo of a question with no typed text is a real message; nothing
+        # at all is not.
+        if not (self.message or "").strip() and not self.attachments and not self.quiz_submission:
+            raise ValueError("message must not be empty")
+        return self
 
     class Config:
         json_schema_extra = {

@@ -1,0 +1,12 @@
+{
+    "errors": {
+        "operationFailed": "Failed to {{operation}}. Please try again.",
+        "operations": {
+            "saveReferralProgram": "save referral program"
+        }
+    },
+    "success": {
+        "updated": "Referral program updated successfully!",
+        "created": "Referral program created successfully!"
+    }
+}

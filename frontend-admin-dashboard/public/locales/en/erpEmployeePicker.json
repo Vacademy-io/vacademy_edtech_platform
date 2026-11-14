@@ -1,0 +1,14 @@
+{
+    "unnamedEmployee": "Unnamed employee",
+    "placeholder": {
+        "default": "Select employee",
+        "loading": "Loading employees…",
+        "unavailable": "Employees unavailable"
+    },
+    "searchPlaceholder": "Search by code, name or designation",
+    "emptyText": "No employees match",
+    "errorHint": "Could not load employees. Reload the page and try again.",
+    "noneForStatus": "No {{status}} employees yet — add them under ERP → People first.",
+    "noneAtAll": "No employees yet — add them under ERP → People first.",
+    "truncatedHint": "Showing the first {{loadedCount}} of {{totalCount}} employees. Search matches only these."
+}

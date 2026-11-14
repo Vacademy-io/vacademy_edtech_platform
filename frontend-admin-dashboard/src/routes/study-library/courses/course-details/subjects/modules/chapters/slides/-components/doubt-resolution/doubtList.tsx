@@ -2,6 +2,7 @@ import { Doubt as DoubtType } from '../../-types/get-doubts-type';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { Doubt } from './doubt';
 import { Info } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export const DoubtList = ({
     allDoubts,
@@ -18,6 +19,7 @@ export const DoubtList = ({
     isFetchingNextPage: boolean;
     status: string;
 }) => {
+    const { t } = useTranslation('studyLibraryDoubtList');
     const showInitialLoader = isLoading && allDoubts.length === 0;
     const showEmptyState = !isLoading && !isFetchingNextPage && allDoubts.length === 0;
 
@@ -41,13 +43,13 @@ export const DoubtList = ({
             {showEmptyState && (
                 <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
                     <Info size={48} className="text-neutral-400" />
-                    <p className="text-base font-medium text-neutral-600">No Doubts Here</p>
+                    <p className="text-base font-medium text-neutral-600">{t('noDoubtsHere')}</p>
                     <p className="text-sm text-neutral-500">
                         {status === 'ALL'
-                            ? 'There are no doubts added for this content yet.'
+                            ? t('emptyState.all')
                             : status === 'RESOLVED'
-                              ? 'No doubts have been marked as resolved yet.'
-                              : 'All doubts are currently resolved, or none have been added.'}
+                              ? t('emptyState.resolved')
+                              : t('emptyState.other')}
                     </p>
                 </div>
             )}

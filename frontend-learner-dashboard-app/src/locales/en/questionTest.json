@@ -1,0 +1,473 @@
+{
+    "common": {
+        "submit": "Submit",
+        "returnToTest": "Return to Test",
+        "yourAnswer": "Your answer",
+        "questionNumber": "Question {{number}}",
+        "tabSwitchWarning": "Warning: You are attempting to leave the test environment. This is warning {{count}} of 3. If you attempt to leave again, your test will be automatically submitted.",
+        "tools": {
+            "calculator": "Calculator",
+            "scratchpad": "Scratchpad"
+        }
+    },
+    "preview": {
+        "header": {
+            "title": "Preview",
+            "subtitle": "Read-only — answering starts when this ends"
+        },
+        "nav": {
+            "sectionsAriaLabel": "Sections"
+        },
+        "actions": {
+            "starting": "Starting...",
+            "startTest": "Start Test"
+        }
+    },
+    "navbar": {
+        "autoSave": {
+            "saved": "Saved",
+            "saving": "Saving…",
+            "notSaved": "Not saved"
+        },
+        "timer": {
+            "title": "Time remaining"
+        },
+        "help": {
+            "ariaLabel": "Help and requests",
+            "menu": {
+                "instructions": "Instructions",
+                "alerts": "Assessment Alerts",
+                "reattempt": "Request Reattempt",
+                "timeIncrease": "Request Time Increase"
+            }
+        },
+        "questionPanel": {
+            "hide": "Hide question panel",
+            "show": "Show question panel"
+        },
+        "pdf": {
+            "preview": "Preview PDF",
+            "upload": "Upload",
+            "uploading": "Uploading...",
+            "back": "Back",
+            "replace": "Replace PDF"
+        },
+        "exitWarning": {
+            "description": "Your test is still in progress. You cannot go back while attempting. Use the Submit button when you have finished — your answers are saved automatically."
+        },
+        "toast": {
+            "missingAttemptId": "Submission failed: Attempt ID is missing.",
+            "submitSuccess": "Assessment submitted successfully!",
+            "retrying": "Submission failed. Retrying ({{attempt}}/{{max}})...",
+            "submitFailed": "Failed to submit your assessment. Please check your connection and try again."
+        }
+    },
+    "networkStatus": {
+        "offline": {
+            "title": "No internet connection",
+            "description": "Your answers are held on this device and re-sent when you are back online."
+        },
+        "saveFailed": {
+            "title": "Answers not syncing",
+            "description": "They are safe on this device. Tap retry to sync now."
+        },
+        "online": {
+            "title": "Back online",
+            "description": "Your network connection was restored."
+        },
+        "retry": "Retry"
+    },
+    "footer": {
+        "actions": {
+            "questionPalette": "Question palette",
+            "tools": "Tools",
+            "closeToolsMenu": "Close tools menu"
+        },
+        "markForReview": {
+            "mark": "Mark for review",
+            "unmark": "Unmark for review",
+            "marked": "Marked for review"
+        },
+        "clearResponse": {
+            "ariaLabel": "Clear response",
+            "label": "Clear"
+        },
+        "nav": {
+            "previous": "Previous",
+            "previousAriaLabel": "Previous question",
+            "next": "Next",
+            "saveAndNext": "Save & Next"
+        }
+    },
+    "coding": {
+        "problem": {
+            "missing": "(No problem statement)"
+        },
+        "badges": {
+            "maxPoints": "Max points: {{max}}",
+            "cpu": "CPU {{seconds}}s",
+            "tests": "Tests: {{count}}"
+        },
+        "actions": {
+            "run": "Run"
+        },
+        "loadingRuntime": "Loading Python runtime…",
+        "tabs": {
+            "tests": "Tests",
+            "output": "Output"
+        },
+        "tests": {
+            "noneProvided": "No sample tests provided.",
+            "sampleFallback": "Sample {{number}}",
+            "hiddenFallback": "Hidden {{number}}",
+            "input": "Input",
+            "expected": "Expected",
+            "empty": "(empty)",
+            "compilerError": "Compiler / runtime error",
+            "yourOutput": "Your output",
+            "hiddenBadge": "hidden"
+        },
+        "output": {
+            "none": "No output yet.",
+            "testFallback": "Test {{number}}",
+            "stdoutLabel": "stdout",
+            "stderrLabel": "stderr / compiler"
+        }
+    },
+    "longAnswer": {
+        "wordCount_one": "{{count}} word",
+        "wordCount_other": "{{count}} words",
+        "placeholder": "Write your answer here. Marks are given for reasoning, not length."
+    },
+    "oneWord": {
+        "placeholder": "Type your one-word answer"
+    },
+    "numeric": {
+        "ariaLabel": "Your numeric answer",
+        "noNegativeMarking": "No negative marking on this question.",
+        "pad": {
+            "show": "Show number pad",
+            "hide": "Hide number pad",
+            "decimalPointAriaLabel": "Decimal point",
+            "backspaceAriaLabel": "Backspace"
+        }
+    },
+    "paragraph": {
+        "readMore": "Read more",
+        "readLess": "Read less"
+    },
+    "page": {
+        "toast": {
+            "savingResumed": "Your responses are being saved again",
+            "savingFailed": "Your responses are not being recorded"
+        }
+    },
+    "questionDisplay": {
+        "selectPrompt": "Select a question to begin",
+        "sectionTimeUp": "Time is up for this section. Please move to the next available section.",
+        "ofTotal": "of {{total}}",
+        "codingMissingConfig": "Coding question is missing configuration.",
+        "answerOptionsAriaLabel": "Answer options",
+        "unsupportedType": "This question type cannot be displayed here.",
+        "types": {
+            "MCQS": "Single choice",
+            "MCQM": "Multiple choice",
+            "TRUE_FALSE": "True / False",
+            "ONE_WORD": "One word",
+            "LONG_ANSWER": "Long answer",
+            "NUMERIC": "Numeric",
+            "CODING": "Coding",
+            "CBE_RESPONSE": "Spreadsheet & written"
+        }
+    },
+    "questionList": {
+        "itemAriaLabel": "Question {{number}}, {{status}}"
+    },
+    "questionNavigator": {
+        "sectionFallback": "Section",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "legendAriaLabel": "Question status legend",
+        "submitPaper": "Submit paper",
+        "hidePanel": "Hide question panel"
+    },
+    "questionPassage": {
+        "label": "Passage",
+        "tapToRead": "Tap to read"
+    },
+    "questionStatus": {
+        "answered": "Answered",
+        "answeredMarked": "Answered & marked",
+        "marked": "Marked for review",
+        "notAnswered": "Not answered",
+        "notVisited": "Not visited"
+    },
+    "sectionTabs": {
+        "ariaLabel": "Assessment sections"
+    },
+    "sectionTimer": {
+        "ariaLabel": "Section time remaining: {{minutes}} minutes {{seconds}} seconds"
+    },
+    "sidebar": {
+        "paletteAriaLabel": "Question palette"
+    },
+    "calculator": {
+        "genericError": "Error",
+        "errors": {
+            "factorialWholeNumber": "Factorial needs a whole number",
+            "tooLarge": "Too large",
+            "unexpectedChar": "Unexpected \"{{char}}\"",
+            "malformedNumber": "Malformed number",
+            "divideByZero": "Divide by zero",
+            "outOfDomain": "Out of domain",
+            "unknownFunction": "Unknown function",
+            "incompleteExpression": "Incomplete expression",
+            "missingParen": "Missing )",
+            "empty": "Empty",
+            "unbalancedParen": "Unbalanced )",
+            "notANumber": "Not a number",
+            "outOfRange": "Out of range"
+        },
+        "keys": {
+            "clear": "Clear",
+            "backspace": "Backspace",
+            "percent": "Percent",
+            "divide": "Divide",
+            "multiply": "Multiply",
+            "minus": "Minus",
+            "plus": "Plus",
+            "decimalPoint": "Decimal point",
+            "equals": "Equals",
+            "secondFunction": "Second function",
+            "toggleAngleUnit": "Toggle degrees or radians",
+            "openBracket": "Open bracket",
+            "closeBracket": "Close bracket",
+            "squareRoot": "Square root",
+            "square": "Square",
+            "power": "Power",
+            "pi": "Pi",
+            "eulersNumber": "Euler's number",
+            "toggleSign": "Toggle sign",
+            "factorial": "Factorial"
+        }
+    },
+    "scratchpad": {
+        "placeholder": "Rough work — not submitted with your paper.",
+        "ariaLabel": "Scratchpad for rough work"
+    },
+    "toolPanel": {
+        "closeAriaLabel": "Close {{title}}"
+    },
+    "viewToggle": {
+        "grid": "Grid view",
+        "list": "List view"
+    },
+    "cbe": {
+        "scenarioLabel": "Scenario",
+        "requirementsLabel": "Requirements",
+        "desktopNotice": "This question has a spreadsheet to fill in. It is best attempted on a laptop or desktop.",
+        "resizeLabel": "Resize scenario and answer panes",
+        "resizeValue": "Scenario {{pct}}% of the width",
+        "pasteBlocked": "Pasting from outside the answer area is not allowed. Copy and paste within your answer works.",
+        "missingConfig": "This question is missing its answer setup. Please tell your instructor.",
+        "kit": {
+            "kindSpreadsheet": "Spreadsheet",
+            "kindDocument": "Document",
+            "marks_one": "{{count}} mark",
+            "marks_other": "{{count}} marks",
+            "partAnswer": "{{tab}} answer",
+            "noParts": "This question has no answer parts.",
+            "sizeTooLarge": "Your answer is too large to save ({{size}} of {{max}}). Remove unused rows, tabs or pasted content.",
+            "sizeNearLimit": "Your answer is close to the size limit ({{size}} of {{max}}).",
+            "spreadsheetLoadFailed": "The spreadsheet could not be loaded.",
+            "documentLoadFailed": "The document editor could not be loaded.",
+            "tryAgain": "Try again",
+            "documentPlaceholder": "Write your answer here…",
+            "writtenAnswer": "Written answer",
+            "spreadsheetAnswer": "Spreadsheet answer",
+            "noSpreadsheetAnswer": "No spreadsheet answer.",
+            "noWrittenAnswer": "No written answer.",
+            "emptyTab": "This tab is empty.",
+            "rowHeader": "Row",
+            "tools": {
+                "spreadsheetToolbar": "Spreadsheet formatting",
+                "textToolbar": "Text formatting",
+                "undo": "Undo",
+                "redo": "Redo",
+                "bold": "Bold",
+                "italic": "Italic",
+                "underline": "Underline",
+                "alignLeft": "Align left",
+                "alignCentre": "Align centre",
+                "alignRight": "Align right",
+                "thousands": "Thousands separator (#,##0)",
+                "moreDecimals": "More decimals",
+                "fewerDecimals": "Fewer decimals",
+                "percent": "Percent",
+                "topBorder": "Top border",
+                "bottomBorder": "Bottom border",
+                "clearBorders": "Clear borders",
+                "mergeCells": "Merge cells",
+                "unmergeCells": "Unmerge cells",
+                "bulletList": "Bulleted list",
+                "numberedList": "Numbered list",
+                "insertTable": "Insert table",
+                "addRowBelow": "Add row below",
+                "addColumnRight": "Add column right",
+                "deleteRow": "Delete row",
+                "deleteColumn": "Delete column",
+                "deleteTable": "Delete table"
+            }
+        }
+    },
+    "examThemes": {
+        "tcs": {
+            "actions": {
+                "saveNext": "Save & Next",
+                "markReviewNext": "Mark for Review & Next",
+                "saveMarkReview": "Save & Mark for Review",
+                "clearResponse": "Clear Response",
+                "back": "<< Back",
+                "next": "Next >>",
+                "submit": "Submit"
+            },
+            "links": {
+                "questionPaper": "Question Paper",
+                "instructions": "Instructions",
+                "viewInstructions": "View Instructions"
+            },
+            "legend": {
+                "ariaLabel": "Question status legend",
+                "answered": "Answered",
+                "notAnswered": "Not Answered",
+                "notVisited": "Not Visited",
+                "marked": "Marked for Review",
+                "answeredMarked": "Answered & Marked for Review (counts for evaluation)"
+            },
+            "summary": {
+                "title": "Exam Summary",
+                "section": "Section Name",
+                "questions": "No. of Questions",
+                "answeredMarked": "Answered & Marked for Review",
+                "confirm": "Do you want to submit the test now? You cannot change your answers after this.",
+                "yes": "Yes",
+                "no": "No",
+                "submitting": "Submitting..."
+            },
+            "questionTypes": {
+                "mcq": "MCQ",
+                "msq": "MSQ",
+                "nat": "NAT",
+                "numerical": "Numerical"
+            },
+            "keypad": {
+                "answer": "Your answer",
+                "ariaLabel": "Number keypad",
+                "backspace": "Backspace",
+                "clearAll": "Clear All",
+                "left": "Move left",
+                "right": "Move right",
+                "minus": "Minus"
+            },
+            "instructions": {
+                "notVisited": "you have not opened this question yet.",
+                "notAnswered": "you opened this question but have not saved an answer.",
+                "answered": "your answer is saved.",
+                "marked": "no answer is saved and you marked the question to look at again.",
+                "answeredMarked": "your answer is saved and marked to look at again; it is counted when the test is scored.",
+                "testTitle": "Instructions for this test"
+            },
+            "timeLeft": "Time Left",
+            "sectionTimeLeft": "Section Time Left",
+            "questionTimeLeft": "Question Time Left",
+            "sections": "Sections",
+            "questionType": "Question Type",
+            "marksCorrect": "Marks for correct answer",
+            "marksNegative": "Negative Marks",
+            "viewIn": "View in",
+            "questionNo": "Question No. {{number}}",
+            "scrollBottom": "Go to the bottom of the question",
+            "scrollTop": "Go to the top of the question",
+            "scrollTabsBack": "Show earlier sections",
+            "scrollTabsForward": "Show later sections",
+            "sectionSummary": "{{name}}: question summary",
+            "chooseQuestion": "Choose a Question",
+            "questionPalette": "Question Palette",
+            "candidate": "Candidate",
+            "chipAriaLabel": "Question {{number}}, {{status}}",
+            "submitLocked": "Submit opens when the time is up ({{time}} left)",
+            "calculator": "Calculator",
+            "zoomIn": "Zoom in",
+            "zoomOut": "Zoom out",
+            "close": "Close",
+            "showPalette": "Show the question palette",
+            "hidePalette": "Hide the question palette",
+            "questionColon": "Question {{number}}:",
+            "remainingTime": "Remaining Time",
+            "candidateName": "Candidate Name",
+            "subjectName": "Subject Name",
+            "paperLanguage": "Paper Language",
+            "subjects": "Subjects",
+            "general": {
+                "clockTitle": "The clock",
+                "clockDuration_one": "This test lasts {{count}} minute. The clock at the top of the test screen shows the time left.",
+                "clockDuration_other": "This test lasts {{count}} minutes. The clock at the top of the test screen shows the time left.",
+                "clockUntimed": "This test has no time limit.",
+                "clockEnd": "When the clock reaches zero, the test ends by itself and the answers you have saved are submitted. You do not have to press {{submit}}.",
+                "clockSubmitLocked": "The {{submit}} button stays off until the time is up.",
+                "clockSubmitEarly": "You can also press {{submit}} to end the test before the time is up.",
+                "sectionClockStrict": "Each section also has its own clock. When it reaches zero, the next section opens by itself, and a choice you have not saved on the open question is lost.",
+                "questionClockStrict": "Each question also has its own clock. When it reaches zero, the next question opens by itself, and a choice you have not saved is lost.",
+                "paletteTitle": "The question palette",
+                "paletteIntro": "The palette beside the question shows a number for every question in the open section. Its shape and colour tell you the state of that question:",
+                "paletteIntroPaper": "The palette beside the question shows a number for every question of the test, across all subjects. Its shape and colour tell you the state of that question:",
+                "paletteCollapse": "The small arrow on the edge of the palette hides it to give the question more room; press it again to bring the palette back.",
+                "moveTitle": "Moving between questions",
+                "moveJump": "Click a number in the palette to go straight to that question.",
+                "moveSections": "Click a section name in the bar above the question to open that section, when the test lets you move between sections.",
+                "moveNoSave": "Going to a question this way does not save the answer on the screen you leave.",
+                "moveBackNext": "{{back}} and {{next}} open the previous or the next question without saving the answer on screen.",
+                "answerTitle": "Answering a question",
+                "answerPickStrict": "Choose an option, or enter a number, to answer. Your choice is not saved until you press one of the save buttons below.",
+                "answerPickPractice": "Choose an option, or enter a number, to answer. Your choice is saved as soon as you make it.",
+                "saveNextStrict": "{{saveNext}} saves your answer and opens the next question.",
+                "saveNextPractice": "{{saveNext}} opens the next question.",
+                "saveMarkReview": "{{saveMarkReview}} saves your answer, marks the question for review and opens the next question.",
+                "markReviewNext": "{{markReviewNext}} marks the question for review, saves any answer you have chosen and opens the next question. A marked question that has an answer is counted when the test is scored.",
+                "clearResponse": "{{clearResponse}} removes the answer to the question on screen.",
+                "sectionEnd": "After the last question of a section, the next question is the first one of the following section.",
+                "changeAnswer": "To change a saved answer, open the question again, make a new choice and press {{saveNext}}.",
+                "numericStrict": "{{label}} questions take a number as the answer. Enter it with the keypad on the screen; the computer keyboard does not work in the answer box.",
+                "numericPractice": "{{label}} questions take a number as the answer. Enter it with the keypad on the screen, or type it.",
+                "multiple": "Where more than one option can be correct, select every option you think is correct.",
+                "readyTitle": "Before you begin",
+                "roughPaper": "Keep rough paper and a pen ready. The test screen has no space for rough work.",
+                "calculator": "A calculator opens from the calculator icon at the right end of the bar above the sections.",
+                "fullScreen": "The test runs in full screen. Leaving full screen or switching to another tab or window is recorded, and repeated warnings can submit your test for you.",
+                "disclaimer": "This is a practice screen laid out like a computer-based exam. It is not affiliated with or endorsed by any exam body."
+            },
+            "brief": {
+                "title": "Instructions",
+                "aboutTitle": "About this test",
+                "readCarefully": "Read the following carefully before you begin.",
+                "generalTitle": "General instructions",
+                "duration_one": "Duration: {{count}} minute",
+                "duration_other": "Duration: {{count}} minutes",
+                "untimed": "Duration: no time limit",
+                "sectionSwitchYes": "You can move between sections at any time during the test.",
+                "sectionSwitchNo": "Sections open one after another; once you move on from a section you cannot return to it.",
+                "preview": "Before answering starts, you get some time to read through the paper.",
+                "attempt": "This is attempt {{used}} of {{max}}.",
+                "noTestInstructions": "Your institute has not added any other instructions for this test.",
+                "attachment": "Attachment",
+                "declaration": "I have read and understood the instructions. I will not use unfair means during this test. I understand that leaving full screen is recorded and can submit my test, and that the test should be finished in one sitting once it starts.",
+                "tickToBegin": "Tick the box above to begin.",
+                "leave": "< Go back",
+                "next": "Next >",
+                "previous": "< Previous",
+                "ready": "I am ready to begin",
+                "starting": "Starting..."
+            }
+        }
+    }
+}

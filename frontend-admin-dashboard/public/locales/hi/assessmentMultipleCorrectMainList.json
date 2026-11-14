@@ -1,0 +1,13 @@
+{
+    "emptyState": "प्रश्न विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें",
+    "popover": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न प्रकार"
+    },
+    "comprehensionText": "गद्यांश पाठ",
+    "questionLabel": "प्रश्न {{number}}",
+    "answerLabel": "उत्तर:",
+    "removeOptionTitle": "विकल्प हटाएं",
+    "addOptionButton": "विकल्प जोड़ें",
+    "explanationLabel": "व्याख्या:"
+}

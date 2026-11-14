@@ -35,4 +35,10 @@ public class BillingSummaryRequestDTO {
 
     /** Optional. Narrows to enrolments whose invite covers any of these package sessions. */
     private List<String> packageSessionIds;
+
+    /**
+     * Optional. Name, email or phone from the search box. Only the learner lists
+     * (outstanding-learners) read it; the summary cards ignore it and keep describing everyone.
+     */
+    private String searchString;
 }

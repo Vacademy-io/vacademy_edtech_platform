@@ -1,0 +1,70 @@
+{
+    "filters": {
+        "everyone": "Everyone",
+        "attempted": "Attempted",
+        "notAttempted": "Not attempted",
+        "passed": "Passed",
+        "failed": "Failed"
+    },
+    "sorts": {
+        "highestScore": "Highest score",
+        "lowestScore": "Lowest score",
+        "nameAz": "Name (A–Z)",
+        "mostRecentAttempt": "Most recent attempt",
+        "mostAttempts": "Most attempts"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile",
+        "status": "Status",
+        "attempts": "Attempts",
+        "marksObtained": "Marks obtained",
+        "totalMarks": "Total marks",
+        "scorePercent": "Score %",
+        "correct": "Correct",
+        "wrong": "Wrong",
+        "skipped": "Skipped",
+        "unanswered": "Unanswered",
+        "timeSpentSeconds": "Time spent (s)",
+        "lastAttempt": "Last attempt"
+    },
+    "table": {
+        "learner": "Learner",
+        "status": "Status",
+        "score": "Score",
+        "responses": "Responses",
+        "attempts": "Attempts",
+        "timeSpent": "Time spent",
+        "lastAttempt": "Last attempt"
+    },
+    "breakdown": {
+        "correct_one": "{{count}} correct",
+        "correct_other": "{{count}} correct",
+        "wrong_one": "{{count}} wrong",
+        "wrong_other": "{{count}} wrong",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped",
+        "unanswered_one": "{{count}} unanswered",
+        "unanswered_other": "{{count}} unanswered"
+    },
+    "searchPlaceholder": "Search learners",
+    "filterLearnersAriaLabel": "Filter learners",
+    "actions": {
+        "exportCsv": "Export CSV",
+        "clearFilters": "Clear filters"
+    },
+    "truncatedNotice": "This batch has more learners than the report returns at once — the list below is capped, so totals may be incomplete.",
+    "empty": {
+        "noMatchTitle": "No learners match these filters",
+        "noMatchSubtitle": "Try a different search term, or switch back to Everyone."
+    },
+    "toast": {
+        "nothingToExport": "Nothing to export with these filters.",
+        "exported_one": "Exported {{count}} row",
+        "exported_other": "Exported {{count}} rows"
+    },
+    "footer": {
+        "summary": "Showing {{visible}} of {{total}} enrolled learners · {{percent}} of the batch has attempted this quiz."
+    }
+}

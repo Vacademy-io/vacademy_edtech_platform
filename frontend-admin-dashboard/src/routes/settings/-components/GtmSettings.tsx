@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -6,77 +7,50 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
-import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
-import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import {
+    DEFAULT_GTM_SETTINGS,
+    GTM_SETTINGS_QUERY_KEY,
+    fetchGtmSettings,
+    saveGtmSettings,
+    type GtmSettingsData,
+} from '@/services/gtm-settings';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface GtmSettingsData {
-    enabled: boolean;
-    containerId: string;
-}
-
-const DEFAULT_GTM_SETTINGS: GtmSettingsData = {
-    enabled: false,
-    containerId: '',
-};
-
-const SETTING_KEY = 'GTM_SETTING';
-const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
 const GTM_ID_PATTERN = /^GTM-[A-Z0-9]+$/;
 
-// ─── API ─────────────────────────────────────────────────────────────────────
-
-const fetchGtmSettings = async (): Promise<GtmSettingsData> => {
-    const instituteId = getCurrentInstituteId();
-    const response = await authenticatedAxiosInstance({
-        method: 'GET',
-        url: GET_INSITITUTE_SETTINGS,
-        params: { instituteId, settingKey: SETTING_KEY },
-    });
-    return response.data?.data ?? DEFAULT_GTM_SETTINGS;
-};
-
-const saveGtmSettings = async (data: GtmSettingsData): Promise<void> => {
-    const instituteId = getCurrentInstituteId();
-    await authenticatedAxiosInstance.post(
-        SAVE_URL,
-        { setting_name: 'GTM Settings', setting_data: data },
-        { params: { instituteId, settingKey: SETTING_KEY } }
-    );
-};
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
+/**
+ * Google Tag Manager container injection.
+ *
+ * Campaign-link settings used to live here too. They moved to their own card
+ * (UtmSettings) because attribution is first-party and works with no container
+ * at all — keeping them here hid the feature from every institute that has
+ * never used a tag manager.
+ */
 export default function GtmSettings() {
+    const { t } = useTranslation('settingsGtm');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<GtmSettingsData>(DEFAULT_GTM_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
 
     const { data, isLoading } = useQuery({
-        queryKey: ['gtm-settings'],
+        queryKey: GTM_SETTINGS_QUERY_KEY,
         queryFn: fetchGtmSettings,
         staleTime: 5 * 60 * 1000,
     });
 
     useEffect(() => {
-        if (data) {
-            setSettings(data);
-            setHasChanges(false);
-        }
+        if (!data) return;
+        setSettings(data);
+        setHasChanges(false);
     }, [data]);
 
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveGtmSettings,
         onSuccess: () => {
-            toast.success('GTM settings saved');
+            toast.success(t('toasts.saveSuccess'));
             setHasChanges(false);
-            queryClient.invalidateQueries({ queryKey: ['gtm-settings'] });
+            queryClient.invalidateQueries({ queryKey: GTM_SETTINGS_QUERY_KEY });
         },
-        onError: () => {
-            toast.error('Failed to save GTM settings');
-        },
+        onError: () => toast.error(t('toasts.saveError')),
     });
 
     const update = (patch: Partial<GtmSettingsData>) => {
@@ -86,26 +60,29 @@ export default function GtmSettings() {
 
     const handleSave = () => {
         if (settings.enabled && !GTM_ID_PATTERN.test(settings.containerId)) {
-            toast.error('Invalid GTM Container ID. Expected format: GTM-XXXXXXX');
+            toast.error(t('errors.invalidContainerId'));
             return;
         }
+        // `settings.utm` is carried through UNTOUCHED. Institutes configured
+        // before UTM became its own setting still keep their toggle in this
+        // blob, and the UTM service reads it as a fallback — dropping it here
+        // would silently switch their campaign links off.
         save(settings);
     };
 
     if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground">Loading GTM settings…</div>;
+        return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
     }
 
     return (
         <div className="space-y-6 p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Google Tag Manager</CardTitle>
+                    <CardTitle>{t('card.title')}</CardTitle>
                     <CardDescription>
-                        Inject your GTM container on learner enrollment pages. This enables
-                        conversion tracking, remarketing pixels, and any tags you configure in
-                        your GTM workspace. An <code>enrollment_success</code> event is pushed
-                        to the dataLayer on successful registration.
+                        {t('card.description.part1')}
+                        <code>enrollment_success</code>
+                        {t('card.description.part2')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -116,25 +93,21 @@ export default function GtmSettings() {
                             onCheckedChange={(v) => update({ enabled: v })}
                         />
                         <Label htmlFor="gtm-enabled" className="cursor-pointer">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
+                            {settings.enabled ? t('toggle.enabled') : t('toggle.disabled')}
                         </Label>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="gtm-container-id">Container ID</Label>
+                        <Label htmlFor="gtm-container-id">{t('containerId.label')}</Label>
                         <Input
                             id="gtm-container-id"
-                            placeholder="GTM-XXXXXXX"
+                            placeholder={t('containerId.placeholder')}
                             value={settings.containerId}
                             disabled={!settings.enabled}
-                            onChange={(e) =>
-                                update({ containerId: e.target.value.toUpperCase().trim() })
-                            }
+                            onChange={(e) => update({ containerId: e.target.value.toUpperCase().trim() })}
                             className="max-w-xs"
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Find your Container ID in GTM → Admin → Container Settings.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('containerId.hint')}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -143,10 +116,10 @@ export default function GtmSettings() {
                 <MyButton
                     buttonType="primary"
                     scale="medium"
+                    disable={!hasChanges || saving}
                     onClick={handleSave}
-                    disable={saving || !hasChanges}
                 >
-                    {saving ? 'Saving…' : 'Save GTM Settings'}
+                    {saving ? t('footer.saving') : t('footer.save')}
                 </MyButton>
             </div>
         </div>

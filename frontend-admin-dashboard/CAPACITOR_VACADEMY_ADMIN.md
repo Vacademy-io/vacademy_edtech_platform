@@ -7,6 +7,7 @@ bundle**, selected by a build-time **flavor**:
 | --------------- | ---------------------- | ---------------- | ------------ | ------------ | ---------------- |
 | `vacademy-admin`| `io.vacademy.admin.app`| **Vacademy Admin** | full portal | self-hosted  | `ca3c4734-7913-48a8-b116-f8f7e0c60eba` |
 | `vimotion`      | `io.vimotion.app`      | Vimotion         | `/vim` only  | Capgo cloud  | — (host-based)   |
+| `evalezy`       | `io.evalezy.app`       | Evalezy          | `/evalezy` only | self-hosted | — (Evalezy brand; see [EVALEZY_APP.md](./EVALEZY_APP.md)) |
 
 The flavor is chosen with the `VITE_CAP_FLAVOR` env var. It is read in two
 places (single source of truth: [`flavor.config.ts`](./flavor.config.ts)):

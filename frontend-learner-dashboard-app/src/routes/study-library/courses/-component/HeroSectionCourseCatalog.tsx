@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCatalogStore } from '../-store/catalogStore.ts'; // Import the store
 import { getPublicUrl } from '@/services/upload_file'; // Import getPublicUrl
 import { useTheme } from '@/providers/theme/theme-provider';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
 
 const HeroSectionCourseCatalog: React.FC = () => {
+  const { t } = useTranslation("study");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const bannerAlt = t("courseCatalogBanner.alt", { course });
   const { apiFetchedInstituteDetails } = useCatalogStore(); // Get details from store
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(null);
-  
 
-  const defaultStaticBannerUrl = '/images/banner.png';
+
+  const defaultStaticBannerUrl = '/images/banner.webp';
   const { getPrimaryColorCode } = useTheme();
 
   useEffect(() => {
@@ -64,7 +70,7 @@ const HeroSectionCourseCatalog: React.FC = () => {
 
   if (!bannerImageUrl) {
     // This will render if bannerImageUrl is a fetched URL or the defaultStaticBannerUrl
-    bannerContent = <img src='./images/banner.png' alt="Course catalog banner" className='w-full h-full object-cover' />;
+    bannerContent = <img src='./images/banner.webp' alt={bannerAlt} className='w-full h-full object-cover' />;
   } else if (apiFetchedInstituteDetails && apiFetchedInstituteDetails.institute_theme_code) {
     // This condition is met if bannerImageUrl is null AND theme_code exists
     const themeStyle: React.CSSProperties = {
@@ -78,7 +84,7 @@ const HeroSectionCourseCatalog: React.FC = () => {
     bannerContent = <div style={themeStyle}></div>; 
   } else {
     // Final fallback if bannerImageUrl is null and no theme_code (should be rare if useEffect is correct)
-    bannerContent = <img src={defaultStaticBannerUrl} alt="Course catalog banner" className='w-full h-full object-cover' />;
+    bannerContent = <img src={defaultStaticBannerUrl} alt={bannerAlt} className='w-full h-full object-cover' />;
   }
 
   return (

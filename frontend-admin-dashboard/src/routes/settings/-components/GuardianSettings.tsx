@@ -8,6 +8,8 @@
  */
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { SpinnerGap, Sparkle } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -71,17 +73,19 @@ export interface GuardianSettingsData {
     parentPortal?: ParentPortalConfig;
 }
 
-const PARENT_PORTAL_MODULES: { key: string; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'attendance', label: 'Attendance' },
-    { key: 'liveSessions', label: 'Live Classes' },
-    { key: 'assessments', label: 'Tests' },
-    { key: 'progress', label: 'Progress' },
-    { key: 'payments', label: 'Fees' },
-    { key: 'badges', label: 'Rewards & Badges' },
-    { key: 'certificates', label: 'Certificates' },
-    { key: 'reports', label: 'Report Cards' },
-];
+function getParentPortalModules(t: TFunction): { key: string; label: string }[] {
+    return [
+        { key: 'overview', label: t('parentPortal.modules.overview') },
+        { key: 'attendance', label: t('parentPortal.modules.attendance') },
+        { key: 'liveSessions', label: t('parentPortal.modules.liveSessions') },
+        { key: 'assessments', label: t('parentPortal.modules.assessments') },
+        { key: 'progress', label: t('parentPortal.modules.progress') },
+        { key: 'payments', label: t('parentPortal.modules.payments') },
+        { key: 'badges', label: t('parentPortal.modules.badges') },
+        { key: 'certificates', label: t('parentPortal.modules.certificates') },
+        { key: 'reports', label: t('parentPortal.modules.reports') },
+    ];
+}
 
 const DEFAULT_PARENT_PORTAL: ParentPortalConfig = {
     enabled: false,
@@ -237,9 +241,11 @@ const saveCredentialTemplateConfig = async (templateId: string): Promise<void> =
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function GuardianSettings() {
+    const { t } = useTranslation('settingsGuardian');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<GuardianSettingsData>(DEFAULT_GUARDIAN_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
+    const parentPortalModules = getParentPortalModules(t);
 
     const { data, isLoading } = useQuery({
         queryKey: ['guardian-settings'],
@@ -257,13 +263,13 @@ export default function GuardianSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveGuardianSettings,
         onSuccess: () => {
-            toast.success('Guardian settings saved');
+            toast.success(t('toasts.settingsSaved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['guardian-settings'] });
             queryClient.invalidateQueries({ queryKey: ['parent-settings-config'] });
         },
         onError: () => {
-            toast.error('Failed to save guardian settings');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
@@ -282,16 +288,12 @@ export default function GuardianSettings() {
                 {/* ── Enable / Disable Guardian Linking ── */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Guardian Setting</CardTitle>
-                        <CardDescription>
-                            Controls whether guardian-student linking (bulk assignment, student
-                            side-view, and backfill) is available institute-wide. Disabling hides
-                            all guardian-linking UI without deleting existing links.
-                        </CardDescription>
+                        <CardTitle>{t('enableCard.title')}</CardTitle>
+                        <CardDescription>{t('enableCard.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="text-body text-neutral-500">Loading guardian settings…</div>
+                            <div className="text-body text-neutral-500">{t('enableCard.loading')}</div>
                         ) : (
                             <div className="flex items-center gap-3">
                                 <Switch
@@ -300,7 +302,9 @@ export default function GuardianSettings() {
                                     onCheckedChange={(v) => update({ enabled: v })}
                                 />
                                 <Label htmlFor="guardian-enabled" className="cursor-pointer">
-                                    {settings.enabled ? 'Enable Guardian Linking' : 'Guardian Linking Disabled'}
+                                    {settings.enabled
+                                        ? t('enableCard.enabledLabel')
+                                        : t('enableCard.disabledLabel')}
                                 </Label>
                             </div>
                         )}
@@ -310,17 +314,12 @@ export default function GuardianSettings() {
                 {/* ── Parent Portal ("My Child" monitoring) ── */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Parent Portal</CardTitle>
-                        <CardDescription>
-                            Let linked guardians monitor their child&apos;s progress, attendance,
-                            tests, live classes, fees, and rewards from the learner app. This is
-                            separate from guardian linking above — turn it on and choose which
-                            sections parents can see.
-                        </CardDescription>
+                        <CardTitle>{t('parentPortal.title')}</CardTitle>
+                        <CardDescription>{t('parentPortal.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
-                            <div className="text-body text-neutral-500">Loading…</div>
+                            <div className="text-body text-neutral-500">{t('parentPortal.loading')}</div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
@@ -338,18 +337,18 @@ export default function GuardianSettings() {
                                     />
                                     <Label htmlFor="parent-portal-enabled" className="cursor-pointer">
                                         {settings.parentPortal?.enabled
-                                            ? 'Parent Portal Enabled'
-                                            : 'Parent Portal Disabled'}
+                                            ? t('parentPortal.enabledLabel')
+                                            : t('parentPortal.disabledLabel')}
                                     </Label>
                                 </div>
 
                                 {settings.parentPortal?.enabled && (
                                     <div className="space-y-3">
                                         <p className="text-body font-medium text-neutral-700">
-                                            Sections visible to parents
+                                            {t('parentPortal.sectionsVisible')}
                                         </p>
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            {PARENT_PORTAL_MODULES.map((m) => {
+                                            {parentPortalModules.map((m) => {
                                                 const pp =
                                                     settings.parentPortal ?? DEFAULT_PARENT_PORTAL;
                                                 const visible =
@@ -386,7 +385,7 @@ export default function GuardianSettings() {
                                         </div>
 
                                         <p className="pt-2 text-body font-medium text-neutral-700">
-                                            View switching
+                                            {t('parentPortal.viewSwitching')}
                                         </p>
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <div className="flex items-center gap-3">
@@ -409,7 +408,7 @@ export default function GuardianSettings() {
                                                     htmlFor="pp-view-as-child"
                                                     className="cursor-pointer"
                                                 >
-                                                    Parent can open student view (read-only)
+                                                    {t('parentPortal.viewAsChildLabel')}
                                                 </Label>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -433,7 +432,7 @@ export default function GuardianSettings() {
                                                     htmlFor="pp-switch-to-parent"
                                                     className="cursor-pointer"
                                                 >
-                                                    Student can switch to their parent portal
+                                                    {t('parentPortal.switchToParentLabel')}
                                                 </Label>
                                             </div>
                                         </div>
@@ -448,12 +447,8 @@ export default function GuardianSettings() {
                 {settings.enabled && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Guardian Credential Email</CardTitle>
-                            <CardDescription>
-                                Optionally email login credentials whenever a new guardian account is
-                                created — whether via bulk assignment, the student side-view&apos;s
-                                &quot;Add Guardian&quot; action, or a backfill run.
-                            </CardDescription>
+                            <CardTitle>{t('credentialEmail.title')}</CardTitle>
+                            <CardDescription>{t('credentialEmail.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex items-center gap-3">
@@ -463,13 +458,13 @@ export default function GuardianSettings() {
                                     onCheckedChange={(v) => update({ sendCredentialEmail: v })}
                                 />
                                 <Label htmlFor="guardian-send-credentials" className="cursor-pointer">
-                                    Send credential email when a guardian account is created
+                                    {t('credentialEmail.sendToggleLabel')}
                                 </Label>
                             </div>
                             {settings.sendCredentialEmail && (
                                 <>
                                     <div className="flex flex-col gap-2">
-                                        <Label>Send to</Label>
+                                        <Label>{t('credentialEmail.sendToLabel')}</Label>
                                         <div className="flex items-center gap-2">
                                             <MyButton
                                                 buttonType={
@@ -480,7 +475,7 @@ export default function GuardianSettings() {
                                                 scale="small"
                                                 onClick={() => update({ credentialRecipient: 'STUDENT' })}
                                             >
-                                                Student
+                                                {t('credentialEmail.studentButton')}
                                             </MyButton>
                                             <MyButton
                                                 buttonType={
@@ -491,13 +486,13 @@ export default function GuardianSettings() {
                                                 scale="small"
                                                 onClick={() => update({ credentialRecipient: 'GUARDIAN' })}
                                             >
-                                                Guardian
+                                                {t('credentialEmail.guardianButton')}
                                             </MyButton>
                                         </div>
                                         <p className="text-caption text-neutral-500">
                                             {settings.credentialRecipient === 'STUDENT'
-                                                ? "Sends to the student's own email. Recommended for backfill, since a backfilled guardian's email is a placeholder address that can't receive mail."
-                                                : "Sends to the guardian's own email — meaningful for link/add-guardian flows where a real guardian email was provided; not deliverable for backfilled (placeholder) guardians."}
+                                                ? t('credentialEmail.studentHint')
+                                                : t('credentialEmail.guardianHint')}
                                         </p>
                                     </div>
                                     <GuardianCredentialTemplateSelector />
@@ -515,7 +510,7 @@ export default function GuardianSettings() {
                             onClick={handleSave}
                             disable={saving || !hasChanges}
                         >
-                            {saving ? 'Saving…' : 'Save'}
+                            {saving ? t('save.saving') : t('save.save')}
                         </MyButton>
                     </div>
                 )}
@@ -523,27 +518,27 @@ export default function GuardianSettings() {
                 {/* ── Backfill Existing Students ── */}
                 <BackfillSection
                     settingsEnabled={settings.enabled}
-                    title="Backfill Existing Students"
-                    description="Create a guardian account for every enrolled student in this institute that doesn't already have one linked. Students that already have a guardian are skipped and untouched."
+                    title={t('backfillEnrolled.title')}
+                    description={t('backfillEnrolled.description')}
                     pendingUrl={PENDING_URL}
                     backfillUrl={BACKFILL_URL}
                     queryKeySuffix="enrolled"
-                    dialogHeading="Run guardian backfill?"
-                    emptyStateLabel="Every student already has a guardian linked. Nothing to backfill."
-                    awaitingLabel="awaiting a guardian"
+                    dialogHeading={t('backfillEnrolled.dialogHeading')}
+                    emptyStateLabel={t('backfillEnrolled.emptyState')}
+                    awaitingLabel={t('backfillEnrolled.awaiting')}
                 />
 
                 {/* ── Backfill Leads' Guardians ── */}
                 <BackfillSection
                     settingsEnabled={settings.enabled}
-                    title="Backfill Leads' Guardians"
-                    description="Create a guardian account for every lead in this institute whose student side already has a real account but no guardian linked — reaches leads that haven't been enrolled yet. Leads that already have a guardian are skipped and untouched."
+                    title={t('backfillLeads.title')}
+                    description={t('backfillLeads.description')}
                     pendingUrl={LEADS_PENDING_URL}
                     backfillUrl={LEADS_BACKFILL_URL}
                     queryKeySuffix="leads"
-                    dialogHeading="Run leads guardian backfill?"
-                    emptyStateLabel="Every lead already has a guardian linked. Nothing to backfill."
-                    awaitingLabel="awaiting a guardian (leads)"
+                    dialogHeading={t('backfillLeads.dialogHeading')}
+                    emptyStateLabel={t('backfillLeads.emptyState')}
+                    awaitingLabel={t('backfillLeads.awaiting')}
                 />
 
                 {/* ── Export guardian credentials ── */}
@@ -578,6 +573,7 @@ function BackfillSection({
     emptyStateLabel,
     awaitingLabel,
 }: BackfillSectionProps) {
+    const { t } = useTranslation('settingsGuardian');
     const queryClient = useQueryClient();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [progress, setProgress] = useState<BackfillProgress | null>(null);
@@ -597,14 +593,19 @@ function BackfillSection({
         },
         onSuccess: (result) => {
             toast.success(
-                `${title} complete: ${result.createdSoFar} created, ${result.skippedSoFar} skipped out of ${result.startingTotal} eligible.`
+                t('backfill.completeToast', {
+                    title,
+                    created: result.createdSoFar,
+                    skipped: result.skippedSoFar,
+                    total: result.startingTotal,
+                })
             );
             setProgress(null);
             queryClient.invalidateQueries({ queryKey: pendingQueryKey });
         },
         onError: () => {
             setProgress(null);
-            toast.error(`${title} failed`);
+            toast.error(t('backfill.failedToast', { title }));
         },
     });
 
@@ -625,14 +626,18 @@ function BackfillSection({
                     {settingsEnabled && (
                         <div className="mb-4">
                             {pendingLoading ? (
-                                <div className="text-body text-neutral-500">Checking for {awaitingLabel}…</div>
+                                <div className="text-body text-neutral-500">
+                                    {t('backfill.checkingFor', { awaitingLabel })}
+                                </div>
                             ) : (pendingStudents?.length ?? 0) === 0 ? (
                                 <div className="text-body text-success-600">{emptyStateLabel}</div>
                             ) : (
                                 <div className="flex flex-col gap-2">
                                     <div className="text-body font-medium text-neutral-800">
-                                        {pendingStudents!.length} student
-                                        {pendingStudents!.length === 1 ? '' : 's'} {awaitingLabel}
+                                        {t('backfill.studentsAwaiting', {
+                                            count: pendingStudents!.length,
+                                            awaitingLabel,
+                                        })}
                                     </div>
                                     <div className="max-h-56 overflow-y-auto rounded-md border border-neutral-200">
                                         <div className="flex flex-col divide-y divide-neutral-100">
@@ -650,7 +655,9 @@ function BackfillSection({
                                     </div>
                                     {pendingStudents!.length > PENDING_PREVIEW_LIMIT && (
                                         <div className="text-caption text-neutral-500">
-                                            +{pendingStudents!.length - PENDING_PREVIEW_LIMIT} more not shown
+                                            {t('backfill.moreNotShown', {
+                                                count: pendingStudents!.length - PENDING_PREVIEW_LIMIT,
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -661,9 +668,12 @@ function BackfillSection({
                         <div className="mb-4 flex flex-col gap-1.5">
                             <Progress value={progressPct} className="w-full" />
                             <div className="text-caption text-neutral-500">
-                                {progressDone} of {progress.startingTotal} processed ({progress.createdSoFar}{' '}
-                                created, {progress.skippedSoFar} skipped) — running in batches, this may take a
-                                while for a large institute.
+                                {t('backfill.progressLine', {
+                                    done: progressDone,
+                                    total: progress.startingTotal,
+                                    created: progress.createdSoFar,
+                                    skipped: progress.skippedSoFar,
+                                })}
                             </div>
                         </div>
                     )}
@@ -673,7 +683,7 @@ function BackfillSection({
                         onClick={() => setDialogOpen(true)}
                         disable={!settingsEnabled || backfilling || (pendingStudents?.length ?? 0) === 0}
                     >
-                        {backfilling ? 'Running Backfill…' : 'Run Backfill'}
+                        {backfilling ? t('backfill.runningButton') : t('backfill.runButton')}
                     </MyButton>
                 </CardContent>
             </Card>
@@ -699,6 +709,7 @@ function BackfillSection({
  * reveal in the student side-view.
  */
 function GuardianCredentialsExport() {
+    const { t } = useTranslation('settingsGuardian');
     const [allowViewPassword, setAllowViewPassword] = useState<boolean | null>(null);
     const [exporting, setExporting] = useState(false);
 
@@ -735,9 +746,9 @@ function GuardianCredentialsExport() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Guardian credentials exported');
+            toast.success(t('export.successToast'));
         } catch {
-            toast.error('Failed to export guardian credentials');
+            toast.error(t('export.errorToast'));
         } finally {
             setExporting(false);
         }
@@ -750,18 +761,11 @@ function GuardianCredentialsExport() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Export Guardian Credentials</CardTitle>
-                <CardDescription>
-                    Download a CSV of every linked guardian&apos;s login details (one row per
-                    guardian, with their linked students). Useful for distributing parent-portal
-                    logins in bulk — especially for backfilled guardians, whose placeholder email
-                    address can&apos;t receive the credential email.
-                </CardDescription>
+                <CardTitle>{t('export.title')}</CardTitle>
+                <CardDescription>{t('export.description')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-                <p className="text-caption text-warning-600">
-                    This file contains plaintext passwords. Handle and share it carefully.
-                </p>
+                <p className="text-caption text-warning-600">{t('export.warning')}</p>
                 <div>
                     <MyButton
                         buttonType="secondary"
@@ -769,7 +773,7 @@ function GuardianCredentialsExport() {
                         onClick={handleExport}
                         disable={exporting || allowViewPassword === null}
                     >
-                        {exporting ? 'Exporting…' : 'Export Credentials CSV'}
+                        {exporting ? t('export.exporting') : t('export.button')}
                     </MyButton>
                 </div>
             </CardContent>
@@ -780,6 +784,7 @@ function GuardianCredentialsExport() {
 // ─── Guardian credential email template picker ────────────────────────────────
 
 function GuardianCredentialTemplateSelector() {
+    const { t } = useTranslation('settingsGuardian');
     const queryClient = useQueryClient();
     const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -803,11 +808,11 @@ function GuardianCredentialTemplateSelector() {
     const { mutate: selectTemplate } = useMutation({
         mutationFn: (templateId: string) => saveCredentialTemplateConfig(templateId),
         onSuccess: () => {
-            toast.success('Guardian credential email template updated');
+            toast.success(t('credentialTemplate.updateSuccessToast'));
             queryClient.invalidateQueries({ queryKey: ['guardian-credential-template-config'] });
         },
         onError: () => {
-            toast.error('Failed to update guardian credential email template');
+            toast.error(t('credentialTemplate.updateErrorToast'));
         },
     });
 
@@ -832,10 +837,10 @@ function GuardianCredentialTemplateSelector() {
             });
             setSelectedTemplate(created);
             selectTemplate(created.id);
-            toast.success('Sample guardian credential template created');
+            toast.success(t('credentialTemplate.createSuccessToast'));
         } catch (error) {
             console.error('Error generating sample guardian credential template:', error);
-            toast.error('Failed to generate sample template. Please try again.');
+            toast.error(t('credentialTemplate.createErrorToast'));
         } finally {
             setIsGenerating(false);
         }
@@ -844,31 +849,31 @@ function GuardianCredentialTemplateSelector() {
     return (
         <div className="flex flex-col gap-2 border-t border-neutral-100 pt-4">
             <div className="flex items-center justify-between gap-2">
-                <Label>Credential Email Template</Label>
+                <Label>{t('credentialTemplate.label')}</Label>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={handleGenerateSample}
                     disabled={isGenerating}
-                    title="Generate a sample guardian credential email template with placeholders pre-filled"
+                    title={t('credentialTemplate.generateTitle')}
                 >
                     {isGenerating ? (
                         <SpinnerGap className="mr-2 size-4 animate-spin" />
                     ) : (
                         <Sparkle className="mr-2 size-4 text-warning-500" />
                     )}
-                    {isGenerating ? 'Generating…' : 'Generate sample'}
+                    {isGenerating ? t('credentialTemplate.generating') : t('credentialTemplate.generateButton')}
                 </Button>
             </div>
             {isLoading ? (
-                <div className="text-body text-neutral-500">Loading template selection…</div>
+                <div className="text-body text-neutral-500">{t('credentialTemplate.loading')}</div>
             ) : (
                 <TemplateSelector
                     templateType="EMAIL"
                     selectedTemplate={selectedTemplate}
                     onTemplateSelect={handleTemplateSelect}
                     variant="dropdown"
-                    placeholder="No template selected — credential emails are skipped until one is chosen"
+                    placeholder={t('credentialTemplate.placeholder')}
                 />
             )}
         </div>
@@ -893,10 +898,11 @@ function GuardianBackfillConfirmDialog({
     pendingCount,
     heading,
 }: GuardianBackfillConfirmDialogProps) {
+    const { t } = useTranslation('settingsGuardian');
     const footer = (
         <div className="flex w-full items-center justify-end gap-2">
             <MyButton buttonType="secondary" scale="medium" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('backfillDialog.cancel')}
             </MyButton>
             <MyButton
                 buttonType="primary"
@@ -906,7 +912,7 @@ function GuardianBackfillConfirmDialog({
                     onOpenChange(false);
                 }}
             >
-                Confirm
+                {t('backfillDialog.confirm')}
             </MyButton>
         </div>
     );
@@ -921,12 +927,11 @@ function GuardianBackfillConfirmDialog({
         >
             <div className="px-6 py-6">
                 <p className="text-body text-neutral-500">
-                    This will create a guardian account for{' '}
+                    {t('backfillDialog.bodyPrefix')}{' '}
                     <span className="font-medium text-neutral-800">
-                        {pendingCount} student{pendingCount === 1 ? '' : 's'}
+                        {t('backfillDialog.studentCount', { count: pendingCount })}
                     </span>{' '}
-                    in this institute that {pendingCount === 1 ? "doesn't" : "don't"} already have one
-                    linked. Students that already have a guardian are skipped and untouched.
+                    {t('backfillDialog.bodySuffix', { count: pendingCount })}
                 </p>
             </div>
         </MyDialog>

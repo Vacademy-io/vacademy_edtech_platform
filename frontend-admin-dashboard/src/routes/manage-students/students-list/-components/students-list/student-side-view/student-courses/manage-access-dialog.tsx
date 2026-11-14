@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
@@ -28,23 +30,17 @@ interface ManageAccessDialogProps {
     onSuccess: () => void;
 }
 
-const MODE_LABELS: Record<AccessChangeMode, string> = {
-    extend: 'Extend by days',
-    set_from_enrollment: 'Set total days from enrollment',
-    set_date: 'Set an exact expiry date',
-    unlimited: 'Give unlimited access',
-};
-
-const MODE_HINTS: Record<AccessChangeMode, string> = {
-    extend: 'Adds days on top of the current expiry. Already-expired learners are counted from today so they get the full extension.',
-    set_from_enrollment:
-        'Recomputes expiry as enrollment date + this many days, ignoring whatever it is now.',
-    set_date: 'Replaces the expiry with this exact date.',
-    unlimited: 'Removes the expiry entirely — the learner keeps access indefinitely.',
-};
-
-const formatExpiry = (value: string | null | undefined) =>
-    value ? format(new Date(value), 'd MMM yyyy') : 'Unlimited';
+/** Mode labels/hints are display-only — `mode` itself stays the untranslated
+ *  AccessChangeMode value used for dispatch/comparison/payload logic below. */
+const buildModeConfig = (t: TFunction): Record<AccessChangeMode, { label: string; hint: string }> => ({
+    extend: { label: t('modes.extend.label'), hint: t('modes.extend.hint') },
+    set_from_enrollment: {
+        label: t('modes.setFromEnrollment.label'),
+        hint: t('modes.setFromEnrollment.hint'),
+    },
+    set_date: { label: t('modes.setDate.label'), hint: t('modes.setDate.hint') },
+    unlimited: { label: t('modes.unlimited.label'), hint: t('modes.unlimited.hint') },
+});
 
 const daysLeft = (value: string | null | undefined): number | null => {
     if (!value) return null;
@@ -60,6 +56,7 @@ export const ManageAccessDialog = ({
     onOpenChange,
     onSuccess,
 }: ManageAccessDialogProps) => {
+    const { t } = useTranslation('manageStudentsManageAccessDialog');
     const instituteId = getInstituteId() || '';
     const [step, setStep] = useState<Step>('CONFIG');
     const [selectedPSIds, setSelectedPSIds] = useState<Set<string>>(new Set());
@@ -87,6 +84,11 @@ export const ManageAccessDialog = ({
         });
         return map;
     }, [courses]);
+
+    const modeConfig = useMemo(() => buildModeConfig(t), [t]);
+
+    const formatExpiry = (value: string | null | undefined) =>
+        value ? format(new Date(value), 'd MMM yyyy') : t('unlimitedLabel');
 
     const handleOpenChange = (isOpen: boolean) => {
         if (isOpen) {
@@ -144,7 +146,7 @@ export const ManageAccessDialog = ({
             setPreviewData(result);
             setStep('PREVIEW');
         } catch (err) {
-            toast.error(errorMessage(err, 'Preview failed'));
+            toast.error(errorMessage(err, t('toasts.previewFailed')));
         }
     };
 
@@ -154,31 +156,39 @@ export const ManageAccessDialog = ({
             setFinalResults(result);
             setStep('RESULTS');
             if (result.summary.updated > 0 && result.summary.failed === 0) {
-                toast.success(`Access updated for ${result.summary.updated} enrollment(s)`);
+                toast.success(t('toasts.accessUpdated', { count: result.summary.updated }));
                 onSuccess();
             } else if (result.summary.updated > 0) {
                 toast.warning(
-                    `${result.summary.updated} updated, ${result.summary.failed} failed.`
+                    t('toasts.partialUpdate', {
+                        updated: result.summary.updated,
+                        failed: result.summary.failed,
+                    })
                 );
                 onSuccess();
             } else {
-                toast.warning('No enrollments were changed.');
+                toast.warning(t('toasts.noChanges'));
             }
         } catch (err) {
-            toast.error(errorMessage(err, 'Access change failed'));
+            toast.error(errorMessage(err, t('toasts.accessChangeFailed')));
         }
     };
 
     const renderConfig = () => (
         <div className="flex flex-col gap-5">
             <p className="text-sm text-neutral-600">
-                Change how long <strong>{userName}</strong> keeps access to selected courses.
+                <Trans
+                    t={t}
+                    i18nKey="config.changePrompt"
+                    values={{ name: userName }}
+                    components={{ strong: <strong /> }}
+                />
             </p>
 
             <div className="flex max-h-56 flex-col gap-2 overflow-y-auto pr-1">
                 {courses.length === 0 ? (
                     <p className="py-4 text-center text-sm text-neutral-400">
-                        No enrollments to manage
+                        {t('config.noEnrollments')}
                     </p>
                 ) : (
                     courses.map((c) => {
@@ -203,16 +213,19 @@ export const ManageAccessDialog = ({
                                 />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-neutral-800">
-                                        {c.package_name || 'Unnamed Course'}
+                                        {c.package_name || t('config.unnamedCourse')}
                                     </p>
                                     <p className="truncate text-xs text-neutral-500">
                                         {c.expiry_date
-                                            ? `Expires ${formatExpiry(c.expiry_date)}${
-                                                  remaining === 0
-                                                      ? ' — expired'
-                                                      : ` — ${remaining} day(s) left`
-                                              }`
-                                            : 'Unlimited access'}
+                                            ? remaining === 0
+                                                ? t('config.expiresExpired', {
+                                                      date: formatExpiry(c.expiry_date),
+                                                  })
+                                                : t('config.expiresRemaining', {
+                                                      date: formatExpiry(c.expiry_date),
+                                                      count: remaining ?? 0,
+                                                  })
+                                            : t('config.unlimitedAccess')}
                                     </p>
                                 </div>
                             </label>
@@ -222,8 +235,8 @@ export const ManageAccessDialog = ({
             </div>
 
             <div className="flex flex-col gap-2 rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-                <p className="text-xs font-medium text-neutral-600">What to change</p>
-                {(Object.keys(MODE_LABELS) as AccessChangeMode[]).map((m) => (
+                <p className="text-xs font-medium text-neutral-600">{t('config.whatToChange')}</p>
+                {(Object.keys(modeConfig) as AccessChangeMode[]).map((m) => (
                     <label key={m} className="flex items-start gap-2">
                         <input
                             type="radio"
@@ -233,8 +246,10 @@ export const ManageAccessDialog = ({
                             className="mt-0.5 text-primary-500"
                         />
                         <span className="text-xs text-neutral-700">
-                            <strong>{MODE_LABELS[m]}</strong>
-                            <span className="block text-2xs text-neutral-500">{MODE_HINTS[m]}</span>
+                            <strong>{modeConfig[m].label}</strong>
+                            <span className="block text-2xs text-neutral-500">
+                                {modeConfig[m].hint}
+                            </span>
                         </span>
                     </label>
                 ))}
@@ -245,7 +260,9 @@ export const ManageAccessDialog = ({
                             htmlFor="access-days"
                             className="text-2xs font-medium text-neutral-600"
                         >
-                            {mode === 'extend' ? 'Days to add' : 'Total days of access'}
+                            {mode === 'extend'
+                                ? t('config.daysToAdd')
+                                : t('config.totalDaysOfAccess')}
                         </label>
                         <Input
                             id="access-days"
@@ -256,9 +273,7 @@ export const ManageAccessDialog = ({
                             min={mode === 'set_from_enrollment' ? 1 : undefined}
                         />
                         {mode === 'extend' && (
-                            <p className="text-2xs text-neutral-500">
-                                Use a negative number to shorten access.
-                            </p>
+                            <p className="text-2xs text-neutral-500">{t('config.negativeHint')}</p>
                         )}
                     </div>
                 )}
@@ -269,7 +284,7 @@ export const ManageAccessDialog = ({
                             htmlFor="access-expiry"
                             className="text-2xs font-medium text-neutral-600"
                         >
-                            New expiry date
+                            {t('config.newExpiryDate')}
                         </label>
                         <Input
                             id="access-expiry"
@@ -284,18 +299,16 @@ export const ManageAccessDialog = ({
 
             <div className="flex flex-col gap-1">
                 <label htmlFor="access-reason" className="text-xs font-medium text-neutral-600">
-                    Reason (optional)
+                    {t('config.reasonLabel')}
                 </label>
                 <Textarea
                     id="access-reason"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="e.g. Compensating for the batch reschedule"
+                    placeholder={t('config.reasonPlaceholder')}
                     className="min-h-16 text-xs"
                 />
-                <p className="text-2xs text-neutral-500">
-                    Stored with the change so anyone reviewing the history can see why.
-                </p>
+                <p className="text-2xs text-neutral-500">{t('config.reasonHint')}</p>
             </div>
         </div>
     );
@@ -313,7 +326,9 @@ export const ManageAccessDialog = ({
                     >
                         <div className="flex items-center justify-between gap-2">
                             <p className="truncate text-sm font-medium text-neutral-800">
-                                {course?.package_name || r.package_session_id || 'Enrollment'}
+                                {course?.package_name ||
+                                    r.package_session_id ||
+                                    t('resultList.enrollmentFallback')}
                             </p>
                             <span
                                 className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-medium ${
@@ -336,8 +351,10 @@ export const ManageAccessDialog = ({
                                 </span>
                                 {r.days_delta != null && (
                                     <span className="text-neutral-500">
-                                        ({r.days_delta > 0 ? '+' : ''}
-                                        {r.days_delta} day(s))
+                                        {t('resultList.daysDelta', {
+                                            count: r.days_delta,
+                                            sign: r.days_delta > 0 ? '+' : '',
+                                        })}
                                     </span>
                                 )}
                             </div>
@@ -353,8 +370,9 @@ export const ManageAccessDialog = ({
     const renderPreview = () => (
         <div className="flex flex-col gap-4">
             <p className="text-sm text-neutral-600">
-                {previewData?.summary.updated ?? 0} enrollment(s) will change,{' '}
-                {previewData?.summary.skipped ?? 0} skipped. Nothing has been saved yet.
+                {t('preview.willChange', { count: previewData?.summary.updated ?? 0 })},{' '}
+                {t('preview.skippedCount', { count: previewData?.summary.skipped ?? 0 })}.{' '}
+                {t('preview.notSaved')}
             </p>
             {previewData && renderResultList(previewData)}
         </div>
@@ -363,8 +381,9 @@ export const ManageAccessDialog = ({
     const renderResults = () => (
         <div className="flex flex-col gap-4">
             <p className="text-sm text-neutral-600">
-                {finalResults?.summary.updated ?? 0} updated, {finalResults?.summary.skipped ?? 0}{' '}
-                skipped, {finalResults?.summary.failed ?? 0} failed.
+                {t('results.updatedCount', { count: finalResults?.summary.updated ?? 0 })},{' '}
+                {t('results.skippedCount', { count: finalResults?.summary.skipped ?? 0 })},{' '}
+                {t('results.failedCount', { count: finalResults?.summary.failed ?? 0 })}.
             </p>
             {finalResults && renderResultList(finalResults)}
         </div>
@@ -372,14 +391,14 @@ export const ManageAccessDialog = ({
 
     const renderHistory = () => {
         if (isHistoryLoading) {
-            return <p className="py-6 text-center text-sm text-neutral-400">Loading history…</p>;
+            return (
+                <p className="py-6 text-center text-sm text-neutral-400">{t('history.loading')}</p>
+            );
         }
         const entries = history?.content ?? [];
         if (entries.length === 0) {
             return (
-                <p className="py-6 text-center text-sm text-neutral-400">
-                    No access changes recorded yet.
-                </p>
+                <p className="py-6 text-center text-sm text-neutral-400">{t('history.empty')}</p>
             );
         }
         return (
@@ -394,7 +413,7 @@ export const ManageAccessDialog = ({
                                 <p className="truncate text-sm font-medium text-neutral-800">
                                     {course?.package_name ||
                                         entry.package_session_id ||
-                                        'Enrollment'}
+                                        t('resultList.enrollmentFallback')}
                                 </p>
                                 <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-2xs font-medium text-neutral-600">
                                     {entry.action}
@@ -408,19 +427,23 @@ export const ManageAccessDialog = ({
                                 </span>
                                 {entry.days_delta != null && (
                                     <span className="text-neutral-500">
-                                        ({entry.days_delta > 0 ? '+' : ''}
-                                        {entry.days_delta}d)
+                                        {t('resultList.daysDelta', {
+                                            count: entry.days_delta,
+                                            sign: entry.days_delta > 0 ? '+' : '',
+                                        })}
                                     </span>
                                 )}
                             </div>
                             <p className="mt-1 text-2xs text-neutral-500">
                                 {format(new Date(entry.created_at), 'd MMM yyyy, h:mm a')} ·{' '}
                                 {entry.source.replace(/_/g, ' ').toLowerCase()}
-                                {entry.actor_name ? ` · by ${entry.actor_name}` : ''}
+                                {entry.actor_name
+                                    ? t('history.byActor', { name: entry.actor_name })
+                                    : ''}
                             </p>
                             {entry.reason && (
                                 <p className="mt-1 text-2xs italic text-neutral-500">
-                                    “{entry.reason}”
+                                    {t('history.reasonQuote', { reason: entry.reason })}
                                 </p>
                             )}
                         </div>
@@ -439,7 +462,7 @@ export const ManageAccessDialog = ({
                 className="gap-1.5"
             >
                 <ClockCounterClockwise className="size-4" />
-                {step === 'HISTORY' ? 'Back to changes' : 'View history'}
+                {step === 'HISTORY' ? t('footer.backToChanges') : t('footer.viewHistory')}
             </MyButton>
 
             <div className="flex items-center gap-2">
@@ -449,7 +472,7 @@ export const ManageAccessDialog = ({
                         disable={!isConfigValid || isPending}
                         onClick={handlePreview}
                     >
-                        {isPending ? 'Checking…' : 'Preview changes'}
+                        {isPending ? t('footer.checking') : t('footer.previewChanges')}
                     </MyButton>
                 )}
                 {step === 'PREVIEW' && (
@@ -459,20 +482,20 @@ export const ManageAccessDialog = ({
                             scale="medium"
                             onClick={() => setStep('CONFIG')}
                         >
-                            Back
+                            {t('footer.back')}
                         </MyButton>
                         <MyButton
                             scale="medium"
                             disable={isPending || (previewData?.summary.updated ?? 0) === 0}
                             onClick={handleConfirm}
                         >
-                            {isPending ? 'Applying…' : 'Apply changes'}
+                            {isPending ? t('footer.applying') : t('footer.applyChanges')}
                         </MyButton>
                     </>
                 )}
                 {(step === 'RESULTS' || step === 'HISTORY') && (
                     <MyButton scale="medium" onClick={() => handleOpenChange(false)}>
-                        Done
+                        {t('footer.done')}
                     </MyButton>
                 )}
             </div>
@@ -481,7 +504,7 @@ export const ManageAccessDialog = ({
 
     return (
         <MyDialog
-            heading="Manage Course Access"
+            heading={t('dialogTitle')}
             open={open}
             onOpenChange={handleOpenChange}
             dialogWidth="max-w-lg"

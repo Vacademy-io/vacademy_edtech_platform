@@ -1,0 +1,72 @@
+{
+    "header": {
+        "title": "Questions from a Topic",
+        "subtitle": "Tell us the topic and what students should learn. We'll draft a set of questions you can edit before sending."
+    },
+    "sections": {
+        "topic": "What's the topic?",
+        "audience": "Who's it for, and how many?"
+    },
+    "fields": {
+        "topicName": {
+            "label": "Topic name",
+            "placeholder": "e.g. Photosynthesis",
+            "error": "Please give the topic a name."
+        },
+        "learningGoal": {
+            "label": "What should students learn?",
+            "placeholder": "e.g. test understanding of the process of photosynthesis, the factors that affect it, and its importance in ecosystems",
+            "error": "Please describe what the questions should cover."
+        },
+        "classLevel": {
+            "label": "Class",
+            "placeholder": "e.g. 8th standard",
+            "error": "Please enter a class"
+        },
+        "numQuestions": {
+            "label": "Number of questions",
+            "placeholder": "10",
+            "error": "How many questions would you like?"
+        },
+        "questionType": {
+            "label": "Question type"
+        },
+        "language": {
+            "label": "Language"
+        }
+    },
+    "questionTypes": {
+        "mcq": "MCQ",
+        "trueFalse": "True/False",
+        "numeric": "Numeric",
+        "shortAnswer": "Short answer",
+        "mixed": "Mixed"
+    },
+    "languages": {
+        "english": "English",
+        "hindi": "Hindi"
+    },
+    "errors": {
+        "generateFailed": "We couldn't draft questions from this. Want to try again?",
+        "taskFailed": "We couldn't finish this draft. Want to try again?"
+    },
+    "progress": {
+        "title": "Drafting your questions",
+        "subtitle": "Crafting questions on your topic. Usually ~30 seconds."
+    },
+    "result": {
+        "heading": "Here's what we drafted for you",
+        "aiGeneratedBadge": "AI-generated",
+        "description": "Review and tweak the questions before saving or exporting. The teacher always has the final word.",
+        "draftAnother": "Draft another"
+    },
+    "actions": {
+        "draftQuestions": "Draft my questions"
+    },
+    "taskListHeading": "Vsmart Topics",
+    "recentDrafts": {
+        "title": "Your recent drafts",
+        "fallbackLabel": "Topic-based draft",
+        "emptyHint": "Your topic-based drafts will appear here. Fill in the topic above and draft your first one."
+    }
+}

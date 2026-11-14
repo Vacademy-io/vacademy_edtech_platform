@@ -8,6 +8,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { WarningCircle } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 
 interface TimesUpModalProps {
   open: boolean
@@ -16,16 +17,17 @@ interface TimesUpModalProps {
 }
 
 export function TimesUpModal({ open, onOpenChange, onFinish }: TimesUpModalProps) {
+  const { t } = useTranslation('courseComponentsExtra')
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <WarningCircle className="h-5 w-5 text-primary-500" />
-            Time is up!
+            {t('timesUpModal.title')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Time for the Assessment has ended. Click to submit your responses.
+            {t('timesUpModal.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -33,7 +35,7 @@ export function TimesUpModal({ open, onOpenChange, onFinish }: TimesUpModalProps
             onClick={onFinish}
             className="w-full bg-primary-500 text-white"
           >
-            Finish
+            {t('timesUpModal.finish')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

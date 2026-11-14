@@ -1,0 +1,21 @@
+{
+    "title": "Offline Access",
+    "enabled": {
+        "label": "Allow offline downloads institute-wide",
+        "hint": "Master switch. Off zeroes out every course/batch/node offline permission, regardless of their own settings, and hides the course Downloads tab for every role (each role keeps its own Downloads toggle in Display Settings for when this is back on)."
+    },
+    "revalidationDays": {
+        "label": "Re-validation lease (days)",
+        "hint": "An offline device must check in online within this many days (1–90) or its downloaded content locks."
+    },
+    "maxDevices": {
+        "label": "Max offline devices per learner",
+        "hint": "Concurrent registered offline devices (1–10) before registration is blocked with DEVICE_LIMIT_REACHED."
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "toasts": {
+        "saveSuccess": "Offline access settings saved",
+        "saveError": "Failed to save offline access settings"
+    }
+}

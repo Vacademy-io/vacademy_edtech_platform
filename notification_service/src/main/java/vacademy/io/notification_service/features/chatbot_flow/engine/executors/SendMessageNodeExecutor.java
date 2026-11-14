@@ -82,8 +82,11 @@ public class SendMessageNodeExecutor implements ChatbotNodeExecutor {
                     return NodeExecutionResult.builder()
                             .success(false).errorMessage("Resolved message text is empty").build();
                 }
-                provider.sendText(context.getPhoneNumber(), resolved,
-                        context.getInstituteId(), context.getBusinessChannelId());
+                // Keep the provider's message id: the engine stamps it on the outgoing
+                // notification_log row, and it is the only key the delivered/read webhooks join on.
+                context.setLastProviderMessageId(
+                        provider.sendText(context.getPhoneNumber(), resolved,
+                                context.getInstituteId(), context.getBusinessChannelId()));
                 log.info("Session text message sent to {}", context.getPhoneNumber());
 
             } else {
@@ -101,8 +104,9 @@ public class SendMessageNodeExecutor implements ChatbotNodeExecutor {
                             .build();
                 }
 
-                provider.sendMedia(context.getPhoneNumber(), messageType, mediaUrl, caption,
-                        filename, context.getInstituteId(), context.getBusinessChannelId());
+                context.setLastProviderMessageId(
+                        provider.sendMedia(context.getPhoneNumber(), messageType, mediaUrl, caption,
+                                filename, context.getInstituteId(), context.getBusinessChannelId()));
                 log.info("Session {} message sent to {}", messageType, context.getPhoneNumber());
             }
 

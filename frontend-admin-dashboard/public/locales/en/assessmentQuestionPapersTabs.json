@@ -1,0 +1,15 @@
+{
+    "filters": {
+        "yearClass": "Year/Class",
+        "tags": "Tags"
+    },
+    "actions": {
+        "filter": "Filter",
+        "reset": "Reset",
+        "tryAgain": "Try again"
+    },
+    "emptyStates": {
+        "noQuestionPapers": "No question papers available",
+        "noFavouriteQuestionPapers": "No question paper has been marked as favourites yet"
+    }
+}

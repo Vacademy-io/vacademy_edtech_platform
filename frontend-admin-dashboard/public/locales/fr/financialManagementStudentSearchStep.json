@@ -1,0 +1,25 @@
+{
+    "searchPlaceholder": "Rechercher par nom d'élève ou téléphone...",
+    "table": {
+        "coursePackage": "Cours / Forfait",
+        "due": "Dû",
+        "overdue": "En retard",
+        "status": "Statut"
+    },
+    "errors": {
+        "unableToLoad": "Impossible de charger les élèves",
+        "tryAgain": "Veuillez réessayer."
+    },
+    "empty": {
+        "noStudentsFound": "Aucun élève trouvé.",
+        "trySearching": "Essayez de rechercher par nom ou numéro de téléphone."
+    },
+    "pagination": {
+        "showing": "Affichage de",
+        "of": "sur"
+    },
+    "redesign": {
+        "findTitle": "Find the {{learner}}",
+        "findHint": "click a {{learner}} to see their installments"
+    }
+}

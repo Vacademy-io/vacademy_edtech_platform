@@ -1,72 +1,85 @@
-import { Fire, Play, VideoCamera } from "@phosphor-icons/react";
+import { CircleNotch, Fire, Play, VideoCamera } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { ProgressRing } from "./ProgressRing";
 import heroGreeting from "@/assets/cleaner-play/hero-greeting.webp";
 import { SessionDetails } from "@/routes/study-library/live-class/-types/types";
-import { useDashboardHeroData } from "./useDashboardHeroData";
+import type { ResumeTarget } from "../../-lib/resume-target";
+import {
+  streakCountdown,
+  streakPrompt,
+  useDashboardHeroData,
+  type DailyTaskProgress,
+} from "./useDashboardHeroData";
 
 export interface PlayDashboardHeroProps {
   userName: string | null;
   liveSessions: SessionDetails[] | undefined;
   isLoadingLive: boolean;
   hasAnyProgress: boolean;
+  /** The checked resume point (see useDashboardResume), or null. */
+  resume: ResumeTarget | null;
+  /** The answer is not in yet: the button says so, and a tap on it waits for the answer. */
+  resumeResolving: boolean;
   studyLibraryLoaded: boolean;
   onJoinSession: (session: SessionDetails) => void;
+  /** The institute's gamification flag. Off hides the streak and the points goal. */
+  showGamification?: boolean;
+  /** Today's daily tasks while a plan runs; the goal ring then tracks them. */
+  taskProgress?: DailyTaskProgress | null;
 }
 
-/** Playful pulsing placeholder shown while the study library loads. */
-function HeroSkeleton(): JSX.Element {
-  return (
-    <div className="rounded-play-card-sm border border-play-surface bg-play-highlight p-4 md:p-6">
-      <div className="flex animate-pulse flex-col items-center gap-5 md:flex-row md:gap-8">
-        <div className="flex items-center gap-4 self-start md:self-center">
-          <div className="h-24 w-24 rounded-full bg-white/70" />
-          <div className="flex flex-col gap-2.5">
-            <div className="h-7 w-44 rounded-full bg-white/70" />
-            <div className="flex gap-2">
-              <div className="h-10 w-28 rounded-full bg-white/70" />
-              <div className="h-10 w-28 rounded-full bg-white/70" />
-            </div>
-          </div>
-        </div>
-        <div className="h-20 w-full rounded-play-card-sm bg-white/70 md:flex-1" />
-      </div>
-    </div>
-  );
-}
 
 export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
   const { t } = useTranslation("dashboard");
+  const { t: tE } = useTranslation("dashboardEngagement");
   const {
     userName,
     liveSessions,
     isLoadingLive,
     hasAnyProgress,
+    resume: resumeTarget,
+    resumeResolving,
     studyLibraryLoaded,
     onJoinSession,
+    showGamification = true,
+    taskProgress = null,
   } = props;
 
   const {
     greeting,
     streak,
+    streakState,
     goalPercent,
+    taskProgress: goalTasks,
     resume,
     imminent,
     liveClassTerm,
     isContinue,
     ctaCaption,
     goToCta,
-  } = useDashboardHeroData({ userName, liveSessions, hasAnyProgress });
+  } = useDashboardHeroData({
+    userName,
+    liveSessions,
+    hasAnyProgress,
+    resume: resumeTarget,
+    resumeResolving,
+    firstRunKnown: studyLibraryLoaded,
+    showGamification,
+    taskProgress,
+  });
+  const prompt = showGamification && streakState.status === "atRisk"
+    ? streakPrompt(streakState, tE)
+    : null;
+  const countdown = showGamification ? streakCountdown(streakState, tE) : null;
+  // The goal ring is shown when it measures tasks (a plan runs) or, with
+  // gamification on, today's points.
+  const showGoal = Boolean(goalTasks) || showGamification;
 
   const ctaLabel = isContinue ? t("hero.ctaContinueUpper") : t("hero.ctaStartUpper");
 
-  if (!studyLibraryLoaded) {
-    return <HeroSkeleton />;
-  }
-
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-stack">
       {/* Live / imminent class banner */}
       {isLoadingLive ? (
         <div className="h-11 w-full max-w-md animate-pulse self-start rounded-full bg-play-surface" />
@@ -122,33 +135,60 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
             <div className="min-w-0">
               <h1 className="text-h2 font-bold text-play-ink">{greeting}!</h1>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                {/* Streak flame chip */}
-                <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-3 shadow-play-soft">
-                  <Fire
-                    weight="fill"
-                    size={20}
-                    className={streak > 0 ? "text-play-warn" : "text-play-muted"}
-                  />
-                  <span className="text-body font-black tabular-nums text-play-ink">
-                    {streak}
+                {/* Streak flame chip: the server streak, with its kept /
+                    at-risk / zero states (filled, outlined, muted flame). */}
+                {showGamification && (
+                  <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-3 shadow-play-soft">
+                    <Fire
+                      weight={streakState.status === "kept" ? "fill" : "regular"}
+                      size={20}
+                      className={streak > 0 ? "text-play-warn" : "text-play-muted"}
+                    />
+                    {streakState.status === "zero" ? (
+                      <span className="text-caption font-bold text-play-ink">
+                        {tE("streakStatus.start")}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-body font-black tabular-nums text-play-ink">
+                          {streak}
+                        </span>
+                        <span className="text-caption font-bold text-play-ink">
+                          {t("hero.dayStreakChip")}
+                        </span>
+                      </>
+                    )}
                   </span>
-                  <span className="text-caption font-bold text-play-ink">
-                    {t("hero.dayStreakChip")}
+                )}
+                {/* Daily goal ring chip: today's tasks while a plan runs,
+                    else today's points. */}
+                {showGoal && (
+                  <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-3 shadow-play-soft">
+                    <ProgressRing
+                      value={goalPercent}
+                      size={30}
+                      strokeWidth={5}
+                      showLabel={false}
+                    />
+                    <span className="text-caption font-bold tabular-nums text-play-ink">
+                      {goalTasks
+                        ? tE("heroGoal.tasks", {
+                            done: goalTasks.done,
+                            count: goalTasks.scheduled,
+                          })
+                        : t("hero.dailyGoal")}
+                    </span>
                   </span>
-                </span>
-                {/* Daily goal ring chip */}
-                <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-3 shadow-play-soft">
-                  <ProgressRing
-                    value={goalPercent}
-                    size={30}
-                    strokeWidth={5}
-                    showLabel={false}
-                  />
-                  <span className="text-caption font-bold text-play-ink">
-                    {t("hero.dailyGoal")}
-                  </span>
-                </span>
+                )}
               </div>
+              {prompt && (
+                <p className="mt-2 text-caption font-bold text-play-warn-soft-ink">
+                  {prompt}
+                  {countdown && (
+                    <span className="font-black"> · {countdown}</span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
 
@@ -157,10 +197,13 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
             <button
               type="button"
               onClick={goToCta}
+              aria-busy={resumeResolving}
               aria-label={
                 // Whole-sentence aria keys — never ctaLabel + " learning", so
                 // translators aren't handed a fragment to glue.
-                resume
+                resumeResolving
+                  ? ctaCaption
+                  : resume
                   ? t("hero.continueAria", { title: resume.slideTitle })
                   : isContinue
                     ? t("hero.ctaContinueLearningAria")
@@ -178,8 +221,15 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
                   <span className="text-display-sm font-black leading-none text-white">
                     {ctaLabel}
                   </span>
-                  <span className="max-w-full truncate rounded-full bg-white px-3 py-0.5 text-caption font-bold text-play-ink">
-                    {ctaCaption}
+                  <span className="flex max-w-full items-center gap-1.5 rounded-full bg-white px-3 py-0.5 text-caption font-bold text-play-ink">
+                    {resumeResolving && (
+                      <CircleNotch
+                        aria-hidden="true"
+                        weight="bold"
+                        className="size-3 shrink-0 animate-spin motion-reduce:animate-none"
+                      />
+                    )}
+                    <span className="min-w-0 truncate">{ctaCaption}</span>
                   </span>
                 </span>
               </span>

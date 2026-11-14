@@ -1,0 +1,30 @@
+{
+    "statusBubble": {
+        "workingOnIt": "Travail en cours…",
+        "shotProgress": "Plan {{completed}} / {{total}}"
+    },
+    "genericDecision": {
+        "letAiDecide": "Laisser l'IA décider",
+        "approve": "Approuver"
+    },
+    "completion": {
+        "videoReady": "Votre vidéo est prête.",
+        "preparingPreview": "Préparation de l'aperçu…",
+        "editVideo": "Modifier la vidéo",
+        "detailsAndDownload": "Détails et téléchargement",
+        "saveCast": "Enregistrer le casting"
+    },
+    "header": {
+        "title": "Assistant",
+        "stop": "Arrêter",
+        "showProgress": "Afficher la progression"
+    },
+    "postEdit": {
+        "updating": "Mise à jour du plan…"
+    },
+    "input": {
+        "placeholderEdit": "Modifiez la vidéo — ex. « refaire le plan 3 — titre plus grand, vraie capture d'écran »",
+        "placeholderSteer": "Orientez la génération — ex. « rendre le plan 3 plus drôle et plus court »",
+        "placeholderWorking": "Travail en cours…"
+    }
+}

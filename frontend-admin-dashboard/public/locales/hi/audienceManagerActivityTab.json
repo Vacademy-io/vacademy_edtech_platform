@@ -1,0 +1,37 @@
+{
+    "dailyActivity": {
+        "title": "दैनिक गतिविधि",
+        "summary_one": "{{count}} गतिविधि · संस्थान का समय क्षेत्र",
+        "summary_other": "{{count}} गतिविधियाँ · संस्थान का समय क्षेत्र",
+        "empty": "इस अवधि में कोई गतिविधि नहीं है।",
+        "barTooltip_one": "{{date}} — {{count}} गतिविधि",
+        "barTooltip_other": "{{date}} — {{count}} गतिविधियाँ"
+    },
+    "counsellorActivity": {
+        "title": "काउंसलर गतिविधि",
+        "empty": "इस अवधि में कोई काउंसलर गतिविधि नहीं है।",
+        "unknownCounsellor": "अज्ञात काउंसलर"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "notes": "नोट्स",
+            "calls": "कॉल",
+            "statusChanges": "स्थिति परिवर्तन",
+            "followupsCreated": "बनाए गए फॉलो-अप",
+            "followupsClosed": "बंद किए गए फॉलो-अप",
+            "total": "कुल"
+        }
+    },
+    "table": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "notes": "नोट्स",
+            "calls": "कॉल",
+            "statusChanges": "स्थिति परिवर्तन",
+            "followupsCreated": "बनाए गए फॉलो-अप",
+            "followupsClosed": "बंद किए गए फॉलो-अप",
+            "total": "कुल"
+        }
+    }
+}

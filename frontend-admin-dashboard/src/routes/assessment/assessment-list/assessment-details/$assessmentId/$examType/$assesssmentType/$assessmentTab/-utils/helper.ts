@@ -25,6 +25,13 @@ import {
 } from './assessment-details-interface';
 import { sectionsEditQuestionFormType } from '../-components/AssessmentPreview';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
+import {
+    buildCbeEvaluationJson,
+    CBE_RESPONSE_TYPE,
+    cbeConfigFromEvaluationJson,
+    cbeQuestionMark,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
 import { BatchDetailsInterface, StudentLeaderboard } from '@/types/assessment-overview';
 import {
     ASSESSMENT_STATUS_STUDENT_ATTEMPTED_COLUMNS_EXTERNAL_WIDTH,
@@ -42,6 +49,7 @@ import {
     Step3ParticipantsListInterface,
     StudentResponseQuestionwiseInterface,
 } from '@/types/assessments/student-questionwise-status';
+import { negativeMarkingPercentageFor } from '@/lib/negative-marking';
 
 export const convertMarksRankData = (leaderboard: StudentLeaderboardEntry[]) => {
     const rankMap = new Map();
@@ -97,6 +105,11 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                         score: `${student.score ? student.score.toFixed(2) : 0} / ${totalMarks}`,
                         evaluation_status: student.evaluation_status,
                         result_status: student.report_release_result_status,
+                        // Same contact columns the results CSV already carries, so the
+                        // table can answer "how do I reach this learner" on its own.
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 } else if (selectedTab === 'Ongoing') {
                     return {
@@ -106,6 +119,9 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                         full_name: student.student_name,
                         start_time: extractDateTime(convertToLocalDateTime(student.attempt_date))
                             .time,
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 } else if (selectedTab === 'Pending') {
                     return {
@@ -117,6 +133,11 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                             batches_for_sessions,
                             student.batch_id
                         ),
+                        // The point of this tab is chasing people who haven't sat the
+                        // test, so carry the same contact columns its CSV export does.
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 }
                 return {};
@@ -128,6 +149,11 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                 if (selectedTab === 'Attempted') {
                     return {
                         id: student.user_id,
+                        // Needed by Provide Reattempt (single and bulk), which resolves
+                        // the participant by registration id. PUBLIC always mapped this;
+                        // PRIVATE dropped it, so reattempt failed with "Could not resolve
+                        // this participant's registration" on every private assessment.
+                        registration_id: student.registration_id,
                         attempt_id: student.attempt_id,
                         full_name: student.student_name,
                         package_session_id: getBatchNameById(
@@ -150,20 +176,44 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                         score: `${student.score ? student.score.toFixed(2) : 0} / ${totalMarks}`,
                         evaluation_status: student.evaluation_status,
                         result_status: student.report_release_result_status,
+                        // Same contact columns the results CSV already carries, so the
+                        // table can answer "how do I reach this learner" on its own.
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 } else if (selectedTab === 'Ongoing') {
                     return {
                         id: student.user_id,
+                        // See the Attempted branch above — reattempt resolves by
+                        // registration id, so it must survive the mapping here too.
+                        registration_id: student.registration_id,
                         attempt_id: student.attempt_id,
                         full_name: student.student_name,
                         start_time: extractDateTime(convertToLocalDateTime(student.attempt_date))
                             .time,
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 } else if (selectedTab === 'Pending') {
                     return {
                         id: student.user_id,
+                        // See the Attempted branch above — reattempt resolves by
+                        // registration id, so it must survive the mapping here too.
+                        registration_id: student.registration_id,
                         attempt_id: student.attempt_id,
                         full_name: student.student_name,
+                        // PRIVATE dropped every column but the name, so this tab showed a
+                        // bare list of names with no way to tell which batch a learner was
+                        // in or how to reach them — the two things it exists for.
+                        package_session_id: getBatchNameById(
+                            batches_for_sessions,
+                            student.batch_id
+                        ),
+                        email: student.user_email ?? '',
+                        mobile_number: student.phone_number ?? '',
+                        username: student.username ?? '',
                     };
                 }
                 return {};
@@ -561,6 +611,17 @@ export function transformSectionsAndQuestionsData(
             } else if (markingJson.type === 'NUMERIC') {
                 baseQuestion.validAnswers = validAnswers;
             }
+            if (isCbeQuestionType(markingJson.type) || isCbeQuestionType(question.question_type)) {
+                // Spreadsheet & Written Response: the whole config from the
+                // evaluation JSON; the scenario is the passage already mapped above.
+                const cbeConfig = cbeConfigFromEvaluationJson(question.evaluation_json);
+                return {
+                    ...baseQuestion,
+                    questionType: 'CBE_RESPONSE',
+                    questionMark: baseQuestion.questionMark || cbeQuestionMark(cbeConfig),
+                    cbeConfig,
+                };
+            }
             return baseQuestion;
         }),
     }));
@@ -618,12 +679,17 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 .map((opt, idx) => (opt.isSelected ? idx.toString() : null))
                 .filter((idx) => idx !== null); // Remove null values
 
-            const auto_evaluation_json = JSON.stringify({
-                type: question.questionType === 'MCQS' ? 'MCQS' : 'MCQM',
-                data: {
-                    correctOptionIds,
-                },
-            });
+            const isCbe = isCbeQuestionType(question.questionType);
+            const auto_evaluation_json = isCbe
+                ? // Spreadsheet & Written Response: the FULL config; assessment_service
+                  // redacts it for learners.
+                  buildCbeEvaluationJson(question.cbeConfig)
+                : JSON.stringify({
+                      type: question.questionType === 'MCQS' ? 'MCQS' : 'MCQM',
+                      data: {
+                          correctOptionIds,
+                      },
+                  });
 
             return {
                 id: null,
@@ -636,7 +702,7 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 media_id: String(question?.imageDetails?.map((img) => img.imageName).join(',')), // Assuming no direct mapping for media_id
                 created_at: null,
                 updated_at: null,
-                question_response_type: null, // Assuming no direct mapping for response type
+                question_response_type: isCbe ? CBE_RESPONSE_TYPE : null,
                 question_type: question.questionType,
                 access_level: null, // Assuming no direct mapping for access level
                 auto_evaluation_json, // Add auto_evaluation_json
@@ -649,7 +715,19 @@ export function transformSectionQuestions(questions: AssessmentSectionQuestionIn
                 default_question_time_mins:
                     Number(question.questionDuration.hrs || 0) * 60 +
                     Number(question.questionDuration.min || 0),
-                options, // Use the mapped options
+                options: isCbe ? [] : options, // Use the mapped options
+                // The CBE scenario (left pane) is the question's passage.
+                ...(isCbe
+                    ? {
+                          parent_rich_text: question.parentRichTextContent
+                              ? {
+                                    id: null,
+                                    type: 'HTML',
+                                    content: question.parentRichTextContent,
+                                }
+                              : null,
+                      }
+                    : {}),
                 errors: [], // Assuming no errors are provided
                 warnings: [], // Assuming no warnings are provided
             };
@@ -768,12 +846,11 @@ export function mergeSectionData(
                         data: {
                             totalMark: question.questionMark || '',
                             negativeMark: question.questionPenalty || '',
-                            negativeMarkingPercentage:
-                                question.questionMark && question.questionPenalty
-                                    ? (Number(question.questionPenalty) /
-                                          Number(question.questionMark)) *
-                                      100
-                                    : '',
+                            negativeMarkingPercentage: negativeMarkingPercentageFor(
+                                question.questionType,
+                                question.questionMark,
+                                question.questionPenalty
+                            ),
                             ...(question.questionType === 'MCQM' && {
                                 partialMarking: correctOptionIdsCnt ? 1 / correctOptionIdsCnt : 0,
                                 partialMarkingPercentage: correctOptionIdsCnt

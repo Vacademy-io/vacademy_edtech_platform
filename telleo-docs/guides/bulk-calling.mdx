@@ -1,0 +1,87 @@
+---
+title: "Bulk calling"
+description: "Queue up to 1,000 calls in one request and follow their progress."
+---
+
+Use a **batch** for campaigns: re-engaging old enquiries, reminding a class about tomorrow's session, collecting feedback from last month's customers.
+
+## Create a batch
+
+```bash
+curl https://api.telleo.ai/v1/batches \
+  -H "X-API-Key: $TELLEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+    "calls": [
+      {"phone_number": "+919876543210", "contact": {"name": "Asha Verma", "external_id": "lead-8812"}, "variables": {"course": "NEET 2027"}},
+      {"phone_number": "+919812345678", "contact": {"name": "Rohan Das", "external_id": "lead-8813"}, "variables": {"course": "JEE 2027"}},
+      {"phone_number": "12345", "contact": {"name": "Bad number"}}
+    ]
+  }'
+```
+
+Each row is accepted or rejected **on its own**; one bad row never fails the batch:
+
+```json
+{
+  "id": "batch_2b9e0c1d4f6a8e7c5b3a1d0f",
+  "object": "batch",
+  "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+  "test": false,
+  "accepted_count": 2,
+  "rejected_count": 1,
+  "calls": [
+    { "index": 0, "id": "call_6f1d2c9a8b7e4f3a2d1c0b9a", "phone_number": "+919876543210", "external_id": "lead-8812" },
+    { "index": 1, "id": "call_0c4e9b2a7d1f3c5e8a6b4d2f", "phone_number": "+919812345678", "external_id": "lead-8813" }
+  ],
+  "rejected": [
+    { "index": 2, "phone_number": "12345", "code": "invalid_request", "message": "phone_number must be in E.164 format, e.g. +919876543210." }
+  ]
+}
+```
+
+`index` is the row's position in your `calls` array. Rejection codes:
+
+| Code | Meaning |
+|---|---|
+| `invalid_request` | The row failed validation; `message` says why. |
+| `duplicate_in_batch` | The same number appears earlier in this batch. |
+| `call_already_queued` | The number already has a call waiting; `call_id` is that call. |
+| `call_failed` | The row could not be queued because of a problem on our side. Send it again. |
+| `call_not_placed` | Only in a replay (same `Idempotency-Key`): the first request did not place this row. Send it again in a new batch. |
+
+A row can set its own `agent_id` to override the batch's; its entry in `calls` then shows that `agent_id`. A row naming an agent that does not exist or is turned off is rejected with that agent's error code (`agent_not_found`, `agent_disabled`). The whole batch is refused only when it has no rows, more than 1,000 rows, an unknown agent, or the account has no credits.
+
+Send an `Idempotency-Key` header (up to 251 characters) with the batch so a retried request does not queue the calls twice: the retry gets the first response back. See [Idempotency](/platform/idempotency#batches).
+
+## Follow progress
+
+```bash
+curl https://api.telleo.ai/v1/batches/batch_2b9e0c1d4f6a8e7c5b3a1d0f -H "X-API-Key: $TELLEO_API_KEY"
+```
+
+```json
+{
+  "id": "batch_2b9e0c1d4f6a8e7c5b3a1d0f",
+  "object": "batch",
+  "total": 900,
+  "finished": 600,
+  "counts": { "completed": 412, "no_answer": 160, "busy": 28, "queued": 300 },
+  "created_at": "2026-10-13T04:30:00Z"
+}
+```
+
+Each call still sends its own webhook as it finishes. To list a batch's calls with their outcomes: `GET /v1/calls?batch_id=batch_…` (see [Pagination](/platform/pagination)).
+
+## How fast
+
+Batch calls are dialled as your lines free up, **behind** single calls from `POST /v1/calls`, and only inside calling hours. A batch created in the evening starts when your next calling window opens. Calls still waiting after 48 hours end `expired`. For more than 1,000 contacts, send several batches; they share the same queue.
+
+To stop a batch, cancel its calls that are still `queued` with `POST /v1/calls/{id}/cancel`.
+
+## Tips
+
+- Keep `variables` short and natural; the agent says them out loud.
+- Run the batch first with `"test": true` to catch rejected rows without calling anyone.
+- Large lists: split by region or language and use the matching agent for each.

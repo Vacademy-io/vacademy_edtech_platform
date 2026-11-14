@@ -13,6 +13,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.netty.http.client.HttpClient;
 import vacademy.io.admin_core_service.features.audience.dto.NormalizedLeadData;
 import vacademy.io.admin_core_service.features.audience.dto.OAuthTokenResult;
@@ -30,6 +31,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * Ad platform strategy for Meta Lead Ads (Facebook + Instagram).
@@ -56,12 +59,53 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
     private static final String META_TOKEN_URL = "https://graph.facebook.com/v21.0/oauth/access_token";
     private static final String HMAC_SHA256 = "HmacSHA256";
 
+    // Field-name candidates for the identity fields we lift out of a lead.
+    // ALIASES are matched whole (case-insensitively) and in order, so the canonical
+    // Meta key always wins when a form happens to carry both. TOKENS are the looser
+    // substring fallback for author-renamed questions ("Your Phone", "mobile no").
+    private static final List<String> PHONE_ALIASES = List.of(
+            "phone_number", "phone", "mobile_number", "mobile", "contact_number",
+            "whatsapp_number", "phone_no", "contact_no");
+    private static final List<String> PHONE_TOKENS = List.of("phone", "mobile", "whatsapp");
+
+    private static final List<String> EMAIL_ALIASES = List.of(
+            "email", "email_address", "e-mail", "mail_id", "email_id");
+    private static final List<String> EMAIL_TOKENS = List.of("email", "e-mail");
+
+    // Name is alias-only. Live forms ask "name_of_school_/_organisation?" and
+    // "school_/_organisation_name", so a substring match on "name" would file the
+    // school as the lead's own name. Building a name out of first/last is NOT done
+    // here either — LeadEnricher.composeFullName already owns that downstream, and
+    // a second implementation would suppress its write to the other name aliases.
+    private static final List<String> NAME_ALIASES = List.of(
+            "full_name", "full name", "name", "your_name");
+
+    // A TOKEN-matched key must also carry a value of the right shape, so a question
+    // like "do_you_have_a_whatsapp_number?" answered "Yes" can never be filed as the
+    // lead's phone. Aliases are exempt: an exact "phone_number" is trusted as-is,
+    // which keeps junk like Meta's own "<test lead: dummy data>" behaving as before.
+    private static final Predicate<String> PHONE_SHAPED =
+            v -> v.replaceAll("[^0-9]", "").length() >= 7;
+    private static final Predicate<String> EMAIL_SHAPED = v -> v.contains("@");
+
     // Permissions needed for Lead Ads. business_management + pages_manage_ads are
     // requested so the connecting account can be recognised as a full Page admin
     // (and so the app can register as a leadgen CRM); the actual blocker if missing
     // is the MANAGE page task, surfaced separately at page-selection time.
     private static final String OAUTH_SCOPE =
             "pages_show_list,pages_read_engagement,leads_retrieval,pages_manage_metadata,pages_manage_ads,business_management";
+
+    /** Lead fields every Graph lead read asks for. */
+    static final String BASE_LEAD_FIELDS = "field_data,created_time,ad_id,form_id";
+
+    /**
+     * Ad fields asked for on top of {@link #BASE_LEAD_FIELDS}: the campaign and ad set ids
+     * and the campaign / ad set / ad names. Meta returns them only to a token that may
+     * read the ad account, so a read that asks for them can be refused; the read is then
+     * repeated with the base fields alone and the connector is remembered (see
+     * {@link #adFieldsRefused}) so later reads go straight to the base fields.
+     */
+    static final String AD_LEAD_FIELDS = "adset_id,adset_name,campaign_id,campaign_name,ad_name";
 
     /** Page task Meta requires to subscribe a Page to lead webhooks (Full control). */
     private static final String MANAGE_TASK = "MANAGE";
@@ -118,6 +162,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
      * the cursor for retry).
      */
     private WebClient webClient;
+
+    /**
+     * Connectors whose lead reads Meta refused because of the ad fields (see
+     * {@link #refusesAdFields}) and which then succeeded without them. Their reads ask for the base fields only until the service restarts,
+     * so a token that cannot read the ad account costs one extra call, not one per lead.
+     */
+    private final Set<String> adFieldsRefused = ConcurrentHashMap.newKeySet();
 
     @jakarta.annotation.PostConstruct
     void initWebClient() {
@@ -192,7 +243,10 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     if (leadgenId == null) continue;
                     try {
                         NormalizedLeadData lead = fetchLeadFromGraph(leadgenId, connector);
-                        if (lead != null) results.add(lead);
+                        if (lead != null) {
+                            applyWebhookAdIds(lead, val);
+                            results.add(lead);
+                        }
                     } catch (Exception ex) {
                         log.error("Failed to fetch Meta lead {} from form {}", leadgenId, formId, ex);
                     }
@@ -211,17 +265,116 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
             return null;
         }
         String pageToken = tokenEncryptionService.decrypt(connector.getOauthAccessTokenEnc());
-        String url = GRAPH_API_BASE + "/" + leadgenId + "?access_token=" + pageToken
-                + "&fields=field_data,created_time,ad_id,form_id";
+        String base = GRAPH_API_BASE + "/" + leadgenId + "?access_token=" + pageToken + "&fields=";
 
-        JsonNode leadNode = webClient
+        JsonNode leadNode;
+        if (asksForAdFields(connector)) {
+            try {
+                leadNode = getJson(base + BASE_LEAD_FIELDS + "," + AD_LEAD_FIELDS);
+            } catch (WebClientResponseException e) {
+                if (!e.getStatusCode().is4xxClientError()) throw e;
+                JsonNode error = graphError(e.getResponseBodyAsString());
+                // A rate limit or a temporary error would refuse the plain read too.
+                if (isTransientGraphError(error)) throw e;
+                // Read the lead exactly as before. Stop asking for the ad fields only when Meta
+                // said it was those fields it refused, and the plain read then worked.
+                leadNode = getJson(base + BASE_LEAD_FIELDS);
+                if (refusesAdFields(error)) {
+                    markAdFieldsRefused(connector, error.path("code").asInt(0));
+                }
+            }
+        } else {
+            leadNode = getJson(base + BASE_LEAD_FIELDS);
+        }
+
+        if (leadNode == null) return null;
+        return buildNormalizedLead(leadgenId, leadNode, connector);
+    }
+
+    private JsonNode getJson(String url) {
+        return webClient
                 .get().uri(url)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block();
+    }
 
-        if (leadNode == null) return null;
-        return buildNormalizedLead(leadgenId, leadNode, connector);
+    private boolean asksForAdFields(FormWebhookConnector connector) {
+        return connector.getId() == null || !adFieldsRefused.contains(connector.getId());
+    }
+
+    /** The {@code error} object of a Graph error body, or a missing node when there is none. */
+    private JsonNode graphError(String body) {
+        if (body == null || body.isBlank()) return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+        try {
+            return objectMapper.readTree(body).path("error");
+        } catch (Exception e) {
+            return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+        }
+    }
+
+    /**
+     * Whether a Graph error says the ad fields themselves were refused: a permission error
+     * (code 10 or 200–299), or code 100 whose message names one of the ad fields. Only then
+     * does a connector stop asking for them.
+     */
+    public static boolean refusesAdFields(JsonNode error) {
+        if (error == null || !error.isObject()) return false;
+        int code = error.path("code").asInt(-1);
+        if (code == 10 || (code >= 200 && code <= 299)) return true;
+        if (code != 100) return false;
+        String message = error.path("message").asText("");
+        for (String field : AD_LEAD_FIELDS.split(",")) {
+            if (message.contains(field)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Whether a Graph error is a rate limit (codes 4, 17, 32, 341, 613, 80000–80014), a
+     * temporary error (codes 1, 2) or marked transient by Meta. Such an error never changes
+     * which fields a connector asks for, and the read is not repeated without the ad fields.
+     */
+    public static boolean isTransientGraphError(JsonNode error) {
+        if (error == null || !error.isObject()) return false;
+        if (error.path("is_transient").asBoolean(false)) return true;
+        int code = error.path("code").asInt(-1);
+        return code == 1 || code == 2 || code == 4 || code == 17 || code == 32 || code == 341 || code == 613
+                || (code >= 80000 && code <= 80014);
+    }
+
+    private void markAdFieldsRefused(FormWebhookConnector connector, int code) {
+        if (connector.getId() != null && adFieldsRefused.add(connector.getId())) {
+            log.info("Meta refused the ad fields on a lead read for connector {} (code {}); reading its leads "
+                    + "without campaign / ad set ids and names from now on", connector.getId(), code);
+        }
+    }
+
+    /**
+     * Fill the ad ids the leadgen webhook carries (ad_id, adgroup_id = the ad set, form_id)
+     * where the Graph read left them empty. The Graph value wins when both exist.
+     */
+    static void applyWebhookAdIds(NormalizedLeadData lead, JsonNode webhookValue) {
+        if (lead == null || webhookValue == null) return;
+        if (lead.getAdId() == null) lead.setAdId(idText(webhookValue, "ad_id"));
+        if (lead.getAdSetId() == null) lead.setAdSetId(idText(webhookValue, "adgroup_id"));
+        if (lead.getAdFormId() == null) lead.setAdFormId(idText(webhookValue, "form_id"));
+    }
+
+    /** An id field as text; Meta sends ids as strings or JSON numbers, and 0 / blank as "none". */
+    static String idText(JsonNode node, String key) {
+        JsonNode v = node == null ? null : node.get(key);
+        if (v == null || v.isNull() || v.isContainerNode()) return null;
+        String text = v.asText("").trim();
+        return text.isEmpty() || "0".equals(text) ? null : text;
+    }
+
+    /** A name field as text, blank as null. */
+    private static String nameText(JsonNode node, String key) {
+        JsonNode v = node == null ? null : node.get(key);
+        if (v == null || v.isNull() || v.isContainerNode()) return null;
+        String text = v.asText("").trim();
+        return text.isEmpty() ? null : text;
     }
 
     /**
@@ -243,18 +396,30 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         }
 
         // Extract email/phone/name from raw fields BEFORE mapping transforms the keys.
-        // Meta uses uppercase keys (EMAIL, FULL_NAME, PHONE_NUMBER) — do case-insensitive lookup.
-        String rawEmail = findValueCaseInsensitive(fields, "email");
-        String rawPhone = findValueCaseInsensitive(fields, "phone_number");
-        String rawName = findValueCaseInsensitive(fields, "full_name");
+        // Meta's canonical keys (EMAIL, FULL_NAME, PHONE_NUMBER) are only a
+        // convention — the form author renames them freely, and a form whose phone
+        // question is called "phone" used to resolve to null here, so the lead was
+        // created with no mobile number even though the answer still reached
+        // custom_field_values through the connector mapping. Resolve by alias, then
+        // by substring, the way GenericFormWebhookStrategy already does.
+        Map.Entry<String, String> emailField = findField(fields, EMAIL_ALIASES, EMAIL_TOKENS, EMAIL_SHAPED);
+        Map.Entry<String, String> phoneField = findField(fields, PHONE_ALIASES, PHONE_TOKENS, PHONE_SHAPED);
+        Map.Entry<String, String> nameField = findField(fields, NAME_ALIASES, null, null);
+
+        String rawEmail = emailField != null ? emailField.getValue() : null;
+        String rawPhone = phoneField != null ? phoneField.getValue() : null;
+        String rawName = nameField != null ? nameField.getValue() : null;
 
         // Normalize phone: Meta Graph API returns "+919876543210" — strip non-digits,
-        // prepend country code 91 for 10-digit Indian numbers.
+        // prepend country code 91 for 10-digit Indian numbers. Rewrite the key that
+        // actually matched, otherwise the raw "+91…" leaks through to the stored
+        // custom field value while the user record carries the normalized one.
         if (rawPhone != null && !rawPhone.isBlank()) {
             String cleaned = rawPhone.replaceAll("[^0-9]", "");
             String normalizedPhone = cleaned.length() == 10 ? "91" + cleaned : cleaned;
             rawPhone = normalizedPhone;
-            fields.replaceAll((k, v) -> k.equalsIgnoreCase("phone_number") ? normalizedPhone : v);
+            String phoneKey = phoneField.getKey();
+            fields.replaceAll((k, v) -> k.equalsIgnoreCase(phoneKey) ? normalizedPhone : v);
         }
 
         // Apply field mapping from connector (transforms keys for audience custom fields)
@@ -270,6 +435,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                         ? connector.getProducesSourceType() : "FACEBOOK_ADS")
                 .targetAudienceId(connector.getAudienceId())
                 .testLead(false)
+                .adCampaignId(idText(leadNode, "campaign_id"))
+                .adCampaignName(nameText(leadNode, "campaign_name"))
+                .adSetId(idText(leadNode, "adset_id"))
+                .adSetName(nameText(leadNode, "adset_name"))
+                .adId(idText(leadNode, "ad_id"))
+                .adName(nameText(leadNode, "ad_name"))
+                .adFormId(idText(leadNode, "form_id"))
                 .build();
     }
 
@@ -308,11 +480,13 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         // RE-encodes our already-percent-encoded 'filtering' value (%5B → %255B). Meta
         // then can't parse the filter, silently ignores it, and returns EVERY lead. A
         // pre-built URI is sent verbatim — single-encoded — so the time filter sticks.
-        String url = GRAPH_API_BASE + "/" + formId + "/leads"
+        String firstPageBase = GRAPH_API_BASE + "/" + formId + "/leads"
                 + "?access_token=" + pageToken
-                + "&fields=id,created_time,field_data,ad_id,form_id"
                 + "&limit=100"
-                + "&filtering=" + URLEncoder.encode(filter, StandardCharsets.UTF_8);
+                + "&filtering=" + URLEncoder.encode(filter, StandardCharsets.UTF_8)
+                + "&fields=id," + BASE_LEAD_FIELDS;
+        boolean withAdFields = asksForAdFields(connector);
+        String url = withAdFields ? firstPageBase + "," + AD_LEAD_FIELDS : firstPageBase;
 
         int pages = 0;
         while (url != null && !url.isBlank() && pages < maxPages) {
@@ -323,6 +497,23 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     .block();
             pages++;
             if (response == null) break;
+            if (response.has("error") && withAdFields && pages == 1
+                    && !isTransientGraphError(response.path("error"))) {
+                // The first page was refused with the ad fields: read it again exactly as
+                // before. A refusal of that plain read is reported below as it always was.
+                // A rate limit or a temporary error is reported straight away instead.
+                withAdFields = false;
+                JsonNode refused = response.path("error");
+                JsonNode plain = webClient
+                        .get().uri(URI.create(firstPageBase))
+                        .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                        .block();
+                if (plain != null && !plain.has("error") && refusesAdFields(refused)) {
+                    markAdFieldsRefused(connector, refused.path("code").asInt(0));
+                }
+                response = plain;
+                if (response == null) break;
+            }
             if (response.has("error")) {
                 String msg = response.path("error").path("message").asText("unknown error");
                 throw new VacademyException("Meta lead poll failed for form " + formId + ": " + msg);
@@ -641,30 +832,48 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         return page;
     }
 
+    /** Upper bound on leadgen_forms pages fetched for the form picker (100 forms per page). */
+    private static final int MAX_FORM_LIST_PAGES = 20;
+
     /**
      * List all lead gen forms for a Facebook Page.
      * Returns [{id, name, status}] — no tokens exposed.
+     *
+     * Meta returns only 25 forms per page by default, newest first, so without
+     * following paging.next a Page with many forms hides its OLDER forms from the
+     * picker — including forms that live ads are still collecting leads on.
      */
     public List<Map<String, String>> listPageForms(String pageId, String pageAccessToken) {
         String url = GRAPH_API_BASE + "/" + pageId + "/leadgen_forms"
                 + "?access_token=" + pageAccessToken
-                + "&fields=id,name,status";
-
-        JsonNode response = webClient
-                .get().uri(url)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+                + "&fields=id,name,status"
+                + "&limit=100";
 
         List<Map<String, String>> forms = new ArrayList<>();
-        if (response == null) return forms;
+        int pages = 0;
+        while (url != null && !url.isBlank() && pages < MAX_FORM_LIST_PAGES) {
+            // Meta's paging.next is a full, already-encoded URL — hand WebClient a URI
+            // so it isn't re-encoded.
+            JsonNode response = webClient
+                    .get().uri(URI.create(url))
+                    .retrieve()
+                    .bodyToMono(JsonNode.class)
+                    .block();
+            pages++;
+            if (response == null) break;
 
-        for (JsonNode form : response.path("data")) {
-            Map<String, String> f = new LinkedHashMap<>();
-            f.put("id", form.path("id").asText());
-            f.put("name", form.path("name").asText("Unnamed Form"));
-            f.put("status", form.path("status").asText("ACTIVE"));
-            forms.add(f);
+            for (JsonNode form : response.path("data")) {
+                Map<String, String> f = new LinkedHashMap<>();
+                f.put("id", form.path("id").asText());
+                f.put("name", form.path("name").asText("Unnamed Form"));
+                f.put("status", form.path("status").asText("ACTIVE"));
+                forms.add(f);
+            }
+            url = response.path("paging").path("next").asText(null);
+        }
+        if (pages >= MAX_FORM_LIST_PAGES && url != null && !url.isBlank()) {
+            log.warn("Form list for page {} hit page cap {} — {} form(s) listed, older forms omitted",
+                    pageId, MAX_FORM_LIST_PAGES, forms.size());
         }
         return forms;
     }
@@ -865,16 +1074,39 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
 
     // ── Utilities ────────────────────────────────────────────────────────────
 
-    /** Case-insensitive lookup in a map (Meta sends EMAIL, FULL_NAME, etc.) */
-    private String findValueCaseInsensitive(Map<String, String> map, String key) {
-        // Try exact match first
-        String v = map.get(key);
-        if (v != null) return v;
-        // Try case-insensitive
-        for (Map.Entry<String, String> e : map.entrySet()) {
-            if (e.getKey().equalsIgnoreCase(key)) return e.getValue();
+    /**
+     * Resolve one logical field out of a Meta lead's answers. Tries each alias as a
+     * whole-key case-insensitive match in the order given, then — when {@code tokens}
+     * is non-null — falls back to a substring match on the key, accepting it only if
+     * {@code tokenValueShape} also passes. Blank answers never match, so an empty
+     * "phone" question cannot shadow a filled "mobile" one.
+     *
+     * Returns the entry rather than the value because the caller has to know which
+     * key matched in order to write the normalized value back onto it.
+     */
+    private Map.Entry<String, String> findField(Map<String, String> map, List<String> aliases,
+            List<String> tokens, Predicate<String> tokenValueShape) {
+        for (String alias : aliases) {
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                if (e.getKey().equalsIgnoreCase(alias) && hasText(e.getValue())) return e;
+            }
+        }
+        if (tokens != null) {
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                String key = e.getKey().toLowerCase(Locale.ROOT);
+                for (String token : tokens) {
+                    if (key.contains(token) && hasText(e.getValue())
+                            && (tokenValueShape == null || tokenValueShape.test(e.getValue()))) {
+                        return e;
+                    }
+                }
+            }
         }
         return null;
+    }
+
+    private boolean hasText(String s) {
+        return s != null && !s.isBlank();
     }
 
     private String bytesToHex(byte[] bytes) {

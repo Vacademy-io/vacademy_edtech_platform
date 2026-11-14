@@ -1,0 +1,20 @@
+{
+    "typeSection": {
+        "title": "Type d'annonce",
+        "description": "Un point de départ — vous pourrez changer l'emplacement et le mode de diffusion plus tard."
+    },
+    "messageSection": {
+        "title": "Message",
+        "description": "Ce que les gens liront. Le titre sert aussi d'objet d'e-mail, sauf si vous le remplacez."
+    },
+    "titleLabel": "Titre",
+    "titlePlaceholder": "ex. Nouveau groupe à partir de lundi",
+    "previewTextLabel": "Texte d'aperçu",
+    "previewTextPlaceholder": "La ligne affichée dans la boîte de réception, avant l'ouverture de l'e-mail",
+    "previewTextHint": "Les boîtes de réception affichent la première ligne de votre contenu quand ce champ est vide.",
+    "contentLabel": "Contenu",
+    "richTextTab": "Texte enrichi",
+    "htmlTab": "HTML",
+    "editorPlaceholder": "Rédigez l'annonce…",
+    "sourcePlaceholder": "Collez ou modifiez le code HTML brut…"
+}

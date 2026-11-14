@@ -331,7 +331,9 @@ export function ModalUsernameLogin({
                                             <div className="relative">
                                                 {/* Custom input wrapper to override MyInput's password behavior */}
                                                 <div className="flex flex-col gap-1">
-                                                    <Label className="text-subtitle font-regular">
+                                                    {/* Default label style, same as the
+                                                        "Username or email" label above. */}
+                                                    <Label>
                                                         {t("common.passwordLabel")}
                                                         <span className="text-subtitle text-danger-600">
                                                             *

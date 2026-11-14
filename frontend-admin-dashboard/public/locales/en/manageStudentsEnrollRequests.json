@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "title": "Enroll Requests List"
+    },
+    "search": {
+        "placeholder": "Search by name, enroll..."
+    },
+    "filters": {
+        "gender": "Gender",
+        "preferredBatch": "Preferred Batch",
+        "paymentStatus": "Payment Status",
+        "approvalStatus": "Approval Status",
+        "paymentOption": "Payment Option"
+    }
+}

@@ -1,0 +1,146 @@
+{
+    "fields": {
+        "studentName": "Student Name",
+        "instituteName": "Institute Name",
+        "instituteLogo": "Institute Logo",
+        "courseName": "Course Name",
+        "packageName": "Package Name",
+        "packageLevel": "Package Level",
+        "sessionName": "Session Name",
+        "completionDate": "Completion Date",
+        "completionPercentage": "Completion %",
+        "dateOfCompletion": "Date of Completion",
+        "certificateId": "Certificate ID",
+        "certificateQr": "QR Code",
+        "certificateBarcode": "Barcode",
+        "certificateShortCode": "Verification Code",
+        "enrollmentNumber": "Enrollment Number",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "themeColor": "Theme Color"
+    },
+    "dragChip": {
+        "title": "Drag onto template to place {{field}}"
+    },
+    "customFields": {
+        "sectionLabel": "Your own fields",
+        "addField": "Add field",
+        "description": "For anything the built-in fields don't cover — a grade, a signatory's title, an accreditation line. Each one becomes a chip you can drag onto the design, anywhere you like.",
+        "empty": "No custom fields yet.",
+        "fieldNameLabel": "Field name",
+        "fieldNamePlaceholder": "Grade",
+        "valueSourceLabel": "Where the value comes from",
+        "valueSourceStatic": "Same text on every certificate",
+        "valueSourceCustom": "The learner's own answer",
+        "learnerKeyLabel": "Learner custom field key",
+        "textToPrintLabel": "Text to print",
+        "textToPrintPlaceholder": "Director of Studies",
+        "fallbackLabel": "If the learner has no answer",
+        "removeField": "Remove {{name}}",
+        "fieldFallback": "field",
+        "placedAsPrefix": "Placed on the certificate as",
+        "duplicateWarning": "Two fields share this name — only the first will be used.",
+        "needsName": "Give this field a name so it can be placed.",
+        "learnerValuePlaceholder": "learner value"
+    },
+    "page": {
+        "title": "Certificate Settings",
+        "description": "Design the certificate, decide how it is numbered and coded, and set up the page people reach by scanning it.",
+        "saveChanges": "Save Changes"
+    },
+    "warnings": {
+        "logoNotSet": "Institute logo is not set — upload one in Dashboard → Edit institute profile so it appears on issued certificates and the navbar.",
+        "themeNotSetPart1": "Institute theme color is not set — borders that bind to",
+        "themeNotSetPart2": "will fall back to"
+    },
+    "autoIssue": {
+        "heading": "Auto-issue certificates",
+        "description": "When enabled, learners receive a certificate as soon as their course completion crosses the threshold below.",
+        "thresholdLabel": "Completion threshold (%)",
+        "thresholdHint": "Learners receive a certificate once their course completion crosses this. Default 80; the server re-checks it at issuance."
+    },
+    "settingsTabs": {
+        "design": "Design",
+        "numbering": "Numbering & codes",
+        "verification": "Verification page"
+    },
+    "numbering": {
+        "badgeTypeLabel": "Scannable code on the certificate",
+        "qrOption": "QR code (default)",
+        "barcodeOption": "Barcode (Code 128)",
+        "badgeHintPart1": "Stamped next to the certificate number, bottom-right — the design below shows you exactly where. To position it yourself instead, drag that badge, or drag the",
+        "badgeHintSlash": "/",
+        "badgeHintPart2": "field onto the design. The same goes for the number: wherever you place",
+        "badgeHintPart3": ", it stops being stamped automatically, so you never get two of either.",
+        "barcodeContentLabel": "What the barcode encodes",
+        "barcodeNumberOption": "Certificate number only (default)",
+        "barcodeVerificationOption": "Verification code — anyone can scan it to check the certificate",
+        "barcodeVerificationHintPart1": "Scanning the barcode gives a code that verifies the certificate on your verification page. It carries about twice as much data as the number alone, so it needs to be at least",
+        "barcodeVerificationHintPart2": "wide to still scan off a printed page — the design below warns you if it is too narrow.",
+        "barcodeNumberHint": "Scanning gives the certificate number as text. That identifies the certificate but proves nothing, because the number on its own is not a credential. Switch to the verification code to make a barcode scan actually verify.",
+        "autoStampHeading": "Automatic stamp",
+        "autoStampDescription": "Printed bottom-right on certificates whose design does not place these itself. A field you place on the design always wins over the stamp.",
+        "stampCodeLabel": "Stamp the {{code}}",
+        "barcodeWord": "barcode",
+        "qrCodeWord": "QR code",
+        "stampCodeOnHint": "Every certificate carries a scannable code.",
+        "stampCodeOffHint": "Turned off — certificates with no code of their own cannot be verified by scanning.",
+        "stampNumberLabel": "Stamp the certificate number",
+        "stampNumberOnHint": "Every certificate shows its number somewhere.",
+        "stampNumberOffHint": "Turned off — the number is still allocated and still verifies, it is just not printed unless your design places it."
+    },
+    "verification": {
+        "multiPageWarning": "That PDF has {{count}} pages — only the first becomes the document.",
+        "pdfReadError": "That PDF could not be read."
+    },
+    "design": {
+        "pageFieldsHeading": "Page & fields",
+        "pageFieldsDescription": "The size the certificate prints at, and any values of your own you want to place on it.",
+        "pageSizeLabel": "Page size",
+        "a4Landscape": "A4 Landscape",
+        "a4Portrait": "A4 Portrait",
+        "a3Landscape": "A3 Landscape",
+        "a3Portrait": "A3 Portrait",
+        "customSize": "Custom",
+        "widthLabel": "Width (mm)",
+        "heightLabel": "Height (mm)",
+        "generatorHeading": "Template Design & Certificate Generation",
+        "generatorDescription": "Upload template and annotate with student data fields",
+        "editorModeVisual": "Visual",
+        "editorModeHtml": "HTML",
+        "downloadTemplate": "Download Template",
+        "downloadError": "Failed to download template preview.",
+        "viewUpload": "Upload",
+        "viewDesign": "Design",
+        "viewPreview": "Preview",
+        "notDefaultWarningPart1": "You are editing",
+        "thisTemplateFallback": "this template",
+        "notDefaultWarningPart2": ". Learners still receive",
+        "defaultTemplateFallback": "the default template",
+        "notDefaultWarningPart3": ". Use",
+        "makeDefaultLabel": "Make default",
+        "notDefaultWarningPart4": "on a card above to change that.",
+        "dragAFieldLabel": "Drag a field",
+        "fieldsPlaced_one": "{{count}} field placed",
+        "fieldsPlaced_other": "{{count}} fields placed"
+    },
+    "htmlEditor": {
+        "insertToken": "Insert a token",
+        "resetToDefault": "Reset to default",
+        "insertTokenTitle": "Insert {{token}} at cursor",
+        "textareaPlaceholder": "<!-- Paste or write HTML for your certificate. Use the token chips above to insert dynamic fields like {{token}}. -->",
+        "livePreview": "Live preview (sample data)"
+    },
+    "preview": {
+        "zoomOut": "Zoom out",
+        "zoomIn": "Zoom in",
+        "fitToScreen": "Fit to screen",
+        "htmlIframeTitle": "HTML certificate preview",
+        "iframeTitle": "Certificate preview",
+        "longNamesLabel": "Preview with long names"
+    },
+    "save": {
+        "success": "Certificate settings saved successfully!",
+        "error": "Failed to save certificate settings. Please try again."
+    }
+}

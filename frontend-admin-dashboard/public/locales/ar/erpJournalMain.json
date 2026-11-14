@@ -1,0 +1,26 @@
+{
+    "intro": "كل قيد محاسبي مزدوج تم ترحيله لهذا الشهر، الأحدث أولاً. تُكتب القيود من الوحدة التي جاءت منها — الموافقة على تشغيل رواتب تُرحّل قيد رواتبه — ويجب أن يتوازن كل قيد: إجمالي المدين يساوي إجمالي الدائن.",
+    "periodLabel": "الفترة",
+    "exportCsv": "تصدير CSV",
+    "preparingCsv": "جارٍ تجهيز CSV…",
+    "exportHint": "يُستورد إلى Zoho Books أو Tally كدفعة سندات يومية.",
+    "totalDebits": "إجمالي المدين",
+    "totalCredits": "إجمالي الدائن",
+    "entriesPosted_zero": "لا قيود مُرحَّلة في {{period}}",
+    "entriesPosted_one": "قيد واحد مُرحَّل في {{period}}",
+    "entriesPosted_two": "قيدان مُرحَّلان في {{period}}",
+    "entriesPosted_few": "{{count}} قيود مُرحَّلة في {{period}}",
+    "entriesPosted_many": "{{count}} قيدًا مُرحَّلًا في {{period}}",
+    "entriesPosted_other": "{{count}} قيد مُرحَّل في {{period}}",
+    "emptyState": {
+        "title": "لا توجد قيود يومية لشهر {{period}}",
+        "description": "تُرحَّل القيود تلقائيًا — فتشغيل الرواتب يكتب قيد رواتبه لحظة اعتماده. إذا كنت تتوقع وجود قيود هنا، تحقق مما إذا كان تشغيل ذلك الشهر قد اعتُمد بعد."
+    },
+    "toasts": {
+        "downloaded": "تم تنزيل دفتر اليومية لشهر {{period}}"
+    },
+    "errors": {
+        "loadFailed": "تعذّر تحميل دفتر اليومية لشهر {{period}}.",
+        "exportFailed": "تعذّر تصدير دفتر اليومية لهذا الشهر."
+    }
+}

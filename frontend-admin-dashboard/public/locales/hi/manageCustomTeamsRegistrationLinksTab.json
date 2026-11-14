@@ -1,0 +1,95 @@
+{
+    "filters": {
+        "searchPlaceholder": "लिंक के नाम से खोजें",
+        "allStatuses": "सभी स्थितियां",
+        "allTypes": "सभी प्रकार",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "paid": "सशुल्क",
+        "free": "मुफ़्त"
+    },
+    "actions": {
+        "createLink": "रजिस्ट्रेशन लिंक बनाएं",
+        "edit": "संपादित करें",
+        "view": "देखें"
+    },
+    "table": {
+        "name": "नाम",
+        "link": "लिंक",
+        "status": "स्थिति",
+        "registrations": "रजिस्ट्रेशन",
+        "created": "बनाया गया",
+        "actions": "कार्रवाई",
+        "attemptsSuffix_one": "{{count}} प्रयास",
+        "attemptsSuffix_other": "{{count}} प्रयास"
+    },
+    "empty": {
+        "noMatchFilters": "कोई रजिस्ट्रेशन लिंक आपके फ़िल्टर से मेल नहीं खाता।",
+        "noLinksYet": "अभी तक कोई रजिस्ट्रेशन लिंक नहीं है।",
+        "createOneHint": "संगठनों को स्वयं को {{term}} के रूप में रजिस्टर करने देने के लिए एक बनाएं।"
+    },
+    "badge": {
+        "kyc": "केवाईसी"
+    },
+    "link": {
+        "copyTitle": "रजिस्ट्रेशन लिंक कॉपी करें",
+        "toggleStatusAria": "{{name}} की स्थिति बदलें"
+    },
+    "toast": {
+        "linkActivated": "रजिस्ट्रेशन लिंक सक्रिय किया गया",
+        "linkDeactivated": "रजिस्ट्रेशन लिंक निष्क्रिय किया गया",
+        "updateStatusFailed": "स्थिति अपडेट करने में विफल",
+        "loadDetailFailed": "रजिस्ट्रेशन लिंक विवरण लोड करने में विफल",
+        "linkCopied": "रजिस्ट्रेशन लिंक कॉपी किया गया",
+        "noRegistrationsToExport": "एक्सपोर्ट करने के लिए कोई रजिस्ट्रेशन नहीं है।",
+        "exportedCount_one": "{{count}} रजिस्ट्रेशन एक्सपोर्ट किया गया।",
+        "exportedCount_other": "{{count}} रजिस्ट्रेशन एक्सपोर्ट किए गए।",
+        "exportFailed": "रजिस्ट्रेशन एक्सपोर्ट करने में विफल।"
+    },
+    "dialog": {
+        "heading": "रजिस्ट्रेशन — {{name}}",
+        "headingDefault": "रजिस्ट्रेशन",
+        "searchPlaceholder": "संगठन, एडमिन या ईमेल से खोजें",
+        "cityLabel": "शहर",
+        "stateLabel": "राज्य",
+        "pincodeLabel": "पिनकोड",
+        "searchCityPlaceholder": "शहर खोजें…",
+        "searchStatePlaceholder": "राज्य खोजें…",
+        "searchPincodePlaceholder": "पिनकोड खोजें…",
+        "searchFieldPlaceholder": "{{field}} खोजें…",
+        "registrationCount_one": "{{count}} रजिस्ट्रेशन",
+        "registrationCount_other": "{{count}} रजिस्ट्रेशन",
+        "filteredSuffix": " · फ़िल्टर किया गया",
+        "clear": "साफ़ करें",
+        "exportCsv": "CSV एक्सपोर्ट करें",
+        "noMatchFilters": "कोई रजिस्ट्रेशन इन फ़िल्टर से मेल नहीं खाता।",
+        "noRegistrationsYet": "इस लिंक के माध्यम से अभी तक कोई रजिस्ट्रेशन नहीं हुआ है।",
+        "table": {
+            "organization": "संगठन",
+            "admin": "एडमिन",
+            "email": "ईमेल",
+            "phone": "फ़ोन",
+            "city": "शहर",
+            "state": "राज्य",
+            "pincode": "पिनकोड",
+            "seats": "सीटें",
+            "status": "स्थिति",
+            "kyc": "केवाईसी",
+            "date": "तारीख"
+        }
+    },
+    "csv": {
+        "organization": "संगठन",
+        "admin": "एडमिन",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "city": "शहर",
+        "state": "राज्य",
+        "pincode": "पिनकोड",
+        "seatsUsed": "उपयोग की गई सीटें",
+        "seatsTotal": "कुल सीटें",
+        "status": "स्थिति",
+        "kyc": "केवाईसी",
+        "registeredOn": "रजिस्टर करने की तारीख"
+    }
+}

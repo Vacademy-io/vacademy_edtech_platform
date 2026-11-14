@@ -18,6 +18,8 @@ public class EwayApiResponseDTO {
     @JsonProperty("Customer") public Customer Customer;
     @JsonProperty("Payment") public PaymentDetails Payment;
     @JsonProperty("Errors") public String Errors;
+    /** Responsive Shared Page: echoed back by GetAccessCodeResult. */
+    @JsonProperty("AccessCode") public String AccessCode;
 
     @Data
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -85,5 +87,13 @@ public class EwayApiResponseDTO {
         @JsonProperty("Payment") public PaymentDetails Payment;
         @JsonProperty("Method") public String Method;
         @JsonProperty("TransactionType") public String TransactionType;
+        /**
+         * Responsive Shared Page only: where eWay sends the learner's browser once they have
+         * paid on eWay's own page. eWay appends ?AccessCode=... to it. Ignored by the Direct
+         * (/Transaction) calls, which never leave our page.
+         */
+        @JsonProperty("RedirectUrl") public String RedirectUrl;
+        /** Responsive Shared Page only: where "cancel" on eWay's page returns the learner. */
+        @JsonProperty("CancelUrl") public String CancelUrl;
     }
 }

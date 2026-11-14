@@ -2,6 +2,7 @@ import { ImportFileImage } from '@/assets/svgs';
 import { MyButton } from '@/components/design-system/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Progress } from '@/components/ui/progress';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { Form } from '@/components/ui/form';
@@ -32,6 +33,7 @@ export const AddDocDialog = ({
 }: {
     openState?: ((open: boolean) => void) | undefined;
 }) => {
+    const { t } = useTranslation('studyLibraryAddDocDialog');
     const [file, setFile] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -114,7 +116,7 @@ export const AddDocDialog = ({
             }
         } catch (error) {
             console.error('Error reordering slides:', error);
-            toast.error('Slide created but reordering failed');
+            toast.error(t('reorderFailed'));
         }
     };
 
@@ -125,13 +127,13 @@ export const AddDocDialog = ({
         };
 
         if (!Object.keys(allowedTypes).includes(selectedFile.type)) {
-            setError('Please upload only document files (DOC, DOCX)');
+            setError(t('invalidFileType'));
             return;
         }
 
         if (selectedFile.size > MAX_DOC_SIZE_BYTES) {
             const sizeMb = (selectedFile.size / (1024 * 1024)).toFixed(1);
-            const msg = `File is ${sizeMb} MB. Maximum size is 25 MB.`;
+            const msg = t('fileTooLarge', { sizeMb });
             setError(msg);
             toast.error(msg);
             return;
@@ -145,7 +147,7 @@ export const AddDocDialog = ({
         const title = selectedFile.name.replace(/\.[^/.]+$/, '');
         form.setValue('docTitle', title);
 
-        toast.success('Document selected successfully');
+        toast.success(t('fileSelected'));
     };
 
     // Clear retry-preserved ids when the dialog closes so the next open
@@ -158,13 +160,13 @@ export const AddDocDialog = ({
 
     const useHandleUpload = async () => {
         if (!file) {
-            toast.error('Please select a file first');
+            toast.error(t('selectFileFirst'));
             return;
         }
 
         const title = form.getValues('docTitle')?.trim();
         if (!title) {
-            const msg = 'Please enter a title for the document';
+            const msg = t('titleRequired');
             setError(msg);
             toast.error(msg);
             return;
@@ -172,7 +174,7 @@ export const AddDocDialog = ({
 
         setIsUploading(true);
         setUploadProgress(0);
-        setUploadStage('Starting…');
+        setUploadStage(t('stageStarting'));
         setError(null);
 
         // Preserve ids across retries so we don't create orphaned records.
@@ -180,15 +182,15 @@ export const AddDocDialog = ({
         if (!documentIdRef.current) documentIdRef.current = crypto.randomUUID();
 
         try {
-            setUploadStage('Converting document…');
+            setUploadStage(t('stageConverting'));
             setUploadProgress(20);
             const HTMLContent = await convertDocToHtml(file);
 
-            setUploadStage('Processing images…');
+            setUploadStage(t('stageProcessingImages'));
             setUploadProgress(45);
             const processedHtml = await replaceBase64ImagesWithNetworkUrls(HTMLContent);
 
-            setUploadStage('Generating preview…');
+            setUploadStage(t('stageGeneratingPreview'));
             setUploadProgress(70);
             const { totalPages } = await convertHtmlToPdf(processedHtml);
 
@@ -198,7 +200,7 @@ export const AddDocDialog = ({
             const lexicalHtml = docHtmlToLexicalIfSafe(processedHtml);
             const finalHtml = lexicalHtml ?? processedHtml;
 
-            setUploadStage('Saving slide…');
+            setUploadStage(t('stageSaving'));
             setUploadProgress(85);
             const slideStatus = getSlideStatusForUser();
 
@@ -229,21 +231,20 @@ export const AddDocDialog = ({
             const createdSlideId =
                 typeof response === 'string' && response ? response : slideIdRef.current;
 
-            setUploadStage('Finalizing…');
+            setUploadStage(t('stageFinalizing'));
             setUploadProgress(95);
             await reorderSlidesAfterNewSlide(createdSlideId);
 
             setUploadProgress(100);
-            setUploadStage('Done');
-            toast.success('Document uploaded successfully!');
+            setUploadStage(t('stageDone'));
+            toast.success(t('uploadSuccess'));
             openState?.(false);
             setFile(null);
             form.reset();
             resetUploadIds();
         } catch (err) {
             console.error('Upload handling error:', err);
-            const errorMessage =
-                err instanceof Error ? err.message : 'Conversion failed. Please try again.';
+            const errorMessage = err instanceof Error ? err.message : t('conversionFailed');
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -282,12 +283,8 @@ export const AddDocDialog = ({
                                 </>
                             ) : (
                                 <div className="flex flex-col gap-2">
-                                    <p className="text-neutral-600">
-                                        Drag and drop a document here, or click to select
-                                    </p>
-                                    <p className="text-xs text-neutral-500">
-                                        DOC or DOCX, up to 25 MB
-                                    </p>
+                                    <p className="text-neutral-600">{t('dropzoneHint')}</p>
+                                    <p className="text-xs text-neutral-500">{t('dropzoneFormats')}</p>
                                 </div>
                             )}
                         </div>
@@ -301,7 +298,7 @@ export const AddDocDialog = ({
                             className="h-2 bg-neutral-200 [&>div]:bg-gradient-to-r [&>div]:from-primary-500 [&>div]:to-primary-600"
                         />
                         <div className="text-sm text-neutral-600">
-                            {uploadStage || 'This may take a few moments…'}
+                            {uploadStage || t('processingHint')}
                         </div>
                     </div>
                 )}
@@ -326,10 +323,10 @@ export const AddDocDialog = ({
                         {isUploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                Uploading…
+                                {t('uploading')}
                             </div>
                         ) : (
-                            'Upload Document'
+                            t('uploadDocument')
                         )}
                     </MyButton>
                 </DialogFooter>

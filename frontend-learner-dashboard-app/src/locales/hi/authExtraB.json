@@ -1,0 +1,108 @@
+{
+  "common": {
+    "emailInvalid": "कृपया एक मान्य ईमेल पता दर्ज करें",
+    "fullNameMinLength": "पूरा नाम कम से कम 2 अक्षरों का होना चाहिए",
+    "usernameMinLength": "उपयोगकर्ता नाम कम से कम 3 अक्षरों का होना चाहिए",
+    "passwordMinLength": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
+    "passwordsDontMatch": "पासवर्ड मेल नहीं खाते",
+    "registerFailed": "उपयोगकर्ता पंजीकरण विफल रहा",
+    "creatingAccount": "खाता बनाया जा रहा है...",
+    "createAccount": "खाता बनाएं",
+    "back": "वापस",
+    "verifyContinue": "सत्यापित करें और जारी रखें",
+    "completeYourProfileTitle": "अपनी प्रोफ़ाइल पूरी करें",
+    "fullNameLabel": "पूरा नाम",
+    "fullNamePlaceholder": "आपका पूरा नाम",
+    "usernameLabel": "उपयोगकर्ता नाम *",
+    "usernamePlaceholder": "एक उपयोगकर्ता नाम चुनें",
+    "passwordLabel": "पासवर्ड *",
+    "passwordPlaceholder": "एक पासवर्ड बनाएं",
+    "confirmPasswordLabel": "पासवर्ड की पुष्टि करें *",
+    "confirmPasswordPlaceholder": "अपने पासवर्ड की पुष्टि करें",
+    "resendSuccessToast": "सत्यापन कोड फिर से भेज दिया गया!",
+    "resendFailedToast": "सत्यापन कोड फिर से भेजने में विफल",
+    "invalidOtpToast": "अमान्य सत्यापन कोड"
+  },
+  "validation": {
+    "usernameMaxLength": "उपयोगकर्ता नाम 30 अक्षरों से कम होना चाहिए",
+    "fullNameMaxLength": "पूरा नाम 100 अक्षरों से कम होना चाहिए",
+    "passwordComplexity": "पासवर्ड में कम से कम एक बड़ा अक्षर, एक छोटा अक्षर और एक अंक होना चाहिए",
+    "instituteIdInvalid": "अमान्य इंस्टीट्यूट आईडी",
+    "emailFormatError": "अमान्य ईमेल प्रारूप",
+    "usernameFormatError": "अमान्य उपयोगकर्ता नाम प्रारूप",
+    "fullNameFormatError": "अमान्य पूरा नाम प्रारूप",
+    "passwordFormatError": "अमान्य पासवर्ड प्रारूप",
+    "instituteIdFormatError": "अमान्य इंस्टीट्यूट आईडी प्रारूप",
+    "generalFailed": "सत्यापन विफल रहा"
+  },
+  "emailOtpSignup": {
+    "toast": {
+      "alreadyEnrolled": "उपयोगकर्ता पहले से ही नामांकित है। कृपया इसके बजाय साइन इन करें।",
+      "otpIncomplete": "कृपया पूरा 6-अंकों का कोड दर्ज करें",
+      "emailVerified": "ईमेल सफलतापूर्वक सत्यापित हो गया!",
+      "accountCreated": "खाता सफलतापूर्वक बनाया गया!",
+      "accountCreateFailed": "खाता बनाने में विफल"
+    },
+    "otpStep": {
+      "checkEmail": "अपना ईमेल जांचें",
+      "codeSentTo": "हमने एक 6-अंकों का कोड इस पते पर भेजा है",
+      "backToEmail": "ईमेल पर वापस जाएं",
+      "resendIn": "{{seconds}} सेकंड में फिर से भेजें",
+      "resendCode": "कोड फिर से भेजें",
+      "verifying": "सत्यापित किया जा रहा है...",
+      "verifyOtp": "OTP सत्यापित करें"
+    },
+    "finalStep": {
+      "subtitle": "पंजीकरण पूरा करने के लिए कृपया अपना विवरण दें",
+      "fullNameLabelRequired": "पूरा नाम *",
+      "fullNamePlaceholderEnter": "अपना पूरा नाम दर्ज करें",
+      "showPassword": "पासवर्ड दिखाएं",
+      "hidePassword": "पासवर्ड छिपाएं",
+      "showConfirmPassword": "पुष्टि पासवर्ड दिखाएं",
+      "hideConfirmPassword": "पुष्टि पासवर्ड छिपाएं"
+    },
+    "successStep": {
+      "title": "खाता सफलतापूर्वक बनाया गया!",
+      "subtitle": "हमारे प्लेटफ़ॉर्म में आपका स्वागत है"
+    }
+  },
+  "githubSignup": {
+    "otpLengthError": "OTP 6 अंकों का होना चाहिए",
+    "toast": {
+      "oauthFailed": "GitHub से प्रमाणीकरण विफल रहा",
+      "otpSent": "आपके ईमेल पर सत्यापन कोड भेज दिया गया है!",
+      "sendOtpFailed": "सत्यापन कोड भेजने में विफल"
+    },
+    "processing": "प्रक्रिया जारी है...",
+    "otpVerification": {
+      "title": "अपना ईमेल सत्यापित करें",
+      "subtitleSentTo": "हमने एक सत्यापन कोड इस पते पर भेजा है",
+      "codeLabel": "सत्यापन कोड",
+      "codePlaceholder": "6-अंकों का कोड दर्ज करें",
+      "resendIn": "{{seconds}} सेकंड में कोड फिर से भेजें",
+      "resendPrompt": "कोड नहीं मिला? फिर से भेजें"
+    },
+    "credentialsStep": {
+      "subtitle": "हमें GitHub से आपका नाम मिल गया है। कृपया अपना उपयोगकर्ता नाम और पासवर्ड सेट करें।"
+    },
+    "emailOtpStep": {
+      "title": "ईमेल सत्यापन आवश्यक है",
+      "subtitle": "आपका GitHub ईमेल निजी है। आगे बढ़ने के लिए कृपया एक ईमेल पता दें।",
+      "emailLabel": "ईमेल पता *",
+      "emailPlaceholder": "अपना ईमेल पता दर्ज करें"
+    },
+    "button": "GitHub के साथ जारी रखें"
+  },
+  "googleSignup": {
+    "toast": {
+      "oauthFailed": "Google से प्रमाणीकरण विफल रहा"
+    },
+    "connecting": "Google से कनेक्ट किया जा रहा है...",
+    "credentialsStep": {
+      "subtitle": "हमें Google से आपका नाम मिल गया है। कृपया अपना उपयोगकर्ता नाम और पासवर्ड सेट करें।"
+    },
+    "button": "Google के साथ जारी रखें",
+    "testButton": "🧪 प्रत्यक्ष पंजीकरण का परीक्षण करें",
+    "backToOptions": "← विकल्पों पर वापस जाएं"
+  }
+}

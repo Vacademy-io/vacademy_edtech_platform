@@ -1,0 +1,45 @@
+{
+    "aria": {
+        "selectAll": "Tout sélectionner",
+        "selectRow": "Sélectionner la ligne",
+        "openMenu": "Ouvrir le menu"
+    },
+    "columns": {
+        "serialNumber": "N°",
+        "class": "Classe",
+        "studentName": "Nom de l'{{learnerLabel}}",
+        "gender": "Genre",
+        "dateOfBirth": "Date de naissance",
+        "parentName": "Nom du parent",
+        "parentEmail": "E-mail du parent",
+        "parentMobile": "Mobile du parent",
+        "trackingId": "ID de suivi",
+        "status": "Statut",
+        "source": "Source",
+        "counsellor": "Conseiller",
+        "leadInterestScore": "Score d'intérêt du prospect",
+        "actions": "Actions"
+    },
+    "status": {
+        "new": "Nouveau",
+        "contacted": "Contacté",
+        "qualified": "Qualifié",
+        "notEligible": "Non éligible",
+        "followUp": "Relance",
+        "closed": "Clôturé",
+        "converted": "Converti",
+        "admitted": "Admis"
+    },
+    "source": {
+        "website": "Site web",
+        "googleAds": "Google Ads",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "referral": "Recommandation",
+        "other": "Autre"
+    },
+    "actionsMenu": {
+        "viewDetails": "Voir les détails",
+        "activityLog": "Journal d'activité"
+    }
+}

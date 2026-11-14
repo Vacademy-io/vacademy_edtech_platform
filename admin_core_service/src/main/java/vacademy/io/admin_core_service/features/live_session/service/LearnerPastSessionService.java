@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.live_session.dto.LearnerDisplaySe
 import vacademy.io.admin_core_service.features.live_session.dto.LearnerPastSessionDTO;
 import vacademy.io.admin_core_service.features.live_session.dto.LearnerPastSessionsResponseDTO;
 import vacademy.io.admin_core_service.features.live_session.dto.LearnerRecordingDTO;
+import vacademy.io.admin_core_service.features.live_session.dto.LiveSessionInstructorDTO;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionContentLink;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionLogs;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionContentLinkRepository;
@@ -32,10 +33,12 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,6 +70,9 @@ public class LearnerPastSessionService {
     private final LiveSessionLearnerDisplaySettingsService displaySettingsService;
     private final PackageSessionRepository packageSessionRepository;
     private final StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
+    private final LiveSessionInstructorService instructorService;
+    private final LearnerPublicSessionVisibilityService publicSessionVisibilityService;
+    private final LiveSessionAttendanceOnlyModeService attendanceOnlyModeService;
     private final ObjectMapper objectMapper;
 
     public LearnerPastSessionsResponseDTO getPastSessions(String batchId, String userId, String instituteId,
@@ -76,6 +82,8 @@ public class LearnerPastSessionService {
         int pageNumber = Math.max(page, 0);
 
         String resolvedInstituteId = resolveInstituteId(batchId, userId, instituteId);
+        // Attendance-only institute: only classes marked show_to_learners are listed.
+        boolean learnerVisibleOnly = attendanceOnlyModeService.isEnabled(resolvedInstituteId);
         LearnerDisplaySettingsFlags flags = displaySettingsService.getFlags(resolvedInstituteId);
         LearnerPastSessionsResponseDTO.DisplayFlagsDTO flagsDTO = LearnerPastSessionsResponseDTO.DisplayFlagsDTO
                 .from(flags);
@@ -87,8 +95,24 @@ public class LearnerPastSessionService {
         }
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<LiveSessionRepository.LearnerPastSessionProjection> pageResult = liveSessionRepository
-                .findPastSessionsForUserAndBatch(batchId, userId, startDate, endDate, pageable);
+        // Opted-in institutes also list their unassigned public classes to enrolled learners.
+        boolean includeUnassignedPublic = flags.showUnassignedPublicSessions()
+                && publicSessionVisibilityService.isEnrolledLearner(resolvedInstituteId, userId);
+        Page<LiveSessionRepository.LearnerPastSessionProjection> pageResult = includeUnassignedPublic
+                ? liveSessionRepository.findPastSessionsForUserAndBatchIncludingUnassignedPublic(
+                        batchId, userId, resolvedInstituteId, startDate, endDate, learnerVisibleOnly, pageable)
+                : liveSessionRepository.findPastSessionsForUserAndBatch(
+                        batchId, userId, startDate, endDate, learnerVisibleOnly, pageable);
+
+        if (learnerVisibleOnly && pageResult.getTotalElements() == 0
+                && !StringUtils.hasText(startDate) && !StringUtils.hasText(endDate)) {
+            // Attendance-only institute with no class shown to learners: all
+            // flags off so the FE hides the Past section, as before the
+            // per-class choice existed, rather than showing it empty.
+            return LearnerPastSessionsResponseDTO.empty(
+                    LearnerPastSessionsResponseDTO.DisplayFlagsDTO.from(LearnerDisplaySettingsFlags.allOff()),
+                    pageNumber, pageSize);
+        }
 
         List<LiveSessionRepository.LearnerPastSessionProjection> projections = pageResult.getContent();
 
@@ -110,9 +134,14 @@ public class LearnerPastSessionService {
             materialsByScheduleId = loadMaterials(scheduleIds, batchId);
         }
 
+        // One batched instructor+directory resolution for the page, not per card.
+        Map<String, List<LiveSessionInstructorDTO>> instructorsBySessionId =
+                loadInstructors(projections);
+
         List<LearnerPastSessionDTO> content = new ArrayList<>();
         for (LiveSessionRepository.LearnerPastSessionProjection projection : projections) {
-            content.add(buildDto(projection, flags, logsByScheduleId, materialsByScheduleId));
+            content.add(buildDto(projection, flags, logsByScheduleId, materialsByScheduleId,
+                    instructorsBySessionId));
         }
 
         return LearnerPastSessionsResponseDTO.builder()
@@ -152,9 +181,55 @@ public class LearnerPastSessionService {
         return null;
     }
 
+    /**
+     * Instructors for every session on this page, keyed by session id (V524).
+     *
+     * <p>Not gated behind a display flag: unlike recordings or attendance,
+     * knowing who taught the class isn't sensitive learner data, and the
+     * existing flags each govern a specific block the plan named.
+     *
+     * <p>Never throws — a page of past classes must not fail over a missing name.
+     */
+    private Map<String, List<LiveSessionInstructorDTO>> loadInstructors(
+            List<LiveSessionRepository.LearnerPastSessionProjection> projections) {
+        try {
+            List<String> sessionIds = projections.stream()
+                    .map(LiveSessionRepository.LearnerPastSessionProjection::getSessionId)
+                    .filter(StringUtils::hasText)
+                    .distinct()
+                    .toList();
+            if (sessionIds.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            Map<String, List<String>> idsBySession = instructorService
+                    .getEffectiveInstructorUserIdsBySession(liveSessionRepository.findAllById(sessionIds));
+
+            List<String> allUserIds = idsBySession.values().stream()
+                    .flatMap(List::stream)
+                    .distinct()
+                    .toList();
+            if (allUserIds.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            Map<String, LiveSessionInstructorDTO> detailsByUserId = instructorService
+                    .toInstructorDetails(allUserIds).stream()
+                    .collect(Collectors.toMap(LiveSessionInstructorDTO::getUserId, d -> d, (a, b) -> a));
+
+            Map<String, List<LiveSessionInstructorDTO>> result = new HashMap<>();
+            idsBySession.forEach((sessionId, userIds) -> result.put(sessionId, userIds.stream()
+                    .map(detailsByUserId::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList())));
+            return result;
+        } catch (Exception e) {
+            return Collections.emptyMap();
+        }
+    }
+
     private LearnerPastSessionDTO buildDto(LiveSessionRepository.LearnerPastSessionProjection projection,
             LearnerDisplaySettingsFlags flags, Map<String, List<LiveSessionLogs>> logsByScheduleId,
-            Map<String, List<LearnerPastSessionDTO.MaterialDTO>> materialsByScheduleId) {
+            Map<String, List<LearnerPastSessionDTO.MaterialDTO>> materialsByScheduleId,
+            Map<String, List<LiveSessionInstructorDTO>> instructorsBySessionId) {
 
         LearnerPastSessionDTO.LearnerPastSessionDTOBuilder builder = LearnerPastSessionDTO.builder()
                 .sessionId(projection.getSessionId())
@@ -167,6 +242,11 @@ public class LearnerPastSessionService {
                 .timezone(projection.getTimezone())
                 .linkType(projection.getLinkType())
                 .thumbnailFileId(projection.getThumbnailFileId());
+
+        List<LiveSessionInstructorDTO> instructors = instructorsBySessionId.get(projection.getSessionId());
+        if (instructors != null && !instructors.isEmpty()) {
+            builder.instructors(instructors);
+        }
 
         if (flags.showRecordings()) {
             builder.recordings(sanitizeRecordings(projection.getProviderRecordingsJson()));

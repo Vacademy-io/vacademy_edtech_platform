@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "Paramètres de parrainage",
+        "description": "Configurez les récompenses pour les parrains et les filleuls lors de l'utilisation des codes de parrainage"
+    },
+    "card": {
+        "defaultBadge": "Par défaut",
+        "changeSettings": "Modifier les paramètres de parrainage"
+    },
+    "refereeBenefit": {
+        "label": "Avantage du filleul",
+        "freeDays": "{{value}} jours gratuits",
+        "bonusContent": "Contenu bonus",
+        "discountOff": "{{value}} de réduction"
+    },
+    "referrerTiers": {
+        "label": "Paliers de parrainage"
+    },
+    "programSettings": {
+        "label": "Paramètres du programme",
+        "vestingPeriod": "Période d'acquisition",
+        "combineOffers": "Combiner les offres",
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "types": {
+        "discountPercentage": "Réduction en pourcentage",
+        "discountFixed": "Réduction fixe",
+        "bonusContent": "Contenu bonus",
+        "freeDays": "Jours gratuits",
+        "pointsSystem": "Système de points"
+    }
+}

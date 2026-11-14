@@ -140,12 +140,16 @@ public class DonationPaymentOptionOperation implements PaymentOptionOperationStr
             PaymentResponseDTO paymentResponseDTO;
             if (extraData.containsKey("SKIP_PAYMENT_INITIATION")
                     && Boolean.TRUE.equals(extraData.get("SKIP_PAYMENT_INITIATION"))) {
+                // Only the order link: this path has never applied the other extras.
                 paymentResponseDTO = paymentService.handlePaymentWithoutGateway(
                         user,
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,
-                        userPlan);
+                        userPlan,
+                        extraData.containsKey("PARENT_PAYMENT_LOG_ID")
+                                ? Map.of("PARENT_PAYMENT_LOG_ID", extraData.get("PARENT_PAYMENT_LOG_ID"))
+                                : Map.of());
             } else {
                 paymentResponseDTO = paymentService.handlePayment(
                         user,

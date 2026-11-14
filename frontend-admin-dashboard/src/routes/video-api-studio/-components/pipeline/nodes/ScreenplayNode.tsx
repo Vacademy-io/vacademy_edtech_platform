@@ -1,14 +1,16 @@
 import { memo, useEffect, useState } from 'react';
 import { NodeProps } from 'reactflow';
-import { ExternalLink, FileText, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ArrowSquareOut, FileText, CircleNotch } from '@phosphor-icons/react';
 import { BaseNodeShell } from './BaseNodeShell';
-import { ACTIVE_SUB_STATUS } from '../-utils/stage-vocab';
+import { buildActiveSubStatus } from '../-utils/stage-vocab';
 import { fetchScriptText } from '../../../-services/video-generation';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 const PREVIEW_LEN = 220;
 
 function ScreenplayNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const slot = data.state.screenplay;
     const scriptUrl = slot.state === 'wrapped' ? slot.data.scriptUrl : undefined;
 
@@ -44,8 +46,8 @@ function ScreenplayNodeInner({ data }: NodeProps<PipelineNodeData>) {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {slot.state === 'in_production' ? (
                         <>
-                            <Loader2 className="size-3.5 animate-spin text-blue-600" />
-                            {ACTIVE_SUB_STATUS.screenplay}
+                            <CircleNotch className="size-3.5 animate-spin text-blue-600" />
+                            {buildActiveSubStatus(t).screenplay}
                         </>
                     ) : (
                         <>
@@ -64,7 +66,7 @@ function ScreenplayNodeInner({ data }: NodeProps<PipelineNodeData>) {
         <BaseNodeShell kind="screenplay" state={slot.state}>
             {loading && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="size-3 animate-spin" /> Loading screenplay…
+                    <CircleNotch className="size-3 animate-spin" /> Loading screenplay…
                 </div>
             )}
             {!loading && text && (
@@ -78,10 +80,10 @@ function ScreenplayNodeInner({ data }: NodeProps<PipelineNodeData>) {
                             href={scriptUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                            className="inline-flex items-center gap-1 text-2xs font-medium text-blue-600 hover:text-blue-700"
                         >
                             Open full screenplay
-                            <ExternalLink className="size-3" />
+                            <ArrowSquareOut className="size-3" />
                         </a>
                     )}
                 </div>
@@ -91,9 +93,9 @@ function ScreenplayNodeInner({ data }: NodeProps<PipelineNodeData>) {
                     href={scriptUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                    className="inline-flex items-center gap-1 text-2xs font-medium text-blue-600 hover:text-blue-700"
                 >
-                    Open screenplay <ExternalLink className="size-3" />
+                    Open screenplay <ArrowSquareOut className="size-3" />
                 </a>
             )}
         </BaseNodeShell>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CaretUpDown, Check, GraduationCap, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { MyButton } from '@/components/design-system/button';
@@ -39,6 +40,7 @@ export function BatchPicker({
     noun,
     nounPlural,
 }: BatchPickerProps) {
+    const { t } = useTranslation('announcementCreateBatchPicker');
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
 
@@ -90,17 +92,17 @@ export function BatchPicker({
     if (batches.length === 0) {
         return (
             <p className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-4 text-caption text-muted-foreground">
-                No {nounPlural} exist for this institute yet. Create one first, then come back.
+                {t('emptyState', { nounPlural })}
             </p>
         );
     }
 
     const triggerLabel =
         selected.length === 0
-            ? `Select ${nounPlural}`
+            ? t('selectNoun', { noun: nounPlural })
             : selected.length === 1
-              ? selectedBatches[0]?.label ?? `1 ${noun} selected`
-              : `${selected.length} ${nounPlural} selected`;
+              ? (selectedBatches[0]?.label ?? t('countSelected', { count: 1, noun }))
+              : t('countSelected', { count: selected.length, noun: nounPlural });
 
     return (
         <div className="space-y-2">
@@ -124,7 +126,7 @@ export function BatchPicker({
                 <PopoverContent className={cn(POPOVER_WIDTH, 'p-0')} align="start">
                     <Command shouldFilter={false}>
                         <CommandInput
-                            placeholder={`Search ${nounPlural}, levels or sessions…`}
+                            placeholder={t('searchPlaceholder', { nounPlural })}
                             value={query}
                             onValueChange={setQuery}
                         />
@@ -132,7 +134,7 @@ export function BatchPicker({
                             {groups.length === 0 ? (
                                 <div className="flex items-center justify-center gap-2 px-3 py-6 text-caption text-muted-foreground">
                                     <MagnifyingGlass className="size-4 shrink-0" />
-                                    No {nounPlural} match “{query.trim()}”.
+                                    {t('noMatch', { nounPlural, query: query.trim() })}
                                 </div>
                             ) : (
                                 <div className="py-1">
@@ -152,7 +154,9 @@ export function BatchPicker({
                                                         onClick={() => toggleGroup(rows)}
                                                         className="shrink-0 rounded-sm px-1 text-caption font-semibold text-primary-500 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                     >
-                                                        {allSelected ? 'Clear' : 'Select all'}
+                                                        {allSelected
+                                                        ? t('clearGroup')
+                                                        : t('selectAll')}
                                                     </button>
                                                 </div>
                                                 {rows.map((batch) => {
@@ -182,7 +186,7 @@ export function BatchPicker({
                                                                 <span className="block truncate text-caption text-muted-foreground">
                                                                     {batch.sessionName}
                                                                     {batch.isOrgAssociated &&
-                                                                        ' · sub-organisation'}
+                                                                        t('orgSuffix')}
                                                                 </span>
                                                             </span>
                                                             {isSelected && (
@@ -203,7 +207,7 @@ export function BatchPicker({
                     </Command>
                     <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
                         <span className="text-caption text-muted-foreground">
-                            {selected.length} selected
+                            {t('footerSelectedCount', { count: selected.length })}
                         </span>
                         <div className="flex items-center gap-2">
                             {selected.length > 0 && (
@@ -212,7 +216,7 @@ export function BatchPicker({
                                     scale="small"
                                     onClick={() => onChange([])}
                                 >
-                                    Clear all
+                                    {t('clearAll')}
                                 </MyButton>
                             )}
                             <MyButton
@@ -220,7 +224,7 @@ export function BatchPicker({
                                 scale="small"
                                 onClick={() => setOpen(false)}
                             >
-                                Done
+                                {t('done')}
                             </MyButton>
                         </div>
                     </div>
@@ -238,7 +242,7 @@ export function BatchPicker({
                                 <button
                                     type="button"
                                     onClick={() => toggle(batch.id)}
-                                    aria-label={`Remove ${batch.label}`}
+                                    aria-label={t('removeAria', { label: batch.label })}
                                     className="rounded-full p-0.5 hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     <X className="size-3" weight="bold" />

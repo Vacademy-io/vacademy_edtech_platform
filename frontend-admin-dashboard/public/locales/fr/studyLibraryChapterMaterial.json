@@ -1,0 +1,7 @@
+{
+    "manageChapter": "Gérer le chapitre",
+    "manageChapterDescription": "Explorez et gérez les chapitres. Cliquez sur un chapitre pour consulter et accéder aux eBooks, aux cours vidéo et aux ressources d'étude, ou ajoutez de nouveaux contenus pour enrichir votre expérience d'apprentissage.",
+    "session": "Session : {{sessionName}}",
+    "chapterDeletedSuccessfully": "Chapitre supprimé avec succès",
+    "failedToDeleteChapter": "Échec de la suppression du chapitre"
+}

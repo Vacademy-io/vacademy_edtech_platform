@@ -1,0 +1,18 @@
+{
+    "employmentType": {
+        "fullTime": "फुल टाइम",
+        "partTime": "पार्ट टाइम",
+        "contract": "अनुबंध",
+        "intern": "इंटर्न"
+    },
+    "employmentStatus": {
+        "active": "सक्रिय",
+        "probation": "परिवीक्षा",
+        "noticePeriod": "नोटिस अवधि",
+        "onLeave": "अवकाश पर",
+        "terminated": "बर्खास्त",
+        "relieved": "कार्यमुक्त",
+        "absconding": "अनुपस्थित"
+    },
+    "unchangedPlaceholder": "अपरिवर्तित"
+}

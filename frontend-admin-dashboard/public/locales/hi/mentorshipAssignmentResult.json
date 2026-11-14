@@ -1,0 +1,12 @@
+{
+    "assigned_one": "{{count}} असाइन किया गया",
+    "assigned_other": "{{count}} असाइन किए गए",
+    "alreadyAssigned_one": "{{count}} पहले से असाइन किया गया",
+    "alreadyAssigned_other": "{{count}} पहले से असाइन किए गए",
+    "skipped_one": "{{count}} छोड़ा गया",
+    "skipped_other": "{{count}} छोड़े गए",
+    "leftOutManual_one": "{{count}} शामिल नहीं हो सका — मेंटर अपनी सीमा पर है",
+    "leftOutManual_other": "{{count}} शामिल नहीं हो सके — मेंटर अपनी सीमा पर है",
+    "leftOutBulk_one": "{{count}} शामिल नहीं हो सका — सभी मेंटर अपनी सीमा पर हैं",
+    "leftOutBulk_other": "{{count}} शामिल नहीं हो सके — सभी मेंटर अपनी सीमा पर हैं"
+}

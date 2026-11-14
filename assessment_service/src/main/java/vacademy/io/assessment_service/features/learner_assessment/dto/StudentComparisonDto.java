@@ -34,4 +34,6 @@ public class StudentComparisonDto {
     private List<MarksRankDto> marksDistribution;
     private List<SectionComparisonDto> sectionWiseComparison;
     private SmartLeaderboardDto leaderboard;
+    /** Report option: the institute hides per-question items (answer review) for this assessment. */
+    private Boolean questionWiseHidden;
 }

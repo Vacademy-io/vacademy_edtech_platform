@@ -1,0 +1,32 @@
+{
+    "headingAdd": "Add holiday",
+    "headingEdit": "Edit holiday",
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "addHoliday": "Add holiday"
+    },
+    "fields": {
+        "name": "Name",
+        "namePlaceholder": "Independence Day",
+        "date": "Date",
+        "type": "Type",
+        "optionalHoliday": "Optional holiday",
+        "optionalHolidayDescription": "Employees choose whether to take it, up to the allowance your leave policy sets — it isn't a closed day for everyone.",
+        "description": "Description",
+        "descriptionPlaceholder": "Anything staff should know about the day"
+    },
+    "toast": {
+        "updated": "Holiday updated",
+        "added": "Holiday added"
+    },
+    "errors": {
+        "saveFailed": "Could not save the holiday."
+    },
+    "validation": {
+        "nameRequired": "Give the holiday a name",
+        "dateRequired": "Pick the date",
+        "descriptionTooLong": "Keep the description under 500 characters"
+    }
+}

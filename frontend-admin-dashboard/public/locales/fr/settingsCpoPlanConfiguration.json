@@ -1,0 +1,95 @@
+{
+    "installmentPresets": {
+        "annual": "Annuel",
+        "halfYearly": "Semestriel",
+        "quarterly": "Trimestriel",
+        "monthly": "Mensuel",
+        "custom": "Personnalisé"
+    },
+    "feeTypePresets": {
+        "tuitionFee": {
+            "label": "Frais de scolarité",
+            "description": "Frais de scolarité réguliers pour l'année académique"
+        },
+        "examFee": {
+            "label": "Frais d'examen",
+            "description": "Frais d'examen et d'évaluation"
+        },
+        "libraryFee": {
+            "label": "Frais de bibliothèque",
+            "description": "Frais d'accès et de ressources de la bibliothèque"
+        },
+        "transportFee": {
+            "label": "Frais de transport",
+            "description": "Frais de transport scolaire"
+        },
+        "hostelFee": {
+            "label": "Frais d'internat",
+            "description": "Frais d'hébergement en internat"
+        },
+        "labFee": {
+            "label": "Frais de laboratoire",
+            "description": "Frais d'utilisation du laboratoire et de matériel"
+        }
+    },
+    "feeTypeEditor": {
+        "defaultName": "Type de frais {{number}}",
+        "installmentCount_one": "{{count}} versement",
+        "installmentCount_many": "{{count}} versements",
+        "installmentCount_other": "{{count}} versements",
+        "remove": "Supprimer",
+        "feeName": {
+            "label": "Nom des frais",
+            "placeholder": "ex. Frais de scolarité"
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Brève description"
+        },
+        "totalAmount": {
+            "label": "Montant total (₹)",
+            "placeholder": "ex. 50000"
+        },
+        "hasInstallments": "Avec versements",
+        "refundable": "Remboursable",
+        "latePenalty": "Pénalité de retard",
+        "penaltyPercentagePlaceholder": "%",
+        "paymentFrequency": "Fréquence de paiement",
+        "installmentCountPlaceholder": "Nombre de versements",
+        "installmentTable": {
+            "remaining": "₹{{amount}} restant à allouer",
+            "exceeds": "Dépasse le total de ₹{{amount}}",
+            "columns": {
+                "number": "#",
+                "amount": "Montant (₹)",
+                "startDate": "Date de début",
+                "endDate": "Date de fin",
+                "dueDate": "Date d'échéance"
+            },
+            "total": "Total"
+        }
+    },
+    "classMultiSelect": {
+        "label": "Sélectionner la classe",
+        "placeholder": "Sélectionner des classes...",
+        "selectedCount_one": "{{count}} classe sélectionnée",
+        "selectedCount_many": "{{count}} classes sélectionnées",
+        "selectedCount_other": "{{count}} classes sélectionnées",
+        "searchPlaceholder": "Rechercher des classes...",
+        "noClassesAvailable": "Aucune classe disponible",
+        "noSearchResults": "Aucune classe ne correspond à votre recherche"
+    },
+    "summary": {
+        "feeTypes": "Types de frais",
+        "totalAmount": "Montant total"
+    },
+    "status": {
+        "label": "Statut",
+        "active": "Actif",
+        "draft": "Brouillon"
+    },
+    "feeTypesSection": {
+        "title": "Types de frais",
+        "addFeeType": "Ajouter un type de frais"
+    }
+}

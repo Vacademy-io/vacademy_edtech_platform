@@ -1,0 +1,48 @@
+{
+    "header": {
+        "addButton": "Add",
+        "upcomingSessionsCount_one": "{{count}} upcoming session",
+        "upcomingSessionsCount_other": "{{count}} upcoming sessions",
+        "noUpcomingSessions": "No upcoming sessions scheduled"
+    },
+    "emptyState": {
+        "noSessionsScheduledYet": "No {{term}} scheduled yet"
+    },
+    "sessionCard": {
+        "upcomingLabel": "Upcoming",
+        "deleteSession": "Delete Session",
+        "viewParticipantDetails": "View Participant Details"
+    },
+    "moreCount_one": "+{{count}} More",
+    "moreCount_other": "+{{count}} More",
+    "participantDialog": {
+        "heading": "Participant Details",
+        "tabs": {
+            "registeredUsers": "Registered Users",
+            "attendance": "Attendance"
+        },
+        "registration": {
+            "title": "Registrations",
+            "exportButton": "Export"
+        },
+        "attendance": {
+            "title": "Attendance",
+            "exportButton": "Export"
+        }
+    },
+    "deleteDialog": {
+        "heading": "Attendance Report",
+        "confirmMessage": "Do you want to delete every class for this session",
+        "yes": "Yes",
+        "no": "No"
+    },
+    "csvExport": {
+        "registrationsDownloaded": "Registrations downloaded successfully.",
+        "attendanceDownloaded": "Attendance report downloaded successfully.",
+        "attendanceStatus": {
+            "present": "Present",
+            "absent": "Absent",
+            "unmarked": "Unmarked"
+        }
+    }
+}

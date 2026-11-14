@@ -1,0 +1,89 @@
+{
+    "heading": {
+        "title": "Tableau des prospects",
+        "subtitle": "Faites glisser un prospect vers une autre colonne pour changer son statut."
+    },
+    "slaOptions": {
+        "anyOverdue": "Une échéance manquée",
+        "firstContactMissed": "Premier contact manqué",
+        "firstContactComingUp": "Premier contact à venir",
+        "followUpComingUp": "Relance à venir",
+        "followUpMissed": "Relance manquée"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "Dernières 24 heures",
+        "last7Days": "7 derniers jours",
+        "last15Days": "15 derniers jours",
+        "last30Days": "30 derniers jours",
+        "allTime": "Toute la période",
+        "customRange": "Période personnalisée"
+    },
+    "filters": {
+        "tier": {
+            "label": "Tous les niveaux",
+            "hot": "Chaud",
+            "warm": "Tiède",
+            "cold": "Froid"
+        },
+        "sla": {
+            "label": "Tous les états SLA"
+        },
+        "audience": {
+            "label": "Tous : {{term}}",
+            "untitled": "Audience sans titre"
+        },
+        "callHistory": {
+            "any": "Historique des appels",
+            "notCalled": "Non appelé",
+            "calledAny": "Appelé (peu importe)",
+            "calledOnce": "Appelé une fois",
+            "calledTwicePlus": "Appelé 2 fois ou plus",
+            "aiCalled": "Appelé par l'IA",
+            "manualCalled": "Appelé manuellement"
+        },
+        "customDate": {
+            "setDates": "Définir les dates",
+            "rangeDisplay": "{{from}} → {{to}}",
+            "done": "Terminé",
+            "from": "Du",
+            "to": "Au"
+        }
+    },
+    "toolbar": {
+        "leadSettings": "Paramètres des prospects"
+    },
+    "chips": {
+        "search": "Recherche : {{query}}",
+        "audience": "Audience : {{names}}",
+        "tier": "Niveau : {{tiers}}",
+        "sla": "SLA : {{states}}",
+        "counsellor": "Conseiller : {{names}}",
+        "source": "Source : {{source}}",
+        "customField": "{{field}} : {{value}}",
+        "dateRangeCustomWithDates": "Date : {{from}} → {{to}}",
+        "dateRangeCustomFallback": "Date : période personnalisée",
+        "dateRangeFallback": "Période",
+        "fallbackSelected": "Sélectionné",
+        "fallbackField": "Champ",
+        "unassigned": "Non assigné",
+        "removeAriaLabel": "Supprimer {{label}}",
+        "clearAll": "Tout effacer"
+    },
+    "search": {
+        "placeholder": "Rechercher des prospects dans toutes les colonnes",
+        "ariaLabel": "Rechercher des prospects"
+    },
+    "board": {
+        "loading": "Chargement du tableau…",
+        "noStatusColumnLabel": "Aucun statut",
+        "noStatusesTitle": "Aucun statut de prospect configuré",
+        "noStatusesDescription": "Configurez les statuts de votre pipeline dans les paramètres des prospects pour utiliser le tableau.",
+        "allHiddenTitle": "Toutes les colonnes sont masquées",
+        "allHiddenDescription": "Chaque colonne de statut est masquée — utilisez « Gérer les colonnes » pour en afficher."
+    },
+    "callReasons": {
+        "noSubmissionId": "Ce prospect n'a pas d'identifiant de soumission",
+        "noPhone": "Ce prospect n'a pas de numéro de téléphone enregistré",
+        "callInProgress": "Un autre appel est en cours de démarrage…"
+    }
+}

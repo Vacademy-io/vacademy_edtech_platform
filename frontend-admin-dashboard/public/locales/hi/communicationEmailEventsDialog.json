@@ -1,0 +1,20 @@
+{
+    "eventLabels": {
+        "delivery": "डिलीवर हुए ईमेल",
+        "open": "खोले गए ईमेल",
+        "click": "क्लिक किए गए ईमेल",
+        "bounce": "बाउंस हुए ईमेल",
+        "complaint": "शिकायतें"
+    },
+    "window": {
+        "last24h": "पिछले 24 घंटे",
+        "lastDays_one": "पिछले {{count}} दिन",
+        "lastDays_other": "पिछले {{count}} दिनों"
+    },
+    "loadingEvents": "{{window}} की घटनाएँ लोड हो रही हैं…",
+    "eventsCount_one": "{{window}} में {{formattedCount}} घटना।",
+    "eventsCount_other": "{{window}} में {{formattedCount}} घटनाएँ।",
+    "errorLoad": "ईमेल लोड नहीं हो सके। कृपया फिर से कोशिश करें।",
+    "emptyState": "{{window}} में कोई {{label}} नहीं।",
+    "openedFrom": "{{ip}} से खोला गया"
+}

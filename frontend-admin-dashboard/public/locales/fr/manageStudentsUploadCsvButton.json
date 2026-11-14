@@ -1,0 +1,33 @@
+{
+    "button": {
+        "uploadCsv": "Importer un CSV",
+        "downloadTemplate": "Télécharger le modèle",
+        "preview": "Aperçu",
+        "showUploadedFile": "Afficher le fichier importé",
+        "upload": "Importer"
+    },
+    "dialog": {
+        "title": "Importer un CSV"
+    },
+    "dropzone": {
+        "instructions": "Glissez-déposez un fichier CSV ici, ou cliquez pour en sélectionner un",
+        "fileSizeKb": "{{size}} Ko"
+    },
+    "errors": {
+        "csvOnly": "Veuillez importer uniquement des fichiers CSV",
+        "headersUnavailable": "Configuration des en-têtes indisponible",
+        "parseCsv": "Erreur lors de l'analyse du CSV",
+        "fixValidationErrors": "Veuillez corriger les erreurs de validation avant l'import !",
+        "fixErrors": "Veuillez corriger les erreurs",
+        "uploadFailed": "Échec de l'import du CSV"
+    },
+    "toast": {
+        "uploadCompleted": "Import terminé ! {{success}} réussis, {{failed}} échoués"
+    },
+    "notification": {
+        "heading": "Préférence de notification",
+        "dontNotify": "Ne pas notifier",
+        "notify": "Notifier les {{term}}",
+        "description": "Souhaitez-vous envoyer des e-mails de notification aux {{term}} concernant leur inscription ?"
+    }
+}

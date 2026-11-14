@@ -1,0 +1,20 @@
+{
+    "validation": {
+        "moduleNameRequired": "Le nom du module est requis",
+        "descriptionMaxLength": "La description doit comporter au maximum {{max}} caractères"
+    },
+    "moduleNameLabel": "Nom du {{term}}",
+    "moduleNamePlaceholder": "Saisir le nom du {{term}}",
+    "descriptionLabel": "Description (facultatif)",
+    "descriptionPlaceholder": "Saisir la description du module",
+    "descriptionHint": "Affiché sur la carte {{term}} — {{count}}/{{max}} caractères",
+    "thumbnailImage": "Image miniature",
+    "loadingThumbnail": "Chargement de la miniature...",
+    "thumbnailPreviewAlt": "Aperçu de la miniature du module",
+    "uploadThumbnail": "Téléverser une miniature",
+    "uploadThumbnailHint": "PNG, JPG · 16:9 recommandé",
+    "uploading": "Téléversement...",
+    "saveChanges": "Enregistrer les modifications",
+    "add": "Ajouter",
+    "cropModuleThumbnail": "Recadrer la miniature du module"
+}

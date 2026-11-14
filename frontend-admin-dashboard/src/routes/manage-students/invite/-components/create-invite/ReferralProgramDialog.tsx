@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog as ShadDialog,
     DialogContent as ShadDialogContent,
@@ -22,6 +23,7 @@ interface ReferralProgramDialogProps {
 }
 
 export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
+    const { t } = useTranslation('manageStudentsReferralProgramDialog');
     const { data: referralProgramDetails } = useSuspenseQuery(handleGetReferralProgramDetails());
 
     useEffect(() => {
@@ -37,11 +39,11 @@ export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
             open={form.watch('showReferralDialog')}
             onOpenChange={(open) => form.setValue('showReferralDialog', open)}
         >
-            <ShadDialogContent className="flex h-[70vh] min-w-[60vw] max-w-lg flex-col">
+            <ShadDialogContent className="flex max-h-dialog-tall w-dialog-md flex-col">
                 <ShadDialogHeader>
-                    <ShadDialogTitle>Select Referral Program</ShadDialogTitle>
+                    <ShadDialogTitle>{t('dialog.title')}</ShadDialogTitle>
                     <ShadDialogDescription>
-                        Choose a referral program for this course
+                        {t('dialog.description')}
                     </ShadDialogDescription>
                 </ShadDialogHeader>
                 <div className="mt-4 flex-1 space-y-4 overflow-auto">
@@ -62,7 +64,7 @@ export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
                                 </div>
                                 {form.watch('selectedReferralId') === program.id && (
                                     <Badge variant="default" className="ml-2">
-                                        Default
+                                        {t('badge.default')}
                                     </Badge>
                                 )}
                             </div>
@@ -70,36 +72,41 @@ export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
                                 <div className="flex flex-col items-start gap-2">
                                     <div className="flex items-center gap-2">
                                         <Gift size={16} />
-                                        <span className="font-semibold">Referee Benefit:</span>
+                                        <span className="font-semibold">{t('refereeBenefit.label')}</span>
                                     </div>
                                     {program?.refereeBenefit?.type === 'free_days' ? (
                                         <span className="ml-6 flex items-center gap-1 font-semibold text-green-700">
                                             {getReferralTypeIcon(
                                                 program?.refereeBenefit?.type || ''
                                             )}
-                                            <span>{program?.refereeBenefit?.value} free days</span>
+                                            <span>
+                                                {t('refereeBenefit.freeDays', {
+                                                    count: program?.refereeBenefit?.value,
+                                                })}
+                                            </span>
                                         </span>
                                     ) : program?.refereeBenefit?.type === 'bonus_content' ? (
                                         <span className="ml-6 flex items-center gap-1 font-semibold text-green-700">
                                             {getReferralTypeIcon(
                                                 program?.refereeBenefit?.type || ''
                                             )}
-                                            <span>Bonus Content</span>
+                                            <span>{t('refereeBenefit.bonusContent')}</span>
                                         </span>
                                     ) : (
                                         <span className="ml-6 flex items-center font-semibold text-green-700">
                                             {getReferralTypeIcon(
                                                 program?.refereeBenefit?.type || ''
                                             )}
-                                            {program?.refereeBenefit?.value}
-                                            &nbsp;off
+                                            {t('refereeBenefit.genericOff', {
+                                                value: program?.refereeBenefit?.value,
+                                            })}
                                         </span>
                                     )}
                                 </div>
                                 <div className="flex flex-col items-start gap-2">
                                     <div className="flex items-center gap-2">
                                         <Users size={16} />
-                                        <span className="font-semibold">Referrer Tiers:</span>
+                                        <span className="font-semibold">{t('referrerTiers.label')}</span>
                                     </div>
                                     {program?.referrerBenefit?.map((benefit, idx) => (
                                         <div
@@ -115,15 +122,19 @@ export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Gear size={16} />
-                                    <span className="font-semibold">Program Settings:</span>
+                                    <span className="font-semibold">{t('programSettings.label')}</span>
                                 </div>
                                 <div className="ml-6 flex items-center justify-between">
-                                    <span className="text-gray-700">Vesting Period</span>
+                                    <span className="text-gray-700">{t('programSettings.vestingPeriod')}</span>
                                     <span>{program.vestingPeriod}</span>
                                 </div>
                                 <div className="ml-6 flex items-center justify-between">
-                                    <span className="text-gray-700">Combine Offers</span>
-                                    <span>{program.combineOffers ? 'Yes' : 'No'}</span>
+                                    <span className="text-gray-700">{t('programSettings.combineOffers')}</span>
+                                    <span>
+                                        {program.combineOffers
+                                            ? t('programSettings.yes')
+                                            : t('programSettings.no')}
+                                    </span>
                                 </div>
                             </div>
                         </Card>
@@ -137,7 +148,7 @@ export function ReferralProgramDialog({ form }: ReferralProgramDialogProps) {
                         onClick={() => form.setValue('showAddReferralDialog', true)}
                         className="p-4"
                     >
-                        + Add New Referral Program
+                        {t('actions.addNewReferral')}
                     </MyButton>
                 </div>
             </ShadDialogContent>

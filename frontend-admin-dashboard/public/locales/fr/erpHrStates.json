@@ -1,0 +1,7 @@
+{
+    "noAccess": {
+        "title": "Vous n'avez pas accès aux dossiers RH",
+        "description": "Les données des employés, des salaires et de la paie sont réservées aux rôles RH. Demandez à un administrateur de l'établissement d'attribuer un rôle RH à votre compte si nécessaire."
+    },
+    "retry": "Réessayer"
+}

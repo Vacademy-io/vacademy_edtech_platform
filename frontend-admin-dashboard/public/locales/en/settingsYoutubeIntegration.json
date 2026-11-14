@@ -1,0 +1,150 @@
+{
+    "header": {
+        "title": "YouTube Integration",
+        "subtitle": "Auto-upload recorded live sessions to your YouTube channel. Connect once; every recording from this institute lands on your channel."
+    },
+    "toasts": {
+        "channelConnected": "YouTube channel connected",
+        "connectFailed": "Connect failed: {{reason}}",
+        "unknownReason": "unknown",
+        "featureEnabled": "YouTube Integration enabled",
+        "featureDisabled": "YouTube Integration turned off",
+        "toggleFailed": "Failed to update toggle",
+        "oauthStartFailed": "Failed to start YouTube OAuth — check console.",
+        "disconnected": "YouTube disconnected",
+        "disconnectFailed": "Failed to disconnect",
+        "defaultsSaved": "Upload defaults saved",
+        "defaultsSaveFailed": "Failed to save defaults",
+        "requeued": "Re-queued for upload",
+        "retryFailed": "Failed to retry"
+    },
+    "featureGate": {
+        "title": "Enable YouTube Integration",
+        "description": "Turn this on if this institute wants to publish recorded live sessions to YouTube. When off, no recording is uploaded and no \"Upload to YouTube\" button appears on any session.",
+        "hint": "Once enabled, you'll be able to connect a YouTube channel, configure upload defaults (privacy, title template, category), and see the upload history of every recording."
+    },
+    "connection": {
+        "title": "YouTube Channel",
+        "description": "Sign in with the Google account that owns the channel you want to publish to. Required: edit access to that channel.",
+        "loading": "Loading…",
+        "unnamedChannel": "(unnamed channel)",
+        "reconnect": "Reconnect",
+        "disconnect": "Disconnect",
+        "invalidTitle": "Connection invalid",
+        "invalidDefaultReason": "Google rejected the refresh token. This usually means access was revoked in Google Account settings.",
+        "reconnectYoutube": "Reconnect YouTube",
+        "redirecting": "Redirecting…",
+        "notConnected": "No channel connected yet. Once connected, every BBB recording will auto-upload to that channel.",
+        "connectYoutube": "Connect YouTube"
+    },
+    "status": {
+        "active": "Connected",
+        "invalid": "Needs reconnect",
+        "notConnected": "Not connected"
+    },
+    "defaults": {
+        "title": "Upload Defaults",
+        "description": "Applied to every recording that auto-uploads. Manual upload can override privacy per recording.",
+        "loading": "Loading…",
+        "reset": "Reset",
+        "save": "Save",
+        "saving": "Saving…",
+        "autoUpload": {
+            "title": "Auto-upload on recording ready",
+            "description": "When off, recordings won't upload automatically. Anyone can still trigger an upload from the live-session view."
+        },
+        "privacyLabel": "Privacy",
+        "categoryLabel": "Category",
+        "licenseLabel": "License",
+        "licenseStandard": "Standard YouTube License",
+        "licenseCreativeCommons": "Creative Commons",
+        "defaultLanguageLabel": "Default language",
+        "defaultLanguagePlaceholder": "en, hi, …",
+        "embeddable": {
+            "title": "Allow embedding",
+            "description": "Required if you want to play these videos inside Vacademy. Turn off only for download-restricted content."
+        },
+        "publicStats": {
+            "title": "Public stats viewable",
+            "description": "Whether view-count / like-count are visible on the video page."
+        },
+        "madeForKids": {
+            "title": "Made for kids",
+            "description": "YouTube requires this declaration. Most adult-learner lectures should be off."
+        },
+        "notifySubscribers": {
+            "title": "Notify channel subscribers",
+            "description": "When on, YouTube pushes a subscriber notification for every uploaded recording. Usually off for routine recordings."
+        },
+        "titleTemplateLabel": "Title template",
+        "titleTemplateTokens": "Tokens: {session_title}, {subject}, {date}",
+        "titleTemplatePlaceholder": "{session_title} | {date}",
+        "descriptionTemplateLabel": "Description template",
+        "descriptionTemplateTokensHint": "Same tokens as title",
+        "descriptionTemplatePlaceholder": "Recorded session of {session_title} on {date}. © Your Institute.",
+        "tagsLabel": "Tags (comma-separated)",
+        "tagsPlaceholder": "lecture, class 12, jee",
+        "playlistLabel": "Default playlist ID (optional)",
+        "playlistPlaceholder": "PLxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "playlistHint": "Videos uploaded with auto-upload will be added to this playlist."
+    },
+    "privacyOptions": {
+        "unlisted": {
+            "label": "Unlisted",
+            "help": "Anyone with the link can watch. Recommended for embed-only."
+        },
+        "private": {
+            "label": "Private",
+            "help": "Only you can watch. Use for review before publishing."
+        },
+        "public": {
+            "label": "Public",
+            "help": "Searchable on YouTube and your channel."
+        }
+    },
+    "categoryOptions": {
+        "education": "Education",
+        "scienceAndTechnology": "Science & Technology",
+        "peopleAndBlogs": "People & Blogs",
+        "newsAndPolitics": "News & Politics",
+        "entertainment": "Entertainment",
+        "gaming": "Gaming",
+        "howToAndStyle": "How-to & Style"
+    },
+    "history": {
+        "title": "Upload History",
+        "description": "Most recent 50 uploads for this institute. Failures can be retried; quota errors auto-retry after the daily window resets.",
+        "notConnected": "Connect a YouTube channel to start uploading recordings.",
+        "loading": "Loading…",
+        "empty": "No uploads yet. Recordings will appear here once they finish processing.",
+        "columns": {
+            "when": "When",
+            "title": "Title",
+            "status": "Status",
+            "trigger": "Trigger",
+            "video": "Video"
+        },
+        "pendingFile": "(pending — file {{fileId}})",
+        "triggerAuto": "Auto",
+        "triggerManual": "Manual",
+        "open": "Open",
+        "retry": "Retry"
+    },
+    "jobStatus": {
+        "queued": "Queued",
+        "queuedWithAttempt": "Queued (try {{attempt}}/{{maxAttempts}})",
+        "uploading": "Uploading…",
+        "done": "Uploaded",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+    },
+    "time": {
+        "justNow": "just now",
+        "minutesAgo_one": "{{count}}m ago",
+        "minutesAgo_other": "{{count}}m ago",
+        "hoursAgo_one": "{{count}}h ago",
+        "hoursAgo_other": "{{count}}h ago",
+        "unknown": "—"
+    },
+    "channelThumbnailAlt": "channel"
+}

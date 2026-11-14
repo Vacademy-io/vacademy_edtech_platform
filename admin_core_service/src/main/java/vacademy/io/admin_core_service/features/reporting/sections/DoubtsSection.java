@@ -126,7 +126,8 @@ public class DoubtsSection implements ReportSection {
 
         Map<String, Object> s = jdbcTemplate.queryForMap(SUMMARY_SQL,
                 ctx.getInstituteId(), batchScoped, batchId, cohortRestricted, cohortCsv,
-                STALE_DAYS, from, to, from, to, from, to);
+                STALE_DAYS, from, to, from, to, from, to,
+                from, to, from, to, from, to);
 
         int openNow = num(s.get("open_now"));
         int unanswered = num(s.get("unanswered"));
@@ -135,7 +136,7 @@ public class DoubtsSection implements ReportSection {
         int resolved = num(s.get("resolved_in_window"));
         Object medianH = s.get("median_h");
         Object medianFirst = s.get("median_first_reply_h");
-        int everReplied = num(s.get("ever_replied"));
+        int answeredInWindow = num(s.get("answered_in_window"));
         int withinDay = num(s.get("replied_within_day"));
 
         // A daily reader gets what changed; a weekly or monthly reader gets how
@@ -198,7 +199,7 @@ public class DoubtsSection implements ReportSection {
                     .build());
         }
 
-        return SectionFacts.builder()
+        SectionFacts.SectionFactsBuilder facts = SectionFacts.builder()
                 .sectionKey(key())
                 .title(title())
                 .identifying(true)
@@ -208,28 +209,40 @@ public class DoubtsSection implements ReportSection {
                 .empty(incremental
                         ? named == 0 && raised == 0 && resolved == 0
                         : openNow == 0 && raised == 0 && resolved == 0)
-                .headline("Open now", String.valueOf(openNow))
-                .headline("No reply yet", String.valueOf(unanswered))
-                .headline("Waiting " + STALE_DAYS + "+ days", String.valueOf(stale))
-                // The turnaround pair. First reply is the number that matters to a
-                // waiting learner; resolution can lag it by weeks.
+                // What MOVED in the period, first. Every one of these changes daily;
+                // the standing counts below do not, which is why they are held back
+                // for readers who hear from us less often.
+                .headline("Raised", String.valueOf(raised))
+                .headline("Answered", String.valueOf(answeredInWindow))
                 .headline("Median first reply", medianFirst == null
                         ? "—" : describeHours(((Number) medianFirst).intValue()))
-                .headline("Answered in a day", everReplied == 0
-                        ? "—" : withinDay + " of " + everReplied)
-                .headline("Median to resolve", medianH == null
-                        ? "—" : describeHours(((Number) medianH).intValue()))
+                .headline("Answered within a day", answeredInWindow == 0
+                        ? "—" : withinDay + " of " + answeredInWindow)
+                // One standing number even on a daily report, because a growing
+                // backlog is the thing a daily reader must not be allowed to forget.
+                .headline("Waiting " + STALE_DAYS + "+ days", String.valueOf(stale))
                 // Colour asserts something, so only where the data is unambiguous:
                 // a doubt nobody has answered in three days is simply bad.
                 .tone("Waiting " + STALE_DAYS + "+ days", stale > 0 ? "bad" : "good")
-                .tone("No reply yet", unanswered > 0 ? "warn" : "good")
                 .tone("Median first reply", medianFirst == null ? "warn"
                         : ((Number) medianFirst).intValue() <= 24 ? "good"
                         : ((Number) medianFirst).intValue() <= 72 ? "warn" : "bad")
                 .column("Learner")
                 .column("Type")
                 .column("Waiting")
-                .column("Question")
+                .column("Question");
+
+        if (!incremental) {
+            // The shape of the queue, for a weekly or monthly reader — the one who
+            // should be judging the backlog rather than working today's arrivals.
+            facts.headline("Open now", String.valueOf(openNow))
+                    .headline("No reply yet", String.valueOf(unanswered))
+                    .headline("Median to resolve", medianH == null
+                            ? "—" : describeHours(((Number) medianH).intValue()))
+                    .tone("No reply yet", unanswered > 0 ? "warn" : "good");
+        }
+
+        return facts
                 .rows(rows)
                 .build();
     }
@@ -301,12 +314,17 @@ public class DoubtsSection implements ReportSection {
                                  AND resolved_time >= ? AND resolved_time < ?
                                  -- Guard against clock skew producing a negative age.
                                  AND resolved_time >= raised_time)) AS median_h,
+                   -- Bounded to doubts ANSWERED IN THE WINDOW. Computed over all
+                   -- history these never move: measured across two consecutive daily
+                   -- reports, median-first-reply and answered-in-a-day were byte
+                   -- identical, which is a lifetime average wearing a period's
+                   -- clothes.
                    round(percentile_cont(0.5) WITHIN GROUP (
                        ORDER BY EXTRACT(EPOCH FROM (first_reply - raised_time)) / 3600)
-                       FILTER (WHERE first_reply IS NOT NULL
+                       FILTER (WHERE first_reply >= ? AND first_reply < ?
                                  AND first_reply >= raised_time)) AS median_first_reply_h,
-                   count(*) FILTER (WHERE first_reply IS NOT NULL) AS ever_replied,
-                   count(*) FILTER (WHERE first_reply IS NOT NULL
+                   count(*) FILTER (WHERE first_reply >= ? AND first_reply < ?) AS answered_in_window,
+                   count(*) FILTER (WHERE first_reply >= ? AND first_reply < ?
                                       AND first_reply - raised_time
                                           < INTERVAL '24 hours') AS replied_within_day
             FROM root

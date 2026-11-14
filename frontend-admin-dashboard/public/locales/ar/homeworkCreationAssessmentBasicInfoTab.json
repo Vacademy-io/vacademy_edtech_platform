@@ -1,0 +1,27 @@
+{
+    "fields": {
+        "homeworkName": {
+            "label": "اسم الواجب المنزلي:"
+        },
+        "subject": {
+            "label": "المادة:"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "تعليمات التقييم:"
+        },
+        "liveDateRange": {
+            "sectionTitle": "نطاق التاريخ المباشر",
+            "startDateLabel": "تاريخ ووقت البدء:",
+            "endDateLabel": "تاريخ ووقت الانتهاء:"
+        },
+        "attemptSettings": {
+            "sectionTitle": "إعدادات المحاولات",
+            "reattemptCountLabel": "عدد إعادة محاولة الواجب المنزلي:",
+            "durationSettingsLabel": "إعدادات مدة الواجب المنزلي:",
+            "entireDurationLabel": "مدة الواجب المنزلي بالكامل",
+            "minuteValue": "{{count}} دقيقة",
+            "previewLabel": "معاينة الواجب المنزلي:",
+            "switchSectionsLabel": "السماح للمشاركين بالتبديل بين الأقسام"
+        }
+    }
+}

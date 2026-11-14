@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
@@ -116,6 +117,7 @@ export function LeadStatusBoardColumn({
     pendingOutKeys,
     activeDragKey,
 }: LeadStatusBoardColumnProps) {
+    const { t: tPages } = useTranslation('crmPages');
     const baseKey = JSON.stringify(basePayload);
     const sortParams = BOARD_SORT_PARAMS[sort];
 
@@ -262,7 +264,17 @@ export function LeadStatusBoardColumn({
                 )}
 
                 {hasNextPage && (
-                    <div ref={sentinelRef} className="flex items-center justify-center py-2">
+                    <div
+                        ref={sentinelRef}
+                        className="flex items-center justify-center gap-1.5 py-2"
+                    >
+                        {totalElements != null && (
+                            <span className="text-xs text-neutral-400">
+                                {tPages('leadBoard.scrollMore', {
+                                    left: Math.max(0, totalElements - vms.length),
+                                })}
+                            </span>
+                        )}
                         <CircleNotch
                             className={cn(
                                 'size-4 text-neutral-400',

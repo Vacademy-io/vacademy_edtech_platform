@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "اختر قالب شهادة",
+        "subtitle": "اختر تصميمًا جاهزًا أو حمّل صورة / ملف PDF خاصًا بك أدناه."
+    },
+    "badge": {
+        "customUpload": "تحميل مخصص",
+        "builtin": "مدمج"
+    },
+    "card": {
+        "default": "افتراضي",
+        "selected": "محدد"
+    },
+    "customCard": {
+        "title": "تحميل مخصص",
+        "altText": "تحميل مخصص",
+        "uploadPlaceholder": "ملفك المحمّل",
+        "tooltipUse": "استخدام الصورة التي حمّلتها",
+        "tooltipEnable": "حمّل صورة أو ملف PDF أدناه لتفعيل هذا الموضع",
+        "descriptionUploaded": "التصميم الذي حمّلته",
+        "descriptionEmpty": "حمّل أدناه لاستخدامه"
+    }
+}

@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { format } from 'date-fns';
@@ -16,6 +19,11 @@ import type {
 import type { PackageDetailDTO } from '@/routes/manage-students/students-list/-services/getLearnerPackages';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import {
+    DEFAULT_TERMINATION_REASON_SETTING,
+    useTerminationReasonSetting,
+} from '@/services/termination-reason-setting';
+import { useCanDeletePayments } from '@/routes/manage-payments/-hooks/useCanDeletePayments';
 
 type DeassignStep = 'CONFIG' | 'PREVIEW' | 'RESULTS';
 
@@ -36,6 +44,7 @@ export const DeassignCourseDialog = ({
     onOpenChange,
     onSuccess,
 }: DeassignCourseDialogProps) => {
+    const { t } = useTranslation('manageStudentsDeassignCourseDialog');
     const instituteId = getInstituteId() || '';
     const [step, setStep] = useState<DeassignStep>('CONFIG');
     const [selectedPSIds, setSelectedPSIds] = useState<Set<string>>(new Set());
@@ -44,10 +53,21 @@ export const DeassignCourseDialog = ({
     // SOFT-only "last access date" override. null → respect the plan's own expiry.
     // A yyyy-MM-dd string once the admin picks a date from the calendar.
     const [accessTillDate, setAccessTillDate] = useState<string | null>(null);
+    // HARD-only. Shown/required per the institute's Termination Reason setting.
+    const [reason, setReason] = useState('');
+    // HARD-only, and only offered to roles allowed to delete payments.
+    const [deleteHistory, setDeleteHistory] = useState(false);
     const [previewData, setPreviewData] = useState<BulkDeassignResponse | null>(null);
     const [finalResults, setFinalResults] = useState<BulkDeassignResponse | null>(null);
 
     const { mutateAsync: bulkDeassign, isPending } = useBulkDeassign();
+    const { data: reasonSetting = DEFAULT_TERMINATION_REASON_SETTING } =
+        useTerminationReasonSetting();
+    const askReason = mode === 'HARD' && reasonSetting.enabled;
+    const reasonMissing = askReason && reasonSetting.required && !reason.trim();
+    const canDeletePayments = useCanDeletePayments();
+    const deletingHistory = mode === 'HARD' && canDeletePayments && deleteHistory;
+    const queryClient = useQueryClient();
 
     // Reset when dialog opens
     const handleOpenChange = (isOpen: boolean) => {
@@ -57,6 +77,8 @@ export const DeassignCourseDialog = ({
             setMode('SOFT');
             setNotifyLearners(false);
             setAccessTillDate(null);
+            setReason('');
+            setDeleteHistory(false);
             setPreviewData(null);
             setFinalResults(null);
         }
@@ -95,6 +117,8 @@ export const DeassignCourseDialog = ({
             // Only meaningful for SOFT; sent only when the admin overrode the
             // default plan-expiry with an explicit last-access date.
             access_till_date: mode === 'SOFT' ? accessTillDate : null,
+            reason: askReason && reason.trim() ? reason.trim() : null,
+            delete_payment_history: deletingHistory,
         },
     });
 
@@ -104,7 +128,7 @@ export const DeassignCourseDialog = ({
             setPreviewData(result);
             setStep('PREVIEW');
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Preview failed');
+            toast.error(err?.response?.data?.message || t('toasts.previewFailed'));
         }
     };
 
@@ -113,32 +137,51 @@ export const DeassignCourseDialog = ({
             const result = await bulkDeassign(buildRequest(false));
             setFinalResults(result);
             setStep('RESULTS');
+            if (deletingHistory && result.summary.successful > 0) {
+                // The payment views cache their data; drop it so the deleted history
+                // is gone the moment the admin looks, not after a refresh.
+                [
+                    'user-invoices',
+                    'user-account-summary',
+                    'user-account-ledger',
+                    'cpo-side-view',
+                    'payment-billing-summary',
+                ].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
+            }
             if (result.summary.failed === 0) {
                 toast.success(
-                    `${result.summary.successful} course(s) de-assigned successfully!`
+                    t('toasts.deassignSuccess', { count: result.summary.successful })
                 );
                 onSuccess();
             } else {
                 toast.warning(
-                    `${result.summary.successful} removed, ${result.summary.failed} failed.`
+                    t('toasts.deassignPartial', {
+                        successful: result.summary.successful,
+                        failed: result.summary.failed,
+                    })
                 );
             }
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'De-assignment failed');
+            toast.error(err?.response?.data?.message || t('toasts.deassignFailed'));
         }
     };
 
     const renderConfig = () => (
         <div className="flex flex-col gap-5">
             <p className="text-sm text-neutral-600">
-                Remove <strong>{userName}</strong> from selected courses.
+                <Trans
+                    t={t}
+                    i18nKey="config.removePrompt"
+                    values={{ name: userName }}
+                    components={{ strong: <strong /> }}
+                />
             </p>
 
             {/* Course selection */}
-            <div className="flex max-h-[220px] flex-col gap-2 overflow-y-auto pr-1">
+            <div className="flex max-h-56 flex-col gap-2 overflow-y-auto pe-1">
                 {courses.length === 0 ? (
                     <p className="py-4 text-center text-sm text-neutral-400">
-                        No courses to de-assign
+                        {t('config.noCourses')}
                     </p>
                 ) : (
                     courses.map((c) => {
@@ -162,7 +205,7 @@ export const DeassignCourseDialog = ({
                                 />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-neutral-800">
-                                        {c.package_name || 'Unnamed Course'}
+                                        {c.package_name || t('config.unnamedCourse')}
                                     </p>
                                     {c.level_name && (
                                         <p className="truncate text-xs text-neutral-500">
@@ -178,7 +221,7 @@ export const DeassignCourseDialog = ({
 
             {/* Mode selection */}
             <div className="flex flex-col gap-2 rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-                <p className="text-xs font-medium text-neutral-600">Removal Mode</p>
+                <p className="text-xs font-medium text-neutral-600">{t('config.removalMode')}</p>
                 <label className="flex items-start gap-2">
                     <input
                         type="radio"
@@ -188,8 +231,8 @@ export const DeassignCourseDialog = ({
                         className="mt-0.5 text-primary-500"
                     />
                     <span className="text-xs text-neutral-700">
-                        <strong>Soft Cancel</strong> — Access continues until plan expires.
-                        Status → CANCELED
+                        <strong>{t('config.softCancel.label')}</strong>{' '}
+                        {t('config.softCancel.description')}
                     </span>
                 </label>
 
@@ -197,8 +240,8 @@ export const DeassignCourseDialog = ({
                     the calendar lets the admin bring the access cut-off forward. */}
                 {mode === 'SOFT' && (
                     <div className="ml-6 mt-1 flex flex-col gap-1.5">
-                        <p className="text-[11px] font-medium text-neutral-600">
-                            Last access date
+                        <p className="text-2xs font-medium text-neutral-600">
+                            {t('config.lastAccessDate.label')}
                         </p>
                         <div className="flex items-center gap-1.5">
                             {/* Typed entry. yyyy-MM-dd is exactly the shape accessTillDate
@@ -207,7 +250,7 @@ export const DeassignCourseDialog = ({
                                 renders natively and can never be clipped by the dialog. */}
                             <Input
                                 type="date"
-                                aria-label="Last access date"
+                                aria-label={t('config.lastAccessDate.ariaLabel')}
                                 value={accessTillDate ?? ''}
                                 onChange={(e) => setAccessTillDate(e.target.value || null)}
                                 className="h-8 w-36 text-xs"
@@ -216,7 +259,7 @@ export const DeassignCourseDialog = ({
                                 <PopoverTrigger asChild>
                                     <button
                                         type="button"
-                                        aria-label="Pick last access date from calendar"
+                                        aria-label={t('config.lastAccessDate.pickAriaLabel')}
                                         className="flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs text-neutral-600 transition-colors hover:border-neutral-300"
                                     >
                                         <CalendarBlank className="size-3.5 text-neutral-400" />
@@ -254,19 +297,21 @@ export const DeassignCourseDialog = ({
                                 </PopoverContent>
                             </Popover>
                         </div>
-                        <p className="text-[10px] text-neutral-400">
+                        <p className="text-2xs text-neutral-400">
                             {accessTillDate
-                                ? 'Access ends on the selected date.'
+                                ? t('config.lastAccessDate.hintSelected')
                                 : defaultExpiry
-                                  ? `Leave empty to keep access until the plan’s own expiry — ${format(defaultExpiry, 'dd MMM yyyy')}.`
-                                  : 'Leave empty to keep access until the plan’s own expiry.'}
+                                  ? t('config.lastAccessDate.hintDefaultWithDate', {
+                                        date: format(defaultExpiry, 'dd MMM yyyy'),
+                                    })
+                                  : t('config.lastAccessDate.hintDefaultNoDate')}
                             {accessTillDate && (
                                 <button
                                     type="button"
                                     onClick={() => setAccessTillDate(null)}
                                     className="ml-1.5 text-primary-500 hover:underline"
                                 >
-                                    Reset to plan expiry
+                                    {t('config.lastAccessDate.reset')}
                                 </button>
                             )}
                         </p>
@@ -281,11 +326,62 @@ export const DeassignCourseDialog = ({
                         className="mt-0.5 text-red-500"
                     />
                     <span className="text-xs text-neutral-700">
-                        <strong>Hard Terminate</strong> — Immediate access revocation.
-                        Status → TERMINATED
-                        <span className="ml-1 text-red-500">⚠ Cannot be undone</span>
+                        <strong>{t('config.hardTerminate.label')}</strong>{' '}
+                        {t('config.hardTerminate.description')}
+                        <span className="ms-1 text-red-500">
+                            {t('config.hardTerminate.cannotUndo')}
+                        </span>
                     </span>
                 </label>
+
+                {askReason && (
+                    <div className="ml-6 mt-1 flex flex-col gap-1.5">
+                        <label
+                            htmlFor="termination-reason"
+                            className="text-2xs font-medium text-neutral-600"
+                        >
+                            {t('config.reason.label')}
+                            {reasonSetting.required ? (
+                                <span className="ms-0.5 text-red-500">*</span>
+                            ) : (
+                                <span className="ms-1 font-normal text-neutral-400">
+                                    {t('config.reason.optional')}
+                                </span>
+                            )}
+                        </label>
+                        <Textarea
+                            id="termination-reason"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder={t('config.reason.placeholder')}
+                            maxLength={1000}
+                            rows={3}
+                            className="text-xs"
+                        />
+                    </div>
+                )}
+
+                {mode === 'HARD' && canDeletePayments && (
+                    <label className="ml-6 mt-1 flex items-start gap-2 rounded-md border border-danger-200 bg-danger-50 p-2">
+                        <input
+                            type="checkbox"
+                            checked={deleteHistory}
+                            onChange={(e) => setDeleteHistory(e.target.checked)}
+                            className="mt-0.5 size-3.5 rounded border-neutral-300 text-red-500"
+                        />
+                        <span className="flex flex-col gap-0.5 text-xs text-neutral-700">
+                            <strong>{t('config.deletePaymentHistory.label')}</strong>
+                            <span className="text-2xs text-neutral-500">
+                                {t('config.deletePaymentHistory.description')}
+                            </span>
+                            {deleteHistory && (
+                                <span className="text-2xs text-red-500">
+                                    ⚠ {t('config.deletePaymentHistory.warning')}
+                                </span>
+                            )}
+                        </span>
+                    </label>
+                )}
 
                 <label className="mt-1 flex items-center gap-2 text-xs text-neutral-600">
                     <input
@@ -294,7 +390,7 @@ export const DeassignCourseDialog = ({
                         onChange={(e) => setNotifyLearners(e.target.checked)}
                         className="h-3.5 w-3.5 rounded border-neutral-300 text-primary-500"
                     />
-                    Notify learner about removal
+                    {t('config.notifyLearners')}
                 </label>
             </div>
         </div>
@@ -305,38 +401,42 @@ export const DeassignCourseDialog = ({
         const { summary, results } = previewData;
         return (
             <div className="flex flex-col gap-4">
-                <p className="text-sm font-medium text-neutral-700">
-                    Preview — Dry Run Results
-                </p>
+                <p className="text-sm font-medium text-neutral-700">{t('preview.title')}</p>
+
+                {askReason && reason.trim() && (
+                    <p className="whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-xs text-neutral-700">
+                        <strong>{t('preview.reason')}</strong> {reason.trim()}
+                    </p>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                     <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                        ✅ {summary.successful} will be removed
+                        ✅ {t('preview.willBeRemoved', { count: summary.successful })}
                     </span>
                     {summary.skipped > 0 && (
                         <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700">
-                            ⏭ {summary.skipped} skipped
+                            ⏭ {t('preview.skipped', { count: summary.skipped })}
                         </span>
                     )}
                     {summary.failed > 0 && (
                         <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
-                            ❌ {summary.failed} failed
+                            ❌ {t('preview.failed', { count: summary.failed })}
                         </span>
                     )}
                 </div>
 
-                <div className="max-h-[260px] overflow-y-auto rounded-lg border border-neutral-200">
+                <div className="max-h-64 overflow-y-auto rounded-lg border border-neutral-200">
                     <table className="w-full text-left text-xs">
                         <thead className="sticky top-0 bg-neutral-50">
                             <tr>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Course
+                                    {t('preview.tableHeaders.course')}
                                 </th>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Action
+                                    {t('preview.tableHeaders.action')}
                                 </th>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Status
+                                    {t('preview.tableHeaders.status')}
                                 </th>
                             </tr>
                         </thead>
@@ -364,7 +464,7 @@ export const DeassignCourseDialog = ({
                                         </td>
                                         <td className="px-3 py-2">
                                             <span
-                                                className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                                className={`inline-block rounded-full px-2 py-0.5 text-2xs font-medium ${
                                                     r.status === 'SUCCESS'
                                                         ? 'bg-green-100 text-green-700'
                                                         : r.status === 'SKIPPED'
@@ -375,12 +475,12 @@ export const DeassignCourseDialog = ({
                                                 {r.status}
                                             </span>
                                             {r.warning && (
-                                                <p className="mt-0.5 text-[10px] text-amber-600">
+                                                <p className="mt-0.5 text-2xs text-amber-600">
                                                     ⚠ {r.warning}
                                                 </p>
                                             )}
                                             {r.message && (
-                                                <p className="mt-0.5 text-[10px] text-neutral-400">
+                                                <p className="mt-0.5 text-2xs text-neutral-400">
                                                     {r.message}
                                                 </p>
                                             )}
@@ -400,35 +500,35 @@ export const DeassignCourseDialog = ({
         const { summary, results } = finalResults;
         return (
             <div className="flex flex-col gap-4">
-                <p className="text-sm font-semibold text-neutral-800">De-assignment Complete</p>
+                <p className="text-sm font-semibold text-neutral-800">{t('results.title')}</p>
                 <div className="flex flex-wrap gap-2">
                     <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                        ✅ {summary.successful} removed
+                        ✅ {t('results.removed', { count: summary.successful })}
                     </span>
                     {summary.skipped > 0 && (
                         <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700">
-                            ⏭ {summary.skipped} skipped
+                            ⏭ {t('results.skipped', { count: summary.skipped })}
                         </span>
                     )}
                     {summary.failed > 0 && (
                         <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
-                            ❌ {summary.failed} failed
+                            ❌ {t('results.failed', { count: summary.failed })}
                         </span>
                     )}
                 </div>
 
-                <div className="max-h-[260px] overflow-y-auto rounded-lg border border-neutral-200">
+                <div className="max-h-64 overflow-y-auto rounded-lg border border-neutral-200">
                     <table className="w-full text-left text-xs">
                         <thead className="sticky top-0 bg-neutral-50">
                             <tr>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Course
+                                    {t('results.tableHeaders.course')}
                                 </th>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Status
+                                    {t('results.tableHeaders.status')}
                                 </th>
                                 <th className="px-3 py-2 font-medium text-neutral-600">
-                                    Message
+                                    {t('results.tableHeaders.message')}
                                 </th>
                             </tr>
                         </thead>
@@ -444,7 +544,7 @@ export const DeassignCourseDialog = ({
                                         </td>
                                         <td className="px-3 py-2">
                                             <span
-                                                className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                                className={`inline-block rounded-full px-2 py-0.5 text-2xs font-medium ${
                                                     r.status === 'SUCCESS'
                                                         ? 'bg-green-100 text-green-700'
                                                         : r.status === 'SKIPPED'
@@ -477,16 +577,18 @@ export const DeassignCourseDialog = ({
                         scale="small"
                         onClick={() => handleOpenChange(false)}
                     >
-                        Cancel
+                        {t('footer.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         scale="small"
-                        disable={selectedPSIds.size === 0 || isPending}
+                        disable={selectedPSIds.size === 0 || reasonMissing || isPending}
                         onClick={handlePreview}
                         className="!bg-red-500 hover:!bg-red-600"
                     >
-                        {isPending ? 'Loading...' : `Preview (${selectedPSIds.size} courses)`}
+                        {isPending
+                            ? t('footer.loading')
+                            : t('footer.previewButton', { count: selectedPSIds.size })}
                     </MyButton>
                 </>
             )}
@@ -497,7 +599,7 @@ export const DeassignCourseDialog = ({
                         scale="small"
                         onClick={() => setStep('CONFIG')}
                     >
-                        ← Back
+                        {t('footer.back')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -506,7 +608,7 @@ export const DeassignCourseDialog = ({
                         onClick={handleConfirm}
                         className="!bg-red-500 hover:!bg-red-600"
                     >
-                        {isPending ? 'Removing...' : '✓ Confirm Removal'}
+                        {isPending ? t('footer.removing') : t('footer.confirmRemoval')}
                     </MyButton>
                 </>
             )}
@@ -517,7 +619,7 @@ export const DeassignCourseDialog = ({
                     onClick={() => handleOpenChange(false)}
                     className="ml-auto"
                 >
-                    Done
+                    {t('footer.done')}
                 </MyButton>
             )}
         </div>
@@ -525,7 +627,9 @@ export const DeassignCourseDialog = ({
 
     return (
         <MyDialog
-            heading={`Remove from ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`}
+            heading={t('dialogTitle', {
+                term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course),
+            })}
             open={open}
             onOpenChange={handleOpenChange}
             dialogWidth="max-w-lg"

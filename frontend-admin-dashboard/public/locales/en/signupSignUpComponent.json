@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "Institute Logo",
+    "heading": "Evaluate smarter, learn better",
+    "subheading": "Redefining Education with Insightful Tools for Smarter Evaluations and Better Learning Outcomes.",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "orContinueWith": "or continue with",
+    "createFreeAccount": "Create Free Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "login": "Login",
+    "items": {
+        "assess": {
+            "description": "Smart assessment and evaluation platform"
+        },
+        "lms": {
+            "description": "Complete learning management system"
+        },
+        "volt": {
+            "description": "Interactive live classroom experience"
+        },
+        "vsmart": {
+            "description": "AI-powered learning assistant"
+        }
+    },
+    "validation": {
+        "selectAtLeastOne": "You have to select at least one item."
+    }
+}

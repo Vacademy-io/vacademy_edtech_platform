@@ -72,9 +72,13 @@ export const Filters = ({
                 const data = response.data;
                 let normalizedResults: { id: string; label: string }[] = [];
 
+                // The batch's own name wins: course + level is identical for every
+                // batch of a course, so the suggestions used to be indistinguishable.
                 const processItem = (item: any) => ({
                     id: item.package_session_id || item.package_id || item.id,
-                    label: `${removeDefaultPrefix(item.package_name || item.course_name || '')}${item.level_name && item.level_name !== 'DEFAULT' ? ` - ${removeDefaultPrefix(item.level_name)}` : ''}`.trim()
+                    label:
+                        (item.batch_name || '').trim() ||
+                        `${removeDefaultPrefix(item.package_name || item.course_name || '')}${item.level_name && item.level_name !== 'DEFAULT' ? ` - ${removeDefaultPrefix(item.level_name)}` : ''}`.trim(),
                 });
 
                 if (Array.isArray(data?.suggestions)) {

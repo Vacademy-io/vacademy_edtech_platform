@@ -1,0 +1,37 @@
+{
+    "header": {
+        "title": "تعرّف على طاقم التمثيل · {{count}}"
+    },
+    "voice": {
+        "autoOption": "صوت تلقائي",
+        "ariaLabel": "الصوت لـ {{name}}"
+    },
+    "redo": {
+        "button": "إعادة",
+        "placeholder": "ما الذي يجب تغييره؟ مثال: أكبر سنًا، ابتسامة أكثر دفئًا، ساري رسمي…"
+    },
+    "upload": {
+        "uploading": "جارٍ الرفع…",
+        "replace": "استبدال",
+        "useMyImage": "استخدام صورتي"
+    },
+    "footer": {
+        "changesSummary_zero": "لن يتم تطبيق أي تغييرات ({{count}}) قبل التصوير.",
+        "changesSummary_one": "سيتم تطبيق تغيير واحد ({{count}}) قبل التصوير.",
+        "changesSummary_two": "سيتم تطبيق تغييرين ({{count}}) قبل التصوير.",
+        "changesSummary_few": "سيتم تطبيق {{count}} تغييرات قبل التصوير.",
+        "changesSummary_many": "سيتم تطبيق {{count}} تغييرًا قبل التصوير.",
+        "changesSummary_other": "سيتم تطبيق {{count}} تغيير قبل التصوير.",
+        "noChanges": "ستظهر هذه الوجوه في كل مشهد.",
+        "submitDefault": "اعتماد طاقم التمثيل والتصوير",
+        "submitWithChanges_zero": "تحديث {{count}} والتصوير",
+        "submitWithChanges_one": "تحديث تغيير واحد ({{count}}) والتصوير",
+        "submitWithChanges_two": "تحديث تغييرين ({{count}}) والتصوير",
+        "submitWithChanges_few": "تحديث {{count}} تغييرات والتصوير",
+        "submitWithChanges_many": "تحديث {{count}} تغييرًا والتصوير",
+        "submitWithChanges_other": "تحديث {{count}} تغيير والتصوير"
+    },
+    "toast": {
+        "uploadFailed": "فشل الرفع. جرّب صورة أصغر حجمًا."
+    }
+}

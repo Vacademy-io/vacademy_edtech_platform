@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.service;
 
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.RowCallbackHandler;
@@ -19,9 +20,11 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -58,6 +61,7 @@ public class PipelineReportService {
     private final LeadReportSettingService settingService;
     private final AuthService authService;
     private final vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService counsellorScopeService;
+    private final AdmissionReportService admissionReportService;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
     private static final String SYSTEM_ACTOR_ID = "SYSTEM";
@@ -95,13 +99,14 @@ public class PipelineReportService {
     // Source performance
     // ─────────────────────────────────────────────────────────────────────
 
-    private static final String SOURCE_PERFORMANCE_SQL = """
+    private static final String SOURCE_BASE_CTE = """
             WITH base AS (
                 SELECT ar.id,
-                       ar.user_id,
-                       COALESCE(ar.source_type, 'UNKNOWN') AS source_type,
-                       ulp.conversion_status,
-                       ulp.converted_at,
+                       COALESCE(ar.user_id, ar.id) AS person_key,
+                       """ + ReportSourceSql.effective("ar.source_type", "a.campaign_type") + """
+                           AS source_type,
+                       """ + ReportSourceSql.fromCampaignType("ar.source_type", "a.campaign_type") + """
+                           AS from_campaign_type,
                        -- ≥1 call with a "connected" status (institute-configurable set).
                        -- Calls are matched by response_id when the call row carries one,
                        -- falling back to user_id otherwise. Intentionally NOT date-bounded:
@@ -127,32 +132,46 @@ public class PipelineReportService {
                   AND ar.submitted_at <  :toTs
                 """ + LEAD_SCOPE_PREDICATES + """
             )
+            """;
+
+    private static final String SOURCE_PERFORMANCE_SQL = SOURCE_BASE_CTE + """
             SELECT b.source_type,
-                   COUNT(*)                              AS leads,
-                   COUNT(*) FILTER (WHERE b.connected)   AS connected_leads,
-                   COUNT(*) FILTER (WHERE b.interested)  AS interested,
-                   COUNT(*) FILTER (WHERE b.conversion_status = 'CONVERTED'
-                                      AND b.converted_at >= :fromTs
-                                      AND b.converted_at <  :toTs) AS won
+                   BOOL_OR(b.from_campaign_type)                            AS from_campaign_type,
+                   COUNT(DISTINCT b.person_key)                             AS leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.connected)  AS connected_leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.interested) AS interested
             FROM base b
             GROUP BY b.source_type
             ORDER BY leads DESC, b.source_type
             """;
 
     /**
+     * Totals row: each person once, even when they enquired through several sources (summing the
+     * per-source rows counts them once per source).
+     */
+    private static final String SOURCE_TOTALS_SQL = SOURCE_BASE_CTE + """
+            SELECT COUNT(DISTINCT b.person_key)                             AS leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.connected)  AS connected_leads,
+                   COUNT(DISTINCT b.person_key) FILTER (WHERE b.interested) AS interested
+            FROM base b
+            """;
+
+    /**
      * PAID revenue per source from CONVERTED leads whose payment landed in-window. Same recognition
      * rule as RevenueReportService (payment_status='PAID', conversion_status='CONVERTED', payment
-     * created_at in window); attributed by the lead profile's best_source_type so it lines up with
-     * the source rows above. payment_log carries no institute_id — the user_lead_profile join scopes
+     * day in window per {@link ReportPaymentSql}); attributed to the student's first enquiry, like every money and
+     * admission figure. payment_log carries no institute_id — the user_lead_profile join scopes
      * it to this institute's converted leads.
      */
     private static final String SOURCE_REVENUE_SQL = """
-            SELECT COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+            SELECT """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
+                       AS source_type,
                    COALESCE(SUM(pl.payment_amount), 0)                        AS revenue
             FROM payment_log pl
             JOIN user_lead_profile ulp
                 ON ulp.user_id = pl.user_id AND ulp.institute_id = :instituteId
             LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+            """ + ReportSourceSql.firstEnquiryJoin("fe", "ulp.user_id", "ulp.institute_id") + """
             LEFT JOIN LATERAL (
                 SELECT lu2.user_id FROM linked_users lu2
                 WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
@@ -161,9 +180,11 @@ public class PipelineReportService {
             WHERE pl.payment_status = 'PAID'
               AND pl.payment_amount IS NOT NULL
               AND ulp.conversion_status = 'CONVERTED'
-              AND pl.created_at >= :fromTs AND pl.created_at < :toTs
+              AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+              AND """ + ReportPaymentSql.inWindow("pl") + """
+
               AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
-              AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
+              AND (:audienceId IS NULL OR fe.audience_id = :audienceId)
             GROUP BY 1
             """;
 
@@ -178,19 +199,34 @@ public class PipelineReportService {
 
         MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv, audienceId)
                 .addValue("connectedCsv", joinSet(settings.connectedCallStatuses()))
-                .addValue("interestedCsv", joinSet(settings.interestedStatusKeys()));
+                .addValue("interestedCsv", joinSet(settings.interestedStatusKeys()))
+                .addValue("tz", zoneOf(settings.timezone()).getId());
 
         // Revenue per source (keyed by best_source_type), merged onto the rows below.
         Map<String, Double> revenueBySource = new HashMap<>();
         jdbc.query(SOURCE_REVENUE_SQL, p, (RowCallbackHandler) rs ->
                 revenueBySource.put(rs.getString("source_type"), rs.getDouble("revenue")));
 
-        List<SourcePerformanceReportDTO.Row> rows = jdbc.query(SOURCE_PERFORMANCE_SQL, p, (rs, i) -> {
+        // Won = admissions in the window (per student x month, exactly as the Admissions tab
+        // counts them), attributed to the student's first enquiry. Conversion % is period-based:
+        // the window's admissions from a source over the people who enquired through it in the window.
+        Map<String, Long> wonBySource = new LinkedHashMap<>();
+        Set<String> wonFromCampaign = new HashSet<>();
+        String audienceFilter = trimToNull(audienceId);
+        for (AdmissionReportService.AdmissionRow a : admissionReportService.admissionRows(
+                instituteId, fromDate, toDate, scopeCsv)) {
+            if (audienceFilter != null && !audienceFilter.equals(a.firstAudienceId())) continue;
+            wonBySource.merge(a.source(), 1L, Long::sum);
+            if (a.fromCampaign()) wonFromCampaign.add(a.source());
+        }
+
+        List<SourcePerformanceReportDTO.Row> rows = new ArrayList<>(jdbc.query(SOURCE_PERFORMANCE_SQL, p, (rs, i) -> {
             long leads = rs.getLong("leads");
-            long won = rs.getLong("won");
             String sourceType = rs.getString("source_type");
+            long won = Optional.ofNullable(wonBySource.remove(sourceType)).orElse(0L);
             return SourcePerformanceReportDTO.Row.builder()
                     .sourceType(sourceType)
+                    .campaignType(rs.getBoolean("from_campaign_type") ? sourceType : null)
                     .leads(leads)
                     .connectedLeads(rs.getLong("connected_leads"))
                     .interested(rs.getLong("interested"))
@@ -198,14 +234,44 @@ public class PipelineReportService {
                     .conversionRate(percentage(won, leads))
                     .revenue(round2(revenueBySource.getOrDefault(sourceType, 0.0)))
                     .build(); // spend / cpl / roi stay null — Wave 2/3
+        }));
+        // Sources with admissions but no new lead in the window (an older enquiry converting now,
+        // or a student with no enquiry at all).
+        wonBySource.forEach((sourceType, won) -> rows.add(SourcePerformanceReportDTO.Row.builder()
+                .sourceType(sourceType)
+                .campaignType(wonFromCampaign.contains(sourceType) ? sourceType : null)
+                .leads(0)
+                .connectedLeads(0)
+                .interested(0)
+                .won(won)
+                .conversionRate(percentage(won, 0))
+                .revenue(round2(revenueBySource.getOrDefault(sourceType, 0.0)))
+                .build()));
+        // Sources that only collected money in the window (installments of older admissions):
+        // without a row their revenue silently dropped out of the table and its total.
+        Set<String> shown = new HashSet<>();
+        rows.forEach(r -> shown.add(r.getSourceType()));
+        revenueBySource.forEach((sourceType, revenue) -> {
+            if (shown.contains(sourceType) || revenue == null || revenue == 0.0) return;
+            rows.add(SourcePerformanceReportDTO.Row.builder()
+                    .sourceType(sourceType)
+                    .leads(0)
+                    .connectedLeads(0)
+                    .interested(0)
+                    .won(0)
+                    .conversionRate(percentage(0, 0))
+                    .revenue(round2(revenue))
+                    .build());
         });
 
-        long tLeads = rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getLeads).sum();
+        long[] distinct = jdbc.queryForObject(SOURCE_TOTALS_SQL, p, (rs, i) -> new long[]{
+                rs.getLong("leads"), rs.getLong("connected_leads"), rs.getLong("interested")});
+        long tLeads = distinct != null ? distinct[0] : 0L;
         long tWon = rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getWon).sum();
         SourcePerformanceReportDTO.Row totals = SourcePerformanceReportDTO.Row.builder()
                 .leads(tLeads)
-                .connectedLeads(rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getConnectedLeads).sum())
-                .interested(rows.stream().mapToLong(SourcePerformanceReportDTO.Row::getInterested).sum())
+                .connectedLeads(distinct != null ? distinct[1] : 0L)
+                .interested(distinct != null ? distinct[2] : 0L)
                 .won(tWon)
                 .conversionRate(percentage(tWon, tLeads))
                 .revenue(round2(rows.stream().mapToDouble(SourcePerformanceReportDTO.Row::getRevenue).sum()))
@@ -262,6 +328,7 @@ public class PipelineReportService {
                    COUNT(DISTINCT ulp.user_id) AS pending_count
             FROM user_lead_profile ulp
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
               AND ulp.assigned_counselor_id IS NOT NULL
               AND (:scopeCsv IS NULL OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
               AND EXISTS (
@@ -547,12 +614,9 @@ public class PipelineReportService {
             ) fh ON true
             """;
 
-    /** Same cohort definitions as source-performance totals: submitted in-window vs won in-window. */
+    /** People who enquired in the window (each once) — the funnel conversion denominator. */
     private static final String OVERALL_CONVERSION_SQL = """
-            SELECT COUNT(*) AS leads,
-                   COUNT(*) FILTER (WHERE ulp.conversion_status = 'CONVERTED'
-                                      AND ulp.converted_at >= :fromTs
-                                      AND ulp.converted_at <  :toTs) AS won
+            SELECT COUNT(DISTINCT COALESCE(ar.user_id, ar.id)) AS leads
             """ + LEAD_SCOPE_JOINS + """
             WHERE a.institute_id = :instituteId
               AND ar.submitted_at >= :fromTs
@@ -593,10 +657,13 @@ public class PipelineReportService {
         });
 
         Double medianDaysToConvert = jdbc.queryForObject(MEDIAN_DAYS_TO_CONVERT_SQL, p, Double.class);
-        long[] overallCounts = jdbc.queryForObject(OVERALL_CONVERSION_SQL, p,
-                (rs, i) -> new long[]{rs.getLong("leads"), rs.getLong("won")});
-        long leads = overallCounts != null ? overallCounts[0] : 0L;
-        long won = overallCounts != null ? overallCounts[1] : 0L;
+        Long leadCount = jdbc.queryForObject(OVERALL_CONVERSION_SQL, p, Long.class);
+        long leads = leadCount != null ? leadCount : 0L;
+        // Period-based, like the Sources tab: the window's admissions over the people who enquired.
+        String audienceFilter = trimToNull(audienceId);
+        long won = admissionReportService.admissionRows(instituteId, fromDate, toDate, scopeCsv).stream()
+                .filter(a -> audienceFilter == null || audienceFilter.equals(a.firstAudienceId()))
+                .count();
 
         return FunnelVelocityReportDTO.builder()
                 .stages(stages)
@@ -618,19 +685,22 @@ public class PipelineReportService {
      * Defaults to the last {@value #DEFAULT_RANGE_DAYS} days ending today (institute TZ).
      */
     private Window resolveWindow(String fromDate, String toDate, String tz) {
-        ZoneId zone;
-        try {
-            zone = ZoneId.of(tz);
-        } catch (Exception e) {
-            log.warn("[PipelineReport] Invalid institute timezone '{}', falling back to Asia/Kolkata", tz);
-            zone = ZoneId.of("Asia/Kolkata");
-        }
+        ZoneId zone = zoneOf(tz);
         LocalDate today = LocalDate.now(zone);
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         return new Window(
                 Timestamp.valueOf(from.atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()),
                 Timestamp.valueOf(to.plusDays(1).atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()));
+    }
+
+    private static ZoneId zoneOf(String tz) {
+        try {
+            return ZoneId.of(tz);
+        } catch (Exception e) {
+            log.warn("[PipelineReport] Invalid institute timezone '{}', falling back to Asia/Kolkata", tz);
+            return ZoneId.of("Asia/Kolkata");
+        }
     }
 
     private static LocalDate parseOr(String iso, LocalDate fallback) {

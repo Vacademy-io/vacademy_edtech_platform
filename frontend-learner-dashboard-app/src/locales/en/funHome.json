@@ -1,0 +1,121 @@
+{
+  "header": {
+    "welcome": "Welcome, {{name}}",
+    "welcomePlain": "Welcome",
+    "profile": "Profile",
+    "streakUnit_one": "day streak",
+    "streakUnit_other": "day streak"
+  },
+  "hero": {
+    "continueLabel": "Continue learning",
+    "continue": "Continue",
+    "count": "{{done}} of {{total}} {{slides}} done",
+    "percent": "{{percent}}%",
+    "percentOfCourse": "{{percent}}% of {{course}}",
+    "progressLabel": "{{course}} progress",
+    "startLabel": "Start your first {{course}}",
+    "startHere": "Start here",
+    "start": "Start {{name}}",
+    "coursesTitle": "Pick up where you left off",
+    "coursesBody": "Your {{courses}} are ready when you are.",
+    "coursesCta": "Go to {{courses}}",
+    "nearlyThere": "Nearly there · {{percent}}%",
+    "loading": "Loading",
+    "errorTitle": "Some of your home did not load",
+    "errorBody": "Check your connection and try again.",
+    "retry": "Try again",
+    "type": {
+      "VIDEO": "Video",
+      "DOCUMENT": "Reading",
+      "PDF": "PDF",
+      "QUIZ": "Quiz",
+      "ASSESSMENT": "Test",
+      "ASSIGNMENT": "Assignment",
+      "AUDIO": "Audio",
+      "QUESTION": "Question",
+      "PRESENTATION": "Slides"
+    },
+    "coursesTitleNew": "Ready to begin?",
+    "coursesBodyNew": "Pick one of your {{courses}} to start."
+  },
+  "empty": {
+    "title": "Find your first {{course}}",
+    "body": "When you join a {{course}}, it lands here in its own colour, ready to start.",
+    "browse": "Browse {{courses}}",
+    "waitTitle": "While you wait",
+    "tests": "Check your tests",
+    "testsBody": "A test may be waiting for you",
+    "profile": "Finish your profile",
+    "profileBody": "Add your photo and details",
+    "ask": "Expecting a {{course}}? Ask {{institute}} to add you. It will show up here.",
+    "askPlain": "Expecting a {{course}}? Ask your institute to add you. It will show up here."
+  },
+  "done": {
+    "title": "You finished every {{course}}!",
+    "body": "{{done}} of {{total}} {{courses}} done. Great work.",
+    "caughtUpTitle": "All caught up",
+    "caughtUpBody": "Nothing is waiting where you left off. Open a {{course}} to choose what's next.",
+    "next": "What's next",
+    "testsTitle_one": "{{count}} test is open",
+    "testsTitle_other": "{{count}} tests are open",
+    "testsBody": "Try one while it's all fresh",
+    "goTests": "Go to tests"
+  },
+  "live": {
+    "joinBy": "Join by {{time}}",
+    "startedAt": "Started at {{time}}",
+    "join": "Join now",
+    "joinShort": "Join",
+    "startsIn_one": "Starts in {{count}} min",
+    "startsIn_other": "Starts in {{count}} min",
+    "dotLabel": ", a class is live now"
+  },
+  "today": {
+    "label": "Today",
+    "tasks": "{{done}} of {{total}}",
+    "tasksToday": "tasks today",
+    "tasksLong": "{{done}} of {{total}} tasks",
+    "tasksLeft_one": "One more to finish today's plan",
+    "tasksLeft_other": "{{count}} more to finish today's plan",
+    "tasksDone": "Today's plan is done",
+    "ringLabel": "{{done}} of {{total}} tasks done today",
+    "nextTask": "Next task",
+    "tests_one": "{{count}} test",
+    "tests_other": "{{count}} tests",
+    "openNow": "open now",
+    "testsLong_one": "{{count}} test open now",
+    "testsLong_other": "{{count}} tests open now",
+    "testsEyebrow": "Tests",
+    "testsSee": "See them in Tests",
+    "chipToday": "Today {{time}}",
+    "chipTomorrow": "Tomorrow {{time}}",
+    "openTask": "Open the next task",
+    "openPlan": "Open today's plan",
+    "seePlan": "See today's plan"
+  },
+  "tiles": {
+    "title": "Your {{courses}}",
+    "otherTitle": "Your other {{courses}}",
+    "lookBack": "Look back",
+    "seeAll": "See all",
+    "seeAllCount": "See all {{count}}",
+    "open": "Open {{course}}"
+  },
+  "fold": {
+    "more_one": "{{count}} more in progress",
+    "more_other": "{{count}} more in progress",
+    "inProgress_one": "{{count}} in progress",
+    "inProgress_other": "{{count}} in progress",
+    "seeAll": "See all"
+  },
+  "pins": {
+    "unread": "New",
+    "dismiss": "Dismiss {{title}}",
+    "dismissShort": "Dismiss",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer"
+  },
+  "nav": {
+    "allPages": "All pages"
+  }
+}

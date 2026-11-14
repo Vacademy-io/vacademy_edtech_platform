@@ -1,0 +1,1154 @@
+---
+title: "Quickstart"
+description: "Create a typed exam, submit an answer, read the AI marks and finalize them. Then do the same for a handwritten copy."
+icon: "rocket"
+---
+
+This guide grades one candidate's answers to a short CBSE Class 10 Science test: one MCQ and one 3-mark long answer. It takes about ten minutes, and grading the long answer uses **1 credit**.
+
+You need:
+
+- an Evalezy API key (`vak_eval_…`) with the scopes `evaluation:read` and `evaluation:write`. The last step, finalize, also needs `evaluation:finalize`. See [Get an API key](#get-an-api-key).
+- credits on your institute's account
+- `curl`, Python 3 with `requests`, or Node.js 18 or later (for the built-in `fetch`)
+
+<Note>
+  The Node snippets in these docs use top-level `await`. Save them in a `.mjs` file, or set `"type": "module"` in your `package.json`.
+</Note>
+
+<Warning>
+  There is no sandbox, so every key is live. Run this quickstart on your own server or laptop, never in a browser, and use a small test like this one.
+</Warning>
+
+## Get an API key
+
+<Steps>
+  <Step title="Get the Evaluation API enabled">
+    Evalezy turns the Evaluation API on for your institute. If it is not on yet, write to [hello@evalezy.com](mailto:hello@evalezy.com).
+  </Step>
+  <Step title="Create a key in the dashboard">
+    An institute **admin** opens the Vacademy admin dashboard and goes to **Settings → Integrations → API keys**, then clicks **Create key**. For this guide, tick all four permissions.
+  </Step>
+  <Step title="Store it safely">
+    The key is shown **once**. Save it in your secret manager or an environment variable:
+
+    ```bash
+    export EVALEZY_API_KEY="vak_eval_..."
+    ```
+  </Step>
+</Steps>
+
+Check that the key works:
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/me \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+import os
+import requests
+
+BASE = "https://api.evalezy.com/v1"
+session = requests.Session()
+session.headers["X-API-Key"] = os.environ["EVALEZY_API_KEY"]
+
+me = session.get(f"{BASE}/me")
+me.raise_for_status()
+print(me.json()["institute_name"], me.json()["scopes"])
+```
+
+```javascript Node
+const BASE = "https://api.evalezy.com/v1";
+const headers = {
+  "X-API-Key": process.env.EVALEZY_API_KEY,
+  "Content-Type": "application/json",
+};
+
+const me = await fetch(`${BASE}/me`, { headers });
+if (!me.ok) throw new Error(`HTTP ${me.status}: ${await me.text()}`);
+const body = await me.json();
+console.log(body.institute_name, body.scopes);
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "key_id": "5b0c8f2e-6d3a-4a51-9a5e-0f7b1c2d3e4f",
+  "name": "School ERP",
+  "institute_id": "c1a2b3d4-0000-4e5f-8a9b-1234567890ab",
+  "institute_name": "Green Valley Public School",
+  "scopes": ["evaluation:finalize", "evaluation:read", "evaluation:review", "evaluation:write"],
+  "rate_tier": "standard",
+  "daily_copy_quota": 2000,
+  "daily_copy_cap": null,
+  "quota_used_today": 0,
+  "quota_resets_at": "2026-10-03T00:00:00Z"
+}
+```
+
+A `401` means the key is wrong or revoked. A `403 product_not_enabled` means the Evaluation API is not on for your institute yet. See [Authentication](/authentication#errors).
+
+## Part 1: grade a typed answer
+
+<Steps>
+  <Step title="Create and open an exam">
+    The exam has one `mcq_single` question and one `long_answer` question with a rubric. The rubric's criterion marks must add up to the question's `max_marks` (here, 3). `"open": true` opens the exam for submissions straight away.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/exams \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: create-exam-cbse-10b-sci-ut2-2026" \
+      -d '{
+        "title": "Class 10 Science - Unit Test 2 (Light)",
+        "mode": "typed",
+        "external_ref": "cbse-10b-sci-ut2-2026",
+        "subject": "Science",
+        "board": "CBSE",
+        "class": "10",
+        "level": "school",
+        "open": true,
+        "questions": [
+          {
+            "label": "1",
+            "type": "mcq_single",
+            "text": "Which colour of sunlight is scattered the most by the molecules of air?",
+            "max_marks": 1,
+            "options": [
+              { "label": "A", "text": "Red" },
+              { "label": "B", "text": "Yellow" },
+              { "label": "C", "text": "Blue" },
+              { "label": "D", "text": "Orange" }
+            ],
+            "correct_options": ["C"]
+          },
+          {
+            "label": "2",
+            "type": "long_answer",
+            "text": "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+            "max_marks": 3,
+            "word_limit": 80,
+            "rubric": {
+              "criteria": [
+                {
+                  "name": "Scattering by air molecules",
+                  "marks": 1,
+                  "keywords": ["scattering", "air molecules"],
+                  "guidance": "States that sunlight is scattered by the tiny molecules of air in the atmosphere."
+                },
+                {
+                  "name": "Wavelength dependence",
+                  "marks": 1,
+                  "guidance": "Shorter wavelengths such as blue are scattered much more strongly than longer wavelengths such as red."
+                },
+                {
+                  "name": "Link to the colour seen",
+                  "marks": 1,
+                  "guidance": "Connects the scattered blue light reaching the eye from all directions to the blue colour of the sky."
+                }
+              ]
+            }
+          }
+        ]
+      }'
+    ```
+
+    ```python Python
+    exam_body = {
+        "title": "Class 10 Science - Unit Test 2 (Light)",
+        "mode": "typed",
+        "external_ref": "cbse-10b-sci-ut2-2026",
+        "subject": "Science",
+        "board": "CBSE",
+        "class": "10",
+        "level": "school",
+        "open": True,
+        "questions": [
+            {
+                "label": "1",
+                "type": "mcq_single",
+                "text": "Which colour of sunlight is scattered the most by the molecules of air?",
+                "max_marks": 1,
+                "options": [
+                    {"label": "A", "text": "Red"},
+                    {"label": "B", "text": "Yellow"},
+                    {"label": "C", "text": "Blue"},
+                    {"label": "D", "text": "Orange"},
+                ],
+                "correct_options": ["C"],
+            },
+            {
+                "label": "2",
+                "type": "long_answer",
+                "text": "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+                "max_marks": 3,
+                "word_limit": 80,
+                "rubric": {
+                    "criteria": [
+                        {
+                            "name": "Scattering by air molecules",
+                            "marks": 1,
+                            "keywords": ["scattering", "air molecules"],
+                            "guidance": "States that sunlight is scattered by the tiny molecules of air in the atmosphere.",
+                        },
+                        {
+                            "name": "Wavelength dependence",
+                            "marks": 1,
+                            "guidance": "Shorter wavelengths such as blue are scattered much more strongly than longer wavelengths such as red.",
+                        },
+                        {
+                            "name": "Link to the colour seen",
+                            "marks": 1,
+                            "guidance": "Connects the scattered blue light reaching the eye from all directions to the blue colour of the sky.",
+                        },
+                    ]
+                },
+            },
+        ],
+    }
+
+    r = session.post(
+        f"{BASE}/exams",
+        json=exam_body,
+        headers={"Idempotency-Key": "create-exam-cbse-10b-sci-ut2-2026"},
+    )
+    r.raise_for_status()
+    exam = r.json()
+    exam_id = exam["id"]
+    print(exam_id, exam["status"])  # ... open
+    ```
+
+    ```javascript Node
+    const examBody = {
+      title: "Class 10 Science - Unit Test 2 (Light)",
+      mode: "typed",
+      external_ref: "cbse-10b-sci-ut2-2026",
+      subject: "Science",
+      board: "CBSE",
+      class: "10",
+      level: "school",
+      open: true,
+      questions: [
+        {
+          label: "1",
+          type: "mcq_single",
+          text: "Which colour of sunlight is scattered the most by the molecules of air?",
+          max_marks: 1,
+          options: [
+            { label: "A", text: "Red" },
+            { label: "B", text: "Yellow" },
+            { label: "C", text: "Blue" },
+            { label: "D", text: "Orange" },
+          ],
+          correct_options: ["C"],
+        },
+        {
+          label: "2",
+          type: "long_answer",
+          text: "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+          max_marks: 3,
+          word_limit: 80,
+          rubric: {
+            criteria: [
+              {
+                name: "Scattering by air molecules",
+                marks: 1,
+                keywords: ["scattering", "air molecules"],
+                guidance: "States that sunlight is scattered by the tiny molecules of air in the atmosphere.",
+              },
+              {
+                name: "Wavelength dependence",
+                marks: 1,
+                guidance: "Shorter wavelengths such as blue are scattered much more strongly than longer wavelengths such as red.",
+              },
+              {
+                name: "Link to the colour seen",
+                marks: 1,
+                guidance: "Connects the scattered blue light reaching the eye from all directions to the blue colour of the sky.",
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const examRes = await fetch(`${BASE}/exams`, {
+      method: "POST",
+      headers: { ...headers, "Idempotency-Key": "create-exam-cbse-10b-sci-ut2-2026" },
+      body: JSON.stringify(examBody),
+    });
+    if (!examRes.ok) throw new Error(`HTTP ${examRes.status}: ${await examRes.text()}`);
+    const exam = await examRes.json();
+    const examId = exam.id;
+    console.log(examId, exam.status); // ... open
+    ```
+
+    </CodeGroup>
+
+    The response is `201 Created`. Trimmed:
+
+    ```json
+    {
+      "id": "8d4e2f10-3b7c-4c55-9e21-6a0f9b1d2c3e",
+      "status": "open",
+      "mode": "typed",
+      "title": "Class 10 Science - Unit Test 2 (Light)",
+      "external_ref": "cbse-10b-sci-ut2-2026",
+      "total_marks": 4.0,
+      "question_count": 2,
+      "dashboard_url": "https://dash.vacademy.io/assessment/assessment-list/assessment-details/8d4e2f10-3b7c-4c55-9e21-6a0f9b1d2c3e/EXAM/PRIVATE/overview",
+      "questions": [
+        { "id": "1f0c9a2e-…", "label": "1", "max_marks": 1.0, "options": [{ "label": "A", "option_id": "…" }, "…"] },
+        { "id": "7a9e3b41-…", "label": "2", "max_marks": 3.0 }
+      ],
+      "rubric": { "version": 1, "locked": false, "questions_with_rubric": 1, "questions_without_rubric": 1 },
+      "quote": { "unit": "answer", "credits_per_answer": 1, "rate_source": "standard" }
+    }
+    ```
+
+    If you are following along with curl, save the exam's `id` for the next steps:
+
+    ```bash
+    export EXAM_ID=8d4e2f10-3b7c-4c55-9e21-6a0f9b1d2c3e   # the "id" from your response
+    ```
+
+    <Tip>
+      `external_ref` is your own id for the exam. If you send the same `external_ref` again, you get `409 exam_exists` with the existing `exam_id` in `error.details`, so a retry never creates a duplicate exam.
+    </Tip>
+  </Step>
+
+  <Step title="Submit the candidate's answers">
+    Send the candidate inline. Evalezy creates them (keyed by your `external_id`) and registers them on the exam. Answer each question by its `label`: `option_labels` for the MCQ, `text` for the long answer.
+
+    Send an `Idempotency-Key` built from your own ids. If the request times out and you send it again with the same key, you get the original response back instead of a second submission.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/exams/$EXAM_ID/submissions \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: submit-cbse-10b-sci-ut2-2026-STU-2026-0142" \
+      -d '{
+        "candidate": {
+          "external_id": "STU-2026-0142",
+          "name": "Aarav Sharma",
+          "roll_number": "17",
+          "section_or_class": "10-B"
+        },
+        "answers": [
+          { "question_label": "1", "option_labels": ["C"] },
+          {
+            "question_label": "2",
+            "text": "Sunlight is made of many colours. When it enters the atmosphere it is scattered by the very small molecules of air. Blue light has a shorter wavelength than red light, so it is scattered much more. This scattered blue light reaches our eyes from every part of the sky, so the sky looks blue."
+          }
+        ]
+      }'
+    ```
+
+    ```python Python
+    submission_body = {
+        "candidate": {
+            "external_id": "STU-2026-0142",
+            "name": "Aarav Sharma",
+            "roll_number": "17",
+            "section_or_class": "10-B",
+        },
+        "answers": [
+            {"question_label": "1", "option_labels": ["C"]},
+            {
+                "question_label": "2",
+                "text": (
+                    "Sunlight is made of many colours. When it enters the atmosphere it is "
+                    "scattered by the very small molecules of air. Blue light has a shorter "
+                    "wavelength than red light, so it is scattered much more. This scattered "
+                    "blue light reaches our eyes from every part of the sky, so the sky looks blue."
+                ),
+            },
+        ],
+    }
+
+    r = session.post(
+        f"{BASE}/exams/{exam_id}/submissions",
+        json=submission_body,
+        headers={"Idempotency-Key": "submit-cbse-10b-sci-ut2-2026-STU-2026-0142"},
+    )
+    r.raise_for_status()
+    submission = r.json()
+    submission_id = submission["id"]
+    print(submission_id, submission["status"], submission["quote"])
+    ```
+
+    ```javascript Node
+    const submissionBody = {
+      candidate: {
+        external_id: "STU-2026-0142",
+        name: "Aarav Sharma",
+        roll_number: "17",
+        section_or_class: "10-B",
+      },
+      answers: [
+        { question_label: "1", option_labels: ["C"] },
+        {
+          question_label: "2",
+          text:
+            "Sunlight is made of many colours. When it enters the atmosphere it is " +
+            "scattered by the very small molecules of air. Blue light has a shorter " +
+            "wavelength than red light, so it is scattered much more. This scattered " +
+            "blue light reaches our eyes from every part of the sky, so the sky looks blue.",
+        },
+      ],
+    };
+
+    const subRes = await fetch(`${BASE}/exams/${examId}/submissions`, {
+      method: "POST",
+      headers: { ...headers, "Idempotency-Key": "submit-cbse-10b-sci-ut2-2026-STU-2026-0142" },
+      body: JSON.stringify(submissionBody),
+    });
+    if (!subRes.ok) throw new Error(`HTTP ${subRes.status}: ${await subRes.text()}`);
+    const submission = await subRes.json();
+    const submissionId = submission.id;
+    console.log(submissionId, submission.status, submission.quote);
+    ```
+
+    </CodeGroup>
+
+    The response is `202 Accepted`: the submission is queued for grading. Trimmed:
+
+    ```json
+    {
+      "id": "3f6a9c2b-81d4-4e0f-b7a5-2c9d0e1f4a6b",
+      "exam_id": "8d4e2f10-3b7c-4c55-9e21-6a0f9b1d2c3e",
+      "candidate": { "id": "a7c1…", "external_id": "STU-2026-0142" },
+      "state": "live",
+      "status": "queued",
+      "needs_review": false,
+      "finalized": false,
+      "queue": { "position": 1, "estimated_ready_at": "2026-10-02T09:41:20Z" },
+      "credits_charged": null,
+      "quote": { "unit": "answer", "answers": 1, "credits": 1, "rate_source": "standard" },
+      "warnings": []
+    }
+    ```
+
+    With curl, save the submission's `id`:
+
+    ```bash
+    export SUBMISSION_ID=3f6a9c2b-81d4-4e0f-b7a5-2c9d0e1f4a6b   # the "id" from your response
+    ```
+
+    The `quote` is the fixed price: 1 credit for one non-blank long answer. The MCQ is marked against the answer key at no charge.
+
+    <Note>
+      Each candidate can have only one live submission per exam. Submitting again for the same candidate returns `409 submission_exists`. To replace a submission on purpose, send `"replace": true`.
+    </Note>
+  </Step>
+
+  <Step title="Poll until it is graded">
+    Read `GET /submissions/{id}` every few seconds until `status` is one of `graded`, `partially_graded`, `failed` or `cancelled`. While it waits, `status` moves through `queued`, `processing`, `reading` and `grading`.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/submissions/$SUBMISSION_ID \
+      -H "X-API-Key: $EVALEZY_API_KEY"
+    ```
+
+    ```python Python
+    import time
+
+    DONE = {"graded", "partially_graded", "failed", "cancelled"}
+
+    while True:
+        r = session.get(f"{BASE}/submissions/{submission_id}")
+        r.raise_for_status()
+        status = r.json()["status"]
+        print("status:", status)
+        if status in DONE:
+            break
+        time.sleep(5)
+    ```
+
+    ```javascript Node
+    const DONE = new Set(["graded", "partially_graded", "failed", "cancelled"]);
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    let status;
+    do {
+      const res = await fetch(`${BASE}/submissions/${submissionId}`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      status = (await res.json()).status;
+      console.log("status:", status);
+      if (!DONE.has(status)) await sleep(5000);
+    } while (!DONE.has(status));
+    ```
+
+    </CodeGroup>
+
+    <Tip>
+      For one submission someone is waiting on, poll every 2 to 5 seconds and back off to 10 seconds. A handwritten copy takes longer, so every 15 to 30 seconds is enough. When you grade a whole class, don't poll each submission. Poll the feed every 30 to 60 seconds instead: `GET /submissions?updated_since=<last check>` returns every submission that changed. See [Syncing results](/guides/syncing-results).
+    </Tip>
+  </Step>
+
+  <Step title="Read the result">
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/result \
+      -H "X-API-Key: $EVALEZY_API_KEY"
+    ```
+
+    ```python Python
+    r = session.get(f"{BASE}/submissions/{submission_id}/result")
+    r.raise_for_status()
+    result = r.json()
+
+    print("Total:", result["totals"]["awarded"], "/", result["totals"]["max"])
+    for q in result["questions"]:
+        print(q["label"], q["awarded"], "/", q["max"], "needs review:", q["needs_review"])
+        for c in q["criteria"]:
+            print("   -", c["name"], c["awarded"], "/", c["max"], ":", c["reason"])
+    ```
+
+    ```javascript Node
+    const resultRes = await fetch(`${BASE}/submissions/${submissionId}/result`, { headers });
+    if (!resultRes.ok) throw new Error(`HTTP ${resultRes.status}: ${await resultRes.text()}`);
+    const result = await resultRes.json();
+
+    console.log("Total:", result.totals.awarded, "/", result.totals.max);
+    for (const q of result.questions) {
+      console.log(q.label, q.awarded, "/", q.max, "needs review:", q.needs_review);
+      for (const c of q.criteria) {
+        console.log("   -", c.name, c.awarded, "/", c.max, ":", c.reason);
+      }
+    }
+    ```
+
+    </CodeGroup>
+
+    ```json Response
+    {
+      "submission_id": "3f6a9c2b-81d4-4e0f-b7a5-2c9d0e1f4a6b",
+      "exam_id": "8d4e2f10-3b7c-4c55-9e21-6a0f9b1d2c3e",
+      "candidate": { "id": "a7c1…", "external_id": "STU-2026-0142", "name": "Aarav Sharma", "roll_number": "17" },
+      "status": "graded",
+      "needs_review": false,
+      "review_reasons": [],
+      "finalized": false,
+      "finalized_at": null,
+      "rubric_version": 1,
+      "rubric_stale": null,
+      "totals": { "awarded": 4, "max": 4, "percentage": 100.0, "questions_graded": 2, "questions_failed": 0 },
+      "questions": [
+        {
+          "question_id": "1f0c9a2e-…",
+          "label": "1",
+          "section": "A",
+          "status": "graded",
+          "counted": true,
+          "awarded": 1,
+          "max": 1,
+          "source": "auto",
+          "confidence": null,
+          "needs_review": false,
+          "review_reasons": [],
+          "extracted_answer": null,
+          "feedback": null,
+          "criteria": [],
+          "error": null
+        },
+        {
+          "question_id": "7a9e3b41-…",
+          "label": "2",
+          "section": "A",
+          "status": "graded",
+          "counted": true,
+          "awarded": 3,
+          "max": 3,
+          "source": "ai",
+          "confidence": 0.91,
+          "needs_review": false,
+          "review_reasons": [],
+          "extracted_answer": "Sunlight is made of many colours. When it enters the atmosphere it is scattered by the very small molecules of air. ...",
+          "feedback": "Clear and complete. You named scattering, explained why blue scatters more and linked it to the colour of the sky.",
+          "criteria": [
+            { "name": "Scattering by air molecules", "awarded": 1, "max": 1, "reason": "States scattering by small air molecules." },
+            { "name": "Wavelength dependence", "awarded": 1, "max": 1, "reason": "Says blue has a shorter wavelength and scatters more." },
+            { "name": "Link to the colour seen", "awarded": 1, "max": 1, "reason": "Scattered blue light reaches the eye from all of the sky." }
+          ],
+          "error": null
+        }
+      ],
+      "checked_copy": { "available": false, "download_path": null },
+      "graded_at": "2026-10-02T09:41:12Z",
+      "credits_charged": 1,
+      "error": null
+    }
+    ```
+
+    These marks are a **draft**. If `needs_review` is `true` on a question, for example because the AI's confidence was below 0.60, have a teacher check it before you finalize. Teachers can review in the Vacademy dashboard (open `dashboard_url`), or you can build review into your own product with the review endpoints.
+  </Step>
+
+  <Step title="Finalize">
+    Finalizing turns the draft marks into final marks. This call needs a key with the **`evaluation:finalize`** scope, which new keys do not have by default.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/exams/$EXAM_ID/finalize \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: finalize-cbse-10b-sci-ut2-2026-STU-2026-0142" \
+      -d '{ "submission_ids": ["'"$SUBMISSION_ID"'"] }'
+    ```
+
+    ```python Python
+    r = session.post(
+        f"{BASE}/exams/{exam_id}/finalize",
+        json={"submission_ids": [submission_id]},
+        headers={"Idempotency-Key": "finalize-cbse-10b-sci-ut2-2026-STU-2026-0142"},
+    )
+    r.raise_for_status()
+    print(r.json())
+    ```
+
+    ```javascript Node
+    const finRes = await fetch(`${BASE}/exams/${examId}/finalize`, {
+      method: "POST",
+      headers: { ...headers, "Idempotency-Key": "finalize-cbse-10b-sci-ut2-2026-STU-2026-0142" },
+      body: JSON.stringify({ submission_ids: [submissionId] }),
+    });
+    if (!finRes.ok) throw new Error(`HTTP ${finRes.status}: ${await finRes.text()}`);
+    console.log(await finRes.json());
+    ```
+
+    </CodeGroup>
+
+    ```json Response
+    {
+      "finalized": ["3f6a9c2b-81d4-4e0f-b7a5-2c9d0e1f4a6b"],
+      "skipped": [],
+      "has_more": false
+    }
+    ```
+
+    To finalize every graded copy of an exam at once, send `{"all_graded": true}` instead of `submission_ids`. Copies that are not `graded` yet are left out entirely, not listed in `skipped`; `GET /exams/{id}/submissions?finalized=false` shows what is still open. `skipped` is filled only when you name copies in `submission_ids`, with a reason such as `not_graded` or `already_finalized`.
+
+    Once a submission is finalized, overriding its marks or re-evaluating it returns `409 submission_finalized`. To change marks after that, for example after a re-evaluation request, call `POST /submissions/{id}/unfinalize` with a `reason`.
+  </Step>
+</Steps>
+
+That's the whole loop: exam, submission, grading, result, finalize.
+
+<Accordion title="Full script: Python">
+
+```python
+import os
+import time
+import requests
+
+BASE = "https://api.evalezy.com/v1"
+DONE = {"graded", "partially_graded", "failed", "cancelled"}
+
+session = requests.Session()
+session.headers["X-API-Key"] = os.environ["EVALEZY_API_KEY"]
+
+
+def call(method, path, idem=None, **kwargs):
+    headers = {"Idempotency-Key": idem} if idem else {}
+    r = session.request(method, f"{BASE}{path}", headers=headers, timeout=30, **kwargs)
+    if not r.ok:
+        err = r.json().get("error", {})
+        raise RuntimeError(f"{r.status_code} {err.get('code')}: {err.get('message')} ({err.get('request_id')})")
+    return r.json()
+
+
+exam = call("POST", "/exams", idem="create-exam-cbse-10b-sci-ut2-2026", json={
+    "title": "Class 10 Science - Unit Test 2 (Light)",
+    "mode": "typed",
+    "external_ref": "cbse-10b-sci-ut2-2026",
+    "subject": "Science", "board": "CBSE", "class": "10", "level": "school",
+    "open": True,
+    "questions": [
+        {
+            "label": "1", "type": "mcq_single", "max_marks": 1,
+            "text": "Which colour of sunlight is scattered the most by the molecules of air?",
+            "options": [{"label": "A", "text": "Red"}, {"label": "B", "text": "Yellow"},
+                        {"label": "C", "text": "Blue"}, {"label": "D", "text": "Orange"}],
+            "correct_options": ["C"],
+        },
+        {
+            "label": "2", "type": "long_answer", "max_marks": 3, "word_limit": 80,
+            "text": "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+            "rubric": {"criteria": [
+                {"name": "Scattering by air molecules", "marks": 1,
+                 "guidance": "States that sunlight is scattered by the tiny molecules of air in the atmosphere."},
+                {"name": "Wavelength dependence", "marks": 1,
+                 "guidance": "Shorter wavelengths such as blue are scattered much more strongly than longer wavelengths such as red."},
+                {"name": "Link to the colour seen", "marks": 1,
+                 "guidance": "Connects the scattered blue light reaching the eye from all directions to the blue colour of the sky."},
+            ]},
+        },
+    ],
+})
+
+sub = call("POST", f"/exams/{exam['id']}/submissions",
+           idem="submit-cbse-10b-sci-ut2-2026-STU-2026-0142", json={
+    "candidate": {"external_id": "STU-2026-0142", "name": "Aarav Sharma", "roll_number": "17"},
+    "answers": [
+        {"question_label": "1", "option_labels": ["C"]},
+        {"question_label": "2", "text": "Sunlight is scattered by the small molecules of air. Blue light has a "
+                                        "shorter wavelength than red, so it is scattered much more, and this "
+                                        "scattered blue light reaches our eyes from all over the sky."},
+    ],
+})
+print("quote:", sub["quote"])
+
+while call("GET", f"/submissions/{sub['id']}")["status"] not in DONE:
+    time.sleep(5)
+
+result = call("GET", f"/submissions/{sub['id']}/result")
+print("total:", result["totals"]["awarded"], "/", result["totals"]["max"])
+
+if not result["needs_review"]:
+    print(call("POST", f"/exams/{exam['id']}/finalize",
+               idem="finalize-cbse-10b-sci-ut2-2026-STU-2026-0142",
+               json={"submission_ids": [sub["id"]]}))
+```
+
+</Accordion>
+
+<Accordion title="Full script: Node.js">
+
+```javascript
+// Node.js 18+ (built-in fetch). Save as quickstart.mjs and run: node quickstart.mjs
+const BASE = "https://api.evalezy.com/v1";
+const DONE = new Set(["graded", "partially_graded", "failed", "cancelled"]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function call(method, path, { body, idem } = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: {
+      "X-API-Key": process.env.EVALEZY_API_KEY,
+      "Content-Type": "application/json",
+      ...(idem ? { "Idempotency-Key": idem } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const e = json.error ?? {};
+    throw new Error(`${res.status} ${e.code}: ${e.message} (${e.request_id})`);
+  }
+  return json;
+}
+
+const exam = await call("POST", "/exams", {
+  idem: "create-exam-cbse-10b-sci-ut2-2026",
+  body: {
+    title: "Class 10 Science - Unit Test 2 (Light)",
+    mode: "typed",
+    external_ref: "cbse-10b-sci-ut2-2026",
+    subject: "Science", board: "CBSE", class: "10", level: "school",
+    open: true,
+    questions: [
+      {
+        label: "1", type: "mcq_single", max_marks: 1,
+        text: "Which colour of sunlight is scattered the most by the molecules of air?",
+        options: [
+          { label: "A", text: "Red" }, { label: "B", text: "Yellow" },
+          { label: "C", text: "Blue" }, { label: "D", text: "Orange" },
+        ],
+        correct_options: ["C"],
+      },
+      {
+        label: "2", type: "long_answer", max_marks: 3, word_limit: 80,
+        text: "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+        rubric: {
+          criteria: [
+            { name: "Scattering by air molecules", marks: 1,
+              guidance: "States that sunlight is scattered by the tiny molecules of air in the atmosphere." },
+            { name: "Wavelength dependence", marks: 1,
+              guidance: "Shorter wavelengths such as blue are scattered much more strongly than longer wavelengths such as red." },
+            { name: "Link to the colour seen", marks: 1,
+              guidance: "Connects the scattered blue light reaching the eye from all directions to the blue colour of the sky." },
+          ],
+        },
+      },
+    ],
+  },
+});
+
+const sub = await call("POST", `/exams/${exam.id}/submissions`, {
+  idem: "submit-cbse-10b-sci-ut2-2026-STU-2026-0142",
+  body: {
+    candidate: { external_id: "STU-2026-0142", name: "Aarav Sharma", roll_number: "17" },
+    answers: [
+      { question_label: "1", option_labels: ["C"] },
+      { question_label: "2", text: "Sunlight is scattered by the small molecules of air. Blue light has a " +
+        "shorter wavelength than red, so it is scattered much more, and this scattered blue light " +
+        "reaches our eyes from all over the sky." },
+    ],
+  },
+});
+console.log("quote:", sub.quote);
+
+while (!DONE.has((await call("GET", `/submissions/${sub.id}`)).status)) await sleep(5000);
+
+const result = await call("GET", `/submissions/${sub.id}/result`);
+console.log("total:", result.totals.awarded, "/", result.totals.max);
+
+if (!result.needs_review) {
+  console.log(await call("POST", `/exams/${exam.id}/finalize`, {
+    idem: "finalize-cbse-10b-sci-ut2-2026-STU-2026-0142",
+    body: { submission_ids: [sub.id] },
+  }));
+}
+```
+
+</Accordion>
+
+## Part 2: grade a handwritten copy
+
+For a handwritten exam, you upload the scanned answer copy as a PDF and submit its `upload_id` instead of `answers`. Use the same question labels as the printed paper ("1", "2", "3a" …) so the AI can match each answer to its question.
+
+<Steps>
+  <Step title="Create a handwritten exam">
+    The same call as in Part 1, with `"mode": "handwritten"` and a new `external_ref`. This one has a single 3-mark long answer.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/exams \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: create-exam-cbse-10b-sci-hw-2026" \
+      -d '{
+        "title": "Class 10 Science - Unit Test 2 (Light), answer sheet",
+        "mode": "handwritten",
+        "external_ref": "cbse-10b-sci-hw-2026",
+        "open": true,
+        "questions": [
+          {
+            "label": "1",
+            "type": "long_answer",
+            "text": "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+            "max_marks": 3,
+            "model_answer": "Sunlight is scattered by the tiny molecules of air. Blue light has a shorter wavelength than red, so it is scattered much more, and this scattered blue light reaches our eyes from all over the sky."
+          }
+        ]
+      }'
+
+    export HW_EXAM_ID=5e0d7a3b-...   # the "id" from the response
+    ```
+
+    ```python Python
+    hw_exam = session.post(
+        f"{BASE}/exams",
+        json={
+            "title": "Class 10 Science - Unit Test 2 (Light), answer sheet",
+            "mode": "handwritten",
+            "external_ref": "cbse-10b-sci-hw-2026",
+            "open": True,
+            "questions": [{
+                "label": "1",
+                "type": "long_answer",
+                "text": "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+                "max_marks": 3,
+                "model_answer": "Sunlight is scattered by the tiny molecules of air. Blue light has a shorter "
+                                "wavelength than red, so it is scattered much more, and this scattered blue "
+                                "light reaches our eyes from all over the sky.",
+            }],
+        },
+        headers={"Idempotency-Key": "create-exam-cbse-10b-sci-hw-2026"},
+    )
+    hw_exam.raise_for_status()
+    hw_exam_id = hw_exam.json()["id"]
+    ```
+
+    ```javascript Node
+    const hwExamRes = await fetch(`${BASE}/exams`, {
+      method: "POST",
+      headers: { ...headers, "Idempotency-Key": "create-exam-cbse-10b-sci-hw-2026" },
+      body: JSON.stringify({
+        title: "Class 10 Science - Unit Test 2 (Light), answer sheet",
+        mode: "handwritten",
+        external_ref: "cbse-10b-sci-hw-2026",
+        open: true,
+        questions: [{
+          label: "1",
+          type: "long_answer",
+          text: "Why does the clear sky appear blue? Explain with reference to the scattering of light.",
+          max_marks: 3,
+          model_answer:
+            "Sunlight is scattered by the tiny molecules of air. Blue light has a shorter wavelength " +
+            "than red, so it is scattered much more, and this scattered blue light reaches our eyes from all over the sky.",
+        }],
+      }),
+    });
+    if (!hwExamRes.ok) throw new Error(`HTTP ${hwExamRes.status}: ${await hwExamRes.text()}`);
+    const hwExamId = (await hwExamRes.json()).id;
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Ask for an upload URL">
+    Send the file name, type and **exact** size in bytes. PDFs only, up to 50 MB.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/uploads \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filename": "STU-2026-0142.pdf",
+        "content_type": "application/pdf",
+        "size_bytes": '"$(wc -c < STU-2026-0142.pdf)"'
+      }'
+    ```
+
+    ```python Python
+    path = "STU-2026-0142.pdf"
+    r = session.post(f"{BASE}/uploads", json={
+        "filename": "STU-2026-0142.pdf",
+        "content_type": "application/pdf",
+        "size_bytes": os.path.getsize(path),
+    })
+    r.raise_for_status()
+    upload = r.json()["uploads"][0]
+    ```
+
+    ```javascript Node
+    import { readFile } from "node:fs/promises";
+
+    const pdf = await readFile("STU-2026-0142.pdf");
+    const upRes = await fetch(`${BASE}/uploads`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        filename: "STU-2026-0142.pdf",
+        content_type: "application/pdf",
+        size_bytes: pdf.length,
+      }),
+    });
+    if (!upRes.ok) throw new Error(`HTTP ${upRes.status}: ${await upRes.text()}`);
+    const upload = (await upRes.json()).uploads[0];
+    ```
+
+    </CodeGroup>
+
+    ```json Response
+    {
+      "uploads": [
+        {
+          "id": "e2b7d4c1-5a90-4f3e-8c21-7d6b0a9f1e33",
+          "filename": "STU-2026-0142.pdf",
+          "upload_url": "https://…signed-url…",
+          "method": "PUT",
+          "headers": { "Content-Type": "application/pdf" },
+          "expires_at": "2026-10-02T10:40:00Z",
+          "status": "pending"
+        }
+      ]
+    }
+    ```
+
+    With curl, save the upload's `id` and `upload_url`:
+
+    ```bash
+    export UPLOAD_ID=e2b7d4c1-5a90-4f3e-8c21-7d6b0a9f1e33   # uploads[0].id
+    export UPLOAD_URL='https://…signed-url…'                # uploads[0].upload_url, in single quotes
+    ```
+
+    The `upload_url` works for one hour. To upload a whole class at once, send up to 100 files in `files[]`.
+  </Step>
+
+  <Step title="Upload the PDF">
+    `PUT` the file to `upload_url` with the `headers` you were given. **Do not** send your `X-API-Key` to this URL. It is a pre-signed storage URL, not the Evalezy API.
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT "$UPLOAD_URL" \
+      -H "Content-Type: application/pdf" \
+      --data-binary @STU-2026-0142.pdf
+    ```
+
+    ```python Python
+    with open(path, "rb") as f:
+        put = requests.put(upload["upload_url"], data=f, headers=upload["headers"])
+    put.raise_for_status()
+    ```
+
+    ```javascript Node
+    const put = await fetch(upload.upload_url, {
+      method: "PUT",
+      headers: upload.headers,
+      body: pdf,
+    });
+    if (!put.ok) throw new Error(`Upload failed: HTTP ${put.status}`);
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Wait for the upload to be ready">
+    Evalezy checks the file (type, size, page count) on the first read after your PUT. Read `GET /uploads/{id}` until `status` is `ready` (with `pages`) or `rejected` (with `reject_reason`).
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/uploads/$UPLOAD_ID \
+      -H "X-API-Key: $EVALEZY_API_KEY"
+    ```
+
+    ```python Python
+    while True:
+        u = session.get(f"{BASE}/uploads/{upload['id']}").json()
+        if u["status"] != "pending":
+            break
+        time.sleep(2)
+    print(u["status"], u["pages"], u["reject_reason"])
+    ```
+
+    ```javascript Node
+    let u;
+    do {
+      u = await (await fetch(`${BASE}/uploads/${upload.id}`, { headers })).json();
+      if (u.status === "pending") await sleep(2000);
+    } while (u.status === "pending");
+    console.log(u.status, u.pages, u.reject_reason);
+    ```
+
+    </CodeGroup>
+
+    ```json Response
+    {
+      "id": "e2b7d4c1-5a90-4f3e-8c21-7d6b0a9f1e33",
+      "filename": "STU-2026-0142.pdf",
+      "content_type": "application/pdf",
+      "size_bytes": 2483120,
+      "status": "ready",
+      "pages": 12,
+      "reject_reason": null,
+      "submission_id": null,
+      "expires_at": "2026-10-02T10:40:00Z",
+      "created_at": "2026-10-02T09:40:00Z"
+    }
+    ```
+
+    This copy has 12 pages, so it will cost 12 credits.
+  </Step>
+
+  <Step title="Submit the copy">
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/exams/$HW_EXAM_ID/submissions \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: submit-cbse-10b-sci-hw-2026-STU-2026-0142" \
+      -d '{
+        "candidate": { "external_id": "STU-2026-0142", "name": "Aarav Sharma", "roll_number": "17" },
+        "upload_id": "'"$UPLOAD_ID"'"
+      }'
+    ```
+
+    ```python Python
+    r = session.post(
+        f"{BASE}/exams/{hw_exam_id}/submissions",
+        json={
+            "candidate": {"external_id": "STU-2026-0142", "name": "Aarav Sharma", "roll_number": "17"},
+            "upload_id": upload["id"],
+        },
+        headers={"Idempotency-Key": "submit-cbse-10b-sci-hw-2026-STU-2026-0142"},
+    )
+    r.raise_for_status()
+    hw_submission_id = r.json()["id"]
+    print(r.json()["quote"])  # {'unit': 'page', 'pages': 12, 'credits': 12, ...}
+    ```
+
+    ```javascript Node
+    const hwRes = await fetch(`${BASE}/exams/${hwExamId}/submissions`, {
+      method: "POST",
+      headers: { ...headers, "Idempotency-Key": "submit-cbse-10b-sci-hw-2026-STU-2026-0142" },
+      body: JSON.stringify({
+        candidate: { external_id: "STU-2026-0142", name: "Aarav Sharma", roll_number: "17" },
+        upload_id: upload.id,
+      }),
+    });
+    if (!hwRes.ok) throw new Error(`HTTP ${hwRes.status}: ${await hwRes.text()}`);
+    const hwSubmission = await hwRes.json();
+    console.log(hwSubmission.quote); // { unit: 'page', pages: 12, credits: 12, ... }
+    ```
+
+    </CodeGroup>
+
+    With curl, save the submission's `id` as `HW_SUBMISSION_ID` for the last step.
+
+    Copies of 41 to 80 pages are accepted with a `pages_beyond_vision_limit` warning and marked for human review. Copies of more than 80 pages are refused with `422 too_many_pages`.
+  </Step>
+
+  <Step title="Poll, read the result, download the checked copy">
+    Poll and read the result exactly as in Part 1. Handwritten copies take longer than typed answers because the handwriting has to be read first (`status: "reading"`). In the result, `extracted_answer` shows the text Evalezy read for each question.
+
+    When `checked_copy.available` is `true`, download the annotated PDF:
+
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.evalezy.com/v1/submissions/$HW_SUBMISSION_ID/checked-copy \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -o STU-2026-0142-checked.pdf
+    ```
+
+    ```python Python
+    r = session.get(f"{BASE}/submissions/{hw_submission_id}/checked-copy")
+    r.raise_for_status()
+    with open("STU-2026-0142-checked.pdf", "wb") as f:
+        f.write(r.content)
+    ```
+
+    ```javascript Node
+    import { writeFile } from "node:fs/promises";
+
+    const cc = await fetch(`${BASE}/submissions/${hwSubmission.id}/checked-copy`, { headers });
+    if (!cc.ok) throw new Error(`HTTP ${cc.status}: ${await cc.text()}`);
+    await writeFile("STU-2026-0142-checked.pdf", Buffer.from(await cc.arrayBuffer()));
+    ```
+
+    </CodeGroup>
+
+    Then finalize as in Part 1.
+  </Step>
+</Steps>
+
+<Warning>
+  Handwriting in Hindi or other regional languages is not supported yet. Such a copy ends as `failed` with the error code `language_not_supported`. Failed copies are not charged.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Scopes, key safety and auth errors.
+  </Card>
+  <Card title="Rubrics" icon="list-check" href="/concepts/rubrics">
+    Write criteria the AI follows closely.
+  </Card>
+  <Card title="Handwritten exams" icon="file-pen" href="/guides/handwritten-exams">
+    Scanning tips, bulk uploads and checked copies.
+  </Card>
+  <Card title="Syncing results" icon="arrows-rotate" href="/guides/syncing-results">
+    Grade a whole class without polling each copy.
+  </Card>
+</CardGroup>

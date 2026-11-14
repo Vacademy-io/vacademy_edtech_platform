@@ -27,6 +27,7 @@ import { MyInput } from '@/components/design-system/input';
 import useIntroJsTour, { Step } from '@/hooks/use-intro';
 import { IntroKey } from '@/constants/storage/introKey';
 import { createAssesmentSteps } from '@/constants/intro/steps';
+import { useTranslation } from 'react-i18next';
 type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 
 const Step2AddingQuestions: React.FC<StepContentProps> = ({
@@ -34,6 +35,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation('homeworkCreationStep2AddingQuestions');
     const queryClient = useQueryClient();
     const params = useParams({ strict: false });
     const examType = params.examtype ?? ''; // Ensure it's a string
@@ -67,7 +69,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
             section: storeDataStep2.section || [
                 {
                     sectionId: '',
-                    sectionName: 'Section 1',
+                    sectionName: t('defaultSectionName', { number: 1 }),
                     questionPaperTitle: '',
                     subject: '',
                     yearClass: '',
@@ -123,7 +125,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
             if (assessmentId !== 'defaultId') {
                 useTestAccessStore.getState().reset();
                 window.history.back();
-                toast.success('Step 2 data has been updated successfully!', {
+                toast.success(t('toast.updateSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -131,7 +133,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 queryClient.invalidateQueries({ queryKey: ['GET_QUESTIONS_DATA_FOR_SECTIONS'] });
             } else {
                 syncStep2DataWithStore(form);
-                toast.success('Step 2 data has been saved successfully!', {
+                toast.success(t('toast.saveSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -144,7 +146,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 feature: 'homework-step2-add-questions',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
-                fallbackMessage: 'Failed to save questions.',
+                fallbackMessage: t('errors.saveQuestionsFailed'),
             });
         },
     });
@@ -163,7 +165,15 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
         console.log(err);
     };
 
-    const { append } = useFieldArray({
+    // The one owner of the section list: cards keyed by react-hook-form's
+    // field id and deleted through this instance, so a card never keeps
+    // showing a section that moved out from under its index (see the
+    // assessment wizard's Step2AddingQuestions).
+    const {
+        fields: sectionFields,
+        append,
+        remove,
+    } = useFieldArray({
         control,
         name: 'section', // Matches the key in defaultValues
     });
@@ -181,7 +191,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
     const handleAddSection = () => {
         append({
             sectionId: '',
-            sectionName: `Section ${allSections.length + 1}`,
+            sectionName: t('defaultSectionName', { number: allSections.length + 1 }),
             questionPaperTitle: '',
             subject: '',
             yearClass: '',
@@ -300,7 +310,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                         : [
                               {
                                   sectionId: '',
-                                  sectionName: `Section 1`,
+                                  sectionName: t('defaultSectionName', { number: 1 }),
                                   questionPaperTitle: '',
                                   subject: '',
                                   yearClass: '',
@@ -342,7 +352,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
     useIntroJsTour({
         key: IntroKey.assessmentStep2Questions,
         steps: createAssesmentSteps
-            .filter((step) => step.element === '#add-question')
+            .filter((step) => step.element === '#add-question') // design-lint-ignore: DOM id selector for intro.js targeting, not a color literal
             .flatMap((step) => step.subStep || [])
             .filter((subStep): subStep is Step => subStep !== undefined),
     });
@@ -355,7 +365,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                 {allSections.length > 0 && (
                     <>
                         <div className="m-0 flex items-center justify-between p-0">
-                            <h1>Add Questions</h1>
+                            <h1>{t('heading')}</h1>
                             <MyButton
                                 type="button"
                                 scale="large"
@@ -407,7 +417,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                 }
                                 onClick={handleSubmit(onSubmit, onInvalid)}
                             >
-                                {assessmentId !== 'defaultId' ? 'Update' : 'Next'}
+                                {assessmentId !== 'defaultId' ? t('actions.update') : t('actions.next')}
                             </MyButton>
                         </div>
                         {examType !== 'SURVEY' && (
@@ -460,7 +470,9 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                                                         <RadioGroupItem value="ASSESSMENT" />
                                                                     </FormControl>
                                                                     <FormLabel className="font-thin">
-                                                                        Entire Assessment Duration
+                                                                        {t(
+                                                                            'durationDistribution.entireAssessmentLabel'
+                                                                        )}
                                                                     </FormLabel>
                                                                 </FormItem>
                                                             )}
@@ -475,7 +487,9 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                                                         <RadioGroupItem value="SECTION" />
                                                                     </FormControl>
                                                                     <FormLabel className="font-thin">
-                                                                        Section-Wise Duration
+                                                                        {t(
+                                                                            'durationDistribution.sectionWiseLabel'
+                                                                        )}
                                                                     </FormLabel>
                                                                 </FormItem>
                                                             )}
@@ -490,7 +504,9 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                                                         <RadioGroupItem value="QUESTION" />
                                                                     </FormControl>
                                                                     <FormLabel className="font-thin">
-                                                                        Question-Wise Duration
+                                                                        {t(
+                                                                            'durationDistribution.questionWiseLabel'
+                                                                        )}
                                                                     </FormLabel>
                                                                 </FormItem>
                                                             )}
@@ -503,10 +519,11 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                     {form.getValues('testDuration.entireTestDuration.checked') && (
                                         <div className="mt-3 text-sm">
                                             <p>
-                                                Entire Assessment Duration –{' '}
+                                                {t('durationDistribution.entireAssessmentHeading')} –{' '}
                                                 <span className="font-light">
-                                                    Set a single time limit for the whole
-                                                    assessement.
+                                                    {t(
+                                                        'durationDistribution.entireAssessmentDescription'
+                                                    )}
                                                 </span>
                                             </p>
                                         </div>
@@ -514,11 +531,11 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                     {form.getValues('testDuration.sectionWiseDuration') && (
                                         <div className="mt-3 text-sm">
                                             <p>
-                                                Section-wise Duration –{' '}
+                                                {t('durationDistribution.sectionWiseHeading')} –{' '}
                                                 <span className="font-light">
-                                                    Assign a specific time for each section in the
-                                                    Sections tab. The total assessment duration will
-                                                    be the sum of all section times.
+                                                    {t(
+                                                        'durationDistribution.sectionWiseDescription'
+                                                    )}
                                                 </span>
                                             </p>
                                         </div>
@@ -526,11 +543,11 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                     {form.getValues('testDuration.questionWiseDuration') && (
                                         <div className="mt-3 text-sm">
                                             <p>
-                                                Question-wise Duration –{' '}
+                                                {t('durationDistribution.questionWiseHeading')} –{' '}
                                                 <span className="font-light">
-                                                    Define individual time limits for each question
-                                                    in the Sections tab, where a time input field is
-                                                    available next to each question.
+                                                    {t(
+                                                        'durationDistribution.questionWiseDescription'
+                                                    )}
                                                 </span>
                                             </p>
                                         </div>
@@ -543,7 +560,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                         }) && (
                                             <div className="mt-4 flex items-center gap-4 text-sm font-thin">
                                                 <h1>
-                                                    Entire Test Duration
+                                                    {t('durationDistribution.entireTestDurationLabel')}
                                                     {getStepKey({
                                                         assessmentDetails,
                                                         currentStep,
@@ -595,7 +612,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                                         </FormItem>
                                                     )}
                                                 />
-                                                <span>hrs</span>
+                                                <span>{t('durationDistribution.hrs')}</span>
                                                 <span>:</span>
                                                 <FormField
                                                     control={control}
@@ -638,7 +655,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                                         </FormItem>
                                                     )}
                                                 />
-                                                <span>minutes</span>
+                                                <span>{t('durationDistribution.minutes')}</span>
                                             </div>
                                         )}
                                 </div>
@@ -646,13 +663,14 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                         )}
                         <Separator className="my-4" />
                         <Accordion type="single" collapsible defaultValue={`section-0`}>
-                            {allSections.map((_, index) => (
+                            {sectionFields.map((sectionField, index) => (
                                 <Step2SectionInfo
-                                    key={index}
+                                    key={sectionField.id}
                                     form={form}
                                     index={index}
                                     currentStep={currentStep}
                                     oldData={oldData}
+                                    onDelete={remove}
                                 />
                             ))}
                         </Accordion>
@@ -667,7 +685,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                     onClick={handleAddSection}
                 >
                     <Plus size={32} />
-                    Add Section
+                    {t('actions.addSection')}
                 </MyButton>
             </form>
         </FormProvider>

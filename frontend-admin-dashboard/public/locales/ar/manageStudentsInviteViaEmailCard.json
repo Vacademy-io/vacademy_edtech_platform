@@ -1,0 +1,8 @@
+{
+  "title": "{{term}} عبر البريد الإلكتروني",
+  "emailInput": {
+    "label": "أدخل بريد المدعو الإلكتروني",
+    "placeholder": "you@email.com"
+  },
+  "addButton": "إضافة"
+}

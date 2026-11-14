@@ -1,0 +1,45 @@
+{
+    "heading": "Describe your automation",
+    "aiBadge": "AI",
+    "intro": "Tell me what you want. I'll propose a plan, then ask you to choose the templates, audiences and variable mappings — so the workflow that lands is ready to publish.",
+    "goalPlaceholder": "e.g. 3 days after someone fills the JEE lead form, if they haven't enrolled, WhatsApp them the brochure.",
+    "actions": {
+        "cancel": "Cancel",
+        "planning": "Planning…",
+        "replan": "Re-plan",
+        "draftWithAi": "Draft with AI",
+        "building": "Building…",
+        "buildWorkflow": "Build workflow"
+    },
+    "plan": {
+        "defaultSummary": "Proposed workflow",
+        "chooseDetails": "Looks good — choose details"
+    },
+    "decisions": {
+        "heading": "A few choices only you can make:",
+        "allSet": "All set",
+        "stillNeeded": "Still needed: {{items}}",
+        "chooseTemplateFirst": "Choose the template above first.",
+        "noVariables": "This template has no variables to map — nothing to do here.",
+        "varMapPlaceholder": "e.g. #item['full_name'] or a fixed value"
+    },
+    "channels": {
+        "email": "Email",
+        "whatsapp": "WhatsApp"
+    },
+    "templateSelect": {
+        "searchPlaceholder": "Search templates…",
+        "selectPlaceholder": "Select a template…",
+        "noneFoundWhatsapp": "No WhatsApp templates found — create one in Settings → Templates first.",
+        "noneFoundEmail": "No email templates found — create one in Settings → Templates first."
+    },
+    "toasts": {
+        "planFailedTitle": "Could not plan",
+        "planningFailedTitle": "Planning failed",
+        "unknownError": "Unknown error",
+        "buildFailedTitle": "Could not build",
+        "noWorkflowReturned": "No workflow returned",
+        "loadedWithNotesTitle": "Loaded with notes",
+        "buildErrorTitle": "Build failed"
+    }
+}

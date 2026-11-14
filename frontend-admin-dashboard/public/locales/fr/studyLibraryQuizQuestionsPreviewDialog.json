@@ -1,0 +1,14 @@
+{
+    "previewQuestions_one": "Aperçu de {{count}} question",
+    "previewQuestions_many": "Aperçu de {{count}} questions",
+    "previewQuestions_other": "Aperçu de {{count}} questions",
+    "allQuestionsRemoved": "Toutes les questions ont été supprimées. Fermez cette fenêtre pour revenir en arrière.",
+    "questionsWillBeAdded_one": "{{count}} question sera ajoutée au quiz",
+    "questionsWillBeAdded_many": "{{count}} questions seront ajoutées au quiz",
+    "questionsWillBeAdded_other": "{{count}} questions seront ajoutées au quiz",
+    "cancel": "Annuler",
+    "adding": "Ajout en cours…",
+    "addQuestionsToQuiz_one": "Ajouter {{count}} question au quiz",
+    "addQuestionsToQuiz_many": "Ajouter {{count}} questions au quiz",
+    "addQuestionsToQuiz_other": "Ajouter {{count}} questions au quiz"
+}

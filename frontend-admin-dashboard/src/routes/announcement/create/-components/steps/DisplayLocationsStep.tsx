@@ -1,9 +1,10 @@
 import { MapPin, Prohibit } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import type { ModeType } from '@/services/announcement';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { MODE_META } from '../../-utils/constants';
+import { buildModeMeta } from '../../-utils/constants';
 import { ModeSettingsForm } from '../ModeSettingsForm';
 import { FieldError, SectionCard } from '../primitives';
 import type { FieldErrors, ModeSettings } from '../../-types';
@@ -29,11 +30,14 @@ export function DisplayLocationsStep({
     errors,
     showErrors,
 }: DisplayLocationsStepProps) {
+    const { t } = useTranslation('announcementCreateDisplayLocationsStep');
+    const modeMeta = buildModeMeta(t);
+
     return (
         <div className="space-y-6">
             <SectionCard
-                title="Where should this appear?"
-                description="Pick one or more places inside the product. This is separate from how it is delivered."
+                title={t('title')}
+                description={t('description')}
                 Icon={MapPin}
                 invalid={showErrors && Boolean(errors.modes)}
             >
@@ -46,7 +50,7 @@ export function DisplayLocationsStep({
                 ) : (
                     <TooltipProvider delayDuration={200}>
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {MODE_META.map((meta) => {
+                            {modeMeta.map((meta) => {
                                 const selected = modes.includes(meta.type);
                                 const blocked = allowedModes[meta.type] === false;
                                 const card = (
@@ -99,7 +103,7 @@ export function DisplayLocationsStep({
                                                     <span className="block">{card}</span>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    Your role cannot send to {meta.label}.
+                                                    {t('blockedTooltip', { label: meta.label })}
                                                 </TooltipContent>
                                             </Tooltip>
                                         ) : (
@@ -115,7 +119,7 @@ export function DisplayLocationsStep({
             </SectionCard>
 
             {modes.map((mode) => {
-                const meta = MODE_META.find((m) => m.type === mode);
+                const meta = modeMeta.find((m) => m.type === mode);
                 if (!meta) return null;
                 const hasError =
                     showErrors &&
@@ -123,7 +127,7 @@ export function DisplayLocationsStep({
                 return (
                     <SectionCard
                         key={mode}
-                        title={`${meta.label} settings`}
+                        title={t('settingsTitle', { label: meta.label })}
                         description={meta.description}
                         Icon={meta.Icon}
                         invalid={hasError}

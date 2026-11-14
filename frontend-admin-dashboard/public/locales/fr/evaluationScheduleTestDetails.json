@@ -1,0 +1,19 @@
+{
+    "moreBatches_one": "+{{count}} de plus",
+    "moreBatches_many": "+{{count}} de plus",
+    "moreBatches_other": "+{{count}} de plus",
+    "assessmentBatches": "Groupes de l'évaluation",
+    "createdOn": "Créé le : {{date}}",
+    "subject": "Matière : {{name}}",
+    "notAvailable": "N/A",
+    "startDateAndTime": "Date et heure de début : {{date}}",
+    "endDateAndTime": "Date et heure de fin : {{date}}",
+    "durationMinutes_one": "Durée : {{count}} minute",
+    "durationMinutes_many": "Durée : {{count}} minutes",
+    "durationMinutes_other": "Durée : {{count}} minutes",
+    "totalParticipants_one": "Participants au total : {{count}}",
+    "totalParticipants_many": "Participants au total : {{count}}",
+    "totalParticipants_other": "Participants au total : {{count}}",
+    "attemptedByLabel": "Tenté par : ",
+    "pendingLabel": "En attente : "
+}

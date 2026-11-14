@@ -1,0 +1,9 @@
+{
+    "optionMarker": {
+        "fallback": "({{label}}.)"
+    },
+    "dropdownMenu": {
+        "duplicateSlide": "Duplicate Slide",
+        "deleteSlide": "Delete Slide"
+    }
+}

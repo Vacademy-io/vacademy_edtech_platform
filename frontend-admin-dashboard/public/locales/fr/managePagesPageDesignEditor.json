@@ -1,0 +1,228 @@
+{
+    "palette": {
+        "header": { "label": "En-tête", "description": "Logo + barre de navigation" },
+        "heroSection": { "label": "Bannière héro", "description": "Mise en page divisée avec collage de photos" },
+        "footer": { "label": "Pied de page", "description": "Liens + barre de copyright" },
+        "productCourseGrid": { "label": "Grille de cours", "description": "Liste de cours avec filtres" },
+        "textBlock": { "label": "Bloc de texte", "description": "Paragraphe de texte enrichi" },
+        "imageBlock": { "label": "Image", "description": "Image cliquable pleine largeur" },
+        "videoEmbed": { "label": "Vidéo intégrée", "description": "Intégration YouTube / Vimeo" },
+        "htmlBlock": { "label": "Bloc HTML", "description": "HTML / CSS personnalisé (isolé, sans scripts)" },
+        "statsHighlights": { "label": "Statistiques", "description": "Mise en avant des chiffres clés" },
+        "testimonialSection": { "label": "Témoignages", "description": "Avis des étudiants" },
+        "faqSection": { "label": "FAQ", "description": "Questions fréquemment posées" },
+        "ctaBanner": { "label": "Bannière CTA", "description": "Section d'appel à l'action" },
+        "featureGrid": { "label": "Grille de fonctionnalités", "description": "Points forts du programme" },
+        "stepsProcess": { "label": "Étapes / Processus", "description": "Comment ça marche" },
+        "marquee": { "label": "Défilement", "description": "Bandeau de texte défilant" }
+    },
+    "groups": {
+        "layout": "Mise en page",
+        "course": "Cours",
+        "content": "Contenu",
+        "marketing": "Marketing"
+    },
+    "heroLayouts": {
+        "split": { "label": "Divisé", "description": "Texte à gauche, image à droite" },
+        "centered": { "label": "Centré", "description": "Texte centré, pleine largeur" }
+    },
+    "colorField": {
+        "reset": "réinitialiser"
+    },
+    "common": {
+        "sectionColors": "Couleurs de la section",
+        "background": "Arrière-plan",
+        "backgroundColor": "Couleur de fond",
+        "textColor": "Couleur du texte",
+        "heading": "Titre",
+        "subheading": "Sous-titre",
+        "description": "Description",
+        "content": "Contenu",
+        "title": "Titre",
+        "image": "Image",
+        "alignment": "Alignement",
+        "alignLeft": "Gauche",
+        "alignCenter": "Centre",
+        "alignRight": "Droite",
+        "ctaButton": "Bouton CTA",
+        "buttonBackground": "Arrière-plan du bouton",
+        "buttonTextColor": "Couleur du texte du bouton",
+        "add": "Ajouter",
+        "labelPlaceholder": "Libellé",
+        "urlPlaceholder": "URL",
+        "urlOrSectionPlaceholder": "URL ou #section",
+        "enrollNowPlaceholder": "S'inscrire maintenant",
+        "descriptionEllipsisPlaceholder": "Description…",
+        "noEditorFor": "Aucun éditeur pour « {{type}} »"
+    },
+    "heroEditor": {
+        "layoutLabel": "Mise en page",
+        "tags": "Étiquettes",
+        "addTag": "Ajouter une étiquette",
+        "tagPlaceholder": "Étiquette",
+        "headingPlaceholder": "Construire des bases solides…",
+        "subheadingPlaceholder": "Un court sous-titre d'appui…",
+        "descriptionPlaceholder": "Ajouter une description d'appui…",
+        "ctaTextPlaceholder": "Découvrir les cours",
+        "ctaUrlPlaceholder": "URL ou #courses",
+        "rightSideImage": "Image du côté droit",
+        "singleImage": "Image unique",
+        "photoCollage": "Collage de photos (jusqu'à 5)",
+        "collageHint": "Apparaît comme une mosaïque à droite.",
+        "photoLabel": "Photo {{number}}",
+        "backgroundImageOptional": "Image d'arrière-plan (facultatif)",
+        "backgroundImageHint": "Affichée en arrière-plan pleine largeur derrière le texte centré."
+    },
+    "headerEditor": {
+        "navLinkColor": "Couleur des liens de navigation",
+        "siteTitle": "Titre du site",
+        "siteTitlePlaceholder": "Mon Académie",
+        "logo": "Logo",
+        "navLinks": "Liens de navigation",
+        "addLink": "Ajouter un lien"
+    },
+    "footerEditor": {
+        "brandName": "Nom de la marque",
+        "brandTagline": "Slogan de la marque",
+        "brandTaglinePlaceholder": "Apprendre sans limites.",
+        "linkSections": "Sections de liens",
+        "sectionTitlePlaceholder": "Titre de la section",
+        "addLink": "Ajouter un lien",
+        "copyrightNote": "Mention de copyright",
+        "copyrightPlaceholder": "© {{year}} Mon Académie"
+    },
+    "courseGridEditor": {
+        "sectionTitle": "Titre de la section",
+        "sectionTitlePlaceholder": "Nos cours",
+        "layoutPreset": "Préréglage de mise en page",
+        "layoutGrid3": "Grille 3",
+        "layoutGrid4": "Grille 4",
+        "layoutList": "Liste",
+        "showFilters": "Afficher les filtres",
+        "showPrice": "Afficher le prix",
+        "showBadge": "Afficher le badge"
+    },
+    "textBlockEditor": {
+        "contentPlaceholder": "Écrivez votre texte ici…"
+    },
+    "imageBlockEditor": {
+        "altText": "Texte alternatif",
+        "altTextPlaceholder": "Texte alternatif descriptif",
+        "linkUrlOptional": "URL du lien (facultatif)"
+    },
+    "htmlBlockEditor": {
+        "html": "HTML",
+        "cssScoped": "CSS (limité à cette section)"
+    },
+    "statsEditor": {
+        "headingPlaceholder": "Nos chiffres",
+        "stats": "Statistiques",
+        "valuePlaceholder": "10 000+",
+        "labelPlaceholder": "Étudiants"
+    },
+    "testimonialEditor": {
+        "headingPlaceholder": "Ce que disent nos apprenants",
+        "testimonials": "Témoignages",
+        "namePlaceholder": "Nom",
+        "rolePlaceholder": "Rôle",
+        "feedbackPlaceholder": "Avis…"
+    },
+    "faqEditor": {
+        "headingPlaceholder": "FAQ",
+        "questions": "Questions",
+        "questionPlaceholder": "Question ?",
+        "answerPlaceholder": "Réponse…"
+    },
+    "videoEmbedEditor": {
+        "videoUrl": "URL de la vidéo",
+        "caption": "Légende",
+        "aspectRatio": "Format d'image"
+    },
+    "ctaBannerEditor": {
+        "showButton": "Afficher le bouton"
+    },
+    "featureGridEditor": {
+        "headingPlaceholder": "Pourquoi nous choisir",
+        "columns": "Colonnes",
+        "features": "Fonctionnalités",
+        "iconEmojiPlaceholder": "Icône/emoji"
+    },
+    "stepsEditor": {
+        "headingPlaceholder": "Comment ça marche",
+        "layout": "Disposition",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical",
+        "steps": "Étapes",
+        "stepTitlePlaceholder": "Titre de l'étape"
+    },
+    "marqueeEditor": {
+        "icons": {
+            "none": "Aucun",
+            "star": "Étoile",
+            "check": "Coche",
+            "graduate": "Diplômé",
+            "trophy": "Trophée",
+            "rocket": "Fusée",
+            "bulb": "Ampoule",
+            "books": "Livres",
+            "fire": "Feu",
+            "sparkle": "Étincelle",
+            "diamond": "Diamant",
+            "circle": "Cercle",
+            "pipe": "Barre verticale"
+        },
+        "appearance": "Apparence",
+        "iconColor": "Couleur de l'icône",
+        "fontSize": "Taille de police",
+        "motion": "Mouvement",
+        "speed": "Vitesse",
+        "speedSlow": "Lent",
+        "speedMedium": "Moyen",
+        "speedFast": "Rapide",
+        "direction": "Direction",
+        "directionLeft": "Gauche",
+        "directionRight": "Droite",
+        "pauseOnHover": "Pause au survol",
+        "defaultSeparatorIcon": "Icône de séparation par défaut",
+        "defaultItem1": "Élément 1",
+        "defaultItem2": "Élément 2",
+        "newItem": "Nouvel élément",
+        "items": "Éléments",
+        "addItem": "Ajouter un élément",
+        "itemTextPlaceholder": "Texte de l'élément",
+        "noItemsYet": "Aucun élément pour le moment. Ajoutez-en ci-dessus."
+    },
+    "layersPanel": {
+        "noComponentsYet": "Aucun composant pour le moment"
+    },
+    "canvas": {
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "hideComponent": "Masquer le composant",
+        "showComponent": "Afficher le composant",
+        "removeComponent": "Supprimer le composant",
+        "hiddenBadge": "masqué",
+        "viewportDesktop": "bureau",
+        "viewportTablet": "tablette",
+        "viewportMobile": "mobile",
+        "emptyHint": "Faites glisser des composants ici ou cliquez sur + pour en ajouter",
+        "componentCountHint_one": "{{count}} composant · cliquez pour sélectionner",
+        "componentCountHint_many": "{{count}} composants · cliquez pour sélectionner",
+        "componentCountHint_other": "{{count}} composants · cliquez pour sélectionner",
+        "pageEmptyTitle": "Cette page est vide",
+        "pageEmptyHint": "Faites glisser depuis le panneau de gauche ou cliquez sur + pour ajouter des composants"
+    },
+    "rightPanel": {
+        "pageSettings": "Paramètres de la page",
+        "brandColor": "Couleur de la marque",
+        "selectComponentHint": "Cliquez sur un composant du canevas pour modifier ses propriétés.",
+        "hide": "Masquer",
+        "show": "Afficher",
+        "remove": "Supprimer",
+        "design": "Design"
+    },
+    "sidebar": {
+        "addTab": "Ajouter",
+        "layersTab": "Calques"
+    }
+}

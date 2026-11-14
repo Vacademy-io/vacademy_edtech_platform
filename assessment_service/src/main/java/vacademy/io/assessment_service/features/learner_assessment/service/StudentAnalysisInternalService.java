@@ -1,13 +1,16 @@
 package vacademy.io.assessment_service.features.learner_assessment.service;
 
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.CohortAssessmentAttemptProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentAttemptHistoryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.UserAssessmentHistorySummaryProjection;
+import vacademy.io.assessment_service.features.assessment.repository.AssessmentBatchRegistrationRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.learner_assessment.dto.SectionComparisonDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto;
@@ -16,11 +19,15 @@ import vacademy.io.assessment_service.features.learner_assessment.dto.internal.A
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.AssessmentSectionSummaryDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryRequest;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.BatchAssessmentHistoryResponse;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentRequest;
+import vacademy.io.assessment_service.features.learner_assessment.dto.internal.CohortAssessmentResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.StudentAssessmentHistoryResponse;
 import vacademy.io.assessment_service.features.learner_assessment.dto.internal.UserAssessmentSummaryDto;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +46,7 @@ import java.util.Set;
  *   <li>Read-only — no writes anywhere.
  *   <li>Reuses existing {@link StudentAttemptRepository} queries and
  *       {@link LearnerReportService#buildComparisonData} — no duplicated query logic.
- *   <li>Comparison is capped at {@link #MAX_ASSESSMENTS_PER_REPORT} (default 25) to bound
+ *   <li>Comparison is capped at {@link #MAX_ASSESSMENTS_PER_REPORT} (default 50) to bound
  *       per-request work.  A truncation warning is logged so operators can tune the cap.
  *   <li>Per-assessment comparison failures are isolated: a single failure marks that entry
  *       with null comparison fields but never aborts the whole request.
@@ -51,10 +58,11 @@ public class StudentAnalysisInternalService {
 
     /**
      * Maximum number of assessments that will have full comparison data computed.
-     * The most recent N attempts are processed; older ones are silently omitted.
-     * Configurable via a constant here; could be externalised to application properties.
+     * The most recent N attempts (by exam date) are processed; older ones are silently omitted.
+     * 25 was too tight: a school term of weekly offline tests passes it (26 in a Sep 2026
+     * Elevate report), and the newest test was the one that got dropped.
      */
-    static final int MAX_ASSESSMENTS_PER_REPORT = 25;
+    static final int MAX_ASSESSMENTS_PER_REPORT = 50;
 
     /** Maximum cohort size accepted by the batch endpoint; larger requests are rejected with 400. */
     static final int MAX_BATCH_USERS = 500;
@@ -62,8 +70,17 @@ public class StudentAnalysisInternalService {
     /** Default look-back window (days) for the batch endpoint when sinceDays is omitted. */
     static final int DEFAULT_SINCE_DAYS = 90;
 
+    /** Row cap for the institute-wide cohort query (all-batches report). */
+    static final int MAX_INSTITUTE_ATTEMPTS = 100_000;
+
     @Autowired
     private StudentAttemptRepository studentAttemptRepository;
+
+    @Autowired
+    private AssessmentBatchRegistrationRepository assessmentBatchRegistrationRepository;
+
+    /** Rows read before the batch filter, so a batch still gets its full cap after filtering. */
+    private static final int MAX_ROWS_BEFORE_BATCH_FILTER = 1000;
 
     /**
      * Self-injection to benefit from Spring's @Cacheable proxy on
@@ -84,6 +101,15 @@ public class StudentAnalysisInternalService {
      */
     public StudentAssessmentHistoryResponse fetchAssessmentHistory(
             String userId, String instituteId, Date startDate, Date endDate) {
+        return fetchAssessmentHistory(userId, instituteId, startDate, endDate, null);
+    }
+
+    /**
+     * As {@link #fetchAssessmentHistory(String, String, Date, Date)}, limited to the assessments
+     * assigned to {@code batchId} when it is given.
+     */
+    public StudentAssessmentHistoryResponse fetchAssessmentHistory(
+            String userId, String instituteId, Date startDate, Date endDate, String batchId) {
 
         // `endDate` arrives via @DateTimeFormat(ISO.DATE), so "2026-06-30" materialises as
         // 2026-06-30T00:00:00 and the query's `created_at <= :endDate` then excluded EVERY attempt
@@ -92,10 +118,16 @@ public class StudentAnalysisInternalService {
         Date inclusiveEnd = endOfDay(endDate);
 
         // Fetch at most MAX+1 rows so we can detect truncation without fetching everything
+        boolean scoped = batchId != null && !batchId.isBlank();
         List<StudentAttemptHistoryProjection> rows = studentAttemptRepository
                 .findAssessmentHistoryForUserInDateRange(
                         userId, instituteId, startDate, inclusiveEnd,
-                        PageRequest.of(0, MAX_ASSESSMENTS_PER_REPORT + 1));
+                        PageRequest.of(0, scoped ? MAX_ROWS_BEFORE_BATCH_FILTER : MAX_ASSESSMENTS_PER_REPORT + 1));
+        if (scoped) {
+            Set<String> batchAssessments = new java.util.HashSet<>(assessmentBatchRegistrationRepository
+                    .findAssessmentIdsByBatchAndInstitute(batchId, instituteId, List.of("ACTIVE")));
+            rows = rows.stream().filter(r -> batchAssessments.contains(r.getAssessmentId())).toList();
+        }
 
         boolean truncated = rows.size() > MAX_ASSESSMENTS_PER_REPORT;
         if (truncated) {
@@ -189,6 +221,64 @@ public class StudentAnalysisInternalService {
                 .build();
     }
 
+    /**
+     * Cohort attempts for the admin batch report: the latest ENDED attempt of each learner on
+     * each assessment in [startDate, endDate]. Max {@value #MAX_BATCH_USERS} learners per call;
+     * with no userIds, every learner of the institute (capped at {@value #MAX_INSTITUTE_ATTEMPTS} rows).
+     */
+    public CohortAssessmentResponse fetchCohortAttempts(CohortAssessmentRequest request) {
+        if (request == null || request.getInstituteId() == null || request.getInstituteId().isBlank()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "instituteId is required");
+        }
+        boolean instituteWide = request.getUserIds() == null || request.getUserIds().isEmpty();
+        if (!instituteWide && request.getUserIds().size() > MAX_BATCH_USERS) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST,
+                    "userIds exceeds the maximum of " + MAX_BATCH_USERS + " per call");
+        }
+        LocalDate start;
+        LocalDate end;
+        try {
+            start = LocalDate.parse(request.getStartDate());
+            end = LocalDate.parse(request.getEndDate());
+        } catch (Exception e) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "startDate and endDate must be yyyy-MM-dd");
+        }
+        if (start.isAfter(end)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "startDate is after endDate");
+        }
+        Date from = Date.from(start.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date to = Date.from(end.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        List<CohortAssessmentAttemptProjection> rows;
+        if (instituteWide) {
+            rows = studentAttemptRepository.findInstituteAttemptsBetween(
+                    request.getInstituteId(), from, to, MAX_INSTITUTE_ATTEMPTS);
+        } else {
+            Set<String> ids = new LinkedHashSet<>();
+            for (String id : request.getUserIds()) {
+                if (id != null && !id.isBlank()) ids.add(id);
+            }
+            if (ids.isEmpty()) {
+                return CohortAssessmentResponse.builder().attempts(List.of()).build();
+            }
+            rows = studentAttemptRepository.findCohortAttemptsBetween(
+                    request.getInstituteId(), new ArrayList<>(ids), from, to);
+        }
+
+        List<CohortAssessmentResponse.Attempt> attempts = new ArrayList<>();
+        for (CohortAssessmentAttemptProjection row : rows) {
+            attempts.add(CohortAssessmentResponse.Attempt.builder()
+                    .userId(row.getUserId())
+                    .assessmentId(row.getAssessmentId())
+                    .assessmentName(row.getAssessmentName())
+                    .attemptAt(row.getAttemptAt() != null ? row.getAttemptAt().toInstant().toString() : null)
+                    .percentage(roundToOneDecimal(row.getPercentage()))
+                    .build());
+        }
+        log.info("student-analysis/cohort: instituteId={} instituteWide={} attempts={} [{} - {}]",
+                request.getInstituteId(), instituteWide, attempts.size(), start, end);
+        return CohortAssessmentResponse.builder().attempts(attempts).build();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -231,14 +321,43 @@ public class StudentAnalysisInternalService {
                         .resultStatus(row.getResultStatus())
                         .sections(Collections.emptyList());
 
+        enrichWithComparison(builder, userId, row.getAssessmentId(), row.getAttemptId(),
+                row.getTotalMarks(), instituteId);
+        return builder.build();
+    }
+
+    /**
+     * One history item from a learner-visible report row (learner chatbot). The caller has
+     * already applied the learner app's release gating; enrichment is the same as above.
+     */
+    AssessmentHistoryItemDto buildHistoryItemFromReport(
+            StudentReportDto row, String userId, String instituteId) {
+        AssessmentHistoryItemDto.AssessmentHistoryItemDtoBuilder builder =
+                AssessmentHistoryItemDto.builder()
+                        .assessmentId(row.getAssessmentId())
+                        .assessmentName(row.getAssessmentName())
+                        .attemptId(row.getAttemptId())
+                        .attemptDate(row.getAttemptDate())
+                        .marks(row.getTotalMarks())
+                        .durationSeconds(row.getDurationInSeconds())
+                        .resultStatus(row.getReportReleaseStatus())
+                        .sections(Collections.emptyList());
+        enrichWithComparison(builder, userId, row.getAssessmentId(), row.getAttemptId(),
+                row.getTotalMarks(), instituteId);
+        return builder.build();
+    }
+
+    private void enrichWithComparison(
+            AssessmentHistoryItemDto.AssessmentHistoryItemDtoBuilder builder,
+            String userId, String assessmentId, String attemptId, Double earnedMarks,
+            String instituteId) {
         // Attempt to enrich with comparison data; never let a failure abort the whole request.
         try {
             StudentComparisonDto comparison = learnerReportService
-                    .buildComparisonData(userId, row.getAssessmentId(), row.getAttemptId(), instituteId);
+                    .buildComparisonData(userId, assessmentId, attemptId, instituteId);
 
             if (comparison != null) {
                 Double totalMarks = comparison.getTotalMarks();
-                Double earnedMarks = row.getTotalMarks();
                 double percentage = (totalMarks != null && totalMarks > 0 && earnedMarks != null)
                         ? Math.round((earnedMarks / totalMarks) * 1000.0) / 10.0
                         : 0.0;
@@ -255,10 +374,8 @@ public class StudentAnalysisInternalService {
         } catch (Exception ex) {
             log.warn("student-analysis: failed to build comparison for " +
                      "assessmentId={} attemptId={} userId={}: {}",
-                     row.getAssessmentId(), row.getAttemptId(), userId, ex.getMessage());
+                     assessmentId, attemptId, userId, ex.getMessage());
         }
-
-        return builder.build();
     }
 
     private List<AssessmentSectionSummaryDto> mapSections(List<SectionComparisonDto> sectionComparisons) {

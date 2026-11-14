@@ -1,0 +1,190 @@
+{
+    "common": {
+        "filters": "Filtres",
+        "clear": "Effacer",
+        "view": "Voir",
+        "close": "Fermer",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "selectPeriod": "Sélectionner la période",
+        "viewModeTimeline": "Chronologie",
+        "viewModeTable": "Tableau",
+        "pageOf": "Page {{page}} sur {{total}}"
+    },
+    "periodSelector": {
+        "today": "Aujourd'hui",
+        "tomorrow": "Demain",
+        "allActivities": "Toutes les activités"
+    },
+    "intervalTypeSelector": {
+        "today": "Aujourd'hui",
+        "thisWeek": "Cette semaine",
+        "thisMonth": "Ce mois-ci",
+        "thisQuarter": "Ce trimestre",
+        "allPlannings": "Toutes les planifications"
+    },
+    "attachments": {
+        "label": "Pièces jointes",
+        "openInNewTab": "Ouvrir dans un nouvel onglet",
+        "failedToLoad": "Échec du chargement",
+        "item": "Pièce jointe {{index}}"
+    },
+    "filtersDialog": {
+        "title": "Options de filtrage",
+        "description": "Personnalisez ce que vous souhaitez voir",
+        "period": "Période",
+        "coursesAndBatches": "{{courses}}/{{batches}}",
+        "clearAllFilters": "Effacer tous les filtres"
+    },
+    "planningFilters": {
+        "clearAll": "Tout effacer",
+        "intervalType": "Type d'intervalle",
+        "unnamedBatch": "{{batch}} sans nom"
+    },
+    "intervalTypeOptions": {
+        "dayOfWeek": "Jour de la semaine",
+        "weekly": "Hebdomadaire",
+        "monthly": "Mensuel",
+        "quarterly": "Trimestriel"
+    },
+    "intervalTypeLabel": {
+        "daily": "Quotidien",
+        "weekly": "Jour de la semaine",
+        "monthly": "Semaine",
+        "yearlyMonth": "Mois",
+        "yearlyQuarter": "Trimestre"
+    },
+    "todayIntervalLabel": {
+        "daily": "Quotidien",
+        "weekly": "Cette semaine",
+        "monthly": "Ce mois-ci",
+        "yearlyMonth": "Ce mois-ci",
+        "yearlyQuarter": "Ce trimestre"
+    },
+    "weekdays": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+    },
+    "monthsFull": {
+        "january": "Janvier",
+        "february": "Février",
+        "march": "Mars",
+        "april": "Avril",
+        "may": "Mai",
+        "june": "Juin",
+        "july": "Juillet",
+        "august": "Août",
+        "september": "Septembre",
+        "october": "Octobre",
+        "november": "Novembre",
+        "december": "Décembre"
+    },
+    "monthsShort": {
+        "jan": "Janv.",
+        "feb": "Févr.",
+        "mar": "Mars",
+        "apr": "Avr.",
+        "may": "Mai",
+        "jun": "Juin",
+        "jul": "Juill.",
+        "aug": "Août",
+        "sep": "Sept.",
+        "oct": "Oct.",
+        "nov": "Nov.",
+        "dec": "Déc."
+    },
+    "quarterRanges": {
+        "q1": "Janv. - Mars",
+        "q2": "Avr. - Juin",
+        "q3": "Juill. - Sept.",
+        "q4": "Oct. - Déc."
+    },
+    "formatters": {
+        "weekLabel": "S{{week}} {{month}}",
+        "yearMonthLabel": "{{month}} {{year}}",
+        "quarterFallback": "T{{num}}"
+    },
+    "groups": {
+        "today": "Aujourd'hui",
+        "tomorrow": "Demain",
+        "pastDays": "Jours passés",
+        "later": "Plus tard",
+        "nextWeek": "Semaine prochaine",
+        "nextMonth": "Mois prochain",
+        "nextQuarter": "Trimestre prochain",
+        "pastWeek": "Semaine dernière",
+        "pastMonth": "Mois dernier",
+        "pastQuarter": "Trimestre dernier"
+    },
+    "table": {
+        "empty": {
+            "title": "Aucune planification ni activité n'a encore été partagée avec vous",
+            "description": "Vos {{teachers}} partageront ici les planifications et les activités"
+        },
+        "headers": {
+            "interval": "Intervalle",
+            "period": "Période",
+            "title": "Titre",
+            "createdBy": "Créé par",
+            "createdAt": "Créé le",
+            "actions": "Actions"
+        }
+    },
+    "timeline": {
+        "previousPage": "Page précédente",
+        "loadMore": "Charger plus"
+    },
+    "timelineCard": {
+        "by": "Par : {{name}}",
+        "viewDetails": "Voir les détails"
+    },
+    "todayCard": {
+        "updatedAgo": "Mis à jour il y a {{time}}",
+        "createdBy": "Créé par {{name}}"
+    },
+    "viewDialog": {
+        "interval": "Intervalle :",
+        "createdBy": "Créé par :",
+        "createdAt": "Créé le :",
+        "description": "Description",
+        "content": "Contenu",
+        "attachmentsCount": "Pièces jointes ({{count}})"
+    },
+    "hub": {
+        "heading": "Planification et activité",
+        "subtitle": "Consultez les planifications et activités partagées par vos {{teachers}}",
+        "plannings": {
+            "title": "Planifications",
+            "description": "Consultez les planifications de vos {{teachers}}",
+            "cta": "Voir les planifications"
+        },
+        "activities": {
+            "title": "Activités",
+            "description": "Consultez les activités de vos {{teachers}}",
+            "cta": "Voir les activités"
+        }
+    },
+    "activityLogsPage": {
+        "navHeading": "Mes activités",
+        "subtitle": "Consultez les activités d'apprentissage quotidiennes",
+        "errorLoad": "Échec du chargement des activités",
+        "empty": {
+            "title": "Aucune activité pour le moment",
+            "description": "Votre {{teacher}} n'a encore enregistré aucune activité"
+        }
+    },
+    "planningLogsPage": {
+        "navHeading": "Mes planifications",
+        "subtitle": "Consultez les plans et les calendriers",
+        "errorLoad": "Échec du chargement des planifications",
+        "empty": {
+            "title": "Aucune planification pour le moment",
+            "description": "Votre {{teacher}} n'a ajouté aucune planification pour cette période"
+        }
+    }
+}

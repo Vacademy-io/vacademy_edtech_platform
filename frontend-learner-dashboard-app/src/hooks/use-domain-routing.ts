@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { matchesCataloguePost } from "@/lib/catalogue-post-route";
+import { isPasswordlessLandingRoute } from "@/lib/auth/passwordless-landing-routes";
 import { Preferences } from "@capacitor/preferences";
 import {
   resolveDomainRouting,
@@ -7,6 +9,7 @@ import {
   DomainRoutingResponse,
   setCachedInstituteBranding,
   setCachedPreferredCountries,
+  setCachedPhoneCountryGeoMode,
 } from "@/services/domain-routing";
 import { useTheme } from "@/providers/theme/theme-provider";
 import { useInstituteFeatureStore } from "@/stores/insititute-feature-store";
@@ -14,7 +17,10 @@ import { isNullOrEmptyOrUndefined } from "@/lib/utils";
 import { applyTabBranding } from "@/utils/branding";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { NAMING_SETTINGS_KEY } from "@/types/naming-settings";
+import { notifyNamingSettingsUpdated } from "@/components/common/layout-container/sidebar/utils";
 import { upsertInstituteDetails } from "@/services/institute-settings-cache";
+import { readSessionInstituteId } from "@/lib/auth/session-institute";
+import { hasActiveLearnerSession } from "@/lib/auth/sessionUtility";
 
 export interface DomainRoutingState {
   isLoading: boolean;
@@ -31,7 +37,53 @@ export interface DomainRoutingState {
   logoWidthPx: number | null;
   logoHeightPx: number | null;
   stackNameBelowLogo: boolean | null;
+  // A signed-in learner of another institute is viewing this host's site. What
+  // this state describes is the site, and nothing of it was saved as theirs.
+  isVisitor?: boolean;
+  // Pre-login policy for this portal, straight from domain routing. The login
+  // screen must read these from here and NOT from Preferences/localStorage:
+  // on a fresh native install neither store has anything yet, and the
+  // Preferences read raced the write on every first launch. Null = the
+  // backend did not say, callers fall back to their own default.
+  allowSignup: boolean | null;
+  allowGoogleAuth: boolean | null;
+  allowGithubAuth: boolean | null;
+  allowEmailOtpAuth: boolean | null;
+  allowUsernamePasswordAuth: boolean | null;
+  allowPhoneAuth: boolean | null;
 }
+
+const NO_AUTH_POLICY = {
+  allowSignup: null,
+  allowGoogleAuth: null,
+  allowGithubAuth: null,
+  allowEmailOtpAuth: null,
+  allowUsernamePasswordAuth: null,
+  allowPhoneAuth: null,
+} as const;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Institute named by the admin page editor's preview iframe, else null.
+ *  Framed only: a top-level visit always resolves by domain as before. */
+const getPreviewInstituteId = (): string | null => {
+  if (typeof window === "undefined" || window.self === window.top) return null;
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("instituteId");
+  return params.get("preview") === "true" && id && UUID_RE.test(id) ? id : null;
+};
+
+const boolOrNull = (v: unknown): boolean | null =>
+  typeof v === "boolean" ? v : null;
+
+const authPolicyFrom = (data: DomainRoutingResponse) => ({
+  allowSignup: boolOrNull(data.allowSignup),
+  allowGoogleAuth: boolOrNull(data.allowGoogleAuth),
+  allowGithubAuth: boolOrNull(data.allowGithubAuth),
+  allowEmailOtpAuth: boolOrNull(data.allowEmailOtpAuth),
+  allowUsernamePasswordAuth: boolOrNull(data.allowUsernamePasswordAuth),
+  allowPhoneAuth: boolOrNull(data.allowPhoneAuth),
+});
 
 // Global state to prevent multiple simultaneous domain routing calls
 let isResolvingGlobally = false;
@@ -39,6 +91,7 @@ let globalDomainRoutingState: DomainRoutingState | null = null;
 
 export const useDomainRouting = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { setPrimaryColor } = useTheme();
   const { setInstituteId } = useInstituteFeatureStore();
 
@@ -65,6 +118,7 @@ export const useDomainRouting = () => {
       logoWidthPx: null,
       logoHeightPx: null,
       stackNameBelowLogo: null,
+      ...NO_AUTH_POLICY,
     };
   });
 
@@ -78,46 +132,10 @@ export const useDomainRouting = () => {
     }
   };
 
-  const storeInstituteData = async (data: DomainRoutingResponse) => {
+  /** Returns true when the signed-in learner belongs to another institute. */
+  const storeInstituteData = async (data: DomainRoutingResponse): Promise<boolean> => {
+    let isVisitor = false;
     try {
-      // Store institute ID in preferences for future use
-      await Preferences.set({
-        key: "InstituteId",
-        value: data.instituteId,
-      });
-
-      // Merge-write so we don't clobber institute_settings_json or other
-      // fields owned by other writers (enroll-form, useSidebar, the settings
-      // cache). This hook runs on every page nav and previously wiped any
-      // settings the invite flow had populated.
-      await upsertInstituteDetails({
-        id: data.instituteId,
-        name: data.instituteName,
-        logo_file_id: data.instituteLogoFileId,
-        institute_logo_file_id: data.instituteLogoFileId,
-        institute_theme_code: data.instituteThemeCode,
-        home_icon_click_route: data.homeIconClickRoute ?? null,
-        homeIconClickRoute: data.homeIconClickRoute ?? null,
-        playStoreAppLink: data.playStoreAppLink ?? null,
-        appStoreAppLink: data.appStoreAppLink ?? null,
-        windowsAppLink: data.windowsAppLink ?? null,
-        macAppLink: data.macAppLink ?? null,
-        learnerPortalUrl: data.learnerPortalUrl ?? null,
-        instructorPortalUrl: data.instructorPortalUrl ?? null,
-        hideInstituteName:
-          typeof data.hideInstituteName === "boolean"
-            ? data.hideInstituteName
-            : null,
-        logoWidthPx:
-          typeof data.logoWidthPx === "number" ? data.logoWidthPx : null,
-        logoHeightPx:
-          typeof data.logoHeightPx === "number" ? data.logoHeightPx : null,
-        stackNameBelowLogo:
-          typeof data.stackNameBelowLogo === "boolean"
-            ? data.stackNameBelowLogo
-            : null,
-      });
-
       // Store per-institute learner settings for quick access
       // Key: LEARNER_<instituteId>, Values: privacyPolicyUrl, termsAndConditionUrl
       const learnerKey = `LEARNER_${data.instituteId}`;
@@ -160,10 +178,68 @@ export const useDomainRouting = () => {
         value: JSON.stringify(learnerSettings),
       });
 
+      // Everything below is about the signed-in learner when one exists, and
+      // this answer is about the host. It may be saved only when nobody is
+      // signed in, or when the learner belongs to this institute.
+      const sessionInstituteId = await readSessionInstituteId();
+      isVisitor = !!sessionInstituteId && sessionInstituteId !== data.instituteId;
+      if (isVisitor) return true;
+
+      // Store institute ID in preferences for future use
+      await Preferences.set({
+        key: "InstituteId",
+        value: data.instituteId,
+      });
+
+      // Merge-write so we don't clobber institute_settings_json or other
+      // fields owned by other writers (enroll-form, useSidebar, the settings
+      // cache). This hook runs on every page nav and previously wiped any
+      // settings the invite flow had populated.
+      await upsertInstituteDetails({
+        id: data.instituteId,
+        name: data.instituteName,
+        logo_file_id: data.instituteLogoFileId,
+        institute_logo_file_id: data.instituteLogoFileId,
+        institute_theme_code: data.instituteThemeCode,
+        home_icon_click_route: data.homeIconClickRoute ?? null,
+        homeIconClickRoute: data.homeIconClickRoute ?? null,
+        playStoreAppLink: data.playStoreAppLink ?? null,
+        appStoreAppLink: data.appStoreAppLink ?? null,
+        windowsAppLink: data.windowsAppLink ?? null,
+        macAppLink: data.macAppLink ?? null,
+        learnerPortalUrl: data.learnerPortalUrl ?? null,
+        instructorPortalUrl: data.instructorPortalUrl ?? null,
+        hideInstituteName:
+          typeof data.hideInstituteName === "boolean"
+            ? data.hideInstituteName
+            : null,
+        logoWidthPx:
+          typeof data.logoWidthPx === "number" ? data.logoWidthPx : null,
+        logoHeightPx:
+          typeof data.logoHeightPx === "number" ? data.logoHeightPx : null,
+        stackNameBelowLogo:
+          typeof data.stackNameBelowLogo === "boolean"
+            ? data.stackNameBelowLogo
+            : null,
+      });
+
+      // Hand the app/portal links to the sidebar directly as well. The cache
+      // write above is not enough on its own: the sidebar fills itself from the
+      // navbar's institute-details query, which can resolve before this one and
+      // does not look again afterwards.
+      try {
+        const { default: useSidebarStore } = await import(
+          "@/components/common/layout-container/sidebar/useSidebar"
+        );
+        useSidebarStore.getState().setAppLinks(data as unknown as Record<string, unknown>);
+      } catch {
+        // Best-effort: the cache write above still covers the common ordering.
+      }
+
       // Seed a minimal namingSettings entry in localStorage so pre-login
       // screens (e.g. login page) can render institute-specific terminology.
       // This is overwritten with the full set by fetchAndStoreInstituteDetails
-      // after the user logs in.
+      // after the user logs in, so a signed-in learner already has the full set.
       try {
         const overrides = data.namingOverrides;
         const seed: { key: string; customValue: string }[] = [];
@@ -185,8 +261,10 @@ export const useDomainRouting = () => {
         if (overrides?.popularTag) {
           seed.push({ key: "PopularTag", customValue: overrides.popularTag });
         }
-        if (seed.length > 0) {
+        if (seed.length > 0 && !sessionInstituteId) {
           localStorage.setItem(NAMING_SETTINGS_KEY, JSON.stringify(seed));
+          // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+          notifyNamingSettingsUpdated();
         }
       } catch (error) {
         console.error("[Domain Routing] Error seeding naming settings:", error);
@@ -231,12 +309,15 @@ export const useDomainRouting = () => {
 
       // Cache preferred countries for synchronous access by phone inputs
       setCachedPreferredCountries(data.commaSeparatedPreferredCountry ?? null);
+      // ...and the portal's rule for when the visitor's own country may win.
+      setCachedPhoneCountryGeoMode(data.phoneCountryGeoMode ?? null);
 
       // Update global state
       setInstituteId(data.instituteId);
     } catch (error) {
       console.error("[Domain Routing] Error storing institute data:", error);
     }
+    return isVisitor;
   };
 
   const getFallbackInstituteId = async (): Promise<string | null> => {
@@ -273,6 +354,31 @@ export const useDomainRouting = () => {
   };
 
   const resolveRouting = async () => {
+    // Admin page-editor preview (`?preview=true&instituteId=…` in an iframe):
+    // the editor names the institute, because one without its own domain
+    // would otherwise resolve to the host's institute and its course blocks
+    // would show the wrong data. Never persisted or cached — preview only.
+    const previewInstituteId = getPreviewInstituteId();
+    if (previewInstituteId) {
+      setState({
+        isLoading: false,
+        instituteId: previewInstituteId,
+        instituteName: null,
+        instituteLogoFileId: null,
+        instituteThemeCode: null,
+        redirectPath: "/login",
+        error: null,
+        homeIconClickRoute: null,
+        convertUsernamePasswordToLowercase: null,
+        hideInstituteName: null,
+        logoWidthPx: null,
+        logoHeightPx: null,
+        stackNameBelowLogo: null,
+        ...NO_AUTH_POLICY,
+      });
+      return;
+    }
+
     // If already resolving globally, use the cached result
     if (isResolvingGlobally && globalDomainRoutingState) {
       setState(globalDomainRoutingState);
@@ -304,11 +410,12 @@ export const useDomainRouting = () => {
         // API returned valid institute data
         // API resolved institute successfully
 
-        await storeInstituteData(apiResult);
-        applyInstituteTheme(apiResult.instituteThemeCode);
+        const isVisitor = await storeInstituteData(apiResult);
+        if (!isVisitor) applyInstituteTheme(apiResult.instituteThemeCode);
 
         const newState: DomainRoutingState = {
           isLoading: false,
+          isVisitor,
           instituteId: apiResult.instituteId,
           instituteName: apiResult.instituteName,
           instituteLogoFileId: apiResult.instituteLogoFileId,
@@ -333,6 +440,7 @@ export const useDomainRouting = () => {
             typeof apiResult.stackNameBelowLogo === "boolean"
               ? apiResult.stackNameBelowLogo
               : null,
+          ...authPolicyFrom(apiResult),
         };
 
         // Cache the result globally
@@ -362,6 +470,7 @@ export const useDomainRouting = () => {
           logoWidthPx: null,
           logoHeightPx: null,
           stackNameBelowLogo: null,
+          ...NO_AUTH_POLICY,
         };
 
         globalDomainRoutingState = newState;
@@ -386,6 +495,7 @@ export const useDomainRouting = () => {
         hideInstituteName: null,
         logoWidthPx: null,
         logoHeightPx: null,
+        ...NO_AUTH_POLICY,
       };
 
       globalDomainRoutingState = newState;
@@ -413,6 +523,7 @@ export const useDomainRouting = () => {
             hideInstituteName: null,
             logoWidthPx: null,
             logoHeightPx: null,
+            ...NO_AUTH_POLICY,
           };
 
           globalDomainRoutingState = newState;
@@ -440,6 +551,7 @@ export const useDomainRouting = () => {
         hideInstituteName: null,
         logoWidthPx: null,
         logoHeightPx: null,
+        ...NO_AUTH_POLICY,
       };
 
       globalDomainRoutingState = newState;
@@ -448,10 +560,16 @@ export const useDomainRouting = () => {
     }
   };
 
-  const redirectToResolvedPath = () => {
+  const redirectToResolvedPath = async () => {
     if (state.redirectPath) {
       // Redirecting to resolved path: ${state.redirectPath}
-      navigate({ to: state.redirectPath as never });
+      // Someone already signed in, to whichever institute, has no use for this
+      // host's sign-in page.
+      const signedInOnCatalogue =
+        state.redirectPath === "/login" &&
+        window.location.pathname.startsWith("/courses") &&
+        (await hasActiveLearnerSession());
+      navigate({ to: (signedInOnCatalogue ? "/dashboard" : state.redirectPath) as never });
     } else if (state.instituteId) {
       // Don't automatically redirect to courses if we're on a public route or course details page
       const currentPath = window.location.pathname;
@@ -480,14 +598,15 @@ export const useDomainRouting = () => {
         "/courses/course-details"
       ) || /^\/[^/]+\/[^/]+\/?$/.test(currentPath);
 
-      // Don't redirect if we're on live-class dynamic route
-      const isOnLiveClassDynamicRoute =
-        /^\/study-library\/live-class\/[^/]+\/?$/.test(currentPath);
+      // Don't redirect on a passwordless landing (live-class, profile edit):
+      // it signs the learner in itself, then moves on.
+      const isOnPasswordlessLanding = isPasswordlessLandingRoute(currentPath);
 
       if (
         isOnPublicRoute ||
         isOnCourseDetailsPage ||
-        isOnLiveClassDynamicRoute
+        isOnPasswordlessLanding ||
+        matchesCataloguePost(router.state.matches)
       ) {
         return;
       }
@@ -539,17 +658,20 @@ export const useDomainRouting = () => {
         "/courses/course-details"
       ) || /^\/[^/]+\/[^/]+\/?$/.test(currentPath);
 
-      // Don't redirect if we're on live-class dynamic route
-      const isOnLiveClassDynamicRoute =
-        /^\/study-library\/live-class\/[^/]+\/?$/.test(currentPath);
+      // Don't redirect on a passwordless landing (live-class, profile edit):
+      // it signs the learner in itself, then moves on.
+      const isOnPasswordlessLanding = isPasswordlessLandingRoute(currentPath);
 
       // Don't redirect if we're on my-files routes
-      const isOnMyFilesRoute = currentPath.startsWith("/my-files");
+      const isOnMyFilesRoute =
+        currentPath.startsWith("/my-files") || currentPath.startsWith("/notebook");
 
       if (
         isOnPublicRoute ||
+        // A blog post on a tagged catalogue site, /<tag>/<page>/<slug>.
+        matchesCataloguePost(router.state.matches) ||
         isOnCourseDetailsPage ||
-        isOnLiveClassDynamicRoute ||
+        isOnPasswordlessLanding ||
         isOnMyFilesRoute
       ) {
         return;
@@ -580,11 +702,12 @@ export const useDomainRouting = () => {
         !currentPathForRedirect.startsWith('/learning-centre') &&
         !currentPathForRedirect.startsWith('/user-profile') &&
         !currentPathForRedirect.startsWith('/my-files') &&
+        !currentPathForRedirect.startsWith('/notebook') &&
         !currentPathForRedirect.startsWith('/Coursetile');
 
       if (window.location.pathname !== "/" && !isPublicRouteForRedirect) {
         // Executing redirect to: ${state.redirectPath}
-        redirectToResolvedPath();
+        void redirectToResolvedPath();
       } else if (isPublicRouteForRedirect) {
         console.log("[Domain Routing] On public route, skipping redirect to:", state.redirectPath);
       }

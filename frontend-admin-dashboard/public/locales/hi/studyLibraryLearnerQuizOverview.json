@@ -1,0 +1,81 @@
+{
+    "filters": {
+        "everyone": "सभी",
+        "hasAttempted": "प्रयास किया",
+        "notStarted": "शुरू नहीं हुआ",
+        "atRisk": "जोखिम में"
+    },
+    "sorts": {
+        "lowestAverage": "सबसे कम औसत",
+        "highestAverage": "सबसे अधिक औसत",
+        "nameAz": "नाम (A–Z)",
+        "mostQuizzesDone": "सबसे अधिक क्विज़ पूर्ण",
+        "fewestQuizzesDone": "सबसे कम क्विज़ पूर्ण",
+        "mostRecentActivity": "हाल की गतिविधि"
+    },
+    "csv": {
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "quizzesAttempted": "प्रयास किए गए क्विज़",
+        "quizzesInCourse": "कोर्स में क्विज़",
+        "totalAttempts": "कुल प्रयास",
+        "marksObtained": "प्राप्त अंक",
+        "maxMarksAttempted": "अधिकतम अंक (प्रयास किए गए)",
+        "maxMarksCourse": "अधिकतम अंक (कोर्स)",
+        "averagePercent": "औसत %",
+        "bestPercent": "सर्वश्रेष्ठ %",
+        "lowestPercent": "न्यूनतम %",
+        "correct": "सही",
+        "wrong": "गलत",
+        "skipped": "छोड़े गए",
+        "quizzesPassed": "उत्तीर्ण क्विज़",
+        "lastActivity": "अंतिम गतिविधि"
+    },
+    "table": {
+        "learner": "शिक्षार्थी",
+        "quizzesDone": "पूर्ण क्विज़",
+        "averageScore": "औसत स्कोर",
+        "notStarted": "शुरू नहीं हुआ",
+        "passed": "उत्तीर्ण",
+        "noPassMark": "कोई उत्तीर्णांक नहीं",
+        "attempts": "प्रयास",
+        "lastActivity": "अंतिम गतिविधि"
+    },
+    "stats": {
+        "learners": "शिक्षार्थी",
+        "quizzesInCourse_one": "इस कोर्स में {{count}} क्विज़",
+        "quizzesInCourse_other": "इस कोर्स में {{count}} क्विज़",
+        "haveAttempted": "प्रयास किया है",
+        "haveNotStarted_one": "{{count}} ने शुरू नहीं किया है",
+        "haveNotStarted_other": "{{count}} ने शुरू नहीं किया है",
+        "classAverage": "कक्षा औसत",
+        "ofLearnersWhoStarted": "जिन शिक्षार्थियों ने शुरुआत की",
+        "atRisk": "जोखिम में",
+        "averagingUnder50": "औसत 50% से कम"
+    },
+    "searchPlaceholder": "शिक्षार्थी खोजें",
+    "filterLearnersAriaLabel": "शिक्षार्थियों को फ़िल्टर करें",
+    "actions": {
+        "exportCsv": "CSV निर्यात करें",
+        "refreshAriaLabel": "शिक्षार्थी परिणाम रीफ़्रेश करें",
+        "clearFilters": "फ़िल्टर साफ़ करें",
+        "retry": "पुनः प्रयास करें"
+    },
+    "truncatedNotice": "इस बैच में रिपोर्ट में एक साथ दिखाए जाने से अधिक शिक्षार्थी हैं — नीचे की सूची सीमित है।",
+    "empty": {
+        "noneEnrolledTitle": "इस बैच में अभी तक कोई शिक्षार्थी नामांकित नहीं है",
+        "noneEnrolledSubtitle": "शिक्षार्थियों के नामांकित होने पर, उनकी क्विज़ प्रगति यहाँ दिखाई देगी।",
+        "noMatchTitle": "इन फ़िल्टर से कोई शिक्षार्थी मेल नहीं खाता",
+        "noMatchSubtitle": "एक अलग खोज शब्द आज़माएँ या फ़िल्टर साफ़ करें।"
+    },
+    "errors": {
+        "couldNotLoad": "शिक्षार्थी परिणाम लोड नहीं हो सके",
+        "couldNotLoadSubtitle": "अनुरोध विफल रहा। अपना कनेक्शन जाँचें और पुनः प्रयास करें।"
+    },
+    "toast": {
+        "nothingToExport": "इन फ़िल्टर के साथ निर्यात करने के लिए कुछ नहीं है।",
+        "exported_one": "{{count}} शिक्षार्थी निर्यात किया गया",
+        "exported_other": "{{count}} शिक्षार्थी निर्यात किए गए"
+    }
+}

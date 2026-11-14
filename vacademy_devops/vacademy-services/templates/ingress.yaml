@@ -29,7 +29,7 @@ metadata:
     # Large uploads (SCORM zips etc.) — without this nginx 413s at the default
     # 1m, and the bare 413 page has no CORS headers so browsers report it as a
     # CORS failure. Services still enforce their own multipart limits.
-    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "820m"
     {{- if .Values.certManager.enabled }}
     cert-manager.io/cluster-issuer: vacademy-letsencrypt
     {{- end }}
@@ -63,6 +63,26 @@ spec:
                 name: auth-service
                 port:
                   number: {{ .Values.services.auth_service.port }}
+{{- end }}
+{{- if .Values.services.ai_service.enabled }}
+          # OAuth discovery for the MCP server. RFC 9728/8414 put these documents
+          # at the ROOT of the host (the resource path is appended AFTER the
+          # well-known segment), so they cannot live under /ai-service. They must
+          # also precede the SPA's catch-all "/" below.
+          - path: /.well-known/oauth-protected-resource
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: {{ .Values.services.ai_service.port }}
+          - path: /.well-known/oauth-authorization-server
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: {{ .Values.services.ai_service.port }}
 {{- end }}
 {{- if .Values.frontends.enabled }}
           - path: /
@@ -109,7 +129,7 @@ metadata:
     # Large uploads (SCORM zips etc.) — without this nginx 413s at the default
     # 1m, and the bare 413 page has no CORS headers so browsers report it as a
     # CORS failure. Services still enforce their own multipart limits.
-    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "820m"
     cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
     certmanager.k8s.io/acme-challenge-type: http01
 spec:
@@ -170,6 +190,24 @@ spec:
                 port:
                   number: {{ .Values.services.notification_service.port }}
           - path: /ai-service
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: {{ .Values.services.ai_service.port }}
+          # OAuth discovery for the MCP server. RFC 9728/8414 put these
+          # documents at the ROOT of the host (the resource path is appended
+          # AFTER the well-known segment), so they cannot live under
+          # /ai-service. MCP clients fetch them before they hold any token.
+          - path: /.well-known/oauth-protected-resource
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: {{ .Values.services.ai_service.port }}
+          - path: /.well-known/oauth-authorization-server
             pathType: Prefix
             backend:
               service:

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -49,6 +50,7 @@ export function EditPersonDialog({
     peopleInTeam,
     onSaved,
 }: Props) {
+    const { t } = useTranslation('manageInstituteEditPersonDialog');
     const [parentUserId, setParentUserId] = useState<string>('');
     const [roleLabel, setRoleLabel] = useState('');
 
@@ -88,13 +90,13 @@ export function EditPersonDialog({
                 }),
             }),
         onSuccess: () => {
-            toast.success('Updated');
+            toast.success(t('toast.updated'));
             onSaved();
             onOpenChange(false);
         },
         onError: (e) => {
             const msg = (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
-            toast.error(msg ?? 'Could not save');
+            toast.error(msg ?? t('toast.saveFailed'));
         },
     });
 
@@ -102,23 +104,21 @@ export function EditPersonDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-h3">Edit {name}</DialogTitle>
-                    <p className="text-subtitle text-neutral-500">
-                        Pick a manager or change the position label.
-                    </p>
+                    <DialogTitle className="text-h3">{t('title', { name })}</DialogTitle>
+                    <p className="text-subtitle text-neutral-500">{t('subtitle')}</p>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div>
                         <label className="mb-1 block text-caption font-medium text-neutral-700">
-                            Reports to
+                            {t('reportsTo')}
                         </label>
                         <select
                             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
                             value={parentUserId}
                             onChange={(e) => setParentUserId(e.target.value)}
                         >
-                            <option value="">No manager — top of team</option>
+                            <option value="">{t('noManager')}</option>
                             {managerOptions.map((p) => (
                                 <option key={p.mappingId} value={p.userId}>
                                     {'  '.repeat(p.depth)}
@@ -128,19 +128,18 @@ export function EditPersonDialog({
                             ))}
                         </select>
                         <p className="mt-1 text-caption text-neutral-500">
-                            Their direct reports (and this person) are hidden from this
-                            list to prevent loops.
+                            {t('reportsToHint')}
                         </p>
                     </div>
 
                     <div>
                         <label className="mb-1 block text-caption font-medium text-neutral-700">
-                            Position label{' '}
-                            <span className="text-neutral-400">(optional)</span>
+                            {t('positionLabel')}{' '}
+                            <span className="text-neutral-400">{t('optional')}</span>
                         </label>
                         <input
                             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body"
-                            placeholder="e.g. Sales Head, Counsellor Lead"
+                            placeholder={t('positionLabelPlaceholder')}
                             value={roleLabel}
                             onChange={(e) => setRoleLabel(e.target.value)}
                             maxLength={100}
@@ -154,14 +153,14 @@ export function EditPersonDialog({
                         onClick={() => onOpenChange(false)}
                         disable={saveMutation.isPending}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={() => saveMutation.mutate()}
                         disable={!dirty || saveMutation.isPending}
                     >
-                        {saveMutation.isPending ? 'Saving…' : 'Save changes'}
+                        {saveMutation.isPending ? t('actions.saving') : t('actions.saveChanges')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

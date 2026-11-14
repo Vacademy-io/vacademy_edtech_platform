@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CaretLeft, ClipboardText } from "@phosphor-icons/react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useLiveTestStore } from "@/stores/live-test-store";
@@ -9,6 +10,24 @@ interface AssessmentNavbarProps {
 }
 
 /**
+ * Leaves the brief: back to wherever the learner came from (usually the
+ * assessment list). Direct / public-link entries have no in-app history to
+ * pop, so they fall back to the assessment tab.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useLeaveBrief(): () => void {
+  const router = useRouter();
+  const navigate = useNavigate();
+  return () => {
+    if (window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/assessment/examination" });
+    }
+  };
+}
+
+/**
  * Slim header for the assessment brief.
  *
  * Deliberately does not repeat the paper's name: the name is the page's H1
@@ -16,23 +35,12 @@ interface AssessmentNavbarProps {
  * title on a phone ("Class 10 — Term 1 Mock…") while the H1 sat empty.
  */
 const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
-  const router = useRouter();
-  const navigate = useNavigate();
+  const { t } = useTranslation("layoutCommonB");
+  const handleBack = useLeaveBrief();
   // The brief is a full-bleed fixed screen, so this bar carries the status-bar
   // clearance itself — see `topSafeAreaInset`.
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
   const inset = topSafeAreaInset(immersiveActive);
-
-  // Return to wherever the learner came from (usually the assessment list).
-  // Direct / public-link entries have no in-app history to pop, so fall back to
-  // the assessment tab.
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      router.history.back();
-    } else {
-      navigate({ to: "/assessment/examination" });
-    }
-  };
 
   return (
     <div
@@ -45,7 +53,7 @@ const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
       <button
         type="button"
         onClick={handleBack}
-        aria-label="Go back"
+        aria-label={t("instructionPage.navbar.goBack")}
         className="flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
       >
         <CaretLeft size={20} weight="bold" />
@@ -57,7 +65,7 @@ const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
         className="truncate text-caption font-semibold uppercase tracking-wide text-neutral-500"
         title={title}
       >
-        Assessment brief
+        {t("instructionPage.navbar.assessmentBrief")}
       </p>
     </div>
   );

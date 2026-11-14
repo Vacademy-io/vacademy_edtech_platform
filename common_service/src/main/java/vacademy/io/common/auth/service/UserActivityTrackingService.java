@@ -26,6 +26,10 @@ public class UserActivityTrackingService {
 
         private static final String AUTH_SERVICE_NAME = "auth_service";
 
+        // last_activity_time is written at most this often per session; see
+        // UserSessionRepository.updateLastActivityTime.
+        private static final long ACTIVITY_WRITE_INTERVAL_SECONDS = 60;
+
         @Autowired
         private UserActivityLogRepository activityLogRepository;
 
@@ -103,7 +107,7 @@ public class UserActivityTrackingService {
 
                         if (!existingSessions.isEmpty()) {
                                 // Update existing session
-                                sessionRepository.updateLastActivityTime(sessionToken, LocalDateTime.now());
+                                touchSession(sessionToken);
                         } else {
                                 // Create new session
                                 UserSession newSession = UserSession.builder()
@@ -249,8 +253,14 @@ public class UserActivityTrackingService {
          */
         private void updateSessionActivity(String sessionToken) {
                 if (sessionToken != null) {
-                        sessionRepository.updateLastActivityTime(sessionToken, LocalDateTime.now());
+                        touchSession(sessionToken);
                 }
+        }
+
+        private void touchSession(String sessionToken) {
+                LocalDateTime now = LocalDateTime.now();
+                sessionRepository.updateLastActivityTime(sessionToken, now,
+                                now.minusSeconds(ACTIVITY_WRITE_INTERVAL_SECONDS));
         }
 
         /**

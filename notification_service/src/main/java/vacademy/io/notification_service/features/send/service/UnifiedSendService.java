@@ -5,16 +5,27 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import vacademy.io.notification_service.features.email_billing.BlockedEmailStore;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClass;
+import vacademy.io.notification_service.features.email_billing.EmailBillingClassifier;
+import vacademy.io.notification_service.features.email_billing.EmailBillingGate;
+import vacademy.io.notification_service.features.email_billing.EmailUnits;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import vacademy.io.notification_service.features.chatbot_flow.entity.NotificationTemplate;
 import vacademy.io.notification_service.features.chatbot_flow.repository.NotificationTemplateRepository;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.firebase_notifications.service.PushNotificationService;
 import vacademy.io.notification_service.features.send.dto.SendBatchSummaryDTO;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendRequest;
 import vacademy.io.notification_service.features.send.dto.UnifiedSendResponse;
+import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
+import vacademy.io.notification_service.features.send.dto.DeliveryStatusDTO;
 import vacademy.io.notification_service.features.send.entity.SendBatch;
 import vacademy.io.notification_service.features.send.repository.SendBatchRepository;
 import vacademy.io.notification_service.service.EmailService;
+import vacademy.io.notification_service.features.notification_log.MessageOriginPayload;
 import vacademy.io.notification_service.service.WhatsAppService;
 import vacademy.io.common.logging.SentryLogger;
 
@@ -35,6 +46,10 @@ public class UnifiedSendService implements SendChannelRouter {
     private final NotificationTemplateRepository notificationTemplateRepository;
     private final UserAnnouncementPreferenceService userAnnouncementPreferenceService;
     private final EmailCcResolver emailCcResolver;
+    private final NotificationLogRepository notificationLogRepository;
+    private final AdminCoreServiceClient adminCoreServiceClient;
+    private final EmailBillingGate emailBillingGate;
+    private final BlockedEmailStore blockedEmailStore;
 
     private static final int SYNC_THRESHOLD = 100;
 
@@ -56,6 +71,13 @@ public class UnifiedSendService implements SendChannelRouter {
         // threshold — a sync multi-recipient loop can exceed the caller's HTTP read
         // timeout while delivery keeps running here (caller sees a spurious failure).
         boolean forceAsync = Boolean.TRUE.equals(request.getForceAsync()) && recipientCount > 1;
+
+        // A multi-recipient email the institute cannot pay for is refused whole, before anything
+        // goes out or is queued: no half-sent campaign, and no thousands of blocked copies stored.
+        UnifiedSendResponse refused = refuseEmailWithoutCredits(request);
+        if (refused != null) {
+            return refused;
+        }
 
         if (recipientCount <= SYNC_THRESHOLD && !forceAsync) {
             return routeSync(request);
@@ -82,6 +104,87 @@ public class UnifiedSendService implements SendChannelRouter {
         }
     }
 
+    // ==================== Email billing ====================
+
+    /** Billing class of an EMAIL request, from the caller's explicit class, its source and the raw template. */
+    EmailBillingClass emailBillingClass(UnifiedSendRequest request, String templateSubject, String templateBody) {
+        UnifiedSendRequest.SendOptions o = request.getOptions();
+        return EmailBillingClassifier.classify(request.getInstituteId(),
+                o == null ? null : EmailBillingClass.parse(o.getBillingClass()),
+                o == null ? null : o.getSource(), templateSubject, templateBody);
+    }
+
+    /**
+     * Null when the send may go ahead; otherwise the response refusing it because the institute's
+     * free allowance and credits do not cover every recipient. Single sends are left to the
+     * per-email check in EmailService, which keeps the email for a later resend.
+     */
+    UnifiedSendResponse refuseEmailWithoutCredits(UnifiedSendRequest request) {
+        if (!"EMAIL".equalsIgnoreCase(request.getChannel()) || request.getRecipients().size() < 2) {
+            return null;
+        }
+        UnifiedSendRequest.SendOptions opts = request.getOptions() != null
+                ? request.getOptions() : UnifiedSendRequest.SendOptions.builder().build();
+        String subject = opts.getEmailSubject();
+        String body = opts.getEmailBody();
+        if ((subject == null || body == null) && request.getTemplateName() != null && !request.getTemplateName().isEmpty()) {
+            try {
+                Optional<NotificationTemplate> t = notificationTemplateRepository
+                        .findByInstituteIdAndNameAndChannelType(request.getInstituteId(), request.getTemplateName(), "EMAIL");
+                if (t.isPresent()) {
+                    if (subject == null) subject = t.get().getSubject();
+                    if (body == null) body = t.get().getContent();
+                }
+            } catch (Exception e) {
+                log.debug("Template lookup for the email credit check failed: {}", e.getMessage());
+            }
+        }
+        EmailBillingClass cls = emailBillingClass(request, subject, body);
+        if (!emailBillingGate.enforcedFor(request.getInstituteId(), cls)) {
+            return null;
+        }
+        List<String> copies = opts.getCc() != null && !opts.getCc().isEmpty() ? opts.getCc() : List.of();
+        if (copies.isEmpty()) {
+            EmailCcResolver.CopyRecipients resolved = emailCcResolver.resolve(request.getInstituteId(), opts.getSource());
+            if (!resolved.isEmpty()) {
+                copies = resolved.cc();
+            }
+        }
+        long units = 0;
+        for (UnifiedSendRequest.Recipient r : request.getRecipients()) {
+            if (r.getEmail() == null || r.getEmail().isEmpty()) {
+                continue;
+            }
+            long bytes = 0;
+            if (r.getAttachments() != null) {
+                for (UnifiedSendRequest.Attachment a : r.getAttachments()) {
+                    if (a.getContentBase64() != null) {
+                        bytes += a.getContentBase64().length() * 3L / 4;
+                    }
+                }
+            }
+            units += EmailUnits.of(copies, bytes);
+        }
+        EmailBillingGate.Estimate estimate = emailBillingGate.estimate(request.getInstituteId(), cls,
+                (int) Math.min(units, Integer.MAX_VALUE));
+        if (estimate.allowed()) {
+            return null;
+        }
+        blockedEmailStore.notifyBlocked(request.getInstituteId());
+        String error = "Not sent: these emails need " + estimate.credits() + " credits and the institute has "
+                + estimate.availableCredits() + " available. Add credits, then send again.";
+        log.warn("Refused email send of {} unit(s) for institute {}: {}", units, request.getInstituteId(), error);
+        int total = request.getRecipients().size();
+        List<UnifiedSendResponse.RecipientResult> results = total <= SYNC_THRESHOLD
+                ? request.getRecipients().stream().map(r -> UnifiedSendResponse.RecipientResult.builder()
+                        .email(r.getEmail()).success(false).status("BLOCKED_NO_CREDITS").error(error).build())
+                        .collect(Collectors.toList())
+                : List.of();
+        return UnifiedSendResponse.builder()
+                .total(total).accepted(0).failed(total)
+                .status("INSUFFICIENT_CREDITS").results(results).build();
+    }
+
     // ==================== Attribution gating ====================
 
     /**
@@ -92,6 +195,19 @@ public class UnifiedSendService implements SendChannelRouter {
      * options through would change those rows' values and double-attribute per-user views.
      */
     public static final String ENGAGEMENT_ENGINE_SOURCE = "ENGAGEMENT_ENGINE";
+    /** SendOptions.source set by EmailInboxService.sendReply; logged as-is so replies are distinguishable from campaigns. */
+    public static final String INBOX_REPLY_SOURCE = "EMAIL_INBOX";
+    /**
+     * notification_log.source of the SMTP row for every other plain (non-engine, non-inbox) send —
+     * including an announcement's real HTML send. EmailThreadMerger pairs announcement rows only
+     * with rows carrying this source.
+     */
+    public static final String PLAIN_LOG_SOURCE = "unified-send";
+
+    /** Source written on the SMTP notification_log row for a plain send — see {@link #PLAIN_LOG_SOURCE}. */
+    static String plainLogSource(String optsSource) {
+        return INBOX_REPLY_SOURCE.equals(optsSource) ? INBOX_REPLY_SOURCE : PLAIN_LOG_SOURCE;
+    }
 
     private boolean isEngagementEngineSend(UnifiedSendRequest request) {
         return request.getOptions() != null
@@ -103,10 +219,27 @@ public class UnifiedSendService implements SendChannelRouter {
     private UnifiedSendResponse sendWhatsApp(UnifiedSendRequest request) {
         List<UnifiedSendResponse.RecipientResult> results = new ArrayList<>();
 
-        // Phase 3: Resolve named variables → positional using stored template
-        Map<String, Integer> nameToPosition = resolveTemplateVariablePositions(
+        Optional<NotificationTemplate> storedTemplate = findWhatsAppTemplate(
                 request.getInstituteId(), request.getTemplateName(),
                 request.getLanguageCode() != null ? request.getLanguageCode() : "en");
+
+        // Phase 3: Resolve named variables → positional using stored template
+        Map<String, Integer> nameToPosition = resolveTemplateVariablePositions(storedTemplate);
+        // {{n}} count of the approved body; WhatsAppService drops undeclared params on the Meta path.
+        Integer declaredBodyParams = storedTemplate
+                .map(t -> WhatsAppService.countBodyPlaceholders(t.getBodyText())).orElse(null);
+
+        // A template approved with a media header (IMAGE/VIDEO/DOCUMENT) must be sent WITH that
+        // header component — Meta rejects the message otherwise: #132012 "header: Format
+        // mismatch, expected DOCUMENT, received UNKNOWN". Callers that only know the template
+        // name (the Inbox composer, automations, chatbot hand-offs) carry no file, so the sample
+        // the template was approved with is the default. An explicit options/_headerUrl still wins.
+        String templateHeaderType = storedTemplate.map(UnifiedSendService::mediaHeaderType).orElse(null);
+        String templateHeaderUrl = templateHeaderType != null
+                ? httpUrlOrNull(storedTemplate.get().getHeaderSampleUrl()) : null;
+        String requestHeaderType = request.getOptions() != null
+                ? blankToNull(request.getOptions().getHeaderType()) : null;
+        String headerType = requestHeaderType != null ? requestHeaderType : templateHeaderType;
 
         List<Map<String, Map<String, String>>> bodyParams = new ArrayList<>();
         Map<String, Map<String, String>> headerParams = new HashMap<>();
@@ -176,24 +309,28 @@ public class UnifiedSendService implements SendChannelRouter {
             userMap.put(phone, resolvedVars);
             bodyParams.add(userMap);
 
-            // Header params (image/document) — from global options or per-recipient variable
+            // Header params (image/video/document) — per-recipient variable, then global options,
+            // then the file the template was approved with.
             String headerUrl = null;
             if (r.getVariables() != null && r.getVariables().containsKey("_headerUrl")) {
-                headerUrl = r.getVariables().get("_headerUrl");
-            } else if (request.getOptions() != null && request.getOptions().getHeaderUrl() != null) {
-                headerUrl = request.getOptions().getHeaderUrl();
+                headerUrl = blankToNull(r.getVariables().get("_headerUrl"));
+            }
+            if (headerUrl == null && request.getOptions() != null) {
+                headerUrl = blankToNull(request.getOptions().getHeaderUrl());
+            }
+            if (headerUrl == null) {
+                headerUrl = templateHeaderUrl;
             }
 
             if (headerUrl != null) {
-                String hType = request.getOptions() != null ? request.getOptions().getHeaderType() : null;
-                if ("video".equalsIgnoreCase(hType)) {
+                if ("video".equalsIgnoreCase(headerType)) {
                     headerVideoParams.put(phone, headerUrl);
                 } else {
                     headerParams.put(phone, Map.of("link", headerUrl));
                 }
                 // Inject into resolvedVars so WATI bulk path can read them
                 resolvedVars.put("_headerUrl", headerUrl);
-                if (hType != null) resolvedVars.put("_headerType", hType);
+                if (headerType != null) resolvedVars.put("_headerType", headerType);
             }
 
             // Fix #2: Per-recipient button URL params from variables
@@ -212,6 +349,13 @@ public class UnifiedSendService implements SendChannelRouter {
                     resolvedVars.put("_buttonIndex", r.getVariables().get("_buttonIndex"));
                 }
             }
+
+            // Who is sending (e.g. a workflow), for the Inbox / timeline — lifted onto the log
+            // payload by WhatsAppService and never sent to the provider (both skip "_" params).
+            if (request.getOptions() != null) {
+                MessageOriginPayload.putOnParams(resolvedVars, request.getOptions().getOriginType(),
+                        request.getOptions().getOriginId(), request.getOptions().getOriginName());
+            }
         }
 
         if (bodyParams.isEmpty()) {
@@ -222,7 +366,6 @@ public class UnifiedSendService implements SendChannelRouter {
         }
 
         try {
-            String headerType = request.getOptions() != null ? request.getOptions().getHeaderType() : null;
             String langCode = request.getLanguageCode() != null ? request.getLanguageCode() : "en";
 
             // Build buttonIndexParams: read from _buttonIndex variable, default to "0"
@@ -251,7 +394,8 @@ public class UnifiedSendService implements SendChannelRouter {
                     // (announcements, campaigns) keeps its legacy row values byte-identical —
                     // announcement stats/timeline consumers key on the old source strings.
                     isEngagementEngineSend(request) ? request.getOptions().getSource() : null,
-                    isEngagementEngineSend(request) ? request.getOptions().getSourceId() : null);
+                    isEngagementEngineSend(request) ? request.getOptions().getSourceId() : null,
+                    declaredBodyParams);
 
             if (waResults != null) {
                 for (WhatsAppService.WhatsAppSendResult r : waResults) {
@@ -263,6 +407,9 @@ public class UnifiedSendService implements SendChannelRouter {
                             .success(r.success())
                             .status(r.success() ? "SENT" : "FAILED")
                             .error(r.success() ? null : r.error())
+                            // The wamid, so the caller can follow up on what the provider actually
+                            // did with the message — "accepted" is all this response can ever mean.
+                            .messageId(r.messageId())
                             .build());
                 }
             }
@@ -373,7 +520,12 @@ public class UnifiedSendService implements SendChannelRouter {
         }
 
         // Resolve emailType and fromAddress ONCE before the loop (same for all recipients in a batch)
-        String emailType = opts.getEmailType() != null ? opts.getEmailType() : "UTILITY_EMAIL";
+        boolean commercialBulk = Boolean.TRUE.equals(opts.getCommercialBulk()) && request.getInstituteId() != null;
+        String emailType = commercialBulk
+                ? bulkEmailType(opts.getEmailType(), true,
+                        emailService.resolveFromEmailAddress(request.getInstituteId(), "PROMOTIONAL_EMAIL"),
+                        emailService.resolveFromEmailAddress(request.getInstituteId(), "UTILITY_EMAIL"))
+                : opts.getEmailType() != null ? opts.getEmailType() : "UTILITY_EMAIL";
         String fromForUnsubCheck = null;
         if (request.getInstituteId() != null) {
             try {
@@ -405,6 +557,29 @@ public class UnifiedSendService implements SendChannelRouter {
         final List<String> finalCopyRecipients = copyRecipients;
         final String finalCopyMode = copyMode;
 
+        // Decided once per request from the caller and the raw template ({{password}} etc.).
+        final EmailBillingClass billingClass = emailBillingClass(request, templateSubject, templateBody);
+
+        // Logged source for plain (non-engine) sends. An ALLOWLIST, not a pass-through of
+        // opts.source: EmailTrackingService lets users filter EMAIL rows by source, and announcement
+        // sends already log their own 'announcement-service' row - passing every caller's source
+        // through would double-count campaigns there. Only inbox replies need to be told apart.
+        final String plainLogSource = plainLogSource(opts.getSource());
+
+        // Membership merge tags ({{practice_name}}, {{expiry_date_long}}, {{subscription_link}}, ...)
+        // live in admin-core. Fetch them once for the whole batch, and only when the message
+        // uses one, so ordinary sends never make the call.
+        Map<String, Map<String, String>> membershipByUser = Map.of();
+        if (MembershipPlaceholders.usedIn(templateSubject, templateBody)) {
+            List<String> memberIds = request.getRecipients().stream()
+                    .map(UnifiedSendRequest.Recipient::getUserId)
+                    .filter(id -> id != null && !id.isBlank() && !id.contains("@"))
+                    .distinct()
+                    .toList();
+            membershipByUser = adminCoreServiceClient.getMembershipPlaceholders(
+                    request.getInstituteId(), memberIds);
+        }
+
         // Optional rate limiting for bulk sends (e.g., announcements)
         com.google.common.util.concurrent.RateLimiter rateLimiter = null;
         if (opts.getRateLimitPerSecond() != null && opts.getRateLimitPerSecond() > 0) {
@@ -435,12 +610,19 @@ public class UnifiedSendService implements SendChannelRouter {
                 // the caller supplied fullName/parentName (and vice versa). Callers'
                 // explicit keys always win; this only adds the spellings they omitted.
                 Map<String, String> vars = UnifiedVariableAliases.expand(r.getVariables());
+                if (!membershipByUser.isEmpty() && r.getUserId() != null) {
+                    vars = MembershipPlaceholders.fillMissing(vars, membershipByUser.get(r.getUserId()));
+                }
                 for (Map.Entry<String, String> var : vars.entrySet()) {
                     String placeholder = "{{" + var.getKey() + "}}";
                     String value = var.getValue() != null ? var.getValue() : "";
                     subject = subject.replace(placeholder, value);
                     body = body.replace(placeholder, value);
                 }
+                // Safety net: a placeholder nobody resolved must not reach a recipient as
+                // literal "{{first_name}}". Drop it (and a dangling ", " after a greeting).
+                subject = scrubUnresolved(subject);
+                body = scrubUnresolved(body);
 
                 // Check if user has unsubscribed from this email sender.
                 // Only check when we have a valid UUID userId (not null, not an email address).
@@ -466,6 +648,7 @@ public class UnifiedSendService implements SendChannelRouter {
                 }
 
                 // Check for attachments
+                EmailService.SendOutcome outcome = EmailService.SendOutcome.SENT;
                 if (r.getAttachments() != null && !r.getAttachments().isEmpty()) {
                     Map<String, byte[]> attachmentMap = new HashMap<>();
                     for (UnifiedSendRequest.Attachment att : r.getAttachments()) {
@@ -474,27 +657,46 @@ public class UnifiedSendService implements SendChannelRouter {
                                     java.util.Base64.getDecoder().decode(att.getContentBase64()));
                         }
                     }
-                    emailService.sendAttachmentEmail(email, subject, "unified-send", body,
+                    outcome = emailService.sendAttachmentEmail(email, subject, plainLogSource, body,
                             attachmentMap, request.getInstituteId(), emailType,
-                            finalCopyRecipients, finalCopyMode);
+                            finalCopyRecipients, finalCopyMode, billingClass);
                 } else if (isEngagementEngineSend(request)) {
                     // Engine sends carry attribution: source → notification_log.source,
                     // sourceId → correlation_id (action id), userId → user attribution
                     // (guard against callers that pass an email address as userId).
-                    emailService.sendHtmlEmail(email, subject,
-                            ENGAGEMENT_ENGINE_SOURCE, body,
-                            request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            opts.getSourceId(),
-                            userId != null && !userId.contains("@") ? userId : null,
-                            finalCopyRecipients, finalCopyMode);
+                    String engineUserId = userId != null && !userId.contains("@") ? userId : null;
+                    outcome = opts.getInReplyTo() != null
+                            ? emailService.sendHtmlEmailReply(email, subject, ENGAGEMENT_ENGINE_SOURCE, body,
+                                    request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
+                                    opts.getSourceId(), engineUserId, finalCopyRecipients, finalCopyMode,
+                                    opts.getInReplyTo())
+                            : emailService.sendHtmlEmail(email, subject, ENGAGEMENT_ENGINE_SOURCE, body,
+                                    request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
+                                    opts.getSourceId(), engineUserId, finalCopyRecipients, finalCopyMode);
                 } else {
-                    emailService.sendHtmlEmail(email, subject, "unified-send", body,
+                    outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            null, null, finalCopyRecipients, finalCopyMode);
+                            null, null, finalCopyRecipients, finalCopyMode, billingClass);
                 }
 
-                results.add(UnifiedSendResponse.RecipientResult.builder()
-                        .email(email).success(true).status("SENT").build());
+                // Sending controls decide the final status: an over-cap send is queued (still a
+                // success from the caller's point of view), an opt-out or bounce is a skip.
+                switch (outcome) {
+                    case DEFERRED -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(true).status("DEFERRED")
+                            .error("Daily cap reached for this sender - queued for the next window").build());
+                    case SKIPPED_UNSUBSCRIBED -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(false).status("SKIPPED_UNSUBSCRIBED")
+                            .error("Recipient unsubscribed from this institute's emails").build());
+                    case SKIPPED_BLOCKED -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(false).status("SKIPPED_BLOCKED")
+                            .error("Recipient address is blocklisted (bounced)").build());
+                    case SKIPPED_NO_CREDITS -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(false).status("BLOCKED_NO_CREDITS")
+                            .error("Not sent: no free emails or credits left. Kept in Email usage to resend").build());
+                    default -> results.add(UnifiedSendResponse.RecipientResult.builder()
+                            .email(email).success(true).status("SENT").build());
+                }
             } catch (Exception e) {
                 String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
 
@@ -606,6 +808,10 @@ public class UnifiedSendService implements SendChannelRouter {
         String batchId = UUID.randomUUID().toString();
 
         try {
+            if (BatchProcessorService.isPacedEmail(request.getChannel(),
+                    request.getOptions() != null ? request.getOptions().getSource() : null)) {
+                request.setRecipients(dedupeEmailRecipients(request.getRecipients()));
+            }
             SendBatch batch = SendBatch.builder()
                     .id(batchId)
                     .instituteId(request.getInstituteId())
@@ -637,6 +843,55 @@ public class UnifiedSendService implements SendChannelRouter {
         }
     }
 
+    /**
+     * Drops only an exact repeat: same address, ignoring case, and same personalisation. Siblings
+     * often share one address and each must get their own mail, so a different message is never
+     * dropped. A recipient with no address or with attachments is always kept.
+     */
+    static List<UnifiedSendRequest.Recipient> dedupeEmailRecipients(List<UnifiedSendRequest.Recipient> recipients) {
+        Set<String> seen = new HashSet<>();
+        List<UnifiedSendRequest.Recipient> unique = new ArrayList<>(recipients.size());
+        for (UnifiedSendRequest.Recipient recipient : recipients) {
+            String email = recipient.getEmail();
+            boolean alwaysKeep = email == null || email.isBlank()
+                    || (recipient.getAttachments() != null && !recipient.getAttachments().isEmpty());
+            Map<String, String> variables = recipient.getVariables() != null ? recipient.getVariables() : Map.of();
+            String key = (email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT)) + "|" + new TreeMap<>(variables);
+            if (alwaysKeep || seen.add(key)) {
+                unique.add(recipient);
+            }
+        }
+        return unique;
+    }
+
+    /**
+     * A bulk commercial send carries the unsubscribe footer by going out as promotional, but only
+     * when that resolves to the same sender. Otherwise the admin's chosen address would silently
+     * change, or an unverified promotional sender would drop the mail to the platform default.
+     */
+    static String bulkEmailType(String requestedType, boolean commercialBulk, String promotionalFrom, String utilityFrom) {
+        String type = requestedType != null ? requestedType : "UTILITY_EMAIL";
+        return commercialBulk && "UTILITY_EMAIL".equalsIgnoreCase(type)
+                && promotionalFrom != null && promotionalFrom.equals(utilityFrom)
+                ? "PROMOTIONAL_EMAIL" : type;
+    }
+
+    private static final java.util.regex.Pattern UNRESOLVED = java.util.regex.Pattern.compile("\\{\\{\\s*[\\w.\\-]+\\s*\\}\\}");
+
+    /** Remove any {{placeholder}} left after substitution, tidying "Hi {{x}}," → "Hi,". */
+    static String scrubUnresolved(String text) {
+        if (text == null || text.indexOf("{{") < 0) return text;
+        String out = UNRESOLVED.matcher(text).replaceAll("");
+        return out.replaceAll("(?i)(\\b(hi|hello|hey|dear)) ,", "$1,").replaceAll("  +", " ");
+    }
+
+    /** Institute that owns the batch, for the caller check on its status endpoint. */
+    public String getBatchInstituteId(String batchId) {
+        return sendBatchRepository.findById(batchId)
+                .map(SendBatch::getInstituteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "BATCH_NOT_FOUND"));
+    }
+
     public UnifiedSendResponse getBatchStatus(String batchId) {
         SendBatch batch = sendBatchRepository.findById(batchId)
                 .orElseThrow(() -> new RuntimeException("Batch not found: " + batchId));
@@ -646,8 +901,52 @@ public class UnifiedSendService implements SendChannelRouter {
                 .total(batch.getTotalRecipients())
                 .accepted(batch.getSentCount())
                 .failed(batch.getFailedCount())
-                .status(batch.getStatus())
+                // A paced email batch can wait on its lane for a while. Callers poll while
+                // PROCESSING and treat anything else as final, so a queued batch must read as running.
+                .status("QUEUED".equals(batch.getStatus()) ? "PROCESSING" : batch.getStatus())
                 .build();
+    }
+
+    /**
+     * The provider's verdict on messages this caller already sent, keyed by wamid.
+     * <p>
+     * The send response deliberately cannot answer this: it returns the moment the provider accepts
+     * the message, and acceptance is not delivery — an accepted WhatsApp message is regularly
+     * rejected a second later (131042 payment issue, 131049 marketing cap, 131026 undeliverable).
+     * Every id that has no verdict yet comes back PENDING rather than being omitted, so a caller
+     * polling this can tell "still waiting" apart from "never sent".
+     */
+    public List<DeliveryStatusDTO> getDeliveryStatus(List<String> messageIds) {
+        if (messageIds == null || messageIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, NotificationLogRepository.DeliveryStatusRow> byId = new HashMap<>();
+        for (NotificationLogRepository.DeliveryStatusRow row :
+                notificationLogRepository.findDeliveryStatusByProviderMessageIds(
+                        messageIds.toArray(new String[0]))) {
+            byId.put(row.getMessageId(), row);
+        }
+
+        List<DeliveryStatusDTO> statuses = new ArrayList<>(messageIds.size());
+        for (String messageId : messageIds) {
+            NotificationLogRepository.DeliveryStatusRow row = byId.get(messageId);
+            String status = (row != null && row.getDeliveryStatus() != null)
+                    ? row.getDeliveryStatus() : "PENDING";
+            statuses.add(DeliveryStatusDTO.builder()
+                    .messageId(messageId)
+                    .status(status)
+                    .errorCode(row != null ? row.getErrorCode() : null)
+                    .errorMessage(row != null ? row.getErrorMessage() : null)
+                    .reportedAt(row != null && row.getReportedAt() != null
+                            ? row.getReportedAt().toInstant() : null)
+                    // READ and FAILED are terminal. DELIVERED can still become READ, so a caller
+                    // that stops polling on DELIVERED simply stops early — it is never shown a
+                    // verdict that later turns out to be wrong.
+                    .settled("FAILED".equals(status) || "READ".equals(status))
+                    .build());
+        }
+        return statuses;
     }
 
     public List<SendBatchSummaryDTO> listBatches(String instituteId, int limit) {
@@ -671,8 +970,55 @@ public class UnifiedSendService implements SendChannelRouter {
     // ==================== Phase 3: Named → Positional Variable Resolution ====================
 
     /**
-     * Looks up the template in whatsapp_templates table and builds a mapping:
-     * variable name → positional index.
+     * The stored copy of the WhatsApp template being sent, if we have one. Empty when the caller
+     * gave no name, or the template was never synced/created here — a send still goes out then,
+     * exactly as the caller shaped it.
+     */
+    private Optional<NotificationTemplate> findWhatsAppTemplate(
+            String instituteId, String templateName, String language) {
+        if (templateName == null || instituteId == null) return Optional.empty();
+        try {
+            return notificationTemplateRepository
+                    .findByInstituteIdAndNameAndLanguage(instituteId, templateName, language);
+        } catch (Exception e) {
+            log.warn("Failed to load template {} for institute {}: {}", templateName, instituteId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * The template's header kind in the form the provider payload uses ("image" / "video" /
+     * "document"), or null for TEXT / NONE headers, which need no file.
+     */
+    static String mediaHeaderType(NotificationTemplate template) {
+        String raw = template.getHeaderType();
+        if (raw == null) return null;
+        switch (raw.trim().toUpperCase()) {
+            case "IMAGE": return "image";
+            case "VIDEO": return "video";
+            case "DOCUMENT": return "document";
+            default: return null;
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * The template's saved sample only qualifies as a header fallback when it is something the
+     * provider can actually fetch. A few draft rows hold pasted HTML in that column; handing that
+     * to Meta as a "link" would just swap one rejection for another.
+     */
+    private static String httpUrlOrNull(String value) {
+        String url = blankToNull(value);
+        if (url == null) return null;
+        String lower = url.toLowerCase();
+        return lower.startsWith("https://") || lower.startsWith("http://") ? url : null;
+    }
+
+    /**
+     * Builds the mapping variable name → positional index from the stored template.
      *
      * Example: bodyText = "Hello {{1}}, welcome to {{2}}"
      * bodySampleValues = '["name", "course"]' (JSON array)
@@ -681,19 +1027,13 @@ public class UnifiedSendService implements SendChannelRouter {
      * If template not found or has no sample values, returns empty map
      * and variables pass through as-is (backward compatible).
      */
-    private Map<String, Integer> resolveTemplateVariablePositions(
-            String instituteId, String templateName, String language) {
+    private Map<String, Integer> resolveTemplateVariablePositions(Optional<NotificationTemplate> templateOpt) {
+        if (templateOpt.isEmpty()) return Map.of();
 
-        if (templateName == null || instituteId == null) return Map.of();
+        NotificationTemplate template = templateOpt.get();
+        String templateName = template.getName();
 
         try {
-            Optional<NotificationTemplate> templateOpt = notificationTemplateRepository
-                    .findByInstituteIdAndNameAndLanguage(instituteId, templateName, language);
-
-            if (templateOpt.isEmpty()) return Map.of();
-
-            NotificationTemplate template = templateOpt.get();
-
             // Prefer bodyVariableNames (semantic: ["name", "course"])
             // Fall back to bodySampleValues (example values: ["Shreyash", "Math 101"])
             String namesJson = template.getBodyVariableNames();

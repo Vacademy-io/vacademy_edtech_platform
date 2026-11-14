@@ -180,13 +180,8 @@ const generateSSOUrl = (targetDomain: string, redirectPath?: string): string | n
         ...(redirectPath && { redirect: redirectPath }),
     });
 
-    // Copy URL to clipboard for easy sharing
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        const fullUrl = `${baseUrl}?${params.toString()}`;
-        navigator.clipboard.writeText(fullUrl).catch((err) => {
-            console.warn('Failed to copy URL to clipboard:', err);
-        });
-    }
+    // Never put this URL on the clipboard: it carries live access + refresh tokens, and a
+    // clipboard is readable by other apps and survives into whatever gets pasted next.
     return `${baseUrl}?${params.toString()}`;
 };
 
@@ -282,10 +277,14 @@ const LOGOUT_PRESERVE_KEYS = [
     'theme-custom-color',
     'vite-ui-theme',
     'current_domain_branding',
+    // A website "Buy <plan>" click waiting for sign-up / log-in (lib/plan-buy-intent.ts):
+    // no user data, expires in a day; the logged-out sign-up page itself triggers a logout.
+    'plan-buy-intent',
 ];
 // Key PREFIXES whose entries also survive logout — per-surface layout choices
 // such as the leads "Manage Column" show/hide (crm-lead-columns:<surface>).
-const LOGOUT_PRESERVE_PREFIXES = ['crm-lead-columns:'];
+// `crm-saved-views:` = a person's saved Recent Leads filter views, keyed by institute + user.
+const LOGOUT_PRESERVE_PREFIXES = ['crm-lead-columns:', 'crm-saved-views:'];
 
 // Expire every cookie visible to this document on the current host AND every
 // parent domain (so legacy `.vacademy.io`-scoped cookies are removed too).

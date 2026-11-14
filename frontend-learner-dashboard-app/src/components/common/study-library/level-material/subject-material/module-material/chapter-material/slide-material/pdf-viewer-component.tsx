@@ -1,8 +1,11 @@
 import {
   DocumentLoadEvent,
+  LoadError,
   PageChangeEvent,
   Viewer,
   SpecialZoomLevel,
+  TextDirection,
+  ThemeContext,
 } from "@react-pdf-viewer/core";
 import { Worker } from "@react-pdf-viewer/core";
 
@@ -20,9 +23,49 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
 import "@react-pdf-viewer/full-screen/lib/styles/index.css";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import "./pdf-viewer-toolbar.css";
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
 import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
+import { createPdfNotesPlugin } from "@/components/notebook/PdfNotesLayer";
+import { useLessonNotesStore } from "@/stores/study-library/lesson-notes-store";
+import { pinchScale } from "./pdf-pinch";
+import { isRetryablePdfLoadError, toPublicBucketFallbackUrl } from "./pdf-cdn-fallback";
 import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+
+/** Renders nothing visible but the loader; switches the viewer to the fallback on mount. */
+const SwitchToFallback = ({ onSwitch, label }: { onSwitch: () => void; label: string }) => {
+  useEffect(() => {
+    onSwitch();
+  }, [onSwitch]);
+  return (
+    <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
+      {label}
+    </div>
+  );
+};
+
+/** The viewer's own error box, markup for markup, for errors we do not retry. */
+const DefaultDocError = ({ message }: { message: string }) => {
+  const { direction } = useContext(ThemeContext);
+  const isRtl = direction === TextDirection.RightToLeft;
+  return (
+    <div className={`rpv-core__doc-error${isRtl ? " rpv-core__doc-error--rtl" : ""}`}>
+      <div className="rpv-core__doc-error-text">{message}</div>
+    </div>
+  );
+};
+
+const MIN_VIEWER_HEIGHT = 240;
 
 export interface PdfViewerComponentRef {
   jumpToPage: (pageIndex: number) => void;
@@ -39,8 +82,23 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
   handlePageChange,
   initialPage = 0
 }, ref) => {
+  const { t } = useTranslation("libraryCommonB");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerHeight, setContainerHeight] = useState<string | undefined>(undefined);
+  const [crampedViewer, setCrampedViewer] = useState(false);
+
+  // If the CDN copy fails to load, try the same file once straight from the
+  // public bucket (see pdf-cdn-fallback). Only for our public CDN URLs; for
+  // anything else, and if the fallback fails too, the viewer's own error shows
+  // exactly as before.
+  const fallbackUrl = toPublicBucketFallbackUrl(pdfUrl);
+  const [fallbackActiveFor, setFallbackActiveFor] = useState<string | null>(null);
+  const usingFallback = !!fallbackUrl && fallbackActiveFor === pdfUrl;
+  const sourceUrl = usingFallback ? (fallbackUrl as string) : pdfUrl;
+  const switchToFallback = useCallback(() => {
+    setFallbackActiveFor(pdfUrl);
+  }, [pdfUrl]);
+  const canFallBack = !!fallbackUrl && !usingFallback;
 
   // Whether this user's role is allowed to download / print the PDF
   // (admin-configured per role; defaults to today's behavior — Download and
@@ -82,14 +140,28 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
     EnterFullScreen: () => <EnterFullScreenButton />,
     // Download / Print are shown only when the institute allows this role to
     // download / print PDFs; otherwise those toolbar entries are hidden.
+    // When allowed, the marker keeps the toolbar button visible on phones too
+    // (pdf-viewer-toolbar.css); the ⋮ menu entries stay as a fallback.
     ...(allowDownload
-      ? {}
+      ? {
+          Download: () => (
+            <span data-pdf-toolbar-show className="contents">
+              <slot.Download />
+            </span>
+          ),
+        }
       : {
           Download: () => <></>,
           DownloadMenuItem: () => <></>,
         }),
     ...(allowPrint
-      ? {}
+      ? {
+          Print: () => (
+            <span data-pdf-toolbar-show className="contents">
+              <slot.Print />
+            </span>
+          ),
+        }
       : {
           Print: () => <></>,
           PrintMenuItem: () => <></>,
@@ -110,13 +182,55 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
   
   const { renderDefaultToolbar } =
     defaultLayoutPluginInstance.toolbarPluginInstance;
+  const { zoomTo } = defaultLayoutPluginInstance.toolbarPluginInstance.zoomPluginInstance;
+  const zoomToRef = useRef(zoomTo);
+  zoomToRef.current = zoomTo;
+
+  // The viewer's zoom right now, reported by the marks layer, for pinch to start from.
+  const scaleRef = useRef(1);
+  const notesPlugin = useMemo(
+    () =>
+      createPdfNotesPlugin((scale) => {
+        scaleRef.current = scale;
+      }),
+    []
+  );
+  const notesPanelOpen = useLessonNotesStore((state) => state.panelOpen);
+  const areaMode = useLessonNotesStore((state) => state.areaMode);
 
   // Compute dynamic height for all mobile devices (iOS & Android) to handle URL bars/safe areas
   useEffect(() => {
     const computeHeight = () => {
       const w = window.innerWidth;
       const vh = window.innerHeight;
-      
+
+      // Phones and tablets: end the viewer exactly where whatever is fixed along
+      // the bottom begins (tab bar, lesson nav, the notes sheet), so its last
+      // lines can always be scrolled into view and the page itself never has to
+      // scroll to reach them.
+      const container = containerRef.current;
+      if (w < 1024 && container) {
+        const top = container.getBoundingClientRect().top;
+        let bottom = vh;
+        for (const el of document.elementsFromPoint(w / 2, vh - 2)) {
+          if (container.contains(el)) continue;
+          const position = getComputedStyle(el).position;
+          if (position === "fixed" || position === "sticky") {
+            const box = el.getBoundingClientRect();
+            // Bars span the screen; a toast or chat bubble passing by does not count.
+            if (box.width >= w * 0.6 && box.top > top && box.top < bottom) bottom = box.top;
+          }
+        }
+        if (top >= 0 && top < vh) {
+          const room = Math.floor(bottom - top - 4);
+          setContainerHeight(`${Math.max(MIN_VIEWER_HEIGHT, room)}px`);
+          // A phone on its side has less room than the viewer's minimum. Let a
+          // scroll carry on to the page then, or the viewer's end stays out of reach.
+          setCrampedViewer(room < MIN_VIEWER_HEIGHT);
+          return;
+        }
+      }
+
       let headerHeight = 60; 
       let bottomNavHeight = 0;
       
@@ -142,27 +256,152 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
     const resizeObserver = new ResizeObserver(computeHeight);
     resizeObserver.observe(document.body);
     
+    // The header and the bottom bars settle after mount.
+    const settle = window.setTimeout(computeHeight, 600);
     return () => {
+      window.clearTimeout(settle);
       window.removeEventListener("resize", computeHeight);
       window.removeEventListener("orientationchange", computeHeight);
       resizeObserver.disconnect();
     };
+    // Re-measured when the notes sheet opens or closes over the viewer's lower half.
+  }, [notesPanelOpen]);
+
+  // Desktop: the panel narrows the viewer, so refit the page to what is left.
+  const panelStateRef = useRef(notesPanelOpen);
+  useEffect(() => {
+    if (panelStateRef.current === notesPanelOpen) return;
+    panelStateRef.current = notesPanelOpen;
+    if (window.innerWidth < 640) return;
+    const timer = window.setTimeout(() => zoomToRef.current(SpecialZoomLevel.PageWidth), 80);
+    return () => window.clearTimeout(timer);
+  }, [notesPanelOpen]);
+
+  // Pinch to zoom the document. The app's viewport turns browser zoom off, so
+  // this is the only way to enlarge a page by hand on a phone. While the fingers
+  // move the page is scaled visually, which is instant; the viewer redraws it
+  // sharp at the new zoom when they lift.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let start: { distance: number; scale: number } | null = null;
+    let ratio = 1;
+    const pages = () => container.querySelector<HTMLElement>(".rpv-core__inner-pages");
+    const distance = (touches: TouchList) => {
+      const a = touches[0] as Touch;
+      const b = touches[1] as Touch;
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    };
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      start = { distance: distance(e.touches), scale: scaleRef.current };
+      ratio = 1;
+      const el = pages();
+      if (el) {
+        const a = e.touches[0] as Touch;
+        const b = e.touches[1] as Touch;
+        const box = el.getBoundingClientRect();
+        el.style.transformOrigin = `${(a.clientX + b.clientX) / 2 - box.left}px ${(a.clientY + b.clientY) / 2 - box.top}px`;
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start || e.touches.length !== 2) return;
+      e.preventDefault();
+      const next = pinchScale(start.scale, start.distance, distance(e.touches));
+      ratio = next / start.scale;
+      const el = pages();
+      if (el) el.style.transform = `scale(${ratio})`;
+    };
+    const onEnd = () => {
+      if (!start) return;
+      const target = start.scale * ratio;
+      const changed = Math.abs(ratio - 1) > 0.02;
+      start = null;
+      ratio = 1;
+      const el = pages();
+      if (el) {
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+      if (changed) zoomToRef.current(target);
+    };
+    container.addEventListener("touchstart", onStart, { passive: true });
+    container.addEventListener("touchmove", onMove, { passive: false });
+    container.addEventListener("touchend", onEnd, { passive: true });
+    container.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      container.removeEventListener("touchstart", onStart);
+      container.removeEventListener("touchmove", onMove);
+      container.removeEventListener("touchend", onEnd);
+      container.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
+
+  // react-pdf-viewer aligns toolbar popovers (e.g. the ⋮ "More actions" menu)
+  // to their button without checking bounds, so on phones the menu runs past
+  // the left edge and this container's overflow-x-hidden clips its labels.
+  // When a popover opens outside the visible area, nudge it back inside.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const MARGIN = 8;
+
+    const keepInside = (body: HTMLElement) => {
+      if (!body.isConnected) return;
+      const fullScreenEl = document.fullscreenElement;
+      const boundsEl =
+        fullScreenEl && fullScreenEl.contains(body) ? fullScreenEl : container;
+      const bounds = boundsEl.getBoundingClientRect();
+      const rect = body.getBoundingClientRect();
+      let shift = 0;
+      if (rect.left < bounds.left + MARGIN) {
+        shift = bounds.left + MARGIN - rect.left;
+      } else if (rect.right > bounds.right - MARGIN) {
+        shift = bounds.right - MARGIN - rect.right;
+      }
+      if (!shift) return;
+      body.style.left = `${(parseFloat(body.style.left) || 0) + shift}px`;
+      // The arrow no longer points at the button once the popover is moved
+      const arrow = body.querySelector<HTMLElement>(
+        ".rpv-core__popover-body-arrow"
+      );
+      if (arrow) arrow.style.display = "none";
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (
+            node instanceof HTMLElement &&
+            node.classList.contains("rpv-core__popover-body")
+          ) {
+            // The library positions it in a layout effect, which has run by
+            // now; re-check next frame in case layout was still settling.
+            keepInside(node);
+            requestAnimationFrame(() => keepInside(node));
+          }
+        });
+      }
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, []);
 
   return (
-    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+    <Worker workerUrl="/pdfjs/3.11.174/pdf.worker.min.js">
       <div
         ref={containerRef}
         className="w-full max-w-full mx-0 px-0 overflow-y-scroll overflow-x-hidden custom-scrollbar"
         style={{
           height: containerHeight || "100%",
-          minHeight: "300px",
-          // Critical for mobile scrolling:
-          touchAction: "pan-y", 
+          minHeight: `${MIN_VIEWER_HEIGHT}px`,
+          // Critical for mobile scrolling. Sideways too, for a zoomed-in page;
+          // pinch is handled above. While dragging out an area, nothing scrolls.
+          touchAction: areaMode ? "none" : "pan-x pan-y",
           WebkitOverflowScrolling: "touch",
           // 'contain' stops the bounce on iOS (iOS 16+) and Chrome Android
           // It is safe for Windows/Desktop (simply ignored or prevents pull-refresh)
-          overscrollBehavior: "contain", 
+          overscrollBehavior: crampedViewer ? "auto" : "contain",
           position: "relative",
         }}
       >
@@ -171,20 +410,34 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
             early would bake in the default and ignore an admin "enable". */}
         {isResolved ? (
           <Viewer
-            fileUrl={pdfUrl}
+            fileUrl={sourceUrl}
+            renderError={
+              canFallBack
+                ? (error: LoadError) =>
+                    isRetryablePdfLoadError(error.name) ? (
+                      <SwitchToFallback
+                        onSwitch={switchToFallback}
+                        label={t("pdfViewer.loading")}
+                      />
+                    ) : (
+                      <DefaultDocError message={error.message ?? ""} />
+                    )
+                : undefined
+            }
             onDocumentLoad={handleDocumentLoad}
             onPageChange={handlePageChange}
             plugins={[
               defaultLayoutPluginInstance,
               pageNavigationPluginInstance,
               fullScreenPluginInstance,
+              notesPlugin,
             ]}
             defaultScale={SpecialZoomLevel.PageWidth}
             initialPage={initialPage}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-            Loading…
+            {t("pdfViewer.loading")}
           </div>
         )}
       </div>

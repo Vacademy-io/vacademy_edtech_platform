@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.workflow.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.workflow.dto.ContextSchemaRequestDTO;
 import vacademy.io.admin_core_service.features.workflow.dto.ContextVariableDTO;
@@ -8,10 +9,36 @@ import vacademy.io.admin_core_service.features.workflow.dto.ContextVariableDTO;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
 public class WorkflowContextSchemaService {
+
+    /**
+     * Type of a variable that is ready to use as a send node's {@code on}: a one-element SpEL
+     * list literal around the person the trigger event is about. The builder's "Send to"
+     * dropdowns list exactly these.
+     */
+    public static final String RECIPIENTS_TYPE = "Recipients";
+
+    /** Trigger keys holding a single person (UserDTO) that a send node can address directly. */
+    private static final List<String> PERSON_KEYS = List.of("user", "member");
+
+    /** Keys already listed as always-available globals at the top of every response. */
+    private static final Set<String> GLOBAL_KEYS = Set.of("executionId", "workflowId", "instituteId");
+
+    private final TriggerContextKeyRegistry triggerContextKeyRegistry;
+
+    /** Without the registry a TRIGGER contributes only its generic keys (used by unit tests). */
+    public WorkflowContextSchemaService() {
+        this(null);
+    }
+
+    @Autowired
+    public WorkflowContextSchemaService(TriggerContextKeyRegistry triggerContextKeyRegistry) {
+        this.triggerContextKeyRegistry = triggerContextKeyRegistry;
+    }
 
     /**
      * Given a list of upstream nodes, compute what context variables are available.
@@ -55,13 +82,22 @@ public class WorkflowContextSchemaService {
                         "Data from the trigger event", "#ctx['triggerData']"));
                 vars.add(var(nodeId, nodeName, nodeType, "triggerEventName", "String",
                         "Name of the trigger event", "#ctx['triggerEventName']"));
+                vars.addAll(triggerEventVariables(nodeId, nodeName, nodeType, config));
             }
             case "QUERY" -> {
-                String resultKey = config != null ? (String) config.getOrDefault("resultKey", "queryResult") : "queryResult";
-                vars.add(var(nodeId, nodeName, nodeType, resultKey, "List<Map>",
-                        "Query result rows", "#ctx['" + resultKey + "']"));
-                vars.add(var(nodeId, nodeName, nodeType, resultKey + "Count", "Number",
-                        "Number of rows returned", "#ctx['" + resultKey + "Count']"));
+                // The QUERY node copies the query's own result keys onto the context and never
+                // writes its resultKey, so offer only the keys the chosen query really puts
+                // there. Offering resultKey / 'queryResult' handed admins a list that is always
+                // empty: a send node reading it sent nothing, with no error.
+                Object prebuiltKey = config != null ? config.get("prebuiltKey") : null;
+                List<String> outputs = PrebuiltQueryOutputs
+                        .keysOf(prebuiltKey instanceof String k ? k : null)
+                        .orElse(List.of());
+                for (int i = 0; i < outputs.size(); i++) {
+                    String key = outputs.get(i);
+                    vars.add(var(nodeId, nodeName, nodeType, key, i == 0 ? "List<Map>" : "Object",
+                            i == 0 ? "Query result rows" : "Query output", "#ctx['" + key + "']"));
+                }
             }
             case "TRANSFORM" -> {
                 vars.add(var(nodeId, nodeName, nodeType, "transformedData", "Map<String, Object>",
@@ -146,6 +182,41 @@ public class WorkflowContextSchemaService {
             }
         }
 
+        return vars;
+    }
+
+    /**
+     * The keys the TRIGGER node's event really puts on the context, from
+     * {@link TriggerContextKeyRegistry}. A person key ({@code user} / {@code member}) is also
+     * offered as a ready-made recipient list, {@code {#ctx['user']}}, so a send node placed after
+     * the trigger (directly or behind a DELAY) can address the learner the event is about.
+     * Before this, the only candidates a send node got here were the system ids, and picking
+     * {@code #ctx['workflowId']} saved a welcome email that could never reach anyone.
+     * Uncatalogued events contribute nothing: guessing a key would recreate that failure.
+     */
+    private List<ContextVariableDTO> triggerEventVariables(String nodeId, String nodeName, String nodeType,
+                                                           Map<String, Object> config) {
+        List<ContextVariableDTO> vars = new ArrayList<>();
+        if (triggerContextKeyRegistry == null || config == null
+                || !(config.get("triggerEvent") instanceof String event) || event.isBlank()) {
+            return vars;
+        }
+        Set<String> emitted = triggerContextKeyRegistry.emittedKeys(event);
+        if (emitted == null) {
+            return vars;
+        }
+        for (String key : PERSON_KEYS) {
+            if (emitted.contains(key)) {
+                vars.add(var(nodeId, nodeName, nodeType, key, RECIPIENTS_TYPE,
+                        "The person this " + event + " event is about (send to them)",
+                        "{#ctx['" + key + "']}"));
+            }
+        }
+        for (String key : emitted) {
+            if (GLOBAL_KEYS.contains(key)) continue;
+            vars.add(var(nodeId, nodeName, nodeType, key, PERSON_KEYS.contains(key) ? "UserDTO" : "Object",
+                    "Emitted by " + event, "#ctx['" + key + "']"));
+        }
         return vars;
     }
 

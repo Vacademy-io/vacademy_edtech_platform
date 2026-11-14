@@ -1,0 +1,21 @@
+{
+    "heading": "Learners & courses",
+    "manage": "Manage",
+    "recentEnrollments": {
+        "label": "Recent enrollments",
+        "oweFees_one": "{{count}} owes fees",
+        "oweFees_other": "{{count}} owe fees",
+        "empty": "No enrollments yet",
+        "learnerFallback": "Learner",
+        "joined": "Joined {{date}}",
+        "due": "{{amount}} due",
+        "paid": "Paid"
+    },
+    "courses": {
+        "label": "My courses",
+        "fallbackName": "Course",
+        "empty": "No courses assigned yet",
+        "learnerCountTitle_one": "{{count}} learner",
+        "learnerCountTitle_other": "{{count}} learners"
+    }
+}

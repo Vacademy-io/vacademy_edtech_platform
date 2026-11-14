@@ -1,0 +1,31 @@
+{
+    "question": {
+        "label": "Question ({{number}}.) ",
+        "correctAnswer": "Réponse correcte :",
+        "explanation": "Explication :",
+        "topCorrectResponses": "Top 3 des réponses correctes les plus rapides",
+        "responseTime_one": "{{count}} sec",
+        "responseTime_many": "{{count}} sec",
+        "responseTime_other": "{{count}} sec"
+    },
+    "stats": {
+        "totalAttempts_one": "Total des tentatives : {{count}} élève",
+        "totalAttempts_many": "Total des tentatives : {{count}} élèves",
+        "totalAttempts_other": "Total des tentatives : {{count}} élèves",
+        "correctRespondents": "Répondants corrects : ",
+        "partiallyCorrectRespondents": "Répondants partiellement corrects : ",
+        "wrongRespondents": "Répondants incorrects : ",
+        "skipped": "Ignoré : ",
+        "notAvailable": "N/A",
+        "viewList": "Voir la liste"
+    },
+    "dialog": {
+        "correctRespondents": "Répondants corrects",
+        "partiallyCorrectRespondents": "Répondants partiellement corrects",
+        "wrongRespondents": "Répondants incorrects",
+        "skippedRespondents": "Répondants ayant ignoré la question"
+    },
+    "toasts": {
+        "exportPdfSuccess": "Les données d'analyse des questions des élèves ont été exportées avec succès en PDF"
+    }
+}

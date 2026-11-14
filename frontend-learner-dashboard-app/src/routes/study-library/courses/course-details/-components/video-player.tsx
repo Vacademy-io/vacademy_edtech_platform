@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { isYouTubeUrl, isVimeoUrl, getVimeoVideoId } from '../-utils/helper';
 import { YouTubeVideoPlayer } from './youtube-video-player';
 
@@ -11,6 +12,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   className = ""
 }) => {
+  const { t } = useTranslation("courseDetailsB");
+
   if (!src) {
     return null;
   }
@@ -32,7 +35,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               className="w-full h-full rounded-md"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
-              title="Vimeo video player"
+              title={t("videoPlayer.vimeoTitle")}
             />
           </div>
         </div>
@@ -56,7 +59,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             e.currentTarget.parentElement?.classList.add("bg-black");
           }}
         >
-          Your browser does not support the video tag.
+          {t("videoPlayer.unsupported")}
         </video>
       </div>
       {/* Video overlay gradient */}

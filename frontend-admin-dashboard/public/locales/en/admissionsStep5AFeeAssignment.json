@@ -1,0 +1,84 @@
+{
+    "dash": "-",
+    "selectPrompt": "Select a fee plan to view details.",
+    "emptyState": {
+        "selectPackage": "Select a package session in Step 1 to view fee plans."
+    },
+    "success": {
+        "title": "Enrollment complete",
+        "messageNamed": "{{name}} has been enrolled with the selected fee plan.",
+        "messageGeneric": "Student has been enrolled with the selected fee plan.",
+        "planLabel": "Plan: {{name}}",
+        "totalAssignedLabel": "Total assigned: {{amount}}",
+        "paymentModeLabel": "Payment mode: Offline",
+        "goToAdmissions": "Go to Admissions"
+    },
+    "header": {
+        "title": "Assign Fee Plan",
+        "subtitle": "Fetched from CPO linked to the selected package session.",
+        "refresh": "Refresh"
+    },
+    "status": {
+        "loadingFeePlans": "Loading fee plans...",
+        "loadError": "Failed to load CPO options. Please retry.",
+        "noFeePlans": "No fee plans found for this package session."
+    },
+    "cpoCard": {
+        "defaultPaymentOption": "Default payment option:",
+        "available": "Available",
+        "notSet": "Not set"
+    },
+    "detailHeader": {
+        "linked": "Linked to current package session",
+        "notLinked": "No session link found"
+    },
+    "feeTable": {
+        "feeType": "Fee Type",
+        "amount": "Amount",
+        "installments": "Installments"
+    },
+    "installmentsTable": {
+        "title": "Installments",
+        "fee": "Fee",
+        "number": "#",
+        "amount": "Amount",
+        "due": "Due",
+        "start": "Start",
+        "end": "End",
+        "noneConfigured": "No installments configured."
+    },
+    "paymentForm": {
+        "recordTitle": "Record payment (optional)",
+        "recordSubtitle": "Capture offline payment details before enrolling.",
+        "hide": "Hide",
+        "payNow": "Pay now",
+        "amountLabel": "Amount received (optional)",
+        "transactionIdLabel": "Transaction ID",
+        "generate": "Generate",
+        "receiptLabel": "Receipt (optional)",
+        "receiptUploaded": "Receipt uploaded",
+        "uploadReceipt": "Upload receipt",
+        "uploading": "Uploading..."
+    },
+    "footer": {
+        "totalLabel": "Total: {{amount}}",
+        "enroll": "Enroll with this fee plan",
+        "enrolling": "Enrolling..."
+    },
+    "installmentLabel": {
+        "oneTime": "One-time payment",
+        "count_one": "{{count}} installment",
+        "count_other": "{{count}} installments",
+        "startsSuffix": " • starts {{date}}"
+    },
+    "toast": {
+        "packageSessionRequired": "Package session is required to enroll.",
+        "selectFeePlan": "Select a fee plan to continue.",
+        "childUserIdMissing": "Child user ID missing from admission response.",
+        "paymentOptionRequired": "Payment option is required. Set a default or update the CPO.",
+        "enrollSuccess": "Student enrolled and fee plan assigned.",
+        "enrollFailed": "Failed to enroll student. Please try again.",
+        "receiptUploaded": "Receipt uploaded",
+        "receiptUploadFailed": "Failed to upload receipt"
+    }
+}

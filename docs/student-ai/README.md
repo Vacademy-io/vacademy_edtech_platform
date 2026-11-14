@@ -12,6 +12,14 @@ Postgres tables (`chat_sessions`, `chat_messages`).
 > - **Vacademy Assistant** (`/assistant/**`) — the *admin* agent, separate router and tables.
 > - **Doubts / Help & Queries** — human doubt resolution, unrelated pipeline.
 
+> **Updated 2026-10-20.** Sections 4.4, 6, 7.1, 7.2, 9 and 12 describe the current
+> code. Other changes since August, in short: the model comes from the super-admin
+> platform setting `chatbot.text.model` (GLM-5.3-flash in production) unless an
+> institute brings its own key; the knowledge-base auto-search reads `kb_chunk`
+> (`purpose='institute_info'`), not `content_embeddings`; the admin form is
+> [StudentAiSettingsSection.tsx](../../frontend-admin-dashboard/src/routes/settings/-components/StudentAiSettingsSection.tsx);
+> desktop and mobile panels share `ChatMessageList` / `ChatComposer` / `MessageBubble`.
+
 ---
 
 ## 1. Component map
@@ -225,24 +233,29 @@ orders by `last_active`, i.e. "chats *started* in this window."
 | `/admin-core-service/institute/setting/v1/save-setting?settingKey=CHATBOT_SETTING` | admin writes config (audited via `@Auditable`) |
 | `/admin-core-service/institute/setting/v1/get?settingKey=CHATBOT_SETTING` | learner + admin read config |
 
-### 4.4 Auth posture of the learner endpoints (⚠ known gap)
+### 4.4 Auth on the learner endpoints (rollout)
 
-The `chat_agent` and `voice_agent` routers declare **no auth dependency** — no
-`get_current_user` / `get_optional_user` (contrast `AI_SERVICE_AUTH_GUIDE.md`).
-Consequences:
+[chat_auth.py](../../ai_service/app/core/chat_auth.py). The learner app sends its access
+token on every call: REST through the authenticated axios client, the stream through a
+fetch-based reader (`chatbotAPI.openStream`, because `EventSource` cannot send headers).
+Tokens are verified locally (HS256); membership is the JWT's per-institute `authorities`
+map, with **no** `is_root_user` bypass (ordinary learners carry that flag).
 
-- `POST /session/init` trusts client-supplied `user_id` **and** `institute_id`. Any
-  caller can open a session as any learner in any institute and pull that learner's
-  progress, strengths/weaknesses and analysis summary through the tools.
-- `GET /session/{id}/stream`, `/updates`, `POST /message`, `/close` are keyed only by
-  session id — no ownership check. (SSE via `EventSource` can't send an
-  `Authorization` header, which is likely why it was left open.)
-- `GET /chat-agent/debug/active-streams` is public.
-- CORS is `allow_origin_regex=".*"` with `allow_credentials=True`.
-- `enable: false` is a **frontend-only** switch.
-
-Credits are deducted from the institute resolved from the session row, so an
-unauthenticated caller can also burn a tenant's AI credits.
+- A request is a *violation* when its token is missing or expired, when `init` names a
+  different `user_id` or an institute not in the token, or when a session belongs to
+  someone else.
+- While the platform setting **`chatbot.text.require_auth`** (env `CHAT_REQUIRE_AUTH`) is
+  off, violations are served and counted per reason. Staff can read the counters at
+  `GET /chat-agent/debug/auth-stats`, and a `[chat-auth]` warning is logged at most once
+  a minute. Switch the flag on once real clients stop producing them; violations then
+  get 401/403.
+- `GET /chat-agent/whoami` is a cheap authenticated call. The app makes it before opening
+  the stream when its token has expired, so the shared client does the refresh.
+- Rate limit: 12 messages per minute per learner on `message` and `audio-message` (429).
+  It is in-process, so the limit is per pod.
+- The voice socket has its own flag, `chatbot.voice.require_auth`; the app already sends
+  `{type:"auth"}` first.
+- Still open: `enable:false` and `enabled_modes` are enforced in the frontend only.
 
 ---
 
@@ -277,49 +290,39 @@ learner across pages instead of re-initialising.
 
 ```
 learner opens panel
-  └─ POST /chat-agent/session/init  ──► row in chat_sessions (status ACTIVE)
-  └─ EventSource GET /session/{id}/stream
-        ├─ replays all existing chat_messages as `message` events
-        ├─ if zero messages → _stream_greeting_generation()  (LLM, no tools)
-        ├─ if last message is an unprocessed `user` → _stream_agentic_processing()
-        └─ polling loop, every 2s: new `user` row → run the agent
-                                   emits `comment` keepalives
-                                   exits after 30 min idle or status=CLOSED
-
-learner types
-  └─ POST /session/{id}/message  ──► row in chat_messages (type=user)
-        (idempotency_key dedupe; image attachments → Mathpix OCR → LaTeX appended
-         to the stored message as "[Math from image: $...$]")
+  └─ POST /session/init        (Accept-Language → context_meta.ui_language)
+  └─ fetch GET /session/{id}/stream
+        ├─ replays every chat_messages row as a `message` event
+        ├─ no rows → templated greeting (no LLM; platform flag chatbot.text.llm_greeting
+        │            turns the AI greeting back on)
+        └─ every 2 s: new rows are relayed; the newest unanswered `user` row is answered
+           by whichever open stream wins its CLAIM
 ```
 
-`_stream_agentic_processing()` in order:
+**Exactly-once answering.** A stream answers a user message only after an atomic
+`UPDATE … RETURNING` sets `metadata.claimed_at` on it. The claim is refreshed between
+steps and becomes takeable after 75 s (the slowest single step, quiz generation, peaked
+at 62 s). `metadata.answered_at` marks it done. As a result:
+- two tabs or a racing reconnect never double-answer;
+- a reconnect recovers a turn whose stream died, after up to 75 s;
+- messages older than 15 minutes are never auto-answered on reconnect.
 
-1. **Load** session, latest user message, resolved context, API keys, optimised
-   history, institute rules + temperature. (Each DB block is a short-lived
-   session — deliberately never held across an LLM call.)
-2. **Auto-KB RAG**: embed the user message, `RAGService.search(top_k=3, threshold=0.35)`,
-   keep `source_type == 'knowledge_base'` hits, append an
-   `INSTITUTE KNOWLEDGE BASE` block to the system prompt. Failures are non-fatal.
-3. **Quiz submission?** → `_handle_quiz_submission()` and return.
-4. **Intent classification** — explicit `intent` from the FE wins, else regex
-   keyword matching in [intent_classifier_service.py](../../ai_service/app/services/intent_classifier_service.py)
-   (`PRACTICE` patterns checked before `DOUBT`, default `GENERAL`).
-   `DOUBT` also writes a `learning_analytics` doubt event.
-5. **`PRACTICE`?** → `_handle_practice_request()` and return.
-6. **Agentic loop**, max **5 iterations**, streaming:
-   - `chat_completion_stream(messages, tools=TOOL_DEFINITIONS, temperature)`
-   - `token` chunks are relayed as SSE `token` events (typing effect)
-   - no tool calls → persist the assembled text as `assistant`, emit `message`, break
-   - tool calls → emit a canned "Let me check your progress! 🔍"-style `assistant`
-     message, execute the tool, persist `tool_call` + `tool_result`, append both to
-     `messages`, loop again
-7. **Post-processing**: bump `last_active`; if ≥20 user+assistant messages since the
-   last summary, generate a `summary` message (see §9).
+The poll cursor only advances through rows the stream read, so a message that lands
+mid-reply is no longer skipped.
 
-Errors: OpenRouter `402` / "Payment Required" is surfaced as
-"AI service credits have been exhausted…" with SSE `error` code 402; anything else
-becomes a generic retry message with code 500. Either way the text is also persisted
-as an `assistant` message.
+`_stream_agentic_processing(message_id)`:
+1. Loads context, keys, history (see §9), institute rules, and knowledge-base snippets
+   (`kb_chunk`, `institute_info`, top 3, ≥0.35).
+2. Quiz submission → scored against the durable answer key in `chat_quiz_state`.
+3. An *explicit* `intent=practice` from the app → quiz on the current topic. The regex
+   classifier no longer routes; it only tags DOUBT for analytics.
+4. Agent loop, up to 5 rounds, streamed. The 5th round is offered no tools, so it always
+   answers. For each tool call:
+   - the `tool_call` row is stored and emitted **before** the tool runs, so the app's
+     indicator is live;
+   - the tool runs, then `tool_result` is stored;
+   - an optional `card` row follows.
+   Text the model streams alongside a tool call is kept as its own message.
 
 ### SSE event types
 
@@ -337,53 +340,41 @@ Response headers include `X-Accel-Buffering: no` so nginx doesn't buffer the str
 
 ## 7. Capabilities
 
-### 7.1 Tools (OpenAI function-calling format)
+### 7.1 Tools
 
-Defined as `TOOL_DEFINITIONS` and dispatched in
-[tool_manager_service.py](../../ai_service/app/services/tool_manager_service.py):
+Defined in [tool_manager_service.py](../../ai_service/app/services/tool_manager_service.py).
+Identity is server-side: no tool takes a `user_id` and the prompt carries no ids or email.
 
-| Tool | Data source |
+| Tool | What it does |
 |---|---|
-| `get_learning_progress(user_id, source_filter?)` | `LearningProgressService` over `learner_operation` — hierarchical paths, %, last viewed, `next_recommendation` |
-| `get_student_feedback(user_id, date_range_days=30)` | `user_linked_data` strengths/weaknesses + latest `student_analysis_process` report |
-| `search_related_resources(topic, resource_type)` | keyword `ILIKE` over `slide`, plus `quiz_slide_question` ids |
-| `get_learning_analytics(user_id)` | `learning_analytics` summary (doubt patterns, quiz trends) |
-| `semantic_search_content(query, top_k=5)` | pgvector similarity over `content_embeddings` |
+| `get_my_courses()` | Active enrolments (unpaid `ABANDONED_CART` rows excluded) with completion % (the `PACKAGE_SESSION` rollup the course cards show), the last slide opened (newest `activity_log` view) or the first slide for a course not started, as a `progress` card with Continue/Start links. ([learner_tools.py](../../ai_service/app/services/learner_tools.py)) |
+| `get_my_live_classes(which)` | Mirrors the learner app's live-class list: participants by batch or user, unassigned public classes when the institute shows them, the `attendanceOnlyMode`/`showPastSessions`/`showRecordings`/`showAttendance` settings. Upcoming (7 days, IST, live/joinable now) and past (14 days, attendance, recording). The Join link is the app's own join page `/study-library/live-class/{username}` (payment, waiting room, attendance, personal BBB link), never the raw meeting URL. |
+| `get_my_tests()` | Open and upcoming tests through assessment_service's internal `GET /assessment-service/internal/learner-chat/v1/assessments` (HMAC). It reuses the examination page's own query. Links to `/assessment/examination/{id}`. |
+| `get_my_results()` | `GET …/learner-chat/v1/results`: the report list's own query, with **only RELEASED attempts carrying marks**, enriched with total, %, rank, percentile, class average and sections (latest 5). Unreleased attempts are listed as awaiting result. Links to `/assessment/reports/student-report?assessmentId&attemptId`. |
+| `get_my_performance()` | Coaching data in one call: released results; the per-test AI analysis in `activity_log` (`llm_assessment`) for **released tests only**; `user_linked_data`; the latest `student_analysis_process` summary; study minutes, active days and streak; 30-day live attendance; doubt topics. |
+| `get_learning_progress(source_filter?)` | `learner_operation` paths, %, next recommendation (detail inside a course) |
+| `search_related_resources(topic, resource_type?)` | Searches the learner's **ACTIVE enrolments** only, per word with light plural folding, over slide title/description and chapter/module/subject names, ranked. Returns text for the model plus a `link_list` **card** whose links open each slide (`/study-library/courses/course-details/subjects/modules/chapters/slides?courseId&levelId&subjectId&moduleId&chapterId&slideId&sessionId`). |
+| `create_practice_quiz(topic, num_questions 3-10 = 5, difficulty)` | Run by the orchestrator: posts a `quiz` message. The model gets a note saying the quiz is on screen. Offered once per turn. |
 
-The system prompt injects the real `user_id` / `institute_id` and instructs the model
-never to ask for them; empty `user_id` args are backfilled server-side.
+`get_student_feedback` and `get_learning_analytics` are no longer offered: `get_my_performance` includes their data.
+`semantic_search_content` is **not offered**. Its corpus (`content_embeddings`) holds only
+the platform's admin help articles, so it answered learners with admin docs. The executor
+and `SEMANTIC_SEARCH_TOOL` stay for when a course corpus exists.
 
-Two rough edges worth knowing:
-- `_execute_get_student_feedback` interpolates the day range into
-  `INTERVAL ':days days'` — a quoted literal, so the bind never applies. The
-  recent-report lookup effectively fails and is swallowed by the `try`.
-- `_execute_semantic_search` reads `institute_id` from the **tool arguments**, which
-  the schema never declares, so it degrades to `""` — i.e. an unscoped search.
-- `search_related_resources`' question branch ignores `topic` entirely and returns
-  three arbitrary question ids.
+**Cards.** A tool may return `ToolOutput(text, card)`
+([chat_cards.py](../../ai_service/app/services/chat_cards.py)). The card is validated
+(kinds `link_list` / `progress`; links must be `/app-route` or `https://`; at most 10 items)
+and stored as `message_type='card'` with `metadata.card`, plus a markdown fallback in
+`content` for older apps and the admin transcript. The app renders cards in
+`components/chatbot/cards/` and treats unknown kinds as markdown.
 
 ### 7.2 Practice quizzes
 
-`_handle_practice_request` → `IntentClassifierService.get_practice_topic()` picks the
-topic (explicit mention → chapter (+subject) → slide name → module → subject → course
-→ first line of content → `"Current Topic"`; deictic words like "this"/"that" are
-skipped so they fall through to context). If the topic is still generic the bot asks
-the learner to name one instead of guessing.
-
-[quiz_service.py](../../ai_service/app/services/quiz_service.py) generates **10 MCQs**
-at `difficulty="medium"` from topic + context, stored as a `quiz` message with
-correct answers **stripped** (`get_quiz_for_frontend`). The full `QuizData` lives
-only in the in-process dict `AiChatAgentService._active_quizzes[session_id]`.
-
-Submission: FE sends `POST /message` with `quiz_submission {quiz_id, answers{qid:idx},
-time_taken_seconds}` → `evaluate_quiz` → `quiz_feedback` message
-(`score/total/percentage/passed (≥60%)/question_feedback[]/overall_feedback/recommendations`),
-a `learning_analytics` `quiz_score` event, and a follow-up nudge ("practice more, or
-any doubts?").
-
-⚠ `_active_quizzes` is **in-memory per process**. With multiple `ai_service` replicas
-(or after a restart) a submission that lands on a different pod hits
-"I couldn't find that quiz."
+The model calls `create_practice_quiz` (vague "quiz me" on a lesson → that lesson's topic).
+The quiz is a `quiz` message with answers stripped; the full answer key lives in
+`chat_quiz_state`. Submission produces a `quiz_feedback` message (score, per-question
+results) and a `learning_analytics` event. Both the quiz and its result are replayed into
+history (§9), so the tutor can explain a question the learner got wrong.
 
 ### 7.3 Multimodal
 
@@ -442,16 +433,18 @@ There is also a one-shot path for text mode: `POST /session/{id}/audio-message`
 ## 9. Context-window management
 
 [context_window_service.py](../../ai_service/app/services/context_window_service.py):
-
-- `SUMMARY_THRESHOLD = 20` user+assistant messages since the last summary → generate one
-- `RECENT_MESSAGES_LIMIT = 10` messages kept verbatim
-- summaries are `summary`-type messages (150–250 words, temperature 0.2, `max_tokens=500`),
-  each fed the previous summary for continuity
-- `get_optimized_history()` returns [latest summary] + recent messages as the LLM history
-
-Slide `content` is separately truncated to 4000 chars in `strip_html()`.
-
----
+- History = latest `summary` + the last 10 conversational turns, built from `user`,
+  `assistant`, `quiz`, `quiz_feedback`, `card` and `tool_result` rows. The non-chat rows
+  become bracketed notes, e.g. `[Quiz I showed …]` (marked "until they submit, do not
+  reveal answers"), `[Quiz result: 8/10 … Q2 WRONG …]`, `[Shown to the student as a card …]`
+  and `[Earlier I looked this up with …]` (truncated to 1,500 chars).
+- Legacy filler lines ("Let me check your progress! 🔍" …) are skipped. New turns no
+  longer store them.
+- A summary is generated after 20 user+assistant messages since the last one.
+- System prompt order: fixed instructions → institute rules → today's date, learner name,
+  page context. The fixed prefix is shared across learners, so providers can cache it.
+  Reply language: mirror the learner (Hinglish stays in Latin letters, Devanagari stays
+  Devanagari); otherwise use the app's language.
 
 ## 10. Models, keys and billing
 
@@ -494,22 +487,23 @@ flushed on `online`.
 
 ## 12. Known issues / follow-ups
 
-| # | Issue | Where |
+| # | Issue | Status |
 |---|---|---|
-| 1 | `/chat-agent/**` and the voice WS are **unauthenticated**; `user_id`/`institute_id` are client-supplied → cross-tenant read of learner progress/analysis + credit burn | `routers/chat_agent.py`, `routers/voice_agent.py` |
-| 2 | No session-ownership check on `stream`/`message`/`close` | same |
-| 3 | `enable: false` is frontend-only — backend still serves | `institute_settings_service.py` vs FE |
-| 4 | `_active_quizzes` is in-process → quiz submissions break across replicas/restarts | `ai_chat_agent_service.py` |
-| 5 | `get_student_feedback` `INTERVAL ':days days'` never binds; recent report silently unavailable | `tool_manager_service.py` |
-| 6 | `semantic_search_content` gets no `institute_id` → unscoped vector search | `tool_manager_service.py` |
-| 7 | `search_related_resources` ignores `topic` for questions | `tool_manager_service.py` |
-| 8 | KB auto-search doesn't filter `is_active` | `ai_chat_agent_service.py` |
-| 9 | SSE polls the DB every 2s per open stream — cost scales with concurrent learners | `stream_session()` |
-| 10 | `enabled_modes` is not enforced server-side (a client can request any mode) | FE-only gate |
-| 11 | Three different default assistant names (backend `Savir`, learner `Vacademy Chatbot`, admin `{institute} Chatbot`) | see §3 |
-| 12 | `/chat-agent/debug/active-streams` publicly exposed | `routers/chat_agent.py` |
-| 13 | Chat tables' DDL lives in admin_core_service Flyway while only ai_service uses them — schema drift risk with the SQLAlchemy models | V78/V79/V171 |
+| 1 | `/chat-agent/**` unauthenticated, client-supplied identity | **Rollout** (§4.4): verified when present; enforced once `chatbot.text.require_auth` is on |
+| 2 | No session-ownership check | Done, enforced with #1 |
+| 3 | `enable:false` / `enabled_modes` frontend-only | Open |
+| 4 | Quiz answer key lost on restart | Fixed (`chat_quiz_state`) |
+| 5 | `get_student_feedback` interval bug | Fixed |
+| 6 | `semantic_search_content` scope / admin-doc corpus | Not offered until a course corpus exists |
+| 7 | `search_related_resources` cross-tenant + phrase-only | Fixed: enrolment-scoped, per word, linked card |
+| 8 | Voice LLM turns and scorecard never billed | Open (pricing decision) |
+| 9 | `voice_doubt` gets an oral-test scorecard; score shown as "80/5" | Open |
+| 10 | SSE polls the DB every 2 s per open stream | Open |
+| 11 | Three different default assistant names | Open |
+| 12 | Public `/debug/active-streams` | Removed (staff-only `/debug/auth-stats`) |
+| 13 | Chat DDL in admin_core Flyway, models in ai_service | Open |
+| 14 | `cn()` (tailwind-merge) drops custom font sizes like `text-caption` next to a text colour, app-wide | Open; worked around in the chatbot chips |
 
 ---
 
-*Written 2026-08-03 from code at `vacademy_platform` HEAD. Line references may drift.*
+*Written 2026-08-03, updated 2026-10-20. Line references may drift.*

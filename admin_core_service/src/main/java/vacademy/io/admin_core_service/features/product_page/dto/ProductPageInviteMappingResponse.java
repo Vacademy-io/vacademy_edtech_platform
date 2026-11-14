@@ -35,6 +35,14 @@ public class ProductPageInviteMappingResponse {
     /** Payment option type (ONE_TIME, SUBSCRIPTION, FREE, DONATION, CPO). */
     private String paymentOptionType;
 
+    /**
+     * Whether the payment option prices by the viewer's country (regional pricing). Read by
+     * RegionalPriceResolver in memory before the response is written; never serialized, so
+     * the public product-page JSON is unchanged.
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Boolean regionalPricingEnabled;
+
     /** Course preview media (file ID) — resolved from the package for card thumbnails. */
     private String coursePreviewImageMediaId;
 

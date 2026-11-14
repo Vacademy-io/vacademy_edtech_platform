@@ -1,0 +1,86 @@
+{
+    "exampleLabel": "Exemple : ",
+    "requiredLabel": "Requis : ",
+    "nodes": {
+        "TRIGGER": {
+            "description": "Démarre le workflow lorsqu'un événement spécifique se produit dans le système.",
+            "example": "Déclencher lorsqu'un nouvel apprenant s'inscrit dans un groupe.",
+            "required": ["Type d'événement"]
+        },
+        "QUERY": {
+            "description": "Récupère des données depuis la base de données à l'aide d'une requête prédéfinie.",
+            "example": "Obtenir tous les apprenants d'un groupe spécifique avec leurs adresses e-mail.",
+            "required": ["Clé de requête"]
+        },
+        "TRANSFORM": {
+            "description": "Modifie ou remodèle les données dans le contexte du workflow.",
+            "example": "Extraire uniquement les champs e-mail et nom d'une liste d'apprenants.",
+            "required": ["Expression de transformation"]
+        },
+        "FILTER": {
+            "description": "Filtre une liste d'éléments selon une condition.",
+            "example": "Ne garder que les apprenants de plus de 18 ans.",
+            "required": ["Liste source", "Condition"]
+        },
+        "AGGREGATE": {
+            "description": "Calcule des statistiques (nombre, somme, moyenne, min, max) sur une liste.",
+            "example": "Calculer le score moyen aux tests de tous les étudiants.",
+            "required": ["Liste source", "Opérations"]
+        },
+        "CONDITION": {
+            "description": "Divise le workflow en deux chemins selon une condition vrai/faux.",
+            "example": "Si le paiement est en retard, envoyer un rappel ; sinon, ignorer.",
+            "required": ["Expression de condition"]
+        },
+        "LOOP": {
+            "description": "Répète les actions en aval pour chaque élément d'une liste.",
+            "example": "Envoyer un e-mail personnalisé à chaque apprenant d'un groupe.",
+            "required": ["Liste source", "Nom de la variable d'élément"]
+        },
+        "MERGE": {
+            "description": "Attend que plusieurs chemins parallèles se terminent avant de continuer.",
+            "example": "Après l'envoi de l'e-mail et du WhatsApp, procéder à la mise à jour des enregistrements.",
+            "required": []
+        },
+        "DELAY": {
+            "description": "Met le workflow en pause pendant une durée définie.",
+            "example": "Attendre 24 heures avant d'envoyer un message de relance.",
+            "required": ["Valeur du délai", "Unité"]
+        },
+        "SEND_EMAIL": {
+            "description": "Envoie des e-mails à un ou plusieurs destinataires à l'aide d'un modèle.",
+            "example": "Envoyer un e-mail de bienvenue aux apprenants nouvellement inscrits.",
+            "required": ["Destinataires", "Modèle"]
+        },
+        "SEND_WHATSAPP": {
+            "description": "Envoie des messages WhatsApp à un ou plusieurs destinataires.",
+            "example": "Envoyer les identifiants du cours via WhatsApp.",
+            "required": ["Destinataires", "Modèle"]
+        },
+        "SEND_PUSH_NOTIFICATION": {
+            "description": "Envoie une notification push aux utilisateurs de l'application mobile/web.",
+            "example": "Informer les étudiants d'un nouveau devoir.",
+            "required": ["Titre", "Corps", "Jetons des destinataires"]
+        },
+        "HTTP_REQUEST": {
+            "description": "Effectue un appel HTTP vers une API interne ou externe.",
+            "example": "Appeler l'API de génération de certificat après la fin du cours.",
+            "required": ["URL", "Méthode"]
+        },
+        "SCHEDULE_TASK": {
+            "description": "Planifie l'exécution d'un workflow à une date future.",
+            "example": "Planifier un rappel 3 jours avant l'échéance de la mensualité.",
+            "required": ["Durée du délai"]
+        },
+        "UPDATE_RECORD": {
+            "description": "Met à jour directement un enregistrement de base de données (limité aux tables autorisées).",
+            "example": "Marquer le statut d'inscription comme ACTIF après confirmation du paiement.",
+            "required": ["Table", "Clause WHERE", "Clause SET"]
+        },
+        "SET_LEAD_STATUS": {
+            "description": "Déplace le prospect vers un statut CRM (via LeadStatusService — sûr pour le double stockage). À connecter après CALL_AI/CONDITION pour réagir à une issue d'appel.",
+            "example": "Issue de rappel → Définir le statut du prospect = À rappeler.",
+            "required": ["Statut du prospect"]
+        }
+    }
+}

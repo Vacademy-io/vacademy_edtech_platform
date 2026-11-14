@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import {
     DropdownMenu,
@@ -10,8 +11,9 @@ import {
     DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
-import { DotsThree, WarningCircle, Info, Coins } from '@phosphor-icons/react';
+import { DotsThree, WarningCircle, Coins } from '@phosphor-icons/react';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
+import { perPageCredits } from '@/services/ai-credits/get-ai-credits';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StudentRevaluateQuestionWiseComponent } from './student-revaluate-question-wise-component';
@@ -31,21 +33,17 @@ import { Route } from '../..';
 import { getInstituteId } from '@/constants/helper';
 import { toast } from 'sonner';
 import { SelectedReleaseResultFilterInterface } from '../AssessmentSubmissionsTab';
-import { getAssessmentDetails } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
+import {
+    getAssessmentDetails,
+} from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
 import {
     storeEvaluationDataInStorage,
     triggerAIEvaluation,
 } from '../../-services/ai-evaluation-services';
-import { MODEL_DISPLAY_NAMES } from '@/routes/ai-center/-types/ai-models';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { stashEvalReturnUrl } from '@/routes/evaluation/evaluation-tool/-utils/eval-return';
 import { UploadAnswerSheetDialog } from '@/routes/evaluation/evaluate/$assessmentId/$attemptId/$examType/-components/UploadAnswerSheetDialog';
+import { ProctoringReviewDialog } from './ProctoringReviewDialog';
+import { StudentAiReportDialog } from './StudentAiReportDialog';
 
 const isEvaluatedStatus = (status?: string | null) => {
     const s = (status || '').toUpperCase();
@@ -59,6 +57,7 @@ const ProvideReattemptComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
 
@@ -66,20 +65,23 @@ const ProvideReattemptComponent = ({
         mutationFn: (registrationId: string) =>
             provideReattemptToParticipants(assessmentId, instituteId, [registrationId]),
         onSuccess: () => {
-            toast.success(`Reattempt has been provided to ${student.full_name}.`, {
-                className: 'success-toast',
-                duration: 4000,
-            });
+            toast.success(
+                t('toasts.reattemptProvided', { name: student.full_name }),
+                {
+                    className: 'success-toast',
+                    duration: 4000,
+                }
+            );
             onClose();
         },
         onError: () => {
-            toast.error('Failed to provide reattempt. Please try again.');
+            toast.error(t('toasts.reattemptError'));
         },
     });
 
     const handleProvideReattempt = () => {
         if (!student.registration_id) {
-            toast.error('Could not resolve this participant’s registration. Please try again.');
+            toast.error(t('toasts.reattemptRegistrationError'));
             return;
         }
         provideReattemptMutation.mutate(student.registration_id);
@@ -87,14 +89,16 @@ const ProvideReattemptComponent = ({
 
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Provide Reattempt</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.provideReattempt.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to provide a reattempt opportunity to{' '}
+                    {t('dialogs.provideReattempt.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
                 <div className="flex justify-end">
@@ -106,7 +110,9 @@ const ProvideReattemptComponent = ({
                         onClick={handleProvideReattempt}
                         disabled={provideReattemptMutation.isPending}
                     >
-                        {provideReattemptMutation.isPending ? 'Providing...' : 'Yes'}
+                        {provideReattemptMutation.isPending
+                            ? t('dialogs.provideReattempt.providing')
+                            : t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -121,6 +127,7 @@ const ReleaseResultComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
     const getReleaseResultMutation = useMutation({
@@ -136,7 +143,7 @@ const ReleaseResultComponent = ({
             selectedFilter: SelectedReleaseResultFilterInterface;
         }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success('Result released successfully. The learner has been notified by email.', {
+            toast.success(t('toasts.resultReleased'), {
                 className: 'success-toast',
                 duration: 4000,
             });
@@ -159,14 +166,16 @@ const ReleaseResultComponent = ({
     };
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Release Result</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.releaseResult.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to release result for{' '}
+                    {t('dialogs.releaseResult.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
                 <div className="flex justify-end">
@@ -177,7 +186,7 @@ const ReleaseResultComponent = ({
                         className="mt-4 font-medium"
                         onClick={handleReleaseResultStudent} // Close the dialog when clicked
                     >
-                        Yes
+                        {t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -185,191 +194,115 @@ const ReleaseResultComponent = ({
     );
 };
 
-// Confirmation shown before opening the manual evaluation tool for an attempt
-// that has already been evaluated. Re-grading resets its status to "Evaluating"
-// until new marks are submitted, so warn the teacher first.
-const ManualReEvaluateConfirmComponent = ({
-    student,
-    onConfirm,
-    onClose,
-}: {
-    student: AssessmentRevaluateStudentInterface;
-    onConfirm: () => void;
-    onClose: () => void;
-}) => {
-    return (
-        <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Re-evaluate Attempt</h1>
-            <div className="flex flex-col gap-2 p-4">
-                <div className="flex items-center gap-1 text-danger-600">
-                    <p>Attention</p>
-                    <WarningCircle size={18} />
-                </div>
-                <h1>
-                    <span className="text-primary-500">{student.full_name}</span>&apos;s attempt has
-                    already been evaluated. Re-evaluating will move it back to{' '}
-                    <span className="font-semibold">Evaluating</span> until you submit new marks. Do
-                    you want to continue?
-                </h1>
-                <div className="mt-4 flex justify-end gap-2">
-                    <MyButton
-                        type="button"
-                        scale="medium"
-                        buttonType="secondary"
-                        className="font-medium"
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </MyButton>
-                    <MyButton
-                        type="button"
-                        scale="medium"
-                        buttonType="primary"
-                        className="font-medium"
-                        onClick={onConfirm}
-                    >
-                        Continue
-                    </MyButton>
-                </div>
-            </div>
-        </DialogContent>
-    );
-};
-
-const StudentEvaluateWithAIComponent = ({
-    student,
-    onClose,
-    assessmentData,
-    isReEvaluation,
-}: {
-    student: AssessmentRevaluateStudentInterface;
-    onClose: () => void;
-    assessmentData: any;
-    isReEvaluation?: boolean;
-}) => {
+/**
+ * Starts the AI check on one attempt and opens its progress page. No model is
+ * sent, so the platform's "evaluation" default decides; teachers do not pick one.
+ * A refusal (a released result, a paper with no questions) toasts the server's reason.
+ */
+const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmentData: any) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
-    const instituteId = getInstituteId();
     const navigate = useNavigate();
-    const [selectedModel, setSelectedModel] = useState<string>('google/gemini-3.1-pro-preview');
+    const toastId = `ai-check-${student.attempt_id}`;
 
-    // Credit cost preview for this evaluation (per graded question).
-    const numQuestions: number = (assessmentData?.[1]?.saved_data?.sections ?? []).reduce(
-        (sum: number, section: any) => sum + (section?.questions?.length || 0),
-        0
-    );
-    const cost = useToolCostPreview('copy_check_evaluation', { num_questions: numQuestions });
-
-    // Trigger AI evaluation mutation
-    const triggerEvaluationMutation = useMutation({
-        mutationFn: ({
-            attempt_ids,
-            preferred_model,
-        }: {
-            attempt_ids: string[];
-            preferred_model?: string;
-        }) => triggerAIEvaluation(attempt_ids, preferred_model),
+    return useMutation({
+        mutationFn: () => triggerAIEvaluation([student.attempt_id]),
+        onMutate: () => {
+            toast.loading(t('dialogs.evaluateWithAI.starting'), { id: toastId });
+        },
         onSuccess: (processIds) => {
-            toast.success(`AI evaluation started successfully!`, {
+            // The server skips an attempt it cannot queue and returns no process for it.
+            const processId = processIds[0];
+            if (!processId) {
+                toast.error(t('toasts.evaluationError'), { id: toastId });
+                return;
+            }
+            toast.success(t('toasts.evaluationStarted'), {
+                id: toastId,
                 className: 'success-toast',
                 duration: 4000,
             });
-
-            console.log('sections', assessmentData?.[1]?.saved_data?.sections);
             storeEvaluationDataInStorage({
-                processId: processIds[0] ?? '',
+                processId,
                 attemptId: student.attempt_id,
-                assessmentId: assessmentId,
+                assessmentId,
                 sectionIds:
                     assessmentData?.[1]?.saved_data?.sections?.map((section: any) => section.id) ||
                     [],
             });
-            onClose();
-
-            // Navigate to the evaluation progress page
             navigate({
                 to: '/assessment/evaluation-ai/$attemptId/$processId',
-                params: {
-                    attemptId: student.attempt_id,
-                    processId: processIds[0] ?? '',
-                },
+                params: { attemptId: student.attempt_id, processId },
             });
         },
         onError: (error: unknown) => {
             console.error('Failed to trigger AI evaluation:', error);
-            toast.error('Failed to start AI evaluation. Please try again.');
+            const body = (error as { response?: { data?: { ex?: string; message?: string } } })
+                ?.response?.data;
+            toast.error(body?.ex || body?.message || t('toasts.evaluationError'), { id: toastId });
         },
     });
+};
 
-    const handleEvaluateWithAIStudent = () => {
-        triggerEvaluationMutation.mutate({
-            attempt_ids: [student.attempt_id],
-            preferred_model: selectedModel,
-        });
-    };
+/**
+ * What one AI check of this paper costs against the institute's balance. The dashboard's
+ * server side only quotes (credit-check.dashboard-enforced=false in prod), so this is the
+ * one thing stopping a check the institute cannot pay for. The check is billed per
+ * question, and the saved sections carry no questions, so they come from the per-section
+ * query (same count as the bulk quote). `enabled` keeps a row from fetching until its
+ * menu is open.
+ */
+const useAiCheckCost = (enabled: boolean) => {
+    // The pages are counted when the copy is read, so the screen shows the rate,
+    // and the balance check uses the minimum: one page.
+    const cost = useToolCostPreview('copy_check_evaluation', { num_pages: 1 }, enabled);
+    return { ...cost, creditsPerPage: perPageCredits(cost.rate) };
+};
+
+/** A copy already checked or under evaluation: a new check costs credits and replaces its marks. */
+const ReCheckWithAIConfirm = ({
+    student,
+    cost,
+    isStarting,
+    onConfirm,
+    onClose,
+}: {
+    student: AssessmentRevaluateStudentInterface;
+    cost: ReturnType<typeof useAiCheckCost>;
+    isStarting: boolean;
+    onConfirm: () => void;
+    onClose: () => void;
+}) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
 
     return (
         <DialogContent className="flex flex-col gap-4 p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                Evaluate Assessment with AI
+                {t('dialogs.evaluateWithAI.recheckTitle')}
             </h1>
             <div className="flex flex-col gap-4 p-4">
-                {isReEvaluation && (
-                    <div className="flex items-start gap-2 rounded-md bg-danger-50 p-3 text-danger-600">
-                        <WarningCircle size={18} className="mt-0.5 shrink-0" />
-                        <p className="text-sm">
-                            This attempt has already been evaluated. Re-evaluating will move it back
-                            to <span className="font-semibold">Evaluating</span> until the new
-                            result is ready.
-                        </p>
-                    </div>
-                )}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-neutral-700">Select AI Model</label>
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(MODEL_DISPLAY_NAMES).map(([modelId, info]) => (
-                                <SelectItem key={modelId} value={modelId}>
-                                    {info.name} - {info.description}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-neutral-500">
-                        Choose the AI model to evaluate{' '}
-                        <span className="font-semibold text-primary-600">
-                            {student.full_name}'s
-                        </span>{' '}
-                        submission
-                    </p>
-                </div>
+                <p className="text-sm text-neutral-700">
+                    {t('dialogs.evaluateWithAI.recheckMessage', { name: student.full_name })}
+                </p>
 
-                <div className="flex items-start gap-2 rounded-md bg-primary-50 p-3 text-xs text-primary-700">
-                    <Info size={16} className="mt-0.5 shrink-0" />
-                    <p>
-                        For any question without a rubric, the AI generates grading criteria the
-                        first time and reuses them for every student, so everyone is graded the same
-                        way. Set rubrics on the assessment for full control over how marks are
-                        awarded.
-                    </p>
-                </div>
-
-                {numQuestions > 0 && cost.credits != null && (
+                {cost.creditsPerPage != null && (
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex items-center gap-2 text-sm text-neutral-700">
                             <Coins size={16} className="text-primary-500" />
                             <span>
-                                Estimated cost:{' '}
+                                {t('dialogs.evaluateWithAI.estimatedCostLabel')}{' '}
                                 <span className="font-semibold text-neutral-900">
-                                    {cost.credits} credits
+                                    {t('dialogs.evaluateWithAI.creditsPerPage', {
+                                        count: cost.creditsPerPage,
+                                    })}
                                 </span>
                             </span>
                         </div>
                         {cost.currentBalance != null && (
                             <span className="text-xs text-neutral-500">
-                                Balance: {cost.currentBalance}
+                                {t('dialogs.evaluateWithAI.balance', {
+                                    count: cost.currentBalance,
+                                })}
                             </span>
                         )}
                     </div>
@@ -378,10 +311,7 @@ const StudentEvaluateWithAIComponent = ({
                 {cost.sufficient === false && (
                     <div className="flex items-start gap-2 rounded-md bg-danger-50 p-3 text-xs text-danger-600">
                         <WarningCircle size={16} className="mt-0.5 shrink-0" />
-                        <p>
-                            Not enough credits for this evaluation. Add credits to your institute to
-                            continue.
-                        </p>
+                        <p>{t('dialogs.evaluateWithAI.insufficientCredits')}</p>
                     </div>
                 )}
 
@@ -390,17 +320,19 @@ const StudentEvaluateWithAIComponent = ({
                         type="button"
                         buttonType="secondary"
                         onClick={onClose}
-                        disabled={triggerEvaluationMutation.isPending}
+                        disabled={isStarting}
                     >
-                        Cancel
+                        {t('dialogs.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
                         buttonType="primary"
-                        onClick={handleEvaluateWithAIStudent}
-                        disabled={triggerEvaluationMutation.isPending || cost.sufficient === false}
+                        onClick={onConfirm}
+                        disabled={isStarting || cost.sufficient === false}
                     >
-                        {triggerEvaluationMutation.isPending ? 'Starting...' : 'Start'}
+                        {isStarting
+                            ? t('dialogs.evaluateWithAI.starting')
+                            : t('dialogs.evaluateWithAI.recheckConfirm')}
                     </MyButton>
                 </div>
             </div>
@@ -415,6 +347,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
     const [selectedFilter] = useState<SelectedFilterRevaluateInterface>({
@@ -439,13 +372,10 @@ const StudentRevaluateForEntireAssessmentComponent = ({
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             onClose();
         },
         onError: (error: unknown) => {
@@ -473,17 +403,17 @@ const StudentRevaluateForEntireAssessmentComponent = ({
     return (
         <DialogContent className="flex flex-col p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                Revaluate Entire Assessment
+                {t('dialogs.revaluateEntireAssessment.title')}
             </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to revaluate for{' '}
-                    <span className="text-primary-500">{student.full_name}</span> for the entire
-                    assessment?
+                    {t('dialogs.revaluateEntireAssessment.confirmMessagePrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>{' '}
+                    {t('dialogs.revaluateEntireAssessment.confirmMessageSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -493,7 +423,7 @@ const StudentRevaluateForEntireAssessmentComponent = ({
                         className="mt-4 font-medium"
                         onClick={handleRevaluateStudent}
                     >
-                        Yes
+                        {t('dialogs.yes')}
                     </MyButton>
                 </div>
             </div>
@@ -502,10 +432,13 @@ const StudentRevaluateForEntireAssessmentComponent = ({
 };
 
 const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
+    const { t } = useTranslation('assessmentStudentAttemptDropdown');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [proctoringOpen, setProctoringOpen] = useState(false);
+    const [aiReportOpen, setAiReportOpen] = useState(false);
     const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
     const navigate = useNavigate();
@@ -539,6 +472,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
         setSelectedOption(value);
     };
 
+    const startAiCheck = useStartAiCheck(student, assessmentData);
+
     // Fetch the report detail for this attempt, resolve the evaluated copy's
     // public URL and open it. The evaluated_file_id lives on the report detail,
     // not on the table row, so it is fetched on demand.
@@ -558,12 +493,12 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                 // the real extension from the file itself before saving.
                 void downloadFileFromUrl(url, `Evaluated-Copy-${student.full_name}`);
             } else {
-                toast.error('No evaluated copy found for this attempt.');
+                toast.error(t('toasts.noEvaluatedCopy'));
             }
         },
         onError: (error: unknown) => {
             console.error('Failed to load evaluated copy:', error);
-            toast.error('Failed to load the evaluated copy. Please try again.');
+            toast.error(t('toasts.evaluatedCopyLoadError'));
         },
     });
 
@@ -593,12 +528,12 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
             const fileUrl =
                 result.type === 'blob' ? window.URL.createObjectURL(result.value) : result.value;
             if (!fileUrl) {
-                toast.error('No submission file found for this attempt.');
+                toast.error(t('toasts.noSubmissionFile'));
                 return;
             }
             const submissionTab = window.open(fileUrl, '_blank');
             if (!submissionTab) {
-                toast.error('Please allow pop-ups to view the submission.');
+                toast.error(t('toasts.popupBlocked'));
             }
             // Revoke object URLs after a delay so the new tab can load the blob.
             if (result.type === 'blob') {
@@ -607,7 +542,7 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
         },
         onError: (error: unknown) => {
             console.error('Failed to load submission:', error);
-            toast.error('Failed to load submission. Please try again.');
+            toast.error(t('toasts.submissionLoadError'));
         },
     });
 
@@ -669,7 +604,7 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
         },
         onError: (error: unknown) => {
             console.error('Failed to generate student report:', error);
-            toast.error('Failed to generate the report. Please try again.');
+            toast.error(t('toasts.reportGenerateError'));
         },
     });
 
@@ -686,6 +621,22 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     const evaluationStatus = student?.evaluation_status;
     const isEvaluationPending = evaluationStatus === 'PENDING';
     const isEvaluated = isEvaluatedStatus(evaluationStatus);
+
+    const aiCheckCost = useAiCheckCost(isManualEvaluation && (menuOpen || openDialog));
+
+    // A pending copy starts in one click. Anything else asks first, whichever menu label it
+    // sits under ("Revaluate"): a teacher's half-marked copy is EVALUATING, not COMPLETED.
+    const handleCheckWithAi = () => {
+        if (!isEvaluationPending) {
+            handleProvideReattempt('Evaluate with AI');
+            return;
+        }
+        if (aiCheckCost.sufficient === false) {
+            toast.error(t('dialogs.evaluateWithAI.insufficientCredits'));
+            return;
+        }
+        startAiCheck.mutate();
+    };
 
     // For manual assessments the menu depends on whether the attempt has a
     // submitted answer sheet and an evaluated copy. Both live behind detail
@@ -733,7 +684,9 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         the admin an upload instead of a dead "View Submission". */}
                     {isManualEvaluation ? (
                         submissionFileQuery.isLoading ? (
-                            <DropdownMenuItem disabled>Checking Submission...</DropdownMenuItem>
+                            <DropdownMenuItem disabled>
+                                {t('dropdown.checkingSubmission')}
+                            </DropdownMenuItem>
                         ) : hasSubmissionFile ? (
                             <DropdownMenuItem
                                 className="cursor-pointer"
@@ -743,15 +696,15 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                 }}
                             >
                                 {viewSubmissionMutation.isPending
-                                    ? 'Loading Submission...'
-                                    : 'View Submission'}
+                                    ? t('dropdown.loadingSubmission')
+                                    : t('dropdown.viewSubmission')}
                             </DropdownMenuItem>
                         ) : (
                             <DropdownMenuItem
                                 className="cursor-pointer"
                                 onClick={() => setUploadDialogOpen(true)}
                             >
-                                Upload Submission
+                                {t('dropdown.uploadSubmission')}
                             </DropdownMenuItem>
                         )
                     ) : (
@@ -763,19 +716,19 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                             }}
                         >
                             {viewSubmissionMutation.isPending
-                                ? 'Loading Submission...'
-                                : 'View Submission'}
+                                ? t('dropdown.loadingSubmission')
+                                : t('dropdown.viewSubmission')}
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleProvideReattempt('Provide Reattempt')}
                     >
-                        Provide Reattempt
+                        {t('dropdown.provideReattempt')}
                     </DropdownMenuItem>
                     <DropdownMenuSub>
                         <DropdownMenuSubTrigger className="cursor-pointer">
-                            {isEvaluationPending ? 'Evaluate' : 'Revaluate'}
+                            {isEvaluationPending ? t('dropdown.evaluate') : t('dropdown.revaluate')}
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent>
                             {!isManualEvaluation ? (
@@ -784,13 +737,13 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                         className="cursor-pointer"
                                         onClick={() => handleProvideReattempt('Question Wise')}
                                     >
-                                        Question Wise
+                                        {t('dropdown.questionWise')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
                                         onClick={() => handleProvideReattempt('Entire Assessment')}
                                     >
-                                        Entire Assessment
+                                        {t('dropdown.entireAssessment')}
                                     </DropdownMenuItem>
                                 </>
                             ) : (
@@ -798,24 +751,19 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                 <>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
-                                        onClick={() => {
-                                            // Already-evaluated attempts get a confirmation
-                                            // (re-grading resets status to "Evaluating"); a
-                                            // first-time evaluation opens the tool directly.
-                                            if (isEvaluationPending) {
-                                                handleManualEvaluate();
-                                            } else {
-                                                handleProvideReattempt('Manual Re-evaluate');
-                                            }
-                                        }}
+                                        // Opens the tool directly, evaluated or not: the
+                                        // backend never moves an evaluated attempt back
+                                        // to Evaluating just for opening it.
+                                        onClick={handleManualEvaluate}
                                     >
-                                        Manual
+                                        {t('dropdown.manual')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
-                                        onClick={() => handleProvideReattempt('Evaluate with AI')}
+                                        disabled={startAiCheck.isPending || aiCheckCost.isLoading}
+                                        onClick={handleCheckWithAi}
                                     >
-                                        Evaluate with AI
+                                        {t('dropdown.evaluateWithAI')}
                                     </DropdownMenuItem>
                                 </>
                             )}
@@ -824,7 +772,9 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     {isManualEvaluation &&
                         !isEvaluationPending &&
                         (reportDetailQuery.isLoading ? (
-                            <DropdownMenuItem disabled>Checking Evaluated Copy...</DropdownMenuItem>
+                            <DropdownMenuItem disabled>
+                                {t('dropdown.checkingEvaluatedCopy')}
+                            </DropdownMenuItem>
                         ) : (
                             hasEvaluatedCopy && (
                                 <DropdownMenuItem
@@ -835,8 +785,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                     }}
                                 >
                                     {viewEvaluatedMutation.isPending
-                                        ? 'Loading Evaluated Copy...'
-                                        : 'View Evaluated Copy'}
+                                        ? t('dropdown.loadingEvaluatedCopy')
+                                        : t('dropdown.viewEvaluatedCopy')}
                                 </DropdownMenuItem>
                             )
                         ))}
@@ -854,15 +804,34 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                             }}
                         >
                             {downloadReportMutation.isPending
-                                ? 'Generating Report...'
-                                : 'Download Report'}
+                                ? t('dropdown.generatingReport')
+                                : t('dropdown.downloadReport')}
+                        </DropdownMenuItem>
+                    )}
+                    {/* The student's AI report (what the learner sees). Download Report
+                        above already returns it once it exists; this also lets the
+                        admin generate it, with a credit warning first. */}
+                    {isEvaluated && !isManualEvaluation && (
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setAiReportOpen(true)}
+                        >
+                            {t('dropdown.downloadAiReport')}
                         </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleProvideReattempt('Release Result')}
                     >
-                        Release Result
+                        {t('dropdown.releaseResult')}
+                    </DropdownMenuItem>
+                    {/* Always offered: an unproctored attempt simply shows an
+                        empty log, and the reviewer learns that at a glance. */}
+                    <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setProctoringOpen(true)}
+                    >
+                        {t('dropdown.proctoring')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -876,6 +845,21 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                 open={uploadDialogOpen}
                 onOpenChange={setUploadDialogOpen}
                 onUploaded={handleAnswerSheetUploaded}
+            />
+
+            <StudentAiReportDialog
+                open={aiReportOpen}
+                onOpenChange={setAiReportOpen}
+                assessmentId={assessmentId}
+                attemptId={student.attempt_id}
+                instituteId={instituteId}
+                studentName={student.full_name}
+            />
+            <ProctoringReviewDialog
+                attemptId={student.attempt_id}
+                studentName={student.full_name}
+                open={proctoringOpen}
+                onOpenChange={setProctoringOpen}
             />
 
             {/* Dialog should be controlled by openDialog state */}
@@ -905,20 +889,15 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     />
                 )}
                 {selectedOption === 'Evaluate with AI' && (
-                    <StudentEvaluateWithAIComponent
+                    <ReCheckWithAIConfirm
                         student={student}
-                        onClose={() => setOpenDialog(false)}
-                        assessmentData={assessmentData}
-                        isReEvaluation={!isEvaluationPending}
-                    />
-                )}
-                {selectedOption === 'Manual Re-evaluate' && (
-                    <ManualReEvaluateConfirmComponent
-                        student={student}
-                        onConfirm={() => {
-                            setOpenDialog(false);
-                            handleManualEvaluate();
-                        }}
+                        cost={aiCheckCost}
+                        isStarting={startAiCheck.isPending}
+                        onConfirm={() =>
+                            startAiCheck.mutate(undefined, {
+                                onSettled: () => setOpenDialog(false),
+                            })
+                        }
                         onClose={() => setOpenDialog(false)}
                     />
                 )}

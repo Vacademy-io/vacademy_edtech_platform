@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -14,6 +15,7 @@ import vacademy.io.admin_core_service.features.common.repository.CustomFieldValu
 import vacademy.io.admin_core_service.features.common.repository.SystemFieldCustomFieldMappingRepository;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
 import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -43,6 +45,9 @@ public class FieldSyncService {
 
     @Autowired
     private InstituteStudentRepository studentRepository;
+
+    @Autowired
+    private StudentSessionInstituteGroupMappingRepository ssigmRepository;
 
     /**
      * Tracks which entity+field combinations are currently being synced to prevent loops.
@@ -96,7 +101,7 @@ public class FieldSyncService {
                 
                 try {
                     markSyncInProgress(systemFieldKey);
-                    updateSystemField(mapping.getEntityType(), sourceId, 
+                    updateSystemFieldForSource(mapping.getEntityType(), sourceType, sourceId,
                                      mapping.getSystemFieldName(), newValue);
                     logger.info("Synced custom field {} to system field {}.{}", 
                                customFieldId, mapping.getEntityType(), mapping.getSystemFieldName());
@@ -254,7 +259,73 @@ public class FieldSyncService {
         return mappingRepository.findAllMappingsForEntityType(instituteId, entityType);
     }
 
+    /**
+     * Entry point for CustomFieldValueSyncListener, which calls it after the transaction
+     * that saved the values has committed. Runs in its own transaction because the
+     * committed one can no longer write.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void syncCustomFieldValuesAfterCommit(Collection<CustomFieldValueChange> changes) {
+        Set<String> customFieldIds = new HashSet<>();
+        for (CustomFieldValueChange change : changes) {
+            customFieldIds.add(change.customFieldId());
+        }
+        Set<String> mapped = new HashSet<>(mappingRepository.findCustomFieldIdsWithSystemSync(customFieldIds));
+        for (CustomFieldValueChange change : changes) {
+            if (!mapped.contains(change.customFieldId())) {
+                continue;
+            }
+            try {
+                syncCustomFieldToSystemField(change.customFieldId(), change.sourceType(),
+                        change.sourceId(), change.value());
+            } catch (Exception e) {
+                logger.error("Failed to sync custom field {} for {} {}: {}", change.customFieldId(),
+                        change.sourceType(), change.sourceId(), e.getMessage());
+            }
+        }
+    }
+
+    /** A saved custom field value, captured for the after-commit sync. */
+    public record CustomFieldValueChange(String customFieldId, String sourceType, String sourceId, String value) {
+    }
+
     // ==================== Private Helper Methods ====================
+
+    /**
+     * Custom field values are keyed by user (USER) or by enrolment (SSIGM rows), not by
+     * student id, so resolve the source to its student rows before writing. Blank values
+     * never clear a system field: the same field is often answered on several sources and
+     * an empty one must not wipe a value another source filled.
+     */
+    private void updateSystemFieldForSource(String entityType, String sourceType, String sourceId,
+                                            String fieldName, String value) {
+        if (!EntityTypeEnum.STUDENT.name().equals(entityType) || !StringUtils.hasText(value)) {
+            return;
+        }
+        for (Student student : resolveStudents(sourceType, sourceId)) {
+            if (Objects.equals(getFieldValue(student, fieldName), value)) {
+                continue;
+            }
+            setFieldValue(student, fieldName, value);
+            studentRepository.save(student);
+        }
+    }
+
+    private List<Student> resolveStudents(String sourceType, String sourceId) {
+        if ("USER".equals(sourceType)) {
+            return studentRepository.findByUserIdIn(List.of(sourceId));
+        }
+        if ("STUDENT_SESSION_INSTITUTE_GROUP_MAPPING".equals(sourceType)
+                || "STUDENT_SESSION_MAPPING".equals(sourceType)) {
+            return ssigmRepository.findById(sourceId)
+                    .map(ssigm -> studentRepository.findByUserIdIn(List.of(ssigm.getUserId())))
+                    .orElse(List.of());
+        }
+        if (EntityTypeEnum.STUDENT.name().equals(sourceType)) {
+            return studentRepository.findById(sourceId).map(List::of).orElse(List.of());
+        }
+        return List.of();
+    }
 
     private void updateSystemField(String entityType, String entityId, 
                                    String fieldName, String value) {

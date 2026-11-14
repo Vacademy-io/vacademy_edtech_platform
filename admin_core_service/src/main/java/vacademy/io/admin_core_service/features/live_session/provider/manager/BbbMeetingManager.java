@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.entity.BbbS
 import vacademy.io.admin_core_service.features.live_session.provider.entity.LiveSessionProviderConfig;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderConnectRequestDTO;
 import vacademy.io.admin_core_service.features.live_session.provider.repository.LiveSessionProviderConfigRepository;
+import vacademy.io.admin_core_service.features.live_session.provider.service.BbbActivenessTokenService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.BbbServerRouter;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.common.exceptions.VacademyException;
@@ -59,6 +60,7 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
     private final InstituteRepository instituteRepository;
     private final MediaService mediaService;
     private final BbbServerRouter serverRouter;
+    private final BbbActivenessTokenService activenessTokenService;
 
     @Value("${tool.executor.base-url:http://localhost}")
     private String backendBaseUrl;
@@ -76,6 +78,19 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
      */
     @Value("${bbb.plugins.pip.enabled:true}")
     private boolean pipPluginEnabled;
+
+    /**
+     * Kill-switch for the opt-in camera activeness plugin (per-session setting
+     * bbb_config.activeness_score). Hosted alongside PiP at
+     * https://<host>/plugins/vacademy-activeness/manifest.json. Set
+     * bbb.plugins.activeness.enabled=false to stop loading it platform-wide.
+     */
+    @Value("${bbb.plugins.activeness.enabled:true}")
+    private boolean activenessPluginEnabled;
+
+    /** Where the activeness plugin POSTs its per-learner report (no JWT; HMAC token in the body). */
+    private static final String ACTIVENESS_REPORT_PATH =
+            "/admin-core-service/live-sessions/provider/meeting/bbb-activeness";
 
     private static final List<String> ACTIVE = List.of("ACTIVE");
 
@@ -226,6 +241,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         boolean disableSharedNotes = boolOrDefault(bbbCfg, "disable_shared_notes", false);
         boolean hideUserList = boolOrDefault(bbbCfg, "hide_user_list", false);
         boolean endWhenNoModerator = boolOrDefault(bbbCfg, "end_when_no_moderator", false);
+        // Opt-in camera attention score. Only loaded when the platform kill-switch is
+        // on and a token secret exists — without a secret no learner gets a token, so
+        // the plugin would have nowhere to report.
+        boolean activenessScore = activenessPluginEnabled
+                && boolOrDefault(bbbCfg, "activeness_score", false)
+                && activenessTokenService.isConfigured();
 
         Map<String, String> params = new LinkedHashMap<>();
         params.put("name", request.getTopic() != null ? request.getTopic() : instituteName + " Live Class");
@@ -323,10 +344,28 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         // from that server's apiUrl (strip "/bigbluebutton/api"). Relative entrypoints in
         // the manifest keep it domain-agnostic across the pool. buildQueryString() URL-encodes
         // the JSON value. Toggle off via bbb.plugins.pip.enabled=false.
-        if (pipPluginEnabled) {
-            String bbbBaseUrl = apiUrl.replaceAll("/bigbluebutton/api/?$", "");
-            String pipManifestUrl = bbbBaseUrl + "/plugins/picture-in-picture/manifest.json";
-            params.put("pluginManifests", "[{\"url\":\"" + pipManifestUrl + "\"}]");
+        //
+        // The activeness plugin (on-device camera attention score) is served from the
+        // same /plugins/ tree and joins the same array when the session opted in.
+        if (pipPluginEnabled || activenessScore) {
+            // The participant's BROWSER fetches this manifest, so it has to be on the
+            // host they are actually on. Built from apiUrl it would always be the
+            // canonical domain, which still loads (plugin assets send CORS headers)
+            // but shows meet.vacademy.io in an institute's devtools.
+            String bbbBaseUrl = applyInstituteLiveSessionDomain(apiUrl, instituteId, selectedServer)
+                    .replaceAll("/bigbluebutton/api/?$", "");
+            List<String> manifestUrls = new ArrayList<>();
+            if (pipPluginEnabled) {
+                manifestUrls.add(bbbBaseUrl + "/plugins/picture-in-picture/manifest.json");
+            }
+            if (activenessScore) {
+                manifestUrls.add(bbbBaseUrl + "/plugins/vacademy-activeness/manifest.json");
+            }
+            StringJoiner manifests = new StringJoiner(",", "[", "]");
+            for (String manifestUrl : manifestUrls) {
+                manifests.add("{\"url\":\"" + manifestUrl + "\"}");
+            }
+            params.put("pluginManifests", manifests.toString());
         }
 
         String queryString = buildQueryString(params);
@@ -389,8 +428,13 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         // leaks into a real join, BBB assigns each joiner a unique internal id and they
         // don't eject one another via maxUserConcurrentAccesses. The name stays generic
         // because a stored, shared URL cannot know who is joining.
-        String moderatorJoinUrl = buildJoinUrl(apiUrl, secret, bbbMeetingId, "Moderator", null, "MODERATOR");
-        String attendeeJoinUrl = buildJoinUrl(apiUrl, secret, bbbMeetingId, "Attendee", null, "VIEWER");
+        // These are participant-facing, so they get the institute's custom host when
+        // one is set. Note this is a SEPARATE variable — `apiUrl` itself must stay
+        // canonical, because it is what the create/end/query calls above and below
+        // talk to.
+        String joinApiUrl = applyInstituteLiveSessionDomain(apiUrl, instituteId, selectedServer);
+        String moderatorJoinUrl = buildJoinUrl(joinApiUrl, secret, bbbMeetingId, "Moderator", null, "MODERATOR");
+        String attendeeJoinUrl = buildJoinUrl(joinApiUrl, secret, bbbMeetingId, "Attendee", null, "VIEWER");
 
         Map<String, Object> raw = new HashMap<>();
         raw.put("meetingID", bbbMeetingId);
@@ -467,15 +511,34 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
     public String buildJoinUrlForUser(String meetingId, String fullName,
             String userId, String role, String instituteId, String bbbServerId,
             Boolean viewerMicLocked) {
+        return buildJoinUrlForUser(meetingId, fullName, userId, role, instituteId, bbbServerId,
+                viewerMicLocked, null);
+    }
+
+    /**
+     * Build a personalized join URL.
+     *
+     * @param activenessToken signed per-learner token for the vacademy-activeness
+     *        plugin (see BbbActivenessTokenService), or null when the session did not
+     *        opt in / the joiner is not a viewer. Passed as BBB user metadata so the
+     *        plugin can read it together with the report URL.
+     */
+    public String buildJoinUrlForUser(String meetingId, String fullName,
+            String userId, String role, String instituteId, String bbbServerId,
+            Boolean viewerMicLocked, String activenessToken) {
         String apiUrl;
         String secret;
+        // Kept in scope so the custom-domain rewrite below can tell whether this
+        // meeting is on the primary pool server.
+        BbbServerPool server = null;
         if (bbbServerId != null) {
             try {
-                BbbServerPool server = serverRouter.getServer(bbbServerId);
+                server = serverRouter.getServer(bbbServerId);
                 apiUrl = server.getApiUrl();
                 secret = server.getSecret();
             } catch (Exception e) {
                 log.warn("[BBB] Failed to resolve server {}, falling back to legacy config", bbbServerId);
+                server = null;
                 Map<String, Object> cfg = getConfigMap(instituteId);
                 apiUrl = (String) cfg.get("apiUrl");
                 secret = (String) cfg.get("secret");
@@ -485,6 +548,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
             apiUrl = (String) cfg.get("apiUrl");
             secret = (String) cfg.get("secret");
         }
+
+        // This URL is opened by the participant, so it carries the institute's own
+        // live-class host when one is configured. The checksum below is computed
+        // over the query string and secret only — BBB does not sign the hostname —
+        // so swapping the origin here keeps the link valid.
+        apiUrl = applyInstituteLiveSessionDomain(apiUrl, instituteId, server);
 
         // Build base join params
         Map<String, String> params = new LinkedHashMap<>();
@@ -539,6 +608,14 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
             } catch (Exception e) {
                 log.warn("[BBB] Failed to fetch institute theme for join URL: {}", e.getMessage());
             }
+        }
+
+        // Activeness plugin metadata — deliberately outside the theme branch above, which
+        // only runs for institutes with a theme colour. BBB exposes userdata-* to plugins
+        // as user metadata; the plugin POSTs its report to the URL with this token.
+        if (activenessToken != null) {
+            params.put("userdata-vacademy_activeness", activenessToken);
+            params.put("userdata-vacademy_activeness_url", bbbCallbackBaseUrl + ACTIVENESS_REPORT_PATH);
         }
 
         String queryString = buildQueryString(params);
@@ -1070,6 +1147,90 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
             return Integer.parseInt(String.valueOf(val).trim());
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Per-institute live-class domain (white-labelling)
+    // -----------------------------------------------------------------------
+
+    /** Plain hostname: dot-separated labels ending in a 2+ letter TLD. */
+    private static final java.util.regex.Pattern LIVE_SESSION_HOST = java.util.regex.Pattern
+            .compile("^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$");
+
+    /**
+     * Normalise a custom live-class host to a bare hostname, or null when it is
+     * absent or is not a plain hostname.
+     *
+     * This value ends up as the origin of a URL we redirect learners to, so it is
+     * validated rather than trusted: scheme, path and userinfo are stripped, and
+     * anything left carrying a port or not matching a hostname shape is rejected
+     * outright (null) instead of being silently patched into something plausible.
+     *
+     * Accepts "meet.zoeedtech.com", "https://meet.zoeedtech.com" and
+     * "https://meet.zoeedtech.com/" alike; all normalise to the bare host.
+     */
+    public static String normalizeLiveSessionHost(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String host = raw.trim().toLowerCase();
+        if (host.isEmpty()) {
+            return null;
+        }
+        host = host.replaceFirst("^[a-z][a-z0-9+.\\-]*://", ""); // scheme
+        host = host.replaceFirst("/.*$", ""); // path
+        host = host.replaceFirst("^[^@]*@", ""); // userinfo
+        if (host.isEmpty() || host.indexOf(':') >= 0) { // no ports
+            return null;
+        }
+        return LIVE_SESSION_HOST.matcher(host).matches() ? host : null;
+    }
+
+    /**
+     * Swap the origin of a BBB API URL for the institute's own live-class host,
+     * leaving the path intact. Returns {@code apiUrl} unchanged whenever the
+     * rewrite does not apply — this method never throws.
+     *
+     * Call this ONLY for URLs a participant will open. Control-plane calls
+     * (create / isMeetingRunning / getRecordings / getAttendance) must keep using
+     * the pool server's own api_url, so that a broken custom domain costs
+     * branding on a link and never a class.
+     *
+     * @param server the pool server the meeting was placed on, or null when the
+     *        legacy single-server config path was used. The rewrite is skipped for
+     *        any non-primary server: the institute's A record points at the
+     *        primary box, so branding a URL that resolves elsewhere would send the
+     *        learner to a server without their meeting.
+     */
+    private String applyInstituteLiveSessionDomain(String apiUrl, String instituteId,
+            BbbServerPool server) {
+        if (apiUrl == null || instituteId == null) {
+            return apiUrl;
+        }
+        if (server != null && !serverRouter.isPrimary(server)) {
+            log.debug("[BBB] Meeting is on non-primary server {} — keeping canonical join host",
+                    server.getSlug());
+            return apiUrl;
+        }
+        try {
+            Institute institute = instituteRepository.findById(instituteId).orElse(null);
+            if (institute == null) {
+                return apiUrl;
+            }
+            String host = normalizeLiveSessionHost(institute.getLiveSessionBaseUrl());
+            if (host == null) {
+                return apiUrl;
+            }
+            URI uri = URI.create(apiUrl);
+            String path = uri.getRawPath() == null ? "" : uri.getRawPath();
+            String rewritten = "https://" + host + path;
+            log.info("[BBB] Join host for institute {}: {} -> {}", instituteId, uri.getHost(), host);
+            return rewritten;
+        } catch (Exception e) {
+            log.warn("[BBB] Could not apply custom live-class domain for institute {}: {}",
+                    instituteId, e.getMessage());
+            return apiUrl;
         }
     }
 

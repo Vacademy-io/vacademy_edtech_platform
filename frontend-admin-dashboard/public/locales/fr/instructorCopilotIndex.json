@@ -1,0 +1,53 @@
+{
+    "navHeading": "Copilote Instructeur",
+    "pageTitle": "Copilote Instructeur",
+    "pageDescription": "Gérez vos cours, enregistrez des sessions et analysez les performances avec Copilote Instructeur.",
+    "toast": {
+        "generationStarted": "Génération du contenu démarrée avec succès !",
+        "generationStartFailed": "Échec du démarrage de la génération du contenu.",
+        "logDeleted": "Journal supprimé avec succès",
+        "logDeleteFailed": "Échec de la suppression du journal",
+        "regenerationStarted": "Régénération du contenu démarrée !",
+        "regenerationFailed": "Échec de la régénération du contenu",
+        "uploadingAudio": "Téléchargement du fichier audio...",
+        "processingTranscription": "Traitement de la transcription...",
+        "transcriptionCompleted": "Transcription terminée !",
+        "audioProcessFailed": "Échec du traitement du fichier audio"
+    },
+    "status": {
+        "uploadingAudio": "Téléchargement du fichier audio...",
+        "creatingTranscriptionJob": "Création de la tâche de transcription...",
+        "transcribingAudio": "Transcription de l'audio...",
+        "transcriptionStatus": "Statut de la transcription : {{status}}"
+    },
+    "confirmDeleteLog": "Êtes-vous sûr de vouloir supprimer ce journal ?",
+    "back": "Retour",
+    "untitledSession": "Session sans titre",
+    "generatedOn": "Généré le {{date}}",
+    "regenerating": "Régénération en cours...",
+    "waitCountdown": "Attendre {{minutes}}:{{seconds}}",
+    "regenerateContent": "Régénérer le contenu",
+    "backToSelection": "Retour à la sélection",
+    "recordAudio": "Enregistrer l'audio",
+    "uploadAudio": "Télécharger l'audio",
+    "recordLectureDescription": "Enregistrez directement votre cours en direct.",
+    "uploadLectureDescription": "Téléchargez un fichier audio de cours préenregistré.",
+    "generatingContent": "Génération du contenu en cours...",
+    "cancel": "Annuler",
+    "backToMenu": "Retour au menu",
+    "previousLectureLogs": "Journaux des cours précédents",
+    "logStatus": {
+        "ready": "Prêt",
+        "processing": "En cours"
+    },
+    "contentGenerationInProgress": "Génération du contenu en cours...",
+    "viewDetails": "Voir les détails",
+    "noSessionsYet": "Aucune session pour le moment",
+    "startSessionToSeeLogs": "Démarrez une nouvelle session pour voir vos journaux ici.",
+    "tabs": {
+        "lecture": "Cours",
+        "assessment": "Évaluation"
+    },
+    "assessmentTools": "Outils d'évaluation",
+    "comingSoon": "Bientôt disponible."
+}

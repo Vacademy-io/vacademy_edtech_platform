@@ -1,0 +1,13 @@
+{
+    "heading": "أكورديون",
+    "addSection": "إضافة قسم",
+    "tabs": {
+        "preview": "معاينة",
+        "edit": "تحرير"
+    },
+    "sectionNumber": "القسم {{number}}",
+    "sectionTitlePlaceholder": "عنوان القسم…",
+    "sectionContentPlaceholder": "محتوى القسم — أضف نصًا و/أو صورة…",
+    "removeSection": "إزالة القسم",
+    "emptySection": "قسم فارغ"
+}

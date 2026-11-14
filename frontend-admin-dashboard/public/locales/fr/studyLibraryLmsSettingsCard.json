@@ -1,0 +1,41 @@
+{
+    "title": "Intégration LMS",
+    "loading": "Chargement…",
+    "builtInLms": "le LMS Vacademy intégré",
+    "moodleCourseId": "ID du cours Moodle",
+    "courseIdInLms": "ID du cours dans le LMS",
+    "enrolSyncNotice": {
+        "prefix": "Lorsque des apprenants s'inscrivent à ce cours, ils sont configurés dans",
+        "suffix": "."
+    },
+    "noConnections": {
+        "prefix": "Aucune connexion LMS pour l'instant. Ajoutez-en une sous",
+        "settingsPath": "Paramètres → Connecter votre LMS",
+        "suffix": ", puis revenez ici pour l'appliquer."
+    },
+    "setupHeading": "Configurer le LMS de ce cours",
+    "lmsConnectionLabel": "Connexion LMS",
+    "chooseConnectionPlaceholder": "Choisir une connexion",
+    "moodleCourseIdPlaceholder": "ex. 74",
+    "courseIdPlaceholder": "ID du cours dans le LMS",
+    "courseIdHelp": {
+        "prefix": "L'ID de ce cours dans",
+        "suffix": ". Le site/jeton proviennent de la connexion — seul l'ID du cours change selon le cours."
+    },
+    "additionalFieldsLabel": "Champs supplémentaires (facultatif)",
+    "fieldKeyPlaceholder": "clé (ex. roleId)",
+    "fieldValuePlaceholder": "valeur",
+    "removeFieldAriaLabel": "Supprimer le champ",
+    "addFieldButton": "Ajouter un champ",
+    "additionalFieldsHelp": "Toute paire clé-valeur supplémentaire est enregistrée dans les paramètres LMS JSON de ce cours (par ex. un champ personnalisé lu par un workflow).",
+    "applyingButton": "Application en cours…",
+    "applyButton": "Utiliser ce LMS pour le cours",
+    "errors": {
+        "loadFailed": "Échec du chargement des informations LMS",
+        "pickConnection": "Choisissez d'abord une connexion LMS.",
+        "applyFailed": "Échec de l'application de la connexion LMS"
+    },
+    "toasts": {
+        "applySuccess": "Ce cours se synchronise désormais avec {{lmsName}}."
+    }
+}

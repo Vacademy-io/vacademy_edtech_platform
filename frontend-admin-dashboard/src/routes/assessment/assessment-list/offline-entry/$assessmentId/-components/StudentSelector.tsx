@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import {
     fetchBatchLearners,
     fetchIndividualParticipants,
@@ -10,6 +12,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+
+// Internal status enum values — never render these directly as user-facing text,
+// and never compare against translated display strings.
+const STUDENT_STATUS = {
+    Registered: 'Registered',
+    Attempted: 'Attempted',
+    Pending: 'Pending',
+} as const;
 
 export interface StudentRow {
     id: string;
@@ -25,6 +35,19 @@ export interface StudentRow {
     userId: string;
     source: 'batch' | 'individual';
 }
+
+const getStudentStatusLabel = (status: string): string => {
+    switch (status) {
+        case STUDENT_STATUS.Attempted:
+            return i18next.t('assessmentStudentSelector:status.attempted');
+        case STUDENT_STATUS.Pending:
+            return i18next.t('assessmentStudentSelector:status.pending');
+        case STUDENT_STATUS.Registered:
+            return i18next.t('assessmentStudentSelector:status.registered');
+        default:
+            return status;
+    }
+};
 
 interface StudentSelectorProps {
     assessmentId: string;
@@ -43,6 +66,7 @@ export const StudentSelector = ({
     packageSessionIds,
     onSelect,
 }: StudentSelectorProps) => {
+    const { t } = useTranslation('assessmentStudentSelector');
     const { getBatchName } = useBatchNames();
 
     const [activeTab, setActiveTab] = useState<'batch' | 'individual'>('batch');
@@ -67,7 +91,7 @@ export const StudentSelector = ({
                 mobileNumber: l.phone_number,
                 batchName: getBatchName(l.package_session_id),
                 batchId: l.package_session_id,
-                status: 'Registered',
+                status: STUDENT_STATUS.Registered,
                 score: null,
                 registrationId: null,
                 userId: l.user_id,
@@ -94,7 +118,7 @@ export const StudentSelector = ({
                 mobileNumber: '',
                 batchName: getBatchName(p.batch_id),
                 batchId: p.batch_id,
-                status: p.attempt_id ? 'Attempted' : 'Pending',
+                status: p.attempt_id ? STUDENT_STATUS.Attempted : STUDENT_STATUS.Pending,
                 score: p.score,
                 registrationId: p.registration_id,
                 userId: p.user_id,
@@ -142,7 +166,7 @@ export const StudentSelector = ({
                         }`}
                     >
                         <span className={activeTab === 'batch' ? 'text-primary-500' : ''}>
-                            Batch Selection
+                            {t('tabs.batchSelection')}
                         </span>
                     </TabsTrigger>
                     <TabsTrigger
@@ -154,7 +178,7 @@ export const StudentSelector = ({
                         }`}
                     >
                         <span className={activeTab === 'individual' ? 'text-primary-500' : ''}>
-                            Individual Selection
+                            {t('tabs.individualSelection')}
                         </span>
                     </TabsTrigger>
                 </TabsList>
@@ -162,12 +186,12 @@ export const StudentSelector = ({
 
             <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                    {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
-                    <span className="ml-2 text-xs text-gray-400">Click a row to start data entry</span>
+                    {t('studentCount', { count: filteredStudents.length })}
+                    <span className="ms-2 text-xs text-gray-400">{t('clickRowHint')}</span>
                 </p>
                 <input
                     type="text"
-                    placeholder="Search by name..."
+                    placeholder={t('search.placeholder')}
                     value={searchTerm}
                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
                     className="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
@@ -181,17 +205,17 @@ export const StudentSelector = ({
                     <table className="w-full text-left text-sm">
                         <thead className="border-b bg-gray-50 text-xs font-medium uppercase text-gray-500">
                             <tr>
-                                <th className="px-4 py-3">Student Name</th>
+                                <th className="px-4 py-3">{t('table.headers.studentName')}</th>
                                 <th className="px-4 py-3">{getTerminology(ContentTerms.Batch, SystemTerms.Batch)}</th>
-                                <th className="px-4 py-3">Status</th>
-                                <th className="px-4 py-3">Score</th>
+                                <th className="px-4 py-3">{t('table.headers.status')}</th>
+                                <th className="px-4 py-3">{t('table.headers.score')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
                             {paginatedStudents.length === 0 && (
                                 <tr>
                                     <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                                        No students found
+                                        {t('table.empty')}
                                     </td>
                                 </tr>
                             )}
@@ -204,13 +228,13 @@ export const StudentSelector = ({
                                     <td className="px-4 py-3 font-medium">{student.name}</td>
                                     <td className="px-4 py-3 text-gray-600">{student.batchName}</td>
                                     <td className="px-4 py-3">
-                                        {student.status === 'Attempted' ? (
+                                        {student.status === STUDENT_STATUS.Attempted ? (
                                             <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
-                                                Attempted
+                                                {t('status.attempted')}
                                             </span>
                                         ) : (
                                             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-                                                {student.status}
+                                                {getStudentStatusLabel(student.status)}
                                             </span>
                                         )}
                                     </td>

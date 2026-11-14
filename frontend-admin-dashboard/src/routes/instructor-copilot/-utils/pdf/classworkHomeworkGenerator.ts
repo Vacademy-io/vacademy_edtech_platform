@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import type { TFunction } from 'i18next';
 import {
     stripHtmlTags,
     addHeader,
@@ -8,7 +9,7 @@ import {
     getContentWidth,
 } from './helpers';
 
-export const generateClassworkPDF = (content: string): void => {
+export const generateClassworkPDF = (content: string, t: TFunction): void => {
     let data: string[] | null = null;
 
     try {
@@ -33,7 +34,7 @@ export const generateClassworkPDF = (content: string): void => {
     }
 
     const doc = new jsPDF();
-    addHeader(doc, 'Classwork');
+    addHeader(doc, t('instructorCopilotClassworkHomeworkGenerator:classwork.title'));
 
     let yPosition: number = PDF_CONSTANTS.HEADER_START_Y;
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -43,7 +44,11 @@ export const generateClassworkPDF = (content: string): void => {
     doc.setFontSize(12);
     doc.setTextColor(100);
     doc.setFont('helvetica', 'italic');
-    doc.text('In-class activities and tasks', PDF_CONSTANTS.MARGIN, yPosition);
+    doc.text(
+        t('instructorCopilotClassworkHomeworkGenerator:classwork.subtitle'),
+        PDF_CONSTANTS.MARGIN,
+        yPosition
+    );
     yPosition += 15;
 
     data.forEach((task, index) => {
@@ -57,7 +62,9 @@ export const generateClassworkPDF = (content: string): void => {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(59, 130, 246); // Blue color
-        const taskNumber = `Task ${index + 1}`;
+        const taskNumber = t('instructorCopilotClassworkHomeworkGenerator:classwork.taskNumber', {
+            number: index + 1,
+        });
         doc.text(taskNumber, PDF_CONSTANTS.MARGIN, yPosition);
         yPosition += 8;
 
@@ -85,7 +92,11 @@ export const generateClassworkPDF = (content: string): void => {
         doc.rect(PDF_CONSTANTS.MARGIN, yPosition, 6, 6);
         doc.setFontSize(9);
         doc.setTextColor(150);
-        doc.text('Completed', PDF_CONSTANTS.MARGIN + 10, yPosition + 5);
+        doc.text(
+            t('instructorCopilotClassworkHomeworkGenerator:classwork.completed'),
+            PDF_CONSTANTS.MARGIN + 10,
+            yPosition + 5
+        );
 
         yPosition += 15; // Space between tasks
     });
@@ -94,7 +105,7 @@ export const generateClassworkPDF = (content: string): void => {
     doc.save('classwork.pdf');
 };
 
-export const generateHomeworkPDF = (content: string): void => {
+export const generateHomeworkPDF = (content: string, t: TFunction): void => {
     let data: string[] | null = null;
 
     try {
@@ -119,7 +130,7 @@ export const generateHomeworkPDF = (content: string): void => {
     }
 
     const doc = new jsPDF();
-    addHeader(doc, 'Homework');
+    addHeader(doc, t('instructorCopilotClassworkHomeworkGenerator:homework.title'));
 
     let yPosition: number = PDF_CONSTANTS.HEADER_START_Y;
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -129,13 +140,21 @@ export const generateHomeworkPDF = (content: string): void => {
     doc.setFontSize(12);
     doc.setTextColor(100);
     doc.setFont('helvetica', 'italic');
-    doc.text('Assignments to be completed after class', PDF_CONSTANTS.MARGIN, yPosition);
+    doc.text(
+        t('instructorCopilotClassworkHomeworkGenerator:homework.subtitle'),
+        PDF_CONSTANTS.MARGIN,
+        yPosition
+    );
     yPosition += 10;
 
     // Add due date section
     doc.setFontSize(10);
     doc.setTextColor(150);
-    doc.text('Due Date: ___________________', PDF_CONSTANTS.MARGIN, yPosition);
+    doc.text(
+        t('instructorCopilotClassworkHomeworkGenerator:homework.dueDate'),
+        PDF_CONSTANTS.MARGIN,
+        yPosition
+    );
     yPosition += 15;
 
     data.forEach((assignment, index) => {
@@ -149,7 +168,10 @@ export const generateHomeworkPDF = (content: string): void => {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(245, 158, 11); // Orange color
-        const assignmentNumber = `Assignment ${index + 1}`;
+        const assignmentNumber = t(
+            'instructorCopilotClassworkHomeworkGenerator:homework.assignmentNumber',
+            { number: index + 1 }
+        );
         doc.text(assignmentNumber, PDF_CONSTANTS.MARGIN, yPosition);
         yPosition += 8;
 
@@ -177,7 +199,11 @@ export const generateHomeworkPDF = (content: string): void => {
         doc.rect(PDF_CONSTANTS.MARGIN, yPosition, 6, 6);
         doc.setFontSize(9);
         doc.setTextColor(150);
-        doc.text('Completed', PDF_CONSTANTS.MARGIN + 10, yPosition + 5);
+        doc.text(
+            t('instructorCopilotClassworkHomeworkGenerator:homework.completed'),
+            PDF_CONSTANTS.MARGIN + 10,
+            yPosition + 5
+        );
 
         yPosition += 15; // Space between assignments
     });

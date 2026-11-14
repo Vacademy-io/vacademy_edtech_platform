@@ -3,7 +3,7 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { PaymentDashboard } from '@/routes/manage-payments/-components/PaymentDashboard';
+import { PaymentDashboardView } from './-components/PaymentDashboardView';
 
 export const Route = createLazyFileRoute('/payment-dashboard/')({
     component: () => (
@@ -31,7 +31,7 @@ function PaymentDashboardPage() {
             </Helmet>
 
             <div className="px-6 pb-6 pt-2">
-                <PaymentDashboard />
+                <PaymentDashboardView />
             </div>
         </>
     );

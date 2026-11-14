@@ -18,6 +18,7 @@
  */
 import { useEffect, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
     CaretLeft,
     CaretRight,
@@ -49,6 +50,9 @@ import {
     ReportTabSkeleton,
     fmtNumber,
     type ReportTabProps,
+    fmtDateTime,
+    fmtDay,
+    fmtTime,
 } from '../report-shared';
 
 const PAGE_SIZE = 25;
@@ -61,6 +65,7 @@ export default function LeadCallsTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerLeadCallsTab');
     const [view, setView] = useState<CallsByLeadView>('CALLED');
     const [page, setPage] = useState(0);
     const [searchInput, setSearchInput] = useState('');
@@ -68,11 +73,11 @@ export default function LeadCallsTab({
 
     // Debounced search — also resets to the first page.
     useEffect(() => {
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             setSearch(searchInput.trim());
             setPage(0);
         }, 400);
-        return () => clearTimeout(t);
+        return () => clearTimeout(timer);
     }, [searchInput]);
 
     // New filter window/scope invalidates the page cursor.
@@ -115,18 +120,18 @@ export default function LeadCallsTab({
 
     const getCalledExportData = () => ({
         headers: [
-            'Lead',
-            'Phone',
-            'Status',
-            'Counsellor',
-            'Attempts',
-            'Connected',
-            'Callback',
-            "Didn't pick up",
-            'Failed',
-            'Last call',
-            'Last outcome',
-            'Next callback',
+            t('field.lead'),
+            t('field.phone'),
+            t('field.status'),
+            t('field.counsellor'),
+            t('field.attempts'),
+            t('field.connected'),
+            t('field.callback'),
+            t('field.notPickedUp'),
+            t('field.failed'),
+            t('field.lastCall'),
+            t('field.lastOutcome'),
+            t('field.nextCallback'),
         ],
         rows: calledRows.map((r) => [
             r.lead_name ?? '',
@@ -139,17 +144,31 @@ export default function LeadCallsTab({
             r.not_picked,
             r.failed,
             fmtDateTime(r.last_call_at),
-            r.last_disposition_key ?? humanizeCallStatus(r.last_call_status ?? ''),
+            // Bug fix: this used to emit the raw last_disposition_key (e.g.
+            // "NOT_INTERESTED") straight from the backend when present, instead
+            // of humanizing it like the on-screen table does (see
+            // CalledLeadsTable below) — the export column silently disagreed
+            // with what the user saw on screen.
+            r.last_disposition_key
+                ? humanizeKey(r.last_disposition_key)
+                : humanizeCallStatus(r.last_call_status ?? ''),
             fmtDateTime(r.next_callback_at),
         ]),
     });
 
     const getUncalledExportData = () => ({
-        headers: ['Lead', 'Phone', 'Source', 'Status', 'Assigned counsellor', 'Submitted'],
+        headers: [
+            t('field.lead'),
+            t('field.phone'),
+            t('field.source'),
+            t('field.status'),
+            t('field.assignedCounsellor'),
+            t('field.submitted'),
+        ],
         rows: uncalledRows.map((r) => [
             r.lead_name ?? '',
             r.lead_phone ?? '',
-            r.source_type ?? '',
+            r.source_type ? humanizeKey(r.source_type) : '',
             r.lead_status_label ?? '',
             r.counsellor_name ?? r.counsellor_user_id ?? '',
             fmtDateTime(r.submitted_at),
@@ -159,45 +178,45 @@ export default function LeadCallsTab({
     return (
         <div className="flex flex-col gap-6">
             {/* ── KPI strip ────────────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <KpiCard
-                    label="Leads called"
+                    label={t('kpi.leadsCalled.label')}
                     value={fmtNumber(summary?.leads_called)}
-                    sub="Unique leads with ≥1 dial"
+                    sub={t('kpi.leadsCalled.sub')}
                     icon={<UserSound size={20} />}
                     tone="primary"
                 />
                 <KpiCard
-                    label="Total dials"
+                    label={t('kpi.totalDials.label')}
                     value={fmtNumber(summary?.total_dials)}
-                    sub="All call attempts in range"
+                    sub={t('kpi.totalDials.sub')}
                     icon={<PhoneOutgoing size={20} />}
                 />
                 <KpiCard
-                    label="Connected"
+                    label={t('kpi.connected.label')}
                     value={fmtNumber(summary?.leads_connected)}
-                    sub="Leads reached at least once"
+                    sub={t('kpi.connected.sub')}
                     icon={<Phone size={20} />}
                     tone="success"
                 />
                 <KpiCard
-                    label="Callback asked"
+                    label={t('kpi.callbackAsked.label')}
                     value={fmtNumber(summary?.leads_callback)}
-                    sub="Leads with a callback logged"
+                    sub={t('kpi.callbackAsked.sub')}
                     icon={<PhoneX size={20} />}
                     tone="info"
                 />
                 <KpiCard
-                    label="Never connected"
+                    label={t('kpi.neverConnected.label')}
                     value={fmtNumber(summary?.leads_never_connected)}
-                    sub="Tried but never got through"
+                    sub={t('kpi.neverConnected.sub')}
                     icon={<PhoneDisconnect size={20} />}
                     tone="warning"
                 />
                 <KpiCard
-                    label="New leads not called"
+                    label={t('kpi.newLeadsNotCalled.label')}
                     value={fmtNumber(summary?.uncalled_new_leads)}
-                    sub="Zero call attempts ever"
+                    sub={t('kpi.newLeadsNotCalled.sub')}
                     icon={<WarningCircle size={20} />}
                     tone="danger"
                     onClick={() => setView('UNCALLED')}
@@ -206,7 +225,7 @@ export default function LeadCallsTab({
 
             {/* ── Lead table ───────────────────────────────────────────────── */}
             <ReportSection
-                title={view === 'CALLED' ? 'Call attempts by lead' : 'New leads never called'}
+                title={view === 'CALLED' ? t('section.titleCalled') : t('section.titleUncalled')}
                 icon={<Phone size={18} />}
                 actions={
                     <div className="flex flex-wrap items-center gap-2">
@@ -218,21 +237,23 @@ export default function LeadCallsTab({
                             <Input
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search name / phone"
+                                placeholder={t('search.placeholder')}
                                 className="h-8 w-48 pl-8 text-sm"
-                                aria-label="Search leads by name or phone"
+                                aria-label={t('search.ariaLabel')}
                             />
                         </div>
                         <div className="flex h-8 items-center gap-1 rounded-md border border-neutral-200 bg-white p-1">
                             <ViewPill
                                 active={view === 'CALLED'}
                                 onClick={() => setView('CALLED')}
-                                label={`Called (${fmtNumber(summary?.leads_called)})`}
+                                label={t('view.called', { count: summary?.leads_called ?? 0 })}
                             />
                             <ViewPill
                                 active={view === 'UNCALLED'}
                                 onClick={() => setView('UNCALLED')}
-                                label={`Never called (${fmtNumber(summary?.uncalled_new_leads)})`}
+                                label={t('view.uncalled', {
+                                    count: summary?.uncalled_new_leads ?? 0,
+                                })}
                             />
                         </div>
                         <ExportWithColumnPickerButton
@@ -251,12 +272,12 @@ export default function LeadCallsTab({
             >
                 {view === 'CALLED' ? (
                     calledRows.length === 0 ? (
-                        <EmptyHint message="No calls to leads in this range." />
+                        <EmptyHint message={t('empty.noCalls')} />
                     ) : (
                         <CalledLeadsTable rows={calledRows} />
                     )
                 ) : uncalledRows.length === 0 ? (
-                    <EmptyHint message="Every new lead in this range has been called at least once. 🎉" />
+                    <EmptyHint message={t('empty.allCalled')} />
                 ) : (
                     <UncalledLeadsTable rows={uncalledRows} />
                 )}
@@ -265,7 +286,12 @@ export default function LeadCallsTab({
                 {totalRows > PAGE_SIZE && (
                     <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
                         <span className="text-xs text-neutral-500">
-                            {fmtNumber(totalRows)} leads · page {page + 1} of {fmtNumber(pageCount)}
+                            {t('pager.summary', {
+                                count: totalRows,
+                                formattedCount: fmtNumber(totalRows),
+                                page: page + 1,
+                                pageCount: fmtNumber(pageCount),
+                            })}
                         </span>
                         <div className="flex items-center gap-1.5">
                             <Button
@@ -276,7 +302,7 @@ export default function LeadCallsTab({
                                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                             >
                                 <CaretLeft size={12} />
-                                Prev
+                                {t('pager.prev')}
                             </Button>
                             <Button
                                 size="sm"
@@ -285,16 +311,14 @@ export default function LeadCallsTab({
                                 disabled={page + 1 >= pageCount || query.isFetching}
                                 onClick={() => setPage((p) => p + 1)}
                             >
-                                Next
+                                {t('pager.next')}
                                 <CaretRight size={12} />
                             </Button>
                         </div>
                     </div>
                 )}
                 <p className="text-xs text-neutral-400">
-                    {view === 'CALLED'
-                        ? 'Connected / Callback / Didn’t pick up are counted per call and can overlap (a connected call may also log a callback), so they don’t sum to Attempts.'
-                        : 'Leads submitted in this range that have never been dialled — not even once, at any time.'}
+                    {view === 'CALLED' ? t('footnote.called') : t('footnote.uncalled')}
                 </p>
             </ReportSection>
         </div>
@@ -304,23 +328,30 @@ export default function LeadCallsTab({
 // ── Called-leads table ─────────────────────────────────────────────────
 
 function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
+    const { t } = useTranslation('audienceManagerLeadCallsTab');
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                        <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">Lead</th>
-                        <th className="py-2 pl-3 text-left">Status</th>
-                        <th className="py-2 pl-3 text-left">Counsellor</th>
-                        <th className="py-2 pl-3 text-right">Attempts</th>
-                        <th className="py-2 pl-3 text-right text-success-600">Connected</th>
-                        <th className="py-2 pl-3 text-right text-info-600">Callback</th>
-                        <th className="py-2 pl-3 text-right text-warning-600">
-                            Didn&rsquo;t pick up
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                        <th className="sticky start-0 z-10 bg-white py-2 pe-3 text-start">
+                            {t('field.lead')}
                         </th>
-                        <th className="py-2 pl-3 text-right">Failed</th>
-                        <th className="py-2 pl-3 text-left">Last call</th>
-                        <th className="py-2 pl-3 text-left">Next callback</th>
+                        <th className="py-2 ps-3 text-start">{t('field.status')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.counsellor')}</th>
+                        <th className="py-2 ps-3 text-end">{t('field.attempts')}</th>
+                        <th className="py-2 ps-3 text-end text-success-600">
+                            {t('field.connected')}
+                        </th>
+                        <th className="py-2 ps-3 text-end text-info-600">
+                            {t('field.callback')}
+                        </th>
+                        <th className="py-2 pl-3 text-right text-warning-600">
+                            {t('field.notPickedUp')}
+                        </th>
+                        <th className="py-2 ps-3 text-end">{t('field.failed')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.lastCall')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.nextCallback')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -329,10 +360,10 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
                             key={r.response_id}
                             className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                         >
-                            <td className="sticky left-0 z-10 bg-white py-2.5 pr-3">
+                            <td className="sticky left-0 z-10 min-w-44 bg-white py-3 pr-3">
                                 <div className="flex flex-col">
                                     <span className="font-medium text-neutral-900">
-                                        {r.lead_name || 'Unknown lead'}
+                                        {r.lead_name || t('row.unknownLead')}
                                     </span>
                                     {r.lead_phone && (
                                         <span className="text-xs text-neutral-500">
@@ -341,41 +372,53 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
                                     )}
                                 </div>
                             </td>
-                            <td className="py-2.5 pl-3">
+                            <td className="py-3 pl-3">
                                 <LeadStatusChip
                                     label={r.lead_status_label}
                                     color={r.lead_status_color}
                                 />
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {r.counsellor_name ?? r.counsellor_user_id ?? '—'}
                             </td>
-                            <td className="py-2.5 pl-3 text-right font-semibold tabular-nums text-neutral-900">
+                            <td className="py-3 pl-3 text-right font-semibold tabular-nums text-neutral-900">
                                 {fmtNumber(r.attempts)}
                             </td>
                             <OutcomeCell value={r.connected} toneClass="text-success-600" />
                             <OutcomeCell value={r.callbacks} toneClass="text-info-600" />
                             <OutcomeCell value={r.not_picked} toneClass="text-warning-600" />
                             <OutcomeCell value={r.failed} toneClass="text-danger-600" />
-                            <td className="whitespace-nowrap py-2.5 pl-3 text-neutral-700">
+                            <td className="py-3 pl-3 text-neutral-700">
                                 <div className="flex flex-col">
-                                    <span>{fmtDateTime(r.last_call_at)}</span>
-                                    <span className="text-xs text-neutral-400">
-                                        {r.last_disposition_key
-                                            ? humanizeKey(r.last_disposition_key)
-                                            : humanizeCallStatus(r.last_call_status ?? '')}
+                                    <span className="whitespace-nowrap">{fmtDay(r.last_call_at)}</span>
+                                    <span className="text-xs text-neutral-500">
+                                        {[
+                                            fmtTime(r.last_call_at),
+                                            r.last_disposition_key
+                                                ? humanizeKey(r.last_disposition_key)
+                                                : humanizeCallStatus(r.last_call_status ?? ''),
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
                                     </span>
                                 </div>
                             </td>
                             <td
                                 className={cn(
-                                    'whitespace-nowrap py-2.5 pl-3',
+                                    'whitespace-nowrap py-3 pl-3',
                                     r.next_callback_at
                                         ? 'font-medium text-info-600'
                                         : 'text-neutral-300'
                                 )}
                             >
-                                {r.next_callback_at ? fmtDateTime(r.next_callback_at) : '—'}
+                                {r.next_callback_at ? (
+                                    <div className="flex flex-col">
+                                        <span>{fmtDay(r.next_callback_at)}</span>
+                                        <span className="text-xs">{fmtTime(r.next_callback_at)}</span>
+                                    </div>
+                                ) : (
+                                    '—'
+                                )}
                             </td>
                         </tr>
                     ))}
@@ -388,16 +431,19 @@ function CalledLeadsTable({ rows }: { rows: CalledLeadRow[] }) {
 // ── Uncalled-leads table ───────────────────────────────────────────────
 
 function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
+    const { t } = useTranslation('audienceManagerLeadCallsTab');
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                        <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">Lead</th>
-                        <th className="py-2 pl-3 text-left">Source</th>
-                        <th className="py-2 pl-3 text-left">Status</th>
-                        <th className="py-2 pl-3 text-left">Assigned counsellor</th>
-                        <th className="py-2 pl-3 text-left">Submitted</th>
+                    <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
+                        <th className="sticky start-0 z-10 bg-white py-2 pe-3 text-start">
+                            {t('field.lead')}
+                        </th>
+                        <th className="py-2 ps-3 text-start">{t('field.source')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.status')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.assignedCounsellor')}</th>
+                        <th className="py-2 ps-3 text-start">{t('field.submitted')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -406,10 +452,10 @@ function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
                             key={r.response_id}
                             className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
                         >
-                            <td className="sticky left-0 z-10 bg-white py-2.5 pr-3">
+                            <td className="sticky left-0 z-10 min-w-48 bg-white py-3 pr-3">
                                 <div className="flex flex-col">
                                     <span className="font-medium text-neutral-900">
-                                        {r.lead_name || 'Unknown lead'}
+                                        {r.lead_name || t('row.unknownLead')}
                                     </span>
                                     {r.lead_phone && (
                                         <span className="text-xs text-neutral-500">
@@ -418,21 +464,21 @@ function UncalledLeadsTable({ rows }: { rows: UncalledLeadRow[] }) {
                                     )}
                                 </div>
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="py-3 pl-3 text-neutral-700">
                                 {humanizeKey(r.source_type ?? 'UNKNOWN')}
                             </td>
-                            <td className="py-2.5 pl-3">
+                            <td className="whitespace-nowrap py-3 pl-3">
                                 <LeadStatusChip
                                     label={r.lead_status_label}
                                     color={r.lead_status_color}
                                 />
                             </td>
-                            <td className="py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {r.counsellor_name ?? r.counsellor_user_id ?? (
-                                    <span className="text-warning-600">Unassigned</span>
+                                    <span className="text-warning-600">{t('row.unassigned')}</span>
                                 )}
                             </td>
-                            <td className="whitespace-nowrap py-2.5 pl-3 text-neutral-700">
+                            <td className="whitespace-nowrap py-3 pl-3 text-neutral-700">
                                 {fmtDateTime(r.submitted_at)}
                             </td>
                         </tr>
@@ -488,26 +534,13 @@ function OutcomeCell({ value, toneClass }: { value: number; toneClass: string })
     return (
         <td
             className={cn(
-                'py-2.5 pl-3 text-right tabular-nums',
+                'py-3 pl-3 text-right tabular-nums',
                 value > 0 ? cn('font-medium', toneClass) : 'text-neutral-300'
             )}
         >
             {fmtNumber(value)}
         </td>
     );
-}
-
-/** ISO-8601 UTC → local "22 Jul, 3:41 pm"; em-dash when absent. */
-function fmtDateTime(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleString(undefined, {
-        day: 'numeric',
-        month: 'short',
-        hour: 'numeric',
-        minute: '2-digit',
-    });
 }
 
 /** SNAKE_CASE key → "Title Case" display. */

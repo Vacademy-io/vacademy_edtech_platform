@@ -1,0 +1,55 @@
+{
+    "dialog": {
+        "title": "حذف خيار الدفع - {{name}}"
+    },
+    "loading": {
+        "checking": "جارٍ التحقق من الدعوات المرتبطة...",
+        "loadingButton": "جارٍ التحميل...",
+        "loadButton": "تحميل الدعوات المرتبطة"
+    },
+    "select": {
+        "alert_zero": "خيار الدفع هذا مرتبط بـ {{count}} دعوة. يرجى تعيين خيار دفع مختلف لكل دعوة أولاً.",
+        "alert_one": "خيار الدفع هذا مرتبط بـ {{count}} دعوة واحدة. يرجى تعيين خيار دفع مختلف لهذه الدعوة أولاً.",
+        "alert_two": "خيار الدفع هذا مرتبط بـ {{count}} دعوتين. يرجى تعيين خيار دفع مختلف لكل دعوة أولاً.",
+        "alert_few": "خيار الدفع هذا مرتبط بـ {{count}} دعوات. يرجى تعيين خيار دفع مختلف لكل دعوة أولاً.",
+        "alert_many": "خيار الدفع هذا مرتبط بـ {{count}} دعوة. يرجى تعيين خيار دفع مختلف لكل دعوة أولاً.",
+        "alert_other": "خيار الدفع هذا مرتبط بـ {{count}} دعوة. يرجى تعيين خيار دفع مختلف لكل دعوة أولاً.",
+        "progress": "التقدم: {{completed}} من {{total}} مكتمل",
+        "status": {
+            "updated": "تم التحديث",
+            "failed": "فشل",
+            "updating": "جارٍ التحديث...",
+            "pending": "قيد الانتظار"
+        },
+        "selectLabel": "اختر خيار دفع جديد",
+        "selectPlaceholder": "اختر خيار الدفع",
+        "updateButton": "تحديث",
+        "updatedTo": "✓ تم التحديث إلى: {{name}}",
+        "errorPrefix": "خطأ: {{error}}",
+        "continueButton": "تم تحديث الكل - المتابعة للحذف"
+    },
+    "confirm": {
+        "noInvitesAlert": "خيار الدفع هذا غير مرتبط بأي دعوات ويمكن حذفه بأمان.",
+        "warningAlert": "لا يمكن التراجع عن هذا الإجراء. اكتب \"delete\" أدناه لتأكيد الحذف.",
+        "inputLabel": "اكتب \"delete\" للتأكيد",
+        "inputPlaceholder": "اكتب 'delete' للتأكيد"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "deleteButton": "حذف خيار الدفع",
+        "deletingButton": "جارٍ الحذف..."
+    },
+    "toasts": {
+        "loadInvitesFailed": "فشل تحميل الدعوات المرتبطة",
+        "selectPaymentOption": "يرجى اختيار خيار دفع",
+        "paymentOptionNotFound": "خيار الدفع المحدد غير موجود",
+        "inviteNotFound": "الدعوة ذات المعرف {{id}} غير موجودة ضمن الدعوات المرتبطة",
+        "updateSuccess": "تم تحديث خيار دفع الدعوة بنجاح",
+        "updateFailed": "فشل تحديث الدعوة",
+        "updateAllRequired": "يرجى تحديث جميع الدعوات المرتبطة قبل الحذف",
+        "confirmTextRequired": "يرجى كتابة \"delete\" للتأكيد",
+        "deleteSuccess": "تم حذف خيار الدفع بنجاح",
+        "deleteFailed": "فشل حذف خيار الدفع"
+    },
+    "unknownPaymentOption": "غير معروف"
+}

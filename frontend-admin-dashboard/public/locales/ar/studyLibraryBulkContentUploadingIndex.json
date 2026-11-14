@@ -1,0 +1,21 @@
+{
+    "pageTitle": "رفع المحتوى بالجملة",
+    "pageDescription": "ارفع ملف zip يحتوي على مجلدات وملفات إلى دورة دفعة واحدة.",
+    "tabs": {
+        "single": "{{term}} واحد",
+        "multiple": "عدة {{term}}",
+        "csv": "عبر جدول بيانات (CSV)"
+    },
+    "multi": {
+        "heading": "ملف zip واحد، عدة {{term}}",
+        "description": "سمِّ كل مجلد من المستوى الأعلى باسم {{term}}. تتم مطابقة المحتوى بداخله تلقائيًا مع البنية الحالية لذلك {{term}} — وستراجع كل شيء قبل رفع أي محتوى."
+    },
+    "single": {
+        "heading": "إلى أين يجب أن يذهب هذا المحتوى؟",
+        "description": "اختر {{term}} (والدفعة) التي ينتمي إليها ملف zip هذا. تصبح بنية المجلدات داخل الملف بنية {{term}}."
+    },
+    "selectPlaceholder": "اختر {{term}}",
+    "searchPlaceholder": "ابحث عن {{term}}…",
+    "noneFound": "لم يتم العثور على {{term}}.",
+    "pickersEmptyState": "اختر {{course}} و{{session}} و{{level}} لبدء الرفع."
+}

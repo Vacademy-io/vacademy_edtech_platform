@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "تطبيق الخصومات على الخطة",
+        "subtitle": "حدد الخصومات لكل فترة خطة أو شريحة سعرية"
+    },
+    "table": {
+        "headers": {
+            "subscriptionInterval": "فترة الاشتراك",
+            "planType": "نوع الخطة",
+            "originalPrice": "السعر الأصلي",
+            "discountType": "نوع الخصم",
+            "discountAmount": "قيمة الخصم",
+            "finalPrice": "السعر النهائي"
+        },
+        "intervalPlanFallback": "خطة {{value}} {{unit}}",
+        "oneTimePayment": "دفعة لمرة واحدة",
+        "savePrefix": "وفّر"
+    },
+    "discountOptions": {
+        "none": "بدون خصم",
+        "percentage": "خصم بالنسبة المئوية",
+        "fixed": "خصم ثابت"
+    },
+    "placeholders": {
+        "percentage": "10",
+        "fixed": "50"
+    },
+    "emptyState": "لا تتوفر معلومات تسعير لهذا النوع من الخطط."
+}

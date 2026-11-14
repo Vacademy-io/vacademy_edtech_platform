@@ -2,6 +2,8 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     ArrowLeft,
     Eye,
@@ -26,11 +28,11 @@ export const Route = createLazyFileRoute('/knowledge-base/publish')({
     component: PublishConsolePage,
 });
 
-const STATUS_META: Record<string, { label: string; tone: StatusType }> = {
-    DRAFT: { label: 'Draft', tone: 'INFO' },
-    PUBLISHED: { label: 'Published', tone: 'SUCCESS' },
-    UNLISTED: { label: 'Withdrawn', tone: 'WARNING' },
-};
+const buildStatusMeta = (t: TFunction): Record<string, { label: string; tone: StatusType }> => ({
+    DRAFT: { label: t('status.draft'), tone: 'INFO' },
+    PUBLISHED: { label: t('status.published'), tone: 'SUCCESS' },
+    UNLISTED: { label: t('status.withdrawn'), tone: 'WARNING' },
+});
 
 /**
  * Prepare and publish the shared library.
@@ -39,16 +41,18 @@ const STATUS_META: Record<string, { label: string; tone: StatusType }> = {
  * from the API rather than a hidden button, so the rule lives in one place.
  */
 function PublishConsolePage() {
+    const { t } = useTranslation('knowledgeBasePublish');
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
     const [rows, setRows] = useState<PublisherListingRow[] | null>(null);
     const [forbidden, setForbidden] = useState(false);
     const [editing, setEditing] = useState<PublisherListingRow | null>(null);
     const [busyId, setBusyId] = useState<string | null>(null);
+    const statusMeta = buildStatusMeta(t);
 
     useEffect(() => {
-        setNavHeading('Publish to library');
-    }, [setNavHeading]);
+        setNavHeading(t('heading'));
+    }, [setNavHeading, t]);
 
     const load = useCallback(() => {
         getPublisherListings()
@@ -69,16 +73,16 @@ function PublishConsolePage() {
             await setListingStatus(row.knowledge_base_id, status);
             toast.success(
                 status === 'PUBLISHED'
-                    ? 'Live in the library'
+                    ? t('toast.published')
                     : status === 'UNLISTED'
-                      ? 'Withdrawn. Institutes that already unlocked it keep their access.'
-                      : 'Returned to draft'
+                      ? t('toast.withdrawn')
+                      : t('toast.returnedToDraft')
             );
             load();
         } catch (error) {
             const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data
                 ?.detail;
-            toast.error(typeof detail === 'string' ? detail : 'Could not change the status');
+            toast.error(typeof detail === 'string' ? detail : t('toast.statusChangeFailed'));
         } finally {
             setBusyId(null);
         }
@@ -89,18 +93,16 @@ function PublishConsolePage() {
             <LayoutContainer>
                 <Card className="flex flex-col items-center gap-3 p-10 text-center">
                     <ShieldWarning className="size-7 text-warning-500" />
-                    <p className="text-body text-neutral-600">
-                        This institute cannot publish to the library
-                    </p>
+                    <p className="text-body text-neutral-600">{t('forbidden.title')}</p>
                     <p className="max-w-md text-caption text-neutral-500">
-                        Libraries are published from one internal Vacademy institute.
+                        {t('forbidden.description')}
                     </p>
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
                         onClick={() => navigate({ to: '/knowledge-base' })}
                     >
-                        Back to Knowledge Base
+                        {t('actions.backToKnowledgeBase')}
                     </MyButton>
                 </Card>
             </LayoutContainer>
@@ -110,7 +112,7 @@ function PublishConsolePage() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Publish to library</title>
+                <title>{t('heading')}</title>
             </Helmet>
 
             <div className="flex flex-col gap-5">
@@ -121,15 +123,13 @@ function PublishConsolePage() {
                     onClick={() => navigate({ to: '/knowledge-base' })}
                 >
                     <ArrowLeft className="mr-1 size-4" />
-                    Knowledge Base
+                    {t('actions.knowledgeBase')}
                 </MyButton>
 
                 <div>
-                    <p className="text-title font-semibold text-neutral-700">Publish to library</p>
+                    <p className="text-title font-semibold text-neutral-700">{t('heading')}</p>
                     <p className="mt-1 max-w-2xl text-body text-neutral-500">
-                        Describe a knowledge base and publish it so every institute can unlock and
-                        use it. Publishing makes it read-only to them — only this institute can keep
-                        editing the material.
+                        {t('description')}
                     </p>
                 </div>
 
@@ -138,11 +138,9 @@ function PublishConsolePage() {
                 {rows?.length === 0 && !forbidden && (
                     <Card className="flex flex-col items-center gap-2 p-10 text-center">
                         <UploadSimple className="size-7 text-neutral-300" />
-                        <p className="text-body text-neutral-600">
-                            No knowledge bases in this institute yet
-                        </p>
+                        <p className="text-body text-neutral-600">{t('emptyState.title')}</p>
                         <p className="text-caption text-neutral-400">
-                            Create one and add its material first, then come back to describe it.
+                            {t('emptyState.description')}
                         </p>
                     </Card>
                 )}
@@ -151,7 +149,7 @@ function PublishConsolePage() {
                     <Card className="overflow-hidden">
                         {rows.map((row) => {
                             const described = Boolean(row.status);
-                            const meta = row.status ? STATUS_META[row.status] : null;
+                            const meta = row.status ? statusMeta[row.status] : null;
                             const busy = busyId === row.knowledge_base_id;
                             return (
                                 <div
@@ -173,7 +171,7 @@ function PublishConsolePage() {
                                         <p className="break-words text-caption text-neutral-500">
                                             {row.summary || (
                                                 <span className="text-neutral-400">
-                                                    Not described yet
+                                                    {t('notDescribedYet')}
                                                 </span>
                                             )}
                                         </p>
@@ -202,7 +200,7 @@ function PublishConsolePage() {
                                             onClick={() => setEditing(row)}
                                         >
                                             <NotePencil className="mr-1 size-3.5" />
-                                            {described ? 'Edit' : 'Describe'}
+                                            {described ? t('actions.edit') : t('actions.describe')}
                                         </MyButton>
 
                                         {described && row.status !== 'PUBLISHED' && (
@@ -213,7 +211,7 @@ function PublishConsolePage() {
                                                 onClick={() => changeStatus(row, 'PUBLISHED')}
                                             >
                                                 <Eye className="mr-1 size-3.5" />
-                                                Publish
+                                                {t('actions.publish')}
                                             </MyButton>
                                         )}
                                         {row.status === 'PUBLISHED' && (
@@ -224,7 +222,7 @@ function PublishConsolePage() {
                                                 onClick={() => changeStatus(row, 'UNLISTED')}
                                             >
                                                 <EyeSlash className="mr-1 size-3.5" />
-                                                Withdraw
+                                                {t('actions.withdraw')}
                                             </MyButton>
                                         )}
                                     </div>
@@ -235,10 +233,7 @@ function PublishConsolePage() {
                 )}
 
                 {rows && rows.length > 0 && (
-                    <p className="text-caption text-neutral-400">
-                        Withdrawing a library removes it from the catalogue but never revokes access
-                        an institute has already paid for.
-                    </p>
+                    <p className="text-caption text-neutral-400">{t('withdrawNotice')}</p>
                 )}
             </div>
 

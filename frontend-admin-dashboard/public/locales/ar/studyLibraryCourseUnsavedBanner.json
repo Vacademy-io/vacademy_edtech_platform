@@ -1,0 +1,9 @@
+{
+    "unsavedInCourse_zero": "لا عناصر غير محفوظة في هذا {{course}}",
+    "unsavedInCourse_one": "عنصر واحد غير محفوظ في هذا {{course}}",
+    "unsavedInCourse_two": "عنصران غير محفوظين في هذا {{course}}",
+    "unsavedInCourse_few": "{{count}} عناصر غير محفوظة في هذا {{course}}",
+    "unsavedInCourse_many": "{{count}} عنصرًا غير محفوظ في هذا {{course}}",
+    "unsavedInCourse_other": "{{count}} عنصر غير محفوظ في هذا {{course}}",
+    "review": "مراجعة"
+}

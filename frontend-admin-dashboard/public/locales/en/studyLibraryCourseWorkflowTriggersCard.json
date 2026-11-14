@@ -1,0 +1,24 @@
+{
+    "title": "Workflow Triggers",
+    "loading": "Loading…",
+    "description": "Run a workflow automatically when something happens for this course — e.g. enrol the learner in your LMS when they enrol here. Pick the event and the workflow; add as many as you need.",
+    "noWorkflows": "No workflows in this institute yet — create one under Automations first.",
+    "noTriggersYet": "No workflow triggers yet.",
+    "whenEventPlaceholder": "When… (event)",
+    "runWorkflowPlaceholder": "Run workflow…",
+    "removeTrigger": "Remove trigger",
+    "addTrigger": "Add trigger",
+    "saving": "Saving…",
+    "saveTriggers": "Save triggers",
+    "cancel": "Cancel",
+    "confirmDialog": {
+        "title": "Update this course's automations?",
+        "description": "This changes which workflows run for this course and takes effect immediately. Workflows you added will start firing on their events (e.g. enrolment); any you removed will stop. Make sure the list is correct before saving.",
+        "yesSave": "Yes, save"
+    },
+    "toast": {
+        "loadFailed": "Failed to load workflow triggers",
+        "saveSuccess": "Workflow triggers saved ({{created}} added, {{removed}} removed).",
+        "saveFailed": "Failed to save workflow triggers"
+    }
+}

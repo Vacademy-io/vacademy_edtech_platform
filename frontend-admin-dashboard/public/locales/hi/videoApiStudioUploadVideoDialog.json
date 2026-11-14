@@ -1,0 +1,35 @@
+{
+    "title": "इंडेक्सिंग के लिए वीडियो अपलोड करें",
+    "fileSize": "{{size}} MB",
+    "filePicker": {
+        "selectPrompt": "वीडियो फ़ाइल चुनने के लिए क्लिक करें",
+        "sizeHint": "MP4, WebM, MOV — अधिकतम {{maxSize}}MB तक"
+    },
+    "name": {
+        "label": "नाम",
+        "placeholder": "जैसे, प्रोडक्ट डेमो रिकॉर्डिंग"
+    },
+    "videoType": {
+        "label": "वीडियो प्रकार",
+        "podcast": "पॉडकास्ट",
+        "demo": "सॉफ़्टवेयर डेमो"
+    },
+    "progress": {
+        "uploading": "वीडियो अपलोड हो रहा है...",
+        "indexing": "इंडेक्सिंग शुरू हो रही है..."
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "processing": "प्रोसेस हो रहा है...",
+        "upload": "अपलोड और इंडेक्स करें"
+    },
+    "errors": {
+        "unsupportedFormat": "असमर्थित फ़ॉर्मैट। MP4, WebM, या MOV का उपयोग करें।",
+        "fileTooLarge": "फ़ाइल बहुत बड़ी है। अधिकतम {{maxSize}}MB।",
+        "uploadFailed": "अपलोड विफल",
+        "publicUrlFailed": "पब्लिक URL प्राप्त करने में विफल"
+    },
+    "success": {
+        "uploadStarted": "वीडियो अपलोड हो गया और इंडेक्सिंग शुरू हो गई"
+    }
+}

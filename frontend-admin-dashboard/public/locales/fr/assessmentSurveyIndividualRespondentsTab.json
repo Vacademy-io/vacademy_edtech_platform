@@ -1,0 +1,38 @@
+{
+    "loading": {
+        "respondents": "Chargement des répondants du sondage...",
+        "questions": "Chargement des données des questions..."
+    },
+    "error": {
+        "title": "Erreur de chargement des répondants",
+        "tryAgain": "Réessayer"
+    },
+    "empty": {
+        "title": "Aucun répondant trouvé",
+        "description": "Aucune réponse au sondage trouvée pour cette évaluation."
+    },
+    "navigation": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "respondentLabel": "Répondant",
+        "ofTotal": "sur {{count}}"
+    },
+    "respondent": {
+        "unknownName": "Inconnu",
+        "noEmail": "Aucun e-mail",
+        "batch": "Lot : {{name}}"
+    },
+    "response": {
+        "noResponse": "Aucune réponse",
+        "unknownType": "Type de réponse inconnu",
+        "unknownQuestionId": "Inconnu",
+        "unknownQuestionType": "Inconnu",
+        "defaultQuestionContent": "Question du sondage",
+        "parseError": "Erreur lors de l'analyse des données de réponse",
+        "questionPrefix": "Q{{number}}.",
+        "label": "Réponse :",
+        "visited": "Visité",
+        "markedForReview": "Marqué pour révision",
+        "noneAvailable": "Aucune réponse disponible pour ce répondant."
+    }
+}

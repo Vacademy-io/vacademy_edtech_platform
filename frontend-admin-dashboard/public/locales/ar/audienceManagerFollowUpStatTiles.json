@@ -1,0 +1,24 @@
+{
+    "tiles": {
+        "overdue": {
+            "label": "معلّق",
+            "caption": "متأخر"
+        },
+        "today": {
+            "label": "اليوم",
+            "caption": "مستحق اليوم"
+        },
+        "upcoming": {
+            "label": "القادمة",
+            "caption": "خلال 7 أيام"
+        },
+        "all": {
+            "label": "الكل",
+            "caption": "كل المعلّقة"
+        },
+        "completed": {
+            "label": "مكتملة",
+            "caption": "تمت بالفعل"
+        }
+    }
+}

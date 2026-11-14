@@ -1,0 +1,12 @@
+{
+    "success": "Success",
+    "error": "Error",
+    "updateBatchSuccess": "Batch updated successfully",
+    "updateBatchError": "Failed to update batch. Please try again.",
+    "extendSessionSuccess": "Session extended successfully",
+    "extendSessionError": "Failed to extend session. Please try again.",
+    "terminateStudentSuccess": "Student registration terminated successfully",
+    "terminateStudentError": "Failed to terminate registration. Please try again.",
+    "deleteStudentSuccess": "Student deleted successfully",
+    "deleteStudentError": "Failed to delete student. Please try again."
+}

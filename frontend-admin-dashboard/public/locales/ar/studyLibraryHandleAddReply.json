@@ -1,0 +1,15 @@
+{
+    "toast": {
+        "errorAddingDoubt": "حدث خطأ أثناء إضافة الرد"
+    },
+    "doubt": {
+        "status": {
+            "unknown": "غير معروف",
+            "resolved": "تم الحل",
+            "unresolved": "لم يُحل"
+        },
+        "anonymousUser": "مستخدم مجهول",
+        "timestampLabel": "الوقت: {{time}}",
+        "pageLabel": "الصفحة: {{page}}"
+    }
+}

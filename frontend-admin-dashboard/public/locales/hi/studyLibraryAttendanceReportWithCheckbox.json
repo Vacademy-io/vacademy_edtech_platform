@@ -1,0 +1,9 @@
+{
+    "select": "चुनें",
+    "srNo": "क्र. सं.",
+    "membersName": "सदस्य का नाम",
+    "attendanceStatus": "उपस्थिति स्थिति",
+    "present": "उपस्थित",
+    "absent": "अनुपस्थित",
+    "unmarked": "अचिह्नित"
+}

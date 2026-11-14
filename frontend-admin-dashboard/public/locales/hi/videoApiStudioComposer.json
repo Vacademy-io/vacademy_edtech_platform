@@ -1,0 +1,62 @@
+{
+    "dropzone": {
+        "hint": "छवियां या PDF यहां छोड़ें"
+    },
+    "preview": {
+        "empty": "पूर्वावलोकन के लिए कुछ नहीं है"
+    },
+    "textarea": {
+        "placeholder": "बताएं कि आप क्या बनाना चाहते हैं…"
+    },
+    "attach": {
+        "title": "संदर्भ छवियां या PDF अटैच करें",
+        "ariaLabel": "संदर्भ फ़ाइलें अटैच करें"
+    },
+    "pdfExtract": {
+        "title": "PDF टेक्स्ट निकालकर प्रॉम्प्ट के रूप में उपयोग करें (मौजूदा टेक्स्ट बदल जाएगा)",
+        "ariaLabel": "PDF को प्रॉम्प्ट के रूप में निकालें"
+    },
+    "previewToggle": {
+        "title": "Markdown/LaTeX पूर्वावलोकन टॉगल करें",
+        "ariaLabel": "पूर्वावलोकन टॉगल करें"
+    },
+    "dialogueChip": {
+        "title": "कहानी संवाद दृश्य चालू हैं (सेटिंग्स में सेट किया गया)",
+        "modeDrama": "ड्रामा",
+        "modeStorybook": "स्टोरीबुक",
+        "modelOmni": "ऑम्नी",
+        "modelSeedance": "सीडांस"
+    },
+    "durationChip": {
+        "title": "लक्षित अवधि (सेटिंग्स में सेट की गई)"
+    },
+    "send": {
+        "titleReady": "जनरेट करें (Enter)",
+        "titleAvatarMissing": "जनरेट करने से पहले ⚙ सेटिंग्स ← होस्ट में एक होस्ट चुनें",
+        "ariaReady": "जनरेट करें",
+        "ariaAvatarMissing": "जनरेट करने से पहले एक होस्ट चुनें"
+    },
+    "footer": {
+        "courseCta": "क्या आप AI के ज़रिए पूरा कोर्स बनाना चाहते हैं?",
+        "credits_one": "{{value}} क्रेडिट",
+        "credits_other": "{{value}} क्रेडिट"
+    },
+    "toasts": {
+        "sampleAudioUnavailable": "नमूना ऑडियो अभी उपलब्ध नहीं है",
+        "hostMissingTitle": "पहले एक होस्ट चुनें",
+        "hostMissingDescription": "⚙ सेटिंग्स ← होस्ट टैब खोलें और एक सहेजा हुआ अवतार चुनें, या अवतार टैब में एक सहेजें।",
+        "pdfExtractSuccess": "PDF सामग्री सफलतापूर्वक निकाली गई",
+        "pdfExtractFailed": "PDF से सामग्री निकालने में विफल",
+        "filesSkipped_one": "{{count}} फ़ाइल छोड़ी गई (केवल छवियां और PDF स्वीकार्य हैं)",
+        "filesSkipped_other": "{{count}} फ़ाइलें छोड़ी गईं (केवल छवियां और PDF स्वीकार्य हैं)",
+        "maxFilesAllowed_one": "अधिकतम {{count}} फ़ाइल की अनुमति है",
+        "maxFilesAllowed_other": "अधिकतम {{count}} फ़ाइलों की अनुमति है",
+        "fileSizeExceeded": "{{fileName}} {{maxSizeMb}}MB की सीमा से अधिक है",
+        "filesAttached_one": "{{count}} फ़ाइल अटैच की गई",
+        "filesAttached_other": "{{count}} फ़ाइलें अटैच की गईं",
+        "filesAttachedPartial": "{{success}} अटैच हुईं, {{failed}} विफल हुईं",
+        "filesUploadFailed_one": "{{count}} फ़ाइल अपलोड करने में विफल",
+        "filesUploadFailed_other": "{{count}} फ़ाइलें अपलोड करने में विफल",
+        "attachmentsUploadFailed": "अटैचमेंट अपलोड करने में विफल"
+    }
+}

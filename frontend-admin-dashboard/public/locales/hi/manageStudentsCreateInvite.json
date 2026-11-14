@@ -1,0 +1,27 @@
+{
+    "trigger": {
+        "createLink": "{{term}} लिंक बनाएं"
+    },
+    "dialog": {
+        "title": "कोर्स और बैच चुनें"
+    },
+    "courseSelect": {
+        "label": "{{term}} चुनें",
+        "placeholder": "एक कोर्स चुनें"
+    },
+    "addBatch": {
+        "heading": "बैच जोड़ें",
+        "sessionPlaceholder": "सत्र चुनें",
+        "levelPlaceholder": "स्तर चुनें",
+        "button": "बैच जोड़ें"
+    },
+    "selectedBatches": {
+        "heading": "चयनित बैच",
+        "parentHint": "(पैरेंट बैच चुनें - पैरेंट बैच का विवरण आमंत्रण लिंक विवरण के रूप में उपयोग किया जाएगा)",
+        "parentBadge": "पैरेंट बैच"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "continue": "जारी रखें"
+    }
+}

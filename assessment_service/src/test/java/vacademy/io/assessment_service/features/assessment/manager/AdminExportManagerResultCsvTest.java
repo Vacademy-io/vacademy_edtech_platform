@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import vacademy.io.assessment_service.features.assessment.dto.AssessmentUserFilter;
-import vacademy.io.assessment_service.features.assessment.dto.ParticipantsDetailsDto;
+import vacademy.io.assessment_service.features.assessment.dto.export.ResultExportRowDto;
 import vacademy.io.assessment_service.features.assessment.dto.RegistrationCustomFieldAnswerDto;
 import vacademy.io.assessment_service.features.assessment.dto.export.ResultExportColumnsDto;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentCustomField;
@@ -57,7 +57,14 @@ class AdminExportManagerResultCsvTest {
         SectionRepository sectionRepository = mock(SectionRepository.class);
 
         instituteMappingRepository = mock(AssessmentInstituteMappingRepository.class);
+        // Batch names come from admin_core. Stubbed empty so these tests stay about the
+        // sheet's shape; the Batch cell then falls back to the (unstubbed, null) batch id
+        // and must render as empty rather than "null".
+        var adminCoreServiceClient =
+                mock(vacademy.io.assessment_service.features.client.AdminCoreServiceClient.class);
+        when(adminCoreServiceClient.getBatchNames(anyList())).thenReturn(java.util.Map.of());
 
+        manager.adminCoreServiceClient = adminCoreServiceClient;
         manager.assessmentUserRegistrationRepository = registrationRepository;
         manager.assessmentCustomFieldRepository = customFieldRepository;
         manager.sectionRepository = sectionRepository;
@@ -79,7 +86,7 @@ class AdminExportManagerResultCsvTest {
 
         // Built before the stubbing calls — these are mocks themselves, and
         // Mockito rejects a mock being stubbed inside an unfinished when(...).
-        List<ParticipantsDetailsDto> participants = List.of(
+        List<ResultExportRowDto> participants = List.of(
                 participant("reg-1", "Anand M", "anand@example.com", 80.0, 600L),
                 participant("reg-2", "Adithya M", "adithya@example.com", 60.0, 700L));
         List<RegistrationCustomFieldAnswerDto> answers = List.of(
@@ -98,10 +105,12 @@ class AdminExportManagerResultCsvTest {
     void exportsEveryRegistrationFieldWhenNoSelectionIsSent() {
         String[] lines = exportLines(filterWithCustomFieldIds(null));
 
-        // "Email" clashes with the result column, so its form twin is disambiguated.
+        // "Email" and "Phone Number" both clash with a result column, so their form twins
+        // are disambiguated. A CSV cannot carry two identically named headers, and the
+        // suffix is what tells the reader which value came off the registration form.
         assertThat(lines[0]).isEqualTo(
-                "Name,Email,Marks Obtained,Total Marks,Percentage,Rank,Duration,Attempt Date,"
-                        + "Phone Number,Email (Form),College Name");
+                "Name,Email,Phone Number,Username,Batch,Marks Obtained,Total Marks,Percentage,Rank,Duration,Attempt Date,"
+                        + "Phone Number (Form),Email (Form),College Name");
         assertThat(lines[1]).contains("+919999999999,anand.form@example.com,\"GEC, Kozhikode\"");
     }
 
@@ -127,7 +136,7 @@ class AdminExportManagerResultCsvTest {
         String[] lines = exportLines(filterWithCustomFieldIds(List.of()));
 
         assertThat(lines[0]).isEqualTo(
-                "Name,Email,Marks Obtained,Total Marks,Percentage,Rank,Duration,Attempt Date");
+                "Name,Email,Phone Number,Username,Batch,Marks Obtained,Total Marks,Percentage,Rank,Duration,Attempt Date");
     }
 
     @Test
@@ -138,7 +147,7 @@ class AdminExportManagerResultCsvTest {
         String[] lines = exportLines(filterWithCustomFieldIds(null));
 
         assertThat(lines).hasSize(1);
-        assertThat(lines[0]).endsWith("Phone Number,Email (Form),College Name");
+        assertThat(lines[0]).endsWith("Phone Number (Form),Email (Form),College Name");
     }
 
     @Test
@@ -168,7 +177,7 @@ class AdminExportManagerResultCsvTest {
                 .thenReturn(Optional.empty());
 
         ResultExportColumnsDto columns =
-                manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID).getBody();
+                manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID, false).getBody();
 
         assertThat(columns).isNotNull();
         assertThat(columns.getCustomFields()).hasSize(3);
@@ -181,20 +190,21 @@ class AdminExportManagerResultCsvTest {
         when(instituteMappingRepository.findTopByAssessmentId(ASSESSMENT_ID))
                 .thenReturn(Optional.of(new AssessmentInstituteMapping()));
 
-        assertThatThrownBy(() -> manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID))
+        assertThatThrownBy(() -> manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID, false))
                 .isInstanceOf(VacademyException.class);
     }
 
     @Test
     void columnListMatchesTheHeadersTheCsvWillProduce() {
         ResultExportColumnsDto columns =
-                manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID).getBody();
+                manager.getResultExportColumns(null, INSTITUTE_ID, ASSESSMENT_ID, false).getBody();
 
         assertThat(columns).isNotNull();
-        assertThat(columns.getBaseColumns()).startsWith("Name", "Email");
+        assertThat(columns.getBaseColumns())
+                .startsWith("Name", "Email", "Phone Number", "Username", "Batch");
         assertThat(columns.getCustomFields())
                 .extracting(ResultExportColumnsDto.CustomFieldColumn::getColumnLabel)
-                .containsExactly("Phone Number", "Email (Form)", "College Name");
+                .containsExactly("Phone Number (Form)", "Email (Form)", "College Name");
     }
 
     private String[] exportLines(AssessmentUserFilter filter) {
@@ -227,13 +237,16 @@ class AdminExportManagerResultCsvTest {
                 .build();
     }
 
-    private ParticipantsDetailsDto participant(String registrationId, String name, String email,
-                                              Double score, Long duration) {
-        ParticipantsDetailsDto dto = mock(ParticipantsDetailsDto.class);
+    private ResultExportRowDto participant(String registrationId, String name, String email,
+                                          Double score, Long duration) {
+        // Phone / username / batch are left unstubbed (null) here on purpose: the sheet must
+        // render an empty cell for a learner missing them, not drop the row or print "null".
+        ResultExportRowDto dto = mock(ResultExportRowDto.class);
         when(dto.getRegistrationId()).thenReturn(registrationId);
         when(dto.getStudentName()).thenReturn(name);
         when(dto.getUserEmail()).thenReturn(email);
         when(dto.getScore()).thenReturn(score);
+        when(dto.getRankMarks()).thenReturn(score);
         when(dto.getDuration()).thenReturn(duration);
         when(dto.getAttemptDate()).thenReturn(new Date(0L));
         return dto;

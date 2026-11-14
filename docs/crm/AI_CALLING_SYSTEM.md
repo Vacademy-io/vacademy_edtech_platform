@@ -11,6 +11,9 @@ the repo cannot tell you what production is actually running.
 
 **Companion docs**
 - [`VACADEMY_AI_AGENT.md`](./VACADEMY_AI_AGENT.md) — the original design + phase plan.
+- [`AI_CALL_QUEUE.md`](./AI_CALL_QUEUE.md) — what happens BEFORE step 2 below: every AI dial
+  is now queued and placed by a single fleet-wide drainer, so the pre-dial throttles in §2.4
+  are re-evaluated at dial time rather than at request time.
 - [`AI_CALL_DEEP_REVIEW.md`](./AI_CALL_DEEP_REVIEW.md) — humanness/latency review (2026-07-14). Some of its "not done yet" items have since shipped; this doc is the current state.
 - [`VACADEMY_VOICE_INTEGRATION.md`](./VACADEMY_VOICE_INTEGRATION.md) — Plivo telephony + IVR.
 - [`AAVTAAR_AI_CALLING.md`](./AAVTAAR_AI_CALLING.md) — the third-party AI provider that shares this pipeline.
@@ -884,8 +887,23 @@ V430/V431 (edge pricing + discount), **V448** (`institute_telephony_config.role`
 
 **Call shape**: `GREET_DELAY_SECS=0.8`, `IDLE_TIMEOUT_SECS=8.0`, `MAX_NUDGES=2`,
 `END_GRACE_SECS=2.0`, `MAX_DEAF_STREAK=2`, `MACHINE_GREETING_WINDOW_SECS=22`,
-`FILLER_PROBABILITY=0.10`, `FILLER_PHRASES=Hmm…`, `NO_REPEAT_ENABLED=true`,
+`FILLER_PROBABILITY=0.10`, `FILLER_PHRASES=Hmm…`, `AMBIENCE_ENABLED=true`, `AMBIENCE_VOLUME=0.15`, `AMBIENCE_DRIFT_DB=2.0`,
+`VOICE_EQ_ENABLED=true` (300 Hz high-pass + 1.7 kHz presence on the bot voice, so it sits in
+the caller's telephone band — see the service README)
+(room tone under every call — voice_bot_service/assets/call_center_ambience_8k_mono.wav, see the
+service README), `NO_REPEAT_ENABLED=true`,
 `NO_ECHO_ENABLED=true` (§7.3a — drop an opener that only parrots the caller's answer),
+`WARM_QUESTIONS_ENABLED=true` (prompt rule for every agent: cushion a question with one
+clause of assumption/reason/their-last-answer instead of firing it bare — founder feedback
+2026-09-08, "it's asking questions as if she is my mother"),
+`PROSODY_EXPAND=1.0` (box default for voice modulation — pitch-range expansion applied to the
+bot's audio by `app/prosody.py`, engine-agnostic; the per-agent "Voice modulation" setting in
+the dashboard (`ai_agent.voice_modulation`, V504) overrides it — Off 1.0 / Subtle 1.3 /
+Conversational 1.6 / Lively 2.0; see the service README),
+`PROSODY_HINTS_ENABLED=true` (prompt rule for every agent: one '...' before the key phrase and
+at most one '!' per reply, so the TTS — which has no prosody knobs — gets a pitch contour from
+the text; +15% pitch spread measured on Smallest/mrunal — client feedback 2026-09-11, "the tone
+is very linear, bot like"),
 `REPLY_INFLIGHT_GRACE_SECS=6.0`, `REPORT_REQUIRE_CONVERSATION=true`,
 `REPORT_SPOOL_MAX_AGE_SECS=1200`.
 
@@ -925,6 +943,7 @@ V430/V431 (edge pricing + discount), **V448** (`institute_telephony_config.role`
 | **Caller says "you never told me who you are"** | the opening was VAD-interrupted seconds in, but the FULL text was already committed to the LLM context, so `already_said_rule` then forbids re-introducing | bot log `greet: openingLine spoken at +Ns` vs a `broadcasting interruption` right after; a greet later than ~2 s invites the caller's "hello?" that cancels it |
 | **"It never heard my answer"** | aggregator deleted the turn | `ANSWER_DELETED` + `answersDeletedSamples` |
 | **Bot confirms every answer back ("okay, you got ninety-four")** | the model reaches for a restatement opener on every turn; the prompt rule alone does not hold it | `turnTaking.echoesTrimmed` — if it is climbing the trim is working; if it is 0 and the parroting is audible, check `NO_ECHO_ENABLED` and whether the authored agent script *itself* contains echo lines (a registry prompt ≥600 chars is authoritative, §3.3) |
+| **Caller hears a HUM / steady tone, then silence; Call Health says "agent's audio wasn't ready (15-19s)"** | Smallest lightning_v3.1_pro returns a ~200 Hz drone (up to 72 s for one sentence) when ENGLISH text is tagged `language: hi` — short interjection openers ("Perfect.", "Got it.", "Ah, okay…") trigger it; the transport plays the drone while the real sentences queue behind it | check the agent's `language` is `english` (providers._smallest_language maps it to `en`); replay the turn's sentences against `wss://api.smallest.ai/waves/v1/tts/live` from the box and look for spectral flatness < 0.08 (calls c9aa4062 / e73a839b / 0e26a0c9, 2026-09-09) |
 | **Panel says an answer was discarded but the transcript looks complete** | a one-character scrap, not an answer — fixed in `RULES_VERSION` 3 (§11.3). On a row stored under v2 read `answersDeletedSamples`: a single syllable is the tell | `rulesVersion` on the row; `turnTaking.fragmentsLost` on v3+ rows |
 | **Wrong voice / wrong gender Hindi** | cross-vendor or wrong-cased voice id fell back to another engine | agent's `voice` vs `TtsVoiceCatalog.forModel`; `diagnostics.tts.vendor` vs configured `tts_model` |
 | **Every call `Incomplete`** | analysis LLM unreachable/misrouted (provider mismatch) | `report._llm_target`; bot log `analysis failed` |

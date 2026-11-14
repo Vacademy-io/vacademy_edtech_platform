@@ -9,6 +9,9 @@ import {
     getNextSlideOrder,
 } from '../../-helper/slide-naming-utils';
 import { getSlideStatusForUser } from '../../non-admin/hooks/useNonAdminSlides';
+import i18n from '@/i18n';
+
+const NS = 'studyLibraryCreateAssignmentSlidePayload';
 
 export function createAssignmentSlidePayload(
     allSlides: Slide[] = [],
@@ -18,7 +21,7 @@ export function createAssignmentSlidePayload(
     const title =
         titleOverride?.trim() ||
         generateUniqueAssignmentSlideTitle(allSlides) ||
-        'Untitled Assignment';
+        i18n.t(`${NS}:untitledAssignment`);
 
     const slideStatus = getSlideStatusForUser();
 
@@ -28,7 +31,7 @@ export function createAssignmentSlidePayload(
         source_type: 'ASSIGNMENT',
         title: title,
         image_file_id: '',
-        description: 'Assignment',
+        description: i18n.t(`${NS}:assignmentDescription`),
         status: slideStatus,
         slide_order: getNextSlideOrder(allSlides),
         video_slide: null,
@@ -67,7 +70,9 @@ export function createQuizSlidePayload(
 ): QuizSlidePayload {
     const slideId = crypto.randomUUID();
     const title =
-        titleOverride?.trim() || generateUniqueQuizSlideTitle(allSlides) || 'Untitled Quiz';
+        titleOverride?.trim() ||
+        generateUniqueQuizSlideTitle(allSlides) ||
+        i18n.t(`${NS}:untitledQuiz`);
 
     const slideStatus = getSlideStatusForUser();
 
@@ -77,7 +82,7 @@ export function createQuizSlidePayload(
         source_type: 'QUIZ',
         title: title,
         image_file_id: '',
-        description: 'Quiz',
+        description: i18n.t(`${NS}:quizDescription`),
         status: slideStatus,
         slide_order: getNextSlideOrder(allSlides),
         video_slide: null,

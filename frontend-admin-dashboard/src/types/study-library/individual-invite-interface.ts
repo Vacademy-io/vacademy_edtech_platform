@@ -22,6 +22,12 @@ interface InstituteCustomField {
     institute_id: string;
     type: string;
     type_id: string;
+    /**
+     * Per-form required-ness, written by this invite's own Required switch. Takes precedence
+     * over `custom_field.isMandatory`, which is the master row shared with every other form
+     * that uses the same field.
+     */
+    is_mandatory?: boolean | null;
     custom_field: CustomField;
 }
 

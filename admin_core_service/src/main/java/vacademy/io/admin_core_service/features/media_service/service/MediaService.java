@@ -199,6 +199,41 @@ public class MediaService {
     }
 
     /**
+     * Permanent public (CDN) URLs for a batch of file ids, keyed by id, in one internal call
+     * (GET /internal/get-public-url/id/many). media_service fails the WHOLE batch when any id
+     * is unknown, so this throws then; callers that must not lose the rest fall back to
+     * {@link #getFilePublicUrlByIdWithoutExpiry(String)} per id.
+     */
+    public Map<String, String> getPublicUrlsWithoutExpiry(java.util.Collection<String> fileIds) {
+        Map<String, String> out = new HashMap<>();
+        if (fileIds == null || fileIds.isEmpty()) {
+            return out;
+        }
+        String commaSeparatedFileIds = String.join(",", fileIds);
+        ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                clientName,
+                HttpMethod.GET.name(),
+                mediaServerBaseUrl,
+                MediaServiceConstants.GET_MULTIPLE_PUBLIC_URLS_BY_ID_ROUTE + "?fileIds=" + commaSeparatedFileIds,
+                null);
+        String body = response.getBody();
+        if (body == null || body.isBlank()) {
+            return out;
+        }
+        try {
+            List<Map<String, String>> entries = objectMapper.readValue(body,
+                    new TypeReference<List<Map<String, String>>>() {
+                    });
+            for (Map<String, String> entry : entries) {
+                if (entry != null) out.putAll(entry);
+            }
+            return out;
+        } catch (JsonProcessingException e) {
+            throw new VacademyException("Failed to parse media_service public-url response: " + e.getMessage());
+        }
+    }
+
+    /**
      * Learner offline downloads (manifest builder): size/type/checksum for a
      * batch of fileIds, via the new offline-asset-details internal endpoint.
      */

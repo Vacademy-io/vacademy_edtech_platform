@@ -1,0 +1,283 @@
+{
+    "panel": {
+        "selectNode": "Sélectionnez un nœud à configurer",
+        "nodeNamePlaceholder": "Nom du nœud"
+    },
+    "common": {
+        "variableMappings": "Mappages de variables",
+        "filename": "Nom du fichier",
+        "filenamePlaceholder": "brochure.pdf"
+    },
+    "trigger": {
+        "sectionLabel": "Paramètres du déclencheur",
+        "typeLabel": "Type de déclencheur",
+        "type": {
+            "keywordMatch": "Correspondance de mot-clé",
+            "firstContact": "Premier contact (nouvel utilisateur)",
+            "buttonReply": "Réponse par bouton"
+        },
+        "keywordsLabel": "Mots-clés (séparés par des virgules)",
+        "keywordsPlaceholder": "hello, hi, start",
+        "matchTypeLabel": "Type de correspondance",
+        "matchType": {
+            "exact": "Correspondance exacte",
+            "contains": "Contient",
+            "regex": "Motif regex"
+        },
+        "priorityLabel": "Priorité (plus élevé = vérifié en premier)"
+    },
+    "sendMessage": {
+        "sectionLabel": "Message de session",
+        "noTemplateNotice": "Aucun modèle requis — envoyé directement dans la fenêtre de session de 24 h.",
+        "typeLabel": "Type de message",
+        "type": {
+            "text": "Message texte",
+            "image": "Image",
+            "video": "Vidéo",
+            "document": "Document (PDF, etc.)",
+            "audio": "Audio"
+        },
+        "textLabel": "Texte du message",
+        "textPlaceholder": "Bonjour {{example}} ! 👋\n\nBienvenue dans notre service. Comment puis-je vous aider aujourd'hui ?",
+        "formattingHint": "Mise en forme WhatsApp prise en charge : *gras*, _italique_, ~barré~, ```code```",
+        "variableHint": {
+            "prefix": "Utilisez",
+            "suffix": "pour des valeurs dynamiques :"
+        },
+        "mediaUrlLabel": "URL du média",
+        "mediaUrlPlaceholder": "https://example.com/image.jpg",
+        "mediaUrlHint": {
+            "prefix": "Doit être une URL HTTPS publiquement accessible. Utilisez",
+            "suffix": "pour des URL dynamiques."
+        },
+        "captionLabel": "Légende (facultatif)",
+        "captionPlaceholder": "Découvrez cette image !",
+        "variableMappingsHint": {
+            "prefix": "Mappez les",
+            "suffix": "utilisés ci-dessus à des champs système ou personnalisés avec des valeurs de repli."
+        }
+    },
+    "sendTemplate": {
+        "sectionLabel": "Modèle",
+        "searchLabel": "Rechercher et sélectionner un modèle",
+        "searchPlaceholder": "Rechercher des modèles...",
+        "loading": "Chargement des modèles...",
+        "noResults": "Aucun modèle trouvé. Saisissez le nom manuellement ci-dessous.",
+        "nameLabel": "Nom du modèle",
+        "namePlaceholder": "welcome_message",
+        "languageLabel": "Langue",
+        "languagePlaceholder": "fr",
+        "previewLabel": "Aperçu",
+        "previewHeader": "En-tête : [{{type}}]",
+        "headerSectionLabel": "En-tête ({{type}})",
+        "headerUrlLabelDocument": "URL du document",
+        "headerUrlLabelGeneric": "URL {{type}}",
+        "headerUrlPlaceholder": "https://...",
+        "bodyParamsLabel": "Paramètres du corps",
+        "bodyParamsHint": {
+            "prefix": "Utilisez la syntaxe",
+            "suffix": "ou saisissez des valeurs statiques"
+        },
+        "bodyParamPlaceholder": "{{example}} ou texte statique",
+        "addParameter": "Ajouter un paramètre",
+        "buttonParamsLabel": "Paramètres des boutons",
+        "buttonFallbackLabel": "Bouton {{index}}",
+        "urlSuffixLabel": "Suffixe d'URL",
+        "payloadLabel": "Charge utile",
+        "variableMappingsHint": {
+            "prefix": "Mappez les",
+            "suffix": "utilisés dans les paramètres du corps, l'URL d'en-tête ou le suffixe d'URL du bouton à des champs utilisateur ou personnalisés avec des valeurs de repli."
+        }
+    },
+    "sendInteractive": {
+        "sectionLabel": "Message interactif",
+        "sessionNotice": "Nécessite une fenêtre de session de 24 h. Configurez un modèle de repli ci-dessous.",
+        "typeLabel": "Type",
+        "type": {
+            "button": "Boutons de réponse (max 3)",
+            "list": "Menu de liste"
+        },
+        "bodyLabel": "Texte du corps",
+        "bodyPlaceholder": "Veuillez sélectionner une option...",
+        "footerLabel": "Pied de page (facultatif)",
+        "footerPlaceholder": "Propulsé par...",
+        "buttonsLabel": "Boutons",
+        "buttonTitlePlaceholder": "Titre du bouton",
+        "addButton": "Ajouter un bouton",
+        "listButtonLabel": "Texte du bouton de menu",
+        "listButtonPlaceholder": "Voir les options",
+        "sectionsLabel": "Sections",
+        "sectionTitlePlaceholder": "Titre de la section",
+        "rowTitlePlaceholder": "Titre de la ligne",
+        "rowIdPlaceholder": "ID de ligne (pour les conditions)",
+        "rowDescriptionPlaceholder": "Description (facultatif)",
+        "addRow": "Ajouter une ligne",
+        "addSection": "Ajouter une section",
+        "fallbackTemplateLabel": "Modèle de repli (si la fenêtre de 24 h a expiré)"
+    },
+    "condition": {
+        "sectionLabel": "Branches de condition",
+        "hint": "Chaque branche crée une arête sortante. Connectez-les aux nœuds suivants sur le canevas.",
+        "typeLabel": "Type de condition",
+        "type": {
+            "userResponse": "Réponse texte de l'utilisateur",
+            "buttonReply": "Réponse par bouton interactif",
+            "listReply": "Réponse par sélection de liste"
+        },
+        "importButton_one": "Importer {{count}} option depuis le nœud interactif connecté",
+        "importButton_many": "Importer {{count}} d'options depuis le nœud interactif connecté",
+        "importButton_other": "Importer {{count}} options depuis le nœud interactif connecté",
+        "defaultBranchLabel": "Par défaut",
+        "branchLabelPlaceholder": "Libellé de la branche",
+        "defaultCheckboxLabel": "Par défaut (repli)",
+        "matchType": {
+            "exact": "Exact",
+            "contains": "Contient",
+            "regex": "Regex",
+            "buttonId": "ID du bouton",
+            "listId": "ID de ligne de liste",
+            "payload": "Charge utile"
+        },
+        "matchValuePlaceholder": "Valeur de correspondance...",
+        "addBranch": "Ajouter une branche"
+    },
+    "delay": {
+        "sectionLabel": "Paramètres de délai",
+        "durationLabel": "Durée",
+        "unit": {
+            "seconds": "Secondes",
+            "minutes": "Minutes",
+            "hours": "Heures",
+            "days": "Jours"
+        }
+    },
+    "workflow": {
+        "sectionLabel": "Action de workflow",
+        "idLabel": "ID du workflow",
+        "contextHint": "Le workflow recevra phone, instituteId, userId et messageText comme contexte."
+    },
+    "webhook": {
+        "sectionLabel": "Webhook HTTP",
+        "urlLabel": "URL",
+        "methodLabel": "Méthode",
+        "resultVariableLabel": "Nom de la variable de résultat",
+        "resultHint": {
+            "prefix": "Réponse stockée sous",
+            "suffix": "pour une utilisation dans les nœuds suivants."
+        }
+    },
+    "aiCredits": {
+        "outOfCreditsTitle": "Crédits IA épuisés.",
+        "outOfCreditsBody": "Cette étape n'appellera pas le modèle — les conversations qui l'atteignent sont confiées à un humain dans la boîte de réception WhatsApp jusqu'à ce que l'institut recharge ses crédits.",
+        "spendNotice": "Chaque réponse consomme des crédits IA",
+        "balance": "· solde {{balance}}"
+    },
+    "aiResponse": {
+        "sectionLabel": "Conversation IA",
+        "modelLabel": "Modèle",
+        "model": {
+            "platformDefault": "Par défaut de la plateforme (GLM 5.3 Flash)",
+            "gemini20Flash": "Gemini 2.0 Flash (rapide)",
+            "gemini25Flash": "Gemini 2.5 Flash",
+            "gemini25Pro": "Gemini 2.5 Pro",
+            "claude35Sonnet": "Claude 3.5 Sonnet",
+            "gpt4oMini": "GPT-4o Mini",
+            "deepseekV32": "DeepSeek V3.2"
+        },
+        "systemPromptLabel": "Invite système",
+        "systemPromptPlaceholder": "Vous êtes un assistant utile pour {{example}}. Répondez aux questions sur les cours et les inscriptions...",
+        "maxTokensLabel": "Jetons max",
+        "maxTurnsLabel": "Tours max",
+        "temperatureLabel": "Température",
+        "exitKeywordsLabel": "Mots-clés de sortie (séparés par des virgules)",
+        "fallbackMessageLabel": "Message de repli (en cas d'erreur/tours max)",
+        "fallbackMessagePlaceholder": "Laissez-moi vous mettre en relation avec un agent humain.",
+        "unsureSectionLabel": "Quand l'IA ne sait pas",
+        "escalateCheckboxLabel": "Transmettre à un administrateur plutôt que de deviner",
+        "handoverMessageLabel": "Message de transfert",
+        "handoverMessagePlaceholder": "Je n'ai pas cette information sous la main pour le moment. Laissez-moi vérifier avec notre équipe et revenir vers vous rapidement.",
+        "escalationNotice": {
+            "prefix": "Lorsque la réponse ne se trouve pas dans le contexte de l'IA, elle envoie ce message au lieu d'en inventer un. La conversation est alors marquée",
+            "unanswered": "Sans réponse",
+            "middle": "dans la boîte de réception WhatsApp, et les personnes listées dans",
+            "flowSettings": "Paramètres du flux",
+            "suffix": "sont informées par e-mail et/ou WhatsApp qu'un apprenant attend. Répondre depuis la boîte de réception résout ce statut."
+        },
+        "interactiveSectionLabel": "Réponses interactives",
+        "interactiveCheckboxLabel": "Autoriser l'IA à envoyer des boutons de réponse et des menus de liste",
+        "interactiveNotice": "L'IA peut désormais inclure des boutons de réponse (max 3) ou des menus de liste lors de la présentation de choix. Revient au texte simple si le format n'est pas valide ou si la session de 24 h a expiré."
+    },
+    "crmLeadCheck": {
+        "sectionLabel": "Vérifier le prospect CRM",
+        "hint": "Recherche ce numéro WhatsApp dans tout votre CRM. Un nouveau numéro est ajouté immédiatement à la liste « WhatsApp Leads ». Un prospect connu n'est jamais dupliqué — le contact est enregistré sur son prospect existant.",
+        "outputsLabel": "Sorties",
+        "branchNew": "Nouveau prospect",
+        "branchExisting": "Prospect existant",
+        "connected": "Connectée",
+        "notConnected": "Non connectée",
+        "connectBothNotice": "Une sortie non connectée met fin au flux pour ce type de prospect. Faites glisser depuis le point correspondant en bas du nœud pour la connecter.",
+        "existingSectionLabel": "Si le prospect existe déjà",
+        "existingMessageLabel": "Message à envoyer",
+        "existingMessagePlaceholder": "ex. Bon retour ! Notre équipe vous contactera très bientôt.",
+        "blankSendsNothing": "Laissez vide pour ne rien envoyer.",
+        "notifyTeamLabel": "Alerter l'équipe",
+        "notifyTeamHint": "Marque la conversation comme en attente de réponse dans la boîte de réception WhatsApp et prévient les personnes indiquées dans les paramètres de ce flux."
+    },
+    "askField": {
+        "sectionLabel": "Demander et enregistrer un champ",
+        "hint": "Pose une question, attend la réponse, vérifie qu'elle correspond au champ et l'enregistre sur le prospect.",
+        "fieldLabel": "Champ",
+        "fieldPlaceholder": "Choisissez un champ…",
+        "leadDetailsGroup": "Informations du prospect",
+        "customFieldsGroup": "Champs personnalisés",
+        "systemFields": {
+            "fullName": "Nom complet",
+            "email": "E-mail"
+        },
+        "loadingFields": "Chargement des champs personnalisés…",
+        "loadFieldsFailed": "Impossible de charger les champs personnalisés.",
+        "retry": "Réessayer",
+        "noCustomFields": "Aucun champ personnalisé pour l'instant — ajoutez-en dans Paramètres → Champs personnalisés.",
+        "missingFieldOption": "{{field}} (n'existe plus)",
+        "missingFieldNotice": "Ce champ n'existe plus dans vos champs personnalisés. Choisissez-en un autre.",
+        "typeWithChoices": "Type : {{type}} · {{total}} choix",
+        "typeOnly": "Type : {{type}}",
+        "noChoicesNotice": "Ce champ n'a pas encore de choix. Ajoutez-les dans Paramètres → Champs personnalisés.",
+        "choicesChangedNotice": "Les choix de ce champ ont changé depuis sa sélection.",
+        "refreshChoices": "Utiliser les derniers choix",
+        "defaultQuestion": "Merci de nous indiquer votre {{field}}.",
+        "questionLabel": "Question",
+        "questionPlaceholder": "Que doit demander le bot ?",
+        "retryMessageLabel": "Message de nouvelle tentative",
+        "retryMessagePlaceholder": "Désolé, cela ne semble pas correct. Veuillez réessayer.",
+        "retryMessageHint": "Envoyé lorsque la réponse ne correspond pas au champ — par ex. un e-mail invalide, ou une réponse hors des choix.",
+        "maxRetriesLabel": "Nombre max. de tentatives",
+        "allowSkipLabel": "Permettre de passer cette question",
+        "listButtonLabel": "Texte du bouton de liste",
+        "noSaveStepNotice": "Ajoutez une étape « Save Lead to CRM » après vos questions pour définir le statut du prospect et lancer vos workflows de prospects.",
+        "preview": {
+            "sectionLabel": "Aperçu",
+            "noQuestion": "Votre question apparaîtra ici",
+            "modeText": "La personne saisit sa réponse.",
+            "modeButtons": "Envoyé sous forme de boutons de réponse.",
+            "modeList": "Envoyé sous forme de liste, ouverte avec le bouton.",
+            "modeNumbered": "Plus de 10 choix — envoyé sous forme de liste numérotée ; la personne répond avec le numéro.",
+            "modeMultiSelect": "Choix multiple — envoyé sous forme de liste numérotée ; la personne peut répondre avec plusieurs numéros.",
+            "longChoiceNotice": "Certains choix dépassent la longueur autorisée ici par WhatsApp ({{max}} caractères) et peuvent être tronqués."
+        }
+    },
+    "saveToCrm": {
+        "sectionLabel": "Enregistrer le prospect dans le CRM",
+        "hint": "Enregistre toutes les réponses recueillies dans ce flux sur le prospect — en le créant s'il n'existe pas encore — et lance vos workflows de soumission de prospects.",
+        "statusLabel": "Définir le statut du prospect",
+        "dontChange": "Ne pas modifier",
+        "loadingStatuses": "Chargement des statuts…",
+        "missingStatusOption": "{{status}} (n'existe plus)",
+        "missingStatusNotice": "Ce statut n'existe plus. Choisissez-en un autre, ou « Ne pas modifier ».",
+        "successMessageLabel": "Message après l'enregistrement",
+        "successMessagePlaceholder": "ex. Merci ! Notre équipe vous contactera bientôt.",
+        "blankSendsNothing": "Laissez vide pour ne rien envoyer.",
+        "fireWorkflowsLabel": "Exécuter les workflows de prospect",
+        "fireWorkflowsHint": "Exécute les workflows « prospect soumis » de l'établissement (ex. messages de confirmation, alertes admin) pour un nouveau prospect une fois les réponses enregistrées. Désactivez-le si ces workflows enverraient un second message de bienvenue. Ne s'exécute jamais pour un prospect existant."
+    }
+}

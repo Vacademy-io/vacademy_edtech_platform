@@ -7,6 +7,7 @@ import {
     Spinner,
     WarningCircle,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,7 @@ interface DeckPlayerProps {
 }
 
 export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
+    const { t } = useTranslation('studyLibraryDeckPlayer');
     const [steps, setSteps] = useState<FlatStep[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [index, setIndex] = useState(0);
@@ -94,21 +96,21 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
                     });
                 });
                 if (!flat.length) {
-                    setError('This presentation has no slides.');
+                    setError(t('error.noSlides'));
                     return;
                 }
                 setSteps(flat);
             })
             .catch((e) => {
                 if (cancelled) return;
-                setError("Couldn't load the presentation.");
+                setError(t('error.loadFailed'));
                 console.error('[DeckPlayer] manifest load failed', e);
             });
 
         return () => {
             cancelled = true;
         };
-    }, [base]);
+    }, [base, t]);
 
     const total = steps?.length ?? 0;
     const current = steps?.[index];
@@ -249,7 +251,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
                     <img
                         key={index}
                         src={current.url}
-                        alt={`Slide ${currentSlideNo}`}
+                        alt={t('slideAlt', { number: currentSlideNo })}
                         className={cn(
                             'absolute inset-0 size-full object-contain',
                             fade && 'animate-in fade-in duration-300'
@@ -299,7 +301,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
                     className="rounded-full hover:bg-neutral-50/10"
                     onClick={() => go(-1)}
                     disable={atStart}
-                    aria-label="Previous"
+                    aria-label={t('aria.previous')}
                 >
                     <CaretLeft size={18} className={atStart ? 'text-neutral-50/30' : 'text-neutral-50'} />
                 </MyButton>
@@ -313,7 +315,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
                     className="rounded-full hover:bg-neutral-50/10"
                     onClick={() => go(1)}
                     disable={atEnd}
-                    aria-label="Next"
+                    aria-label={t('aria.next')}
                 >
                     <CaretRight size={18} className={atEnd ? 'text-neutral-50/30' : 'text-neutral-50'} />
                 </MyButton>
@@ -324,7 +326,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
                     buttonType="text"
                     className="rounded-full hover:bg-neutral-50/10"
                     onClick={toggleFullscreen}
-                    aria-label={isFullscreen ? 'Exit full screen' : 'Play full screen'}
+                    aria-label={isFullscreen ? t('aria.exitFullScreen') : t('aria.playFullScreen')}
                 >
                     {isFullscreen ? (
                         <CornersIn size={18} className="text-neutral-50" />

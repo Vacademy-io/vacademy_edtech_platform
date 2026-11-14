@@ -1,0 +1,8 @@
+{
+    "anonymous": "Anonymous",
+    "backToList": "Back to list",
+    "guest": "Guest",
+    "assigned": "Assigned",
+    "nameAsked": "{{name}} · asked",
+    "noPermissionToReply": "You do not have permission to reply to this doubt."
+}

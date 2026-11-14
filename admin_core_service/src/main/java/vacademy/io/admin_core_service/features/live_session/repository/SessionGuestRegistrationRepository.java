@@ -59,7 +59,8 @@ public interface SessionGuestRegistrationRepository extends JpaRepository<Sessio
                 'EXTERNAL_USER' AS sourceType,
                 lsl.status_type AS statusType,
                 lsl.engagement_data AS engagementData,
-                lsl.provider_total_duration_minutes AS providerTotalDurationMinutes
+                lsl.provider_total_duration_minutes AS providerTotalDurationMinutes,
+                lsl.provider_total_duration_seconds AS providerTotalDurationSeconds
             FROM session_guest_registrations sgr
             LEFT JOIN live_session_logs lsl
                 ON lsl.session_id = sgr.session_id
@@ -106,5 +107,40 @@ public interface SessionGuestRegistrationRepository extends JpaRepository<Sessio
             WHERE sgr.session_id = :sessionId
             """, nativeQuery = true)
     List<GuestSessionCustomFieldDTO> findGuestCustomFieldsBySessionId(@Param("sessionId") String sessionId);
+
+    /**
+     * The name a public-session registrant typed on the registration form —
+     * the same fields the learner app itself treats as the full name
+     * (register/live-class helper extractFieldValue): key full_name or
+     * full_name_inst_..., key name or name_inst_..., or a label that normalises
+     * to "full name" / "name". Deliberately NOT the report's loose ILIKE
+     * '%name%' match, which would happily return a School Name or Father's
+     * Name on a form without a Full Name field. A Full Name field wins over a
+     * plain Name field regardless of form order. Empty when no such field
+     * exists or the registrant left it blank — the caller then falls back.
+     */
+    @Query(value = """
+            SELECT cfv.value
+            FROM custom_field_values cfv
+            JOIN custom_fields cf ON cf.id = cfv.custom_field_id
+            WHERE cfv.source_id = :registrationId
+              AND cfv.value IS NOT NULL
+              AND btrim(cfv.value) <> ''
+              AND (
+                   cf.field_key = 'full_name'
+                OR left(cf.field_key, 15) = 'full_name_inst_'
+                OR cf.field_key = 'name'
+                OR left(cf.field_key, 10) = 'name_inst_'
+                OR lower(regexp_replace(btrim(cf.field_name), '[[:space:]-]+', '_', 'g')) IN ('full_name', 'name')
+              )
+            ORDER BY
+              CASE WHEN cf.field_key = 'full_name'
+                     OR left(cf.field_key, 15) = 'full_name_inst_'
+                     OR lower(regexp_replace(btrim(cf.field_name), '[[:space:]-]+', '_', 'g')) = 'full_name'
+                   THEN 0 ELSE 1 END,
+              cf.form_order ASC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<String> findRegistrantNameByRegistrationId(@Param("registrationId") String registrationId);
 
 }

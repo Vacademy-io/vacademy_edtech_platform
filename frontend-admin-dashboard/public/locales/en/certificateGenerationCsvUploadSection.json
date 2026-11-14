@@ -1,0 +1,25 @@
+{
+    "errors": {
+        "fileSizeExceeded": "File size exceeds 1MB limit",
+        "invalidFileType": "Please upload a CSV file",
+        "missingRows": "CSV file must contain at least a header row and one data row",
+        "emptyFile": "CSV file is empty or malformed",
+        "parseFailed": "Failed to parse CSV file. Please check the file format."
+    },
+    "heading": "Dynamic Data Upload",
+    "clearUpload": "Clear Upload",
+    "processing": "Processing CSV...",
+    "uploadPrompt": "Upload Dynamic Data CSV",
+    "dropHint": "Drag and drop or click to select • Max 1MB • CSV format only",
+    "selectFile": "Select CSV File",
+    "issuesFound": "CSV Upload Issues Found",
+    "uploadSuccessful": "CSV Upload Successful",
+    "rowsProcessed_one": "{{count}} row processed",
+    "rowsProcessed_other": "{{count}} rows processed",
+    "columnsCount_one": "{{count}} column",
+    "columnsCount_other": "{{count}} columns",
+    "dynamicFieldsCount_one": "{{count}} dynamic field",
+    "dynamicFieldsCount_other": "{{count}} dynamic fields",
+    "detectedColumns": "Detected Columns",
+    "required": "(required)"
+}

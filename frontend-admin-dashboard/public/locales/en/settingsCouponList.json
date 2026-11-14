@@ -1,0 +1,50 @@
+{
+    "discount": {
+        "maxCap": ", max ₹{{amount}}"
+    },
+    "validity": {
+        "noExpiry": "No expiry",
+        "until": "until {{date}}"
+    },
+    "filters": {
+        "searchPlaceholder": "Search by code",
+        "searchAriaLabel": "Search coupons by code",
+        "statusAriaLabel": "Filter by status"
+    },
+    "status": {
+        "all": "All statuses",
+        "active": "Active",
+        "inactive": "Inactive",
+        "deleted": "Deleted"
+    },
+    "actions": {
+        "createCoupon": "Create coupon",
+        "tryAgain": "Try again"
+    },
+    "table": {
+        "code": "Code",
+        "discount": "Discount",
+        "validity": "Validity",
+        "usage": "Usage",
+        "status": "Status",
+        "actions": "Actions",
+        "productPageBadge": "product page"
+    },
+    "confirm": {
+        "deleteMessage": "Delete coupon \"{{code}}\"? Existing redemptions are preserved; this only prevents new applications."
+    },
+    "toasts": {
+        "deleted": "Coupon \"{{code}}\" deleted"
+    },
+    "errors": {
+        "deleteFailed": "Could not delete coupon",
+        "loadFailed": "Could not load coupons",
+        "loadTitle": "Couldn't load coupons"
+    },
+    "empty": {
+        "filteredTitle": "No coupons match these filters",
+        "emptyTitle": "No coupons yet",
+        "filteredSubtitle": "Try clearing the search or status filter.",
+        "emptySubtitle": "Create a coupon to let {{learnerPlural}} apply a discount at checkout."
+    }
+}

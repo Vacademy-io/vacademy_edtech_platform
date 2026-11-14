@@ -1,0 +1,87 @@
+{
+    "summaryView": {
+        "overview": "Overview",
+        "keyTakeaways": "Key Takeaways"
+    },
+    "flashcardsView": {
+        "questionLabel": "Question",
+        "answerLabel": "Answer",
+        "clickToFlip": "Click to flip",
+        "previous": "Previous",
+        "next": "Next",
+        "cardCounter": "Card {{current}} of {{total}}"
+    },
+    "classworkView": {
+        "emptyState": "No classwork was assigned"
+    },
+    "homeworkView": {
+        "emptyState": "No homework was assigned"
+    },
+    "toasts": {
+        "instituteDetailsUnavailable": "Institute details not available",
+        "quizGenerationStarted": "Quiz generation started! Polling for results...",
+        "quizGeneratedSuccess": "Quiz generated successfully!",
+        "quizSavedFailed": "Quiz generated but failed to save to log",
+        "quizTimedOut": "Quiz generation timed out",
+        "quizGenerationFailedPoll": "Failed to generate quiz",
+        "quizGenerationFailedStart": "Failed to start quiz generation",
+        "noNotesAvailable": "No notes available to download",
+        "notesDownloadSuccess": "Notes PDF downloaded successfully!",
+        "notesDownloadFailed": "Failed to generate notes PDF",
+        "noSummaryAvailable": "No summary available to download",
+        "summaryDownloadSuccess": "Summary PDF downloaded successfully!",
+        "summaryDownloadFailed": "Failed to generate summary PDF",
+        "noQuizAvailable": "No quiz available to download",
+        "noClassworkAvailable": "No classwork available to download",
+        "classworkDownloadSuccess": "Classwork PDF downloaded successfully!",
+        "classworkDownloadFailed": "Failed to generate classwork PDF",
+        "noHomeworkAvailable": "No homework available to download",
+        "homeworkDownloadSuccess": "Homework PDF downloaded successfully!",
+        "homeworkDownloadFailed": "Failed to generate homework PDF",
+        "generatingPlaceholder": "Generating {{label}}... (TODO)"
+    },
+    "tabs": {
+        "transcription": {
+            "label": "Transcription",
+            "description": "Full text transcription of the audio"
+        },
+        "notes": {
+            "label": "Notes",
+            "description": "Structured notes from the content"
+        },
+        "summary": {
+            "label": "Summary",
+            "description": "AI-generated summary of key points"
+        },
+        "flashcards": {
+            "label": "Flashcards",
+            "description": "Study flashcards"
+        },
+        "quiz": {
+            "label": "Quiz",
+            "description": "Auto-generated quiz questions"
+        },
+        "slides": {
+            "label": "Slides",
+            "description": "Presentation slides outline"
+        },
+        "videos": {
+            "label": "Video Ideas",
+            "description": "Video content suggestions"
+        },
+        "homework": {
+            "label": "Homework",
+            "description": "Homework assignment ideas"
+        },
+        "classwork": {
+            "label": "Classwork",
+            "description": "In-class activity ideas"
+        }
+    },
+    "emptyState": {
+        "title": "No {{label}} Generated Yet",
+        "hint": "Generate {{label}} from your transcription to see the content here.",
+        "generateButton": "Generate {{label}}"
+    },
+    "downloadButton": "Download PDF"
+}

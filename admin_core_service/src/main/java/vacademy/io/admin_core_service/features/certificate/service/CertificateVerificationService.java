@@ -48,6 +48,14 @@ public class CertificateVerificationService {
     private final IssuedCertificateRepository issuedCertificateRepository;
     private final InstituteRepository instituteRepository;
     private final AuthService authService;
+
+    /**
+     * Shrinks long values to their boxes on the verification document, the same
+     * way issued certificates are fitted. Stateless, so built here rather than
+     * injected — an initialised final field stays out of the generated
+     * constructor that the verification tests call directly.
+     */
+    private final CertificateTextFitService textFitService = new CertificateTextFitService();
     /**
      * Deliberately NOT a constructor dependency.
      *
@@ -269,7 +277,13 @@ public class CertificateVerificationService {
         // Parsed once and shared by every settings read below.
         com.fasterxml.jackson.databind.JsonNode certificateConfig = readCertificateConfig(institute);
 
-        return CertificateVerificationDto.builder()
+        // Masked unless the institute opted in to full details. The opt-in is
+        // the only way the username and email ever reach this public response.
+        boolean fullDetails = Boolean.TRUE.equals(readFlag(certificateConfig, "verificationShowFullDetails"));
+        UserDTO learner = resolveLearner(certificate.getUserId());
+        String fullName = learner != null && learner.getFullName() != null ? learner.getFullName().trim() : "";
+
+        CertificateVerificationDto.CertificateVerificationDtoBuilder builder = CertificateVerificationDto.builder()
                 .valid(true)
                 .certificateId(certificate.getCertificateId())
                 .instituteName(institute != null ? institute.getInstituteName() : "")
@@ -287,11 +301,38 @@ public class CertificateVerificationService {
                 .courseName(certificate.getCourseName())
                 .issuedAt(certificate.getIssuedAt())
                 .completionPercentage(certificate.getCompletionPercentage())
-                .learnerName(maskName(resolveLearnerName(certificate.getUserId())))
+                .learnerName(fullDetails ? fullName : maskName(fullName))
                 .verificationMode(resolveVerificationMode(certificateConfig))
                 .documentType(resolveDocumentType(certificateConfig))
-                .documentUrl(resolveDocumentUrl(certificateConfig, certificate))
-                .build();
+                .documentUrl(resolveDocumentUrl(certificateConfig, certificate));
+        if (fullDetails && learner != null) {
+            builder.learnerUsername(learner.getUsername())
+                    .learnerFirstName(firstName(fullName))
+                    .learnerLastName(lastName(fullName))
+                    .learnerEmail(learner.getEmail());
+        }
+        return builder.build();
+    }
+
+    /** First word of the full name — "Alex Sample" → "Alex". */
+    static String firstName(String fullName) {
+        if (!StringUtils.hasText(fullName)) {
+            return "";
+        }
+        return fullName.trim().split("\\s+")[0];
+    }
+
+    /**
+     * Last word of the full name, or empty for a one-word name — "Alex Q Sample"
+     * → "Sample". Middle names belong to neither, matching how a record split
+     * into first/last name is usually filled in.
+     */
+    static String lastName(String fullName) {
+        if (!StringUtils.hasText(fullName)) {
+            return "";
+        }
+        String[] parts = fullName.trim().split("\\s+");
+        return parts.length > 1 ? parts[parts.length - 1] : "";
     }
 
     /**
@@ -399,7 +440,9 @@ public class CertificateVerificationService {
         if (!StringUtils.hasText(template)) {
             return Optional.empty();
         }
-        return Optional.of(substituteVerificationTokens(template, dto));
+        // Fitted after substitution, as on the certificate: only the real value
+        // says whether it fits. A no-op for documents without data-fit fields.
+        return Optional.of(textFitService.fitTemplate(substituteVerificationTokens(template, dto)));
     }
 
     /**
@@ -423,6 +466,11 @@ public class CertificateVerificationService {
                 : new java.text.SimpleDateFormat("dd MMM yyyy").format(dto.getIssuedAt()));
         values.put("COMPLETION_PERCENTAGE", dto.getCompletionPercentage() == null ? ""
                 : dto.getCompletionPercentage() + "%");
+        // Empty unless the institute opted in to full details — see toDto.
+        values.put("USERNAME", nullToEmpty(dto.getLearnerUsername()));
+        values.put("FIRST_NAME", nullToEmpty(dto.getLearnerFirstName()));
+        values.put("LAST_NAME", nullToEmpty(dto.getLearnerLastName()));
+        values.put("EMAIL", nullToEmpty(dto.getLearnerEmail()));
 
         String out = template;
         for (java.util.Map.Entry<String, String> entry : values.entrySet()) {
@@ -582,16 +630,16 @@ public class CertificateVerificationService {
         return null;
     }
 
-    private String resolveLearnerName(String userId) {
+    private UserDTO resolveLearner(String userId) {
         try {
             List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(userId));
             if (users != null && !users.isEmpty()) {
-                return Optional.ofNullable(users.get(0).getFullName()).orElse("");
+                return users.get(0);
             }
         } catch (Exception e) {
-            log.warn("Could not resolve learner name for verification of user {}", userId, e);
+            log.warn("Could not resolve learner for verification of user {}", userId, e);
         }
-        return "";
+        return null;
     }
 
     /**

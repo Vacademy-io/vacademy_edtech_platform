@@ -1,0 +1,12 @@
+{
+    "steps": {
+        "draft": "Brouillon",
+        "processing": "En cours de traitement",
+        "processed": "Traité",
+        "approved": "Approuvé",
+        "paid": "Payé",
+        "cancelled": "Annulé"
+    },
+    "processing": "En cours de traitement…",
+    "cancelledMessage": "Annulé — ses retenues de prêts et remboursements ont été restitués. Créez une nouvelle exécution pour ce mois quand vous serez prêt."
+}

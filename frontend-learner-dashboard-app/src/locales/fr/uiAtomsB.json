@@ -1,0 +1,20 @@
+{
+    "common": {
+        "close": "Fermer"
+    },
+    "pagination": {
+        "ariaLabel": "pagination",
+        "previous": {
+            "ariaLabel": "Aller à la page précédente",
+            "label": "Précédent"
+        },
+        "next": {
+            "ariaLabel": "Aller à la page suivante",
+            "label": "Suivant"
+        },
+        "morePages": "Plus de pages"
+    },
+    "sidebar": {
+        "toggleSidebar": "Afficher/masquer la barre latérale"
+    }
+}

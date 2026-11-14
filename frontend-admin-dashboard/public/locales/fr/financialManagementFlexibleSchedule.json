@@ -1,0 +1,35 @@
+{
+    "heading": "Quand les échéances sont-elles dues ?",
+    "fixed": {
+        "title": "Dates fixes pour tous les apprenants",
+        "description": "Définissez ici les échéances et leurs dates. Tous les inscrits à ce plan paient aux mêmes dates."
+    },
+    "flexible": {
+        "title": "Choisies pour chaque apprenant à l’inscription",
+        "description": "Définissez seulement les frais ici. À l’inscription, choisissez le nombre d’échéances et leur espacement.",
+        "feesHint": "Les frais marqués « Payer en plusieurs fois » sont répartis sur l’échéancier de l’apprenant ; les autres sont dus à la première échéance."
+    },
+    "defaults": {
+        "count": "Échéances par défaut",
+        "every": "Tous les",
+        "maxCount": "Échéances maximum",
+        "maxCountPlaceholder": "Jusqu’à {{max}}"
+    },
+    "units": {
+        "days": "jours",
+        "months": "mois"
+    },
+    "fee": {
+        "splitToggle": "Payer en plusieurs fois",
+        "split": "réparti par apprenant",
+        "upfront": "payé d’avance"
+    },
+    "perLearner": "Par apprenant",
+    "badge": "Échéances choisies à l’inscription",
+    "errors": {
+        "count": "Le nombre d’échéances par défaut doit être compris entre 1 et le maximum ({{max}} au plus).",
+        "value": "L’espacement doit être compris entre 1 et {{gap}}.",
+        "maxCount": "Le maximum d’échéances doit être compris entre 1 et {{max}}.",
+        "noSplitFee": "Activez « Payer en plusieurs fois » pour au moins un frais."
+    }
+}

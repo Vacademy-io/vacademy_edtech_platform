@@ -1,0 +1,45 @@
+---
+title: "Idempotency"
+description: "Retry requests without calling anyone twice."
+---
+
+Networks fail. If your request to start a call times out, you cannot know whether the call was created. Send an `Idempotency-Key` header, and retrying becomes safe:
+
+```bash
+curl https://api.telleo.ai/v1/calls \
+  -H "X-API-Key: $TELLEO_API_KEY" \
+  -H "Idempotency-Key: lead-8812" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id": "17ea33d2-…", "phone_number": "+919876543210"}'
+```
+
+| Situation | Response |
+|---|---|
+| First request with this key | `201 Created`: the new call. |
+| Same key, same body | `200 OK`: the **same** call as before, with `"idempotent_replay": true`. Nobody is called again. |
+| Same key, different body | `409 idempotency_key_reused`, with the original `call_id` in `details`. Every field counts, including `test`, so a key used for a test call cannot be reused for a real one. |
+
+- Keys are up to 255 characters (251 on `POST /v1/batches`) and are honoured for **24 hours**. After that the same key starts a new call.
+- Build them from your own ids (`lead-8812`, `enquiry-5521-attempt-2`) so that a retry naturally reuses the key, and a deliberate new attempt gets a new one.
+- Two requests with the same key at the same moment create one call.
+
+## Batches
+
+`POST /v1/batches` takes an `Idempotency-Key` too, of up to 251 characters.
+
+| Situation | Response |
+|---|---|
+| Same key, same request | `200 OK` with `"idempotent_replay": true`: the same batch `id`, the same `calls` and the same `rejected` rows as the first response. Nobody is called again. |
+| Same key, different request | `409 idempotency_key_reused`, with the original `batch_id` in `details`. `test` and every row count. |
+| Same key while the first request is still running | `409 request_in_progress`. Wait the seconds in `Retry-After` (30), then retry with the same key. |
+
+- A replay never places a call. A row the first request accepted but could not place (`call_failed`, or `call_already_queued` found while queueing) comes back as `call_not_placed`. To call it, send it again in a new batch, without the key or under a new one.
+- A batch in which no call was placed at all is not remembered: retrying it is a new attempt.
+
+Without a key, a re-sent batch is still partly protected: a number that already has a waiting call is rejected as `call_already_queued`.
+
+## Counsellors and agents
+
+`POST /v1/counsellors` and `POST /v1/agents` take an `Idempotency-Key` too (up to 255 characters, 24 hours), with the same rules: the same request returns the counsellor or agent the first one made (`200`, `idempotent_replay: true`, as it is now), a different request is `409 idempotency_key_reused`, and a retry while the first is still running is `409 request_in_progress` (`Retry-After: 5`). A request that failed leaves the key free to retry, and a request that was cut off (no answer within two minutes) no longer blocks it: after two minutes a retry runs.
+
+Adding a counsellor is also safe without a key: an email that is already a counsellor in your account comes back with `created: false` and nothing changes.

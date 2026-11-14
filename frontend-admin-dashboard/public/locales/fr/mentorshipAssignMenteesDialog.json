@@ -1,0 +1,19 @@
+{
+    "selectAtLeastOneStudent": "Sélectionnez au moins un étudiant",
+    "mentorFallback": "mentor",
+    "assignHeading": "Attribuer des étudiants à {{mentorName}}",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "seatsFreeSuffix": " · {{slots}} places libres sur {{max}}",
+    "cancel": "Annuler",
+    "selectAtLeastOneBelow": "Sélectionnez au moins un étudiant ci-dessous",
+    "assigning": "Attribution…",
+    "assignStudent_one": "Attribuer l'étudiant",
+    "assignStudent_many": "Attribuer {{count}} d'étudiants",
+    "assignStudent_other": "Attribuer {{count}} étudiants",
+    "assignmentResultFailed": "Échec de l'attribution des étudiants",
+    "filterHelp": "Filtrez par groupe pour prendre une classe entière d'un coup, ou recherchez par nom. Tout ce que vous cochez reste sélectionné lorsque vous changez de groupe.",
+    "atLimit": "Ce mentor a déjà atteint sa limite de {{max}}. Rien ne sera attribué ici — augmentez sa capacité, ou répartissez le groupe entre plusieurs mentors avec Attribution groupée.",
+    "seatsLeft_one": "Ce mentor a {{count}} place restante. Les premiers {{count}} seront attribués et le reste ignoré — augmentez sa capacité, ou répartissez le groupe entre plusieurs mentors avec Attribution groupée.",
+    "seatsLeft_many": "Ce mentor a {{count}} de places restantes. Les premiers {{count}} seront attribués et le reste ignoré — augmentez sa capacité, ou répartissez le groupe entre plusieurs mentors avec Attribution groupée.",
+    "seatsLeft_other": "Ce mentor a {{count}} places restantes. Les premiers {{count}} seront attribués et le reste ignoré — augmentez sa capacité, ou répartissez le groupe entre plusieurs mentors avec Attribution groupée."
+}

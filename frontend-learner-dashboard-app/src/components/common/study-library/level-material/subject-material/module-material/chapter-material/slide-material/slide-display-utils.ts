@@ -41,7 +41,7 @@ export function getSlideTitle(slide: Slide): string {
     (slide.source_type === "DOCUMENT" && slide.document_slide?.title) ||
     (slide.source_type === "VIDEO" && slide.video_slide?.title) ||
     slide.title ||
-    "Untitled"
+    i18n.t("libraryCommonB:slideDisplayUtils.untitled")
   );
 }
 
@@ -162,7 +162,12 @@ export function computeDisplayTitles(
   //    documents in one chapter stay tellable apart.
   const unnamed = entries
     .filter((e) => !result.get(e.id))
-    .map((e) => ({ ...e, typeLabel: getSlideTypeDisplay(e.slide) || "Item" }));
+    .map((e) => ({
+      ...e,
+      typeLabel:
+        getSlideTypeDisplay(e.slide) ||
+        i18n.t("libraryCommonB:slideDisplayUtils.item"),
+    }));
   const perType = new Map<string, number>();
   for (const e of unnamed) {
     perType.set(e.typeLabel, (perType.get(e.typeLabel) ?? 0) + 1);

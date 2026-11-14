@@ -1,0 +1,63 @@
+{
+    "header": {
+        "mcqSingleCorrect": "MCQ (एकल सही):",
+        "mcqMultipleCorrect": "MCQ (बहु सही):",
+        "total": "कुल:"
+    },
+    "uploadSection": {
+        "title": "प्रश्न पत्र अपलोड करें",
+        "uploadFromDevice": "डिवाइस से अपलोड करें",
+        "uploadFromDeviceDialogTitle": "डिवाइस से प्रश्न पत्र अपलोड करें",
+        "createManually": "मैन्युअल रूप से बनाएं",
+        "createManuallyDialogTitle": "प्रश्न पत्र मैन्युअल रूप से बनाएं",
+        "chooseSavedPaper": "सहेजा गया पेपर चुनें",
+        "chooseSavedDialogTitle": "सूची से सहेजा गया प्रश्न पत्र चुनें"
+    },
+    "sectionDescription": {
+        "title": "सेक्शन विवरण",
+        "placeholder": "इस सेक्शन का विवरण लिखें"
+    },
+    "duration": {
+        "questionDuration": "प्रश्न अवधि",
+        "sectionDuration": "सेक्शन अवधि",
+        "hrs": "घंटे",
+        "minutes": "मिनट"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "प्रति प्रश्न अंक",
+            "default": "(डिफ़ॉल्ट)"
+        },
+        "negativeMarking": "नकारात्मक अंकन",
+        "partialMarking": "आंशिक अंकन"
+    },
+    "randomization": {
+        "problemRandomization": "प्रश्न रैंडमाइज़ेशन"
+    },
+    "table": {
+        "adaptiveMarkingRulesTitle": "अनुकूली अंकन नियम",
+        "headers": {
+            "qno": "प्र.सं.",
+            "question": "प्रश्न",
+            "questionType": "प्रश्न प्रकार",
+            "marks": "अंक",
+            "penalty": "दंड",
+            "time": "समय"
+        },
+        "questionTypeLabels": {
+            "MCQS": "MCQ (एकल सही)",
+            "MCQM": "MCQ (बहु सही)",
+            "NUMERIC": "संख्यात्मक",
+            "CMCQS": "कॉम्प्रिहेंशन MCQ (एकल सही)",
+            "CMCQM": "कॉम्प्रिहेंशन MCQ (बहु सही)",
+            "CNUMERIC": "कॉम्प्रिहेंशन संख्यात्मक",
+            "ONE_WORD": "एक शब्द",
+            "LONG_ANSWER": "दीर्घ उत्तर",
+            "TRUE_FALSE": "सही/गलत",
+            "CODING": "कोडिंग"
+        }
+    },
+    "totalMarks": {
+        "label": "कुल अंक"
+    }
+}

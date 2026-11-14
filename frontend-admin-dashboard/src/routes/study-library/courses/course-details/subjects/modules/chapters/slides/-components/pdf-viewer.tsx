@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Viewer, SpecialZoomLevel } from '@react-pdf-viewer/core';
 import { Worker } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -23,6 +24,7 @@ interface PDFViewerProps {
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
+    const { t } = useTranslation('studyLibraryPdfViewer');
     const searchParams = Route.useSearch();
     const { pdfPageNumber, clearPdfPageNumber } = useMediaNavigationStore();
 
@@ -79,7 +81,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
                 jumpToPage(pageIndex);
             } catch (error) {
                 console.error('Error jumping to initial page:', error);
-                toast.error('Failed to navigate to initial page');
+                toast.error(t('failedToNavigateInitial'));
             }
         }
     }, [searchParams.currentPage, jumpToPage]);
@@ -92,10 +94,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
                 const pageIndex = pdfPageNumber - 1;
                 jumpToPage(pageIndex);
                 clearPdfPageNumber();
-                toast.success(`Navigated to page ${pdfPageNumber}`);
+                toast.success(t('navigatedToPage', { page: pdfPageNumber }));
             } catch (error) {
                 console.error('Error jumping to page:', error);
-                toast.error('Failed to navigate to page');
+                toast.error(t('failedToNavigate'));
                 clearPdfPageNumber();
             }
         }
@@ -110,9 +112,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
         return (
             <div className="flex size-full flex-col items-center justify-center gap-2 text-center">
                 <FilePdf size={40} className="text-neutral-300" />
-                <p className="text-sm text-neutral-500">
-                    No PDF has been uploaded for this slide yet.
-                </p>
+                <p className="text-sm text-neutral-500">{t('noPdfUploaded')}</p>
             </div>
         );
     }
@@ -132,7 +132,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
                     />
                 ) : (
                     <div className="flex size-full items-center justify-center text-sm text-neutral-400">
-                        Loading…
+                        {t('loadingEllipsis')}
                     </div>
                 )}
             </div>

@@ -1,0 +1,51 @@
+{
+    "header": {
+        "mcqSingleCorrect": "MCQ(Single Correct):",
+        "mcqMultipleCorrect": "MCQ(Multiple Correct):",
+        "total": "Total:"
+    },
+    "sectionDescription": {
+        "title": "Section Description"
+    },
+    "duration": {
+        "sectionDuration": "Section Duration:",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestionDefault": "Marks Per Question (Default):",
+        "negativeMarking": "Negative Marking:",
+        "partialMarking": "Partial Marking:",
+        "cutoffMarking": "Cutoff Marking:"
+    },
+    "randomization": {
+        "problemRandomization": "Problem Randomization:"
+    },
+    "table": {
+        "surveyQuestionsTitle": "Survey Questions",
+        "adaptiveMarkingRulesTitle": "Adaptive Marking Rules",
+        "headers": {
+            "qno": "Q.No.",
+            "question": "Question",
+            "questionType": "Question Type",
+            "marks": "Marks",
+            "penalty": "Penalty",
+            "time": "Time"
+        },
+        "questionTypeLabels": {
+            "MCQS": "MCQ (Single Correct)",
+            "MCQM": "MCQ (Multiple Correct)",
+            "NUMERIC": "Numerical",
+            "CMCQS": "Comprehension MCQ (Single Correct)",
+            "CMCQM": "Comprehension MCQ (Multiple Correct)",
+            "CNUMERIC": "Comprehension Numerical",
+            "ONE_WORD": "Single Word",
+            "LONG_ANSWER": "Long Answer",
+            "TRUE_FALSE": "True/False",
+            "CODING": "Coding"
+        }
+    },
+    "totalMarks": {
+        "label": "Total Marks"
+    }
+}

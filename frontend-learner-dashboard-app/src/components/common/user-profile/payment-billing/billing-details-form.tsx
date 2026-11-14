@@ -3,8 +3,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { SpinnerGap } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
+import i18n from "@/i18n";
 import {
   Form,
   FormControl,
@@ -21,8 +23,8 @@ import {
 } from "./payment-method-services";
 
 const billingSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Enter a valid email"),
+  name: z.string().min(2, i18n.t("userProfileExtra:billingDetailsForm.validation.nameRequired")),
+  email: z.string().email(i18n.t("userProfileExtra:billingDetailsForm.validation.invalidEmail")),
   address_line: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
@@ -47,6 +49,7 @@ export const BillingDetailsForm = ({
   billingDetails,
   onUpdated,
 }: BillingDetailsFormProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const form = useForm<BillingFormValues>({
     resolver: zodResolver(billingSchema),
     defaultValues: {
@@ -80,12 +83,12 @@ export const BillingDetailsForm = ({
     mutationFn: (values: BillingFormValues) =>
       updateBillingDetails(instituteId, values),
     onSuccess: () => {
-      toast.success("Billing details updated");
+      toast.success(t("billingDetailsForm.toast.success"));
       onUpdated();
     },
     onError: (error) => {
       console.error("Billing details update failed:", error);
-      toast.error("Failed to update billing details. Please try again.");
+      toast.error(t("billingDetailsForm.toast.error"));
     },
   });
 
@@ -102,10 +105,10 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  Billing Name
+                  {t("billingDetailsForm.labels.billingName")}
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="Name on account" {...field} />
+                  <Input placeholder={t("billingDetailsForm.placeholders.billingName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -117,10 +120,14 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  Billing Email
+                  {t("billingDetailsForm.labels.billingEmail")}
                 </FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="billing@email.com" {...field} />
+                  <Input
+                    type="email"
+                    placeholder={t("billingDetailsForm.placeholders.billingEmail")}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -133,10 +140,10 @@ export const BillingDetailsForm = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                Address
+                {t("billingDetailsForm.labels.address")}
               </FormLabel>
               <FormControl>
-                <Input placeholder="Street address" {...field} />
+                <Input placeholder={t("billingDetailsForm.placeholders.address")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -149,7 +156,7 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  City
+                  {t("billingDetailsForm.labels.city")}
                 </FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -164,7 +171,7 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  State
+                  {t("billingDetailsForm.labels.state")}
                 </FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -179,7 +186,7 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  Postal Code
+                  {t("billingDetailsForm.labels.postalCode")}
                 </FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -194,10 +201,10 @@ export const BillingDetailsForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-medium uppercase text-gray-500">
-                  Country
+                  {t("billingDetailsForm.labels.country")}
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. AU" {...field} />
+                  <Input placeholder={t("billingDetailsForm.placeholders.country")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -215,10 +222,10 @@ export const BillingDetailsForm = ({
             {mutation.isPending ? (
               <>
                 <SpinnerGap className="me-2 size-4 animate-spin" />
-                Saving...
+                {t("common.saving")}
               </>
             ) : (
-              "Save Billing Details"
+              t("billingDetailsForm.saveBillingDetails")
             )}
           </MyButton>
         </div>

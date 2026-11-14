@@ -45,6 +45,11 @@ export type SelectedPayment = PaymentPlan & {
   type: string;
   amount?: number;
   duration?: string;
+  /**
+   * Set only by the auto-preselect paths (which used to store a pre-built
+   * `duration` string). Formatted at render via formatPlanDuration.
+   */
+  plan_duration?: { validityInDays: number | null | undefined; unit?: string };
 };
 
 /**

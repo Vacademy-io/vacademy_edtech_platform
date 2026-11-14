@@ -1,6 +1,7 @@
 import { Separator } from '@/components/ui/separator';
 import { VacademyAssessLogo, VacademyLMSLogo } from '@/svgs';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CreateOnboardingSidebar } from './CreateOnboardingSidebar';
 import { OnboardingSteps } from './OnboardingSteps';
 import { Route } from '..';
@@ -10,8 +11,13 @@ import VacademyVSmartLogo from '@/components/core/vsmart-logo';
 // import { toast } from 'sonner';
 
 export function OnboardingComponent() {
+    const { t } = useTranslation('signupOnboardingComponent');
     const searchParams = Route.useSearch();
-    const steps = ['Organization Setup', 'Organization Theme', 'Add Your Details'];
+    const steps = [
+        t('steps.organizationSetup'),
+        t('steps.organizationTheme'),
+        t('steps.addYourDetails'),
+    ];
     const [currentStep, setCurrentStep] = useState(0);
     const [completedSteps, setCompletedSteps] = useState([false, false]);
 
@@ -63,9 +69,7 @@ export function OnboardingComponent() {
                         {searchParams.volt && <VacademyVoltLogo className="w-24 lg:w-auto" />}
                         {searchParams.vsmart && <VacademyVSmartLogo className="w-24 lg:w-auto" />}
                     </div>
-                    <p className="mt-2 text-sm lg:text-base">
-                        Fast-track your access in 3 steps—explore the tool now!
-                    </p>
+                    <p className="mt-2 text-sm lg:text-base">{t('fastTrackTagline')}</p>
                     <Separator className="my-2 lg:my-6" />
                     <CreateOnboardingSidebar
                         steps={steps}

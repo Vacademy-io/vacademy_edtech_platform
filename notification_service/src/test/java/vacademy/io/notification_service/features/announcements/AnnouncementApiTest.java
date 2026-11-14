@@ -9,11 +9,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.CreateAnnouncementRequest;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -24,6 +27,15 @@ class AnnouncementApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+
+    private static CustomUserDetails principal(String userId, String role) {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(userId);
+        dto.setUsername(userId + "@example.com");
+        dto.setFullName(userId);
+        dto.setAuthorities(List.of(role));
+        return new CustomUserDetails(dto);
+    }
 
     private CreateAnnouncementRequest sampleRequest() {
         CreateAnnouncementRequest req = new CreateAnnouncementRequest();
@@ -80,7 +92,7 @@ class AnnouncementApiTest {
 
         String id = objectMapper.readTree(postResult.getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(get("/notification-service/v1/announcements/" + id))
+        mockMvc.perform(get("/notification-service/v1/announcements/" + id).header("clientId", "INST_TEST").with(user(principal("admin-1", "ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Test Announcement"));
     }

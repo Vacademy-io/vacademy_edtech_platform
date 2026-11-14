@@ -1,0 +1,52 @@
+{
+    "eyebrow": "طلب القبول",
+    "status": {
+        "admitted": "تم القبول",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "pending": "قيد الانتظار",
+        "underReview": "قيد المراجعة",
+        "submitted": "تم الإرسال"
+    },
+    "stageSteps": {
+        "submitted": "تم الإرسال",
+        "review": "قيد المراجعة",
+        "decision": "القرار"
+    },
+    "hero": {
+        "trackingId": "رقم التتبع: {{id}}",
+        "stage": "المرحلة: {{stage}}"
+    },
+    "empty": {
+        "title": "لم يتم العثور على طلب",
+        "hint": "لا يوجد طلب مرتبط بهذا المتعلم حتى الآن."
+    },
+    "error": {
+        "title": "تعذر تحميل تفاصيل الطلب",
+        "hint": "حدث خطأ أثناء جلب الطلب. يرجى المحاولة مرة أخرى."
+    },
+    "sections": {
+        "studentInformation": "معلومات الطالب",
+        "parentInformation": "معلومات ولي الأمر",
+        "applicationTimeline": "الجدول الزمني للطلب"
+    },
+    "fields": {
+        "fullName": "الاسم الكامل",
+        "dateOfBirth": "تاريخ الميلاد",
+        "gender": "الجنس",
+        "classAppliedFor": "الصف المتقدم إليه",
+        "fatherName": "اسم الأب",
+        "motherName": "اسم الأم",
+        "applyingForClass": "الصف المتقدم للالتحاق به",
+        "academicYear": "العام الدراسي",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "address": "العنوان",
+        "trackingId": "رقم التتبع",
+        "currentStage": "المرحلة الحالية",
+        "stageStatus": "حالة المرحلة",
+        "createdAt": "تاريخ الإنشاء",
+        "lastUpdated": "آخر تحديث"
+    },
+    "notAvailable": "غير متاح"
+}

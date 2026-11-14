@@ -7,6 +7,19 @@ import {
   type QuestionDto,
 } from "../types/assessment";
 import { safeParse } from "@/lib/storage";
+import {
+  CBE_QUESTION_TYPE,
+  isCbeAnswerEmpty,
+  parseCbeConfig,
+  type CbeAnswer,
+  type CbeConfig,
+} from "@/components/cbe/types";
+import {
+  effectiveAnswerCommit,
+  resolveExamTheme,
+} from "@/components/common/questionLiveTest/themes";
+import type { AnswerCommit } from "@/types/exam-theme";
+import { isForwardSectionStep } from "@/components/common/questionLiveTest/engine/navigation-logic";
 
 const LEGACY_STATE_KEY_PREFIX = "ASSESSMENT_STATE_";
 
@@ -17,6 +30,41 @@ const getAssessmentIdFromStorage = async (): Promise<string | null> => {
   const { value } = await Storage.get({ key: "InstructionID_and_AboutID" });
   const parsed = safeParse<{ assessment_id?: string } | null>(value, null);
   return parsed?.assessment_id ?? null;
+};
+
+const isQuotaExceeded = (error: unknown): boolean =>
+  error instanceof DOMException &&
+  (error.name === "QuotaExceededError" ||
+    error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+    error.code === 22);
+
+/**
+ * Removes every persisted live-test snapshot except `keepKey`. Each snapshot
+ * holds the whole assessment (all question HTML), so a learner who has taken
+ * many tests can fill the ~5MB localStorage quota with them.
+ */
+const purgeOtherAssessmentStates = async (keepKey: string) => {
+  const { keys } = await Storage.keys();
+  await Promise.all(
+    keys
+      .filter((key) => key.startsWith(LEGACY_STATE_KEY_PREFIX) && key !== keepKey)
+      .map((key) => Storage.remove({ key }))
+  );
+};
+
+/** Marks a snapshot saved without `assessment` because storage was full. */
+const SLIM_SNAPSHOT_FLAG = "__slimSnapshot";
+
+// Logged once per page load; saveState runs every few seconds.
+let localSaveSkippedLogged = false;
+
+/** Drops an attempt's local snapshot (current and legacy key) once it is submitted. */
+export const removePersistedAssessmentState = async (attemptId: string) => {
+  const assessmentId = await getAssessmentIdFromStorage();
+  if (assessmentId) {
+    await Storage.remove({ key: buildStateKey(assessmentId, attemptId) });
+  }
+  await Storage.remove({ key: `${LEGACY_STATE_KEY_PREFIX}${attemptId}` });
 };
 
 /**
@@ -34,8 +82,14 @@ const getAssessmentIdFromStorage = async (): Promise<string | null> => {
 export const hasAnswerFor = (
   questionId: string,
   answers: Record<string, string[]>,
-  codingAnswers: Record<string, { sourceCode?: string }>
+  codingAnswers: Record<string, { sourceCode?: string }>,
+  cbeAnswers?: Record<string, CbeAnswer>,
+  /** The question's CBE config, so content identical to its template does not count. */
+  cbeConfig?: CbeConfig | null
 ): boolean => {
+  const cbe = cbeAnswers?.[questionId];
+  if (cbe && !isCbeAnswerEmpty(cbe, cbeConfig)) return true;
+
   const coding = codingAnswers?.[questionId];
   if (coding?.sourceCode && coding.sourceCode.trim().length > 0) return true;
 
@@ -45,6 +99,83 @@ export const hasAnswerFor = (
   return answer.some(
     (value) => value !== null && value !== undefined && String(value).trim() !== ""
   );
+};
+
+/**
+ * Whether the current question holds an answer: a chosen option / typed
+ * answer, or a CBE workspace holding more than its starting template. The
+ * footer uses it to enable "Clear response" and to label the primary button
+ * "Save & Next" (answered) or "Next" (not answered).
+ * Coding answers are left out on purpose: clearResponse does not touch them
+ * (the code editor keeps its own buffer), so enabling Clear would do nothing.
+ */
+export const canClearResponse = (
+  questionId: string | undefined,
+  state: {
+    assessment: AssessmentPreviewData | null | undefined;
+    answers: Record<string, string[]>;
+    cbeAnswers: Record<string, CbeAnswer>;
+  }
+): boolean =>
+  !!questionId &&
+  hasAnswerFor(
+    questionId,
+    state.answers,
+    {},
+    state.cbeAnswers,
+    cbeConfigOf(state.assessment, questionId)
+  );
+
+/** The learner-safe CBE config of a question in the loaded paper, or null. */
+export const cbeConfigOf = (
+  assessment: AssessmentPreviewData | null | undefined,
+  questionId: string
+): CbeConfig | null => {
+  for (const section of assessment?.section_dtos ?? []) {
+    const question = section.question_preview_dto_list?.find(
+      (q) => q.question_id === questionId
+    );
+    if (question) {
+      return question.question_type === CBE_QUESTION_TYPE
+        ? parseCbeConfig(question.evaluation_json)
+        : null;
+    }
+  }
+  return null;
+};
+
+/**
+ * How a picked answer is saved for the loaded paper: `auto` (counts at once,
+ * the default) or `explicit` (a draft until Save & Next commits it). Comes
+ * from the assessment's exam theme; see `themes/layouts.ts`.
+ */
+export const answerCommitModeOf = (state: {
+  assessment: AssessmentPreviewData | null | undefined;
+}): AnswerCommit =>
+  effectiveAnswerCommit(resolveExamTheme(state.assessment?.exam_interface));
+
+/**
+ * The answer the question pane shows: the unsaved draft when there is one,
+ * else the saved answer. Drafts exist only in explicit mode, so in auto mode
+ * this is always the saved answer.
+ */
+export const displayedAnswerFor = (
+  state: {
+    answers: Record<string, string[]>;
+    draftAnswers: Record<string, string[]>;
+  },
+  questionId: string
+): string[] | undefined => state.draftAnswers[questionId] ?? state.answers[questionId];
+
+/** `draftAnswers` without one question's entry (the same object when it has none). */
+const withoutDraft = (
+  draftAnswers: Record<string, string[]>,
+  questionId: string | undefined
+): Record<string, string[]> => {
+  if (!questionId || !(questionId in draftAnswers)) return draftAnswers;
+  const next = { ...draftAnswers };
+  delete next[questionId];
+  return next;
 };
 
 interface PdfFile {
@@ -96,17 +227,35 @@ interface AssessmentStore {
   currentQuestionIndex: number | null;
   questionStates: Record<string, QuestionState>;
   answers: Record<string, string[]>;
+  /**
+   * Explicit-commit mode only: picks not yet saved with Save & Next. Never
+   * persisted, autosaved or submitted; leaving the question discards it.
+   */
+  draftAnswers: Record<string, string[]>;
   codingAnswers: Record<string, CodingAnswerData>;
+  /** CBE_RESPONSE answers by question id (contract §4 `answer`). */
+  cbeAnswers: Record<string, CbeAnswer>;
+  /** Blocked pastes (text not copied inside the CBE workspace) by question id. */
+  cbePasteAttempts: Record<string, number>;
   sectionTimers: Record<number, SectionTimer>;
   questionTimers: Record<string, number>;
   setAssessment: (assessment: AssessmentPreviewData) => void;
   setCurrentSection: (sectionIndex: number) => void;
   setCurrentQuestion: (question: QuestionDto) => void;
   setQuestionState: (questionId: string, state: Partial<QuestionState>) => void;
+  /** Auto mode: saves the answer. Explicit mode: writes the draft only. */
   setAnswer: (questionId: string, answerId: string[]) => void;
+  /** Saves the question's draft as its answer (no-op without a draft). */
+  commitDraft: (questionId: string) => void;
+  /** Throws the question's unsaved draft away. */
+  discardDraft: (questionId: string) => void;
   setCodingAnswer: (questionId: string, data: CodingAnswerData) => void;
   incrementCodingPasteAttempt: (questionId: string) => void;
+  setCbeAnswer: (questionId: string, answer: CbeAnswer) => void;
+  incrementCbePasteAttempt: (questionId: string) => void;
   markForReview: (questionId: string) => void;
+  /** Sets (not toggles) the review flag, for "Mark for Review & Next". */
+  setMarkedForReview: (questionId: string, value: boolean) => void;
   clearResponse: (questionId: string) => void;
   updateSectionTimer: (sectionIndex: number, timeLeft: number) => void;
   updateQuestionTimer: (questionId: string, timeLeft: number) => void;
@@ -123,6 +272,9 @@ interface AssessmentStore {
   isSectionAvailable: (sectionIndex: number) => boolean;
   tabSwitchCount: number;
   incrementTabSwitchCount: () => void;
+  /** Set once by the proctoring layer when the admin's violation ceiling is hit; the navbar submits. */
+  proctorAutoSubmitRequested: boolean;
+  requestProctorAutoSubmit: () => void;
   saveState: () => Promise<void>;
   loadState: () => Promise<void>;
   clearPersistedState: () => Promise<void>;
@@ -146,7 +298,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   currentQuestionIndex: 0,
   questionStates: {},
   answers: {},
+  draftAnswers: {},
   codingAnswers: {},
+  cbeAnswers: {},
+  cbePasteAttempts: {},
   sectionTimers: {},
   questionTimers: {},
   questionStartTime: {},
@@ -161,7 +316,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       currentQuestionIndex: 0,
       questionStates: {},
       answers: {},
+      draftAnswers: {},
       codingAnswers: {},
+      cbeAnswers: {},
+      cbePasteAttempts: {},
       sectionTimers: {},
       questionTimers: {},
       questionStartTime: {},
@@ -210,7 +368,11 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
             isAnswered: hasAnswerFor(
               question.question_id,
               state.answers,
-              state.codingAnswers
+              state.codingAnswers,
+              state.cbeAnswers,
+              question.question_type === CBE_QUESTION_TYPE
+                ? parseCbeConfig(question.evaluation_json)
+                : null
             ),
             isVisited: previous?.isVisited ?? false,
             isMarkedForReview: previous?.isMarkedForReview ?? false,
@@ -249,6 +411,8 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         currentSection: 0,
         currentQuestion,
         questionStartTime,
+        // Unsaved picks never survive a (re)load of the paper.
+        draftAnswers: {},
       };
     }),
 
@@ -260,7 +424,15 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         const previousSectionsComplete = [...Array(sectionIndex)].every(
           (_, idx) => state.sectionTimers[idx]?.timeLeft === 0
         );
-        if (!previousSectionsComplete) return {};
+        // Sections without their own clocks open one after another: the step
+        // from the open section to the next one is always allowed.
+        const forwardStep = isForwardSectionStep(
+          false,
+          state.sectionTimers,
+          state.currentSection,
+          sectionIndex
+        );
+        if (!previousSectionsComplete && !forwardStep) return {};
       }
 
       const updatedTimers = { ...state.sectionTimers };
@@ -280,6 +452,12 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   setCurrentQuestion: (question) =>
     set((state) => ({
       currentQuestion: question,
+      // Leaving a question without saving discards its unsaved pick (explicit
+      // mode; there are no drafts in auto mode).
+      draftAnswers:
+        state.currentQuestion?.question_id === question.question_id
+          ? state.draftAnswers
+          : withoutDraft(state.draftAnswers, state.currentQuestion?.question_id),
       questionStates: {
         ...state.questionStates,
         [question.question_id]: {
@@ -302,16 +480,50 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
     })),
 
   setAnswer: (questionId, answerIds) =>
-    set((state) => ({
-      answers: { ...state.answers, [questionId]: answerIds },
-      questionStates: {
-        ...state.questionStates,
-        [questionId]: {
-          ...state.questionStates[questionId],
-          isAnswered: answerIds.length > 0,
+    set((state) => {
+      if (answerCommitModeOf(state) === "explicit") {
+        return {
+          draftAnswers: { ...state.draftAnswers, [questionId]: answerIds },
+        };
+      }
+      return {
+        answers: { ...state.answers, [questionId]: answerIds },
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: answerIds.length > 0,
+          },
         },
-      },
-    })),
+      };
+    }),
+
+  commitDraft: (questionId) =>
+    set((state) => {
+      const pending = state.draftAnswers[questionId];
+      if (!pending) return {};
+      // A number box holding only "-", "." or "-." has no number in it yet:
+      // saving it saves no answer (it would otherwise count as Answered).
+      const draft =
+        pending.length === 1 && /^(?:-|-?\.)$/.test(pending[0] ?? "") ? [] : pending;
+      return {
+        answers: { ...state.answers, [questionId]: draft },
+        draftAnswers: withoutDraft(state.draftAnswers, questionId),
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: hasAnswerFor(questionId, { [questionId]: draft }, {}),
+          },
+        },
+      };
+    }),
+
+  discardDraft: (questionId) =>
+    set((state) => {
+      const draftAnswers = withoutDraft(state.draftAnswers, questionId);
+      return draftAnswers === state.draftAnswers ? {} : { draftAnswers };
+    }),
 
   setCodingAnswer: (questionId, data) =>
     set((state) => ({
@@ -322,6 +534,31 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
           ...state.questionStates[questionId],
           isAnswered: !!data.sourceCode && data.sourceCode.length > 0,
         },
+      },
+    })),
+
+  setCbeAnswer: (questionId, answer) =>
+    set((state) => ({
+      cbeAnswers: { ...state.cbeAnswers, [questionId]: answer },
+      questionStates: {
+        ...state.questionStates,
+        [questionId]: {
+          ...state.questionStates[questionId],
+          // Typing into the workspace means the learner is on this question.
+          isVisited: true,
+          isAnswered: !isCbeAnswerEmpty(
+            answer,
+            cbeConfigOf(state.assessment, questionId)
+          ),
+        },
+      },
+    })),
+
+  incrementCbePasteAttempt: (questionId) =>
+    set((state) => ({
+      cbePasteAttempts: {
+        ...state.cbePasteAttempts,
+        [questionId]: (state.cbePasteAttempts[questionId] || 0) + 1,
       },
     })),
 
@@ -371,17 +608,44 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       },
     })),
 
-  clearResponse: (questionId) =>
-    set((state) => ({
-      answers: { ...state.answers, [questionId]: [] },
-      questionStates: {
-        ...state.questionStates,
-        [questionId]: {
-          ...state.questionStates[questionId],
-          isAnswered: false,
+  setMarkedForReview: (questionId, value) =>
+    set((state) => {
+      // Guard: a question with no state yet (unlike markForReview, never throws).
+      const previous: QuestionState | undefined = state.questionStates[questionId];
+      return {
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: previous
+            ? { ...previous, isMarkedForReview: value }
+            : {
+                isAnswered: false,
+                isVisited: false,
+                isDisabled: false,
+                isMarkedForReview: value,
+              },
         },
-      },
-    })),
+      };
+    }),
+
+  clearResponse: (questionId) =>
+    set((state) => {
+      // Dropping the entry (not storing an empty one) puts the CBE workspace
+      // back on each part's starting template.
+      const cbeAnswers = { ...state.cbeAnswers };
+      delete cbeAnswers[questionId];
+      return {
+        answers: { ...state.answers, [questionId]: [] },
+        draftAnswers: withoutDraft(state.draftAnswers, questionId),
+        cbeAnswers,
+        questionStates: {
+          ...state.questionStates,
+          [questionId]: {
+            ...state.questionStates[questionId],
+            isAnswered: false,
+          },
+        },
+      };
+    }),
 
   updateSectionTimer: (sectionIndex, timeLeft) =>
     set((state) => {
@@ -412,6 +676,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
             sectionTimers: updatedTimers,
             currentSection: nextSectionIndex,
             currentQuestion: firstQuestion,
+            draftAnswers: withoutDraft(
+              state.draftAnswers,
+              state.currentQuestion?.question_id
+            ),
           };
         } else {
           if (state.entireTestTimer <= 0) {
@@ -592,6 +860,9 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   incrementTabSwitchCount: () =>
     set((state) => ({ tabSwitchCount: state.tabSwitchCount + 1 })),
 
+  proctorAutoSubmitRequested: false,
+  requestProctorAutoSubmit: () => set({ proctorAutoSubmitRequested: true }),
+
   entireTestTimer: 0,
   setEntireTestTimer: (time) => set({ entireTestTimer: time }),
 
@@ -620,6 +891,10 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
       questionStates: state.questionStates,
       answers: state.answers,
       codingAnswers: state.codingAnswers,
+      // Spreadsheet answers can be large (capped at 300 KB each); if they push
+      // the snapshot past the storage quota, see the fallbacks below.
+      cbeAnswers: state.cbeAnswers,
+      cbePasteAttempts: state.cbePasteAttempts,
       sectionTimers: state.sectionTimers,
       questionTimers: state.questionTimers,
       entireTestTimer: state.entireTestTimer,
@@ -636,10 +911,40 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         : null,
     };
 
-    await Storage.set({
-      key: buildStateKey(assessmentId, attemptId),
-      value: JSON.stringify(dataToSave),
-    });
+    const key = buildStateKey(assessmentId, attemptId);
+    const value = JSON.stringify(dataToSave);
+
+    try {
+      await Storage.set({ key, value });
+    } catch (error) {
+      if (!isQuotaExceeded(error)) throw error;
+      // Storage is full, usually with snapshots of earlier attempts. Clear
+      // them and retry once; the server copy stays the source of truth, so a
+      // skipped local snapshot must not break the test.
+      try {
+        await purgeOtherAssessmentStates(key);
+        await Storage.set({ key, value });
+      } catch {
+        // Never leave the OLDER snapshot behind: a reload would restore its
+        // stale answers and the next server autosave would overwrite newer
+        // work with them. Try a slim snapshot without the paper (loadState
+        // re-reads it from "Assessment_questions"); failing that, drop it.
+        try {
+          const { assessment: _paper, ...slim } = dataToSave;
+          void _paper;
+          await Storage.set({
+            key,
+            value: JSON.stringify({ ...slim, [SLIM_SNAPSHOT_FLAG]: true }),
+          });
+        } catch (slimError) {
+          await Storage.remove({ key }).catch(() => undefined);
+          if (!localSaveSkippedLogged) {
+            localSaveSkippedLogged = true;
+            console.warn("saveState: storage full, local snapshot dropped", slimError);
+          }
+        }
+      }
+    }
   },
 
   loadState: async () => {
@@ -678,18 +983,23 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
     );
     if (!parsedState) return;
 
+    // A slim snapshot (saved when storage was full) has no paper: take it
+    // from the attempt's stored question payload.
+    if (parsedState[SLIM_SNAPSHOT_FLAG]) {
+      delete parsedState[SLIM_SNAPSHOT_FLAG];
+      if (!parsedAssessment) return;
+      parsedState.assessment = parsedAssessment;
+    }
+
     set(parsedState);
   },
 
   clearPersistedState: async () => {
     const state = get();
     const attemptId = state?.assessment?.attempt_id;
-    const assessmentId = await getAssessmentIdFromStorage();
-    if (!attemptId || !assessmentId) return;
+    if (!attemptId) return;
 
-    await Storage.remove({ key: buildStateKey(assessmentId, attemptId) });
-    // Clean up the legacy key too, just in case it was migrated mid-session.
-    await Storage.remove({ key: `${LEGACY_STATE_KEY_PREFIX}${attemptId}` });
+    await removePersistedAssessmentState(attemptId);
   },
 
   setQuestionStartTime: (questionId: string, startTime: number) =>

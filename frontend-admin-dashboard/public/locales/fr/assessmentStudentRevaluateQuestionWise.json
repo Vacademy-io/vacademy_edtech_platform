@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "Réévaluation question par question"
+    },
+    "table": {
+        "columnQNo": "N° Q.",
+        "columnQuestion": "Question"
+    },
+    "actions": {
+        "revaluate": "Réévaluer"
+    },
+    "toasts": {
+        "revaluateSuccess": "La tentative de cet élève pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !"
+    }
+}

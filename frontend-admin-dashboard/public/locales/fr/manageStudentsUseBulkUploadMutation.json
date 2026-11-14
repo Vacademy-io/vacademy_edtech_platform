@@ -1,0 +1,7 @@
+{
+    "toast": {
+        "uploadSuccess": "Fichier CSV téléchargé avec succès",
+        "uploadFailed": "Échec du téléchargement des étudiants",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+    }
+}

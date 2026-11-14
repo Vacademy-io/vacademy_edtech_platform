@@ -1,0 +1,146 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "login": "Login",
+    "unknownInstructor": "Unknown Instructor"
+  },
+  "courseCard": {
+    "noTagsAvailable": "No tags available",
+    "moreTags": "+ {{count}} more",
+    "viewButton": "View {{course}}"
+  },
+  "catalogPage": {
+    "bannerAlt": "{{course}} Banner"
+  },
+  "header": {
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "impact": "Impact",
+      "getInvolved": "Get Involved",
+      "contact": "Contact"
+    },
+    "loadingLogoAriaLabel": "Loading logo",
+    "toggleMobileMenuAriaLabel": "Toggle mobile menu",
+    "logoAlt": "logo",
+    "donate": "Donate"
+  },
+  "donationDialog": {
+    "closeAriaLabel": "Close",
+    "continueButton": "Continue",
+    "errors": {
+      "amountRequired": "Please select or enter a donation amount",
+      "invalidEmail": "Please enter a valid email address"
+    }
+  },
+  "coursesPage": {
+    "untitledPackage": "Untitled Package",
+    "defaultLevelName": "Beginner",
+    "empty": {
+      "title": "No {{courses}} available",
+      "description": "Try adjusting your search criteria or check back later for new {{courses}}."
+    }
+  },
+  "filterPanel": {
+    "title": "Filters",
+    "clearAll": "Clear All",
+    "apply": "Apply",
+    "showLess": "Show Less",
+    "showMore": "Show More",
+    "noItemsAvailable": "No {{title}} available.",
+    "filtersUnavailable": "{{title}} filters are currently unavailable."
+  },
+  "footer": {
+    "tagline": "Empowering children through education",
+    "logoAlt": "Logo",
+    "quickLinks": "Quick Links",
+    "contactUs": "Contact Us",
+    "websiteLabel": "Codecircle.org",
+    "emailLabel": "Email:",
+    "newsletterTitle": "Subscribe to our Newsletter",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "Your email",
+    "subscribeButton": "Subscribe",
+    "copyright": "© 2025 Codecircle.org. All rights reserved",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
+  },
+  "hero": {
+    "bannerAlt": "{{course}} catalog banner"
+  },
+  "cta": {
+    "titlePrefix": "Want to Create Your Own",
+    "titleSuffix": "?",
+    "subtitle1": "Share your knowledge with the world!",
+    "subtitle2": "Log in and start building your own {{courses}} for others to explore and learn from."
+  },
+  "pagination": {
+    "ariaLabel": "Pagination",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "searchAndSortBar": {
+    "searchPlaceholder": "Search {{courses}} by title ...",
+    "sortNewest": "Sort by: Newest",
+    "sortOldest": "Sort by: Oldest"
+  },
+  "supporters": {
+    "titlePrefix": "Our",
+    "titleHighlight": "Supporters"
+  },
+  "donation": {
+    "amountStep": {
+      "loadingOptions": "Loading payment options...",
+      "other": "Other",
+      "minAmountPlaceholder": "{{currencySymbol}} (min {{currencySymbol}}{{minAmount}})"
+    },
+    "summary": {
+      "title": "Donation Summary",
+      "amountLabel": "Amount:",
+      "emailLabel": "Email:",
+      "editButton": "Edit"
+    },
+    "emailStep": {
+      "emailLabel": "Your Email",
+      "emailPlaceholder": "you@example.com",
+      "receiptNote": "We'll send your receipt to this email address"
+    },
+    "header": {
+      "title": "Support Free Learning",
+      "subtitle": "Choose an amount to donate"
+    },
+    "paymentStep": {
+      "loadingGateway": "Loading payment gateway...",
+      "gatewayUnavailable": "Payment gateway not available",
+      "cardDetailsLabel": "Card Details",
+      "errors": {
+        "gatewayNotConfigured": "Payment gateway not configured",
+        "failedToLoad": "Failed to load payment gateway"
+      }
+    },
+    "successStep": {
+      "thankYouTitle": "Thank You!",
+      "donationProcessingPrefix": "Your donation of",
+      "donationProcessingSuffix": "is being processed.",
+      "thankYouMessage": "Thank you for supporting free learning and making education accessible to everyone!",
+      "paymentFailedTitle": "Payment Failed",
+      "paymentFailedPrefix": "We couldn't process your donation of",
+      "paymentFailedSuffix": ".",
+      "paymentIssueTitle": "Payment Issue",
+      "tryAgainButton": "Try Again"
+    },
+    "paymentForm": {
+      "processing": "Processing...",
+      "donateNow": "Donate Now",
+      "securePaymentBy": "Secure payment powered by",
+      "stripeBrand": "Stripe",
+      "errors": {
+        "stripeNotLoaded": "Stripe is not loaded. Please refresh the page.",
+        "cardElementNotFound": "Card element not found.",
+        "paymentMethodCreationFailed": "Payment method creation failed.",
+        "paymentProcessingFailed": "Payment processing failed",
+        "paymentFailedRetry": "Payment failed. Please try again."
+      }
+    }
+  }
+}

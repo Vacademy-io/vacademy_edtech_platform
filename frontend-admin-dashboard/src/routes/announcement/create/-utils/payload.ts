@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type {
     CreateAnnouncementRequest,
     CustomFieldFilter,
@@ -108,13 +109,14 @@ export function expandRecipients(
                 break;
 
             case 'AUDIENCE':
-                if (rule.campaignId)
+                rule.campaignIds.forEach((id) => {
                     out.push({
                         recipientType: 'AUDIENCE',
-                        recipientId: rule.campaignId,
-                        recipientName: rule.campaignName,
+                        recipientId: id,
+                        recipientName: rule.campaignNames[id] || undefined,
                         ...shared,
                     });
+                });
                 break;
 
             case 'CUSTOM_FIELD_FILTER':
@@ -211,6 +213,9 @@ export function buildCreatePayload(
                     fromName: sender?.name,
                     template: input.email.templateName || undefined,
                     previewText: input.previewText || undefined,
+                    ...(input.email.referralInviteId
+                        ? { referral_enroll_invite_id: input.email.referralInviteId }
+                        : {}),
                 },
             };
         }
@@ -226,6 +231,9 @@ export function buildCreatePayload(
                     template_name: input.whatsapp.templateName,
                     language_code: input.whatsapp.languageCode || 'en',
                     dynamic_values: buildWhatsAppValues(input.whatsapp, input.selectedWaTemplate),
+                    ...(input.whatsapp.referralInviteId
+                        ? { referral_enroll_invite_id: input.whatsapp.referralInviteId }
+                        : {}),
                     ...(headerKind
                         ? {
                               header_type: headerKind,
@@ -292,7 +300,7 @@ export interface ApiFailure {
 }
 
 /** Turn an axios failure into inline field errors plus one sentence for the toast. */
-export function interpretApiError(err: unknown): ApiFailure {
+export function interpretApiError(t: TFunction, err: unknown): ApiFailure {
     const typed = err as {
         response?: {
             status?: number;
@@ -321,13 +329,11 @@ export function interpretApiError(err: unknown): ApiFailure {
     const status = typed?.response?.status;
     const message =
         typed?.response?.data?.message ||
-        (paths.length ? 'Some fields need fixing before this can be created.' : '') ||
-        (status === 401 || status === 403
-            ? 'You do not have permission to send this announcement.'
-            : '') ||
-        (status && status >= 500 ? 'The announcement service is unavailable right now.' : '') ||
+        (paths.length ? t('error.fixFieldsBeforeCreate') : '') ||
+        (status === 401 || status === 403 ? t('error.noPermission') : '') ||
+        (status && status >= 500 ? t('error.serviceUnavailable') : '') ||
         typed?.message ||
-        'Could not create the announcement. Please try again.';
+        t('error.genericCreateFailure');
 
     return {
         fieldErrors,

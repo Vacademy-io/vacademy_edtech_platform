@@ -1,0 +1,12 @@
+{
+    "adjustmentType": {
+        "earning": "Gain",
+        "deduction": "Retenue"
+    },
+    "runScope": {
+        "regular": "Régulier",
+        "offCycle": "Hors cycle",
+        "fnf": "Solde de tout compte",
+        "bonus": "Prime"
+    }
+}

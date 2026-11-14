@@ -1,0 +1,53 @@
+{
+    "validation": {
+        "batchRequired": "Select at least one batch",
+        "studentRequired": "Learner is required"
+    },
+    "toast": {
+        "exportSuccess": "Report exported",
+        "exportFailed": "Failed to export PDF",
+        "csvExportSuccess": "CSV exported",
+        "csvExportFailed": "Failed to export CSV",
+        "learnerNotInBatches": "This learner is not enrolled in any of the selected batches."
+    },
+    "form": {
+        "selectStudent": "Select Student",
+        "searchStudent": "Search Student...",
+        "noStudentsFound": "No students found",
+        "generateReport": "Generate Report",
+        "fixErrorsPrefix": "Please fix the following errors:",
+        "loadingStudents": "Loading…",
+        "learnerHint": "{{count}} available",
+        "pickBatchFirst": "Pick a {{batch}} first."
+    },
+    "report": {
+        "exporting": "Exporting...",
+        "exportPdf": "Export PDF",
+        "subjectWiseHeading": "Subject-wise Progress Report",
+        "exportCsv": "Export CSV",
+        "batchCount": "{{term}} · {{count}} selected",
+        "batchLoadFailed": "Could not load the report for {{name}}."
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "{{batchTerm}} {{subjectTerm}}-wise Progress",
+        "learnerProgressReport": "Learner Progress Report",
+        "learnerLabel": "Learner",
+        "termCompleted": "{{term}} Completed",
+        "termsTracked": "{{term}}s Tracked",
+        "termWiseProgress": "{{term}}-wise Progress",
+        "termColonName": "{{term}}: {{name}}",
+        "completed": "Completed",
+        "dailyTimeAvg": "Daily Time (Avg)",
+        "termDailyTimeAvg": "{{term}} Daily Time (Avg)",
+        "termWiseProgressReport": "{{term}}-wise Progress Report",
+        "learningProgressReport": "Learning Progress Report"
+    },
+    "csv": {
+        "fileStem": "learner-progress",
+        "title": "{{term}}-wise progress",
+        "moduleCompleted": "{{module}} completed (%)",
+        "moduleCompletedByBatch": "{{module}} completed by {{batch}} (%)",
+        "dailyTimeMin": "Daily time spent avg (min)",
+        "dailyTimeByBatchMin": "Daily time spent by {{batch}} avg (min)"
+    }
+}

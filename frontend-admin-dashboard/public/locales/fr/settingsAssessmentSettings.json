@@ -1,0 +1,36 @@
+{
+    "header": {
+        "title": "Paramètres d'évaluation",
+        "subtitle": "Configurez les fonctionnalités d'évaluation pour votre établissement",
+        "saveChanges": "Enregistrer les modifications",
+        "saving": "Enregistrement..."
+    },
+    "loading": "Chargement des paramètres d'évaluation...",
+    "errors": {
+        "loadSettings": "Échec du chargement des paramètres d'évaluation",
+        "saveSettings": "Échec de l'enregistrement des paramètres d'évaluation"
+    },
+    "toasts": {
+        "settingsSaved": "Paramètres d'évaluation enregistrés avec succès"
+    },
+    "offlineEntry": {
+        "title": "Saisie de données hors ligne",
+        "description": "Permettez aux utilisateurs de saisie de données de saisir manuellement les réponses des élèves issues des tests papier. Cela active les analyses pour les examens en ligne comme hors ligne.",
+        "enableLabel": "Activer la saisie hors ligne",
+        "enableHint": "Affiche le bouton « Saisie hors ligne » sur la page des soumissions d'évaluation"
+    },
+    "reportBranding": {
+        "title": "Image de marque des rapports d'évaluation",
+        "description": "Personnalisez l'apparence des rapports PDF générés pour les élèves. Ces paramètres s'appliquent à tous les rapports d'évaluation de votre établissement."
+    },
+    "aiCopyCheck": {
+        "title": "Correction IA des copies",
+        "description": "Comment l'IA corrige les copies : où apparaissent les remarques de l'enseignant, les consignes suivies par l'IA et le signalement des fautes d'orthographe et de grammaire. Présélectionné à l'envoi des copies, modifiable pour chaque lot."
+    },
+    "assessmentFolders": {
+        "title": "Dossiers d’évaluations",
+        "description": "Regroupez les évaluations dans des dossiers comme Anglais ou Maths. Les élèves voient d’abord les dossiers, puis en ouvrent un pour voir ses tests.",
+        "enableLabel": "Organiser les évaluations en dossiers",
+        "enableHint": "Affiche un panneau de dossiers sur la liste des évaluations, une étape de dossier après la publication et des cartes de dossiers dans l’application élève."
+    }
+}

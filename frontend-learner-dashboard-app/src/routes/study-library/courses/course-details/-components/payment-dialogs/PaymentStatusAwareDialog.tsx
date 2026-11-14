@@ -69,8 +69,8 @@ export const PaymentStatusAwareDialog: React.FC<PaymentStatusAwareDialogProps> =
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+          <div className="text-center space-y-4">
+            <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
             <p className="text-gray-600">Checking payment status...</p>
           </div>
         </div>
@@ -83,9 +83,9 @@ export const PaymentStatusAwareDialog: React.FC<PaymentStatusAwareDialogProps> =
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-4">Status Check Error</h3>
-            <p className="text-red-600 mb-4">{error.message}</p>
+          <div className="text-center space-y-4">
+            <h3 className="text-lg font-semibold">Status Check Error</h3>
+            <p className="text-red-600">{error.message}</p>
             <div className="space-x-2">
               <Button onClick={() => refetch()} variant="outline">
                 Try Again
@@ -105,10 +105,10 @@ export const PaymentStatusAwareDialog: React.FC<PaymentStatusAwareDialogProps> =
     return (
       <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
         <div className="bg-white rounded-lg p-6 max-w-sm">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-4">Already Enrolled</h3>
-            <p className="text-gray-600 mb-4">
-              You are already enrolled in this course.
+          <div className="text-center space-y-4">
+            <h3 className="text-lg font-semibold">Already Enrolled</h3>
+            <p className="text-gray-600">
+              You are already enrolled in this {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
             </p>
             <Button onClick={() => onOpenChange(false)} variant="outline">
               Close
@@ -152,10 +152,10 @@ export const PaymentStatusAwareDialog: React.FC<PaymentStatusAwareDialogProps> =
       return (
         <div className="fixed inset-0 z-50 bg-black/60 animate-fade-in flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 max-w-sm">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-4">Payment Required</h3>
-              <p className="text-gray-600 mb-4">
-                You have an active plan but need to complete payment for this course.
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">Payment Required</h3>
+              <p className="text-gray-600">
+                You have an active plan but need to complete payment for this {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
               </p>
               <div className="space-x-2">
                 <Button onClick={() => onOpenChange(false)} variant="outline">

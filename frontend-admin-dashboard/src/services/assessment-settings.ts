@@ -7,7 +7,10 @@ import {
     AssessmentSettingsResponse,
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
+    mergeEvalezySettings,
     mergeExamExperience,
+    normalizeCommentPlacement,
+    normalizeStudentMapping,
 } from '@/types/assessment-settings';
 
 const SETTINGS_KEY = 'ASSESSMENT_SETTING';
@@ -25,7 +28,9 @@ interface CachedSettings {
     instituteId: string;
 }
 
-const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): AssessmentSettingsData => {
+export const mergeWithDefaults = (
+    settings: Partial<AssessmentSettingsData>
+): AssessmentSettingsData => {
     return {
         offlineEntry: {
             ...DEFAULT_ASSESSMENT_SETTINGS.offlineEntry,
@@ -40,6 +45,26 @@ const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): Assessmen
             roles: settings?.resultNotifications?.roles ?? {},
         },
         examExperience: mergeExamExperience(settings?.examExperience),
+        aiCopyCheck: {
+            commentPlacement: normalizeCommentPlacement(settings?.aiCopyCheck?.commentPlacement),
+            ...(typeof settings?.aiCopyCheck?.instructions === 'string' && {
+                instructions: settings.aiCopyCheck.instructions,
+            }),
+            ...(settings?.aiCopyCheck?.languageFeedback === 'HIGHLIGHT' && {
+                languageFeedback: 'HIGHLIGHT' as const,
+            }),
+            ...(settings?.aiCopyCheck?.penStyle && {
+                penStyle: settings.aiCopyCheck.penStyle,
+            }),
+            // Kept only when it is a real choice; absent reads as ASK.
+            ...(normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping) !== 'ASK' && {
+                studentMapping: normalizeStudentMapping(settings?.aiCopyCheck?.studentMapping),
+            }),
+        },
+        assessmentFolders: {
+            enabled: settings?.assessmentFolders?.enabled === true,
+        },
+        evalezy: mergeEvalezySettings(settings?.evalezy),
     };
 };
 
@@ -119,6 +144,21 @@ export const getAssessmentSettings = async (
 
 export const getAssessmentSettingsFromCache = (): AssessmentSettingsData => {
     return getCachedSettings() || DEFAULT_ASSESSMENT_SETTINGS;
+};
+
+/**
+ * For a form that saves the whole document. Unlike getAssessmentSettings, a failed read throws
+ * instead of returning the defaults, which a later save would write over the institute's settings.
+ */
+export const loadAssessmentSettingsStrict = async (): Promise<AssessmentSettingsData> => {
+    const instituteId = getInstituteId();
+    if (!instituteId) throw new Error('Institute ID not found');
+    const response = await authenticatedAxiosInstance.get<AssessmentSettingsResponse>(
+        `${BASE_URL}/admin-core-service/institute/setting/v1/get`,
+        { params: { instituteId, settingKey: SETTINGS_KEY } }
+    );
+    const saved = response.data?.data;
+    return saved && Object.keys(saved).length > 0 ? mergeWithDefaults(saved) : DEFAULT_ASSESSMENT_SETTINGS;
 };
 
 export const saveAssessmentSettings = async (settings: AssessmentSettingsData): Promise<void> => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Download } from 'lucide-react';
+import { DownloadSimple } from '@phosphor-icons/react';
 import {
     type RenderSettings,
     type RenderResolution,
@@ -32,6 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'video-render-settings';
+const NS = 'videoApiStudioRenderSettingsDialog';
 
 // Cheap #RRGGBB → rgba(...) helper for the preview's background-opacity
 // composition. Falls back to the raw hex if the input is malformed (so the
@@ -65,14 +67,13 @@ const CAPTION_PREVIEW_SIZE_REM: Record<CaptionSize, number> = {
  * — placeholder narration text + the user's live settings on a dark
  * canvas matching the chosen orientation.
  */
-// Realistic mid-length narration sample — long enough that the user can
-// judge font sizing and wrapping at "Large", short enough to fit two lines
-// in landscape. Shorter samples ("Sample text") under-tested the wrap behavior
-// and led to surprises at render time.
-const CAPTION_PREVIEW_SAMPLE = 'This is what your caption will look like at this size.';
-const CAPTION_PREVIEW_SAMPLE_KARAOKE_FIRST_WORD = 'This';
-const CAPTION_PREVIEW_SAMPLE_REST = ' is what your caption will look like at this size.';
-
+// The sample text is a realistic mid-length narration string — long enough
+// that the user can judge font sizing and wrapping at "Large", short enough
+// to fit two lines in landscape. Shorter samples ("Sample text") under-tested
+// the wrap behavior and led to surprises at render time. Translated catalogs
+// should aim for a similar length. The karaoke preview highlights the first
+// word, split on the first space so this works for any locale's translation
+// without needing separately-maintained "first word" / "rest" keys.
 function CaptionPreview({
     settings,
     isPortrait,
@@ -80,6 +81,13 @@ function CaptionPreview({
     settings: RenderSettings;
     isPortrait: boolean;
 }) {
+    const { t } = useTranslation(NS);
+    const previewSample = t('captionPreview.sampleText');
+    const firstSpaceIdx = previewSample.indexOf(' ');
+    const previewSampleFirstWord =
+        firstSpaceIdx === -1 ? previewSample : previewSample.slice(0, firstSpaceIdx);
+    const previewSampleRest = firstSpaceIdx === -1 ? '' : previewSample.slice(firstSpaceIdx);
+
     const bgRgba = hexToRgba(settings.captionBgColor, settings.captionBgOpacity / 100);
     const fontFamily = CAPTION_PREVIEW_FONT_FAMILY[settings.captionFontFamily];
     // 1080p target → preview is ~1/4 scale. Scale the stroke width down
@@ -96,7 +104,7 @@ function CaptionPreview({
                 'relative mx-auto overflow-hidden rounded-md bg-neutral-900 ring-1 ring-neutral-800',
                 isPortrait ? 'aspect-[9/16] h-48' : 'aspect-video h-36'
             )}
-            aria-label="Caption preview"
+            aria-label={t('captionPreview.ariaLabel')}
         >
             {/* Subtle gradient stripes mimic a "real" frame so the caption
                 isn't floating in a flat box — easier to judge contrast. */}
@@ -131,12 +139,12 @@ function CaptionPreview({
                     {settings.captionStyle === 'karaoke' ? (
                         <>
                             <span style={{ color: settings.captionHighlightColor }}>
-                                {CAPTION_PREVIEW_SAMPLE_KARAOKE_FIRST_WORD}
+                                {previewSampleFirstWord}
                             </span>
-                            {CAPTION_PREVIEW_SAMPLE_REST}
+                            {previewSampleRest}
                         </>
                     ) : (
-                        CAPTION_PREVIEW_SAMPLE
+                        previewSample
                     )}
                 </span>
             </div>
@@ -222,6 +230,7 @@ export function RenderSettingsDialog({
     isPortrait = false,
     initialSettings,
 }: RenderSettingsDialogProps) {
+    const { t } = useTranslation(NS);
     const [settings, setSettings] = useState<RenderSettings>(() => ({
         ...loadSettings(),
         ...(initialSettings ?? {}),
@@ -244,8 +253,15 @@ export function RenderSettingsDialog({
     };
 
     const resolutionLabel = (r: RenderResolution) => {
-        if (r === '720p') return isPortrait ? '720p (720×1280)' : '720p (1280×720)';
-        return isPortrait ? '1080p (1080×1920)' : '1080p (1920×1080)';
+        const dimensions =
+            r === '720p'
+                ? isPortrait
+                    ? '720×1280'
+                    : '1280×720'
+                : isPortrait
+                  ? '1080×1920'
+                  : '1920×1080';
+        return t('resolution.optionLabel', { resolution: r, dimensions });
     };
 
     return (
@@ -257,14 +273,14 @@ export function RenderSettingsDialog({
                 )}
             >
                 <DialogHeader>
-                    <DialogTitle>Render Settings</DialogTitle>
-                    <DialogDescription>Configure video output before rendering.</DialogDescription>
+                    <DialogTitle>{t('dialog.title')}</DialogTitle>
+                    <DialogDescription>{t('dialog.description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-2">
                     {/* Resolution */}
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium">Resolution</Label>
+                        <Label className="text-xs font-medium">{t('resolution.label')}</Label>
                         <ToggleGroup<RenderResolution>
                             options={['720p', '1080p']}
                             value={settings.resolution}
@@ -278,18 +294,18 @@ export function RenderSettingsDialog({
 
                     {/* FPS */}
                     <div className="space-y-2">
-                        <Label className="text-xs font-medium">Frame Rate</Label>
+                        <Label className="text-xs font-medium">{t('fps.label')}</Label>
                         <ToggleGroup<RenderFps>
                             options={[15, 20, 25, 30, 45, 60]}
                             value={settings.fps}
                             onChange={(v) => update('fps', v)}
                             labels={{
-                                '15': '15 fps',
-                                '20': '20 fps',
-                                '25': '25 fps',
-                                '30': '30 fps',
-                                '45': '45 fps',
-                                '60': '60 fps',
+                                '15': t('fps.optionLabel', { fps: 15 }),
+                                '20': t('fps.optionLabel', { fps: 20 }),
+                                '25': t('fps.optionLabel', { fps: 25 }),
+                                '30': t('fps.optionLabel', { fps: 30 }),
+                                '45': t('fps.optionLabel', { fps: 45 }),
+                                '60': t('fps.optionLabel', { fps: 60 }),
                             }}
                         />
                     </div>
@@ -298,7 +314,7 @@ export function RenderSettingsDialog({
 
                     {/* Captions toggle */}
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Captions</Label>
+                        <Label className="text-xs font-medium">{t('captions.label')}</Label>
                         <Switch
                             checked={settings.captions}
                             onCheckedChange={(v) => update('captions', v)}
@@ -318,7 +334,7 @@ export function RenderSettingsDialog({
                                 show a "Custom" indicator instead. */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">
-                                    Style preset
+                                    {t('stylePreset.label')}
                                 </Label>
                                 <div className="flex flex-wrap gap-1">
                                     {(() => {
@@ -350,9 +366,9 @@ export function RenderSettingsDialog({
                                                 {active === 'custom' && (
                                                     <span
                                                         className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
-                                                        title="Settings tweaked past every named preset"
+                                                        title={t('stylePreset.customTooltip')}
                                                     >
-                                                        Custom
+                                                        {t('stylePreset.customBadge')}
                                                     </span>
                                                 )}
                                             </>
@@ -363,29 +379,42 @@ export function RenderSettingsDialog({
 
                             {/* Position */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Position</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('position.label')}
+                                </Label>
                                 <ToggleGroup<CaptionPosition>
                                     options={['top', 'bottom']}
                                     value={settings.captionPosition}
                                     onChange={(v) => update('captionPosition', v)}
-                                    labels={{ top: 'Top', bottom: 'Bottom' }}
+                                    labels={{
+                                        top: t('position.top'),
+                                        bottom: t('position.bottom'),
+                                    }}
                                 />
                             </div>
 
                             {/* Size */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Size</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('size.label')}
+                                </Label>
                                 <ToggleGroup<CaptionSize>
                                     options={['S', 'M', 'L']}
                                     value={settings.captionSize}
                                     onChange={(v) => update('captionSize', v)}
-                                    labels={{ S: 'Small', M: 'Medium', L: 'Large' }}
+                                    labels={{
+                                        S: t('size.small'),
+                                        M: t('size.medium'),
+                                        L: t('size.large'),
+                                    }}
                                 />
                             </div>
 
                             {/* Text color */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Text Color</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('textColor.label')}
+                                </Label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="color"
@@ -401,7 +430,9 @@ export function RenderSettingsDialog({
 
                             {/* Background color + opacity */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Background</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    {t('background.label')}
+                                </Label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="color"
@@ -417,7 +448,9 @@ export function RenderSettingsDialog({
 
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">
-                                    Background Opacity: {settings.captionBgOpacity}%
+                                    {t('background.opacityLabel', {
+                                        value: settings.captionBgOpacity,
+                                    })}
                                 </Label>
                                 <Slider
                                     min={0}
@@ -434,20 +467,25 @@ export function RenderSettingsDialog({
                             {/* Display mode (phrase vs karaoke per-word highlight) */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">
-                                    Display mode
+                                    {t('displayMode.label')}
                                 </Label>
                                 <ToggleGroup<CaptionStyle>
                                     options={['phrase', 'karaoke']}
                                     value={settings.captionStyle}
                                     onChange={(v) => update('captionStyle', v)}
-                                    labels={{ phrase: 'Phrase', karaoke: 'Karaoke' }}
+                                    labels={{
+                                        phrase: t('displayMode.phrase'),
+                                        karaoke: t('displayMode.karaoke'),
+                                    }}
                                 />
                             </div>
 
                             {/* Font family + weight */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs text-muted-foreground">Font</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('font.label')}
+                                    </Label>
                                     <select
                                         value={settings.captionFontFamily}
                                         onChange={(e) =>
@@ -458,7 +496,9 @@ export function RenderSettingsDialog({
                                         }
                                         className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
                                     >
-                                        <option value="system">System</option>
+                                        <option value="system">{t('font.system')}</option>
+                                        {/* Font names below are proper nouns (actual font
+                                            family names), not translated. */}
                                         <option value="inter">Inter</option>
                                         <option value="montserrat">Montserrat</option>
                                         <option value="noto-sans">Noto Sans</option>
@@ -466,7 +506,9 @@ export function RenderSettingsDialog({
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label className="text-xs text-muted-foreground">Weight</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                        {t('weight.label')}
+                                    </Label>
                                     <select
                                         value={settings.captionFontWeight}
                                         onChange={(e) =>
@@ -486,7 +528,9 @@ export function RenderSettingsDialog({
                             {/* Text stroke (outline) */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">
-                                    Text outline: {settings.captionTextStrokeWidth}px
+                                    {t('textOutline.label', {
+                                        width: settings.captionTextStrokeWidth,
+                                    })}
                                 </Label>
                                 <div className="flex items-center gap-2">
                                     <Slider
@@ -506,7 +550,7 @@ export function RenderSettingsDialog({
                                             update('captionTextStrokeColor', e.target.value)
                                         }
                                         className="size-8 cursor-pointer rounded border border-border p-0.5"
-                                        title="Outline color"
+                                        title={t('textOutline.colorTitle')}
                                     />
                                 </div>
                             </div>
@@ -515,7 +559,7 @@ export function RenderSettingsDialog({
                             {settings.captionStyle === 'karaoke' && (
                                 <div className="space-y-1.5">
                                     <Label className="text-xs text-muted-foreground">
-                                        Highlight color (karaoke active word)
+                                        {t('highlightColor.label')}
                                     </Label>
                                     <div className="flex items-center gap-2">
                                         <input
@@ -539,7 +583,7 @@ export function RenderSettingsDialog({
 
                     {/* Watermark toggle */}
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Watermark</Label>
+                        <Label className="text-xs font-medium">{t('watermark.label')}</Label>
                         <Switch
                             checked={settings.watermark}
                             onCheckedChange={(v) => update('watermark', v)}
@@ -549,11 +593,11 @@ export function RenderSettingsDialog({
 
                 <DialogFooter className="gap-2 sm:gap-0">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('actions.cancel')}
                     </Button>
                     <Button onClick={handleConfirm} className="gap-2">
-                        <Download className="size-4" />
-                        Start Render
+                        <DownloadSimple className="size-4" />
+                        {t('actions.startRender')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

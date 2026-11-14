@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useRouter } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ParentPortalNavbarProps {
   title: string;
@@ -24,6 +25,7 @@ export function ParentPortalNavbar({
   onSwitchChild,
   canSwitch,
 }: ParentPortalNavbarProps) {
+  const { t } = useTranslation("parent");
   const router = useRouter();
   const [canGoBack, setCanGoBack] = useState(false);
 
@@ -51,7 +53,7 @@ export function ParentPortalNavbar({
               </button>
             </TooltipTrigger>
             <TooltipContent className="bg-primary-400 text-white" side="bottom">
-              Go back
+              {t("admissionPortal.navbar.goBack")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -77,12 +79,12 @@ export function ParentPortalNavbar({
               className="hidden sm:flex items-center gap-2 h-8 text-xs"
             >
               <Users className="h-3.5 w-3.5" weight="duotone" />
-              Switch Child
+              {t("admissionPortal.navbar.switchChild")}
             </Button>
             <button
               onClick={onSwitchChild}
               className="sm:hidden flex items-center justify-center w-8 h-8 rounded-md border border-primary-200/50 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-primary-50 transition-all duration-200"
-              title="Switch Child"
+              title={t("admissionPortal.navbar.switchChild")}
             >
               <Users className="h-4 w-4 text-primary-600" weight="duotone" />
             </button>

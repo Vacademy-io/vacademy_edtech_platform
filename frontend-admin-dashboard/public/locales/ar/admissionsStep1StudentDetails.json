@@ -1,0 +1,66 @@
+{
+    "heading": "بيانات الطالب",
+    "studentFirstName": {
+        "label": "الاسم الأول للطالب",
+        "placeholder": "أدخل الاسم الأول"
+    },
+    "middleName": {
+        "label": "الاسم الأوسط",
+        "placeholder": "أدخل الاسم الأوسط"
+    },
+    "lastName": {
+        "label": "اسم العائلة",
+        "placeholder": "أدخل اسم العائلة"
+    },
+    "gender": {
+        "label": "الجنس",
+        "select": "اختر الجنس",
+        "male": "ذكر",
+        "female": "أنثى",
+        "other": "آخر"
+    },
+    "applicationNumber": {
+        "label": "رقم الطلب",
+        "placeholder": "يُنشأ تلقائيًا / قابل للتعديل"
+    },
+    "class": {
+        "label": "الصف",
+        "select": "اختر الصف"
+    },
+    "section": {
+        "label": "الشعبة",
+        "select": "اختر الشعبة"
+    },
+    "dateOfAdmission": {
+        "label": "تاريخ القبول"
+    },
+    "dateOfBirth": {
+        "label": "تاريخ الميلاد"
+    },
+    "residentialPhone": {
+        "label": "رقم هاتف السكن"
+    },
+    "studentType": {
+        "label": "نوع الطالب",
+        "select": "اختر النوع",
+        "regular": "منتظم",
+        "transfer": "منقول"
+    },
+    "admissionType": {
+        "label": "نوع القبول",
+        "select": "اختر النوع",
+        "dayScholar": "طالب غير مقيم",
+        "hostel": "سكن داخلي"
+    },
+    "transport": {
+        "label": "الحاجة إلى النقل",
+        "no": "لا",
+        "yes": "نعم"
+    },
+    "aadhaarType": {
+        "label": "نوع بطاقة آدهار الخاصة بالطالب",
+        "select": "اختر النوع",
+        "standard": "قياسي",
+        "temporary": "مؤقت"
+    }
+}

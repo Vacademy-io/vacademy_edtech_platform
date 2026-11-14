@@ -1,0 +1,51 @@
+{
+    "unknown": "غير معروف",
+    "untitledSession": "جلسة بدون عنوان",
+    "codeLabel": "الرمز: {{code}}",
+    "typeLabels": {
+        "packageSession": "دفعة / جلسة الباقة",
+        "audience": "الجمهور / الحملة",
+        "liveSession": "جلسة مباشرة",
+        "enrollInvite": "دعوة تسجيل",
+        "institute": "المعهد",
+        "assessment": "تقييم",
+        "userPlan": "العضوية / خطة المستخدم",
+        "payment": "الدفع"
+    },
+    "institute": {
+        "appliesToWhole": "ينطبق هذا المُشغّل على المعهد بالكامل. لا حاجة لتحديد كيان معين."
+    },
+    "manual": {
+        "restrictLabel": "تقييد على {{type}} معينة (اختياري)",
+        "pickFromList": "اختر من القائمة",
+        "placeholder": "أدخل معرّف {{type}}، مفصولاً بفواصل، أو اتركه فارغًا للكل",
+        "willFireForAll": "اترك الحقل فارغًا وسيتم تشغيل سير العمل لكل {{type}} في معهدك.",
+        "willFireForSelected_zero": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحدد.",
+        "willFireForSelected_one": "سيتم تشغيل سير العمل لـ {{type}} واحد محدد.",
+        "willFireForSelected_two": "سيتم تشغيل سير العمل لـ {{type}}ين محددين.",
+        "willFireForSelected_few": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة.",
+        "willFireForSelected_many": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة.",
+        "willFireForSelected_other": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة."
+    },
+    "checklist": {
+        "selectLabel": "اختر {{type}} — اترك بدون تحديد للكل",
+        "enterIdManually": "أدخل المعرّف يدويًا",
+        "loading": "جارٍ التحميل...",
+        "noneFound": "لم يتم العثور على {{type}}",
+        "summaryNone": "لا يوجد تحديد — سيتم تشغيل سير العمل لكل {{type}} في معهدك.",
+        "summarySelected_zero": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحدد فقط.",
+        "summarySelected_one": "سيتم تشغيل سير العمل فقط لـ {{type}} المحدد.",
+        "summarySelected_two": "سيتم تشغيل سير العمل لـ {{type}}ين محددين. سيتم إنشاء صف مُشغّل لكل تحديد.",
+        "summarySelected_few": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة. سيتم إنشاء صف مُشغّل لكل تحديد.",
+        "summarySelected_many": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة. سيتم إنشاء صف مُشغّل لكل تحديد.",
+        "summarySelected_other": "سيتم تشغيل سير العمل لعدد {{count}} من {{type}} المحددة. سيتم إنشاء صف مُشغّل لكل تحديد.",
+        "searchPlaceholder": "ابحث في {{type}}...",
+        "noMatches": "لا توجد نتائج لـ ”{{search}}“.",
+        "hiddenBySearch_zero": "لا توجد عناصر محددة مخفية بسبب البحث",
+        "hiddenBySearch_one": "عنصر محدد واحد مخفي بسبب البحث",
+        "hiddenBySearch_two": "عنصران محددان مخفيان بسبب البحث",
+        "hiddenBySearch_few": "{{count}} عناصر محددة مخفية بسبب البحث",
+        "hiddenBySearch_many": "{{count}} عنصرًا محددًا مخفية بسبب البحث",
+        "hiddenBySearch_other": "{{count}} عنصر محدد مخفي بسبب البحث"
+    }
+}

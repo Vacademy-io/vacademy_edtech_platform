@@ -1,0 +1,7 @@
+{
+    "placeholder": "विषय/टॉपिक टैग जोड़ें",
+    "removeTag": "{{tag}} हटाएं",
+    "noTagsFound": "कोई टैग नहीं मिला।",
+    "createTag": "“{{value}}” बनाएं",
+    "existingTags": "मौजूदा टैग"
+}

@@ -34,6 +34,7 @@ import { StripeCheckoutForm } from "@/components/common/enroll-by-invite/-compon
 import { EwayProvider } from "@/components/common/enroll-by-invite/-contexts/eway-context";
 import { EwayCardForm } from "@/components/common/enroll-by-invite/-components/eway-card-form";
 import { getKeyData } from "@/components/common/enroll-by-invite/-services/enroll-invite-services";
+import { useTranslation } from "react-i18next";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -123,6 +124,7 @@ function isOverdue(dueDateIso: string): boolean {
 // ── Page Component ─────────────────────────────────────────────────────────────
 
 function InvoicePaymentPage() {
+  const { t } = useTranslation("miscRoutesB");
   const { invoiceId } = Route.useParams();
   const { redirect } = Route.useSearch();
   const redirectParam = redirect
@@ -237,13 +239,13 @@ function InvoicePaymentPage() {
     if (vendor === "STRIPE") {
       const processPayment = stripeProcessRef.current;
       if (!processPayment) {
-        toast.error("The payment form is still loading. Please try again.");
+        toast.error(t("payInvoice.toast.formLoading"));
         return;
       }
       setIsPaying(true);
       const result = await processPayment();
       if (!result.success || !result.paymentMethodId) {
-        setCardError(result.error ?? "Card verification failed");
+        setCardError(result.error ?? t("payInvoice.toast.cardVerificationFailed"));
         setIsPaying(false);
         return;
       }
@@ -257,7 +259,7 @@ function InvoicePaymentPage() {
       };
     } else if (vendor === "EWAY") {
       if (!ewayData) {
-        toast.error("Enter your card details to continue.");
+        toast.error(t("payInvoice.toast.enterCardDetails"));
         return;
       }
       vendorBody = {
@@ -293,9 +295,7 @@ function InvoicePaymentPage() {
         return;
       }
       if (paymentStatus === "FAILED") {
-        setCardError(
-          "The payment was declined. Please check your card details and try again."
-        );
+        setCardError(t("payInvoice.toast.paymentDeclined"));
         return;
       }
 
@@ -323,7 +323,7 @@ function InvoicePaymentPage() {
       // Fallback redirect — source=invoice skips gateway-specific polling
       window.location.href = `/payment-result?orderId=${data.order_id}&instituteId=${invoice.institute_id}&source=invoice${redirectParam}`;
     } catch {
-      toast.error("Failed to initiate payment. Please try again.");
+      toast.error(t("payInvoice.toast.initiateFailed"));
     } finally {
       setIsPaying(false);
     }
@@ -355,8 +355,8 @@ function InvoicePaymentPage() {
             <Skeleton className="h-5 w-36" />
           </div>
           <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="bg-primary-50 border-b border-border px-6 py-5">
-              <Skeleton className="h-5 w-40 mb-2" />
+            <div className="bg-primary-50 border-b border-border px-6 py-5 space-y-2">
+              <Skeleton className="h-5 w-40" />
               <Skeleton className="h-4 w-28" />
             </div>
             <div className="px-6 py-5 space-y-3">
@@ -382,11 +382,10 @@ function InvoicePaymentPage() {
             <Receipt size={28} className="text-danger-500" weight="duotone" />
           </div>
           <h1 className="text-h3 text-foreground font-semibold">
-            Invoice Not Found
+            {t("payInvoice.notFound.title")}
           </h1>
           <p className="text-body text-muted-foreground">
-            This invoice link is invalid or the invoice is no longer available.
-            Please contact your institute for a new payment link.
+            {t("payInvoice.notFound.description")}
           </p>
         </div>
       </PageShell>
@@ -402,10 +401,10 @@ function InvoicePaymentPage() {
             <CheckCircle size={28} className="text-success-500" weight="duotone" />
           </div>
           <h1 className="text-h3 text-foreground font-semibold">
-            Payment Initiated!
+            {t("payInvoice.initiated.title")}
           </h1>
           <p className="text-body text-muted-foreground">
-            Redirecting to payment confirmation…
+            {t("payInvoice.initiated.description")}
           </p>
         </div>
       </PageShell>
@@ -424,7 +423,7 @@ function InvoicePaymentPage() {
           {logoUrl ? (
             <img
               src={logoUrl}
-              alt={instituteName ?? "Institute logo"}
+              alt={instituteName ?? t("payInvoice.defaultLogoAlt")}
               className="h-12 w-auto max-w-40 object-contain"
             />
           ) : (
@@ -445,7 +444,7 @@ function InvoicePaymentPage() {
           <div className="bg-primary-50 border-b border-border px-6 py-4 flex items-center gap-3">
             <div className="min-w-0">
               <h1 className="text-subtitle font-semibold text-foreground leading-tight">
-                Invoice Payment
+                {t("payInvoice.header.title")}
               </h1>
               <p className="text-caption text-muted-foreground mt-0.5 truncate">
                 {invoice.invoice_number}
@@ -460,25 +459,25 @@ function InvoicePaymentPage() {
               {/* Table header — hidden on mobile, shown on sm+ */}
               <div className="hidden sm:grid grid-cols-12 gap-2 bg-muted px-3 py-2">
                 <span className="col-span-5 text-caption font-medium text-muted-foreground">
-                  Description
+                  {t("payInvoice.table.description")}
                 </span>
                 <span className="col-span-2 text-caption font-medium text-muted-foreground text-end">
-                  Qty
+                  {t("payInvoice.table.qty")}
                 </span>
                 <span className="col-span-2 text-caption font-medium text-muted-foreground text-end">
-                  Unit
+                  {t("payInvoice.table.unit")}
                 </span>
                 <span className="col-span-3 text-caption font-medium text-muted-foreground text-end">
-                  Amount
+                  {t("payInvoice.table.amount")}
                 </span>
               </div>
               {/* Mobile-only table header */}
               <div className="grid grid-cols-2 bg-muted px-3 py-2 sm:hidden">
                 <span className="text-caption font-medium text-muted-foreground">
-                  Description
+                  {t("payInvoice.table.description")}
                 </span>
                 <span className="text-caption font-medium text-muted-foreground text-end">
-                  Amount
+                  {t("payInvoice.table.amount")}
                 </span>
               </div>
 
@@ -524,7 +523,7 @@ function InvoicePaymentPage() {
 
               {/* Subtotal */}
               <div className="flex justify-between px-3 py-2.5 border-t border-border bg-muted/50">
-                <span className="text-body text-muted-foreground">Subtotal</span>
+                <span className="text-body text-muted-foreground">{t("payInvoice.table.subtotal")}</span>
                 <span className="text-body text-foreground tabular-nums">
                   {formatCurrency(invoice.subtotal, invoice.currency)}
                 </span>
@@ -533,7 +532,7 @@ function InvoicePaymentPage() {
               {/* Discount */}
               {invoice.discount_amount > 0 && (
                 <div className="flex justify-between px-3 py-2.5 border-t border-border">
-                  <span className="text-body text-success-500">Discount</span>
+                  <span className="text-body text-success-500">{t("payInvoice.table.discount")}</span>
                   <span className="text-body text-success-500 tabular-nums">
                     -{formatCurrency(invoice.discount_amount, invoice.currency)}
                   </span>
@@ -543,7 +542,7 @@ function InvoicePaymentPage() {
               {/* Tax */}
               {invoice.tax_amount > 0 && (
                 <div className="flex justify-between px-3 py-2.5 border-t border-border">
-                  <span className="text-body text-muted-foreground">Tax</span>
+                  <span className="text-body text-muted-foreground">{t("payInvoice.table.tax")}</span>
                   <span className="text-body text-foreground tabular-nums">
                     {formatCurrency(invoice.tax_amount, invoice.currency)}
                   </span>
@@ -552,7 +551,7 @@ function InvoicePaymentPage() {
 
               {/* Total */}
               <div className="flex justify-between px-3 py-3 border-t border-border bg-primary-50">
-                <span className="text-subtitle font-semibold text-foreground">Total</span>
+                <span className="text-subtitle font-semibold text-foreground">{t("payInvoice.table.total")}</span>
                 <span className="text-subtitle font-semibold text-primary-500 tabular-nums">
                   {formatCurrency(invoice.total_amount, invoice.currency)}
                 </span>
@@ -573,8 +572,8 @@ function InvoicePaymentPage() {
               ) : (
                 <CalendarBlank size={14} weight="regular" />
               )}
-              <span>Due: {formatDate(invoice.due_date)}</span>
-              {overdue && <span className="text-warning-600">(Overdue)</span>}
+              <span>{t("payInvoice.due.label", { date: formatDate(invoice.due_date) })}</span>
+              {overdue && <span className="text-warning-600">{t("payInvoice.due.overdue")}</span>}
             </div>
 
             {/* Card entry for gateways that need it (Stripe / eWay) */}
@@ -619,23 +618,25 @@ function InvoicePaymentPage() {
                 {isPaying ? (
                   <>
                     <SpinnerGap size={18} className="animate-spin" weight="bold" />
-                    Processing…
+                    {t("payInvoice.pay.processing")}
                   </>
                 ) : invoice.status === "PAID" ? (
                   <>
                     <CheckCircle size={18} weight="fill" />
-                    Already Paid
+                    {t("payInvoice.pay.alreadyPaid")}
                   </>
                 ) : (
                   <>
                     <CreditCard size={18} weight="regular" />
-                    Pay {formatCurrency(invoice.total_amount, invoice.currency)}
+                    {t("payInvoice.pay.cta", {
+                      amount: formatCurrency(invoice.total_amount, invoice.currency),
+                    })}
                   </>
                 )}
               </Button>
 
               <p className="text-center text-caption text-muted-foreground">
-                Secured payment · Your information is encrypted and safe
+                {t("payInvoice.secured")}
               </p>
             </div>
           </div>
@@ -656,8 +657,10 @@ function InvoicePaymentPage() {
               toast.error(err);
             }
           }}
-          courseName="Invoice Payment"
-          courseDescription={`Invoice ${invoice.invoice_number}`}
+          courseName={t("payInvoice.checkout.defaultTitle")}
+          courseDescription={t("payInvoice.checkout.description", {
+            invoiceNumber: invoice.invoice_number,
+          })}
           userName=""
         />
       </div>

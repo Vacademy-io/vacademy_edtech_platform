@@ -1,0 +1,10 @@
+{
+    "evaluateResponse": "Évaluer la réponse",
+    "pageDescription": "Cette page affiche tous les détails relatifs à une évaluation.",
+    "couldNotLoadAnswerSheet": "Impossible de charger la copie",
+    "couldNotLoadAnswerSheetBody": "La réponse téléchargée par l'élève n'a pas pu être chargée. Elle n'a peut-être pas encore été soumise, ou le fichier est temporairement indisponible. Si l'élève a partagé sa copie autrement, vous pouvez la téléverser en son nom.",
+    "back": "Retour",
+    "retry": "Réessayer",
+    "uploadAnswerSheet": "Téléverser la copie",
+    "gettingResponseFile": "Récupération du fichier de réponse, veuillez patienter..."
+}

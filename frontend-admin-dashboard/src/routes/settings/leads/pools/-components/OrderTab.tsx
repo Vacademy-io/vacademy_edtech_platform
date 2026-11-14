@@ -13,6 +13,10 @@
  *           the counsellors once, save fans out to every audience.
  *       (b) "Per-campaign" — admin picks a campaign and reorders just
  *           that one.
+ *
+ * Both views carry the pool's "pool-wide rotation" switch (unified_rotation_order).
+ * When it's on, routing uses one order for the whole pool and ignores per-campaign
+ * orders, so editing is locked to "same order for all campaigns".
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -41,6 +45,7 @@ import {
     CounselorPoolDTO,
     PoolMemberDTO,
     useUpdateAudienceOrder,
+    useUpdatePool,
 } from '@/services/counselor-pool';
 
 interface OrderTabProps {
@@ -101,6 +106,24 @@ export default function OrderTab({ pool }: OrderTabProps) {
     };
 
     const { mutateAsync: saveOrder, isPending: saving } = useUpdateAudienceOrder(pool.id);
+    const { mutateAsync: updatePool, isPending: savingUnified } = useUpdatePool(pool.id);
+    const unifiedRotation = !!pool.unified_rotation_order;
+
+    const handleUnifiedRotationChange = async (next: boolean) => {
+        try {
+            await updatePool({ unified_rotation_order: next });
+            toast.success(next ? 'Pool-wide rotation turned on' : 'Pool-wide rotation turned off');
+        } catch (e) {
+            toast.error(extractError(e) ?? 'Failed to update rotation setting');
+        }
+    };
+    const unifiedRotationCard = (
+        <UnifiedRotationCard
+            checked={unifiedRotation}
+            disabled={savingUnified || saving}
+            onChange={handleUnifiedRotationChange}
+        />
+    );
 
     // ─── Derived "current saved state" (used for read-only view + reset on Cancel) ─────
     const ordersDiffer = useMemo(() => audienceOrdersDiffer(members, audiences), [members, audiences]);
@@ -141,7 +164,8 @@ export default function OrderTab({ pool }: OrderTabProps) {
     const startEdit = () => {
         // Default toggle: ON when orders are already uniform, OFF when they differ
         // (so the admin sees their current per-audience differences and decides).
-        setSameForAll(!ordersDiffer);
+        // Pool-wide rotation ignores per-campaign orders, so it always edits one order.
+        setSameForAll(unifiedRotation || !ordersDiffer);
         setUnifiedOrder(savedUnifiedOrder);
         setPerAudienceOrder(savedPerAudienceOrder);
         setEditing(true);
@@ -199,6 +223,7 @@ export default function OrderTab({ pool }: OrderTabProps) {
     if (!editing) {
         return (
             <div className="space-y-6">
+                {unifiedRotationCard}
                 <Card>
                     <CardHeader className="flex flex-row items-start justify-between space-y-0">
                         <div>
@@ -221,6 +246,13 @@ export default function OrderTab({ pool }: OrderTabProps) {
                                 ? 'Different orders per campaign'
                                 : 'Same order across all campaigns'}
                         </Badge>
+                        {unifiedRotation && ordersDiffer && (
+                            <p className="mt-3 rounded border border-warning-200 bg-warning-50 p-2 text-xs text-warning-700">
+                                Pool-wide rotation is on, so these per-campaign orders are ignored.
+                                Leads rotate in the order most campaigns share. Edit and save one
+                                order for all campaigns to make them match.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -262,6 +294,7 @@ export default function OrderTab({ pool }: OrderTabProps) {
     // ── Editing view ──────────────────────────────────────────────────────
     return (
         <div className="space-y-6">
+            {unifiedRotationCard}
             <Card>
                 <CardHeader>
                     <CardTitle>Rotation Order</CardTitle>
@@ -271,13 +304,19 @@ export default function OrderTab({ pool }: OrderTabProps) {
                     <div className="flex items-center gap-3">
                         <Switch
                             id="same-order-toggle"
-                            checked={sameForAll}
+                            checked={sameForAll || unifiedRotation}
                             onCheckedChange={setSameForAll}
+                            disabled={unifiedRotation}
                         />
                         <Label htmlFor="same-order-toggle" className="cursor-pointer">
                             Use the same order for all campaigns
                         </Label>
                     </div>
+                    {unifiedRotation && (
+                        <p className="text-xs text-muted-foreground">
+                            Pool-wide rotation is on, so one order applies to every campaign.
+                        </p>
+                    )}
                     {sameForAll && ordersDiffer && (
                         <p className="rounded border border-warning-200 bg-warning-50 p-2 text-xs text-warning-700">
                             Orders currently differ across campaigns. Saving will normalize all
@@ -287,7 +326,7 @@ export default function OrderTab({ pool }: OrderTabProps) {
                 </CardContent>
             </Card>
 
-            {sameForAll ? (
+            {sameForAll || unifiedRotation ? (
                 <Card>
                     <CardHeader>
                         <CardTitle>Order (applies to all campaigns)</CardTitle>
@@ -370,6 +409,37 @@ export default function OrderTab({ pool }: OrderTabProps) {
                 </Card>
             )}
         </div>
+    );
+}
+
+interface UnifiedRotationCardProps {
+    checked: boolean;
+    disabled: boolean;
+    onChange: (next: boolean) => void;
+}
+
+function UnifiedRotationCard({ checked, disabled, onChange }: UnifiedRotationCardProps) {
+    return (
+        <Card>
+            <CardContent className="flex items-start gap-3 pt-6">
+                <Switch
+                    id="unified-rotation-toggle"
+                    checked={checked}
+                    onCheckedChange={onChange}
+                    disabled={disabled}
+                />
+                <div className="space-y-1">
+                    <Label htmlFor="unified-rotation-toggle" className="cursor-pointer">
+                        Pool-wide rotation
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                        Leads from every campaign follow one rotation order, so no counsellor is
+                        skipped when campaigns&apos; orders drift apart. Per-campaign orders are
+                        ignored while this is on.
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 

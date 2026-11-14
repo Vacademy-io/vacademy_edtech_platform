@@ -212,7 +212,7 @@ public class CounsellorRatingComputeService {
         Integer assigned = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM user_lead_profile ulp " +
                         ASSIGNED_AT_LATERAL +
-                        "WHERE ulp.institute_id = ? " +
+                        "WHERE ulp.institute_id = ? AND ulp.merged_into_user_id IS NULL " +
                         "  AND ulp.assigned_counselor_id = ? " +
                         "  AND ta.assigned_at IS NOT NULL " +
                         "  AND " + windowSql,
@@ -222,7 +222,7 @@ public class CounsellorRatingComputeService {
         Integer converted = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM user_lead_profile ulp " +
                         ASSIGNED_AT_LATERAL +
-                        "WHERE ulp.institute_id = ? " +
+                        "WHERE ulp.institute_id = ? AND ulp.merged_into_user_id IS NULL " +
                         "  AND ulp.assigned_counselor_id = ? " +
                         "  AND ta.assigned_at IS NOT NULL " +
                         "  AND " + windowSql + " " +
@@ -233,7 +233,7 @@ public class CounsellorRatingComputeService {
                 "SELECT AVG(EXTRACT(EPOCH FROM (ulp.converted_at - ta.assigned_at)) / 3600) " +
                         "FROM user_lead_profile ulp " +
                         ASSIGNED_AT_LATERAL +
-                        "WHERE ulp.institute_id = ? " +
+                        "WHERE ulp.institute_id = ? AND ulp.merged_into_user_id IS NULL " +
                         "  AND ulp.assigned_counselor_id = ? " +
                         "  AND ta.assigned_at IS NOT NULL " +
                         "  AND ulp.converted_at IS NOT NULL " +

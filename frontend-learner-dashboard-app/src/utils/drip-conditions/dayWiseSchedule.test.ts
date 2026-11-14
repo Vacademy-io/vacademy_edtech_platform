@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluateDripCondition } from "./evaluateDripCondition";
 import {
+  enforceableCondition,
   parseCourseSettingsDripConditions,
   resolveDripCondition,
 } from "./resolveDripCondition";
@@ -66,27 +67,15 @@ describe("day-wise drip schedule", () => {
     ).toBe(true);
   });
 
-  it("does NOT exempt the first item from a day rule once opted in", () => {
+  it("does NOT exempt the first item from a day rule", () => {
     // The index-0 escape hatch exists for progress rules, which would
     // otherwise deadlock. A time rule on item 0 must still be honoured.
     const result = evaluateDripCondition(dayRule(5), {
       percentageCompleted: 0,
       itemIndex: 0,
       enrollmentDate: enrolledDaysAgo(0),
-      strictFirstItem: true,
     });
     expect(result.isLocked).toBe(true);
-  });
-
-  it("keeps the old broad first-item exemption when NOT opted in", () => {
-    // Live courses already rely on item 0 being open under a date rule;
-    // narrowing that silently would close content under them.
-    const result = evaluateDripCondition(dayRule(5), {
-      percentageCompleted: 0,
-      itemIndex: 0,
-      enrollmentDate: enrolledDaysAgo(0),
-    });
-    expect(result.isLocked).toBe(false);
   });
 
   it("still exempts the first item from a sequential rule", () => {
@@ -189,6 +178,100 @@ describe("opt-in gate", () => {
   const blob = (drip: Record<string, unknown>) =>
     JSON.stringify({ setting: { COURSE_SETTING: { data: { dripConditions: drip } } } });
 
+  const sequential = {
+    type: "sequential" as const,
+    params: { requires_previous: true, threshold: 100 },
+  };
+  const tomorrow = () => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const dateRule = (unlockDate: string): DripConditionJson => ({
+    target: "slide",
+    behavior: "lock",
+    is_enabled: true,
+    rules: [{ type: "date_based", params: { unlock_date: unlockDate } }],
+  });
+
+  it("enforces a fixed-date rule without the opt-in", () => {
+    // The reported bug: an admin set "unlock on the 19th" on a slide, the
+    // institute had never flipped the enforce toggle, and the slide stayed
+    // open. Time rules cannot harm anyone mid-course, so they never needed
+    // the gate.
+    expect(enforceableCondition(dateRule(tomorrow()), false)).not.toBeNull();
+  });
+
+  it("enforces a day-wise rule without the opt-in", () => {
+    expect(enforceableCondition(dayRule(5), false)).not.toBeNull();
+  });
+
+  it("still holds a progress-only rule back until the institute opts in", () => {
+    const condition: DripConditionJson = {
+      target: "chapter",
+      behavior: "lock",
+      is_enabled: true,
+      rules: [sequential],
+    };
+    expect(enforceableCondition(condition, false)).toBeNull();
+    expect(enforceableCondition(condition, true)).toBe(condition);
+  });
+
+  it("narrows a mixed rule to its time part until the institute opts in", () => {
+    const mixed: DripConditionJson = {
+      target: "chapter",
+      behavior: "lock",
+      is_enabled: true,
+      rules: [sequential, dayRule(3).rules[0]!],
+    };
+    const narrowed = enforceableCondition(mixed, false);
+    expect(narrowed?.rules.map((r) => r.type)).toEqual(["relative_date"]);
+    expect(enforceableCondition(mixed, true)).toBe(mixed);
+  });
+
+  it("a future-dated slide rule locks the slide for an opted-out institute", () => {
+    // End to end through resolve + evaluate, the way the slide page runs it.
+    const resolved = resolveDripCondition(
+      [
+        {
+          id: "s",
+          level: "slide",
+          level_id: "slide-1",
+          enabled: true,
+          drip_condition: [dateRule(tomorrow())],
+        },
+      ],
+      { level: "slide", levelId: "slide-1", packageId: "course-1" },
+      { applyConfiguredRules: false }
+    );
+    expect(resolved).not.toBeNull();
+    const result = evaluateDripCondition(resolved, {
+      percentageCompleted: 0,
+      itemIndex: 1,
+    });
+    expect(result.isLocked).toBe(true);
+    expect(result.unlockMessage).toMatch(/Available from/);
+  });
+
+  it("a progress rule resolves to nothing for an opted-out institute", () => {
+    const stored = [
+      {
+        id: "c",
+        level: "chapter" as const,
+        level_id: "ch-1",
+        enabled: true,
+        drip_condition: [
+          {
+            target: "chapter" as const,
+            behavior: "lock" as const,
+            is_enabled: true,
+            rules: [sequential],
+          },
+        ],
+      },
+    ];
+    const target = { level: "chapter" as const, levelId: "ch-1", packageId: "p" };
+    expect(resolveDripCondition(stored, target, { applyConfiguredRules: false })).toBeNull();
+    expect(resolveDripCondition(stored, target)).toBeNull();
+    expect(resolveDripCondition(stored, target, { applyConfiguredRules: true })).not.toBeNull();
+  });
+
   it("is OFF for an institute that has conditions but never opted in", () => {
     const parsed = parseCourseSettingsDripConditions(
       blob({ enabled: true, conditions: [{ id: "a", level: "chapter", level_id: "c1" }] })
@@ -269,7 +352,6 @@ describe("unlocking is computed, not stored", () => {
       percentageCompleted: 0,
       itemIndex: 1,
       enrollmentDate: enrollment,
-      strictFirstItem: true,
     };
 
     // Day 3 opens at the START of the third calendar day, not 24h x 2 after
@@ -301,7 +383,6 @@ describe("unlocking is computed, not stored", () => {
       percentageCompleted: 0,
       itemIndex: 1,
       enrollmentDate: enrollment,
-      strictFirstItem: true,
     };
 
     const dayTwo = new Date(enrollment);

@@ -1,0 +1,119 @@
+{
+    "dialogTitle": "تعيين إلى {{term}}",
+    "selectCourses": {
+        "description": "تعيين <strong>{{name}}</strong> إلى مقرر واحد أو أكثر.",
+        "searchPlaceholder": "ابحث عن المقررات...",
+        "selectedCount": "{{selected}} من {{total}} محدد",
+        "selectAll": "تحديد الكل",
+        "deselectAll": "إلغاء تحديد الكل",
+        "noCoursesFound": "لم يتم العثور على مقررات"
+    },
+    "configure": {
+        "description": "قم بتكوين إعدادات التسجيل لكل مقرر. يمكنك ترك كل شيء على <strong>\"تلقائي (افتراضي)\"</strong> لتسجيل مجاني سريع، أو اختيار دعوة محددة لكل مقرر.",
+        "optionsLabel": "الخيارات",
+        "duplicateHandlingLabel": "إذا كان مسجلاً بالفعل:",
+        "duplicateOptions": {
+            "skip": "تخطي",
+            "error": "خطأ",
+            "reEnroll": "إعادة التسجيل"
+        },
+        "notifyLabel": "إشعار المتعلم عبر البريد الإلكتروني"
+    },
+    "preview": {
+        "title": "معاينة — نتائج التشغيل التجريبي",
+        "willSucceed_zero": "[{{count}}] لن ينجح أي عنصر",
+        "willSucceed_one": "[{{count}}] عنصر واحد سينجح",
+        "willSucceed_two": "[{{count}}] عنصران سينجحان",
+        "willSucceed_few": "[{{count}}] عناصر ستنجح",
+        "willSucceed_many": "[{{count}}] عنصرًا سينجح",
+        "willSucceed_other": "[{{count}}] عنصر سينجح",
+        "skipped_zero": "[{{count}}] لم يُتخطَّ أي عنصر",
+        "skipped_one": "[{{count}}] عنصر واحد متخطى",
+        "skipped_two": "[{{count}}] عنصران متخطيان",
+        "skipped_few": "[{{count}}] عناصر متخطاة",
+        "skipped_many": "[{{count}}] عنصرًا متخطى",
+        "skipped_other": "[{{count}}] عنصر متخطى",
+        "failed_zero": "[{{count}}] لم يفشل أي عنصر",
+        "failed_one": "[{{count}}] عنصر واحد فشل",
+        "failed_two": "[{{count}}] عنصران فشلا",
+        "failed_few": "[{{count}}] عناصر فشلت",
+        "failed_many": "[{{count}}] عنصرًا فشل",
+        "failed_other": "[{{count}}] عنصر فشل",
+        "inviteConfigTitle": "تكوين الدعوة",
+        "autoDefault": "تلقائي (افتراضي)",
+        "cpoBadge": "CPO",
+        "installments_zero": "[{{count}}] بلا أقساط",
+        "installments_one": "[{{count}}] قسط واحد",
+        "installments_two": "[{{count}}] قسطان",
+        "installments_few": "[{{count}}] أقساط",
+        "installments_many": "[{{count}}] قسطًا",
+        "installments_other": "[{{count}}] قسط",
+        "totalAmount": "الإجمالي ₹{{amount}}",
+        "recordingNow": "تسجيل ₹{{amount}} الآن",
+        "noInitialPayment": "بدون دفعة أولى",
+        "tableHeaders": {
+            "course": "المقرر",
+            "action": "الإجراء",
+            "status": "الحالة"
+        }
+    },
+    "results": {
+        "title": "اكتمل التعيين",
+        "assigned_zero": "[{{count}}] لم يتم تعيين أي عنصر",
+        "assigned_one": "[{{count}}] عنصر واحد تم تعيينه",
+        "assigned_two": "[{{count}}] عنصران تم تعيينهما",
+        "assigned_few": "[{{count}}] عناصر تم تعيينها",
+        "assigned_many": "[{{count}}] عنصرًا تم تعيينه",
+        "assigned_other": "[{{count}}] عنصر تم تعيينه",
+        "skipped_zero": "[{{count}}] لم يُتخطَّ أي عنصر",
+        "skipped_one": "[{{count}}] عنصر واحد متخطى",
+        "skipped_two": "[{{count}}] عنصران متخطيان",
+        "skipped_few": "[{{count}}] عناصر متخطاة",
+        "skipped_many": "[{{count}}] عنصرًا متخطى",
+        "skipped_other": "[{{count}}] عنصر متخطى",
+        "failed_zero": "[{{count}}] لم يفشل أي عنصر",
+        "failed_one": "[{{count}}] عنصر واحد فشل",
+        "failed_two": "[{{count}}] عنصران فشلا",
+        "failed_few": "[{{count}}] عناصر فشلت",
+        "failed_many": "[{{count}}] عنصرًا فشل",
+        "failed_other": "[{{count}}] عنصر فشل",
+        "tableHeaders": {
+            "course": "المقرر",
+            "status": "الحالة",
+            "message": "الرسالة"
+        }
+    },
+    "stepper": {
+        "select": "اختيار",
+        "configure": "إعداد",
+        "preview": "معاينة",
+        "done": "تم"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "nextConfigure_zero": "التالي → الإعداد ([{{count}}])",
+        "nextConfigure_one": "التالي → الإعداد ([{{count}}])",
+        "nextConfigure_two": "التالي → الإعداد ([{{count}}])",
+        "nextConfigure_few": "التالي → الإعداد ([{{count}}])",
+        "nextConfigure_many": "التالي → الإعداد ([{{count}}])",
+        "nextConfigure_other": "التالي → الإعداد ([{{count}}])",
+        "back": "← رجوع",
+        "loading": "جارٍ التحميل...",
+        "previewButton": "معاينة →",
+        "assigning": "جارٍ التعيين...",
+        "confirmAssignment": "✓ تأكيد التعيين",
+        "done": "تم"
+    },
+    "toasts": {
+        "loadCoursesFailed": "فشل تحميل المقررات",
+        "previewFailed": "فشلت المعاينة",
+        "assignFailed": "فشل التعيين",
+        "assignSuccess_zero": "[{{count}}] لم يتم تعيين أي مقرر بنجاح!",
+        "assignSuccess_one": "[{{count}}] تم تعيين مقرر واحد بنجاح!",
+        "assignSuccess_two": "[{{count}}] تم تعيين مقررين بنجاح!",
+        "assignSuccess_few": "[{{count}}] تم تعيين مقررات بنجاح!",
+        "assignSuccess_many": "[{{count}}] تم تعيين مقررًا بنجاح!",
+        "assignSuccess_other": "[{{count}}] تم تعيين مقرر بنجاح!",
+        "assignPartial": "تم تعيين {{successful}}، وفشل {{failed}}."
+    }
+}

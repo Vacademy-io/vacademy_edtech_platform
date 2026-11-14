@@ -1,0 +1,32 @@
+{
+    "title": "Ajouter une nouvelle remise",
+    "fields": {
+        "title": {
+            "label": "Titre de la remise",
+            "placeholder": "Saisissez le titre de la remise"
+        },
+        "code": {
+            "label": "Code de remise",
+            "placeholder": "Saisissez le code de remise"
+        },
+        "type": {
+            "label": "Type de remise",
+            "placeholder": "Sélectionnez un type",
+            "options": {
+                "percent": "Pourcentage",
+                "rupees": "Montant en roupies"
+            }
+        },
+        "value": {
+            "label": "Valeur de la remise",
+            "placeholderPercent": "Saisissez un pourcentage (ex. 10)",
+            "placeholderRupees": "Saisissez un montant (ex. 500)"
+        },
+        "expires": {
+            "label": "Date d'expiration"
+        }
+    },
+    "actions": {
+        "save": "Enregistrer"
+    }
+}

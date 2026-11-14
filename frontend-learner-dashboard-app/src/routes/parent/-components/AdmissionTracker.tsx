@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile, ApplicantStage } from "@/types/parent-portal";
 import {
   useAdmissionStages,
@@ -14,6 +15,7 @@ interface AdmissionTrackerProps {
 }
 
 export function AdmissionTracker({ child }: AdmissionTrackerProps) {
+  const { t } = useTranslation("parent");
   const { data: stages, isLoading: isStagesLoading } = useAdmissionStages(
     child.institute_id,
   );
@@ -71,10 +73,10 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold text-foreground">
-          Admission Tracker
+          {t("admissionPortal.tracker.heading")}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Full journey timeline for {child.full_name}
+          {t("admissionPortal.tracker.subheading", { name: child.full_name })}
         </p>
       </div>
 
@@ -84,16 +86,19 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
         animate={{ opacity: 1, y: 0 }}
       >
         <Card className="shadow-sm overflow-hidden">
-          <CardContent className="p-4">
+          <CardContent className="p-card">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Flag size={16} className="text-primary" />
                 <p className="text-sm font-semibold text-foreground">
-                  Overall Progress
+                  {t("admissionPortal.tracker.overallProgress")}
                 </p>
               </div>
               <Badge variant="outline" className="text-xs font-medium">
-                {completedStages} / {totalStages} steps
+                {t("admissionPortal.tracker.stepsCount", {
+                  completed: completedStages,
+                  total: totalStages,
+                })}
               </Badge>
             </div>
 
@@ -103,11 +108,13 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-y-0 start-0 bg-gradient-to-r from-primary to-emerald-500 rounded-full"
+                className="absolute inset-y-0 start-0 bg-gradient-to-r from-primary to-success-500 rounded-full"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 text-end">
-              {progressPercent}% complete
+              {t("admissionPortal.tracker.percentComplete", {
+                percent: progressPercent,
+              })}
             </p>
           </CardContent>
         </Card>
@@ -124,7 +131,7 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <ListNumbers size={16} />
-                Admission Process
+                {t("admissionPortal.tracker.process")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -165,7 +172,9 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
                             {stage.stage_name}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Step {stage.sequence}
+                            {t("admissionPortal.tracker.step", {
+                              number: stage.sequence,
+                            })}
                           </p>
                           <div className="flex gap-2 mt-2">
                             <Badge variant="secondary" className="text-caption">
@@ -177,12 +186,12 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
                         {/* Status Badge */}
                         {isCompleted && (
                           <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 text-caption shrink-0">
-                            Completed
+                            {t("admissionPortal.tracker.completed")}
                           </Badge>
                         )}
                         {isCurrent && (
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/10 text-caption shrink-0">
-                            In Progress
+                            {t("admissionPortal.tracker.inProgress")}
                           </Badge>
                         )}
                       </div>
@@ -205,18 +214,21 @@ export function AdmissionTracker({ child }: AdmissionTrackerProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="shadow-sm bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800">
-            <CardContent className="p-6 text-center">
+          <Card className="shadow-sm bg-gradient-to-br from-success-50 to-success-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800">
+            <CardContent className="p-card-lg text-center">
               <Confetti
                 size={36}
                 className="mx-auto text-emerald-600 mb-3"
               />
               <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
-                Congratulations!
+                {t("admissionPortal.tracker.congratulations")}
               </h3>
               <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
-                {child.full_name} has been successfully enrolled.
-                {child.batch_name && ` Welcome to ${child.batch_name}!`}
+                {t("admissionPortal.tracker.enrolledNotice", {
+                  name: child.full_name,
+                })}
+                {child.batch_name &&
+                  ` ${t("admissionPortal.tracker.welcomeToBatch", { batch: child.batch_name })}`}
               </p>
             </CardContent>
           </Card>

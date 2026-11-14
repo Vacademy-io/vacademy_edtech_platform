@@ -1,0 +1,12 @@
+{
+    "success": "सफलता",
+    "error": "त्रुटि",
+    "updateBatchSuccess": "बैच सफलतापूर्वक अपडेट किया गया",
+    "updateBatchError": "बैच अपडेट करने में विफल। कृपया पुनः प्रयास करें।",
+    "extendSessionSuccess": "सत्र सफलतापूर्वक बढ़ाया गया",
+    "extendSessionError": "सत्र बढ़ाने में विफल। कृपया पुनः प्रयास करें।",
+    "terminateStudentSuccess": "छात्र पंजीकरण सफलतापूर्वक समाप्त किया गया",
+    "terminateStudentError": "पंजीकरण समाप्त करने में विफल। कृपया पुनः प्रयास करें।",
+    "deleteStudentSuccess": "छात्र सफलतापूर्वक हटाया गया",
+    "deleteStudentError": "छात्र को हटाने में विफल। कृपया पुनः प्रयास करें।"
+}

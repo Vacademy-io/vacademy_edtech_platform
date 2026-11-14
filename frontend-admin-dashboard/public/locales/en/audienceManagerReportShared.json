@@ -1,0 +1,28 @@
+{
+    "emptyHint": {
+        "default": "No data in this range."
+    },
+    "skeleton": {
+        "ariaLabel": "Loading report"
+    },
+    "errorState": {
+        "deployPendingTitle": "This report needs the latest backend — deploy pending",
+        "genericTitle": "Couldn't load this report",
+        "deployPendingBody": "The endpoint powering this tab is not on this environment yet. It will light up automatically after the next backend deploy.",
+        "genericBody": "Something went wrong while fetching the data. Check your connection and try again.",
+        "retry": "Retry"
+    },
+    "export": {
+        "defaultLabel": "Export CSV",
+        "dialogTitle": "Choose export columns",
+        "selectAll": "Select all",
+        "deselectAll": "Deselect all",
+        "columnsSelected": "{{selected}} / {{total}} columns",
+        "cancel": "Cancel",
+        "export": "Export"
+    },
+    "breakdownBar": {
+        "converted_one": "({{count}} conv.)",
+        "converted_other": "({{count}} conv.)"
+    }
+}

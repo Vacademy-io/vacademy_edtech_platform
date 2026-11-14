@@ -1,0 +1,8 @@
+{
+    "untitledTerm": "{{term}} بلا اسم",
+    "pageDescription": "مدفوعات {{term}} والمتعلمون والفريق. السجل للقراءة فقط — مسؤول المؤسسة الرئيسية هو من يدير الأقساط والخصومات.",
+    "switchTerm": "تبديل {{term}}",
+    "selectTermPlaceholder": "اختر {{term}}",
+    "noAccessTitle": "لا يوجد وصول إلى {{term}}.",
+    "noAccessBody": "اطلب من مسؤول المؤسسة منحك صلاحية مسؤول {{term}}."
+}

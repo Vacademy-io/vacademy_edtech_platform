@@ -1,0 +1,71 @@
+{
+    "dialogHeading": "ट्रांसक्रिप्ट",
+    "statusPill": {
+        "transcriptReady": "ट्रांसक्रिप्ट तैयार है",
+        "wordCount_one": "{{formattedCount}} शब्द",
+        "wordCount_other": "{{formattedCount}} शब्द"
+    },
+    "languages": {
+        "en": "अंग्रेज़ी",
+        "hi": "हिंदी",
+        "bn": "बंगाली",
+        "ta": "तमिल",
+        "te": "तेलुगु",
+        "mr": "मराठी",
+        "gu": "गुजराती",
+        "kn": "कन्नड़",
+        "ml": "मलयालम",
+        "pa": "पंजाबी",
+        "ur": "उर्दू",
+        "source": "स्रोत"
+    },
+    "reader": {
+        "transcriptLabel": "{{language}} ट्रांसक्रिप्ट",
+        "emptyTranscript": "इस रिकॉर्डिंग के लिए ट्रांसक्रिप्ट खाली है।",
+        "loadingTranscript": "ट्रांसक्रिप्ट लोड हो रही है…"
+    },
+    "buttons": {
+        "copy": "कॉपी करें",
+        "back": "वापस",
+        "retry": "पुनः प्रयास करें"
+    },
+    "actions": {
+        "createAssessment": {
+            "title": "मूल्यांकन बनाएं",
+            "description": "इस लेक्चर से स्वतः MCQ मूल्यांकन बनाएं और इसे अपने बैचों में प्रकाशित करें।",
+            "cta": "मूल्यांकन बनाएं"
+        },
+        "generateNotes": {
+            "title": "लेक्चर नोट्स बनाएं",
+            "description": "इस ट्रांसक्रिप्ट को स्पष्ट, संरचित अध्ययन नोट्स में बदलें जिन्हें आप छात्रों के साथ साझा कर सकते हैं।",
+            "cta": "नोट्स बनाएं"
+        }
+    },
+    "loading": {
+        "generatingNotes": "लेक्चर नोट्स बनाए जा रहे हैं…",
+        "usuallyTakes": "आमतौर पर 5–15 सेकंड लगते हैं।"
+    },
+    "errors": {
+        "couldNotGenerateNotes": "नोट्स नहीं बनाए जा सके।",
+        "transcriptTooShort": "नोट्स बनाने के लिए ट्रांसक्रिप्ट खाली है या बहुत छोटी है",
+        "cachingFailed": "नोट्स बन गए, लेकिन कैशिंग विफल रही — पुनः प्रयास के लिए फिर से बनाएं।",
+        "generateFailed": "नोट्स बनाने में विफल",
+        "pdfGenerationFailed": "PDF नहीं बनाया जा सका",
+        "notesNotReady": "नोट्स अभी निर्यात के लिए तैयार नहीं हैं।"
+    },
+    "toasts": {
+        "copied": "{{label}} कॉपी किया गया",
+        "clipboardError": "क्लिपबोर्ड तक पहुंच नहीं मिली",
+        "notesGenerated": "लेक्चर नोट्स बन गए",
+        "pdfDownloaded": "PDF डाउनलोड हो गया"
+    },
+    "loaded": {
+        "backToActions": "← कार्रवाइयों पर वापस जाएं",
+        "generated": "{{timeAgo}} बनाया गया",
+        "addToCourse": "कोर्स में जोड़ें",
+        "lectureNotes": "लेक्चर नोट्स",
+        "preparing": "तैयार हो रहा है…",
+        "downloadPdf": "PDF डाउनलोड करें",
+        "regenerate": "फिर से बनाएं"
+    }
+}

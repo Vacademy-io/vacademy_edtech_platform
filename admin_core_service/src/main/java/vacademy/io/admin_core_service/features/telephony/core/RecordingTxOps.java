@@ -16,7 +16,6 @@ import vacademy.io.admin_core_service.features.timeline.service.TimelineEventSer
 import vacademy.io.common.media.dto.FileDetailsDTO;
 
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +41,7 @@ public class RecordingTxOps {
     @Autowired private TelephonyProviderRegistry registry;
     @Autowired private MediaService mediaService;
     @Autowired private TimelineEventService timelineEventService;
-    @Autowired private UserMobileResolver userMobileResolver;
+    @Autowired private CallTimelineWriter callTimelineWriter;
     @Autowired private vacademy.io.admin_core_service.features.call_intelligence.core.CallIntelligenceEnqueueService callIntelligenceEnqueueService;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -127,7 +126,8 @@ public class RecordingTxOps {
         row.setRecordingLogged(true);
         callLogRepo.save(row);
 
-        writeTimelineEvent(row);
+        // Same CALL_MADE row the call-ended path wrote — now carrying the recording key.
+        callTimelineWriter.write(row);
 
         // Recording is now in our storage — kick off transcription + analysis if the
         // institute has call intelligence on. Best-effort, never throws.
@@ -151,78 +151,10 @@ public class RecordingTxOps {
                         "Call recording fetch failed",
                         "Tried 5 times — recording not available.",
                         Map.of("call_log_id", row.getId(), "status", row.getStatus()),
-                        null);
+                        // Link to the lead so this counts as a response for TAT.
+                        row.getUserId());
             } catch (Exception ignored) { /* never block on a logging side-effect */ }
         }
-    }
-
-    private void writeTimelineEvent(TelephonyCallLog row) {
-        boolean isInbound = "INBOUND".equalsIgnoreCase(row.getDirection());
-
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("provider_call_id", row.getProviderCallId());
-        meta.put("recording_storage_key", row.getRecordingStorageKey());
-        meta.put("status", row.getStatus());
-        meta.put("duration_seconds", row.getDurationSeconds());
-        meta.put("call_log_id", row.getId());
-        meta.put("caller_id", row.getCallerId());
-        // Direction is the source of truth for "did the lead call us or did we
-        // call the lead?" — frontend renderers (icon, accent colour, label)
-        // read this off the metadata so a single timeline-event renderer can
-        // handle both directions without duplicating logic.
-        meta.put("direction", row.getDirection());
-
-        // Actor: for OUTBOUND the counsellor placed the call → show their name.
-        // For INBOUND the LEAD initiated; the counsellor still answered, so
-        // we keep their name on the "by" line so it's clear who picked up.
-        String actorName = userMobileResolver
-                .findDisplayName(row.getCounsellorUserId())
-                .orElse(null);
-
-        // Title needs to reflect direction so the timeline doesn't mislabel
-        // inbound callbacks as outbound calls. action_type stays as CALL_MADE
-        // for both — the existing timeline renderer keys on this and we don't
-        // want to break it. Direction-specific styling reads `meta.direction`.
-        String title = isInbound ? "Inbound call from lead" : "Outbound call";
-
-        try {
-            // Use the 10-arg overload so the event row carries student_user_id
-            // — some timeline queries filter by it (and the side-view also
-            // groups events under the lead's user for cross-response views).
-            timelineEventService.logEvent(
-                    "LEAD",
-                    row.getResponseId() != null ? row.getResponseId() : row.getUserId(),
-                    "CALL_MADE",
-                    "USER",
-                    row.getCounsellorUserId(),
-                    actorName,
-                    title,
-                    describeOutcome(row),
-                    meta,
-                    row.getUserId());
-        } catch (Exception e) {
-            log.warn("timeline event write failed for call {}", row.getId(), e);
-        }
-    }
-
-    private String describeOutcome(TelephonyCallLog row) {
-        Integer d = row.getDurationSeconds();
-        String pretty = d == null ? "" : formatDuration(d);
-        String label = switch (row.getStatus()) {
-            case "COMPLETED" -> "Connected";
-            case "NO_ANSWER" -> "No answer";
-            case "BUSY"      -> "Busy";
-            case "CANCELLED" -> "Cancelled";
-            case "FAILED"    -> "Failed";
-            default          -> row.getStatus();
-        };
-        return d == null || d == 0 ? label : pretty + " · " + label;
-    }
-
-    private String formatDuration(int seconds) {
-        int m = seconds / 60;
-        int s = seconds % 60;
-        return m + "m " + s + "s";
     }
 
     /**

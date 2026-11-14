@@ -1,0 +1,18 @@
+{
+    "failedDialog": {
+        "heading": "Échec du chargement des questions",
+        "clickPrefix": "Cliquez",
+        "hereLink": "ici",
+        "retrySuffix": "pour réessayer"
+    },
+    "retryButton": {
+        "label": "Réessayer"
+    },
+    "openChatButton": {
+        "label": "Ouvrir le chat",
+        "loading": "Chargement…"
+    },
+    "toast": {
+        "noDataExists": "Aucune donnée disponible !"
+    }
+}

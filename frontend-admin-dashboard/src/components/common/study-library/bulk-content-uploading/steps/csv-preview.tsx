@@ -10,6 +10,8 @@ import {
     useBulkContentUploadingStore,
 } from '../use-bulk-content-uploading-store';
 import type { CsvRowResult } from '../csv-manifest';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 const RowStatus = ({ row }: { row: CsvRowResult }) => {
     if (row.status === 'valid') {
@@ -100,7 +102,13 @@ export const CsvPreview = ({ onConfirm }: { onConfirm: () => void }) => {
                         <tr>
                             <th className="px-4 py-2 font-medium">Row</th>
                             <th className="px-4 py-2 font-medium">File / link</th>
-                            <th className="px-4 py-2 font-medium">Course → chapter</th>
+                            <th className="px-4 py-2 font-medium">
+                                {getTerminology(ContentTerms.Course, SystemTerms.Course)} →{' '}
+                                {getTerminology(
+                                    ContentTerms.Chapters,
+                                    SystemTerms.Chapters
+                                ).toLocaleLowerCase()}
+                            </th>
                             <th className="px-4 py-2 font-medium">Order</th>
                             <th className="px-4 py-2 font-medium">Status</th>
                         </tr>

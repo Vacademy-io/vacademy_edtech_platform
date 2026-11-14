@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "Content Protection",
+        "description": "Control, per role, which slide types can be downloaded and whether right-click, copy and view-source are blocked on slides. These are best-effort, client-side deterrents — they hide our own controls and cannot stop every browser-level save."
+    },
+    "actions": {
+        "roleLabel": "Role"
+    },
+    "roles": {
+        "admin": {
+            "label": "Admin",
+            "cardLabel": "admins"
+        },
+        "teacher": {
+            "label": "Teacher",
+            "cardLabel": "teachers"
+        },
+        "learner": {
+            "label": "Learner",
+            "cardLabel": "learners"
+        }
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "toast": {
+        "updated": "Shift updated",
+        "created": "Shift created"
+    },
+    "errors": {
+        "save": "Could not save the shift."
+    },
+    "dialog": {
+        "editHeading": "Edit shift",
+        "addHeading": "Add shift",
+        "saveChanges": "Save changes",
+        "createShift": "Create shift"
+    },
+    "fields": {
+        "name": "Name",
+        "namePlaceholder": "General shift",
+        "code": "Code",
+        "codePlaceholder": "GEN",
+        "codeDescription": "Uppercase, no spaces — used when assigning employees in bulk.",
+        "startTime": "Start time",
+        "endTime": "End time",
+        "breakMinutes": "Break (minutes)",
+        "breakDescription": "Deducted from the hours worked.",
+        "gracePeriodMinutes": "Grace period (minutes)",
+        "gracePeriodDescription": "How late someone can check in before the day counts as late.",
+        "minHoursFullDay": "Minimum hours for a full day",
+        "minHoursHalfDay": "Minimum hours for a half day"
+    },
+    "switches": {
+        "nightShiftLabel": "Night shift",
+        "nightShiftDescription": "The shift crosses midnight — a check-out after 00:00 still belongs to the day it started on.",
+        "defaultShiftLabel": "Default shift",
+        "defaultShiftDescription": "Employees with no shift assignment are treated as being on this one."
+    },
+    "validation": {
+        "nameRequired": "Give the shift a name",
+        "codeMinLength": "Codes are at least 2 characters",
+        "codeFormat": "Uppercase letters, digits and underscores only — no spaces",
+        "startTimeRequired": "A start time is required",
+        "endTimeRequired": "An end time is required",
+        "wholeMinutesOnly": "Whole minutes only",
+        "hoursExampleFull": "Hours, e.g. 8 or 7.5",
+        "hoursExampleHalf": "Hours, e.g. 4"
+    }
+}

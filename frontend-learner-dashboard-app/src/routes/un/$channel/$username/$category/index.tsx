@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
@@ -16,6 +17,7 @@ export const Route = createFileRoute(
 });
 
 function UnsubscribeCommunicationPage() {
+  const { t } = useTranslation("miscRoutesA");
   const params = Route.useParams();
 
   // Sometimes during SPA navigation, params might be undefined momentarily
@@ -101,11 +103,11 @@ function UnsubscribeCommunicationPage() {
           transition={{ duration: 0.4 }}
         >
           <h1 className="text-h2 font-semibold text-slate-900 sm:text-h1 sm:leading-9">
-            Update your notifications
+            {t("unsubscribe.header.title")}
           </h1>
           <p className="text-body text-slate-600 sm:text-sm">
-            We’re updating your message preference for{" "}
-            <span className="font-medium text-slate-800">{flow.channelInfo.label}</span>.
+            {t("unsubscribe.header.descriptionPrefix")}{" "}
+            <span className="font-medium text-slate-800">{flow.channelLabel}</span>.
           </p>
         </motion.header>
 
@@ -117,7 +119,7 @@ function UnsubscribeCommunicationPage() {
         >
           <UnsubscribeSummaryCard
             icon={flow.channelInfo.icon}
-            channelLabel={flow.channelInfo.label}
+            channelLabel={flow.channelLabel}
 
             isError={flow.isError}
             isPending={flow.isPending}

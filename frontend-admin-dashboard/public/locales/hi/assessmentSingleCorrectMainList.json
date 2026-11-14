@@ -1,0 +1,14 @@
+{
+    "questionsSettings": "प्रश्न सेटिंग्स",
+    "questionType": "प्रश्न प्रकार",
+    "comprehensionText": "गद्यांश",
+    "comprehensionTextPlaceholder": "गद्यांश लिखें",
+    "questionNumber": "प्रश्न {{number}}",
+    "writeTheQuestion": "प्रश्न लिखें",
+    "answer": "उत्तर:",
+    "optionPlaceholder": "विकल्प {{letter}}",
+    "removeOption": "विकल्प हटाएं",
+    "addOption": "विकल्प जोड़ें",
+    "explanation": "स्पष्टीकरण:",
+    "explanationPlaceholder": "स्पष्टीकरण"
+}

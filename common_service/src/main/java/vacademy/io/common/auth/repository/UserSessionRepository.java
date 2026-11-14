@@ -31,12 +31,17 @@ public interface UserSessionRepository extends JpaRepository<UserSession, String
        // Find session by token
        List<UserSession> findBySessionTokenAndIsActive(String sessionToken, Boolean isActive);
 
-       // Update last activity time
+       // Update last activity time, at most once per staleBefore window. Every request
+       // touched this row (twice), and last_activity_time sits in several indexes, so each
+       // write was a non-HOT update through all of them and concurrent requests queued on
+       // the row lock (4-5 s waits). Readers look at windows of 5 minutes or more.
        @Modifying
        @Transactional
-       @Query("UPDATE UserSession u SET u.lastActivityTime = :activityTime WHERE u.sessionToken = :sessionToken AND u.isActive = true")
+       @Query("UPDATE UserSession u SET u.lastActivityTime = :activityTime WHERE u.sessionToken = :sessionToken AND u.isActive = true " +
+                     "AND (u.lastActivityTime IS NULL OR u.lastActivityTime < :staleBefore)")
        void updateLastActivityTime(@Param("sessionToken") String sessionToken,
-                     @Param("activityTime") LocalDateTime activityTime);
+                     @Param("activityTime") LocalDateTime activityTime,
+                     @Param("staleBefore") LocalDateTime staleBefore);
 
        // End session by token (existing — used by UserActivityTrackingService and
        // logout-by-token)

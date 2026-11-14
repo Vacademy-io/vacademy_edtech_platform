@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.common.auth.entity.User;
+import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
 import vacademy.io.notification_service.features.announcements.dto.*;
 import vacademy.io.notification_service.features.announcements.entity.*;
 import vacademy.io.notification_service.features.announcements.enums.*;
@@ -50,6 +52,8 @@ public class AnnouncementService {
     private final AnnouncementSchedulingService schedulingService;
     private final AnnouncementProcessingService processingService;
     private final InstituteAnnouncementSettingsService instituteSettingsService;
+    private final RecipientResolutionService recipientResolutionService;
+    private final AuthServiceClient authServiceClient;
 
     @Transactional
     public AnnouncementResponse createAnnouncement(CreateAnnouncementRequest request) {
@@ -147,7 +151,7 @@ public class AnnouncementService {
     @Transactional(readOnly = true)
     public Page<AnnouncementResponse> getAnnouncementsByInstitute(String instituteId, Pageable pageable) {
         return announcementRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId, pageable)
-                .map(this::mapToAnnouncementResponse);
+                .map(this::mapToListResponse);
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +159,7 @@ public class AnnouncementService {
                                                                           AnnouncementStatus status, 
                                                                           Pageable pageable) {
         return announcementRepository.findByInstituteIdAndStatusOrderByCreatedAtDesc(instituteId, status, pageable)
-                .map(this::mapToAnnouncementResponse);
+                .map(this::mapToListResponse);
     }
 
     @Transactional(readOnly = true)
@@ -168,6 +172,59 @@ public class AnnouncementService {
     public Page<AnnouncementCalendarItem> getPastAnnouncements(String instituteId, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable) {
         return announcementRepository.findPastAnnouncements(instituteId, fromDate, toDate, pageable)
                 .map(this::mapToCalendarItem);
+    }
+
+    /**
+     * Who an unsaved announcement would reach, one page at a time. Recipients are packed the way
+     * a save packs them and resolved by the same service delivery uses, so the count matches.
+     */
+    public RecipientPreviewResponse previewRecipients(RecipientPreviewRequest request) {
+        List<AnnouncementRecipient> rows = new ArrayList<>(
+                buildRecipientEntities(null, request.getRecipients(), false));
+        rows.addAll(buildRecipientEntities(null, request.getExclusions(), true));
+        List<String> userIds = recipientResolutionService.resolveUserIds(
+                request.getInstituteId(), "recipient preview", rows);
+        return toPreviewPage(userIds, request.getPage(), request.getSize());
+    }
+
+    /** Who a saved announcement would reach if it were delivered now. */
+    public RecipientPreviewResponse previewRecipients(String announcementId, int page, int size) {
+        List<String> userIds = recipientResolutionService.resolveRecipientsToUsers(announcementId);
+        return toPreviewPage(userIds, page, Math.min(Math.max(size, 1), 100));
+    }
+
+    private RecipientPreviewResponse toPreviewPage(List<String> userIds, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int from = Math.min(safePage * size, userIds.size());
+        int to = Math.min(from + size, userIds.size());
+        List<String> pageIds = userIds.subList(from, to);
+
+        // Contact details only for the visible page; ids auth no longer knows still show up.
+        Map<String, User> byId = new HashMap<>();
+        if (!pageIds.isEmpty()) {
+            for (User user : authServiceClient.getUsersByIdsInBatches(new ArrayList<>(pageIds), 100)) {
+                byId.put(user.getId(), user);
+            }
+        }
+        List<RecipientPreviewResponse.PreviewUser> users = pageIds.stream()
+                .map(id -> {
+                    User user = byId.get(id);
+                    return RecipientPreviewResponse.PreviewUser.builder()
+                            .userId(id)
+                            .fullName(user != null ? user.getFullName() : null)
+                            .email(user != null ? user.getEmail() : null)
+                            .mobileNumber(user != null ? user.getMobileNumber() : null)
+                            .build();
+                })
+                .toList();
+
+        return RecipientPreviewResponse.builder()
+                .totalCount(userIds.size())
+                .page(safePage)
+                .size(size)
+                .totalPages((userIds.size() + size - 1) / size)
+                .users(users)
+                .build();
     }
 
     /**
@@ -398,69 +455,86 @@ public class AnnouncementService {
         announcement.setCreatedByName(request.getCreatedByName());
         announcement.setCreatedByRole(request.getCreatedByRole());
         announcement.setTimezone(request.getTimezone() != null ? request.getTimezone() : "UTC");
+        announcement.setEntity(request.getEntity());
+        announcement.setEntityId(request.getEntityId());
         announcement.setStatus(AnnouncementStatus.DRAFT);
         return announcement;
     }
 
     private void saveRecipients(String announcementId, List<CreateAnnouncementRequest.RecipientRequest> recipients, boolean isExclusion) {
         if (recipients != null && !recipients.isEmpty()) {
-            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            List<AnnouncementRecipient> recipientEntities = recipients.stream()
-                    .map(r -> {
-                        AnnouncementRecipient recipient = new AnnouncementRecipient();
-                        recipient.setAnnouncementId(announcementId);
-                        recipient.setRecipientType(RecipientType.valueOf(r.getRecipientType()));
-                        
-                        // Handle CUSTOM_FIELD_FILTER type - store filters as JSON
-                        if ("CUSTOM_FIELD_FILTER".equals(r.getRecipientType())) {
-                            try {
-                                // Store filters as JSON in recipientName field
-                                if (r.getCustomFieldFilters() == null || r.getCustomFieldFilters().isEmpty()) {
-                                    log.warn("CUSTOM_FIELD_FILTER recipient has no filters provided");
-                                    recipient.setRecipientName("ERROR");
-                                } else {
-                                    String filtersJson = objectMapper.writeValueAsString(r.getCustomFieldFilters());
-                                    log.info("Serialized {} filters to JSON for CUSTOM_FIELD_FILTER: {}",
-                                            r.getCustomFieldFilters().size(), filtersJson);
-                                    recipient.setRecipientName(filtersJson);
-                                }
-                                // Use a placeholder ID or empty for CUSTOM_FIELD_FILTER
-                                String recipientId = isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER";
-                                recipient.setRecipientId(recipientId);
-                            } catch (Exception e) {
-                                log.error("Error serializing filters for CUSTOM_FIELD_FILTER recipient", e);
-                                recipient.setRecipientId(isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER");
-                                recipient.setRecipientName("ERROR");
-                            }
-                        } else {
-                            // For inclusions, store exclusions as JSON in recipientName if present
-                            if (!isExclusion && r.getExclusions() != null && !r.getExclusions().isEmpty()) {
-                                try {
-                                    String exclusionsJson = objectMapper.writeValueAsString(r.getExclusions());
-                                    recipient.setRecipientName(exclusionsJson);
-                                    log.info("SUCCESS: Stored {} exclusions as JSON for recipient {}: {}", r.getExclusions().size(), r.getRecipientId(), exclusionsJson);
-                                } catch (Exception e) {
-                                    log.error("Error serializing exclusions for recipient {}", r.getRecipientId(), e);
-                                    recipient.setRecipientName(r.getRecipientName());
-                                }
-                            } else {
-                                recipient.setRecipientName(r.getRecipientName());
-                                log.debug("No exclusions for recipient {}, stored name: {}", r.getRecipientId(), r.getRecipientName());
-                            }
-
-                            // For other types and exclusions, prefix the recipientId with "EXCLUDE:"
-                            String recipientId = isExclusion ? "EXCLUDE:" + r.getRecipientId() : r.getRecipientId();
-                            recipient.setRecipientId(recipientId);
-                        }
-                        return recipient;
-                    })
-                    .collect(Collectors.toList());
+            List<AnnouncementRecipient> recipientEntities = buildRecipientEntities(announcementId, recipients, isExclusion);
             recipientRepository.saveAll(recipientEntities);
             log.debug("Saved {} {} for announcement: {}",
                     recipientEntities.size(),
                     isExclusion ? "exclusions" : "recipients",
                     announcementId);
         }
+    }
+
+    /**
+     * Recipient rows exactly as {@link #saveRecipients} stores them (filters and per-row exclusions
+     * packed into recipientName, "EXCLUDE:" prefix), without saving — the recipient preview resolves
+     * an unsaved draft from these so it counts the same people the real send would.
+     */
+    private List<AnnouncementRecipient> buildRecipientEntities(String announcementId,
+                                                               List<CreateAnnouncementRequest.RecipientRequest> recipients,
+                                                               boolean isExclusion) {
+        if (recipients == null || recipients.isEmpty()) {
+            return new ArrayList<>();
+        }
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        List<AnnouncementRecipient> recipientEntities = recipients.stream()
+                .map(r -> {
+                    AnnouncementRecipient recipient = new AnnouncementRecipient();
+                    recipient.setAnnouncementId(announcementId);
+                    recipient.setRecipientType(RecipientType.valueOf(r.getRecipientType()));
+                    
+                    // Handle CUSTOM_FIELD_FILTER type - store filters as JSON
+                    if ("CUSTOM_FIELD_FILTER".equals(r.getRecipientType())) {
+                        try {
+                            // Store filters as JSON in recipientName field
+                            if (r.getCustomFieldFilters() == null || r.getCustomFieldFilters().isEmpty()) {
+                                log.warn("CUSTOM_FIELD_FILTER recipient has no filters provided");
+                                recipient.setRecipientName("ERROR");
+                            } else {
+                                String filtersJson = objectMapper.writeValueAsString(r.getCustomFieldFilters());
+                                log.info("Serialized {} filters to JSON for CUSTOM_FIELD_FILTER: {}",
+                                        r.getCustomFieldFilters().size(), filtersJson);
+                                recipient.setRecipientName(filtersJson);
+                            }
+                            // Use a placeholder ID or empty for CUSTOM_FIELD_FILTER
+                            String recipientId = isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER";
+                            recipient.setRecipientId(recipientId);
+                        } catch (Exception e) {
+                            log.error("Error serializing filters for CUSTOM_FIELD_FILTER recipient", e);
+                            recipient.setRecipientId(isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER");
+                            recipient.setRecipientName("ERROR");
+                        }
+                    } else {
+                        // For inclusions, store exclusions as JSON in recipientName if present
+                        if (!isExclusion && r.getExclusions() != null && !r.getExclusions().isEmpty()) {
+                            try {
+                                String exclusionsJson = objectMapper.writeValueAsString(r.getExclusions());
+                                recipient.setRecipientName(exclusionsJson);
+                                log.info("SUCCESS: Stored {} exclusions as JSON for recipient {}: {}", r.getExclusions().size(), r.getRecipientId(), exclusionsJson);
+                            } catch (Exception e) {
+                                log.error("Error serializing exclusions for recipient {}", r.getRecipientId(), e);
+                                recipient.setRecipientName(r.getRecipientName());
+                            }
+                        } else {
+                            recipient.setRecipientName(r.getRecipientName());
+                            log.debug("No exclusions for recipient {}, stored name: {}", r.getRecipientId(), r.getRecipientName());
+                        }
+
+                        // For other types and exclusions, prefix the recipientId with "EXCLUDE:"
+                        String recipientId = isExclusion ? "EXCLUDE:" + r.getRecipientId() : r.getRecipientId();
+                        recipient.setRecipientId(recipientId);
+                    }
+                    return recipient;
+                })
+                .collect(Collectors.toList());
+        return recipientEntities;
     }
 
     private void saveModes(String announcementId, List<CreateAnnouncementRequest.ModeRequest> modes) {
@@ -587,6 +661,17 @@ public class AnnouncementService {
     }
 
     private AnnouncementResponse mapToAnnouncementResponse(Announcement announcement) {
+        return mapToAnnouncementResponse(announcement, true);
+    }
+
+    // List rows skip stats: the email part reads notification_log by source_id, which has no index,
+    // so every row cost a full scan of that table. The history page loads stats per row on demand
+    // from /{id}/stats instead.
+    private AnnouncementResponse mapToListResponse(Announcement announcement) {
+        return mapToAnnouncementResponse(announcement, false);
+    }
+
+    private AnnouncementResponse mapToAnnouncementResponse(Announcement announcement, boolean includeStats) {
         // Map entity to response DTO with all related data
         AnnouncementResponse response = new AnnouncementResponse();
         response.setId(announcement.getId());
@@ -684,14 +769,16 @@ public class AnnouncementService {
                     schedulingResponse.setTimezone(scheduledMessage.getTimezone());
                     schedulingResponse.setStartDate(scheduledMessage.getStartDate());
                     schedulingResponse.setEndDate(scheduledMessage.getEndDate());
-                    schedulingResponse.setNextRunTime(scheduledMessage.getNextRunTime());
+                    schedulingResponse.setNextRunTime(schedulingService.nextRunTimeInScheduleZone(scheduledMessage));
                     schedulingResponse.setLastRunTime(scheduledMessage.getLastRunTime());
                     schedulingResponse.setIsActive(scheduledMessage.getIsActive());
                     response.setScheduling(schedulingResponse);
                 });
         
         // Map stats
-        response.setStats(computeAnnouncementStats(announcement.getId()));
+        if (includeStats) {
+            response.setStats(computeAnnouncementStats(announcement.getId()));
+        }
         
         return response;
     }
@@ -707,9 +794,48 @@ public class AnnouncementService {
     @Transactional(readOnly = true)
     public Page<AnnouncementRecipientInteractionResponse> getRecipientInteractions(
             String announcementId, ModeType modeType, Pageable pageable) {
-        Page<RecipientMessage> messages = modeType != null
-                ? recipientMessageRepository.findByAnnouncementIdAndModeTypeOrderByCreatedAtDesc(announcementId, modeType, pageable)
-                : recipientMessageRepository.findByAnnouncementIdOrderByCreatedAtDesc(announcementId, pageable);
+        return getRecipientInteractions(announcementId, modeType, null, null, pageable);
+    }
+
+    /**
+     * Report table page.
+     *
+     * @param channel a MediumType (EMAIL, WHATSAPP, PUSH_NOTIFICATION) or a ModeType for in-app
+     *                rows, matching {@link AnnouncementResponse.ChannelStats#getChannel()}; null = all
+     * @param outcome DELIVERED (sent, delivered or read), FAILED or PENDING; null = all
+     */
+    @Transactional(readOnly = true)
+    public Page<AnnouncementRecipientInteractionResponse> getRecipientInteractions(
+            String announcementId, ModeType modeType, String channel, String outcome, Pageable pageable) {
+        MediumType mediumFilter = null;
+        ModeType modeFilter = modeType;
+        boolean inAppOnly = false;
+        if (channel != null && !channel.isBlank()) {
+            String key = channel.trim().toUpperCase();
+            mediumFilter = parseEnum(MediumType.class, key);
+            if (mediumFilter == null) {
+                modeFilter = parseEnum(ModeType.class, key);
+                if (modeFilter == null) {
+                    throw new IllegalArgumentException("Unknown channel: " + channel);
+                }
+                inAppOnly = true;
+            }
+        }
+
+        Page<RecipientMessage> messages = recipientMessageRepository.findReportPage(
+                announcementId, statusesFor(outcome), modeFilter, mediumFilter, inAppOnly, pageable);
+
+        // Email detail for the email rows on this page, in one query.
+        String[] emailUserIds = messages.getContent().stream()
+                .filter(rm -> rm.getMediumType() == MediumType.EMAIL)
+                .map(RecipientMessage::getUserId)
+                .distinct()
+                .toArray(String[]::new);
+        Map<String, NotificationLogRepository.AnnouncementRecipientEmailRow> emailByUser = new HashMap<>();
+        if (emailUserIds.length > 0) {
+            notificationLogRepository.findAnnouncementEmailsForUsers(announcementId, emailUserIds)
+                    .forEach(e -> emailByUser.put(e.getUserId(), e));
+        }
 
         return messages.map(rm -> {
             AnnouncementRecipientInteractionResponse row = new AnnouncementRecipientInteractionResponse();
@@ -717,7 +843,9 @@ public class AnnouncementService {
             row.setUserId(rm.getUserId());
             row.setUserName(rm.getUserName());
             row.setModeType(rm.getModeType());
+            row.setMediumType(rm.getMediumType());
             row.setStatus(rm.getStatus());
+            row.setErrorMessage(rm.getErrorMessage());
             row.setDeliveredAt(rm.getDeliveredAt());
             messageInteractionRepository.findByRecipientMessageIdAndUserIdAndInteractionType(
                     rm.getId(), rm.getUserId(), InteractionType.READ)
@@ -725,8 +853,56 @@ public class AnnouncementService {
             messageInteractionRepository.findByRecipientMessageIdAndUserIdAndInteractionType(
                     rm.getId(), rm.getUserId(), InteractionType.DISMISSED)
                     .ifPresent(i -> row.setDismissedAt(i.getInteractionTime()));
+            if (rm.getMediumType() == MediumType.EMAIL) {
+                NotificationLogRepository.AnnouncementRecipientEmailRow email = emailByUser.get(rm.getUserId());
+                if (email != null) {
+                    row.setEmail(email.getEmail());
+                    row.setEmailStatus(emailStatusOf(email));
+                    row.setEmailOpenedAt(toUtcLocal(email.getOpenedAt()));
+                    row.setEmailClickedAt(toUtcLocal(email.getClickedAt()));
+                    if (row.getErrorMessage() == null && email.getSendError() != null) {
+                        row.setErrorMessage(email.getSendError());
+                    }
+                }
+            }
             return row;
         });
+    }
+
+    private static List<MessageStatus> statusesFor(String outcome) {
+        if (outcome == null || outcome.isBlank()) {
+            return List.of(MessageStatus.values());
+        }
+        return switch (outcome.trim().toUpperCase()) {
+            case "DELIVERED" -> List.of(MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.READ);
+            case "FAILED" -> List.of(MessageStatus.FAILED);
+            case "PENDING" -> List.of(MessageStatus.PENDING);
+            default -> throw new IllegalArgumentException("Unknown outcome: " + outcome);
+        };
+    }
+
+    /** Most significant thing SES said about this email: a failure beats engagement beats delivery. */
+    public static String emailStatusOf(NotificationLogRepository.AnnouncementRecipientEmailRow email) {
+        if ("FAILED".equalsIgnoreCase(email.getSendStatus())) return "FAILED";
+        if (Boolean.TRUE.equals(email.getBounced())) return "BOUNCED";
+        if (Boolean.TRUE.equals(email.getRejected())) return "REJECTED";
+        if (Boolean.TRUE.equals(email.getComplained())) return "COMPLAINED";
+        if (email.getClickedAt() != null) return "CLICKED";
+        if (email.getOpenedAt() != null) return "OPENED";
+        if (Boolean.TRUE.equals(email.getDelivered())) return "DELIVERED";
+        return "SENT";
+    }
+
+    private static LocalDateTime toUtcLocal(java.sql.Timestamp ts) {
+        return ts == null ? null : LocalDateTime.ofInstant(ts.toInstant(), java.time.ZoneOffset.UTC);
+    }
+
+    private static <E extends Enum<E>> E parseEnum(Class<E> type, String name) {
+        try {
+            return Enum.valueOf(type, name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
     
     /**
@@ -833,132 +1009,102 @@ public class AnnouncementService {
 
     private AnnouncementResponse.AnnouncementStatsResponse computeAnnouncementStats(String announcementId) {
         AnnouncementResponse.AnnouncementStatsResponse stats = new AnnouncementResponse.AnnouncementStatsResponse();
-        
-        // Original stats from recipient_messages table
-        long totalRecipients = recipientMessageRepository.countByAnnouncementId(announcementId);
-        long deliveredCount = recipientMessageRepository.countByAnnouncementIdAndStatus(announcementId, MessageStatus.DELIVERED);
-        long failedCount = recipientMessageRepository.countByAnnouncementIdAndStatus(announcementId, MessageStatus.FAILED);
-        long readCount = messageInteractionRepository.countByAnnouncementIdAndInteractionType(announcementId, InteractionType.READ);
-        long dismissedCount = messageInteractionRepository.countByAnnouncementIdAndInteractionType(announcementId, InteractionType.DISMISSED);
 
-        stats.setTotalRecipients(totalRecipients);
-        stats.setDeliveredCount(deliveredCount);
-        stats.setFailedCount(failedCount);
-        stats.setReadCount(readCount);
-        stats.setDismissedCount(dismissedCount);
+        // People, not rows: an announcement holds one recipient row per user per mode per medium.
+        RecipientMessageRepository.PeopleSummaryRow people = recipientMessageRepository.summarizePeople(announcementId);
+        long totalPeople = asLong(people == null ? null : people.getPeople());
+        long reached = asLong(people == null ? null : people.getReached());
+        RecipientMessageRepository.EngagementSummaryRow engagement =
+                recipientMessageRepository.summarizeEngagement(announcementId);
+        long readPeople = asLong(engagement == null ? null : engagement.getReadPeople());
+        long dismissedPeople = asLong(engagement == null ? null : engagement.getDismissedPeople());
 
-        if (totalRecipients > 0) {
-            stats.setDeliveryRate((double) deliveredCount / totalRecipients * 100);
-            stats.setReadRate((double) readCount / totalRecipients * 100);
-            stats.setDismissRate((double) dismissedCount / totalRecipients * 100);
-        } else {
-            stats.setDeliveryRate(0.0);
-            stats.setReadRate(0.0);
-            stats.setDismissRate(0.0);
-        }
-        
-        // Enhanced SES Email Event Stats from notification_log table
+        stats.setTotalRecipients(totalPeople);
+        stats.setTotalMessages(asLong(people == null ? null : people.getMessages()));
+        stats.setDeliveredCount(reached);
+        stats.setFailedCount(asLong(people == null ? null : people.getFailed()));
+        stats.setPendingCount(asLong(people == null ? null : people.getPending()));
+        stats.setReadCount(readPeople);
+        stats.setDismissedCount(dismissedPeople);
+        stats.setDeliveryRate(rate(reached, totalPeople));
+        stats.setReadRate(rate(readPeople, totalPeople));
+        stats.setDismissRate(rate(dismissedPeople, totalPeople));
+
+        stats.setChannels(recipientMessageRepository.summarizeChannels(announcementId).stream()
+                .map(row -> new AnnouncementResponse.ChannelStats(
+                        row.getChannel(),
+                        asLong(row.getPeople()),
+                        asLong(row.getReached()),
+                        asLong(row.getFailed()),
+                        asLong(row.getPending())))
+                .collect(Collectors.toList()));
+
+        // SES email stats, cumulative over every event linked to each announcement email.
         try {
-            // 1. Find all original EMAIL logs for this announcement
-            List<NotificationLog> emailLogs = notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL");
-            long emailsSent = emailLogs.size();
-            stats.setEmailsSent(emailsSent);
-            
-            if (emailsSent > 0) {
-                // 2. Get all email log IDs to query their events
-                List<String> emailLogIds = emailLogs.stream()
-                        .map(NotificationLog::getId)
-                        .collect(Collectors.toList());
-                
-                // 3. Get latest event for each email using native query (more reliable for duplicates)
-                String[] emailLogIdsArray = emailLogIds.toArray(new String[0]);
-                List<NotificationLog> latestEvents = notificationLogRepository.findLatestEmailEventsBySourceIdsNative(emailLogIdsArray);
-                
-                // 4. Count events by extracting event type from body
-                Map<String, Long> eventCounts = countEventsByType(latestEvents);
-                
-                // Log event breakdown for debugging
-                log.debug("Event counts for announcement {}: {}", announcementId, eventCounts);
-                
-                long emailsSend = eventCounts.getOrDefault("send", 0L);
-                long emailsDelivered = eventCounts.getOrDefault("delivery", 0L);
-                long emailsOpened = eventCounts.getOrDefault("open", 0L);
-                long emailsClicked = eventCounts.getOrDefault("click", 0L);
-                long emailsBounced = eventCounts.getOrDefault("bounce", 0L);
-                long emailsRejected = eventCounts.getOrDefault("reject", 0L);
-                long emailsComplained = eventCounts.getOrDefault("complaint", 0L);
-                long emailsPending = emailsSent - latestEvents.size(); // Emails without any event yet
-                
-                stats.setEmailsSend(emailsSend);
-                stats.setEmailsDelivered(emailsDelivered);
-                stats.setEmailsOpened(emailsOpened);
-                stats.setEmailsClicked(emailsClicked);
-                stats.setEmailsBounced(emailsBounced);
-                stats.setEmailsRejected(emailsRejected);
-                stats.setEmailsComplained(emailsComplained);
-                stats.setEmailsPending(emailsPending);
-                
-                // Calculate enhanced rates
-                stats.setEmailDeliveryRate(emailsSent > 0 ? (double) emailsDelivered / emailsSent * 100 : 0.0);
-                stats.setEmailOpenRate(emailsDelivered > 0 ? (double) emailsOpened / emailsDelivered * 100 : 0.0);
-                stats.setEmailClickRate(emailsDelivered > 0 ? (double) emailsClicked / emailsDelivered * 100 : 0.0);
-                stats.setEmailBounceRate(emailsSent > 0 ? (double) emailsBounced / emailsSent * 100 : 0.0);
-                stats.setEmailRejectRate(emailsSent > 0 ? (double) emailsRejected / emailsSent * 100 : 0.0);
-                stats.setEmailComplaintRate(emailsSent > 0 ? (double) emailsComplained / emailsSent * 100 : 0.0);
-            } else {
-                // No emails sent yet, set all to 0
-                stats.setEmailsSend(0L);
-                stats.setEmailsDelivered(0L);
-                stats.setEmailsOpened(0L);
-                stats.setEmailsClicked(0L);
-                stats.setEmailsBounced(0L);
-                stats.setEmailsRejected(0L);
-                stats.setEmailsComplained(0L);
-                stats.setEmailsPending(0L);
-                stats.setEmailDeliveryRate(0.0);
-                stats.setEmailOpenRate(0.0);
-                stats.setEmailClickRate(0.0);
-                stats.setEmailBounceRate(0.0);
-                stats.setEmailRejectRate(0.0);
-                stats.setEmailComplaintRate(0.0);
-            }
+            NotificationLogRepository.AnnouncementEmailFunnelRow email =
+                    notificationLogRepository.summarizeAnnouncementEmails(announcementId);
+            long logged = asLong(email == null ? null : email.getLogged());
+            long failedToSend = asLong(email == null ? null : email.getFailedToSend());
+            long sent = Math.max(0, logged - failedToSend);
+            long delivered = asLong(email == null ? null : email.getDelivered());
+            long opened = asLong(email == null ? null : email.getOpened());
+            long clicked = asLong(email == null ? null : email.getClicked());
+            long bounced = asLong(email == null ? null : email.getBounced());
+            long rejected = asLong(email == null ? null : email.getRejected());
+            long complained = asLong(email == null ? null : email.getComplained());
+
+            stats.setEmailsSent(sent);
+            stats.setEmailsFailedToSend(failedToSend);
+            stats.setEmailsSend(asLong(email == null ? null : email.getAccepted()));
+            stats.setEmailsDelivered(delivered);
+            stats.setEmailsOpened(opened);
+            stats.setEmailsClicked(clicked);
+            stats.setEmailsBounced(bounced);
+            stats.setEmailsRejected(rejected);
+            stats.setEmailsComplained(complained);
+            stats.setEmailsPending(asLong(email == null ? null : email.getAwaiting()));
+            stats.setEmailDeliveryRate(rate(delivered, sent));
+            stats.setEmailOpenRate(rate(opened, delivered));
+            stats.setEmailClickRate(rate(clicked, delivered));
+            stats.setEmailBounceRate(rate(bounced, sent));
+            stats.setEmailRejectRate(rate(rejected, sent));
+            stats.setEmailComplaintRate(rate(complained, sent));
         } catch (Exception e) {
             log.error("Error computing SES email event stats for announcement {}: {}", announcementId, e.getMessage(), e);
-            // Set default values if error occurs
-            stats.setEmailsSent(0L);
-            stats.setEmailsSend(0L);
-            stats.setEmailsDelivered(0L);
-            stats.setEmailsOpened(0L);
-            stats.setEmailsClicked(0L);
-            stats.setEmailsBounced(0L);
-            stats.setEmailsRejected(0L);
-            stats.setEmailsComplained(0L);
-            stats.setEmailsPending(0L);
-            stats.setEmailDeliveryRate(0.0);
-            stats.setEmailOpenRate(0.0);
-            stats.setEmailClickRate(0.0);
-            stats.setEmailBounceRate(0.0);
-            stats.setEmailRejectRate(0.0);
-            stats.setEmailComplaintRate(0.0);
+            zeroEmailStats(stats);
         }
 
         return stats;
     }
-    
-    /**
-     * Helper method to extract event type from notification log body and count occurrences
-     */
-    private Map<String, Long> countEventsByType(List<NotificationLog> events) {
-        Map<String, Long> counts = new HashMap<>();
-        
-        for (NotificationLog event : events) {
-            String eventType = extractEventTypeFromBody(event.getBody());
-            counts.put(eventType, counts.getOrDefault(eventType, 0L) + 1);
-        }
-        
-        return counts;
+
+    private static void zeroEmailStats(AnnouncementResponse.AnnouncementStatsResponse stats) {
+        stats.setEmailsSent(0L);
+        stats.setEmailsFailedToSend(0L);
+        stats.setEmailsSend(0L);
+        stats.setEmailsDelivered(0L);
+        stats.setEmailsOpened(0L);
+        stats.setEmailsClicked(0L);
+        stats.setEmailsBounced(0L);
+        stats.setEmailsRejected(0L);
+        stats.setEmailsComplained(0L);
+        stats.setEmailsPending(0L);
+        stats.setEmailDeliveryRate(0.0);
+        stats.setEmailOpenRate(0.0);
+        stats.setEmailClickRate(0.0);
+        stats.setEmailBounceRate(0.0);
+        stats.setEmailRejectRate(0.0);
+        stats.setEmailComplaintRate(0.0);
     }
-    
+
+    private static long asLong(Number n) {
+        return n == null ? 0L : n.longValue();
+    }
+
+    /** Percentage, 0 when the base is empty. */
+    public static double rate(long part, long whole) {
+        return whole > 0 ? (double) part / whole * 100 : 0.0;
+    }
+
     /**
      * Extract event type from the notification log body
      * Body format: "Email Event: DELIVERY\n..." or "Email Event: OPEN\n..." etc.
@@ -1013,7 +1159,7 @@ public class AnnouncementService {
             item.setTimezone(sm.getTimezone());
             item.setStartDate(sm.getStartDate());
             item.setEndDate(sm.getEndDate());
-            item.setNextRunTime(sm.getNextRunTime());
+            item.setNextRunTime(schedulingService.nextRunTimeInScheduleZone(sm));
             item.setLastRunTime(sm.getLastRunTime());
         });
         return item;

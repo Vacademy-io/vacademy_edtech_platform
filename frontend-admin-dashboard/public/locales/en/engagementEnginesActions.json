@@ -1,0 +1,138 @@
+{
+    "types": {
+        "ADD_NOTE": {
+            "label": "Note",
+            "description": "Writes a note on the lead for the counsellor, labelled AI."
+        },
+        "CREATE_FOLLOWUP": {
+            "label": "Follow-up",
+            "description": "Schedules a follow-up for the counsellor. Never a second one while one is open."
+        },
+        "ESCALATE": {
+            "label": "Escalation",
+            "description": "Flags the lead for a counsellor to look at now, with the reason."
+        },
+        "UPDATE_STATUS": {
+            "label": "Status change",
+            "description": "Moves the lead's CRM status. Never to Converted; Lost and Not interested need a note that explains why."
+        },
+        "SCHEDULE_AI_CALL": {
+            "label": "AI call",
+            "description": "Queues an AI voice call in calling hours, at most 3 a week. Never after a wrong number or a do-not-disturb."
+        }
+    },
+    "panel": {
+        "title": "CRM actions",
+        "subtitle": "{{count}} allowed · each one starts as an inbox task",
+        "loadFailed": "Couldn't load the CRM actions.",
+        "retry": "Retry",
+        "empty": "No CRM actions are available.",
+        "allowed": "Allowed",
+        "auto": "Runs on its own",
+        "allowedFor": "Allow {{action}}",
+        "autoFor": "Let {{action}} run on its own",
+        "progress": "{{approved}} of {{threshold}} approved — it runs on its own after that",
+        "graduated": "Runs on its own now",
+        "paused": "Paused by the kill switch",
+        "footnote": "An action runs on its own only after a person has approved enough of that same type. The kill switch stops all of them, a lead marked Do not automate gets drafts only, and the holdout group gets nothing.",
+        "saved": "CRM actions saved",
+        "saveFailed": "Couldn't save the CRM actions",
+        "autoNeedsAllowed": "Allow this action first."
+    },
+    "inbox": {
+        "kindFilter": "CRM actions",
+        "whatWillHappen": "What will happen",
+        "whatHappened": "What happened",
+        "noDescription": "No description.",
+        "fields": {
+            "statusKey": "New status",
+            "dueInHours": "In (hours)",
+            "note": "Note",
+            "reason": "Reason"
+        },
+        "doneAuto": "Done automatically",
+        "approvedBy": "Approved {{name}}",
+        "undone": "Undone",
+        "waitingUntil": "Approved — waits until {{time}}",
+        "approve": "Approve",
+        "undo": "Undo",
+        "cancelCall": "Cancel the call",
+        "approvedToast": "Done",
+        "scheduledToast": "Approved — it will run at the time asked for",
+        "undoneToast": "Undone",
+        "approveFailed": "Couldn't do this action",
+        "undoFailed": "Couldn't undo this action",
+        "approved": "Approved"
+    },
+    "lead": {
+        "title": "Do not automate",
+        "onHint": "Engagement engines only draft for this lead; nothing is sent or done on its own.",
+        "offHint": "Engagement engines may contact this lead and act on its own where allowed.",
+        "loadFailed": "Couldn't load the automation setting.",
+        "saveFailed": "Couldn't save the automation setting",
+        "onToast": "Automation is off for this lead",
+        "offToast": "Automation is back on for this lead",
+        "retry": "Retry"
+    },
+    "picker": {
+        "autoHelp": "\"Runs on its own\" works only after a person has approved a few actions of that type (5 by default). Until then, each one is an inbox task.",
+        "implicit": "Allowed because the AI call channel is on"
+    },
+    "upcomingCalls": {
+        "title": "AI calls",
+        "someone": "Someone",
+        "review_one": "Approve {{count}} call",
+        "review_other": "Approve {{count}} calls",
+        "empty": "No call is coming up. A call shows here as soon as the engine proposes one.",
+        "mode": {
+            "notLive": "The engine is not active, so no call is placed.",
+            "killed": "The kill switch is on: every call waits for your approval in the inbox.",
+            "manual": "Every call waits for your approval in the inbox.",
+            "learning": "{{approved}} of {{threshold}} calls approved. After that, calls go out on their own.",
+            "auto": "Calls go out on their own, in calling hours."
+        },
+        "section": {
+            "NEEDS_APPROVAL_one": "Waiting for your approval ({{count}})",
+            "NEEDS_APPROVAL_other": "Waiting for your approval ({{count}})",
+            "SCHEDULED_one": "Approved, calling later ({{count}})",
+            "SCHEDULED_other": "Approved, calling later ({{count}})",
+            "IN_QUEUE_one": "In the calling queue ({{count}})",
+            "IN_QUEUE_other": "In the calling queue ({{count}})",
+            "PLACED_one": "Placed in the last 24 hours ({{count}})",
+            "PLACED_other": "Placed in the last 24 hours ({{count}})",
+            "FIRST_one": "Next first call ({{count}} person)",
+            "FIRST_other": "Next first calls ({{count}} people)"
+        },
+        "firstHint": "Nothing has gone to these people yet. When the engine next looks at them, it proposes an AI call first.",
+        "state": {
+            "NEEDS_APPROVAL": "Needs approval",
+            "SCHEDULED": "Scheduled",
+            "IN_QUEUE": "In queue",
+            "PLACED": "Placed"
+        },
+        "result": {
+            "COMPLETED": "Connected",
+            "NO_ANSWER": "No answer",
+            "BUSY": "Busy",
+            "FAILED": "Failed"
+        },
+        "expires": "Expires {{time}}",
+        "callsAt": "Calls at {{time}}",
+        "notBefore": "Not before {{time}}",
+        "nextFreeLine": "When a line is free",
+        "placedAt": "{{time}}",
+        "around": "Around {{time}}",
+        "nextCheck": "At the next check",
+        "noPhone": "No phone: another channel",
+        "more_one": "and {{count}} more person",
+        "more_other": "and {{count}} more people",
+        "show": "Details",
+        "hide": "Hide",
+        "summary": {
+            "NEEDS_APPROVAL": "{{count}} to approve",
+            "SCHEDULED": "{{count}} scheduled",
+            "IN_QUEUE": "{{count}} in the queue",
+            "FIRST": "{{count}} to call first"
+        }
+    }
+}

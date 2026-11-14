@@ -1,0 +1,47 @@
+{
+    "common": {
+        "open": "Open",
+        "attention": "Attention",
+        "dateText": "Date",
+        "timeText": "Time",
+        "reminderBodyPrefix": "A Homework reminder will be sent to all",
+        "participants_one": "{{count}} participant",
+        "participants_other": "{{count}} participants",
+        "reminderBodySuffix": "who have not yet appeared from the assigned batches."
+    },
+    "menu": {
+        "viewHomeworkDetails": "View Homework Details",
+        "deleteHomework": "Delete Homework"
+    },
+    "reminderDialog": {
+        "title": "Send Reminder",
+        "send": "Send"
+    },
+    "deleteDialog": {
+        "title": "Delete Homework",
+        "confirmPrefix": "Are you sure you want to delete",
+        "confirmSuffix": "?",
+        "slidesDeleteFailedToast": "Assessment deleted, but its course slides could not be removed.",
+        "successToast": "Assessment has been deleted successfully!",
+        "delete": "Delete"
+    },
+    "pauseDialog": {
+        "title": "Pause Live Status",
+        "pauseUntilLabel": "Pause Until",
+        "pause": "Pause"
+    },
+    "resumeDialog": {
+        "title": "Resume Live Status",
+        "confirmPrefix": "Do you want to resume your Live homework",
+        "testName": "The Human Eye and The Colourful World",
+        "confirmSuffix": "?",
+        "resume": "Resume"
+    },
+    "reopenDialog": {
+        "title": "Reopen Homework",
+        "selectDateTime": "Select homework reopening date and time",
+        "startDateTimeLabel": "Start Date & Time",
+        "endDateTimeLabel": "End Date & Time",
+        "reopen": "Reopen"
+    }
+}

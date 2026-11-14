@@ -1,0 +1,93 @@
+{
+    "heading": {
+        "activeMemberships": "Adhésions actives",
+        "viewHistory": "Voir l'historique",
+        "membershipHistory": "Historique des adhésions"
+    },
+    "emptyState": {
+        "noActivePlans": "Aucune adhésion active pour cet apprenant.",
+        "noPlansFound": "Aucun plan trouvé."
+    },
+    "planStatus": {
+        "active": "Plan actif",
+        "expired": "Plan expiré",
+        "unknown": "Inconnu"
+    },
+    "enrollmentStatus": {
+        "active": "Inscription active",
+        "inactive": "Cours inactif"
+    },
+    "fallback": {
+        "planName": "Plan inconnu",
+        "paymentOption": "Option de paiement inconnue"
+    },
+    "coupon": {
+        "defaultLabel": "Coupon",
+        "percentageOff": "{{point}}% de réduction",
+        "percentageOffWithCap": "{{point}}% de réduction · max {{amount}}",
+        "amountOff": "{{amount}} de réduction"
+    },
+    "autoRenewal": {
+        "enabled": "Renouvellement automatique",
+        "disabled": "Pas de renouvellement automatique",
+        "paymentAttemptOn": "Tentative de paiement le {{date}}",
+        "scheduledDate": "date prévue",
+        "disabledTooltip": "Le renouvellement automatique est désactivé"
+    },
+    "policy": {
+        "expiryPolicy": "Politique d'expiration",
+        "finalDate": "Fin : {{date}}",
+        "gracePeriod_one": "{{count}} jour de grâce",
+        "gracePeriod_many": "{{count}} de jours de grâce",
+        "gracePeriod_other": "{{count}} jours de grâce",
+        "actionsCount": "Actions de la politique ({{count}})",
+        "reenrollmentFrom": "Réinscription à partir du {{date}}",
+        "reenrollmentAvailable": "Réinscription disponible",
+        "gapDays_one": "({{count}} jour d'écart)",
+        "gapDays_many": "({{count}} de jours d'écart)",
+        "gapDays_other": "({{count}} jours d'écart)",
+        "reenrollmentNotAllowed": "Réinscription non autorisée"
+    },
+    "daysLeft": {
+        "label": "jours restants",
+        "noExpiry": "Sans expiration",
+        "activeSession": "Session active",
+        "renewalDueSoon": "Renouvellement bientôt requis",
+        "urgentRenewal": "Renouvellement urgent requis"
+    },
+    "dates": {
+        "started": "Commencé le {{date}}",
+        "ends": "Se termine le {{date}}"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "toast": {
+        "loadHistoryFailed": "Échec du chargement de l'historique des plans",
+        "loadPageFailed": "Échec du chargement des plans"
+    },
+    "changePlan": {
+        "button": "Change plan",
+        "title": "Change payment plan",
+        "noChargeWarning": "This applies immediately and takes no payment. The member keeps their current access window; the new price starts billing at their next renewal.",
+        "loadFailed": "We couldn't load the available plans. Please try again.",
+        "noOptions": "No other plan is marked switchable for this member. Turn on plan switching for a payment option in Settings → Payment Settings.",
+        "alreadyInProgress": "A plan change is already in progress for this membership.",
+        "planNotActive": "This membership isn't active, so its plan can't be changed.",
+        "currentlyOn": "Currently on {{plan}} ({{price}}).",
+        "upgrade": "Upgrade",
+        "downgrade": "Downgrade",
+        "cadence": "{{price}} every {{days}} days",
+        "crossOptionNote": "Also moves them onto the {{option}} enrolment invite — gateway, currency and auto-pay settings come from it.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. negotiated downgrade, billing correction",
+        "notifyLearner": "Notify the member about this change",
+        "cancel": "Cancel",
+        "apply": "Apply change",
+        "applying": "Applying…",
+        "successToast": "Moved to {{plan}}",
+        "failedToast": "Couldn't change the plan"
+    }
+}

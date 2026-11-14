@@ -49,6 +49,22 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
             """, nativeQuery = true)
     Integer countAssignmentSlidesForPackageSession(@Param("packageSessionId") String packageSessionId);
 
+    /**
+     * Every slide reachable from a package session (chapter mapping, then chapter_to_slides),
+     * anything not deleted. Scopes the learner report marks and topics to a picked batch. READ-ONLY.
+     */
+    @Query(value = """
+            SELECT DISTINCT cs.slide_id
+            FROM chapter_package_session_mapping cpsm
+            JOIN chapter c ON c.id = cpsm.chapter_id
+            JOIN chapter_to_slides cs ON cs.chapter_id = c.id
+            WHERE cpsm.package_session_id = :packageSessionId
+              AND cpsm.status <> 'DELETED'
+              AND c.status <> 'DELETED'
+              AND cs.status <> 'DELETED'
+            """, nativeQuery = true)
+    List<String> findSlideIdsForPackageSession(@Param("packageSessionId") String packageSessionId);
+
     @Query(value = """
             SELECT s.id AS slideId,
                    s.title AS slideTitle,
@@ -267,57 +283,138 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
             @Param("chapterId") String chapterId,
             @Param("status") List<String> status);
 
+    /**
+     * Lessons the learner opened but has not finished, most recent first, each under one batch
+     * the learner is actively enrolled in at this institute. A chapter counts only through its
+     * link to that batch, and a subject only through its own link to that batch, so a lesson
+     * shared between courses reads as belonging to the batch it is returned under.
+     *
+     * <p>A lesson is finished once any of its activity rows, or the per-slide completion the
+     * chapter rollup uses, reaches 100. When a lesson sits in several of the learner's batches,
+     * a batch joined by the lesson's last activity wins, because the learner could have been
+     * studying through it then; then the latest enrolment; then the batch id, so the answer is
+     * stable. Progress rollups cannot decide this: one lesson writes to every enrolled batch that
+     * holds its chapter, and those rows keep the timestamp of their first write.
+     *
+     * <p>Module and subject are resolved for the nearest ten lessons only, not for every lesson
+     * the learner ever opened: one chapter can sit in many modules, so resolving them earlier
+     * costs time in proportion to the learner's history. Ten rather than five leaves room for a
+     * lesson with no subject link to this batch to drop out and still return five.
+     *
+     * <p>A quiz returns an empty description, because the stored value can be the generated quiz
+     * itself rather than text for this list. Every other lesson type returns its stored value.
+     */
     @Query(value = """
-                SELECT DISTINCT ON (s.id)
+                WITH activity AS (
+                    SELECT al.slide_id,
+                           MAX(COALESCE(al.last_seen_at, al.updated_at)) AS last_active
+                    FROM activity_log al
+                    WHERE al.user_id = :userId
+                      AND al.slide_id IS NOT NULL
+                    GROUP BY al.slide_id
+                    HAVING NOT COALESCE(BOOL_OR(al.percentage_watched >= 100), FALSE)
+                ),
+                nearest AS (
+                    SELECT candidate.*
+                    FROM (
+                        SELECT DISTINCT ON (activity.slide_id)
+                            activity.slide_id,
+                            activity.last_active,
+                            cts.chapter_id,
+                            cpsm.package_session_id
+                        FROM activity
+                        JOIN slide lesson ON lesson.id = activity.slide_id AND lesson.status IN (:slideStatus)
+                        JOIN chapter_to_slides cts ON cts.slide_id = activity.slide_id AND cts.status IN (:chapterSlideStatus)
+                        JOIN chapter ch ON ch.id = cts.chapter_id AND ch.status IN (:chapterStatus)
+                        JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = ch.id
+                                                                  AND cpsm.status IN (:chapterStatus)
+                                                                  AND cpsm.package_session_id IN (:packageSessionIds)
+                        JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = :userId
+                                                                           AND ssigm.institute_id = :instituteId
+                                                                           AND ssigm.package_session_id = cpsm.package_session_id
+                                                                           AND ssigm.status IN (:learnerStatus)
+                        JOIN package_session batch ON batch.id = cpsm.package_session_id AND batch.status IN (:packageSessionStatus)
+                        WHERE NOT EXISTS (
+                            SELECT 1
+                            FROM learner_operation finished
+                            WHERE finished.user_id = :userId
+                              AND finished.source = 'SLIDE'
+                              AND finished.source_id = activity.slide_id
+                              AND finished.operation IN ('PERCENTAGE_VIDEO_WATCHED','PERCENTAGE_DOCUMENT_COMPLETED',
+                                                         'PERCENTAGE_QUIZ_COMPLETED','PERCENTAGE_QUESTION_COMPLETED',
+                                                         'PERCENTAGE_ASSIGNMENT_COMPLETED','PERCENTAGE_ASSESSMENT_DONE',
+                                                         'PERCENTAGE_SCORM_COMPLETED','PERCENTAGE_AUDIO_LISTENED')
+                              AND CASE WHEN finished.value ~ '^[0-9]+(\\.[0-9]+)?$'
+                                       THEN CAST(finished.value AS FLOAT) ELSE 0 END >= 100
+                        )
+                        ORDER BY activity.slide_id,
+                                 (ssigm.created_at <= activity.last_active) DESC,
+                                 ssigm.created_at DESC,
+                                 cpsm.package_session_id,
+                                 cts.chapter_id
+                    ) candidate
+                    ORDER BY candidate.last_active DESC NULLS LAST, candidate.slide_id
+                    LIMIT 10
+                ),
+                recent AS (
+                    SELECT located.*
+                    FROM (
+                        SELECT DISTINCT ON (nearest.slide_id)
+                            nearest.*,
+                            m.id AS module_id,
+                            sub.id AS subject_id
+                        FROM nearest
+                        JOIN module_chapter_mapping mtc ON mtc.chapter_id = nearest.chapter_id
+                        JOIN modules m ON m.id = mtc.module_id AND m.status IN (:moduleStatus)
+                        JOIN subject_module_mapping smm ON smm.module_id = m.id
+                        JOIN subject sub ON sub.id = smm.subject_id AND sub.status IN (:subjectStatus)
+                        JOIN subject_session sbs ON sbs.subject_id = sub.id AND sbs.session_id = nearest.package_session_id
+                        ORDER BY nearest.slide_id, m.id, sub.id
+                    ) located
+                    ORDER BY located.last_active DESC NULLS LAST, located.slide_id
+                    LIMIT 5
+                )
+                SELECT
                     s.id AS slideId,
                     s.title AS slideTitle,
-                    s.description AS slideDescription,
+                    CASE WHEN s.source_type = 'QUIZ' THEN '' ELSE s.description END AS slideDescription,
                     s.source_type AS sourceType,
                     s.status AS status,
                     s.image_file_id AS imageFileId,
 
-                    COALESCE(
-                        CASE WHEN lo.operation = 'VIDEO_LAST_TIMESTAMP' THEN CAST(lo.value AS BIGINT) END,
-                        CASE WHEN lo.operation = 'DOCUMENT_LAST_PAGE' THEN CAST(lo.value AS BIGINT) END
-                    ) AS progressMarker,
+                    CASE WHEN lo.value ~ '^[0-9]+$' AND LENGTH(lo.value) <= 18
+                         THEN CAST(lo.value AS BIGINT) END AS progressMarker,
 
                     ps.package_id AS packageId,
                     ps.level_id AS levelId,
-                    ch.id AS chapterId,
-                    m.id AS moduleId,
-                    sub.id AS subjectId,
+                    recent.chapter_id AS chapterId,
+                    recent.module_id AS moduleId,
+                    recent.subject_id AS subjectId,
                     ps.id AS packageSessionId
 
-                FROM slide s
-                JOIN activity_log al ON al.slide_id = s.id
-                JOIN chapter_to_slides cts ON s.id = cts.slide_id AND cts.status IN (:chapterSlideStatus)
-                JOIN chapter ch ON cts.chapter_id = ch.id AND ch.status IN (:chapterStatus)
-                JOIN package_session ps ON ps.id IN (:packageSessionIds) AND ps.status IN (:packageSessionStatus)
-                JOIN module_chapter_mapping mtc ON mtc.chapter_id = ch.id
-                JOIN modules m ON mtc.module_id = m.id AND m.status IN (:moduleStatus)
-                JOIN subject_module_mapping smm ON smm.module_id = m.id
-                JOIN subject sub ON smm.subject_id = sub.id AND sub.status IN (:subjectStatus)
-
-                LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
+                FROM recent
+                JOIN slide s ON s.id = recent.slide_id
+                JOIN package_session ps ON ps.id = recent.package_session_id
                 LEFT JOIN learner_operation lo ON lo.user_id = :userId
-                                                  AND lo.source = 'SLIDE'
-                                                  AND lo.source_id = s.id
-
-                WHERE al.user_id = :userId
-                AND s.status IN (:slideStatus)
-                AND (al.percentage_watched IS NULL OR al.percentage_watched != 100)
-                LIMIT 5
+                                               AND lo.source = 'SLIDE'
+                                               AND lo.source_id = s.id
+                                               AND lo.operation = CASE s.source_type
+                                                                      WHEN 'VIDEO' THEN 'VIDEO_LAST_TIMESTAMP'
+                                                                      WHEN 'DOCUMENT' THEN 'DOCUMENT_LAST_PAGE'
+                                                                  END
+                ORDER BY recent.last_active DESC NULLS LAST, recent.slide_id
             """, nativeQuery = true)
     List<LearnerRecentSlides> findRecentIncompleteSlides(
             @Param("userId") String userId,
+            @Param("instituteId") String instituteId,
             @Param("packageSessionIds") List<String> packageSessionIds,
             @Param("slideStatus") List<String> slideStatus,
             @Param("chapterSlideStatus") List<String> chapterSlideStatus,
             @Param("chapterStatus") List<String> chapterStatus,
             @Param("moduleStatus") List<String> moduleStatus,
             @Param("subjectStatus") List<String> subjectStatus,
-            @Param("packageSessionStatus") List<String> packageSessionStatus);
+            @Param("packageSessionStatus") List<String> packageSessionStatus,
+            @Param("learnerStatus") List<String> learnerStatus);
 
     @Query(value = """
                     SELECT json_agg(slide_data ORDER BY slide_order IS NOT NULL, slide_order, created_at DESC) AS slides
@@ -610,6 +707,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                                     'marks_per_question', qs.marks_per_question,
                                     'negative_marking', qs.negative_marking,
                                     'pass_percentage', qs.pass_percentage,
+                                    'partial_marking', qs.partial_marking,
                                     're_attempt_count', qs.re_attempt_count,
                                     'questions', COALESCE((
                                         SELECT json_agg(
@@ -1147,6 +1245,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                             'marks_per_question', qs.marks_per_question,
                             'negative_marking', qs.negative_marking,
                             'pass_percentage', qs.pass_percentage,
+                            'partial_marking', qs.partial_marking,
                             're_attempt_count', qs.re_attempt_count,
                             'questions', COALESCE((
                                                 SELECT json_agg(
@@ -1724,6 +1823,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                             'marks_per_question', qs.marks_per_question,
                             'negative_marking', qs.negative_marking,
                             'pass_percentage', qs.pass_percentage,
+                            'partial_marking', qs.partial_marking,
                             're_attempt_count', qs.re_attempt_count,
                             'questions', COALESCE((
                                                 SELECT json_agg(
@@ -2023,18 +2123,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
     Optional<String> findSubjectNameBySlideId(@Param("slideId") String slideId);
 
     @Query(value = """
-            WITH assignment_question_counts AS (
-                SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                FROM assignment_slide_question
-                WHERE status IN :assignmentQuestionStatusList
-                GROUP BY assignment_slide_id
-            ),
-            quiz_question_counts AS (
-                SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                FROM quiz_slide_question
-                WHERE status IN :questionStatusList
-                GROUP BY quiz_slide_id
-            )
             SELECT
                 CASE
                     WHEN s.source_type = 'DOCUMENT' THEN COALESCE(ds.type, 'UNKNOWN_DOCUMENT_TYPE')
@@ -2060,9 +2148,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                         WHEN s.source_type = 'QUESTION' THEN
                             5
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN :assignmentQuestionStatusList), 0) * 3
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN :questionStatusList), 0) * 2
                         ELSE 0
                     END
                 ) AS readTimeInMinutes
@@ -2074,10 +2162,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 ON hvs.id = s.source_id AND s.source_type = 'HTML_VIDEO'
             LEFT JOIN document_slide ds
                 ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN assignment_question_counts aqc
-                ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN quiz_question_counts qqc
-                ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
 
             JOIN chapter_to_slides cs
                 ON cs.slide_id = s.id
@@ -2123,18 +2207,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
             @Param("questionStatusList") List<String> questionStatusList);
 
     @Query(value = """
-            WITH assignment_question_counts AS (
-                SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                FROM assignment_slide_question
-                WHERE status IN :assignmentQuestionStatusList
-                GROUP BY assignment_slide_id
-            ),
-            quiz_question_counts AS (
-                SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                FROM quiz_slide_question
-                WHERE status IN :questionStatusList
-                GROUP BY quiz_slide_id
-            )
             SELECT
                 CASE
                     WHEN s.source_type = 'DOCUMENT' THEN COALESCE(ds.type, 'UNKNOWN_DOCUMENT_TYPE')
@@ -2160,9 +2232,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                         WHEN s.source_type = 'QUESTION' THEN
                             5
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN :assignmentQuestionStatusList), 0) * 3
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN :questionStatusList), 0) * 2
                         ELSE 0
                     END
                 ) AS readTimeInMinutes
@@ -2174,10 +2246,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 ON hvs.id = s.source_id AND s.source_type = 'HTML_VIDEO'
             LEFT JOIN document_slide ds
                 ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN assignment_question_counts aqc
-                ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN quiz_question_counts qqc
-                ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
 
             JOIN chapter_to_slides cs
                 ON cs.slide_id = s.id
@@ -2516,6 +2584,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                                 'marks_per_question', qs.marks_per_question,
                                 'negative_marking', qs.negative_marking,
                                 'pass_percentage', qs.pass_percentage,
+                                'partial_marking', qs.partial_marking,
                                 're_attempt_count', qs.re_attempt_count,
                                 'questions', COALESCE((
                                     SELECT json_agg(
@@ -2740,30 +2809,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
             @Param("lang") String lang);
 
     @Query(value = """
-            -- CTE to count active questions for each assignment slide
-            WITH assignment_question_counts AS (
-                SELECT
-                    asq.assignment_slide_id,
-                    COUNT(asq.id) AS question_count
-                FROM
-                    assignment_slide_question asq
-                WHERE
-                    asq.status IN (:assignmentQuestionStatusList)
-                GROUP BY
-                    asq.assignment_slide_id
-            ),
-            -- CTE to count active questions for each quiz slide
-            quiz_question_counts AS (
-                SELECT
-                    qsq.quiz_slide_id,
-                    COUNT(qsq.id) AS question_count
-                FROM
-                    quiz_slide_question qsq
-                WHERE
-                    qsq.status IN (:quizQuestionStatusList)
-                GROUP BY
-                    qsq.quiz_slide_id
-            )
             -- Main query to calculate the total read time
             SELECT
                 -- Use COALESCE to ensure the result is 0 if no slides are found, instead of NULL
@@ -2802,11 +2847,11 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
 
                         -- 4. For ASSIGNMENT slides (time based on question count from CTE)
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)), 0) * 3
 
                         -- 5. For QUIZ slides (time based on question count from CTE)
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:quizQuestionStatusList)), 0) * 2
 
                         -- 6. Default case for any other slide type
                         ELSE 0
@@ -2824,10 +2869,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 video vs ON s.source_id = vs.id AND s.source_type = 'VIDEO'
             LEFT JOIN
                 document_slide ds ON s.source_id = ds.id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN
-                assignment_question_counts aqc ON s.source_id = aqc.assignment_slide_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN
-                quiz_question_counts qqc ON s.source_id = qqc.quiz_slide_id AND s.source_type = 'QUIZ'
             LEFT JOIN
                 html_video_slide hvs ON s.source_id = hvs.id AND s.source_type = 'HTML_VIDEO'
             WHERE
@@ -2861,30 +2902,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
      * COALESCE over an empty aggregate -- callers must default missing triples to 0.0.
      */
     @Query(value = """
-            -- CTE to count active questions for each assignment slide
-            WITH assignment_question_counts AS (
-                SELECT
-                    asq.assignment_slide_id,
-                    COUNT(asq.id) AS question_count
-                FROM
-                    assignment_slide_question asq
-                WHERE
-                    asq.status IN (:assignmentQuestionStatusList)
-                GROUP BY
-                    asq.assignment_slide_id
-            ),
-            -- CTE to count active questions for each quiz slide
-            quiz_question_counts AS (
-                SELECT
-                    qsq.quiz_slide_id,
-                    COUNT(qsq.id) AS question_count
-                FROM
-                    quiz_slide_question qsq
-                WHERE
-                    qsq.status IN (:quizQuestionStatusList)
-                GROUP BY
-                    qsq.quiz_slide_id
-            )
             SELECT
                 ps.package_id AS "packageId",
                 ps.session_id AS "sessionId",
@@ -2909,9 +2926,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                         WHEN s.source_type = 'QUESTION' THEN
                             5
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)), 0) * 3
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:quizQuestionStatusList)), 0) * 2
                         ELSE 0
                     END
                 ), 0) AS "readTimeInMinutes"
@@ -2927,10 +2944,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 video vs ON s.source_id = vs.id AND s.source_type = 'VIDEO'
             LEFT JOIN
                 document_slide ds ON s.source_id = ds.id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN
-                assignment_question_counts aqc ON s.source_id = aqc.assignment_slide_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN
-                quiz_question_counts qqc ON s.source_id = qqc.quiz_slide_id AND s.source_type = 'QUIZ'
             LEFT JOIN
                 html_video_slide hvs ON s.source_id = hvs.id AND s.source_type = 'HTML_VIDEO'
             WHERE
@@ -2952,30 +2965,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
 
 
     @Query(value = """
-            -- CTE to count active questions for each assignment slide
-            WITH assignment_question_counts AS (
-                SELECT
-                    asq.assignment_slide_id,
-                    COUNT(asq.id) AS question_count
-                FROM
-                    assignment_slide_question asq
-                WHERE
-                    asq.status IN (:assignmentQuestionStatusList)
-                GROUP BY
-                    asq.assignment_slide_id
-            ),
-            -- CTE to count active questions for each quiz slide
-            quiz_question_counts AS (
-                SELECT
-                    qsq.quiz_slide_id,
-                    COUNT(qsq.id) AS question_count
-                FROM
-                    quiz_slide_question qsq
-                WHERE
-                    qsq.status IN (:quizQuestionStatusList)
-                GROUP BY
-                    qsq.quiz_slide_id
-            )
             -- Main query to calculate the total read time
             SELECT
                 COALESCE(SUM(
@@ -2998,9 +2987,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                         WHEN s.source_type = 'QUESTION' THEN
                             5
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)), 0) * 3
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:quizQuestionStatusList)), 0) * 2
                         ELSE 0
                     END
                 ), 0)
@@ -3016,10 +3005,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 video vs ON s.source_id = vs.id AND s.source_type = 'VIDEO'
             LEFT JOIN
                 document_slide ds ON s.source_id = ds.id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN
-                assignment_question_counts aqc ON s.source_id = aqc.assignment_slide_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN
-                quiz_question_counts qqc ON s.source_id = qqc.quiz_slide_id AND s.source_type = 'QUIZ'
             LEFT JOIN
                 html_video_slide hvs ON s.source_id = hvs.id AND s.source_type = 'HTML_VIDEO'
             WHERE
@@ -3039,30 +3024,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
      * sessions.
      */
     @Query(value = """
-            -- CTE to count active questions for each assignment slide
-            WITH assignment_question_counts AS (
-                SELECT
-                    asq.assignment_slide_id,
-                    COUNT(asq.id) AS question_count
-                FROM
-                    assignment_slide_question asq
-                WHERE
-                    asq.status IN (:assignmentQuestionStatusList)
-                GROUP BY
-                    asq.assignment_slide_id
-            ),
-            -- CTE to count active questions for each quiz slide
-            quiz_question_counts AS (
-                SELECT
-                    qsq.quiz_slide_id,
-                    COUNT(qsq.id) AS question_count
-                FROM
-                    quiz_slide_question qsq
-                WHERE
-                    qsq.status IN (:quizQuestionStatusList)
-                GROUP BY
-                    qsq.quiz_slide_id
-            )
             -- Main query to calculate read time per package session
             SELECT
                 ps.id AS packageSessionId,
@@ -3086,9 +3047,9 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                         WHEN s.source_type = 'QUESTION' THEN
                             5
                         WHEN s.source_type = 'ASSIGNMENT' THEN
-                            COALESCE(aqc.question_count, 0) * 3
+                            COALESCE((SELECT COUNT(*) FROM assignment_slide_question asq WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)), 0) * 3
                         WHEN s.source_type = 'QUIZ' THEN
-                            COALESCE(qqc.question_count, 0) * 2
+                            COALESCE((SELECT COUNT(*) FROM quiz_slide_question qsq WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:quizQuestionStatusList)), 0) * 2
                         ELSE 0
                     END
                 ), 0) AS readTimeInMinutes
@@ -3104,10 +3065,6 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                 video vs ON s.source_id = vs.id AND s.source_type = 'VIDEO'
             LEFT JOIN
                 document_slide ds ON s.source_id = ds.id AND s.source_type = 'DOCUMENT'
-            LEFT JOIN
-                assignment_question_counts aqc ON s.source_id = aqc.assignment_slide_id AND s.source_type = 'ASSIGNMENT'
-            LEFT JOIN
-                quiz_question_counts qqc ON s.source_id = qqc.quiz_slide_id AND s.source_type = 'QUIZ'
             LEFT JOIN
                 html_video_slide hvs ON s.source_id = hvs.id AND s.source_type = 'HTML_VIDEO'
             WHERE
@@ -3188,6 +3145,7 @@ public interface SlideRepository extends JpaRepository<Slide, String> {
                             'marks_per_question', qs.marks_per_question,
                             'negative_marking', qs.negative_marking,
                             'pass_percentage', qs.pass_percentage,
+                            'partial_marking', qs.partial_marking,
                             're_attempt_count', qs.re_attempt_count,
                             'questions', COALESCE((
                                 SELECT json_agg(

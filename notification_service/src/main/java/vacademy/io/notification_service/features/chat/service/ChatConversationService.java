@@ -211,17 +211,32 @@ public class ChatConversationService {
         return map;
     }
 
+    /**
+     * Get-or-create the caller's member row. The stored member_role is deliberately NEVER rewritten
+     * for an existing row: {@link ChatMembershipReconciler} keeps every non-MEMBER row out of roster
+     * reconciliation, so promoting a materialized MEMBER here would quietly make that person immune to
+     * being removed when they leave the batch. Moderation authority that comes from the institute role
+     * is evaluated per-request from the token instead (see ChatMessageService#canModerate).
+     */
     public ChatConversationMember ensureMember(ChatConversation conv, String userId, String userRole, ChatMemberRole memberRole) {
+        // Joining (or re-joining) an existing conversation starts caught up: history from before the join is
+        // readable but not "unread" — otherwise the app-wide unread badge shows 99+ for a community/batch the
+        // learner never opened, and the community push rule would never reach them.
+        long joinSeq = conv.getLastMessageSeq() == null ? 0L : conv.getLastMessageSeq();
         Optional<ChatConversationMember> existing = memberRepo.findByConversationIdAndUserId(conv.getId(), userId);
         if (existing.isPresent()) {
             ChatConversationMember m = existing.get();
             if (!Boolean.TRUE.equals(m.getIsActive())) {
                 m.setIsActive(true);
+                m.setLastReadSeq(Math.max(m.getLastReadSeq() == null ? 0L : m.getLastReadSeq(), joinSeq));
                 memberRepo.save(m);
             }
             return m;
         }
-        return saveMember(conv.getId(), userId, ChatPermissionService.normalizeRole(userRole).toUpperCase(), null, memberRole);
+        ChatConversationMember member = newMember(conv.getId(), userId,
+                ChatPermissionService.normalizeRole(userRole).toUpperCase(), null, memberRole);
+        member.setLastReadSeq(joinSeq);
+        return memberRepo.save(member);
     }
 
     private ChatConversationMember saveMember(String conversationId, String userId, String userRole, String userName, ChatMemberRole memberRole) {
@@ -246,6 +261,20 @@ public class ChatConversationService {
     // ---------------------------------------------------------------------
     // Listing
     // ---------------------------------------------------------------------
+
+    /**
+     * Unread total for the caller's badge, computed like listConversations' per-row unreadCount (capped per
+     * conversation) in a single aggregate query — no conversation hydration, no title lookups.
+     */
+    public long getUnreadTotal(String userId, String instituteId) {
+        if (!permissionService.isChatEnabled(instituteId)) {
+            return 0L;
+        }
+        // Community is left out of the app-wide badge: members get a row (cursor 0) when they first open chat,
+        // so an unopened community would pin the badge at 99+ everywhere. Its unread still shows in the list.
+        Long total = memberRepo.sumUnread(userId, instituteId, false, UNREAD_CAP);
+        return total == null ? 0L : total;
+    }
 
     // Intentionally NOT @Transactional: the reads are independent SELECTs that don't need one
     // snapshot, and title resolution makes external HTTP calls. Wrapping this in a transaction would
@@ -421,6 +450,8 @@ public class ChatConversationService {
                 .memberRole(callerMember != null ? callerMember.getMemberRole() : null)
                 .rulesVersion(c.getRulesVersion())
                 .canPost(canPost)
+                .canEditOwnMessages(permissionService.canEditOwnMessage(c.getInstituteId(), callerRole))
+                .canDeleteOwnMessages(permissionService.canDeleteOwnMessage(c.getInstituteId(), callerRole))
                 .build();
     }
 
@@ -559,12 +590,17 @@ public class ChatConversationService {
         } else {
             targetSeq = fallbackSeq;
         }
+        // Reading the newest live message reads the whole conversation: deleted messages after it are never
+        // shown, so without this a deleted tail leaves a phantom unread (badge never clears) and blocks the
+        // community "one push until read" rule.
+        if (targetSeq < fallbackSeq
+                && !messageRepo.existsByConversationIdAndSeqGreaterThanAndIsDeletedFalse(conversationId, targetSeq)) {
+            targetSeq = fallbackSeq;
+        }
 
-        if (member.getLastReadSeq() == null || targetSeq > member.getLastReadSeq()) {
-            member.setLastReadSeq(targetSeq);
-            member.setLastReadMessageId(upToMessageId);
-            member.setLastReadAt(LocalDateTime.now());
-            memberRepo.save(member);
+        // Atomic, forward-only: two overlapping markRead calls must never move the cursor backwards (a lower
+        // cursor makes the push rule treat an already-seen message as unread).
+        if (memberRepo.advanceReadCursor(member.getId(), targetSeq, upToMessageId, LocalDateTime.now()) > 0) {
 
             // Read receipts only matter for DIRECT (and small batch); skip community fan-out.
             if (!ChatConversationType.COMMUNITY.name().equals(conv.getType())) {

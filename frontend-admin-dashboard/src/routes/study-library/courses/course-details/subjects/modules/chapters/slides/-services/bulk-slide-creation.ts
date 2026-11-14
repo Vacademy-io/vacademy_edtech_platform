@@ -6,6 +6,7 @@
 // the chapter/module/subject context passed per call. Slide ids are returned so
 // callers can build reorder payloads.
 
+import i18next from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     ADD_UPDATE_DOCUMENT_SLIDE,
@@ -13,6 +14,8 @@ import {
     ADD_UPDATE_QUIZ_SLIDE,
     ADD_UPDATE_ASSESSMENT_SLIDE,
     UPDATE_SLIDE_ORDER,
+    SCORM_UPLOAD,
+    SCORM_ADD_OR_UPDATE,
 } from '@/constants/urls';
 import type {
     DocumentSlidePayload,
@@ -20,6 +23,7 @@ import type {
     QuizSlidePayload,
     QuizSlideQuestion,
     AssessmentSlidePayload,
+    ScormSlidePayload,
 } from '../-hooks/use-slides';
 
 export interface BulkSlideContext {
@@ -52,6 +56,22 @@ const postVideoSlide = async (
 ): Promise<string> => {
     const response = await authenticatedAxiosInstance.post(videoSlideUrl(ctx), payload);
     return response.data || payload.id;
+};
+
+// Param order mirrors useSlidesMutations' SCORM call exactly.
+const scormSlideUrl = (ctx: BulkSlideContext) =>
+    `${SCORM_ADD_OR_UPDATE}?chapterId=${ctx.chapterId}&moduleId=${ctx.moduleId}&subjectId=${ctx.subjectId}&packageSessionId=${ctx.packageSessionId}&instituteId=${ctx.instituteId}`;
+
+// This endpoint returns the slide object rather than a bare id string like the
+// document/video ones, so unwrap either shape and fall back to the id we sent.
+const postScormSlide = async (
+    ctx: BulkSlideContext,
+    payload: ScormSlidePayload & { id: string }
+): Promise<string> => {
+    const response = await authenticatedAxiosInstance.post(scormSlideUrl(ctx), payload);
+    const data = response.data;
+    const returnedId = typeof data === 'string' ? data : data?.id;
+    return returnedId || payload.id;
 };
 
 // Query-param order mirrors the working useSlidesMutations hook exactly so the
@@ -169,6 +189,49 @@ export const createExternalLinkSlide = (
         slideOrder: args.slideOrder,
         description: 'External link',
     });
+};
+
+/**
+ * SCORM is a two-step flow: uploadScormPackage() posts the .zip to the SCORM
+ * service, which unzips and parses it, then this attaches the resulting
+ * ScormSlide id to a slide. Mirrors add-scorm-dialog.tsx.
+ */
+export const createScormSlide = (
+    ctx: BulkSlideContext,
+    args: { title: string; scormSlideId: string; slideOrder: number }
+): Promise<string> => {
+    return postScormSlide(ctx, {
+        id: crypto.randomUUID(),
+        title: args.title,
+        description: null,
+        status: ctx.status,
+        slide_order: args.slideOrder,
+        new_slide: true,
+        // AddScormSlideDTO.notify is a primitive boolean — omitting it silently
+        // means false, so a published SCORM slide would skip the learner
+        // notification that every other slide type sends.
+        notify: ctx.notify,
+        scorm_slide: { id: args.scormSlideId },
+    });
+};
+
+/**
+ * Posts the SCORM .zip to the parser and returns the ScormSlide id.
+ * Multipart, and the server unzips it — callers should serialize large ones.
+ */
+export const uploadScormPackage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await authenticatedAxiosInstance.post(SCORM_UPLOAD, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    const scormSlideId = response.data?.id;
+    if (!scormSlideId) {
+        throw new Error(
+            i18next.t('studyLibraryBulkSlideCreation:errors.scormNoPackageId')
+        );
+    }
+    return scormSlideId;
 };
 
 export const createVideoFileSlide = (

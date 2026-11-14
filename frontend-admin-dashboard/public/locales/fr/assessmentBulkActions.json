@@ -1,0 +1,11 @@
+{
+    "selectedCount_one": "[{{count}}] sélectionné",
+    "selectedCount_many": "[{{count}}] sélectionnés",
+    "selectedCount_other": "[{{count}}] sélectionnés",
+    "reset": "Réinitialiser",
+    "bulkActions": "Actions groupées",
+    "selectAll_one": "Tout sélectionner ({{count}})",
+    "selectAll_many": "Tout sélectionner ({{count}})",
+    "selectAll_other": "Tout sélectionner ({{count}})",
+    "selectingAll": "Sélection en cours…"
+}

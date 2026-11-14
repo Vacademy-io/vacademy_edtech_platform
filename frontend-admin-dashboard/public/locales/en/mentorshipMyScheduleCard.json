@@ -1,0 +1,14 @@
+{
+    "heading": "Upcoming sessions",
+    "loading": "Loading…",
+    "learnerFallback": "Learner",
+    "todayBadge": "Today",
+    "joinButton": "Join",
+    "linkPendingTitle": "The meeting link is still being created. If it doesn't appear, ask your admin to check the Google connection.",
+    "linkPendingLabel": "Link pending",
+    "rescheduleAriaLabel": "Reschedule the session with {{name}}",
+    "rescheduleTitle": "Move this session to another slot",
+    "cancelAriaLabel": "Cancel the session with {{name}}",
+    "cancelTitle": "Cancel this session",
+    "thisLearnerFallback": "this learner"
+}

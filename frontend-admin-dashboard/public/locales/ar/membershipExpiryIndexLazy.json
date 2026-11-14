@@ -1,0 +1,10 @@
+{
+    "title": "انتهاء صلاحية العضوية",
+    "subtitle": "راقب وأدر انتهاء صلاحية عضويات الطلاب.",
+    "exportCsv": "تصدير CSV",
+    "exporting": "جارٍ التصدير...",
+    "exportSuccess_one": "تم تصدير {{count}} عضوية",
+    "exportSuccess_other": "تم تصدير {{count}} عضويات",
+    "exportEmpty": "لا توجد عضويات تطابق عوامل التصفية المحددة",
+    "exportFailed": "فشل تصدير العضويات"
+}

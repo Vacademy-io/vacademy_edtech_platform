@@ -1,0 +1,14 @@
+{
+    "sectionTitle": "من سيستلم هذا؟",
+    "sectionDescription": "أضف جمهورًا واحدًا أو أكثر. يتم إزالة التكرار من التداخلات، بحيث لا يستلمه أحد مرتين.",
+    "addAudience": "إضافة جمهور",
+    "quickAdd": {
+        "allLearners": "كل {{noun}}",
+        "allTeachers": "كل {{noun}}",
+        "specificBatches": "{{noun}} محددة",
+        "byTag": "حسب الوسم",
+        "campaign": "حملة"
+    },
+    "emptyTitle": "لا يوجد جمهور بعد",
+    "emptyDescription": "اختر أحد الاختصارات أعلاه، أو أضف جمهورًا وحدد بدقة من سيستهدفه."
+}

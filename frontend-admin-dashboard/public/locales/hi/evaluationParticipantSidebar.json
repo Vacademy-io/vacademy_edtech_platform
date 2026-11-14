@@ -1,0 +1,14 @@
+{
+    "participantDetails": "प्रतिभागी विवरण",
+    "faceProfileAlt": "फेस प्रोफाइल",
+    "attemptUploadSuccess": "प्रयास सफलतापूर्वक अपलोड हुआ",
+    "fileUploadSuccess": "फ़ाइल सफलतापूर्वक अपलोड हुई",
+    "uploadFailedRetry": "अपलोड विफल रहा। कृपया पुनः प्रयास करें।",
+    "uploading": "अपलोड हो रहा है",
+    "uploadAttempt": "प्रयास अपलोड करें",
+    "submit": "सबमिट करें",
+    "evaluate": "मूल्यांकन करें",
+    "confirmUploadHeading": "अपलोड की पुष्टि करें?",
+    "confirmUploadBody": "नई फ़ाइल अपलोड करने से छात्र की मौजूदा प्रतिक्रिया अधिलेखित हो जाएगी। क्या आप जारी रखना चाहते हैं?",
+    "upload": "अपलोड करें"
+}

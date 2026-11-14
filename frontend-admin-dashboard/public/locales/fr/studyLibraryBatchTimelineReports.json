@@ -1,0 +1,61 @@
+{
+    "form": {
+        "startDateRequired": "La date de début est requise",
+        "endDateRequired": "La date de fin est requise",
+        "dateRangeTooLong": "L'écart entre la date de début et la date de fin doit être inférieur à un mois.",
+        "errorsHeading": "Veuillez corriger les erreurs suivantes :",
+        "batchRequired": "Sélectionnez au moins un groupe"
+    },
+    "range": {
+        "label": "Période :",
+        "last7Days": "7 derniers jours",
+        "hide": "Masquer",
+        "change": "Modifier"
+    },
+    "actions": {
+        "generateReport": "Générer le rapport",
+        "exporting": "Exportation en cours…",
+        "exportPdf": "Exporter en PDF",
+        "exportCsv": "Exporter en CSV"
+    },
+    "toast": {
+        "exportSuccess": "Rapport du groupe exporté",
+        "exportFailed": "Échec de l'exportation du PDF",
+        "csvExportSuccess": "CSV exporté",
+        "csvExportFailed": "Échec de l'export CSV"
+    },
+    "report": {
+        "duration": "Durée :",
+        "courseCompletedLabel": "{{term}} terminé(s)",
+        "acrossBatch": "sur l'ensemble du groupe",
+        "dailyTimeSpentAvg": "Temps quotidien passé (moyenne)",
+        "concentrationScoreAvg": "Score de concentration (moyenne)",
+        "dailyLearningPerformance": "Performance d'apprentissage quotidienne",
+        "trackDailyProgress": "Suivez la progression quotidienne et les tendances d'activité",
+        "activitySummary": "Résumé d'activité",
+        "leaderboard": "Classement",
+        "topPerformingStudents": "Meilleurs élèves du groupe",
+        "multiBatchTitle": "Rapport {{term}} · {{count}} sélectionné(s)",
+        "comparisonTitle": "Comparaison des {{term}}",
+        "comparisonSubtitle": "Indicateurs clés de chaque groupe sélectionné, côte à côte",
+        "batchLoadFailed": "Impossible de charger le rapport pour {{name}}.",
+        "loadFailed": "Une erreur est survenue lors du chargement du rapport. Veuillez réessayer."
+    },
+    "csv": {
+        "fileStem": "chronologie-apprentissage",
+        "summaryTitle": "Résumé",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "courseCompleted": "{{term}} terminé (%)",
+        "dailyTimeMin": "Temps quotidien moyen (min)",
+        "concentration": "Score de concentration (%)",
+        "dailyTitle": "Temps quotidien",
+        "date": "Date",
+        "avgDailyTimeMin": "Temps moyen (min)",
+        "leaderboardTitle": "Classement",
+        "rank": "Rang",
+        "name": "Nom",
+        "email": "E-mail",
+        "totalTimeMin": "Temps total (min)"
+    }
+}

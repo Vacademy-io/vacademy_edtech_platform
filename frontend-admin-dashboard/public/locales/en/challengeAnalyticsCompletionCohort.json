@@ -1,0 +1,47 @@
+{
+    "title": "Completion & Alumnus Cohorts",
+    "subtitle": "Users who completed the challenge program",
+    "emptyState": {
+        "message": "No completion data available",
+        "hint": "Select completion templates to view cohort data"
+    },
+    "createCampaign": "Create Campaign",
+    "export": "Export",
+    "summary": {
+        "totalCompleted": "Total Completed",
+        "templatesTracked": "Templates Tracked",
+        "currentPage": "Current Page",
+        "dateRange": "Date Range"
+    },
+    "timeline": {
+        "title": "Completion Timeline",
+        "completionsCount_one": "{{count}} completion",
+        "completionsCount_other": "{{count}} completions"
+    },
+    "completionTemplates": "Completion Templates",
+    "table": {
+        "user": "User",
+        "contact": "Contact",
+        "center": "Center",
+        "completed": "Completed",
+        "actions": "Actions"
+    },
+    "anonymous": "Anonymous",
+    "parentLabel": "Parent: {{name}}",
+    "unknown": "Unknown",
+    "notAvailable": "N/A",
+    "send": "Send",
+    "pagination": {
+        "showing_one": "Showing {{shown}} of {{count}} user",
+        "showing_other": "Showing {{shown}} of {{count}} users",
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "completionDate": "Completion Date",
+        "center": "Center"
+    }
+}

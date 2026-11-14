@@ -1,0 +1,31 @@
+{
+    "pageTitle": "جارٍ معالجة أصول الدورة",
+    "pageDescription": "الذكاء الاصطناعي يُعِدّ محتوى دورتك.",
+    "heading": "جارٍ إنشاء أصول دورتك",
+    "generatingSubtitle": "نقوم بإنشاء صور ومقاطع فيديو حقيقية لدورتك!",
+    "images": "الصور",
+    "videos": "مقاطع الفيديو",
+    "processingStatus": "جارٍ معالجة أصول دورتك...",
+    "estimatedTimeRemaining": "الوقت المتبقي المقدر:",
+    "minutesShort_zero": "{{count}} دقيقة",
+    "minutesShort_one": "دقيقة واحدة",
+    "minutesShort_two": "دقيقتان",
+    "minutesShort_few": "{{count}} دقائق",
+    "minutesShort_many": "{{count}} دقيقة",
+    "minutesShort_other": "{{count}} دقيقة",
+    "secondsShort_zero": "{{count}} ثانية",
+    "secondsShort_one": "ثانية واحدة",
+    "secondsShort_two": "ثانيتان",
+    "secondsShort_few": "{{count}} ثوانٍ",
+    "secondsShort_many": "{{count}} ثانية",
+    "secondsShort_other": "{{count}} ثانية",
+    "processDurationNote": "تستغرق هذه العملية عادةً من 2 إلى 5 دقائق. يمكنك الانتظار هنا أو العودة لاحقًا.",
+    "backToCourseLibrary": "العودة إلى مكتبة الدورات",
+    "dialog": {
+        "title": "العودة إلى مكتبة الدورات؟",
+        "description": "هل أنت متأكد من رغبتك في العودة إلى مكتبة الدورات؟ يمكنك إما تجاهل دورتك الحالية أو حفظها كمسودة.",
+        "cancel": "إلغاء",
+        "discardCourse": "تجاهل الدورة",
+        "saveToDrafts": "حفظ كمسودة"
+    }
+}

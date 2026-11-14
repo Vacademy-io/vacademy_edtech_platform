@@ -46,6 +46,11 @@ public class UnifiedSendRequest {
         private String fromEmail;
         @JsonProperty("fromName")
         private String fromName;
+        /**
+         * Email billing class: FREE (login codes, password reset, login details), ESSENTIAL
+         * (receipts, invoices) or BILLABLE. Null lets notification-service decide.
+         */
+        private String billingClass;
         private String source;
         private String sourceId;
     }

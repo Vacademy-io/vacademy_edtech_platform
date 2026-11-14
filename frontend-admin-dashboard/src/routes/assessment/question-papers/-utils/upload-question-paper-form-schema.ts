@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isQuillContentEmpty } from './helper';
+import { cbeConfigFormSchema, cbeSecretStatusFormSchema, validateCbeConfig } from './cbe-question';
 
 // Helper function to validate single choice questions (MCQS, CMCQS)
 const validateSingleChoiceQuestion = (question: any, ctx: z.RefinementCtx, examType: string, optionsPath: string, optionsName: string) => {
@@ -179,13 +180,35 @@ const validateNumericTypeConstraints = (question: any, ctx: z.RefinementCtx) => 
 
     const check = numericType ? typeChecks[numericType] : undefined;
 
-    if (check && !validAnswers.every(check)) {
+    // Empty answer boxes are null and are dropped on save; check only what is typed.
+    const typedAnswers = validAnswers.filter(
+        (answer: unknown) => answer !== null && answer !== ''
+    );
+
+    if (check && !typedAnswers.every(check)) {
         ctx.addIssue({
             path: ['validAnswers'],
             code: z.ZodIssueCode.custom,
             message: `Not correct answer type is entered ${numericType}`,
         });
     }
+};
+
+// Spreadsheet & Written Response: at least one part, every part worth marks.
+// A missing solution / marking scheme only warns (shown in the editor).
+export const validateCbeQuestion = (question: any, ctx: z.RefinementCtx, examType: string) => {
+    if (examType === 'SURVEY') return;
+    const { errors } = validateCbeConfig(question.cbeConfig);
+    errors.forEach((issue) => {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+                issue.code === 'noParts'
+                    ? 'Add at least one answer part'
+                    : `Part ${'label' in issue ? issue.label : ''} needs marks greater than 0`,
+            path: ['cbeConfig'],
+        });
+    });
 };
 
 // Main validation function that routes to specific validators
@@ -217,6 +240,9 @@ const validateQuestionByType = (question: any, ctx: z.RefinementCtx, examType: s
             break;
         case 'LONG_ANSWER':
             validateSubjectiveQuestion(question, ctx, examType, 'LONG_ANSWER');
+            break;
+        case 'CBE_RESPONSE':
+            validateCbeQuestion(question, ctx, examType);
             break;
     }
 
@@ -333,7 +359,13 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                 parentRichTextContent: z.union([z.string(), z.null()]).optional(),
                 decimals: z.number().optional(),
                 numericType: z.string().optional(),
-                validAnswers: z.union([z.array(z.union([z.number(), z.string()])), z.null()]).optional(),
+                // An answer box left empty is null in the form; drop it before validating.
+                validAnswers: z
+                    .preprocess(
+                        (value) => (Array.isArray(value) ? value.filter((a) => a !== null) : value),
+                        z.union([z.array(z.union([z.number(), z.string()])), z.null()])
+                    )
+                    .optional(),
                 questionResponseType: z.union([z.string(), z.null()]).optional(),
                 subjectiveAnswerText: z.string().optional(),
                 questionPoints: z.string().optional(),
@@ -370,6 +402,9 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                         evaluationMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
                     })
                     .optional(),
+                // CBE_RESPONSE (Spreadsheet & Written Response): kept whole, see cbe-question.ts.
+                cbeConfig: cbeConfigFormSchema,
+                cbeSecretStatus: cbeSecretStatusFormSchema,
             })
             .superRefine((question, ctx) => {
                 validateQuestionByType(question, ctx, examType || 'EXAM');

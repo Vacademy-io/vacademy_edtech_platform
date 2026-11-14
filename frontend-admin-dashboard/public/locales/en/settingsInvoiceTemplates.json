@@ -1,0 +1,62 @@
+{
+    "types": {
+        "invoice": {
+            "title": "Invoice PDF Templates",
+            "description": "Layout used to render the invoice PDF — branding, line items table and totals."
+        },
+        "invoiceEmail": {
+            "title": "Invoice Email Templates",
+            "description": "Email body sent to the learner with the invoice PDF attached."
+        }
+    },
+    "actions": {
+        "generateSampleTitle": "Generate a sample template with all invoice variables pre-filled",
+        "generateSample": "Generate sample",
+        "generating": "Generating…",
+        "createTemplate": "Create Template"
+    },
+    "toasts": {
+        "loadFailed": "Failed to load templates. Please try again.",
+        "sampleCreated": "Sample template created — opening editor…",
+        "generateSampleFailed": "Failed to generate sample template. Please try again.",
+        "deleteSuccess": "Template deleted successfully!",
+        "deleteFailed": "Failed to delete template. Please try again.",
+        "defaultSet": "Default template updated",
+        "defaultSetFailed": "Could not set the default template. Please try again."
+    },
+    "loading": "Loading templates…",
+    "emptyState": {
+        "messagePdf": "No invoice PDF templates yet. The built-in default will be used until you create one.",
+        "messageEmail": "No invoice email templates yet. The built-in default will be used until you create one.",
+        "createFirst": "Create your first template"
+    },
+    "table": {
+        "columns": {
+            "name": "Name",
+            "subject": "Subject",
+            "created": "Created",
+            "actions": "Actions"
+        },
+        "noSubject": "No subject",
+        "actions": {
+            "preview": "Preview",
+            "edit": "Edit",
+            "delete": "Delete",
+            "setDefault": "Set as default"
+        },
+        "defaultBadge": "Default",
+        "defaultBadgeTitle": "Used for every new invoice"
+    },
+    "pagination": {
+        "templateCount_one": "{{count}} template",
+        "templateCount_other": "{{count}} templates",
+        "pageOf": "Page {{page}} of {{total}}"
+    },
+    "deleteDialog": {
+        "title": "Delete Template",
+        "description": "Are you sure you want to delete this template? This action cannot be undone.",
+        "cancel": "Cancel",
+        "deleting": "Deleting…",
+        "delete": "Delete"
+    }
+}

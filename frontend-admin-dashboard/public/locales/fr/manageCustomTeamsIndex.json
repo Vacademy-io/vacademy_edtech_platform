@@ -1,0 +1,8 @@
+{
+    "helmetTitle": "Gérer les {{termPlural}}",
+    "heading": "Gérer les {{termPlural}}",
+    "subtitle": "Gérez et surveillez tous vos portails {{termPlural}} en un seul endroit.",
+    "tabs": {
+        "registrationLinks": "Liens d'inscription"
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "heading": "نسخ إلى",
+        "submitLabel": "نسخ",
+        "busyLabel": "جارٍ النسخ…"
+    },
+    "toast": {
+        "copiedSuccess": "تم نسخ الشريحة بنجاح!",
+        "copiedToLocations_zero": "لم يتم نسخ الشريحة إلى أي موقع",
+        "copiedToLocations_one": "تم نسخ الشريحة إلى موقع واحد",
+        "copiedToLocations_two": "تم نسخ الشريحة إلى موقعين",
+        "copiedToLocations_few": "تم نسخ الشريحة إلى {{count}} مواقع",
+        "copiedToLocations_many": "تم نسخ الشريحة إلى {{count}} موقعًا",
+        "copiedToLocations_other": "تم نسخ الشريحة إلى {{count}} موقع",
+        "copyFailed": "فشل نسخ الشريحة",
+        "partialSuccess_zero": "لم يتم النسخ إلى أي موقع من أصل {{total}}. أعد المحاولة للباقي أدناه.",
+        "partialSuccess_one": "تم النسخ إلى موقع واحد من أصل {{total}}. أعد المحاولة للباقي أدناه.",
+        "partialSuccess_two": "تم النسخ إلى موقعين من أصل {{total}}. أعد المحاولة للباقي أدناه.",
+        "partialSuccess_few": "تم النسخ إلى {{count}} مواقع من أصل {{total}}. أعد المحاولة للباقي أدناه.",
+        "partialSuccess_many": "تم النسخ إلى {{count}} موقعًا من أصل {{total}}. أعد المحاولة للباقي أدناه.",
+        "partialSuccess_other": "تم النسخ إلى {{count}} موقع من أصل {{total}}. أعد المحاولة للباقي أدناه."
+    }
+}

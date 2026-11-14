@@ -1,0 +1,45 @@
+{
+    "toast": {
+        "linkCopied": "Booking link copied",
+        "copyFailed": "Could not copy the link",
+        "deleted": "Booking page deleted",
+        "deleteFailed": "Failed to delete the booking page",
+        "createdForOtherHost": "Created — hosted by {{hostName}}; it appears in their list.",
+        "anotherUser": "another user"
+    },
+    "heading": {
+        "create": "New Booking Page",
+        "edit": "Edit Booking Page",
+        "list": "Booking Pages"
+    },
+    "missingInstitute": "Missing institute context.",
+    "loading": "Loading your booking pages…",
+    "error": {
+        "title": "Couldn't load your booking pages",
+        "description": "Something went wrong. Please try again.",
+        "retry": "Retry"
+    },
+    "list": {
+        "title": "Your booking pages",
+        "description": "Each page has its own link people use to pick a slot on your calendar. Edit, copy, or open a page below.",
+        "newBookingPage": "New Booking Page",
+        "emptyTitle": "No booking pages yet",
+        "emptyDescription": "Create one to get a shareable booking link.",
+        "audienceLabel": "{{term}}: {{label}}",
+        "durationMin_one": "{{count}} min",
+        "durationMin_other": "{{count}} min"
+    },
+    "actions": {
+        "open": "Open booking page",
+        "copy": "Copy booking link",
+        "edit": "Edit booking page",
+        "delete": "Delete booking page"
+    },
+    "deleteDialog": {
+        "title": "Delete booking page",
+        "description": "Are you sure you want to delete \"{{title}}\"? Its booking link will stop working. This action cannot be undone.",
+        "cancel": "Cancel",
+        "deleting": "Deleting...",
+        "delete": "Delete"
+    }
+}

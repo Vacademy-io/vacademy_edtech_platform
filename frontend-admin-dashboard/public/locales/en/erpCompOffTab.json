@@ -1,0 +1,25 @@
+{
+    "approvedToast": "Comp-off approved",
+    "rejectedToast": "Comp-off rejected",
+    "updateErrorFallback": "Could not update this comp-off.",
+    "columns": {
+        "employee": "Employee",
+        "workedOn": "Worked on",
+        "earnedDays": "Earned days",
+        "expires": "Expires",
+        "status": "Status"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "approving": "Approving…",
+    "rejecting": "Rejecting…",
+    "intro": "Days an employee worked when they did not have to. Approving one credits their COMP_OFF balance with the earned days, which then expire on the date shown — an unused comp-off is not carried forward past it.",
+    "employeeLabel": "Employee",
+    "allEmployeesPlaceholder": "All employees",
+    "showEveryone": "Show everyone",
+    "loadError": "Couldn't load comp-off records.",
+    "emptyTitle": "No comp-off recorded",
+    "emptyDescriptionFiltered": "This employee has not claimed any comp-off yet.",
+    "emptyDescriptionAll": "Comp-off appears here when an employee claims a day they worked on a holiday or weekly off.",
+    "footerNote": "Approved comp-off shows up as a COMP_OFF row in the balances table above, where it behaves like any other leave type until it expires."
+}

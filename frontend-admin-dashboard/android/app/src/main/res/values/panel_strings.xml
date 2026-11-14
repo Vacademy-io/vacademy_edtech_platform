@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vacademy Classroom (panel mode) native screens. Shared by every flavor but
+     only shown when R.bool.panel_mode is true (vacademy-classroom). -->
+<resources>
+    <!-- Unsupported WebView gate -->
+    <string name="panel_unsupported_title">This panel\'s browser is too old</string>
+    <string name="panel_unsupported_requirement">Vacademy Classroom needs Android System WebView (Chrome) %1$d or newer.</string>
+    <string name="panel_unsupported_detected">Detected: %1$s %2$s (Chrome %3$d) · Android %4$s (API %5$d) · %6$s %7$s</string>
+    <string name="panel_unsupported_no_webview">No working Android System WebView was found on this device.</string>
+    <string name="panel_unsupported_unknown">unknown</string>
+    <string name="panel_unsupported_steps_title">What you can do</string>
+    <string name="panel_unsupported_step_1">1. Ask the panel vendor for a firmware or Android System WebView update.</string>
+    <string name="panel_unsupported_step_2">2. Use the panel\'s Android or Windows OPS module, if it has one.</string>
+    <string name="panel_unsupported_step_3">3. Open panel.vacademy.io in Chrome on another device and connect it to the panel.</string>
+    <string name="panel_action_retry">Retry</string>
+    <string name="panel_action_choose_home">Choose Home app</string>
+    <string name="panel_action_settings">Open Settings</string>
+    <string name="panel_action_unavailable">This panel has no screen for that setting.</string>
+
+    <!-- Render-process crash loop -->
+    <string name="panel_crash_title">Vacademy Classroom keeps stopping</string>
+    <string name="panel_crash_body">The panel\'s browser engine stopped %1$d times in the last minute. This usually means the panel is low on memory. Close other apps, then restart Vacademy Classroom.</string>
+    <string name="panel_action_restart">Restart</string>
+</resources>

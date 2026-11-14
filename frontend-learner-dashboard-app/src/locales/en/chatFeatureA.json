@@ -1,0 +1,111 @@
+{
+    "common": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "loading": "Loading…",
+        "memberFallback": "Member",
+        "typeCommunity": "Community",
+        "typeDirectMessage": "Direct message",
+        "typeGroupMessages": "Group messages",
+        "noPermissionToPost": "You don't have permission to post here."
+    },
+    "conversationList": {
+        "typeFallback": {
+            "batchGroup": "{{batch}} Group"
+        },
+        "empty": {
+            "title": "No conversations yet",
+            "description": "Start a new conversation or open the community channel."
+        },
+        "noMessagesYet": "No messages yet",
+        "unreadOverflow": "99+"
+    },
+    "thread": {
+        "loadEarlier": "Load earlier messages",
+        "empty": "No messages yet. Say hello to get the conversation started.",
+        "deletedMessage": "This message was deleted",
+        "editMessage": "Edit message",
+        "deleteMessage": "Delete message",
+        "attachmentAltFallback": "attachment",
+        "attachmentNameFallback": "Attachment",
+        "failedAria": "Message failed to send",
+        "retry": "Retry",
+        "dismissFailedAria": "Dismiss failed message",
+        "sendingAria": "Sending message",
+        "sending": "Sending…",
+        "timestampEdited": "{{time}} · edited",
+        "dayToday": "Today",
+        "dayYesterday": "Yesterday",
+        "editDialog": {
+            "inputAria": "Message text",
+            "notice": "Everyone in the conversation sees the change, marked as edited."
+        },
+        "deleteDialog": {
+            "body": "This removes the message for everyone in the conversation. It can't be undone.",
+            "confirm": "Delete"
+        }
+    },
+    "composer": {
+        "placeholder": "Type a message…",
+        "attachAria": "Attach image",
+        "sendAria": "Send message",
+        "removeAttachmentAria": "Remove attachment",
+        "disabledDefault": "You can't post in this conversation.",
+        "imageOnlyError": "Only image attachments are supported.",
+        "uploadFailedError": "Failed to upload image. Please try again."
+    },
+    "communityRules": {
+        "defaultTitle": "Community Guidelines",
+        "acceptNotice": "Please accept the guidelines to start posting in this channel.",
+        "accept": "Accept & continue",
+        "accepting": "Accepting…"
+    },
+    "newChatModal": {
+        "title": "New message",
+        "searchPlaceholder": "Search people by name…",
+        "everyone": "Everyone",
+        "empty": "No people found.",
+        "opening": "Opening…",
+        "startError": "Couldn't start the chat. Please try again."
+    },
+    "ruleRejection": {
+        "slowMode": "Slow mode is on — please wait before sending again",
+        "blockedByModeration": "Message blocked: it contains a banned word",
+        "rulesNotAcknowledged": "Please accept the community rules first",
+        "linksNotAllowed": "Links aren't allowed here",
+        "attachmentsNotAllowed": "Attachments aren't allowed here",
+        "newMemberReadonly": "New members can't post yet",
+        "chatDisabled": "Chat is disabled for this institute"
+    },
+    "screen": {
+        "loadThreadError": "Couldn't load this conversation.",
+        "sendGenericError": "Message failed to send.",
+        "deleteError": "Couldn't delete the message. Please try again.",
+        "editError": "Couldn't save the edit. Please try again.",
+        "acknowledgeError": "Couldn't accept the guidelines. Please try again.",
+        "ackGateReason": "Accept the community guidelines above to start posting.",
+        "headerGroupFallback": "Group",
+        "newMessage": "New message",
+        "chatDisabledTitle": "In-App Messages are turned off for your institute",
+        "chatDisabledDescription": "Messaging isn't available right now. Check back later or reach out to your institute admin.",
+        "header": {
+            "messages": "Messages",
+            "refreshAria": "Refresh",
+            "backAria": "Back",
+            "communitySubtitle": "Institute community"
+        },
+        "emptySelection": {
+            "title": "Select a conversation",
+            "description": "Pick a conversation from the list, open the community channel, or start a new direct message."
+        }
+    },
+    "batchPanel": {
+        "disabledFallback": "Messaging is turned off for this institute",
+        "genericErrorTitle": "Couldn't load the discussion",
+        "genericErrorDescription": "Something went wrong opening these messages. Please try again later."
+    },
+    "route": {
+        "openChatError": "Couldn't open the chat. Please try again."
+    }
+}

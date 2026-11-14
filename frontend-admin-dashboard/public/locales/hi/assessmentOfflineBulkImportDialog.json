@@ -1,0 +1,152 @@
+{
+    "dialog": {
+        "heading": "बल्क ऑफ़लाइन डेटा एंट्री"
+    },
+    "footer": {
+        "close": "बंद करें",
+        "cancel": "रद्द करें",
+        "chooseAnotherFile": "दूसरी फ़ाइल चुनें",
+        "retryingText": "पुनः प्रयास हो रहा है...",
+        "importingText": "आयात हो रहा है...",
+        "retryImport": "आयात पुनः प्रयास करें",
+        "importStudents_one": "{{count}} छात्र आयात करें",
+        "importStudents_other": "{{count}} छात्र आयात करें"
+    },
+    "pick": {
+        "errors": {
+            "studentsLoadFailed": {
+                "title": "छात्र सूची लोड नहीं हो सकी",
+                "detail": "जब तक यह लोड नहीं होती, यूज़रनेम का मिलान नहीं किया जा सकता। पुनः प्रयास के लिए इस डायलॉग को बंद करके फिर से खोलें।"
+            },
+            "noBatchLearners": {
+                "title": "इस असेसमेंट में कोई बैच लर्नर नहीं है",
+                "detail": "बल्क इम्पोर्ट असेसमेंट के बैचों से यूज़रनेम के आधार पर छात्रों का मिलान करता है। असेसमेंट में बैच जोड़ें, या इन छात्रों को एक-एक करके दर्ज करें।"
+            },
+            "zipInvalid": {
+                "title": "उस ज़िप का उपयोग नहीं किया जा सका"
+            }
+        },
+        "template": {
+            "title": "1. एक टेम्पलेट से शुरू करें",
+            "loadingStudents": "छात्र सूची लोड हो रही है…",
+            "description_one": "दोनों डाउनलोड इस असेसमेंट के बैचों के {{count}} छात्र के साथ पहले से भरे हुए हैं, इसलिए आपको केवल अंक और फ़ाइल नाम भरने हैं।",
+            "description_other": "दोनों डाउनलोड इस असेसमेंट के बैचों के {{count}} छात्रों के साथ पहले से भरे हुए हैं, इसलिए आपको केवल अंक और फ़ाइल नाम भरने हैं।",
+            "downloadCsv": "CSV डाउनलोड करें",
+            "building": "बन रहा है...",
+            "downloadSampleZip": "सैंपल ज़िप डाउनलोड करें"
+        },
+        "upload": {
+            "title": "2. भरी हुई ज़िप अपलोड करें",
+            "description": "ज़िप में <manifest>manifest.csv</manifest> के साथ आपकी स्कैन की गई PDF होनी चाहिए। <answers>answers/</answers>, <checked>checked/</checked> या <reports>reports/</reports> में यूज़रनेम के नाम पर रखी PDF अपने आप पहचान ली जाती हैं। किसी कॉलम की ज़रूरत नहीं — छात्र के नाम पर रखी फ़ाइल खुद ही उसकी पहचान कर देती है। जब तक आप प्रीव्यू नहीं देख लेते, कुछ भी सेव नहीं होता।",
+            "readingZip": "ज़िप पढ़ी जा रही है...",
+            "clickOrDrag": "अपलोड करने के लिए क्लिक करें या खींचकर छोड़ें",
+            "zipOnly": "केवल .zip"
+        }
+    },
+    "preview": {
+        "readyCount": "{{count}} तैयार",
+        "pdfsToUpload_one": "अपलोड के लिए {{count}} PDF",
+        "pdfsToUpload_other": "अपलोड के लिए {{count}} PDF",
+        "problemsCount": "{{count}} में समस्याएँ",
+        "downloadProblemsCsv": "समस्याओं की CSV डाउनलोड करें",
+        "errors": {
+            "manifestInvalid": {
+                "title": "इस मैनिफेस्ट को आयात नहीं किया जा सकता"
+            },
+            "importFailed": {
+                "title": "आयात विफल",
+                "retryNote": "आपकी फ़ाइलें पहले से अपलोड हो चुकी हैं — \"आयात पुनः प्रयास करें\" दोबारा अपलोड किए बिना उन्हें फिर से भेजता है।"
+            },
+            "noRowsReady": {
+                "title": "आयात के लिए कोई पंक्ति तैयार नहीं है",
+                "detail": "manifest.csv की हर पंक्ति में कोई समस्या है। नीचे बताई गई समस्याओं को ठीक करें (या समस्याओं की CSV डाउनलोड करें) और ज़िप फिर से अपलोड करें।"
+            }
+        },
+        "uploadFailures": {
+            "header_one": "{{count}} पंक्ति छोड़ी गई क्योंकि उसकी फ़ाइल अपलोड नहीं हो सकी",
+            "header_other": "{{count}} पंक्तियाँ छोड़ी गईं क्योंकि उनकी फ़ाइलें अपलोड नहीं हो सकीं",
+            "lineDetail": "पंक्ति {{line}} ({{username}}): {{errors}}",
+            "andMore_one": "…और {{count}} और — समस्याओं की CSV देखें।",
+            "andMore_other": "…और {{count}} और — समस्याओं की CSV देखें।"
+        },
+        "warnings": {
+            "marksReleased": "जिन पंक्तियों में total_marks का मान है, उनका परिणाम छात्र को जारी कर दिया जाएगा।",
+            "newAttempt": "आयात हर छात्र के लिए एक नया प्रयास जोड़ता है। विफलताओं को ठीक करने के लिए, पूरी फ़ाइल नहीं बल्कि केवल प्रभावित पंक्तियाँ फिर से अपलोड करें।"
+        },
+        "ignoredColumns": {
+            "header": "अनदेखे किए गए कॉलम: {{columns}}",
+            "hint": "अगर आपने इन्हें पढ़े जाने की उम्मीद की थी तो टाइपो जाँचें। ज्ञात कॉलम: {{columns}}।"
+        },
+        "unreferencedFiles": {
+            "header_one": "ज़िप में {{count}} फ़ाइल को अनदेखा कर दिया जाएगा",
+            "header_other": "ज़िप में {{count}} फ़ाइलों को अनदेखा कर दिया जाएगा",
+            "noFileAttachedSuffix": " — किसी भी पंक्ति में फ़ाइल संलग्न नहीं है, इसलिए केवल अंक ही आयात होंगे",
+            "hint": "इन्हें manifest.csv में नाम दें, या छात्र के यूज़रनेम के नाम पर <answers>answers/</answers>, <checked>checked/</checked> या <reports>reports/</reports> में रखें।"
+        },
+        "progress": {
+            "uploading": "{{total}} में से {{done}} फ़ाइलें अपलोड हो रही हैं…"
+        }
+    },
+    "table": {
+        "headers": {
+            "line": "पंक्ति",
+            "student": "छात्र",
+            "marks": "अंक",
+            "answer": "उत्तर",
+            "checked": "जाँचा गया",
+            "report": "रिपोर्ट",
+            "status": "स्थिति"
+        },
+        "status": {
+            "ready": "तैयार"
+        },
+        "footerNote_one": "{{total}} में से {{visible}} पंक्तियाँ दिखाई जा रही हैं — {{hidden}} और बिना किसी समस्या के आयात होंगी।",
+        "footerNote_other": "{{total}} में से {{visible}} पंक्तियाँ दिखाई जा रही हैं — {{hidden}} और बिना किसी समस्या के आयात होंगी।"
+    },
+    "done": {
+        "errors": {
+            "somethingWrong": {
+                "title": "कुछ गड़बड़ हो गई"
+            }
+        },
+        "importedCount": "{{count}} आयात किए गए",
+        "notImportedCount": "{{count}} आयात नहीं हुए",
+        "resultLine": "{{rowLabel}} ({{username}}): {{message}}"
+    },
+    "slotCell": {
+        "auto": "ऑटो"
+    },
+    "common": {
+        "emptyValue": "—"
+    },
+    "toasts": {
+        "importedWithFailures_one": "{{count}} में से {{success}} छात्र आयात किए गए — {{failed}} विफल।",
+        "importedWithFailures_other": "{{count}} में से {{success}} छात्र आयात किए गए — {{failed}} विफल।",
+        "importedSuccess_one": "{{count}} छात्र आयात किया गया।",
+        "importedSuccess_other": "{{count}} छात्र आयात किए गए।",
+        "noProblemsToDownload": "डाउनलोड करने के लिए कोई समस्या नहीं है।"
+    },
+    "errors": {
+        "couldNotBuildCsvTemplate": "CSV टेम्पलेट नहीं बनाया जा सका।",
+        "couldNotBuildSampleZip": "सैंपल ज़िप नहीं बनाई जा सकी।",
+        "couldNotReadZip": "यह ज़िप फ़ाइल नहीं पढ़ी जा सकी।",
+        "noRowsUploaded": "कोई भी पंक्ति अपलोड नहीं हो सकी, इसलिए कुछ भी आयात नहीं हुआ। नीचे समस्याएँ देखें।",
+        "bulkImportFailed": "बल्क आयात विफल रहा। कृपया फिर से प्रयास करें।",
+        "couldNotBuildProblemsCsv": "समस्याओं की CSV नहीं बनाई जा सकी।",
+        "uploadNoFileId": "\"{{name}}\" के अपलोड ने कोई फ़ाइल आईडी नहीं दी",
+        "fileUploadFailed": "फ़ाइल अपलोड विफल रहा",
+        "importFailedGeneric": "आयात विफल"
+    },
+    "validation": {
+        "notZip": "\"{{fileName}}\" .zip फ़ाइल नहीं है। manifest.csv और अपनी PDF को एक ज़िप आर्काइव में डालें और उसे अपलोड करें।",
+        "emptyZip": "\"{{fileName}}\" खाली है (0 बाइट्स)। ज़िप फिर से बनाएँ और पुनः प्रयास करें।",
+        "studentsNotLoaded": "छात्र सूची लोड नहीं हो सकी, इसलिए यूज़रनेम का मिलान नहीं किया जा सकता। पुनः प्रयास के लिए इस डायलॉग को बंद करके फिर से खोलें।",
+        "noBatchLearners": "इस असेसमेंट में मिलान के लिए कोई बैच लर्नर नहीं है। बल्क इम्पोर्ट असेसमेंट के बैचों से यूज़रनेम के आधार पर छात्रों का मिलान करता है।",
+        "noManifestFound": "इस ज़िप में manifest.csv नहीं मिली। अपेक्षित लेआउट देखने के लिए ऊपर दी गई सैंपल ज़िप डाउनलोड करें।",
+        "manifestEmpty": "{{manifestPath}} खाली है। कम से कम एक पंक्ति भरें और फिर से ज़िप करें।",
+        "manifestNoDataRows": "{{manifestPath}} में हेडर तो है लेकिन कोई डेटा पंक्ति नहीं है। हर छात्र के लिए एक पंक्ति जोड़ें और फिर से ज़िप करें।"
+    },
+    "network": {
+        "unreachable": "सर्वर तक नहीं पहुँच सका। अपना कनेक्शन जाँचें और फिर से प्रयास करें।"
+    }
+}

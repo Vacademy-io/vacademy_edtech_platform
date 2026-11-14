@@ -1,0 +1,56 @@
+{
+    "title": "Connaissances du cours",
+    "intro": "Laissez l'IA étudiant répondre à partir de vos leçons, avec des liens vers la page ou la minute exacte. Les leçons verrouillées restent verrouillées : l'IA indique seulement aux apprenants quand elles s'ouvriront.",
+    "readOnlyNotice": "Seuls les administrateurs peuvent modifier ces paramètres.",
+    "enabled": {
+        "label": "Préparer pour l'IA les leçons nouvelles et modifiées",
+        "hint": "Gratuit pour le texte, les PDF avec texte, les quiz, SCORM, le code, les vidéos IA et les sous-titres YouTube."
+    },
+    "learnerAnswers": {
+        "label": "Répondre aux apprenants à partir du contenu du cours",
+        "hint": "L'IA étudiant cherche dans les leçons que chaque apprenant peut ouvrir et renvoie vers la page ou la minute exacte.",
+        "needsEnabled": "Activez d'abord « Préparer pour l'IA les leçons nouvelles et modifiées »."
+    },
+    "autoPaid": {
+        "label": "Traiter automatiquement les scans et les vidéos",
+        "hint": "Utilise des crédits IA pour les pages scannées, les images de diapositives et les vidéos importées, dans la limite mensuelle ci-dessous.",
+        "capPrefix": "Jusqu'à",
+        "capSuffix": "crédits par mois",
+        "capAria": "Limite mensuelle de crédits pour le traitement automatique",
+        "capHint": "Le traitement automatique est suspendu pour le mois une fois la limite atteinte. Maximum {{max}}.",
+        "allowOcr": "Lire les pages scannées et les images de diapositives (0,5 crédit par page)",
+        "allowTranscription": "Transcrire les vidéos et audios importés (0,5 crédit par minute)",
+        "meter": "Utilisés ce mois-ci : {{used}} sur {{cap}} crédits",
+        "meterAria": "Crédits utilisés ce mois-ci pour le traitement automatique",
+        "capReached": "Limite mensuelle atteinte"
+    },
+    "footer": "Les cours existants ne sont pas traités automatiquement. Ouvrez un cours › Connaissances IA › Préparer le cours pour l'IA.",
+    "validation": {
+        "capWholeNumber": "Saisissez un nombre entier de crédits (0 ou plus)",
+        "capMax": "La limite ne peut pas dépasser {{max}} crédits"
+    },
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "discard": "Annuler les modifications",
+    "toasts": {
+        "saved": "Paramètres des connaissances du cours enregistrés",
+        "deleted": "Données IA des cours supprimées"
+    },
+    "errors": {
+        "saveFailed": "Impossible d'enregistrer les paramètres. Réessayez.",
+        "deleteFailed": "Impossible de supprimer les données IA des cours. Réessayez."
+    },
+    "danger": {
+        "title": "Zone de danger",
+        "description": "Supprimez tout ce que l'IA a lu dans vos leçons et désactivez les connaissances du cours.",
+        "button": "Supprimer les données IA des cours",
+        "dialogTitle": "Supprimer les données IA des cours ?",
+        "dialogBody": "Cette action est irréversible. Vos leçons elles-mêmes ne sont pas modifiées.",
+        "dialogPointIndex": "Tout ce que l'IA a lu dans vos leçons est supprimé.",
+        "dialogPointOff": "Les connaissances du cours sont désactivées : les apprenants ne reçoivent plus de réponses tirées du contenu du cours.",
+        "dialogPointCredits": "Les traitements en cours sont arrêtés. Les crédits déjà dépensés ne sont pas remboursés.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer les données",
+        "deleting": "Suppression…"
+    }
+}

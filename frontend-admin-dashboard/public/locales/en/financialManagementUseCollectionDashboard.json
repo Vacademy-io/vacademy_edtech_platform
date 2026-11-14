@@ -1,0 +1,36 @@
+{
+    "vendorLabels": {
+        "onlinePortal": "Online Portal",
+        "cash": "Cash",
+        "bankTransfer": "Bank Transfer",
+        "other": "Other",
+        "offlineUnspecified": "Offline (mode not recorded)"
+    },
+    "summaryCards": {
+        "projectedRevenue": "Projected revenue",
+        "tillNowExpected": "Till now expected",
+        "tillNowCollected": "Till now collected",
+        "totalOverdue": "Total overdue",
+        "totalDue": "Total due"
+    },
+    "pipeline": {
+        "codes": {
+            "projectedRevenue": "PR",
+            "tillNowExpected": "TNE",
+            "tillNowCollected": "TNC",
+            "totalOverdue": "TO",
+            "totalDue": "TD"
+        },
+        "tooltips": {
+            "projectedRevenue": "Projected Revenue",
+            "tillNowExpected": "Till Now Expected",
+            "tillNowCollected": "Till Now Collected",
+            "totalOverdue": "Total Overdue",
+            "totalDue": "Total Due"
+        }
+    },
+    "gauge": {
+        "collected": "Collected",
+        "remaining": "Remaining"
+    }
+}

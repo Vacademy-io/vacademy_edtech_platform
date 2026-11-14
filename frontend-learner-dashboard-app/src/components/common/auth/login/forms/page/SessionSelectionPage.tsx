@@ -186,10 +186,10 @@ const SessionSelectionPage = () => {
   );
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-success-50 via-white to-teal-50 p-4">
       <div className="w-full px-4">
         <div className="text-center space-y-4 mb-10">
-        <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-md mx-auto flex items-center justify-center shadow-md">
+        <div className="w-20 h-20 bg-gradient-to-br from-success-500 to-teal-600 rounded-md mx-auto flex items-center justify-center shadow-md">
             <svg
               className="w-10 h-10 text-white"
               fill="none"
@@ -273,7 +273,7 @@ const SessionSelectionPage = () => {
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="flex w-full h-full items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-100">
+                        <div className="flex w-full h-full items-center justify-center bg-gradient-to-br from-success-100 to-teal-100">
                           <svg
                             className="w-12 h-12 text-emerald-400"
                             fill="none"
@@ -330,13 +330,13 @@ const SessionSelectionPage = () => {
                           {new Date(session.start_time).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="pt-1">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="pt-1 space-y-1">
+                        <div className="flex justify-between text-xs text-gray-500">
                           <span>{t("sessionSelection.readyToStart")}</span>
                           <span>100%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-1.5 rounded-full w-full" />
+                          <div className="bg-gradient-to-r from-success-500 to-teal-500 h-1.5 rounded-full w-full" />
                         </div>
                       </div>
                     </CardContent>

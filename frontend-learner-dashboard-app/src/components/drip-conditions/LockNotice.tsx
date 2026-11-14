@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface LockNoticeProps {
@@ -17,9 +18,10 @@ interface LockNoticeProps {
  * thumbnail, and two locks on one card is one lock too many.
  */
 export function LockNotice({ message, className }: LockNoticeProps) {
+  const { t } = useTranslation("courseComponentsExtra");
   return (
     <p className={cn("text-caption text-muted-foreground", className)}>
-      {message || "Locked"}
+      {message || t("dripConditions.common.locked")}
     </p>
   );
 }

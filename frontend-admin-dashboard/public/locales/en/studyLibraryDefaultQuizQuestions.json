@@ -1,0 +1,29 @@
+{
+    "q1": {
+        "question": "What is the primary purpose of machine learning?",
+        "options": {
+            "0": "To create databases",
+            "1": "To enable computers to learn from data",
+            "2": "To design user interfaces",
+            "3": "To manage network security"
+        }
+    },
+    "q2": {
+        "question": "Which ensemble method combines multiple weak learners sequentially?",
+        "options": {
+            "0": "Bagging",
+            "1": "Boosting",
+            "2": "Stacking",
+            "3": "Random Forest"
+        }
+    },
+    "q3": {
+        "question": "What does PCA stand for in dimensionality reduction?",
+        "options": {
+            "0": "Principal Component Analysis",
+            "1": "Primary Correlation Assessment",
+            "2": "Progressive Component Algorithm",
+            "3": "Practical Classification Approach"
+        }
+    }
+}

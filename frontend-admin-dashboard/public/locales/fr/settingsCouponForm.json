@@ -1,0 +1,97 @@
+{
+    "schema": {
+        "codeMinLength": "Le code doit comporter au moins 3 caractères",
+        "codeMaxLength": "Le code doit comporter au plus 32 caractères",
+        "codeFormat": "Utilisez des majuscules, des chiffres, _ ou -",
+        "discountValueRequired": "La valeur de la remise est requise",
+        "discountValuePositive": "La valeur de la remise doit être supérieure à 0",
+        "usageLimitInvalid": "Saisissez un nombre ou laissez vide",
+        "percentageMax": "Le pourcentage ne peut pas dépasser 100",
+        "endDateAfterStart": "La date de fin doit être postérieure à la date de début"
+    },
+    "priceLine": {
+        "percentOff": "{{value}} % de réduction",
+        "percentOffWithMax": "{{value}} % de réduction, max {{max}}",
+        "flatOff": "{{amount}} de réduction",
+        "withExpiry": "{{discount}} · valable jusqu'au {{date}}"
+    },
+    "dialog": {
+        "editHeading": "Modifier le coupon {{code}}",
+        "newHeading": "Nouveau coupon"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "createCoupon": "Créer le coupon"
+    },
+    "toasts": {
+        "updated": "Coupon mis à jour",
+        "created": "Coupon « {{code}} » créé",
+        "saveFailed": "Impossible d'enregistrer le coupon"
+    },
+    "basics": {
+        "title": "Informations de base",
+        "code": {
+            "label": "Code du coupon",
+            "placeholder": "SAVE20"
+        },
+        "discountType": {
+            "label": "Type de remise",
+            "percentage": "Pourcentage (%)",
+            "flat": "Montant fixe"
+        },
+        "value": {
+            "labelPercentage": "Valeur (%)",
+            "labelFlat": "Valeur (₹)",
+            "placeholderPercentage": "20",
+            "placeholderFlat": "500"
+        },
+        "maxCap": {
+            "label": "Plafond maximal (₹)",
+            "placeholder": "Sans plafond",
+            "noCapHint": "(vide = sans plafond)"
+        }
+    },
+    "validity": {
+        "title": "Validité",
+        "startDate": {
+            "label": "Date de début",
+            "optional": "(facultatif)"
+        },
+        "endDate": {
+            "label": "Date de fin",
+            "noExpiryHint": "(vide = sans expiration)"
+        },
+        "usageLimit": {
+            "label": "Limite d'utilisation",
+            "unlimitedHint": "(vide = illimité)",
+            "placeholder": "Illimité"
+        }
+    },
+    "emailRestriction": {
+        "restrictLabel": "Limiter à des e-mails spécifiques",
+        "restrictHint": "Seuls les e-mails de {{term}} listés peuvent utiliser ce coupon",
+        "allowedEmailsLabel": "E-mails autorisés",
+        "allowedEmailsPlaceholder": "alice@example.com, bob@example.com",
+        "emailsCaptured_one": "{{count}} e-mail enregistré",
+        "emailsCaptured_many": "{{count}} d'e-mails enregistrés",
+        "emailsCaptured_other": "{{count}} e-mails enregistrés"
+    },
+    "scope": {
+        "title": "Où il s'applique",
+        "locked": "(verrouillé — le coupon a déjà été utilisé)"
+    },
+    "livePreview": {
+        "heading": "Aperçu {{term}}",
+        "codePlaceholder": "VOTRECODE",
+        "status": "Statut",
+        "usage": "Utilisation",
+        "scope": "Portée",
+        "instituteWide": "Tout l'institut",
+        "scopeCount": "{{count}} {{unit}}",
+        "emailRestricted": "Limité par e-mail",
+        "allowedCount": "{{count}} autorisé(s)"
+    },
+    "frozenNotice": "Ce coupon a déjà été utilisé. La remise et la portée sont verrouillées ; vous pouvez encore prolonger la date de fin, augmenter la limite d'utilisation ou changer le statut."
+}

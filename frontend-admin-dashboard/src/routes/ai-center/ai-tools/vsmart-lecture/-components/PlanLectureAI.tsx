@@ -10,6 +10,8 @@ import { getRandomTaskName } from '@/routes/ai-center/-utils/helper';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { languageSupport, teachingMethod } from '@/constants/dummy-data';
 import {
     relativeTime,
@@ -38,7 +40,30 @@ const methodShortLabel = (full: string): string => {
     return idx > 0 ? full.slice(0, idx).trim() : full;
 };
 
+// `teachingMethod` / `languageSupport` (from '@/constants/dummy-data') are
+// shared enum-like data values submitted to the backend as-is and consumed
+// by several other ai-center tools — they are NOT translated here. Only the
+// locally-rendered display label is translated, via a lookup keyed by the
+// (English) constant value, falling back to the original text for any
+// value the map doesn't recognize (e.g. a future addition to the shared
+// constant).
+const buildTeachingMethodLabels = (t: TFunction): Record<string, string> => ({
+    'Concept-First': t('teachingMethodOptions.conceptFirst'),
+    Storytelling: t('teachingMethodOptions.storytelling'),
+    'Problem-Solution': t('teachingMethodOptions.problemSolution'),
+    'Question-Led': t('teachingMethodOptions.questionLed'),
+    'Step-by-Step Tutorial': t('teachingMethodOptions.stepByStepTutorial'),
+    Gamified: t('teachingMethodOptions.gamified'),
+    'Case-Based Learning': t('teachingMethodOptions.caseBasedLearning'),
+});
+
+const buildLanguageLabels = (t: TFunction): Record<string, string> => ({
+    ENGLISH: t('languageOptions.english'),
+    HINDI: t('languageOptions.hindi'),
+});
+
 const PlanLectureAI = () => {
+    const { t } = useTranslation('aiCenterPlanLectureAI');
     const queryClient = useQueryClient();
     const { setLoader, setKey } = useAICenter();
     const [enableTasksDialog, setEnableTasksDialog] = useState(false);
@@ -46,6 +71,13 @@ const PlanLectureAI = () => {
     const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
     const [readyTask, setReadyTask] = useState<AITaskIndividualListInterface | null>(null);
     const [openPreviewDialog, setOpenPreviewDialog] = useState(false);
+
+    const teachingMethodLabels = useMemo(() => buildTeachingMethodLabels(t), [t]);
+    const languageLabels = useMemo(() => buildLanguageLabels(t), [t]);
+    const teachingMethodDisplayLabel = (full: string): string =>
+        teachingMethodLabels[methodShortLabel(full)] ?? methodShortLabel(full);
+    const languageDisplayLabel = (lang: string): string =>
+        languageLabels[lang] ?? lang.charAt(0) + lang.slice(1).toLowerCase();
 
     const form = useForm<PlanLectureAIFormSchema>({
         resolver: zodResolver(planLectureFormSchema),
@@ -92,7 +124,7 @@ const PlanLectureAI = () => {
             console.error(error);
             setLoader(false);
             setKey(null);
-            setErrorMessage("We couldn't draft a plan. Want to try again?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
@@ -138,16 +170,16 @@ const PlanLectureAI = () => {
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this plan. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
-    }, [recentTasksData, pendingTaskId]);
+    }, [recentTasksData, pendingTaskId, t]);
 
     const recentTasks = useMemo(() => {
         const list: AITaskIndividualListInterface[] = Array.isArray(recentTasksData)
@@ -166,12 +198,9 @@ const PlanLectureAI = () => {
         <div className="flex w-full flex-col gap-10 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Lesson Planner
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Tell us what students should learn, and we&apos;ll draft a plan you can
-                    refine.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             <FormProvider {...form}>
@@ -181,8 +210,8 @@ const PlanLectureAI = () => {
                 >
                     <Section
                         step={1}
-                        title="What should students learn or be able to do?"
-                        hint="The clearer your goal, the better the plan."
+                        title={t('steps.goal.title')}
+                        hint={t('steps.goal.hint')}
                     >
                         <Controller
                             control={form.control}
@@ -191,13 +220,13 @@ const PlanLectureAI = () => {
                                 <div className="flex flex-col gap-1">
                                     <textarea
                                         {...field}
-                                        placeholder="By the end of this lecture, students should understand the process of photosynthesis and be able to explain its importance in the ecosystem."
+                                        placeholder={t('steps.goal.placeholder')}
                                         rows={4}
                                         className="w-full resize-y rounded-xl border border-neutral-200 bg-white p-3 text-sm text-gray-900 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                     />
                                     {fieldState.error && (
                                         <span className="text-xs text-red-600">
-                                            Please describe what students should learn.
+                                            {t('steps.goal.requiredError')}
                                         </span>
                                     )}
                                 </div>
@@ -207,7 +236,7 @@ const PlanLectureAI = () => {
 
                     <Section
                         step={2}
-                        title="Who are you teaching, and for how long?"
+                        title={t('steps.audience.title')}
                     >
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <Controller
@@ -215,18 +244,22 @@ const PlanLectureAI = () => {
                                 name="level"
                                 render={({ field, fieldState }) => (
                                     <Field
-                                        label="Class"
-                                        error={fieldState.error ? 'Please enter a class' : null}
+                                        label={t('steps.audience.classLabel')}
+                                        error={
+                                            fieldState.error
+                                                ? t('steps.audience.classRequiredError')
+                                                : null
+                                        }
                                     >
                                         <input
                                             {...field}
-                                            placeholder="e.g. 8th standard"
+                                            placeholder={t('steps.audience.classPlaceholder')}
                                             className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                         />
                                     </Field>
                                 )}
                             />
-                            <Field label="Duration">
+                            <Field label={t('steps.audience.durationLabel')}>
                                 <div className="flex items-center gap-2">
                                     <Controller
                                         control={form.control}
@@ -241,11 +274,13 @@ const PlanLectureAI = () => {
                                                     )
                                                 }
                                                 className="w-14 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-center text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                                                placeholder="0"
+                                                placeholder={t('steps.audience.hoursPlaceholder')}
                                             />
                                         )}
                                     />
-                                    <span className="text-xs text-neutral-500">hrs</span>
+                                    <span className="text-xs text-neutral-500">
+                                        {t('steps.audience.hoursUnit')}
+                                    </span>
                                     <Controller
                                         control={form.control}
                                         name="lectureDuration.min"
@@ -259,11 +294,13 @@ const PlanLectureAI = () => {
                                                     )
                                                 }
                                                 className="w-14 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-center text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                                                placeholder="40"
+                                                placeholder={t('steps.audience.minutesPlaceholder')}
                                             />
                                         )}
                                     />
-                                    <span className="text-xs text-neutral-500">min</span>
+                                    <span className="text-xs text-neutral-500">
+                                        {t('steps.audience.minutesUnit')}
+                                    </span>
                                 </div>
                             </Field>
                         </div>
@@ -271,22 +308,22 @@ const PlanLectureAI = () => {
 
                     <Section
                         step={3}
-                        title="Refine the approach"
-                        hint="Optional — we&apos;ve picked sensible defaults."
+                        title={t('steps.refine.title')}
+                        hint={t('steps.refine.hint')}
                     >
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <Controller
                                 control={form.control}
                                 name="teachingMethod"
                                 render={({ field }) => (
-                                    <Field label="Teaching style">
+                                    <Field label={t('steps.refine.teachingStyleLabel')}>
                                         <select
                                             {...field}
                                             className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                         >
                                             {teachingMethod.map((method) => (
                                                 <option key={method} value={method}>
-                                                    {methodShortLabel(method)}
+                                                    {teachingMethodDisplayLabel(method)}
                                                 </option>
                                             ))}
                                         </select>
@@ -297,15 +334,14 @@ const PlanLectureAI = () => {
                                 control={form.control}
                                 name="language"
                                 render={({ field }) => (
-                                    <Field label="Language">
+                                    <Field label={t('steps.refine.languageLabel')}>
                                         <select
                                             {...field}
                                             className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                         >
                                             {languageSupport.map((lang) => (
                                                 <option key={lang} value={lang}>
-                                                    {lang.charAt(0) +
-                                                        lang.slice(1).toLowerCase()}
+                                                    {languageDisplayLabel(lang)}
                                                 </option>
                                             ))}
                                         </select>
@@ -319,8 +355,8 @@ const PlanLectureAI = () => {
                                 name="isQuestionGenerated"
                                 render={({ field }) => (
                                     <ToggleRow
-                                        label="Include questions in the plan"
-                                        description="Add discussion or check-for-understanding questions at each segment."
+                                        label={t('steps.refine.questionsToggleLabel')}
+                                        description={t('steps.refine.questionsToggleDescription')}
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
                                     />
@@ -331,8 +367,8 @@ const PlanLectureAI = () => {
                                 name="isAssignmentHomeworkGenerated"
                                 render={({ field }) => (
                                     <ToggleRow
-                                        label="Include homework"
-                                        description="Add a short assignment students can do after the lecture."
+                                        label={t('steps.refine.homeworkToggleLabel')}
+                                        description={t('steps.refine.homeworkToggleDescription')}
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
                                     />
@@ -352,9 +388,9 @@ const PlanLectureAI = () => {
                             readyTask={readyTask}
                             openPreview={openPreviewDialog}
                             setOpenPreview={setOpenPreviewDialog}
-                            heading="Vsmart Lecturer"
-                            title="Here's the lesson plan we drafted"
-                            subtitle="Open it to review the timeline, edit any segment, or export."
+                            heading={t('productName')}
+                            title={t('draftingDone.title')}
+                            subtitle={t('draftingDone.subtitle')}
                             onDraftAnother={() => {
                                 setReadyTask(null);
                                 setPendingTaskId(null);
@@ -374,8 +410,8 @@ const PlanLectureAI = () => {
                         />
                     ) : isWorking ? (
                         <GeneratingState
-                            title="Drafting your plan"
-                            subtitle="Organizing the lecture into clear segments. Usually ~30 seconds."
+                            title={t('generating.title')}
+                            subtitle={t('generating.subtitle')}
                         />
                     ) : (
                         <div className="flex flex-wrap items-center gap-3">
@@ -383,12 +419,13 @@ const PlanLectureAI = () => {
                                 type="submit"
                                 className="inline-flex w-fit items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                             >
-                                Draft my plan
+                                {t('actions.draftMyPlan')}
                                 <ArrowRight size={16} weight="bold" />
                             </button>
                             <ToolCostBadge
                                 credits={costPreview.credits}
                                 sufficient={costPreview.sufficient}
+                                coverage={costPreview.coverage}
                                 loading={costPreview.isLoading}
                             />
                         </div>
@@ -403,7 +440,8 @@ const PlanLectureAI = () => {
                 currentBalance={costPreview.currentBalance}
                 balanceAfter={costPreview.balanceAfter}
                 sufficient={costPreview.sufficient}
-                confirmLabel="Draft my plan"
+                coverage={costPreview.coverage}
+                confirmLabel={t('actions.draftMyPlan')}
                 onConfirm={() => {
                     if (pendingValues) runGenerate(pendingValues);
                 }}
@@ -411,9 +449,9 @@ const PlanLectureAI = () => {
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent plans"
-                fallbackLabel="Lesson plan"
-                emptyHint="Your lesson plans will appear here. Draft your first one above."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
                 overrideIcon={
                     <ChalkboardSimple size={18} weight="fill" className="text-primary-500" />
@@ -421,7 +459,7 @@ const PlanLectureAI = () => {
             />
 
             <AITasksList
-                heading="Vsmart Lecturer"
+                heading={t('productName')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
             />

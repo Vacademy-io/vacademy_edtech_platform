@@ -2,6 +2,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Medal, Target, Info } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 interface FinalCourseData {
   aboutCourse: string;
@@ -52,6 +58,9 @@ const hasContent = (htmlString: string | undefined | null): boolean => {
 };
 
 const CourseInfoCard = ({ courseData, levelName }: CourseInfoCardProps) => {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const learners = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
   // Check if level should be shown
   const normalizedLevel = (levelName || "").trim().toLowerCase();
   const hasLevel = normalizedLevel && normalizedLevel !== "default" && normalizedLevel !== "-";
@@ -67,7 +76,7 @@ const CourseInfoCard = ({ courseData, levelName }: CourseInfoCardProps) => {
 
   return (
     <Card className="overflow-hidden shadow-lg border bg-white w-full">
-      <CardContent className="p-5 sm:p-6">
+      <CardContent className="p-5 sm:p-card-lg">
         {/* Course Name, Tags, and Description Removed as they duplicate the header info */}
 
         {/* Level Wedge - hidden when level is 'default' (case-insensitive) or empty */}
@@ -87,11 +96,11 @@ const CourseInfoCard = ({ courseData, levelName }: CourseInfoCardProps) => {
 
         {/* What Learners Will Gain Section */}
         {hasLearningOutcome && (
-          <div className="mb-8">
-            <div className="flex items-start gap-2 sm:gap-3 mb-4">
+          <div className="mb-8 space-y-4">
+            <div className="flex items-start gap-2 sm:gap-3">
               <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0 mt-0.5" />
               <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
-                What Learners Will Gain
+                {t("courseInfoCard.learnersWillGain", { learners })}
               </h2>
             </div>
             <div className="grid gap-3">
@@ -112,11 +121,11 @@ const CourseInfoCard = ({ courseData, levelName }: CourseInfoCardProps) => {
 
         {/* About the Course Section */}
         {hasAboutCourse && (
-          <div className="mb-8">
-            <div className="flex items-start gap-2 sm:gap-3 mb-4">
+          <div className="mb-8 space-y-4">
+            <div className="flex items-start gap-2 sm:gap-3">
               <Info className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0 mt-0.5" />
               <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
-                About the Course
+                {t("courseInfoCard.aboutCourse", { course })}
               </h2>
             </div>
             <p

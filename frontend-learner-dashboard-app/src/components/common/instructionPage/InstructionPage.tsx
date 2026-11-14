@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams } from "@tanstack/react-router";
 import AssessmentStartModal from "./StartAssessment";
 import { Preferences } from "@capacitor/preferences";
@@ -15,21 +16,44 @@ import { SpinnerGap, WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings";
 import { useImmersiveMode } from "@/hooks/use-immersive-mode";
+import { useIOSSafeAreaInsets } from "@/hooks/use-ios-safe-area-insets";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { bottomSafeAreaInset } from "@/utils/safe-area";
+import { ProctorCheckIn } from "@/components/common/proctoring/ProctorCheckIn";
+import { fetchProctoringConfig } from "@/services/proctoring";
+import { isProctored, type ProctoringConfig } from "@/types/proctoring";
+import { useAssessmentExamTheme } from "@/hooks/use-assessment-exam-theme";
+import { DEFAULT_EXAM_THEME } from "@/components/common/questionLiveTest/themes";
+import { withThemeTools } from "@/components/common/questionLiveTest/themes/tools";
+import { instructionTemplateFor } from "./templates";
+import { TcsInstructionTemplate } from "./templates/tcs";
 
 const InstructionPage = () => {
+  const { t } = useTranslation("layoutCommonB");
   const [instructions, setInstructions] = useState<RichText>();
   const [assessmentInfo, setAssessmentInfo] = useState<AssessmentType>();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  // Proctoring (V48). null until fetched; a failed fetch resolves to "off", so
+  // the Start button never waits on this for an unproctored assessment.
+  const [proctoring, setProctoring] = useState<ProctoringConfig | null>(null);
+  const [proctorReady, setProctorReady] = useState(false);
   const { assessmentId } = useParams({ strict: false });
   const examExperience = useExamExperienceSettings();
+  // Exam theme (V68). Console themes get their own template (templates/);
+  // the state, proctoring and start flow below are shared by every template.
+  // The page keeps its loading state until the theme is known (the call runs
+  // in parallel with the instruction fetch and is capped), so a themed test
+  // is not drawn under the institute skin first and restyled a moment later.
+  const { theme: fetchedExamTheme, isLoading: examThemeLoading } =
+    useAssessmentExamTheme(assessmentId);
+
   // The brief is part of the assessment safe zone: it is a full-bleed screen
   // with a sticky Start bar, so Android's system bars must come down here too,
   // not only once the paper opens.
   useImmersiveMode(examExperience.mobile.hideAppNavigation);
+  useIOSSafeAreaInsets();
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
 
   const fetchInstructions = async () => {
@@ -85,18 +109,66 @@ const InstructionPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentId]);
 
-  const isReady = !isLoading && !hasError && !!assessmentInfo;
+  useEffect(() => {
+    if (!assessmentId) return;
+    let cancelled = false;
+    fetchProctoringConfig(assessmentId).then((cfg) => {
+      if (!cancelled) setProctoring(cfg);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [assessmentId]);
+
+  // A teacher-checked paper (evaluation MANUAL) always uses the default
+  // screen (answer-sheet upload, no self-submit), so it gets the default brief.
+  const examTheme =
+    assessmentInfo?.evaluation_type === "MANUAL" ? DEFAULT_EXAM_THEME : fetchedExamTheme;
+  // The brief lists the tools the test will have, so apply the theme's
+  // built-in ones (GATE's calculator) the same way the test screen does.
+  const themedExamExperience = withThemeTools(examExperience, examTheme);
+  const pageLoading = isLoading || examThemeLoading;
+  const isReady = !pageLoading && !hasError && !!assessmentInfo;
+  const needsCheckIn = isProctored(proctoring);
+  const canStart = isReady && agreed && (!needsCheckIn || proctorReady);
+
+  if (isReady && assessmentInfo && instructionTemplateFor(examTheme) === "tcs") {
+    return (
+      <TcsInstructionTemplate
+        theme={examTheme}
+        assessmentInfo={assessmentInfo}
+        instructionsHtml={instructions?.content ?? ""}
+        examExperience={themedExamExperience}
+        agreed={agreed}
+        onAgreedChange={setAgreed}
+        proctorCheckIn={
+          needsCheckIn && proctoring && assessmentId ? (
+            <ProctorCheckIn
+              assessmentId={assessmentId}
+              config={proctoring}
+              onReadyChange={setProctorReady}
+            />
+          ) : null
+        }
+        canStart={canStart}
+      />
+    );
+  }
 
   return (
     // fixed inset-0 rather than min-h-screen: the brief is a full-bleed screen
     // with its own scroller, so the sticky start bar stays reachable on a phone
     // instead of sitting below the fold behind the system nav bar.
-    <div className="fixed inset-0 flex flex-col bg-neutral-50">
+    <div
+      data-exam-theme={examTheme.id}
+      data-exam-theme-family={examTheme.family}
+      className="fixed inset-0 flex flex-col bg-neutral-50"
+    >
       <AssessmentNavbar title={assessmentInfo?.name ?? ""} />
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-8">
         <div className="mx-auto w-full max-w-2xl">
-          {isLoading ? (
+          {pageLoading ? (
             <div className="flex min-h-reg-320 flex-col items-center justify-center gap-4">
               <SpinnerGap
                 size={40}
@@ -104,18 +176,17 @@ const InstructionPage = () => {
                 weight="bold"
               />
               <p className="text-body text-neutral-500">
-                Loading assessment details…
+                {t("instructionPage.instructionPage.loadingDetails")}
               </p>
             </div>
           ) : hasError || !assessmentInfo ? (
             <div className="flex min-h-reg-320 flex-col items-center justify-center gap-4 text-center">
               <WarningCircle size={48} className="text-danger-400" weight="duotone" />
               <p className="text-title font-semibold text-neutral-700">
-                Assessment details unavailable
+                {t("instructionPage.instructionPage.detailsUnavailable")}
               </p>
               <p className="max-w-sm text-body text-neutral-500">
-                We couldn&apos;t load this assessment. Please go back and try
-                again.
+                {t("instructionPage.instructionPage.loadFailed")}
               </p>
             </div>
           ) : (
@@ -126,7 +197,7 @@ const InstructionPage = () => {
                 preview={assessmentInfo.preview_time > 0}
                 canSwitchSections={assessmentInfo.can_switch_section}
                 assessmentInfo={assessmentInfo}
-                examExperience={examExperience}
+                examExperience={themedExamExperience}
               />
 
               {/* Explicit acknowledgement. Proctoring can auto-submit a paper,
@@ -147,10 +218,17 @@ const InstructionPage = () => {
                   className="mt-0.5 size-4 flex-none accent-primary-500"
                 />
                 <span className="text-body leading-relaxed text-neutral-700">
-                  I have read the instructions and understand that leaving full
-                  screen is recorded and may auto-submit my paper.
+                  {t("instructionPage.instructionPage.acknowledgement")}
                 </span>
               </label>
+
+              {needsCheckIn && proctoring && assessmentId && (
+                <ProctorCheckIn
+                  assessmentId={assessmentId}
+                  config={proctoring}
+                  onReadyChange={setProctorReady}
+                />
+              )}
             </>
           )}
         </div>
@@ -163,10 +241,10 @@ const InstructionPage = () => {
         }}
       >
         <div className="mx-auto w-full max-w-2xl">
-          <AssessmentStartModal disabled={!isReady || !agreed} />
+          <AssessmentStartModal disabled={!canStart} />
           {isReady && !agreed && (
             <p className="mt-2 text-center text-caption text-neutral-400">
-              Tick the acknowledgement above to begin.
+              {t("instructionPage.instructionPage.tickToBegin")}
             </p>
           )}
         </div>

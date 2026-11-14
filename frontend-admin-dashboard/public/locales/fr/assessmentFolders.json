@@ -1,0 +1,91 @@
+{
+    "rail": {
+        "title": "Dossiers",
+        "newFolder": "Nouveau dossier",
+        "dropHint": "Déposez le test sur un dossier pour l’y déplacer",
+        "all": "Toutes les évaluations",
+        "unfiled": "Hors dossier",
+        "empty": "Aucun dossier pour l’instant. Créez-en un, puis faites-y glisser des tests ou utilisez ⋮ → Déplacer vers un dossier.",
+        "count_one": "{{count}} test",
+        "count_many": "{{count}} tests",
+        "count_other": "{{count}} tests",
+        "hidden": "Masqué pour les élèves",
+        "reorder": "Faire glisser pour réordonner {{name}}",
+        "loading": "Chargement des dossiers…",
+        "tip": "Ouvrez un dossier pour voir ses tests. Pour déplacer un test, faites glisser sa carte sur un dossier ou utilisez ⋮ → Déplacer vers un dossier.",
+        "emptyReadOnly": "Aucun dossier pour l’instant."
+    },
+    "menu": {
+        "moveToFolder": "Déplacer vers un dossier",
+        "folderActions": "Actions pour {{name}}",
+        "edit": "Modifier",
+        "copyLink": "Copier le lien",
+        "delete": "Supprimer le dossier"
+    },
+    "form": {
+        "name": "Nom du dossier",
+        "namePlaceholder": "ex. Anglais",
+        "description": "Description (facultatif)",
+        "descriptionPlaceholder": "Une ligne sur son contenu",
+        "image": "Image du dossier (facultatif)",
+        "imagePlaceholder": "Téléversez ou collez l’adresse d’une image",
+        "visible": "Visible par les élèves",
+        "visibleHint": "Un dossier masqué reste visible ici pour vous. Les élèves voient ses tests dans Autres.",
+        "nameRequired": "Saisissez un nom de dossier",
+        "createTitle": "Nouveau dossier",
+        "editTitle": "Modifier le dossier",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer",
+        "create": "Créer le dossier"
+    },
+    "move": {
+        "title": "Déplacer vers un dossier",
+        "afterPublishTitle": "Ajouter à un dossier",
+        "afterPublishHint": "Choisissez un dossier pour « {{name}} » afin que les élèves l’y trouvent. Vous pourrez le changer plus tard via ⋮ → Déplacer vers un dossier.",
+        "hint": "Choisissez le dossier de « {{name}} ».",
+        "back": "Retour",
+        "skip": "Passer",
+        "createAndAdd": "Créer et ajouter",
+        "add": "Ajouter au dossier",
+        "move": "Déplacer",
+        "current": "Actuel",
+        "noFolder": "Aucun dossier",
+        "noFolderHint": "Le retirer de son dossier",
+        "createNew": "Créer un dossier"
+    },
+    "toast": {
+        "updated": "Dossier enregistré",
+        "created": "Dossier « {{name}} » créé",
+        "createdAndMoved": "Dossier « {{name}} » créé et test ajouté",
+        "moved": "Déplacé vers {{name}}",
+        "removed": "Retiré du dossier",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "linkCopied": "Lien du dossier copié. Pour l’afficher dans la barre latérale, ajoutez un sous-onglet avec ce lien dans Paramètres → Paramètres d’affichage.",
+        "deleted": "Dossier supprimé. Ses tests ne sont plus dans aucun dossier."
+    },
+    "delete": {
+        "title": "Supprimer le dossier ?",
+        "body_one": "« {{name}} » sera supprimé. Son {{count}} test est conservé et passe dans Hors dossier.",
+        "body_many": "« {{name}} » sera supprimé. Ses {{count}} tests sont conservés et passent dans Hors dossier.",
+        "body_other": "« {{name}} » sera supprimé. Ses {{count}} tests sont conservés et passent dans Hors dossier.",
+        "confirm": "Supprimer le dossier"
+    },
+    "banner": {
+        "hiddenFromStudents": "Masqué pour les élèves",
+        "emptyHint": "Aucun test ici pour l’instant. Ouvrez Toutes les évaluations et faites glisser un test sur ce dossier, ou utilisez ⋮ → Déplacer vers un dossier.",
+        "emptyReadOnly": "Aucun test dans ce dossier pour l’instant."
+    },
+    "view": {
+        "label": "Affichage des évaluations",
+        "folders": "Dossiers",
+        "list": "Tous les tests",
+        "listHint": "Toutes les évaluations dans une seule liste. Chaque carte indique son dossier."
+    },
+    "grid": {
+        "unfiledTitle": "Hors dossier",
+        "unfiledHint": "Faites glisser un test sur un dossier ci-dessus pour l’y déplacer, ou utilisez ⋮ → Déplacer vers un dossier.",
+        "unfiledHintReadOnly": "Tests qui ne sont dans aucun dossier.",
+        "allFolders": "Tous les dossiers"
+    }
+}

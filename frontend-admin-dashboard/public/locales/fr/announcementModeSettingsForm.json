@@ -1,0 +1,79 @@
+{
+    "field": {
+        "priority": "Priorité",
+        "expiresAt": "Expire le",
+        "position": "Position",
+        "pinStartTime": "Épinglé à partir de",
+        "pinEndTime": "Épinglé jusqu'à",
+        "showUntil": "Afficher jusqu'à",
+        "isDismissible": "Autoriser les utilisateurs à le fermer",
+        "messagePriority": "Priorité du message",
+        "allowReplies": "Autoriser les réponses",
+        "packageSessionId": "Identifiant de session de forfait",
+        "streamType": "Type de flux",
+        "folderName": "Nom du dossier",
+        "category": "Catégorie",
+        "accessLevel": "Niveau d'accès",
+        "communityType": "Type de communauté",
+        "tags": "Étiquettes",
+        "taskTitle": "Titre de la tâche",
+        "estimatedMinutes": "Minutes estimées",
+        "taskDescription": "Description de la tâche",
+        "slideIds": "Identifiants des diapositives",
+        "goLive": "Mise en ligne",
+        "deadline": "Échéance",
+        "status": "Statut",
+        "reminderBeforeMinutes": "Rappel (minutes avant)",
+        "isMandatory": "Obligatoire",
+        "autoStatusUpdate": "Mettre à jour le statut automatiquement"
+    },
+    "hint": {
+        "expiresAt": "Laissez vide pour une alerte qui n'expire jamais.",
+        "pinPriority": "Les nombres plus élevés s'épinglent au-dessus des autres.",
+        "showUntil": "La superposition cesse de s'afficher après cette heure même si elle n'a jamais été fermée. Laissez vide pour aucune expiration.",
+        "overlayPriority": "Entre 1 et 10.",
+        "commaSeparated": "Séparés par des virgules."
+    },
+    "placeholder": {
+        "folderName": "ex. Circulaires",
+        "optional": "Facultatif",
+        "tags": "annonces, examens",
+        "taskDescription": "Que doit faire l'apprenant ?",
+        "slideIds": "slide-id-1, slide-id-2"
+    },
+    "option": {
+        "priority": {
+            "high": "Haute",
+            "medium": "Moyenne",
+            "low": "Basse"
+        },
+        "position": {
+            "top": "Haut",
+            "middle": "Milieu",
+            "bottom": "Bas"
+        },
+        "streamType": {
+            "live": "En direct",
+            "recorded": "Enregistré",
+            "upcoming": "À venir"
+        },
+        "accessLevel": {
+            "students": "Élèves",
+            "teachers": "Enseignants",
+            "everyone": "Tout le monde"
+        },
+        "communityType": {
+            "school": "École",
+            "class": "Classe",
+            "club": "Club"
+        },
+        "status": {
+            "draft": "Brouillon",
+            "scheduled": "Planifié",
+            "live": "En direct",
+            "completed": "Terminé",
+            "overdue": "En retard",
+            "cancelled": "Annulé"
+        }
+    }
+}

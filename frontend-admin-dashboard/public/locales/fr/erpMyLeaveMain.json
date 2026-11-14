@@ -1,0 +1,54 @@
+{
+    "intro": "Votre solde de congés, les demandes que vous avez envoyées, et tout comp-off que vous avez gagné. Les jours ne sont déduits de votre solde qu'une fois la demande approuvée.",
+    "leave": "Congé",
+    "applyForLeave": "Demander un congé",
+    "withdraw": "Retirer",
+    "keepIt": "Le conserver",
+    "toast": {
+        "withdrawn": "Congé retiré"
+    },
+    "errors": {
+        "withdraw": "Impossible de retirer ce congé.",
+        "loadBalance": "Impossible de charger votre solde de congés.",
+        "loadApplications": "Impossible de charger vos demandes de congé.",
+        "loadCompOff": "Impossible de charger votre comp-off."
+    },
+    "balance": {
+        "heading": "Solde",
+        "emptyTitle": "Aucun solde de congés pour {{year}}",
+        "emptyDescription": "Les soldes apparaissent une fois que votre équipe RH a mis en place une politique de congés pour votre type d'emploi. Vous pouvez toujours faire une demande — le solde est vérifié lors de l'approbation.",
+        "daysLeftUsed": "jours restants · {{used}} utilisés cette année"
+    },
+    "applications": {
+        "heading": "Mes demandes",
+        "emptyTitle": "Vous n'avez fait aucune demande de congé",
+        "emptyDescription": "Tout ce que vous demandez apparaît ici avec son statut, et reste jusqu'à approbation, rejet ou retrait.",
+        "dateRange": "{{from}} → {{to}}",
+        "daysCount_one": "{{formatted}} jour",
+        "daysCount_many": "{{formatted}} jours",
+        "daysCount_other": "{{formatted}} jours",
+        "halfDay": " · demi-journée",
+        "halfDayWithType": " · demi-journée ({{type}})",
+        "youWrote": "Vous avez écrit : {{reason}}",
+        "turnedDown": "Refusé : {{reason}}"
+    },
+    "compOff": {
+        "heading": "Mon comp-off",
+        "intro": "Les jours où vous avez travaillé alors que ce n'était pas nécessaire. Une fois approuvés, ils s'ajoutent à votre solde de comp-off et expirent à la date indiquée, que vous les utilisiez ou non.",
+        "emptyTitle": "Aucun comp-off enregistré",
+        "emptyDescription": "Si vous travaillez un jour férié ou un jour de repos hebdomadaire, votre équipe RH l'enregistre ici et cela devient un congé que vous pourrez prendre plus tard.",
+        "worked": "Travaillé le {{date}}",
+        "daysEarned_one": "{{formatted}} jour gagné",
+        "daysEarned_many": "{{formatted}} jours gagnés",
+        "daysEarned_other": "{{formatted}} jours gagnés",
+        "expires": "Expire le {{date}}",
+        "noExpiry": "Aucune date d'expiration enregistrée",
+        "alreadyUsed": " · déjà utilisé"
+    },
+    "footerNote": "Retirer un congé approuvé remet les jours dans votre solde et efface les jours de congé de votre présence. Si la paie a déjà été clôturée pour ce mois, il ne pourra pas être retiré et vous en serez informé.",
+    "cancelDialog": {
+        "title": "Retirer ce congé ?",
+        "description": "Votre {{leaveType}} du {{date}} sera retiré. S'il était déjà approuvé, les jours reviendront dans votre solde.",
+        "thatDate": "cette date"
+    }
+}

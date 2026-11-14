@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
 export function MathBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryMathEditor');
     const editor = useYooptaEditor();
     const [latex, setLatex] = useState(element?.props?.latex || '');
     const [displayMode, setDisplayMode] = useState(
@@ -49,9 +51,9 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
             });
         } catch {
             const escaped = latex.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<span style="color: #dc2626;">Invalid LaTeX: ${escaped}</span>`;
+            return `<span style="color: #dc2626;">${t('invalidLatex', { latex: escaped })}</span>`;
         }
-    }, [latex, displayMode]);
+    }, [latex, displayMode, t]);
 
     // Handle backspace prevention for textarea
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -103,7 +105,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
-                        ∑ Math / LaTeX
+                        ∑ {t('mathLatex')}
                     </span>
                 </div>
 
@@ -121,7 +123,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                             cursor: 'pointer',
                         }}
                     >
-                        Display
+                        {t('display')}
                     </button>
                     <button
                         onClick={() => setDisplayMode(false)}
@@ -136,7 +138,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                             cursor: 'pointer',
                         }}
                     >
-                        Inline
+                        {t('inline')}
                     </button>
 
                     {/* Edit/Preview toggle */}
@@ -153,7 +155,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                             marginLeft: '4px',
                         }}
                     >
-                        {isEditing ? 'Preview' : 'Edit'}
+                        {isEditing ? t('preview') : t('edit')}
                     </button>
                 </div>
             </div>
@@ -165,7 +167,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                         value={latex}
                         onChange={(e) => setLatex(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Enter LaTeX expression, e.g. \frac{a}{b} or \int_0^1 f(x)\,dx"
+                        placeholder={t('latexPlaceholder')}
                         style={{
                             width: '100%',
                             minHeight: '60px',
@@ -212,7 +214,7 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                             cursor: 'pointer',
                         }}
                     >
-                        Click to add a math equation
+                        {t('clickToAddEquation')}
                     </div>
                 )}
             </div>
@@ -229,17 +231,21 @@ export function MathBlock({ element, attributes, children, blockId }: PluginElem
                     }}
                 >
                     {[
-                        { label: 'Fraction', code: '\\frac{a}{b}' },
-                        { label: 'Square Root', code: '\\sqrt{x}' },
-                        { label: 'Power', code: 'x^{n}' },
-                        { label: 'Subscript', code: 'x_{i}' },
-                        { label: 'Integral', code: '\\int_{a}^{b}' },
-                        { label: 'Sum', code: '\\sum_{i=1}^{n}' },
-                        { label: 'Greek', code: '\\alpha \\beta \\gamma' },
-                        { label: 'Matrix', code: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}' },
+                        { key: 'fraction', label: t('shortcutFraction'), code: '\\frac{a}{b}' },
+                        { key: 'squareRoot', label: t('shortcutSquareRoot'), code: '\\sqrt{x}' },
+                        { key: 'power', label: t('shortcutPower'), code: 'x^{n}' },
+                        { key: 'subscript', label: t('shortcutSubscript'), code: 'x_{i}' },
+                        { key: 'integral', label: t('shortcutIntegral'), code: '\\int_{a}^{b}' },
+                        { key: 'sum', label: t('shortcutSum'), code: '\\sum_{i=1}^{n}' },
+                        { key: 'greek', label: t('shortcutGreek'), code: '\\alpha \\beta \\gamma' },
+                        {
+                            key: 'matrix',
+                            label: t('shortcutMatrix'),
+                            code: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}',
+                        },
                     ].map((shortcut) => (
                         <button
-                            key={shortcut.label}
+                            key={shortcut.key}
                             onClick={() => setLatex((prev: string) => prev + (prev ? ' ' : '') + shortcut.code)}
                             title={shortcut.code}
                             style={{

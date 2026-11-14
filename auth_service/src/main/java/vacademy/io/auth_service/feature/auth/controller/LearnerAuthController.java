@@ -103,6 +103,8 @@ public class LearnerAuthController {
         return authManager.loginByUsernameTrusted(
                 request.getUsername(),
                 request.getInstituteId(),
+                request.getCode(),
+                request.getRoute(),
                 clientIP);
     }
 

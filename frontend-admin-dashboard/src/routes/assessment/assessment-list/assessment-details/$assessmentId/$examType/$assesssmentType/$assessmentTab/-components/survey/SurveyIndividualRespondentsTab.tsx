@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
+import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    ChevronLeft,
-    ChevronRight,
-    Loader2,
-    AlertCircle,
+    CaretLeft,
+    CaretRight,
+    CircleNotch,
+    WarningCircle,
     Users,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { useSurveyRespondents } from './hooks/useSurveyData';
 import { surveyApiService } from '@/services/survey-api';
 import { useBatchNames } from './hooks/useBatchNames';
@@ -27,21 +29,21 @@ const formatMcqResponse = (responseData: any, questionData: any): string => {
       return responseData.optionIds.join(', ');
     }
   }
-  return 'No response';
+  return i18next.t('assessmentSurveyIndividualRespondentsTab:response.noResponse');
 };
 
 const formatNumericResponse = (responseData: any): string => {
   if (responseData.validAnswer !== null && responseData.validAnswer !== undefined) {
     return responseData.validAnswer.toString();
   }
-  return 'No response';
+  return i18next.t('assessmentSurveyIndividualRespondentsTab:response.noResponse');
 };
 
 const formatTextResponse = (responseData: any): string => {
   if (responseData.answer && responseData.answer.trim() !== '') {
     return responseData.answer;
   }
-  return 'No response';
+  return i18next.t('assessmentSurveyIndividualRespondentsTab:response.noResponse');
 };
 
 const RESPONSE_TYPE_FORMATTERS = {
@@ -55,13 +57,13 @@ const RESPONSE_TYPE_FORMATTERS = {
 
 const formatAnswerByType = (responseData: any, questionData: any): string => {
   const formatter = RESPONSE_TYPE_FORMATTERS[responseData.type as keyof typeof RESPONSE_TYPE_FORMATTERS];
-  return formatter ? formatter(responseData, questionData) : 'Unknown response type';
+  return formatter ? formatter(responseData, questionData) : i18next.t('assessmentSurveyIndividualRespondentsTab:response.unknownType');
 };
 
 const createParsedResponse = (response: any, responseData: any, questionData: any, formattedAnswer: string) => ({
-  questionId: response.questionId || 'Unknown',
-  questionType: responseData.type || 'Unknown',
-  questionContent: questionData?.questionContent || 'Survey Question',
+  questionId: response.questionId || i18next.t('assessmentSurveyIndividualRespondentsTab:response.unknownQuestionId'),
+  questionType: responseData.type || i18next.t('assessmentSurveyIndividualRespondentsTab:response.unknownQuestionType'),
+  questionContent: questionData?.questionContent || i18next.t('assessmentSurveyIndividualRespondentsTab:response.defaultQuestionContent'),
   questionOrder: questionData?.questionOrder || 0,
   formattedAnswer,
   timeTaken: response.timeTakenInSeconds || 0,
@@ -73,11 +75,11 @@ const createParsedResponse = (response: any, responseData: any, questionData: an
 });
 
 const createErrorResponse = (responseString: string) => ({
-  questionId: 'Unknown',
-  questionType: 'Unknown',
-  questionContent: 'Survey Question',
+  questionId: i18next.t('assessmentSurveyIndividualRespondentsTab:response.unknownQuestionId'),
+  questionType: i18next.t('assessmentSurveyIndividualRespondentsTab:response.unknownQuestionType'),
+  questionContent: i18next.t('assessmentSurveyIndividualRespondentsTab:response.defaultQuestionContent'),
   questionOrder: 0,
-  formattedAnswer: 'Error parsing response data',
+  formattedAnswer: i18next.t('assessmentSurveyIndividualRespondentsTab:response.parseError'),
   timeTaken: 0,
   durationLeft: 0,
   isVisited: false,
@@ -107,6 +109,7 @@ interface SurveyIndividualRespondentsTabProps {
 }
 
 export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondentsTabProps> = ({ assessmentId, sectionIds, assessmentName, assessmentDetails }) => {
+    const { t } = useTranslation('assessmentSurveyIndividualRespondentsTab');
     const [currentRespondentIndex, setCurrentRespondentIndex] = useState(0);
     const [pageInput, setPageInput] = useState('');
     const [pageNo, setPageNo] = useState(1);
@@ -254,9 +257,9 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="flex items-center gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <CircleNotch className="h-6 w-6 animate-spin" />
                     <span>
-                        {loading ? 'Loading survey respondents...' : 'Loading questions data...'}
+                        {loading ? t('loading.respondents') : t('loading.questions')}
                     </span>
                 </div>
             </div>
@@ -268,11 +271,11 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Respondents</h3>
+                    <WarningCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('error.title')}</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
                     <Button onClick={() => window.location.reload()}>
-                        Try Again
+                        {t('error.tryAgain')}
                     </Button>
                 </div>
             </div>
@@ -285,8 +288,8 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Respondents Found</h3>
-                    <p className="text-gray-600">No survey responses found for this assessment.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('empty.title')}</h3>
+                    <p className="text-gray-600">{t('empty.description')}</p>
                 </div>
             </div>
         );
@@ -303,21 +306,21 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                     disabled={currentRespondentIndex <= 0 && pageNo <= 1}
                     className="flex items-center gap-2"
                 >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    <CaretLeft className="h-4 w-4" />
+                    {t('navigation.previous')}
                 </Button>
 
                 <div className="text-center">
-                    <div className="font-semibold text-lg">{currentRespondent?.name || 'Unknown'}</div>
-                    <div className="text-sm text-gray-600">{currentRespondent?.email || 'No email'}</div>
+                    <div className="font-semibold text-lg">{currentRespondent?.name || t('respondent.unknownName')}</div>
+                    <div className="text-sm text-gray-600">{currentRespondent?.email || t('respondent.noEmail')}</div>
                     {currentRespondent?.source_id && (
                         <div className="text-xs text-gray-500 mt-1">
-                            Batch: {getBatchName(currentRespondent.source_id)}
+                            {t('respondent.batch', { name: getBatchName(currentRespondent.source_id) })}
                         </div>
                     )}
                     <div className="flex items-center justify-center gap-2 mt-1">
                         <span className="text-xs text-gray-500">
-                            Respondent
+                            {t('navigation.respondentLabel')}
                         </span>
                         <Input
                             type="number"
@@ -330,7 +333,7 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                             className="w-12 h-6 text-xs text-center p-1"
                         />
                         <span className="text-xs text-gray-500">
-                            of {totalElements}
+                            {t('navigation.ofTotal', { count: totalElements })}
                         </span>
                     </div>
                 </div>
@@ -341,8 +344,8 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                     disabled={currentRespondentIndex >= totalRespondents - 1 && data?.pagination?.last}
                     className="flex items-center gap-2"
                 >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
+                    {t('navigation.next')}
+                    <CaretRight className="h-4 w-4" />
                 </Button>
             </div>
 
@@ -357,7 +360,7 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                         <CardHeader>
                             <div className="flex items-start justify-between gap-2">
                                 <CardTitle className="text-lg font-semibold flex-1">
-                                        Q{parsedResponse.questionOrder || index + 1}. {parsedResponse.questionContent}
+                                        {t('response.questionPrefix', { number: parsedResponse.questionOrder || index + 1 })} {parsedResponse.questionContent}
                                 </CardTitle>
                                     <div className="flex items-center gap-2">
                                 <Badge className="bg-primary-100 text-primary-800 border-primary-200 w-fit flex-shrink-0">
@@ -365,12 +368,12 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                                         </Badge>
                                         {parsedResponse.isVisited && (
                                             <Badge variant="outline" className="text-xs">
-                                                Visited
+                                                {t('response.visited')}
                                             </Badge>
                                         )}
                                         {parsedResponse.isMarkedForReview && (
                                             <Badge variant="outline" className="text-xs">
-                                                Marked for Review
+                                                {t('response.markedForReview')}
                                 </Badge>
                                         )}
                                     </div>
@@ -380,7 +383,7 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                                 <div className="space-y-4">
                                     {/* Response Data */}
                                     <div>
-                                        <div className="text-sm font-medium text-gray-700 mb-2">Response:</div>
+                                        <div className="text-sm font-medium text-gray-700 mb-2">{t('response.label')}</div>
                                 <div className="p-4 bg-gray-50 rounded-lg border">
                                             <p className="text-sm font-medium">
                                                 {parsedResponse.formattedAnswer}
@@ -395,7 +398,7 @@ export const SurveyIndividualRespondentsTab: React.FC<SurveyIndividualRespondent
                     );
                 }) || (
                     <div className="col-span-2 text-center py-8">
-                        <p className="text-gray-500">No responses available for this respondent.</p>
+                        <p className="text-gray-500">{t('response.noneAvailable')}</p>
                     </div>
                 )}
             </div>

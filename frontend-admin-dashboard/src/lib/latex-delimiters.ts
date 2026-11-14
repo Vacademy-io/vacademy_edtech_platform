@@ -16,8 +16,12 @@ import katex from 'katex';
 // word-bearing fragment such as `b = Cl`, never a bare amount like `5-`.
 const LATEX_SIGNAL = /[\\^_{}]/;
 const SHORT_MATH_FRAGMENT = /^(?=.{1,30}$).*[a-zA-Z].*$/s;
+// A coordinate pair or a bare arithmetic expression — `$(2,0)$`, `$2+2$` — is
+// maths too, letters or not; a price never comes bracketed or with an operator.
+const NUMERIC_EXPRESSION = /^[([].*[)\]]$|[=+×÷<>≤≥]/;
 
-const looksLikeMath = (body: string) => LATEX_SIGNAL.test(body) || SHORT_MATH_FRAGMENT.test(body);
+const looksLikeMath = (body: string) =>
+    LATEX_SIGNAL.test(body) || SHORT_MATH_FRAGMENT.test(body) || NUMERIC_EXPRESSION.test(body);
 
 // Only these constructs are worth centring as display math; short chemistry /
 // symbol fragments read better inline even when authored with `$$`.
@@ -37,7 +41,15 @@ const SKIP_TAGS = new Set(['CODE', 'PRE', 'SCRIPT', 'STYLE', 'TEXTAREA']);
 function balanceBraces(tex: string): string {
     let depth = 0;
     let out = '';
-    for (const ch of tex) {
+    for (let i = 0; i < tex.length; i++) {
+        const ch = tex[i];
+        // `\{` / `\}` are literal braces (`\left\{ … \right.`), and `\\` is a
+        // row break whose second backslash must not escape the next brace.
+        if (ch === '\\') {
+            out += ch + (tex[i + 1] ?? '');
+            i++;
+            continue;
+        }
         if (ch === '{') {
             depth++;
         } else if (ch === '}') {
@@ -84,6 +96,17 @@ export function renderLatexDelimiters(html: string | null | undefined): string {
     if (!html.includes('$') && !html.includes('\\(') && !html.includes('\\[')) return html;
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    // An editor math node always carries `data-latex`. A `.math-block` without
+    // it and without a rendered formula is a plain wrapper around `$$…$$`
+    // text — the paper converter's own markup — so it is read like any other
+    // text, not skipped (and later dropped as an empty formula).
+    doc.querySelectorAll('.math-block:not([data-latex]), .math-inline:not([data-latex])').forEach(
+        (el) => {
+            if (el.querySelector('.katex')) return;
+            el.classList.remove('math-block', 'math-inline');
+            if (!el.classList.length) el.removeAttribute('class');
+        }
+    );
     const textNodes: Text[] = [];
     collectTextNodes(doc.body, textNodes);
 

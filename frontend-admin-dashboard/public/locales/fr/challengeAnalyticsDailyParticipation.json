@@ -1,0 +1,53 @@
+{
+    "title": "Statistiques de participation quotidienne",
+    "subtitle": "Activité des messages et taux de réponse par jour",
+    "emptyState": "Aucune donnée de participation disponible pour la période sélectionnée",
+    "kpi": {
+        "days": "Jours",
+        "sent": "Envoyés",
+        "received": "Reçus",
+        "response": "Réponse"
+    },
+    "tabs": {
+        "chart": "Graphiques",
+        "table": "Détails du jour"
+    },
+    "charts": {
+        "responseRateTrend": "Tendance du taux de réponse",
+        "messagesByDay": "Messages par jour",
+        "completeOverview": "Vue d'ensemble complète",
+        "outgoingLabel": "Sortants",
+        "incomingLabel": "Entrants",
+        "outgoingMessagesLabel": "Messages sortants",
+        "incomingMessagesLabel": "Messages entrants",
+        "responseRateLabel": "Taux de réponse",
+        "responseRateValue": "Taux de réponse : {{value}}%",
+        "responseValue": "Réponse : {{value}}%",
+        "messagesCount_one": "{{count}} message",
+        "messagesCount_many": "{{count}} messages",
+        "messagesCount_other": "{{count}} messages",
+        "usersCount_one": "{{count}} utilisateur",
+        "usersCount_many": "{{count}} utilisateurs",
+        "usersCount_other": "{{count}} utilisateurs"
+    },
+    "table": {
+        "day": "Jour",
+        "label": "Libellé",
+        "outgoing": "Sortants",
+        "incoming": "Entrants",
+        "responseRate": "Taux de réponse",
+        "trend": "Tendance",
+        "status": "Statut"
+    },
+    "status": {
+        "noMessages": "Aucun message",
+        "lowEngagement": "Faible engagement",
+        "good": "Bon"
+    },
+    "templates": {
+        "breakdown": "Répartition des modèles",
+        "dayHeading": "Jour {{day}} - {{label}}",
+        "outgoing": "Modèles sortants :",
+        "incoming": "Modèles entrants :"
+    }
+}

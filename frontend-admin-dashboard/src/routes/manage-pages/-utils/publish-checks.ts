@@ -11,6 +11,11 @@
  * mistakes from reaching visitors.
  */
 
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { localesOf } from './catalogue-i18n';
+import { collectSiteStrings, coverageOf, languageName } from '../-components/i18n/site-strings';
+
 export type CheckSeverity = 'error' | 'warning';
 
 export interface PublishIssue {
@@ -60,6 +65,33 @@ const collectStrings = (node: any, out: string[], depth = 0) => {
     }
 };
 
+/** ctaBanner variant "band" draws its secondaryButton only when enabled and labelled. */
+const bandSecondaryButton = (c: any): boolean => {
+    const b = c?.props?.secondaryButton;
+    return (
+        c?.type === 'ctaBanner' &&
+        c?.props?.variant === 'band' &&
+        !!b &&
+        typeof b === 'object' &&
+        b.enabled !== false &&
+        !!String(b.text || '').trim()
+    );
+};
+
+/** A catalogue spotlight button that opens a form ('open-form') with no campaign: not drawn at all. */
+const hasUnwiredSpotlightButton = (c: any): boolean => {
+    if (c?.type !== 'courseCatalog' || !Array.isArray(c?.props?.columnSections)) return false;
+    return c.props.columnSections.some(
+        (section: any) =>
+            section?.kind === 'spotlight' &&
+            Array.isArray(section.slides) &&
+            section.slides.some(
+                (slide: any) =>
+                    slide?.cta?.action === 'open-form' && !String(slide.cta.audienceId || '').trim(),
+            ),
+    );
+};
+
 export const runPublishChecks = (config: any): PublishIssue[] => {
     const issues: PublishIssue[] = [];
     const pages: any[] = config?.pages || [];
@@ -85,15 +117,30 @@ export const runPublishChecks = (config: any): PublishIssue[] => {
             const p = c?.props || {};
             const cctx = { ...ctx, componentId: c?.id };
 
-            // Capture surfaces wired to nothing.
-            const wantsForm =
-                p.action === 'openForm' || p.button?.action === 'openForm';
-            const formAudience = String(p.audienceId || p.button?.audienceId || '').trim();
-            if (wantsForm && !formAudience) {
+            // Capture surfaces wired to nothing: a bare action, the single
+            // `button` (CTA banner, media showcase…) and each hero button.
+            const formButtons: Array<{ action?: string; audienceId?: string }> = [
+                { action: p.action, audienceId: p.audienceId },
+                ...(p.button ? [p.button] : []),
+                ...(bandSecondaryButton(c) ? [p.secondaryButton] : []),
+                ...(p.left?.buttons || []),
+            ];
+            const unwiredButton = formButtons.some(
+                (b) => b?.action === 'openForm' && !String(b?.audienceId || '').trim(),
+            );
+            if (unwiredButton) {
                 issues.push({
                     severity: 'error',
                     title: 'A button opens a form but no campaign is selected',
                     fix: 'Pick a campaign for it, or change the button back to a link. Right now it does nothing when tapped.',
+                    ...cctx,
+                });
+            }
+            if (hasUnwiredSpotlightButton(c)) {
+                issues.push({
+                    severity: 'error',
+                    title: 'A spotlight button opens a form but no campaign is selected',
+                    fix: 'Pick a campaign for it, or change it to a link. Until then the button is hidden from visitors.',
                     ...cctx,
                 });
             }
@@ -108,10 +155,60 @@ export const runPublishChecks = (config: any): PublishIssue[] => {
             if (c?.type === 'productPageOffer' && !String(p.productPageCode || '').trim()) {
                 issues.push({
                     severity: 'error',
-                    title: 'A course section has no product page selected',
+                    title: `A ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} section has no product page selected`,
                     fix: 'Pick a product page in its properties, or remove the section. It is hidden from visitors as-is.',
                     ...cctx,
                 });
+            }
+            if (c?.type === 'folderBrowser' && !String(p.libraryId || '').trim()) {
+                issues.push({
+                    severity: 'error',
+                    title: 'A Folder Browser section has no folder library selected',
+                    fix: 'Pick a library in its properties (or create one with the Folders button), or remove the section. It is hidden from visitors as-is.',
+                    ...cctx,
+                });
+            }
+            // Learning path: one path needs its product page, a list needs its library.
+            if (c?.type === 'learningPath') {
+                if (p.mode === 'list' ? !String(p.libraryId || '').trim() : !String(p.productPageCode || '').trim()) {
+                    issues.push({
+                        severity: 'error',
+                        title:
+                            p.mode === 'list'
+                                ? 'A Learning Path list has no folder library selected'
+                                : 'A Learning Path section has no product page selected',
+                        fix:
+                            p.mode === 'list'
+                                ? 'Pick the folder library that holds your paths in its properties, or remove the section. It shows nothing as-is.'
+                                : 'Pick the product page that holds the path in its properties, or remove the section. It shows nothing as-is.',
+                        ...cctx,
+                    });
+                }
+            }
+            // Visibility rules: a rule with no parameter is silently ignored by the site.
+            if (
+                Array.isArray(c?.visibleWhen) &&
+                c.visibleWhen.some((r: any) => !r || typeof r.param !== 'string' || !r.param.trim())
+            ) {
+                issues.push({
+                    severity: 'warning',
+                    title: 'A section has a visibility rule with no parameter',
+                    fix: 'Open the section’s “Show on” rules and fill in the address parameter (for example “stream”) or remove the rule. Until then it is ignored and the section always shows.',
+                    ...cctx,
+                });
+            }
+            // A blog on the home page still works (?post=<slug>), but every
+            // article then shares the home URL — no clean links, no sitemap entries.
+            if (c?.type === 'blog' && c?.enabled !== false) {
+                const route = String(page?.route || '').replace(/^\//, '').toLowerCase();
+                if (route === '' || route === 'home' || route === 'homepage' || page?.id === 'home') {
+                    issues.push({
+                        severity: 'warning',
+                        title: 'The Blog section is on the home page',
+                        fix: 'Move it to its own page (for example "blog") so each article gets a clean URL of its own and appears in the sitemap.',
+                        ...cctx,
+                    });
+                }
             }
 
             // Header/footer nav pointing at pages that do not exist.
@@ -146,6 +243,36 @@ export const runPublishChecks = (config: any): PublishIssue[] => {
                 });
             }
         });
+    }
+
+    // Site cart switched on with no store page: the site quietly has no cart.
+    const siteCart = config?.globalSettings?.siteCart;
+    if (siteCart?.enabled === true && !String(siteCart?.storeProductPageCode || '').trim()) {
+        issues.push({
+            severity: 'error',
+            title: 'The site cart is on but has no store page',
+            fix: 'Choose a store product page in Global Settings → Site cart (then sync the catalogue into it), or switch the cart off. Visitors see no cart until then.',
+        });
+    }
+
+    // Site languages: an untranslated text shows in the base language to a
+    // visitor who picked another one. Only for sites that switched languages on.
+    const i18n = config?.globalSettings?.i18n;
+    if (i18n?.enabled) {
+        const sources = collectSiteStrings(config);
+        const [base, ...others] = localesOf(i18n);
+        const baseName = base ? languageName(base.code, base.label) : 'the base language';
+        for (const locale of others) {
+            const { total, translated } = coverageOf(sources, i18n.strings?.[locale.code]);
+            if (total > 0 && translated < total) {
+                const name = languageName(locale.code, locale.label);
+                issues.push({
+                    severity: 'warning',
+                    title: `${name}: ${total - translated} of ${total} texts are not translated yet`,
+                    fix: `Visitors who choose ${name} see these in ${baseName}. Finish them in Global Settings → Languages → Translations.`,
+                });
+            }
+        }
     }
 
     // Site-wide: measurement is the difference between a website and a

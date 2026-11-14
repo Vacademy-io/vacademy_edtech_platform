@@ -1,9 +1,10 @@
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Camera, CheckCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { Progress } from '@/components/ui/progress';
 import { BaseNodeShell } from './BaseNodeShell';
-import { ACTIVE_SUB_STATUS } from '../-utils/stage-vocab';
+import { buildActiveSubStatus } from '../-utils/stage-vocab';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 /**
@@ -11,6 +12,7 @@ import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
  * Phase 2 replaces this with N individual `<SceneNode>` instances.
  */
 function FilmingNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const slot = data.state.filming;
 
     let completed = 0;
@@ -53,14 +55,14 @@ function FilmingNodeInner({ data }: NodeProps<PipelineNodeData>) {
                 <div className="flex items-center gap-2 text-xs">
                     {slot.state === 'wrapped' ? (
                         <>
-                            <CheckCircle2 className="size-3.5 text-green-600" />
+                            <CheckCircle className="size-3.5 text-green-600" />
                             <span className="text-foreground">All scenes wrapped</span>
                         </>
                     ) : (
                         <>
                             <Loader2 className="size-3.5 animate-spin text-blue-600" />
                             <span className="text-muted-foreground">
-                                {ACTIVE_SUB_STATUS.filming}
+                                {buildActiveSubStatus(t).filming}
                             </span>
                         </>
                     )}
@@ -68,7 +70,7 @@ function FilmingNodeInner({ data }: NodeProps<PipelineNodeData>) {
                 {total > 0 && (
                     <div className="space-y-1">
                         <Progress value={pct} className="h-1" />
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <div className="flex items-center justify-between text-2xs text-muted-foreground">
                             <span>Scene {Math.min(completed + 1, total)} on set</span>
                             <span className="tabular-nums">{pct}%</span>
                         </div>

@@ -1,0 +1,16 @@
+{
+    "runStatus": {
+        "draft": "ड्राफ्ट",
+        "processing": "प्रोसेस हो रहा है",
+        "processed": "प्रोसेस हो गया",
+        "approved": "स्वीकृत",
+        "paid": "भुगतान हो गया",
+        "cancelled": "रद्द"
+    },
+    "runType": {
+        "regular": "नियमित",
+        "offCycle": "ऑफ-साइकल",
+        "fnf": "फुल एंड फाइनल",
+        "bonus": "बोनस"
+    }
+}

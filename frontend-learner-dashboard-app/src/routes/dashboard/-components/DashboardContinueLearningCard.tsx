@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,13 @@ import {
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { Play, Target, BookOpen, CaretRight, Sparkle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { readableSlideDescription } from "../-lib/slide-description";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import iconContinue from "@/assets/cleaner-play/icon-continue.webp";
 import emptyLearningIllustration from "@/assets/cleaner-play/empty-learning.webp";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunContinueFold } from "./fun/FunContinueFold";
 
 // Skeleton mirroring the card layout to avoid layout shift while loading
 const ContinueLearningCardSkeleton = () => (
@@ -52,6 +56,8 @@ export const ContinueLearningCard = ({
     onResumeClick,
     isLoading = false,
     hasAnyProgress = false,
+    heroOffersResume = false,
+    heroSlideId = null,
 }: {
     data: DashbaordResponse | null;
     onResumeClick: (slide: DashboardSlide) => void;
@@ -59,13 +65,28 @@ export const ContinueLearningCard = ({
     /** Whether the learner has made any progress at all — splits the empty
      *  state into first-run ("start your first lesson") vs genuinely done. */
     hasAnyProgress?: boolean;
+    /** The hero already offers a lesson, so its button is the page's one primary
+     *  action. Only this card's colours answer to that: the answer can land while
+     *  a finger is on its way to a course below, so nothing here changes size. */
+    heroOffersResume?: boolean;
+    /** Fun only: the lesson the hero offers, so the fold counts the others. */
+    heroSlideId?: string | null;
 }) => {
+    const { t } = useTranslation("dashboard");
     const navigate = useNavigate();
     const isPlay = usePlayTheme();
     const isCleanerPlay = useCleanerPlayTheme();
     // Institutes rename Slide (e.g. "Lesson"/"Topic") — keep the empty-state
     // copy in the same vocabulary as the "N slides in progress" counter.
     const slideTerm = getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLocaleLowerCase();
+    const coursesPluralTerm = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+    const slidesPluralTerm = getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides);
+    const isFun = useFunTheme();
+
+    // Fun: the hero offers the first lesson; this folds the rest into one row.
+    if (isFun) {
+        return <FunContinueFold data={data} isLoading={isLoading} heroSlideId={heroSlideId} />;
+    }
 
     if (isLoading) {
         return <ContinueLearningCardSkeleton />;
@@ -85,18 +106,17 @@ export const ContinueLearningCard = ({
                     />
                     <div className="space-y-1">
                         <h3 className="cp-heading text-h3">
-                            {isFirstRun ? "Start Learning" : "All Caught Up!"}
+                            {isFirstRun ? t("continueLearning.startLearningTitle") : t("continueLearning.allCaughtUpTitle")}
                         </h3>
                         <p className="cp-muted mx-auto max-w-xs text-body">
                             {isFirstRun
-                                ? `Browse your ${getTerminologyPlural(
-                                      ContentTerms.Course,
-                                      SystemTerms.Course
-                                  )} and start your first ${slideTerm}.`
-                                : `You've completed all available ${getTerminologyPlural(
-                                      ContentTerms.Slides,
-                                      SystemTerms.Slides
-                                  )}. Great work, keep the momentum going.`}
+                                ? t("continueLearning.browsePrompt", {
+                                      courses: coursesPluralTerm,
+                                      slide: slideTerm,
+                                  })
+                                : t("continueLearning.allCompletePrompt", {
+                                      slides: slidesPluralTerm,
+                                  })}
                         </p>
                     </div>
                     <button
@@ -109,7 +129,7 @@ export const ContinueLearningCard = ({
                         ) : (
                             <BookOpen weight="fill" size={16} />
                         )}
-                        {isFirstRun ? `Start your first ${slideTerm}` : "Explore Content"}
+                        {isFirstRun ? t("continueLearning.startFirstSlideButton", { slide: slideTerm }) : t("continueLearning.exploreContentButton")}
                     </button>
                 </div>
             );
@@ -126,18 +146,17 @@ export const ContinueLearningCard = ({
                     />
                     <div className="space-y-1">
                         <h3 className="text-h3 font-black text-play-success-soft-ink">
-                            {isFirstRun ? "Start Learning" : "All Caught Up!"}
+                            {isFirstRun ? t("continueLearning.startLearningTitle") : t("continueLearning.allCaughtUpTitle")}
                         </h3>
                         <p className="mx-auto max-w-xs text-body font-medium text-play-ink/70">
                             {isFirstRun
-                                ? `Browse your ${getTerminologyPlural(
-                                      ContentTerms.Course,
-                                      SystemTerms.Course
-                                  )} and start your first ${slideTerm}.`
-                                : `You've completed all available ${getTerminologyPlural(
-                                      ContentTerms.Slides,
-                                      SystemTerms.Slides
-                                  )}. Great work, keep the momentum going.`}
+                                ? t("continueLearning.browsePrompt", {
+                                      courses: coursesPluralTerm,
+                                      slide: slideTerm,
+                                  })
+                                : t("continueLearning.allCompletePrompt", {
+                                      slides: slidesPluralTerm,
+                                  })}
                         </p>
                     </div>
                     <button
@@ -150,7 +169,7 @@ export const ContinueLearningCard = ({
                         ) : (
                             <BookOpen weight="fill" size={16} />
                         )}
-                        {isFirstRun ? `Start your first ${slideTerm}` : "Explore Content"}
+                        {isFirstRun ? t("continueLearning.startFirstSlideButton", { slide: slideTerm }) : t("continueLearning.exploreContentButton")}
                     </button>
                 </div>
             );
@@ -158,7 +177,7 @@ export const ContinueLearningCard = ({
 
         return (
             <Card className="continue-learning-card-empty h-full border-dashed bg-muted/40 shadow-none hover:shadow-none transition-none">
-                <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full space-y-4 relative overflow-hidden">
+                <CardContent className="p-card-lg text-center flex flex-col items-center justify-center h-full space-y-4 relative overflow-hidden">
                     <div className="p-3 bg-primary/10 rounded-full text-primary ring-1 ring-primary/20">
                         {isFirstRun ? (
                             <BookOpen weight="duotone" size={24} />
@@ -168,18 +187,17 @@ export const ContinueLearningCard = ({
                     </div>
                     <div className="space-y-1">
                         <h3 className="text-lg font-semibold tracking-tight">
-                            {isFirstRun ? "Start Learning" : "All Caught Up!"}
+                            {isFirstRun ? t("continueLearning.startLearningTitle") : t("continueLearning.allCaughtUpTitle")}
                         </h3>
                         <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                             {isFirstRun
-                                ? `Browse your ${getTerminologyPlural(
-                                      ContentTerms.Course,
-                                      SystemTerms.Course
-                                  )} and start your first ${slideTerm}.`
-                                : `You've completed all available ${getTerminologyPlural(
-                                      ContentTerms.Slides,
-                                      SystemTerms.Slides
-                                  )}. Great work, keep the momentum going.`}
+                                ? t("continueLearning.browsePrompt", {
+                                      courses: coursesPluralTerm,
+                                      slide: slideTerm,
+                                  })
+                                : t("continueLearning.allCompletePrompt", {
+                                      slides: slidesPluralTerm,
+                                  })}
                         </p>
                     </div>
                     <Button
@@ -192,7 +210,7 @@ export const ContinueLearningCard = ({
                         ) : (
                             <BookOpen weight="fill" size={16} />
                         )}
-                        {isFirstRun ? `Start your first ${slideTerm}` : "Explore Content"}
+                        {isFirstRun ? t("continueLearning.startFirstSlideButton", { slide: slideTerm }) : t("continueLearning.exploreContentButton")}
                     </Button>
                 </CardContent>
             </Card>
@@ -211,22 +229,23 @@ export const ContinueLearningCard = ({
                             className="h-11 w-11 object-contain"
                         />
                         <div>
-                            <p className="cp-heading text-body">Continue Learning</p>
+                            <p className="cp-heading text-body">{t("continueLearning.title")}</p>
                             <p className="cp-muted text-caption">
-                                {data.slides.length}{" "}
-                                {(data.slides.length === 1
-                                    ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
-                                    : getTerminologyPlural(
-                                          ContentTerms.Slides,
-                                          SystemTerms.Slides
-                                      )
-                                ).toLocaleLowerCase()}{" "}
-                                in progress
+                                {t("continueLearning.slidesInProgress", {
+                                    count: data.slides.length,
+                                    slide: (data.slides.length === 1
+                                        ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
+                                        : getTerminologyPlural(
+                                              ContentTerms.Slides,
+                                              SystemTerms.Slides
+                                          )
+                                    ).toLocaleLowerCase(),
+                                })}
                             </p>
                         </div>
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full bg-cp-terracotta-tint px-2.5 py-1 text-caption font-semibold text-cp-terracotta">
-                        <Sparkle size={10} weight="fill" /> Active
+                        <Sparkle size={10} weight="fill" /> {t("membership.statusActive")}
                     </span>
                 </div>
 
@@ -253,7 +272,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="cp-muted truncate text-3xs">
-                                    {slide.slide_description || "Continue from where you left off"}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="cp-muted shrink-0" />
@@ -264,10 +283,15 @@ export const ContinueLearningCard = ({
                 <button
                     type="button"
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-body font-semibold text-primary-foreground shadow-sm transition-transform active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+                    className={cn(
+                        "flex w-full items-center justify-center gap-2 rounded-full py-3 text-body font-semibold transition-transform active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
+                        heroOffersResume
+                            ? "text-foreground ring-1 ring-inset ring-border"
+                            : "bg-primary text-primary-foreground shadow-sm"
+                    )}
                 >
                     <Play weight="fill" size={16} />
-                    Resume Learning
+                    {t("continueLearning.resumeLearningButton")}
                 </button>
             </div>
         );
@@ -285,22 +309,23 @@ export const ContinueLearningCard = ({
                             className="h-11 w-11 object-contain"
                         />
                         <div>
-                            <p className="text-body font-black text-play-navy-soft-ink">Continue Learning</p>
+                            <p className="text-body font-black text-play-navy-soft-ink">{t("continueLearning.title")}</p>
                             <p className="text-caption font-bold text-play-ink/60">
-                                {data.slides.length}{" "}
-                                {(data.slides.length === 1
-                                    ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
-                                    : getTerminologyPlural(
-                                          ContentTerms.Slides,
-                                          SystemTerms.Slides
-                                      )
-                                ).toLocaleLowerCase()}{" "}
-                                in progress
+                                {t("continueLearning.slidesInProgress", {
+                                    count: data.slides.length,
+                                    slide: (data.slides.length === 1
+                                        ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
+                                        : getTerminologyPlural(
+                                              ContentTerms.Slides,
+                                              SystemTerms.Slides
+                                          )
+                                    ).toLocaleLowerCase(),
+                                })}
                             </p>
                         </div>
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-caption font-black uppercase tracking-wide text-play-navy-soft-ink shadow-play-soft-card">
-                        <Sparkle size={10} weight="fill" /> Active
+                        <Sparkle size={10} weight="fill" /> {t("membership.statusActive")}
                     </span>
                 </div>
 
@@ -327,7 +352,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="truncate text-3xs text-play-ink/60">
-                                    {slide.slide_description || "Continue from where you left off"}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="shrink-0 text-play-ink/50" />
@@ -338,10 +363,15 @@ export const ContinueLearningCard = ({
                 <button
                     type="button"
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
-                    className="flex w-full items-center justify-center gap-2 rounded-play-btn bg-play-navy py-3 text-body font-black uppercase tracking-wide text-white shadow-play-2d-navy transition-transform active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-play-ink/30"
+                    className={cn(
+                        "flex w-full items-center justify-center gap-2 rounded-play-btn py-3 text-body font-black uppercase tracking-wide transition-transform active:translate-y-0.5 active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-play-ink/30",
+                        heroOffersResume
+                            ? "bg-play-navy-soft text-play-ink"
+                            : "bg-play-navy text-white shadow-play-2d-navy"
+                    )}
                 >
                     <Play weight="fill" size={16} />
-                    Resume Learning
+                    {t("continueLearning.resumeLearningButton")}
                 </button>
             </div>
         );
@@ -365,18 +395,19 @@ export const ContinueLearningCard = ({
                     </div>
                     <div>
                         <CardTitle className="text-lg font-bold">
-                            Continue Learning
+                            {t("continueLearning.title")}
                         </CardTitle>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            {data.slides.length}{" "}
-                            {(data.slides.length === 1
-                                ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
-                                : getTerminologyPlural(
-                                      ContentTerms.Slides,
-                                      SystemTerms.Slides
-                                  )
-                            ).toLocaleLowerCase()}{" "}
-                            in progress
+                            {t("continueLearning.slidesInProgress", {
+                                count: data.slides.length,
+                                slide: (data.slides.length === 1
+                                    ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
+                                    : getTerminologyPlural(
+                                          ContentTerms.Slides,
+                                          SystemTerms.Slides
+                                      )
+                                ).toLocaleLowerCase(),
+                            })}
                         </p>
                     </div>
                 </div>
@@ -384,7 +415,7 @@ export const ContinueLearningCard = ({
                     "bg-primary/10 text-primary border-primary/20 gap-1",
                     "[.ui-vibrant_&]:bg-white/50 [.ui-vibrant_&]:border-primary/30"
                 )}>
-                    <Sparkle size={10} weight="fill" /> Active
+                    <Sparkle size={10} weight="fill" /> {t("membership.statusActive")}
                 </Badge>
             </CardHeader>
 
@@ -416,7 +447,7 @@ export const ContinueLearningCard = ({
                                     {slide.slide_title}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate">
-                                    {slide.slide_description || "Continue from where you left off"}
+                                    {readableSlideDescription(slide.slide_description, slide.source_type) || t("continueLearning.continueFromWhereLeftOff")}
                                 </p>
                             </div>
                             <CaretRight size={14} weight="bold" className="text-muted-foreground group-hover/item:text-primary transition-colors" />
@@ -425,14 +456,16 @@ export const ContinueLearningCard = ({
                 </div>
 
                 <Button
+                    variant={heroOffersResume ? "outline" : "default"}
                     onClick={() => data.slides[0] && onResumeClick(data.slides[0])}
                     className={cn(
                         "w-full gap-2 font-semibold",
-                        "[.ui-vibrant_&]:bg-gradient-to-r [.ui-vibrant_&]:from-primary [.ui-vibrant_&]:to-primary/90 [.ui-vibrant_&]:shadow-lg [.ui-vibrant_&]:shadow-primary/20"
+                        !heroOffersResume &&
+                            "[.ui-vibrant_&]:bg-gradient-to-r [.ui-vibrant_&]:from-primary [.ui-vibrant_&]:to-primary/90 [.ui-vibrant_&]:shadow-lg [.ui-vibrant_&]:shadow-primary/20"
                     )}
                 >
                     <Play weight="fill" size={16} />
-                    Resume Learning
+                    {t("continueLearning.resumeLearningButton")}
                 </Button>
             </CardContent>
             </div>

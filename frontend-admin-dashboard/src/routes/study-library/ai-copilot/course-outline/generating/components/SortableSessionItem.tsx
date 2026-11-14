@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -36,6 +37,7 @@ export const SortableSessionItem = ({
     setEditSessionTitle,
     children,
 }: SortableSessionItemProps) => {
+    const { t } = useTranslation('studyLibrarySortableSessionItem');
     const isEditing = editingSessionId === session.sessionId;
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: session.sessionId,
@@ -103,7 +105,7 @@ export const SortableSessionItem = ({
                                             onStartEdit(session.sessionId, session.sessionTitle);
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 transition-opacity hover:bg-indigo-50 md:opacity-0 md:group-hover:opacity-100"
-                                        title="Edit"
+                                        title={t('edit')}
                                     >
                                         <Edit2 className="size-3.5" />
                                     </button>
@@ -113,7 +115,7 @@ export const SortableSessionItem = ({
                                             onDelete(session.sessionId);
                                         }}
                                         className="rounded p-1 text-xs text-red-600 transition-opacity hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100"
-                                        title="Delete"
+                                        title={t('delete')}
                                     >
                                         <Trash2 className="size-3.5" />
                                     </button>
@@ -127,7 +129,7 @@ export const SortableSessionItem = ({
                                             handleSaveEdit();
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                        title="Save"
+                                        title={t('save')}
                                     >
                                         <CheckCircle className="size-3.5" />
                                     </button>
@@ -137,14 +139,17 @@ export const SortableSessionItem = ({
                                             onCancelEdit();
                                         }}
                                         className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                        title="Cancel"
+                                        title={t('cancel')}
                                     >
                                         <X className="size-3.5" />
                                     </button>
                                 </div>
                             )}
                             <div className="text-xs text-neutral-500">
-                                {completedCount}/{session.slides.length} pages
+                                {t('pagesCount', {
+                                    completed: completedCount,
+                                    count: session.slides.length,
+                                })}
                             </div>
                             {session.progress < 100 && (
                                 <CircularProgress

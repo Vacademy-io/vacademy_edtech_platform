@@ -1,0 +1,20 @@
+{
+    "zoomModal": {
+        "closeTitle": "إغلاق (Esc)"
+    },
+    "block": {
+        "clickToZoom": "انقر للتكبير",
+        "header": "مخطط Mermaid",
+        "done": "تم",
+        "editCode": "تعديل الكود",
+        "diagramCodeLabel": "كود المخطط",
+        "diagramCodePlaceholder": "اكتب كود Mermaid، مثال:",
+        "livePreviewHintPrefix": "المعاينة المباشرة أدناه. يدعم المخططات الانسيابية",
+        "livePreviewHintSuffix": "، والتسلسلية، والصفية، ومخططات جانت، والدائرية، وغيرها.",
+        "insertExample": "إدراج مثال",
+        "renderingDiagram": "جارٍ عرض المخطط…",
+        "renderError": "تعذر عرض هذا المخطط — تحقق من صيغة Mermaid.",
+        "noDiagram": "لا يوجد مخطط",
+        "clickToAdd": "انقر لإضافة كود مخطط Mermaid"
+    }
+}

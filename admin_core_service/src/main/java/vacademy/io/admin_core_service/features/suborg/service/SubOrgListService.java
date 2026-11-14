@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.suborg.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -11,9 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
-import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollInviteSettingDTO;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.institute.entity.InstituteSubOrg;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteSubOrgRepository;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -43,7 +41,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubOrgListService {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final InstituteSubOrgRepository instituteSubOrgRepository;
     private final InstituteRepository instituteRepository;
@@ -51,6 +48,7 @@ public class SubOrgListService {
     private final AuthService authService;
     private final UserPlanRepository userPlanRepository;
     private final EnrollInviteRepository enrollInviteRepository;
+    private final SubOrgSeatCapResolver seatCapResolver;
 
     @Transactional(readOnly = true)
     public Page<SubOrgListItemDTO> getSubOrgsWithDetails(String parentInstituteId, Pageable pageable) {
@@ -124,7 +122,8 @@ public class SubOrgListService {
         }
 
         // 5. The spawned institutes themselves, in one query — carry the address the
-        // registration stamped on them (city/state/pincode; null when never collected).
+        // registration stamped on them (street line + city/state/pincode; null when never
+        // collected).
         Map<String, Institute> instituteBySubOrg = new HashMap<>();
         if (!subOrgIds.isEmpty()) {
             instituteRepository.findAllById(subOrgIds)
@@ -140,12 +139,12 @@ public class SubOrgListService {
 
             String planStatus = null;
             Integer totalSeats = null;
+            PaymentPlan adminPlan = null;
             if (plan != null) {
                 planStatus = plan.getStatus();
                 try {
-                    if (plan.getPaymentPlan() != null) {
-                        totalSeats = plan.getPaymentPlan().getMemberCount();
-                    }
+                    adminPlan = plan.getPaymentPlan();
+                    totalSeats = adminPlan != null ? adminPlan.getMemberCount() : null;
                 } catch (Exception ignored) {
                     // Lazy payment-plan not resolvable — leave the cap null.
                 }
@@ -165,11 +164,7 @@ public class SubOrgListService {
                         break;
                     }
                 }
-                // The seat cap for CPO / spawned sub-orgs lives on the org-invite settings, not
-                // the admin's PaymentPlan — fall back to it so "occupied / total" always has a total.
-                if (totalSeats == null) {
-                    totalSeats = readMemberCountFromInvites(invites);
-                }
+                totalSeats = seatCapResolver.resolve(invites, adminPlan);
             }
 
             Institute spawned = StringUtils.hasText(soId) ? instituteBySubOrg.get(soId) : null;
@@ -178,9 +173,13 @@ public class SubOrgListService {
                     .suborgId(soId)
                     .name(so.getName())
                     .status(so.getStatus())
+                    // Set from the mapping row, not the auth lookup, so the action stays
+                    // available even when auth-service enrichment failed for this page.
+                    .adminUserId(admin != null ? admin[0] : null)
                     .adminName(user != null ? user.getFullName() : null)
                     .adminEmail(user != null ? user.getEmail() : null)
                     .adminPhone(user != null ? user.getMobileNumber() : null)
+                    .addressLine(spawned != null ? spawned.getAddress() : null)
                     .city(spawned != null ? spawned.getCity() : null)
                     .state(spawned != null ? spawned.getState() : null)
                     .pincode(spawned != null ? spawned.getPinCode() : null)
@@ -199,30 +198,6 @@ public class SubOrgListService {
         // Preserve the page's paging metadata (total count / number / size) while returning
         // the enriched rows for just this page.
         return new PageImpl<>(result, pageable, subOrgPage.getTotalElements());
-    }
-
-    /** Read the sub-org's seat cap (MEMBER_COUNT) off the org-level invite's settingJson. */
-    private Integer readMemberCountFromInvites(List<EnrollInvite> invites) {
-        for (EnrollInvite invite : invites) {
-            if (!StringUtils.hasText(invite.getSettingJson())) {
-                continue;
-            }
-            try {
-                EnrollInviteSettingDTO dto = OBJECT_MAPPER.readValue(
-                        invite.getSettingJson(), EnrollInviteSettingDTO.class);
-                Integer mc = Optional.ofNullable(dto)
-                        .map(EnrollInviteSettingDTO::getSetting)
-                        .map(EnrollInviteSettingDTO.Settings::getSubOrgSetting)
-                        .map(EnrollInviteSettingDTO.SubOrgSetting::getMemberCount)
-                        .orElse(null);
-                if (mc != null) {
-                    return mc;
-                }
-            } catch (Exception ignored) {
-                // Malformed settings — try the next invite.
-            }
-        }
-        return null;
     }
 
     private Map<String, UserDTO> fetchUsers(List<String> userIds) {

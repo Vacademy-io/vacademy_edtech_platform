@@ -1,0 +1,22 @@
+{
+    "columns": {
+        "status": "स्थिति",
+        "uploadStatus": "अपलोड स्थिति",
+        "uploadError": "अपलोड त्रुटि"
+    },
+    "placeholders": {
+        "selectGender": "लिंग चुनें",
+        "selectOption": "एक विकल्प चुनें"
+    },
+    "hints": {
+        "mobileNumberExample": "(उदा. +91-1234567890)"
+    },
+    "errors": {
+        "viewErrors_one": "त्रुटि ({{count}})",
+        "viewErrors_other": "त्रुटियाँ ({{count}})"
+    },
+    "uploadResult": {
+        "success": "सफल",
+        "failed": "विफल"
+    }
+}

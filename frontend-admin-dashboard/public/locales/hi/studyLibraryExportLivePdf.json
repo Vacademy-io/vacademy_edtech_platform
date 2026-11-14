@@ -1,0 +1,61 @@
+{
+    "cornerLabel": "लाइव क्लास रिपोर्ट",
+    "subtitle": "उपस्थिति और सहभागिता रिपोर्ट",
+    "fields": {
+        "course": "कोर्स",
+        "batch": "बैच",
+        "period": "अवधि",
+        "learner": "शिक्षार्थी",
+        "attendance": "उपस्थिति",
+        "engagement": "सहभागिता"
+    },
+    "batch": {
+        "title": "बैच लाइव क्लास रिपोर्ट",
+        "classWiseAttendance": "कक्षा-वार उपस्थिति",
+        "cards": {
+            "avgAttendance": "औसत उपस्थिति",
+            "learnersCount_one": "{{count}} शिक्षार्थी",
+            "learnersCount_other": "{{count}} शिक्षार्थी",
+            "classesHeld": "आयोजित कक्षाएँ",
+            "avgDuration": "औसत अवधि",
+            "perPresentLearner": "प्रति उपस्थित शिक्षार्थी",
+            "avgEngagement": "औसत सहभागिता",
+            "participationPoints": "सहभागिता अंक"
+        }
+    },
+    "leaderboard": {
+        "title": "लीडरबोर्ड"
+    },
+    "learner": {
+        "title": "शिक्षार्थी लाइव क्लास रिपोर्ट",
+        "classHistory": "कक्षा इतिहास",
+        "cards": {
+            "batchPct": "बैच {{pct}}%",
+            "classesAttended": "उपस्थित कक्षाएँ",
+            "batchDuration": "बैच {{duration}}",
+            "batchAvgPts": "बैच औसत {{points}} अंक"
+        }
+    },
+    "tableHeaders": {
+        "date": "तिथि",
+        "class": "कक्षा",
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित",
+        "attendance": "उपस्थिति",
+        "avgDuration": "औसत अवधि",
+        "engagement": "सहभागिता",
+        "rank": "रैंक",
+        "name": "नाम",
+        "classes": "कक्षाएँ",
+        "status": "स्थिति",
+        "duration": "अवधि",
+        "talkTime": "बात करने का समय",
+        "chats": "चैट",
+        "polls": "पोल",
+        "raiseHand": "हाथ उठाना"
+    },
+    "status": {
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित"
+    }
+}

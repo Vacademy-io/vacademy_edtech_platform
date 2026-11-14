@@ -1,0 +1,45 @@
+{
+    "dialogTitle": "Award badge",
+    "intro_one": "Award a badge to {{count}} selected learner.",
+    "intro_other": "Award a badge to {{count}} selected learners.",
+    "duplicateRowsHint_one": "1 learner appears in more than one row of the selection and is counted once.",
+    "duplicateRowsHint_other": "{{count}} learners appear in more than one row of the selection and are counted once.",
+    "disabledBanner": "Badges are turned off for this institute. Awards are saved, but learners won't see them or be notified until badges are enabled in Settings → Badges & Rewards (parents with portal access see them immediately).",
+    "noteLabel": "Note for the learners (optional)",
+    "notePlaceholder": "e.g. Outstanding effort in this week's project — every learner sees this with the badge",
+    "noteHint": "The same note is attached to every learner in this selection.",
+    "running": {
+        "title": "Awarding badge…",
+        "progress": "{{done}} of {{total}} learners processed",
+        "keepOpen": "Keep this window open until it finishes."
+    },
+    "results": {
+        "awarded_one": "{{count}} learner newly awarded",
+        "awarded_other": "{{count}} learners newly awarded",
+        "upgraded_one": "{{count}} learner had auto-unlocked it — now recorded as a staff award",
+        "upgraded_other": "{{count}} learners had auto-unlocked it — now recorded as staff awards",
+        "alreadyHad_one": "{{count}} learner already held this badge (left unchanged)",
+        "alreadyHad_other": "{{count}} learners already held this badge (left unchanged)",
+        "failed_one": "{{count}} learner could not be awarded — try again for them",
+        "failed_other": "{{count}} learners could not be awarded — try again for them",
+        "notEnrolled_one": "{{count}} learner is not a member of this institute (skipped)",
+        "notEnrolled_other": "{{count}} learners are not members of this institute (skipped)",
+        "notified": "Learners have been notified.",
+        "notNotified": "Learners were not notified because badges are turned off for this institute."
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "award_one": "Award to {{count}} learner",
+        "award_other": "Award to {{count}} learners",
+        "awarding": "Awarding…",
+        "done": "Done"
+    },
+    "toasts": {
+        "success_one": "Badge awarded to {{count}} learner",
+        "success_other": "Badge awarded to {{count}} learners",
+        "nothingNew": "Everyone selected already held this badge",
+        "partialFailure_one": "{{count}} learner could not be awarded",
+        "partialFailure_other": "{{count}} learners could not be awarded",
+        "notNotified": "Learners are not notified while badges are turned off"
+    }
+}

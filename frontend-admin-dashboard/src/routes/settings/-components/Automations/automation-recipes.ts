@@ -979,12 +979,18 @@ export const AUTOMATION_FEATURES: AutomationFeature[] = [
                         on: "#ctx['adminContacts']",
                         forEach: { operation: 'SEND_EMAIL', eval: "#ctx['item']" },
                         recipientField: 'email',
+                        // The lead-submission context carries the lead as `user` (every
+                        // path sets it) and its number as `phone` (not on form-webhook
+                        // leads, hence the fallback). There is no `lead` key, and a var
+                        // that fails to evaluate is sent as its expression text, so each
+                        // one is written to come out blank rather than fail.
                         templateVars: {
                             adminName: "#ctx['item'].fullName",
                             campaignName: "#ctx['campaignName']",
-                            leadName: "#ctx['lead']['Full Name']",
-                            leadEmail: "#ctx['lead']['Email']",
-                            leadMobile: "#ctx['lead']['Phone Number']",
+                            leadName: "#ctx['user']?.fullName",
+                            leadEmail: "#ctx['user']?.email",
+                            leadMobile: "#ctx['phone'] ?: #ctx['user']?.mobileNumber",
+                            submissionTime: "#ctx['submissionTime']",
                             instituteName: "#ctx['instituteName']",
                         },
                     }, 250, 410);
@@ -1074,6 +1080,56 @@ export const AUTOMATION_FEATURES: AutomationFeature[] = [
                             doubtText: "#ctx['htmlText']",
                             contentType: "#ctx['contentType']",
                             batchId: "#ctx['packageSessionId']",
+                            instituteName: "#ctx['instituteName']",
+                        },
+                    }, 250, 410);
+                    return {
+                        nodes: [trigger, fetchAdmins, send],
+                        edges: [makeEdge(trigger.id, fetchAdmins.id), makeEdge(fetchAdmins.id, send.id)],
+                    };
+                },
+            },
+        ],
+    },
+    {
+        id: 'admin_reviews',
+        section: 'admin',
+        icon: '⭐',
+        title: 'Website reviews',
+        description: 'Know as soon as a visitor sends a review from your website.',
+        recipes: [
+            {
+                id: 'admin_notify_review_submitted',
+                triggerEvent: 'REVIEW_SUBMITTED',
+                icon: '⭐',
+                label: 'Email the team when a visitor sends a review',
+                whatHappens:
+                    'When someone sends a review through the Reviews & feedback section of your website, the admin team gets an email with the stars and the review so it can be approved quickly. Change the channel (WhatsApp, in-app) or who gets it in the workflow builder.',
+                mode: 'event',
+                customGenerator: (form) => {
+                    const trigger = makeNode('TRIGGER', 'Trigger: Site review submitted', {
+                        triggerEvent: 'REVIEW_SUBMITTED',
+                    }, 250, 50, true);
+                    const fetchAdmins = makeNode('QUERY', 'Fetch admin team', {
+                        prebuiltKey: 'fetch_institute_admin_emails',
+                        params: {},
+                    }, 250, 230);
+                    const send = makeNode('SEND_EMAIL', `Send to team: ${form.templateName ?? ''}`, {
+                        templateName: form.templateName as string,
+                        on: "#ctx['adminContacts']",
+                        forEach: { operation: 'SEND_EMAIL', eval: "#ctx['item']" },
+                        recipientField: 'email',
+                        templateVars: {
+                            adminName: "#ctx['item'].fullName",
+                            reviewerName: "#ctx['reviewerName']",
+                            rating: "#ctx['rating']",
+                            ratingStars: "#ctx['ratingStars']",
+                            reviewText: "#ctx['reviewText']",
+                            courseName: "#ctx['courseName']",
+                            city: "#ctx['city']",
+                            designation: "#ctx['designation']",
+                            answersText: "#ctx['answersText']",
+                            siteTag: "#ctx['siteTag']",
                             instituteName: "#ctx['instituteName']",
                         },
                     }, 250, 410);

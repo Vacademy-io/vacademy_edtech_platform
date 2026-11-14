@@ -1,7 +1,12 @@
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 export const ScheduleTestHeaderDescription = () => {
   const isMobile = useIsMobile();
+  const { t } = useTranslation("assessment");
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin).toLocaleLowerCase();
 
   return (
     <div
@@ -10,11 +15,10 @@ export const ScheduleTestHeaderDescription = () => {
     >
       <div className="flex flex-col w-full max-w-3xl">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Stay Assessment Ready
+          {t("scheduleTest.header.title")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-          View all the Assessments created by the admin, along with their
-          schedules and statuses to stay on track.
+          {t("scheduleTest.header.description", { admin })}
         </p>
       </div>
     </div>

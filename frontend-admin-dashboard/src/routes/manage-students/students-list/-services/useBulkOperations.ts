@@ -1,5 +1,6 @@
 // services/student-operations/useBulkOperations.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { STUDENT_UPDATE_OPERATION } from '@/constants/urls';
 import { useToast } from '@/hooks/use-toast';
@@ -38,20 +39,21 @@ const bulkUpdateStudentBatch = async ({
 export const useBulkUpdateBatchMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
         mutationFn: bulkUpdateStudentBatch,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Successfully updated batches for selected students',
+                title: t('updateBatch.successTitle'),
+                description: t('updateBatch.successDescription'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to update batches. Please try again.',
+                title: t('updateBatch.errorTitle'),
+                description: t('updateBatch.errorDescription'),
                 variant: 'destructive',
             });
             console.error('Error in bulk batch update:', error);
@@ -86,20 +88,21 @@ const bulkExtendStudentSession = async ({ students, newExpiryDate }: BulkExtendS
 export const useBulkExtendSessionMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
         mutationFn: bulkExtendStudentSession,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Successfully extended sessions for selected students',
+                title: t('extendSession.successTitle'),
+                description: t('extendSession.successDescription'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to extend sessions. Please try again.',
+                title: t('extendSession.errorTitle'),
+                description: t('extendSession.errorDescription'),
                 variant: 'destructive',
             });
             console.error('Error in bulk session extension:', error);
@@ -133,20 +136,21 @@ const bulkTerminateStudents = async ({ students }: BulkTerminateRequest) => {
 export const useBulkTerminateStudentsMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
         mutationFn: bulkTerminateStudents,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Successfully terminated registrations for selected students',
+                title: t('terminate.successTitle'),
+                description: t('terminate.successDescription'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to terminate registrations. Please try again.',
+                title: t('terminate.errorTitle'),
+                description: t('terminate.errorDescription'),
                 variant: 'destructive',
             });
             console.error('Error in bulk termination:', error);
@@ -180,20 +184,21 @@ const bulkDeleteStudents = async ({ students }: BulkDeleteRequest) => {
 export const useBulkDeleteStudentsMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
         mutationFn: bulkDeleteStudents,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Successfully deleted selected students',
+                title: t('delete.successTitle'),
+                description: t('delete.successDescription'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to delete students. Please try again.',
+                title: t('delete.errorTitle'),
+                description: t('delete.errorDescription'),
                 variant: 'destructive',
             });
             console.error('Error in bulk deletion:', error);

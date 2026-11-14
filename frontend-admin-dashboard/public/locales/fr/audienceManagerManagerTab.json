@@ -1,0 +1,39 @@
+{
+    "sectionTitle": "Performance des équipes",
+    "teamsBadge_one": "{{count}} équipe",
+    "teamsBadge_many": "{{count}} d'équipes",
+    "teamsBadge_other": "{{count}} équipes",
+    "unassigned": "Non attribuée",
+    "total": "Total",
+    "emptyHint": "Aucune activité d'équipe sur cette période.",
+    "breakdownTitle": "Taux de conversion par équipe",
+    "footnote": "Répondu = leads ayant reçu au moins une réponse. Taux de conv. % = conversions ÷ leads. Réponse moyenne = temps moyen jusqu'à la première réponse. Taux d'atteinte % = conversions ÷ objectif.",
+    "table": {
+        "team": "Équipe",
+        "head": "Responsable",
+        "counsellors": "Conseillers",
+        "leads": "Leads",
+        "responded": "Répondu",
+        "conversions": "Conversions",
+        "convRate": "Taux de conv. %",
+        "open": "Ouvert",
+        "overdue": "En retard",
+        "avgResponse": "Réponse moyenne",
+        "target": "Objectif",
+        "attainmentPct": "Taux d'atteinte %"
+    },
+    "csv": {
+        "team": "Équipe",
+        "head": "Responsable",
+        "counsellors": "Conseillers",
+        "leads": "Leads",
+        "responded": "Répondu",
+        "conversions": "Conversions",
+        "conversionRatePct": "Taux de conversion (%)",
+        "open": "Ouvert",
+        "overdue": "En retard",
+        "avgResponseMinutes": "Réponse moyenne (minutes)",
+        "target": "Objectif",
+        "attainmentPct": "Taux d'atteinte (%)"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "fields": {
+        "homeworkName": {
+            "label": "Nom du devoir :"
+        },
+        "subject": {
+            "label": "Matière :"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "Instructions de l'évaluation :"
+        },
+        "liveDateRange": {
+            "sectionTitle": "Plage de dates en direct",
+            "startDateLabel": "Date et heure de début :",
+            "endDateLabel": "Date et heure de fin :"
+        },
+        "attemptSettings": {
+            "sectionTitle": "Paramètres de tentative",
+            "reattemptCountLabel": "Nombre de nouvelles tentatives du devoir :",
+            "durationSettingsLabel": "Paramètres de durée du devoir :",
+            "entireDurationLabel": "Durée totale du devoir",
+            "minuteValue": "{{count}} min",
+            "previewLabel": "Aperçu du devoir :",
+            "switchSectionsLabel": "Autoriser les participants à changer de section"
+        }
+    }
+}

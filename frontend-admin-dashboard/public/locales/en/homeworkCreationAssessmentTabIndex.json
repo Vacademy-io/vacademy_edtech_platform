@@ -1,0 +1,31 @@
+{
+    "heading": {
+        "title": "Homework Details"
+    },
+    "helmet": {
+        "title": "Homework Details",
+        "description": "This page shows all details related to an homework."
+    },
+    "actions": {
+        "previewHomework": "Preview Homework",
+        "exportOffline": "Export Offline",
+        "noSectionsError": "No sections have been added for this homework."
+    },
+    "badge": {
+        "visibility": {
+            "PRIVATE": "Private",
+            "PUBLIC": "Public"
+        },
+        "status": {
+            "COMPLETED": "Completed"
+        }
+    },
+    "tabs": {
+        "overview": "Overview",
+        "submissions": "Submissions",
+        "basicInfo": "Basic Info",
+        "questions": "Questions",
+        "participants": "Participants",
+        "accessControl": "Access Control"
+    }
+}

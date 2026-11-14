@@ -1,0 +1,601 @@
+{
+    "notAdmin": "Only an institute admin can manage classroom panels.",
+    "tabs": {
+        "label": "Classroom panel sections",
+        "panels": "Panels & rooms",
+        "usage": "Usage",
+        "licence": "Licences",
+        "installers": "Installers",
+        "alerts": "Alerts",
+        "empty": "Nothing to show here yet."
+    },
+    "usage": {
+        "title": "Panel usage",
+        "description": "How much the classroom panels were used, by room, teacher and content. Dates and times are in your time zone ({{tz}}).",
+        "loadError": "Could not load panel usage.",
+        "featureOffTitle": "Usage is not available",
+        "featureOff": "Usage reports are not switched on for this institute.",
+        "unknownTeacher": "Unknown teacher",
+        "unknownRoom": "Unknown room",
+        "range": {
+            "label": "Dates",
+            "last7": "Last 7 days",
+            "thisWeek": "This week",
+            "lastWeek": "Last week",
+            "last30": "Last 30 days",
+            "term": "Term (last {{days}} days)",
+            "custom": "Custom",
+            "from": "From",
+            "to": "To",
+            "showing": "{{from}} to {{to}}",
+            "incomplete": "Pick a start date and an end date.",
+            "order": "The start date must be on or before the end date.",
+            "tooLong": "Pick at most {{days}} days."
+        },
+        "mySchools": {
+            "label": "My schools"
+        },
+        "kpi": {
+            "hours": "Panel hours",
+            "hoursCaption": "Sessions: {{count}}",
+            "rooms": "Rooms used",
+            "roomsValue": "{{used}} of {{total}}",
+            "roomsCaption": "Rooms with a panel that someone used",
+            "teachers": "Teachers",
+            "teachersCaption": "Live classes started: {{count}}",
+            "idle": "Idle rooms",
+            "idleCaption": "These rooms have a panel that nobody used",
+            "idleNone": "Every room with a panel was used"
+        },
+        "chart": {
+            "title": "Panel hours by day",
+            "description": "Time teachers were signed in on a panel, for each day.",
+            "aria": "Bar chart of panel hours for each day from {{from}} to {{to}}",
+            "hours": "Hours: {{value}}",
+            "sessions": "Sessions: {{value}}"
+        },
+        "rooms": {
+            "title": "Rooms",
+            "description": "Most used first. Open a room to see its sessions.",
+            "open": "Show sessions in {{room}}",
+            "emptyTitle": "No rooms used",
+            "emptyBody": "No room had a panel session in these dates.",
+            "columns": {
+                "room": "Room",
+                "hours": "Hours",
+                "sessions": "Sessions",
+                "teachers": "Teachers",
+                "days": "Days used",
+                "lastUsed": "Last used"
+            }
+        },
+        "teachers": {
+            "title": "Teachers",
+            "description": "Most panel time first. Open a teacher to see their sessions.",
+            "open": "Show sessions by {{teacher}}",
+            "emptyTitle": "No teachers",
+            "emptyBody": "No teacher signed in on a panel in these dates.",
+            "columns": {
+                "teacher": "Teacher",
+                "hours": "Hours",
+                "sessions": "Sessions",
+                "rooms": "Rooms",
+                "days": "Days active",
+                "topContent": "Most used content"
+            }
+        },
+        "idle": {
+            "title": "Idle rooms",
+            "description": "Rooms with a working panel that nobody signed in on in these dates.",
+            "online": "Online",
+            "offline": "Offline",
+            "never": "Not used yet",
+            "emptyTitle": "No idle rooms",
+            "emptyBody": "Every room with a panel was used in these dates.",
+            "columns": {
+                "room": "Room",
+                "status": "Panel",
+                "lastUsed": "Last used"
+            }
+        },
+        "content": {
+            "title": "What was taught",
+            "description": "Lessons, presentations, live classes and whiteboards opened on the panels.",
+            "coverage": "Content was recorded for {{pct}}% of sessions.",
+            "coverageWhy": "Panels on an older app version do not record content, so this list can be incomplete.",
+            "recordedFrom": "Recorded since {{date}}.",
+            "notRecorded": "Not recorded",
+            "notRecordedBody": "No content was recorded in these dates. Panels record it once they run the latest app version.",
+            "untitled": "Untitled",
+            "columns": {
+                "kind": "Type",
+                "title": "Title",
+                "time": "Time",
+                "sessions": "Sessions",
+                "teachers": "Teachers"
+            }
+        },
+        "kinds": {
+            "LESSON": "Lesson",
+            "DECK": "Presentation",
+            "DECK_LIVE": "Live presentation",
+            "CLASS": "Live class",
+            "WHITEBOARD": "Whiteboard"
+        },
+        "sessions": {
+            "titleRoom": "Sessions in {{name}}",
+            "titleTeacher": "Sessions by {{name}}",
+            "loadError": "Could not load sessions.",
+            "emptyTitle": "No sessions",
+            "emptyBody": "There were no sessions in these dates.",
+            "noContent": "No content recorded"
+        },
+        "endReasons": {
+            "ACTIVE": "Still signed in",
+            "SIGN_OUT": "Signed out",
+            "IDLE": "Signed out when idle",
+            "CLASS_END": "Class ended",
+            "ADMIN": "Ended by an admin",
+            "PHONE": "Ended from a phone",
+            "REPLACED": "Panel replaced",
+            "SUPERSEDED": "Another sign-in took over",
+            "UNBOUND": "Panel moved",
+            "EXPIRED": "Session expired",
+            "ACCESS_REMOVED": "Access removed",
+            "DEAD_MAN": "Panel stopped responding"
+        },
+        "startedVia": {
+            "QR": "Phone QR code",
+            "PASSWORD": "Password"
+        },
+        "duration": {
+            "hm": "{{h}} h {{m}} min",
+            "m": "{{m}} min"
+        },
+        "empty": {
+            "title": "No panel use in these dates",
+            "body": "Nobody signed in on a panel from {{from}} to {{to}}. Try other dates."
+        },
+        "export": {
+            "button": "Export CSV",
+            "working": "Preparing…",
+            "done": "Exported sessions: {{count}}.",
+            "doneSchools": "Exported schools: {{count}}.",
+            "truncated": "Exported the first {{count}} sessions. Pick fewer days to export the rest.",
+            "error": "Could not export.",
+            "empty": "There are no sessions to export.",
+            "columns": {
+                "date": "Date",
+                "room": "Room",
+                "teacher": "Teacher",
+                "started": "Started",
+                "ended": "Ended",
+                "minutes": "Minutes",
+                "endReason": "How it ended",
+                "startedVia": "Signed in with",
+                "content": "Content",
+                "roomsUsed": "Rooms used",
+                "roomsWithPanel": "Rooms with a panel"
+            }
+        },
+        "multi": {
+            "title": "My schools",
+            "description": "Panel use in each school where you are an admin ({{count}}).",
+            "loadError": "Could not load usage for your schools.",
+            "emptyTitle": "No schools",
+            "emptyBody": "There is no panel usage to compare in these dates.",
+            "fallbackName": "School {{id}}",
+            "columns": {
+                "school": "School",
+                "hours": "Panel hours",
+                "sessions": "Sessions",
+                "rooms": "Rooms used",
+                "teachers": "Teachers",
+                "idle": "Idle rooms"
+            }
+        }
+    },
+    "licence": {
+        "title": "Licences",
+        "description": "A seat lets teachers sign in on the panel in a room. The seat belongs to the room, so it stays when a panel is replaced.",
+        "loadError": "Could not load licences.",
+        "summary": {
+            "state": "Status",
+            "seats": "Seats in use",
+            "seatsValue": "{{used}} of {{granted}}",
+            "endsOn": "Ends on",
+            "graceUntil": "Grace period until"
+        },
+        "state": {
+            "UNMANAGED": "Not managed",
+            "ACTIVE": "Active",
+            "TRIAL": "Trial",
+            "GRACE": "Grace period",
+            "EXPIRED": "Ended",
+            "NONE": "No licence"
+        },
+        "note": {
+            "shadow": "Not enforced yet. Teachers can still sign in on every panel, whatever its seat status.",
+            "unmanaged": "Seats are not managed for this institute. Teachers can sign in on every panel.",
+            "overLimit": "More rooms hold a seat than you have seats. Release the seat of a room you no longer use.",
+            "ended": "Your licence has ended. Teachers cannot sign in on panels that need a seat."
+        },
+        "grants": {
+            "title": "Licence periods",
+            "kind": {
+                "TRIAL": "Trial",
+                "PAID": "Licence",
+                "COMPLIMENTARY": "Complimentary"
+            },
+            "seats": "Seats: {{seats}}",
+            "period": "{{from}} to {{to}}",
+            "grace": "Grace period after the end, in days: {{days}}"
+        },
+        "rooms": {
+            "title": "Rooms",
+            "search": "Search rooms",
+            "noMatch": "No room matches this search.",
+            "noPanel": "No panel",
+            "hasPanel": "Has a panel",
+            "empty": {
+                "title": "No rooms with a panel yet",
+                "body": "Rooms show here once a panel is paired to them."
+            },
+            "columns": {
+                "room": "Room",
+                "state": "Seat",
+                "since": "Seat since",
+                "actions": "Actions"
+            },
+            "assignFor": "Assign a seat to {{room}}",
+            "releaseFor": "Release the seat of {{room}}",
+            "assign": "Assign seat",
+            "release": "Release"
+        },
+        "roomState": {
+            "LICENSED": "Licensed",
+            "GRACE": "Grace period",
+            "OVER_LIMIT": "Over the limit",
+            "UNLICENSED": "No seat",
+            "EXPIRED": "Ended",
+            "UNMANAGED": "Not managed"
+        },
+        "assign": {
+            "title": "Assign a seat to {{room}}?",
+            "body": "Teachers can sign in on the panel in {{room}}. This uses one of your free seats.",
+            "confirm": "Assign seat",
+            "success": "{{room}} now has a seat."
+        },
+        "release": {
+            "title": "Release the seat of {{room}}?",
+            "body": "While seats are enforced, teachers cannot sign in on the panel in {{room}}. A class already running is not stopped. The seat becomes free for another room.",
+            "confirm": "Release seat",
+            "success": "Seat released from {{room}}."
+        },
+        "errors": {
+            "NO_SEAT": "Every seat is in use. Release the seat of another room first."
+        }
+    },
+    "installers": {
+        "title": "Installers",
+        "description": "An installer can set up panels in your rooms. Each panel they set up waits for your approval under Panels & rooms.",
+        "loadError": "Could not load installers.",
+        "empty": {
+            "title": "No installers yet",
+            "body": "Create a code and give it to the installer who sets up your panels."
+        },
+        "columns": {
+            "name": "Installer",
+            "linked": "Linked",
+            "until": "Can set up panels until",
+            "installs": "Panels set up",
+            "actions": "Actions"
+        },
+        "via": {
+            "SCHOOL_CODE": "With your code",
+            "SUPER_ADMIN": "By support"
+        },
+        "noEnd": "No end date",
+        "ended": "Ended",
+        "revokeFor": "Remove {{name}}",
+        "invite": {
+            "open": "Let an installer set up panels",
+            "title": "Let an installer set up panels",
+            "intro": "You get a code to give the installer. They enter it in the Classroom app on their phone after signing in.",
+            "daysLabel": "The installer can set up panels for",
+            "days": "{{days}} days",
+            "create": "Create code",
+            "codeLabel": "Installer code",
+            "shownOnce": "This code is shown only once. Copy it now.",
+            "expires": "Use it before {{when}}.",
+            "copy": "Copy code",
+            "copied": "Code copied.",
+            "copyFailed": "Could not copy. Select the code and copy it yourself.",
+            "cancel": "Cancel this code",
+            "cancelled": "Code cancelled. It can no longer be used."
+        },
+        "revoke": {
+            "title": "Remove {{name}}?",
+            "body": "{{name}} can no longer set up panels here. Panels they already set up stay, and any waiting for approval still wait for you.",
+            "confirm": "Remove installer",
+            "success": "{{name}} removed."
+        },
+        "approval": {
+            "banner": "Set up by {{name}} and waiting for your approval: {{count}}",
+            "bannerMixed": "Set up by installers and waiting for your approval: {{count}}",
+            "bannerHelp": "Check that each panel is in the right room, then approve or reject it.",
+            "chip": "Awaiting approval",
+            "rejectedChip": "Rejected",
+            "installedBy": "Set up by {{name}}",
+            "approve": "Approve",
+            "reject": "Reject",
+            "approveFor": "Approve the panel in {{room}}",
+            "rejectFor": "Reject the panel in {{room}}",
+            "approveTitle": "Approve the panel in {{room}}?",
+            "approveBody": "Teachers can sign in on it once you approve. {{room}} gets a seat if one is free.",
+            "approveConfirm": "Approve panel",
+            "approved": "Panel in {{room}} approved.",
+            "rejectTitle": "Reject the panel in {{room}}?",
+            "rejectBody": "The panel goes back to its setup screen and {{room}} becomes free. To use this panel again it needs a new setup code.",
+            "rejectConfirm": "Reject panel",
+            "rejected": "Panel in {{room}} rejected."
+        }
+    },
+    "alerts": {
+        "title": "Alerts",
+        "description": "Panels that need a look, the most urgent first.",
+        "loadError": "Could not load alerts.",
+        "empty": {
+            "title": "Nothing needs attention",
+            "body": "Every panel is online, up to date and in use."
+        },
+        "severity": {
+            "bad": "Needs action",
+            "warn": "Check soon",
+            "info": "For your information"
+        },
+        "kind": {
+            "OFFLINE": "Offline",
+            "NOT_CONFIRMED": "Not confirmed",
+            "AWAITING_APPROVAL": "Awaiting approval",
+            "UPDATE_REQUIRED": "Update required",
+            "APP_OUTDATED": "Update available",
+            "WEBVIEW_OLD": "Old WebView",
+            "UNUSED": "Not used",
+            "LICENCE_ROOM": "No seat",
+            "LICENCE_ENDING": "Licence ending",
+            "other": "Needs a look"
+        },
+        "todo": {
+            "OFFLINE": "Check the panel is on and on Wi-Fi.",
+            "NOT_CONFIRMED": "Tap Confirm on the panel, or remove it and add it again.",
+            "AWAITING_APPROVAL": "Approve or reject it under Panels & rooms.",
+            "UPDATE_REQUIRED": "Open the panel and install the update.",
+            "APP_OUTDATED": "Open the panel and install the update.",
+            "WEBVIEW_OLD": "Update Android System WebView on the panel.",
+            "UNUSED": "Show teachers how to sign in.",
+            "LICENCE_ROOM": "Assign a seat to this room under Licences.",
+            "LICENCE_ENDING": "Renew before the end date to keep teachers signing in.",
+            "other": "Something on this panel needs a look. Reload this page for details."
+        },
+        "institute": "Whole institute",
+        "since": "Since {{when}}",
+        "summary": "Panels that need attention: {{count}}",
+        "summaryHelp": "See the Alerts tab for what to do.",
+        "notify": {
+            "title": "Email alerts",
+            "description": "One email a day to the institute admins, listing only new problems. Nothing is sent on a day with nothing new.",
+            "email": "Send alerts by email",
+            "hour": "Send at",
+            "timezone": "Time zone: {{zone}}",
+            "save": "Save",
+            "saved": "Alert settings saved.",
+            "loadError": "Could not load alert settings.",
+            "saveError": "Could not save alert settings. Try again."
+        }
+    },
+    "common": {
+        "cancel": "Cancel",
+        "done": "Done",
+        "none": "None",
+        "noMatchTitle": "Nothing found",
+        "noRoomMatch": "No room found.",
+        "retry": "Try again",
+        "save": "Save",
+        "searchRooms": "Search rooms",
+        "stale": "Could not refresh. This may be out of date.",
+        "working": "Please wait…"
+    },
+    "errors": {
+        "BUSY": "The server is busy. Try again in a moment.",
+        "DEVICE_NOT_ACTIVE": "This panel was removed, so it cannot be changed.",
+        "FORBIDDEN": "You need to be an admin of this institute to do this.",
+        "NOT_FOUND": "This was not found. It may have been removed already.",
+        "RATE_LIMITED": "Too many attempts. Wait a minute and try again.",
+        "ROOM_HAS_DEVICE": "This room has a panel. Move or remove the panel first.",
+        "ROOM_NAME_TAKEN": "A room with this name already exists.",
+        "ROOM_OCCUPIED": "This room already has a panel. Pick another room, or remove that panel first.",
+        "ROOM_OTHER_INSTITUTE": "This room belongs to another institute.",
+        "TRY_AGAIN": "This could not finish just now. Try again in a moment.",
+        "WRONG_NUMBER": "That number did not match.",
+        "LICENCE_REQUIRED": "This room needs a seat before teachers can sign in. Assign one under Licences.",
+        "AWAITING_APPROVAL": "This panel is waiting for approval under Panels & rooms.",
+        "UPDATE_REQUIRED": "This panel needs an app update before it can be used.",
+        "FEATURE_OFF": "This is not switched on for your institute.",
+        "NOT_INSTALLER": "This installer can no longer set up panels for your institute.",
+        "INVITE_INVALID": "This code is not valid. It may have been used, cancelled or expired.",
+        "NO_SEAT": "Every seat is in use. Release the seat of another room first.",
+        "generic": "Something went wrong. Try again.",
+        "network": "Could not reach the server. Check your connection and try again."
+    },
+    "panels": {
+        "title": "Panels",
+        "description": "Classroom panels paired to this institute, and who is signed in on them.",
+        "add": "Add a panel",
+        "search": "Search by room",
+        "showRemoved": "Show removed panels",
+        "noMatch": "No panel matches this search.",
+        "loadError": "Could not load panels.",
+        "empty": {
+            "title": "No panels yet",
+            "body": "A panel must first show a setup code. Open the Classroom app on the panel, then add it here with that code."
+        },
+        "columns": {
+            "room": "Room",
+            "state": "Status",
+            "teacher": "Teacher",
+            "device": "Panel",
+            "paired": "Paired by",
+            "password": "Password",
+            "actions": "Actions"
+        },
+        "status": {
+            "online": "Online",
+            "offline": "Offline",
+            "waiting": "Waiting for Confirm",
+            "removed": "Removed"
+        },
+        "lastSeen": "Last seen {{when}}",
+        "neverSeen": "Not seen yet",
+        "lastIp": "Last IP {{ip}}",
+        "unknownModel": "Unknown model",
+        "appVersion": "App {{version}}",
+        "webview": "WebView {{version}}",
+        "liveClassHint": "Live classes start from the teacher's device",
+        "teacher": {
+            "none": "No one signed in",
+            "unknown": "Unknown teacher",
+            "viaQr": "Signed in with QR",
+            "viaPassword": "Signed in with password",
+            "approvedFrom": "Approved from {{ip}}"
+        },
+        "passwordToggle": "Allow password sign-in on the panel in {{room}}",
+        "actionsFor": "Actions for the panel in {{room}}",
+        "actions": {
+            "move": "Move to another room",
+            "endSession": "End session",
+            "revoke": "Remove panel"
+        }
+    },
+    "move": {
+        "title": "Move the panel in {{room}}",
+        "roomLabel": "New room",
+        "roomPlaceholder": "Select a room",
+        "roomRequired": "Pick a room.",
+        "noFreeRooms": "Every room has a panel. Add a room first.",
+        "help": "No visit to the panel is needed. It shows the new room name within a minute.",
+        "submit": "Move panel",
+        "success": "Panel moved to {{room}}."
+    },
+    "revoke": {
+        "title": "Remove the panel in {{room}}?",
+        "body": "Whoever is signed in on it is signed out, and it returns to its setup screen within a minute. {{room}} becomes free. To use this panel again you need a new setup code.",
+        "confirm": "Remove panel",
+        "success": "Panel in {{room}} removed."
+    },
+    "endSession": {
+        "title": "End the session in {{room}}?",
+        "body": "{{teacher}} is signed out of the panel in {{room}} within a minute.",
+        "confirm": "End session",
+        "success": "Session ended."
+    },
+    "addPanel": {
+        "title": "Add a panel",
+        "code": {
+            "intro": "Open the Classroom app on the panel. It shows a setup code and a number.",
+            "label": "Setup code",
+            "placeholder": "K7QF-2M9X",
+            "invalid": "Enter the 8-character code shown on the panel.",
+            "notFound": "No panel is showing this code. Check it, or use the new code on the panel.",
+            "submit": "Continue"
+        },
+        "details": {
+            "panelLabel": "This panel reports",
+            "roomLabel": "Room",
+            "roomPlaceholder": "Select a room",
+            "roomRequired": "Pick a room.",
+            "roomHasPanel": "{{room}} (has a panel)",
+            "newRoomLabel": "New room name",
+            "useNewRoom": "Add a new room instead",
+            "useExistingRoom": "Pick an existing room instead",
+            "numberLabel": "Number shown on the panel",
+            "numberHelp": "Tap the same number you can see on the panel.",
+            "numberRequired": "Tap the number shown on the panel.",
+            "warning": "Only pair a panel you can see right now. If someone sent you this code by message or phone, stop here.",
+            "wrongNumber": "That number didn't match. The panel now shows a new code. Enter it to try again.",
+            "expired": "This code has expired or was already used. Enter the new code shown on the panel.",
+            "submit": "Pair panel"
+        },
+        "replace": {
+            "title": "Replace the panel in {{room}}?",
+            "body": "{{room}} already has a panel: {{model}}, {{seen}}. Replacing removes that panel and signs out anyone using it. It needs a new setup code to be used again.",
+            "lastSeen": "last seen {{when}}",
+            "neverSeen": "not seen yet",
+            "confirm": "Replace panel"
+        },
+        "done": {
+            "title": "Now tap Confirm on the panel",
+            "body": "{{room}} is ready once you confirm.",
+            "activeTitle": "{{room}} is ready",
+            "activeBody": "Teachers can now sign in on this panel.",
+            "declinedTitle": "The panel declined this pairing",
+            "declinedBody": "{{room}} is free again. Use the new code on the panel to try again.",
+            "another": "Add another"
+        }
+    },
+    "rooms": {
+        "title": "Rooms",
+        "description": "Each room holds one panel. The room name is what teachers see on the panel and on their phone.",
+        "search": "Search rooms",
+        "noPanel": "No panel",
+        "hasPanel": "Has a panel",
+        "noMatch": "No room matches this search.",
+        "loadError": "Could not load rooms.",
+        "addPanelFor": "Add a panel to {{room}}",
+        "actionsFor": "Actions for {{room}}",
+        "empty": {
+            "title": "No rooms yet",
+            "body": "Add your rooms now, or name a new room when you add a panel. A panel must first show a setup code."
+        },
+        "columns": {
+            "name": "Room",
+            "panel": "Panel",
+            "actions": "Actions"
+        },
+        "actions": {
+            "rename": "Rename",
+            "archive": "Archive"
+        },
+        "name": {
+            "label": "Room name",
+            "placeholder": "Room 101",
+            "required": "Enter a room name.",
+            "tooLong": "Use at most {{max}} characters."
+        },
+        "add": {
+            "open": "Add room",
+            "title": "Add room"
+        },
+        "rename": {
+            "title": "Rename room"
+        },
+        "paste": {
+            "open": "Paste a list",
+            "title": "Paste a list of rooms",
+            "label": "Room names",
+            "help": "One room per line, up to {{max}}. Names that already exist are skipped.",
+            "required": "Enter at least one room name.",
+            "tooMany": "Paste at most {{max}} rooms at a time.",
+            "lineTooLong": "Use at most {{max}} characters for each room: {{name}}",
+            "submit": "Add rooms",
+            "created": "Rooms added: {{total}}",
+            "skipped": "Already there, skipped: {{total}}"
+        },
+        "archive": {
+            "title": "Archive {{room}}?",
+            "body": "The room is removed from this list. Past sessions are kept, and you can add a room with the same name later.",
+            "confirm": "Archive room",
+            "success": "{{room}} archived."
+        }
+    }
+}

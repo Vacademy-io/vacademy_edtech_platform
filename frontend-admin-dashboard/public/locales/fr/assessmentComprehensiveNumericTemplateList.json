@@ -1,0 +1,29 @@
+{
+    "emptyState": {
+        "message": "Veuillez ajouter une question pour afficher les détails de la question"
+    },
+    "header": {
+        "questionsSettings": "Paramètres des questions",
+        "questionTypeLabel": "Type de question",
+        "numericalTypeLabel": "Type numérique"
+    },
+    "timeLimit": {
+        "title": "Limite de temps",
+        "hrs": "h",
+        "min": "min"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Réponse :"
+    },
+    "explanation": {
+        "label": "Explication :"
+    },
+    "editor": {
+        "showMore": "Afficher plus",
+        "showLess": "Afficher moins"
+    }
+}

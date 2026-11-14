@@ -1,0 +1,118 @@
+---
+title: "Claude (web, desktop and mobile)"
+sidebarTitle: "Claude"
+description: "Add your institute as a custom connector in Claude, sign in on your admin portal, and choose which tools Claude may use."
+icon: "comments"
+---
+
+Claude connects to Vacademy MCP as a **custom connector**. You add it once on the web or desktop app. It then works in the Claude mobile apps too.
+
+<Note>
+Menus may move. These steps match Anthropic's help article as of October 2026. If something looks different, see [Getting started with custom connectors using remote MCP](https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp).
+</Note>
+
+## Before you start
+
+- An admin has turned the server on and allowed your role. See the [Quickstart](/mcp-server/quickstart).
+- You have the **server URL** from **Settings → MCP Server**. It looks like `https://<your backend>/ai-service/mcp/i/<institute_id>`.
+- Custom connectors are available on Claude's Free, Pro, Max, Team and Enterprise plans. Free plans are limited to one custom connector.
+
+## Pro and Max (your own account)
+
+<Steps>
+  <Step title="Open the connectors page">
+    In Claude, go to **Customize → Connectors** (in older versions of Claude: **Settings → Connectors**).
+  </Step>
+  <Step title="Add a custom connector">
+    Click **+ Add**, then **Add custom connector**.
+  </Step>
+  <Step title="Name it and paste the URL">
+    Enter a name you will recognise, such as your institute's name. Paste the server URL and continue.
+  </Step>
+  <Step title="Keep the detected sign-in settings">
+    Claude detects how the server signs people in. Keep what it detects:
+
+    - **Authentication:** *Sign in now* or *Sign in when needed*. Not *No sign in*.
+    - **OAuth client:** leave the recommended option.
+    - **Request headers:** leave empty. Vacademy MCP uses sign-in, not API keys.
+
+    Click **Add**.
+
+    <Frame caption="Claude's Add custom connector dialog, with a name and the server URL filled in.">
+      <img src="/mcp-server/images/screenshots/claude-add-connector.svg" alt="Placeholder for a screenshot of Claude's Add custom connector dialog" />
+    </Frame>
+  </Step>
+  <Step title="Sign in and approve">
+    A browser tab opens on **your institute's admin portal**. Sign in with your own account. The page shows which app is asking and for which institute. Click **Approve**.
+
+    You land back in Claude, connected.
+  </Step>
+</Steps>
+
+## Team and Enterprise (for the whole organisation)
+
+An **Owner** adds the connector once. Then each member connects with their own account.
+
+<Steps>
+  <Step title="Owner: add the connector">
+    Go to **Organization settings → Connectors**. Click **Add**, hover over **Custom** and choose **Web**. Enter a name and the server URL, keep the detected sign-in settings, and click **Add**.
+  </Step>
+  <Step title="Each member: connect">
+    Go to **Customize → Connectors**, find the connector your owner added (usually marked *Custom*), and click **Connect**. Sign in on your admin portal and approve.
+  </Step>
+</Steps>
+
+Because every member signs in separately, Claude acts as each person, with the areas your admin allows for their role. In the CRM, a counsellor's Claude sees the counsellor's leads; an admin's Claude sees the whole institute.
+
+<Warning>
+Do not add a shared credential under **Request headers**. Everyone would then act as one account. Vacademy MCP is built for one sign-in per person.
+</Warning>
+
+## Using it in a chat
+
+- **Turn the connector on or off for a chat:** click **+** at the bottom left of the message box, then **Connectors**, and use the toggle.
+- **Turn individual tools off:** use the **Search and tools** menu. For example, keep the website tools off in a chat about leads.
+- **Allowing tools:** Claude asks you to allow a tool before it uses it. Choose **Allow always** only for tools that just read. Keep allowing edit tools one at a time. Allowing a tool is not the same as confirming a change: Vacademy's previews still wait for your yes in the chat. See [Confirmations](/mcp-server/usage/confirmations).
+
+Try:
+
+```text
+Who am I connected as?
+```
+
+```text
+Which of our courses are still drafts, and what is missing before each can be submitted for review?
+```
+
+<Tip>
+Claude's Research mode can call connector tools without asking each time. Turn off any edit tools in **Search and tools** before you start a Research run.
+</Tip>
+
+## If sign-in fails
+
+<AccordionGroup>
+  <Accordion title="The browser tab opens, but approving fails">
+    Read the message on the approval page:
+
+    - *Signed in to a different institute*: sign in with your account for the institute in the URL.
+    - *Expired or already handled*: requests last 15 minutes and work once. Click **Connect** again in Claude.
+    - *Not enabled* or *role not allowed*: ask an admin to turn the server on or add your role.
+  </Accordion>
+  <Accordion title="Claude cannot complete sign-in with the default OAuth client option">
+    Remove the connector and add it again. Under **OAuth client**, choose **Register automatically**. You cannot edit a connector in place, so removing and re-adding is the only way to change this.
+  </Accordion>
+  <Accordion title="Claude asks for a client ID">
+    Choose **Use your own OAuth client** and paste **Your client ID** from **Settings → MCP Server**. It already accepts Claude's callback addresses. Leave the client secret empty.
+  </Accordion>
+  <Accordion title="Connected, but no tools appear">
+    - **No tools at all:** the server is off, the settings were not saved, or your role is not under **Who can connect**.
+    - **Only `whoami` (Who is connected):** you are connected, but every area is Off for your role. Ask an admin to set one to View.
+
+    Then start a new chat.
+  </Accordion>
+</AccordionGroup>
+
+## Disconnecting
+
+- **You:** go to **Customize → Connectors** and click **Remove**, or use the three dots next to the connector.
+- **An admin:** can revoke any connection in **Settings → MCP Server → Active connections**. It stops working on its next request.

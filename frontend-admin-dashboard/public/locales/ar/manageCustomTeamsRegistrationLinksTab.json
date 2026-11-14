@@ -1,0 +1,107 @@
+{
+    "filters": {
+        "searchPlaceholder": "البحث باسم الرابط",
+        "allStatuses": "جميع الحالات",
+        "allTypes": "جميع الأنواع",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "paid": "مدفوع",
+        "free": "مجاني"
+    },
+    "actions": {
+        "createLink": "إنشاء رابط تسجيل",
+        "edit": "تعديل",
+        "view": "عرض"
+    },
+    "table": {
+        "name": "الاسم",
+        "link": "الرابط",
+        "status": "الحالة",
+        "registrations": "التسجيلات",
+        "created": "تاريخ الإنشاء",
+        "actions": "الإجراءات",
+        "attemptsSuffix_zero": "لا توجد محاولات ({{count}})",
+        "attemptsSuffix_one": "محاولة واحدة",
+        "attemptsSuffix_two": "محاولتان",
+        "attemptsSuffix_few": "{{count}} محاولات",
+        "attemptsSuffix_many": "{{count}} محاولة",
+        "attemptsSuffix_other": "{{count}} محاولة"
+    },
+    "empty": {
+        "noMatchFilters": "لا توجد روابط تسجيل مطابقة لعوامل التصفية.",
+        "noLinksYet": "لا توجد روابط تسجيل حتى الآن.",
+        "createOneHint": "أنشئ رابطًا للسماح للمؤسسات بتسجيل أنفسها بصفتها {{term}}."
+    },
+    "badge": {
+        "kyc": "التحقق من الهوية"
+    },
+    "link": {
+        "copyTitle": "نسخ رابط التسجيل",
+        "toggleStatusAria": "تبديل حالة {{name}}"
+    },
+    "toast": {
+        "linkActivated": "تم تفعيل رابط التسجيل",
+        "linkDeactivated": "تم إلغاء تفعيل رابط التسجيل",
+        "updateStatusFailed": "فشل تحديث الحالة",
+        "loadDetailFailed": "فشل تحميل تفاصيل رابط التسجيل",
+        "linkCopied": "تم نسخ رابط التسجيل",
+        "noRegistrationsToExport": "لا توجد تسجيلات لتصديرها.",
+        "exportedCount_zero": "لم يتم تصدير أي تسجيلات ({{count}}).",
+        "exportedCount_one": "تم تصدير تسجيل واحد.",
+        "exportedCount_two": "تم تصدير تسجيلين.",
+        "exportedCount_few": "تم تصدير {{count}} تسجيلات.",
+        "exportedCount_many": "تم تصدير {{count}} تسجيلًا.",
+        "exportedCount_other": "تم تصدير {{count}} تسجيل.",
+        "exportFailed": "فشل تصدير التسجيلات."
+    },
+    "dialog": {
+        "heading": "التسجيلات — {{name}}",
+        "headingDefault": "التسجيلات",
+        "searchPlaceholder": "البحث عن مؤسسة أو مسؤول أو بريد إلكتروني",
+        "cityLabel": "المدينة",
+        "stateLabel": "الولاية",
+        "pincodeLabel": "الرمز البريدي",
+        "searchCityPlaceholder": "البحث عن مدينة…",
+        "searchStatePlaceholder": "البحث عن ولاية…",
+        "searchPincodePlaceholder": "البحث عن رمز بريدي…",
+        "searchFieldPlaceholder": "البحث عن {{field}}…",
+        "registrationCount_zero": "لا توجد تسجيلات ({{count}})",
+        "registrationCount_one": "تسجيل واحد",
+        "registrationCount_two": "تسجيلان",
+        "registrationCount_few": "{{count}} تسجيلات",
+        "registrationCount_many": "{{count}} تسجيلًا",
+        "registrationCount_other": "{{count}} تسجيل",
+        "filteredSuffix": " · تمت التصفية",
+        "clear": "مسح",
+        "exportCsv": "تصدير CSV",
+        "noMatchFilters": "لا توجد تسجيلات مطابقة لعوامل التصفية هذه.",
+        "noRegistrationsYet": "لا توجد تسجيلات عبر هذا الرابط حتى الآن.",
+        "table": {
+            "organization": "المؤسسة",
+            "admin": "المسؤول",
+            "email": "البريد الإلكتروني",
+            "phone": "الهاتف",
+            "city": "المدينة",
+            "state": "الولاية",
+            "pincode": "الرمز البريدي",
+            "seats": "المقاعد",
+            "status": "الحالة",
+            "kyc": "التحقق من الهوية",
+            "date": "التاريخ"
+        }
+    },
+    "csv": {
+        "organization": "المؤسسة",
+        "admin": "المسؤول",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "city": "المدينة",
+        "state": "الولاية",
+        "pincode": "الرمز البريدي",
+        "seatsUsed": "المقاعد المستخدمة",
+        "seatsTotal": "إجمالي المقاعد",
+        "status": "الحالة",
+        "kyc": "التحقق من الهوية",
+        "registeredOn": "تاريخ التسجيل"
+    }
+}

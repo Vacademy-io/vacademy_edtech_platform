@@ -1,0 +1,46 @@
+{
+    "builtIn": {
+        "pending": "En attente",
+        "resolved": "Résolu"
+    },
+    "statusTitle": "Statut : {{label}}",
+    "changeStatus": "Changer le statut",
+    "current": "actuel",
+    "remarkLabel": "Remarque (facultatif)",
+    "remarkPlaceholder": "Pourquoi ce changement ? Visible par le personnel uniquement.",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "moveTo": "Passer à {{label}}",
+    "addRemark": "Ajouter une remarque",
+    "toast": {
+        "moved": "Passé à {{label}}",
+        "remarkAdded": "Remarque ajoutée",
+        "updateFailed": "Impossible de mettre à jour la question"
+    },
+    "addStatus": {
+        "title": "Nouveau statut de question",
+        "newStatus": "Nouveau statut…",
+        "name": "Nom du statut",
+        "namePlaceholder": "ex. En cours, En attente de l'apprenant, Escaladé",
+        "nameRequired": "Donnez un nom au statut",
+        "keyHint": "Enregistré sous {{key}}",
+        "color": "Couleur",
+        "kind": "Compte comme",
+        "kinds": {
+            "OPEN": "Ouvert",
+            "IN_PROGRESS": "En cours",
+            "RESOLVED": "Résolu"
+        },
+        "kindHint": {
+            "OPEN": "Les apprenants voient une question ouverte, sans réponse.",
+            "IN_PROGRESS": "Les apprenants la voient en cours de traitement ; elle reste ouverte.",
+            "RESOLVED": "Passer ici résout la question et notifie l'apprenant."
+        },
+        "learnerLabel": "L'apprenant voit (facultatif)",
+        "learnerLabelPlaceholder": "Identique au nom du statut",
+        "submit": "Ajouter le statut",
+        "created": "Statut « {{label}} » ajouté",
+        "duplicate": "Un statut avec la clé {{key}} existe déjà",
+        "failed": "Impossible d'ajouter le statut"
+    }
+}

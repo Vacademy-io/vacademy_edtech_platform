@@ -1,0 +1,11 @@
+{
+    "dependsOn": {
+        "label": "Dépend de (facultatif)",
+        "none": "Aucun",
+        "hint": "Afficher des options différentes selon la réponse à une autre liste déroulante de ce formulaire.",
+        "activeHint": "Choisissez pour quelle réponse à {{parent}} chaque option s'affiche. Les options réglées sur « Toutes » s'affichent toujours.",
+        "noCandidates": "Ajoutez un autre champ de liste déroulante à ce formulaire pour que celui-ci puisse en dépendre."
+    },
+    "showWhen": "Afficher quand {{parent}} est",
+    "any": "Toutes"
+}

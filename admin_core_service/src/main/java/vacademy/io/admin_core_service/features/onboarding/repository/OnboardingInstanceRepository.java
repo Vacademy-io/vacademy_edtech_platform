@@ -47,4 +47,9 @@ public interface OnboardingInstanceRepository extends JpaRepository<OnboardingIn
                                               @Param("flowId") String flowId,
                                               @Param("status") String status,
                                               Pageable pageable);
+
+    /** Instances per status for the dashboard count cards -- same filter as searchInstances, one grouped query. */
+    @Query("SELECT o.status, COUNT(o) FROM OnboardingInstance o WHERE o.instituteId = :instituteId " +
+            "AND (:flowId IS NULL OR o.flowId = :flowId) GROUP BY o.status")
+    List<Object[]> countByStatus(@Param("instituteId") String instituteId, @Param("flowId") String flowId);
 }

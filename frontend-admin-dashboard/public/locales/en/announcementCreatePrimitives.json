@@ -1,0 +1,8 @@
+{
+    "retry": "Retry",
+    "issueSummary": {
+        "title_one": "One thing needs fixing",
+        "title_other": "{{count}} things need fixing",
+        "worthChecking": "Worth checking"
+    }
+}

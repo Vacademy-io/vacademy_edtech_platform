@@ -29,7 +29,8 @@
         "quiz": "اختبار قصير",
         "assignment": "واجب",
         "scormModule": "وحدة SCORM",
-        "content": "محتوى"
+        "content": "محتوى",
+        "discussion": "نقاش"
     },
     "slideDetails": {
         "pageCount_zero": "{{count}} صفحة",
@@ -77,10 +78,10 @@
         "availableInFewMinutes": "سيكون الفيديو متاحًا خلال بضع دقائق.",
         "pendingGeneration": "الفيديو في انتظار الإنشاء",
         "processing": "جارٍ معالجة الفيديو...",
-        "dataNotFound": "لم يتم العثور على بيانات الفيديو",
-        "videoNotFound": "لم يتم العثور على الفيديو {{videoId}}",
-        "failedToLoadUrls": "تعذّر تحميل روابط الفيديو",
-        "tryAgainLater": "يرجى المحاولة مرة أخرى لاحقًا"
+        "tryAgainLater": "يرجى المحاولة مرة أخرى لاحقًا",
+        "unavailableTitle": "هذا الفيديو غير متاح حاليًا",
+        "loadFailedTitle": "تعذّر علينا تحميل هذا الفيديو",
+        "checkConnection": "تحقق من اتصالك بالإنترنت وحاول مرة أخرى."
     },
     "slideState": {
         "noCodeData": "لا تتوفر بيانات برمجية",
@@ -337,5 +338,148 @@
         "doneDescription": "مكتمل",
         "unknownLabel": "غير معروف",
         "unknownDescription": "الحالة غير معروفة"
+    },
+    "discussion": {
+        "eyebrow": "نقاش",
+        "you": "أنت",
+        "anonymousClassmate": "زميل مجهول",
+        "teacher": "المعلّم",
+        "postedAnonymously": "نُشر دون اسم",
+        "edited": "معدّل",
+        "justNow": "الآن",
+        "pinned": "ثبّته معلّمك",
+        "status": {
+            "pending": "بانتظار موافقة معلّمك",
+            "hidden": "أخفاه معلّمك"
+        },
+        "reactions": {
+            "HEART": "أحببت هذا",
+            "HUG": "أرسل لك عناقًا",
+            "THANKS": "شكرًا لك",
+            "INSIGHT": "ملهم",
+            "RELATE": "أشعر بالمثل",
+            "STRENGTH": "أنت قادر على ذلك",
+            "add": "تفاعل",
+            "addAria": "أضف تفاعلًا",
+            "chipAria": "{{label}}، {{count}}"
+        },
+        "menu": {
+            "more": "خيارات أخرى",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "report": "إبلاغ",
+            "reported": "تم الإبلاغ"
+        },
+        "delete": {
+            "titleResponse": "حذف ردّك؟",
+            "titleComment": "حذف تعليقك؟",
+            "body": "ستتم إزالته للجميع. لا يمكن التراجع عن ذلك.",
+            "cancel": "إبقاؤه",
+            "confirm": "حذف"
+        },
+        "report": {
+            "title": "الإبلاغ عن هذا المنشور",
+            "body": "سيطّلع عليه معلّمك. لن يعرف الكاتب من أبلغ عنه.",
+            "reasonLabel": "أخبر معلّمك بما هو خطأ (اختياري)",
+            "cancel": "إلغاء",
+            "submit": "إبلاغ"
+        },
+        "edit": {
+            "label": "تعديل منشورك",
+            "save": "حفظ",
+            "approvalNote": "سيراجع معلّمك التعديل قبل أن يراه الآخرون."
+        },
+        "reply": {
+            "action": "ردّ",
+            "label": "الرد على {{name}}",
+            "placeholder": "اكتب ردًا لطيفًا…",
+            "placeholderOwn": "أضف إلى ردّك، أو أجب معلّمك…",
+            "submit": "ردّ"
+        },
+        "comments": {
+            "showMore_zero": "عرض المزيد من الردود",
+            "showMore_one": "عرض ردّ آخر",
+            "showMore_two": "عرض ردّين آخرين",
+            "showMore_few": "عرض {{count}} ردود أخرى",
+            "showMore_many": "عرض {{count}} ردًا آخر",
+            "showMore_other": "عرض {{count}} ردّ آخر"
+        },
+        "composer": {
+            "label": "ردّك",
+            "placeholder": "خذ وقتك. شارك بالقدر الذي يريحك.",
+            "submit": "مشاركة",
+            "addAnother": "شارك فكرة أخرى",
+            "cancel": "إلغاء",
+            "anonymous": "النشر دون اسم",
+            "anonymousHint": "لن يرى زملاؤك اسمك. سيراه معلّمك.",
+            "charactersLeft_zero": "لم يتبقَّ أي حرف",
+            "charactersLeft_one": "تبقّى حرف واحد",
+            "charactersLeft_two": "تبقّى حرفان",
+            "charactersLeft_few": "تبقّت {{formatted}} أحرف",
+            "charactersLeft_many": "تبقّى {{formatted}} حرفًا",
+            "charactersLeft_other": "تبقّى {{formatted}} حرف"
+        },
+        "audience": {
+            "OPEN": "سيرى زملاؤك ومعلّمك ردّك",
+            "AFTER_REPLY": "سترى ردود زملائك بعد أن تشارك ردّك",
+            "PRIVATE": "معلّمك فقط سيرى ردّك",
+            "approval": "سيراجعه معلّمك قبل أن يراه الآخرون"
+        },
+        "visibility": {
+            "OPEN": "مشترك مع صفّك",
+            "AFTER_REPLY": "تظهر الردود بعد مشاركتك",
+            "PRIVATE": "خاص بينك وبين معلّمك"
+        },
+        "closed": {
+            "title": "هذا النقاش مغلق",
+            "body": "لا يزال بإمكانك قراءة الردود هنا."
+        },
+        "careNoteLabel": "رسالة من معلّمك",
+        "sections": {
+            "yours_zero": "ردودك",
+            "yours_one": "ردّك",
+            "yours_two": "ردّاك",
+            "yours_few": "ردودك",
+            "yours_many": "ردودك",
+            "yours_other": "ردودك",
+            "class": "من صفّك",
+            "teacher": "من معلّمك"
+        },
+        "gate": {
+            "title_zero": "لم يشارك أي زميل بعد",
+            "title_one": "شارك زميل واحد",
+            "title_two": "شارك زميلان",
+            "title_few": "شارك {{formatted}} زملاء",
+            "title_many": "شارك {{formatted}} زميلًا",
+            "title_other": "شارك {{formatted}} زميل",
+            "body": "شارك ردّك لترى ردودهم.",
+            "noneTitle": "لم يشارك أحد بعد",
+            "noneBody": "شارك ردّك، وسترى ردود زملائك فور وصولها."
+        },
+        "private": {
+            "title": "يبقى ردّك بينك وبين معلّمك",
+            "body": "لا يرى زملاؤك الردود الخاصة. قد يكتب لك معلّمك هنا."
+        },
+        "empty": {
+            "title": "كن أول من يشارك",
+            "body": "ستظهر ردود صفّك هنا.",
+            "afterMineTitle": "شكرًا لمشاركتك",
+            "afterMineBody": "لم يشارك أي زميل بعد. ستظهر ردودهم هنا."
+        },
+        "participants_zero": "لم يشارك أحد بعد",
+        "participants_one": "شارك شخص واحد",
+        "participants_two": "شارك شخصان",
+        "participants_few": "شارك {{formatted}} أشخاص",
+        "participants_many": "شارك {{formatted}} شخصًا",
+        "participants_other": "شارك {{formatted}} شخص",
+        "loadError": "تعذّر تحميل هذا النقاش",
+        "errors": {
+            "generic": "حدث خطأ ما. يُرجى المحاولة مرة أخرى."
+        },
+        "toast": {
+            "shared": "شكرًا لمشاركتك",
+            "sentForReview": "أُرسل إلى معلّمك للمراجعة",
+            "reported": "شكرًا لإبلاغ معلّمك"
+        }
     }
 }

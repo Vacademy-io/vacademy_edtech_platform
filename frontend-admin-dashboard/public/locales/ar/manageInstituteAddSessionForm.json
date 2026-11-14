@@ -1,0 +1,16 @@
+{
+    "form": {
+        "sessionNameLabel": "اسم {{term}}",
+        "sessionNamePlaceholder": "مثال: 2024-2025",
+        "startDateLabel": "تاريخ البدء",
+        "startDatePlaceholder": "YYYY-MM-DD",
+        "selectLevelsHeading": "اختر المستويات من الدورات"
+    },
+    "toast": {
+        "courseAddedSuccess": "تمت إضافة {{term}} بنجاح",
+        "courseAddFailed": "فشلت إضافة {{term}}"
+    },
+    "button": {
+        "addCourse": "إضافة {{term}}"
+    }
+}

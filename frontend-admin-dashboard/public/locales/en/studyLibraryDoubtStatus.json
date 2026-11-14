@@ -1,0 +1,46 @@
+{
+    "builtIn": {
+        "pending": "Pending",
+        "resolved": "Resolved"
+    },
+    "statusTitle": "Status: {{label}}",
+    "changeStatus": "Change status",
+    "current": "current",
+    "remarkLabel": "Remark (optional)",
+    "remarkPlaceholder": "Why is it moving? Visible to staff only.",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "moveTo": "Move to {{label}}",
+    "addRemark": "Add remark",
+    "toast": {
+        "moved": "Moved to {{label}}",
+        "remarkAdded": "Remark added",
+        "updateFailed": "Couldn't update the doubt"
+    },
+    "addStatus": {
+        "title": "New doubt status",
+        "newStatus": "New status…",
+        "name": "Status name",
+        "namePlaceholder": "e.g. In progress, Waiting on learner, Escalated",
+        "nameRequired": "Give the status a name",
+        "keyHint": "Saved as {{key}}",
+        "color": "Colour",
+        "kind": "Counts as",
+        "kinds": {
+            "OPEN": "Open",
+            "IN_PROGRESS": "In progress",
+            "RESOLVED": "Resolved"
+        },
+        "kindHint": {
+            "OPEN": "Learners see an open, unanswered doubt.",
+            "IN_PROGRESS": "Learners see it as being worked on; the doubt stays open.",
+            "RESOLVED": "Moving here resolves the doubt and notifies the learner."
+        },
+        "learnerLabel": "Learner sees (optional)",
+        "learnerLabelPlaceholder": "Same as the status name",
+        "submit": "Add status",
+        "created": "Status \"{{label}}\" added",
+        "duplicate": "A status with key {{key}} already exists",
+        "failed": "Couldn't add the status"
+    }
+}

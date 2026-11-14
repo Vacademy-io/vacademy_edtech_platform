@@ -1,0 +1,88 @@
+{
+    "dash": "-",
+    "selectPrompt": "اختر خطة رسوم لعرض التفاصيل.",
+    "emptyState": {
+        "selectPackage": "اختر جلسة الباقة في الخطوة 1 لعرض خطط الرسوم."
+    },
+    "success": {
+        "title": "اكتمل التسجيل",
+        "messageNamed": "تم تسجيل {{name}} في خطة الرسوم المختارة.",
+        "messageGeneric": "تم تسجيل الطالب في خطة الرسوم المختارة.",
+        "planLabel": "الخطة: {{name}}",
+        "totalAssignedLabel": "إجمالي المبلغ المخصص: {{amount}}",
+        "paymentModeLabel": "طريقة الدفع: غير متصل",
+        "goToAdmissions": "الذهاب إلى القبول"
+    },
+    "header": {
+        "title": "تعيين خطة الرسوم",
+        "subtitle": "تم الجلب من CPO المرتبط بجلسة الباقة المختارة.",
+        "refresh": "تحديث"
+    },
+    "status": {
+        "loadingFeePlans": "جارٍ تحميل خطط الرسوم...",
+        "loadError": "فشل تحميل خيارات CPO. يرجى إعادة المحاولة.",
+        "noFeePlans": "لم يتم العثور على خطط رسوم لجلسة الباقة هذه."
+    },
+    "cpoCard": {
+        "defaultPaymentOption": "خيار الدفع الافتراضي:",
+        "available": "متاح",
+        "notSet": "غير محدد"
+    },
+    "detailHeader": {
+        "linked": "مرتبط بجلسة الباقة الحالية",
+        "notLinked": "لم يتم العثور على رابط جلسة"
+    },
+    "feeTable": {
+        "feeType": "نوع الرسوم",
+        "amount": "المبلغ",
+        "installments": "الأقساط"
+    },
+    "installmentsTable": {
+        "title": "الأقساط",
+        "fee": "الرسوم",
+        "number": "#",
+        "amount": "المبلغ",
+        "due": "تاريخ الاستحقاق",
+        "start": "البداية",
+        "end": "النهاية",
+        "noneConfigured": "لم يتم تكوين أي أقساط."
+    },
+    "paymentForm": {
+        "recordTitle": "تسجيل دفعة (اختياري)",
+        "recordSubtitle": "أدخل تفاصيل الدفع غير المتصل قبل التسجيل.",
+        "hide": "إخفاء",
+        "payNow": "ادفع الآن",
+        "amountLabel": "المبلغ المستلم (اختياري)",
+        "transactionIdLabel": "معرّف المعاملة",
+        "generate": "إنشاء",
+        "receiptLabel": "الإيصال (اختياري)",
+        "receiptUploaded": "تم رفع الإيصال",
+        "uploadReceipt": "رفع الإيصال",
+        "uploading": "جارٍ الرفع..."
+    },
+    "footer": {
+        "totalLabel": "الإجمالي: {{amount}}",
+        "enroll": "التسجيل بهذه الخطة",
+        "enrolling": "جارٍ التسجيل..."
+    },
+    "installmentLabel": {
+        "oneTime": "دفعة لمرة واحدة",
+        "count_zero": "لا توجد أقساط ({{count}})",
+        "count_one": "قسط واحد ({{count}})",
+        "count_two": "قسطان ({{count}})",
+        "count_few": "{{count}} أقساط",
+        "count_many": "{{count}} قسطًا",
+        "count_other": "{{count}} قسط",
+        "startsSuffix": " • يبدأ في {{date}}"
+    },
+    "toast": {
+        "packageSessionRequired": "جلسة الباقة مطلوبة للتسجيل.",
+        "selectFeePlan": "اختر خطة رسوم للمتابعة.",
+        "childUserIdMissing": "معرّف مستخدم الطفل مفقود من استجابة القبول.",
+        "paymentOptionRequired": "خيار الدفع مطلوب. حدد خيارًا افتراضيًا أو حدّث CPO.",
+        "enrollSuccess": "تم تسجيل الطالب وتعيين خطة الرسوم.",
+        "enrollFailed": "فشل تسجيل الطالب. يرجى إعادة المحاولة.",
+        "receiptUploaded": "تم رفع الإيصال",
+        "receiptUploadFailed": "فشل رفع الإيصال"
+    }
+}

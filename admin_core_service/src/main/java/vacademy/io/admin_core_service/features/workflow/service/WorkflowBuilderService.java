@@ -260,29 +260,9 @@ public class WorkflowBuilderService {
         }
 
         // Trigger rows: only EVENT_DRIVEN workflows own trigger rows through the builder. A
-        // SCHEDULED workflow save must not delete trigger rows it never displays.
+        // SCHEDULED workflow save must not touch trigger rows it never displays.
         if ("EVENT_DRIVEN".equalsIgnoreCase(dto.getWorkflowType())) {
-            // Preserve webhook slug/secret keyed by eventId ("" = global).
-            Map<String, String[]> webhookByEventId = new HashMap<>();
-            List<WorkflowTrigger> oldTriggers = triggerRepository.findByWorkflowId(workflowId);
-            for (WorkflowTrigger t : oldTriggers) {
-                if (t.getWebhookUrlSlug() != null || t.getWebhookSecret() != null) {
-                    webhookByEventId.put(t.getEventId() == null ? "" : t.getEventId(),
-                            new String[]{t.getWebhookUrlSlug(), t.getWebhookSecret()});
-                }
-            }
-            // Preserve idempotency settings when the DTO doesn't carry its own (the edit page
-            // does not round-trip them; deleting-and-recreating used to reset CUSTOM_EXPRESSION
-            // dedup back to UUID).
-            if (dto.getTrigger() != null && dto.getTrigger().getIdempotencyGenerationSetting() == null) {
-                oldTriggers.stream()
-                        .map(WorkflowTrigger::getIdempotencyGenerationSetting)
-                        .filter(s -> s != null && !s.isBlank())
-                        .findFirst()
-                        .ifPresent(dto.getTrigger()::setIdempotencyGenerationSetting);
-            }
-            oldTriggers.forEach(triggerRepository::delete);
-            persistTriggers(workflowId, dto, webhookByEventId);
+            reconcileTriggers(workflowId, dto);
         }
 
         // Build response with (possibly remapped) node ids.
@@ -517,6 +497,98 @@ public class WorkflowBuilderService {
      * effective event id (global trigger when none). {@code webhookByEventId} carries any webhook
      * slug/secret to preserve across an update (keyed by eventId, "" = global); empty for create.
      */
+    /**
+     * Make this workflow's trigger rows match the DTO by UPDATING rows in place, never by
+     * delete-and-recreate.
+     *
+     * <p>Two reasons a hard delete is wrong here. (1) {@code workflow_execution.workflow_trigger_id}
+     * FK-references this table ({@code fk_workflow_execution_trigger}, V73), so once a trigger has
+     * fired even once the DELETE aborts with a DataIntegrityViolationException and the workflow
+     * becomes permanently uneditable -- the exact failure already documented for the onboarding
+     * path in OnboardingStepWorkflowTriggerService.saveStepWorkflowTriggers. (2) Even when the
+     * delete succeeds (never-fired workflow), recreating regenerates the id, so existing execution
+     * history stops resolving back to its trigger and the webhook slug/secret have to be manually
+     * carried across. Updating in place keeps ids, history links and webhook credentials stable --
+     * the same reasoning that already governs schedule rows above.</p>
+     *
+     * <p>Rows that are no longer wanted are status-flipped to INACTIVE rather than removed. Every
+     * fire-time lookup filters {@code status IN ('ACTIVE')} (WorkflowTriggerService:58,283,343), so
+     * a deactivated row can never start a run, and its execution history stays intact.</p>
+     */
+    private void reconcileTriggers(String workflowId, WorkflowBuilderDTO dto) {
+        List<WorkflowTrigger> existing = triggerRepository.findByWorkflowId(workflowId);
+        WorkflowBuilderDTO.TriggerDTO trig = dto.getTrigger();
+
+        // No trigger authored in the DTO -> leave existing rows alone (mirrors the schedule rule:
+        // the edit page not sending one must not be read as "delete what is there").
+        if (trig == null) {
+            return;
+        }
+
+        // Preserve idempotency settings when the DTO doesn't carry its own (the edit page does not
+        // round-trip them; resetting would silently drop CUSTOM_EXPRESSION dedup back to UUID).
+        if (trig.getIdempotencyGenerationSetting() == null) {
+            existing.stream()
+                    .map(WorkflowTrigger::getIdempotencyGenerationSetting)
+                    .filter(s -> s != null && !s.isBlank())
+                    .findFirst()
+                    .ifPresent(trig::setIdempotencyGenerationSetting);
+        }
+
+        String eventName = trig.getTriggerEventName();
+        String idempotencySettings = resolveIdempotencySettings(trig, defaultIdempotencyFor(eventName));
+        Workflow managedWorkflow = workflowRepository.findById(workflowId).orElseThrow();
+
+        // An empty event-ids list is the legitimate "fires for everything" choice, represented by a
+        // single row with a null eventId (WorkflowBuilderDTO.getEffectiveEventIds).
+        List<String> targets = trig.getEffectiveEventIds();
+        if (targets.isEmpty()) {
+            targets = Collections.singletonList(null);
+        }
+
+        Set<WorkflowTrigger> claimed = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (String eventId : targets) {
+            // Prefer the row that already represents this (event, entity) pair; otherwise recycle
+            // any spare row so the common single-trigger edit (switching event or audience) updates
+            // the existing row instead of orphaning it.
+            WorkflowTrigger row = existing.stream()
+                    .filter(t -> !claimed.contains(t))
+                    .filter(t -> Objects.equals(t.getEventId(), eventId)
+                            && Objects.equals(t.getTriggerEventName(), eventName))
+                    .findFirst()
+                    .orElseGet(() -> existing.stream()
+                            .filter(t -> !claimed.contains(t))
+                            .findFirst()
+                            .orElse(null));
+
+            if (row == null) {
+                row = new WorkflowTrigger();
+                row.setWorkflow(managedWorkflow);
+            } else {
+                claimed.add(row);
+            }
+            row.setTriggerEventName(eventName);
+            row.setInstituteId(dto.getInstituteId());
+            row.setDescription(trig.getDescription());
+            row.setStatus("ACTIVE");
+            row.setEventId(eventId);
+            row.setEventAppliedType(trig.getEventAppliedType());
+            row.setIdempotencyGenerationSetting(idempotencySettings);
+            // webhookUrlSlug / webhookSecret are deliberately left untouched: the row survives, so
+            // an already-published webhook URL keeps working across edits.
+            triggerRepository.save(row);
+        }
+
+        for (WorkflowTrigger leftover : existing) {
+            if (!claimed.contains(leftover) && !"INACTIVE".equalsIgnoreCase(leftover.getStatus())) {
+                leftover.setStatus("INACTIVE");
+                triggerRepository.save(leftover);
+                log.info("Deactivated trigger {} (event={}, eventId={}) on workflow {} -- no longer in the DTO",
+                        leftover.getId(), leftover.getTriggerEventName(), leftover.getEventId(), workflowId);
+            }
+        }
+    }
+
     private void persistTriggers(String workflowId, WorkflowBuilderDTO dto, Map<String, String[]> webhookByEventId) {
         if (!"EVENT_DRIVEN".equalsIgnoreCase(dto.getWorkflowType()) || dto.getTrigger() == null) return;
         WorkflowBuilderDTO.TriggerDTO trig = dto.getTrigger();

@@ -1,0 +1,16 @@
+{
+    "heading": "Participants à l'évaluation",
+    "participantsCountInternal_one": "{{count}} participant (interne)",
+    "participantsCountInternal_many": "{{count}} participants (interne)",
+    "participantsCountInternal_other": "{{count}} participants (interne)",
+    "joinLink": "Lien de participation",
+    "qrCode": "Code QR",
+    "notifyParticipantsViaEmail": "Notifier les participants par e-mail :",
+    "whenAssessmentCreated": "Lorsque l'évaluation est créée :",
+    "beforeAssessmentGoesLive": "Avant la mise en ligne de l'évaluation :",
+    "minutesValue_one": "{{count}} min",
+    "minutesValue_many": "{{count}} min",
+    "minutesValue_other": "{{count}} min",
+    "whenAssessmentGoesLive": "Lorsque l'évaluation est mise en ligne :",
+    "whenAssessmentReportsGenerated": "Lorsque les rapports d'évaluation sont générés :"
+}

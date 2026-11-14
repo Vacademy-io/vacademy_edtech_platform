@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SpinnerGap } from "@phosphor-icons/react";
+import { CustomFieldValueDisplay } from "@/components/common/custom-fields/CustomFieldValueDisplay";
 import {
   getResolvedStepFields,
   type OnboardingStepInstanceDTO,
@@ -19,6 +21,7 @@ interface SubmittedFormDialogProps {
  * returns each field's value regardless of the step's status.
  */
 export const SubmittedFormDialog = ({ stepInstance, onOpenChange }: SubmittedFormDialogProps) => {
+  const { t } = useTranslation("userProfileExtra");
   const { data: fields, isLoading, isError } = useQuery({
     queryKey: ["ONBOARDING_SUBMITTED_FIELDS", stepInstance?.id],
     queryFn: () => getResolvedStepFields(stepInstance!.id),
@@ -38,15 +41,15 @@ export const SubmittedFormDialog = ({ stepInstance, onOpenChange }: SubmittedFor
         {isLoading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-neutral-500">
             <SpinnerGap className="size-4 animate-spin" />
-            Loading submitted details...
+            {t("submittedFormDialog.loading")}
           </div>
         ) : isError ? (
           <p className="py-4 text-sm text-danger-600">
-            Couldn&apos;t load what was submitted for this step. Please try again later.
+            {t("submittedFormDialog.error")}
           </p>
         ) : !fields || fields.length === 0 ? (
           <p className="py-4 text-sm text-neutral-500">
-            This step had no fields to fill in — it was just marked as complete.
+            {t("submittedFormDialog.empty")}
           </p>
         ) : (
           <dl className="flex flex-col divide-y divide-neutral-100">
@@ -56,9 +59,12 @@ export const SubmittedFormDialog = ({ stepInstance, onOpenChange }: SubmittedFor
               .map((field) => (
                 <div key={field.institute_custom_field_id} className="flex flex-col gap-0.5 py-2">
                   <dt className="text-xs font-medium text-neutral-500">
-                    {field.field_name ?? "Field"}
+                    {field.field_name ?? t("onboardingStepForm.defaultFieldLabel")}
                   </dt>
-                  <dd className="text-sm text-neutral-800">{field.value || "—"}</dd>
+                  <dd className="text-sm text-neutral-800">
+                    {/* By type, not as a string: a file field's value is an upload URL. */}
+                    <CustomFieldValueDisplay value={field.value} fieldType={field.field_type} />
+                  </dd>
                 </div>
               ))}
           </dl>

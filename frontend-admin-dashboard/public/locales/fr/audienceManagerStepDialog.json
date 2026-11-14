@@ -1,0 +1,52 @@
+{
+    "heading": {
+        "add": "Ajouter une étape",
+        "edit": "Modifier l'étape"
+    },
+    "fields": {
+        "stepName": {
+            "label": "Nom de l'étape",
+            "placeholder": "ex. Remplir le formulaire d'inscription"
+        },
+        "coursePool": {
+            "label": "Cours(s) dans lesquels cette étape peut inscrire",
+            "loadingPlaceholder": "Chargement des cours…",
+            "emptyPlaceholder": "Laissez vide pour que l'administrateur choisisse n'importe quel cours…",
+            "helperText": "Laissez vide et l'administrateur qui finalise l'inscription choisira n'importe quel cours au moment de l'intégration — le flux n'a jamais besoin d'être reconstruit lors de l'ajout d'un nouveau cours. Sélectionnez des cours spécifiques pour restreindre le choix à ceux-ci uniquement."
+        }
+    },
+    "switches": {
+        "optional": "Étape facultative (peut être ignorée)",
+        "grantsStudentRole": "Accorder le rôle ÉTUDIANT à la fin",
+        "sendsLoginCredentials": "Envoyer les identifiants de connexion à la fin",
+        "createStudent": "Créer un étudiant à partir de ce formulaire à la fin",
+        "skipIfAlreadyEnrolled": "Terminer automatiquement cette étape si l'étudiant est déjà inscrit à un cours"
+    },
+    "sections": {
+        "stepAccess": "Accès à l'étape (qui peut consulter/modifier cette étape)",
+        "formFields": "Champs du formulaire",
+        "loadingFields": "Chargement des champs existants…",
+        "step": "Step",
+        "formFieldsHint": "Attach existing custom fields or create new ones."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveStep": "Enregistrer l'étape",
+        "addStep": "Ajouter l'étape"
+    },
+    "toasts": {
+        "stepUpdated": "Étape mise à jour",
+        "stepAdded": "Étape ajoutée",
+        "saveError": "Impossible d'enregistrer l'étape. Veuillez réessayer.",
+        "pendingFieldSelection": "Vous avez choisi un champ mais n'avez pas encore cliqué sur \"Attacher\" — attachez-le (ou effacez la sélection) avant d'enregistrer, sinon il sera perdu."
+    },
+    "schema": {
+        "stepNameRequired": "Le nom de l'étape est requis",
+        "stepNameMaxLength": "Limitez-le à moins de 150 caractères"
+    },
+    "switchHints": {
+        "optional": "Admins can skip it with a reason.",
+        "createStudent": "Shows the {{course}} choice and the auto-complete option."
+    }
+}

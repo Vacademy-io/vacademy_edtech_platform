@@ -1,0 +1,70 @@
+{
+    "table": {
+        "date": "التاريخ",
+        "class": "الحصة",
+        "status": "الحالة",
+        "present": "حاضر",
+        "absent": "غائب",
+        "duration": "المدة",
+        "talkTime": "وقت الحديث",
+        "chats": "المحادثات",
+        "polls": "الاستطلاعات",
+        "raiseHand": "رفع اليد"
+    },
+    "export": {
+        "generatedOn": "تم الإنشاء {{date}}",
+        "exportSuccess": "تم تصدير تقرير المتعلم",
+        "exportFailed": "فشل تصدير ملف PDF",
+        "csvExportSuccess": "تم تصدير CSV",
+        "csvExportFailed": "فشل تصدير CSV"
+    },
+    "errors": {
+        "loadFailed": "حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى.",
+        "batchLoadFailed": "تعذر تحميل تقرير {{name}}."
+    },
+    "emptyState": {
+        "title": "لم يتم العثور على حصص مباشرة",
+        "description": "لم تكن لدى هذا المتعلم أي حصص مباشرة مجدولة خلال الفترة المحددة."
+    },
+    "actions": {
+        "attendanceTracker": "متتبع الحضور",
+        "exporting": "جارٍ التصدير…",
+        "exportPdf": "تصدير PDF",
+        "exportCsv": "تصدير CSV"
+    },
+    "metrics": {
+        "attendance": "الحضور",
+        "batchPercentage": "الدفعة {{value}}%",
+        "classesAttended": "الحصص المحضورة",
+        "avgDurationPerClass": "متوسط المدة / الحصة",
+        "batchDuration": "الدفعة {{value}}",
+        "engagement": "التفاعل",
+        "batchEngagement": "الدفعة {{value}} · من أصل 100",
+        "engagementInfo": "درجة التفاعل (0–100) بناءً على المشاركة أثناء الحصة — وقت الحديث والمحادثات والاستطلاعات ورفع اليد، تُقاس لكل حصة. 100 = المتعلم الأكثر نشاطًا في هذه الدفعة. متاحة فقط للحصص المتزامنة مع مزود الخدمة (Zoom/BBB)."
+    },
+    "sections": {
+        "classHistoryTitle": "سجل الحصص",
+        "classHistorySubtitle": "الحضور والمشاركة لكل حصة خلال الفترة"
+    },
+    "batchCount": "{{term}} · تم اختيار {{count}}",
+    "csv": {
+        "fileStem": "learner-live-class-report",
+        "summaryTitle": "الملخص",
+        "learner": "المتعلم",
+        "email": "البريد الإلكتروني",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "attendancePct": "الحضور (%)",
+        "batchAttendancePct": "حضور {{batch}} (%)",
+        "attended": "الحصص المحضورة",
+        "totalClasses": "إجمالي الحصص",
+        "avgDurationMin": "متوسط المدة (دقيقة)",
+        "batchAvgDurationMin": "متوسط مدة {{batch}} (دقيقة)",
+        "engagementScore": "درجة التفاعل (0-100)",
+        "batchEngagementScore": "درجة تفاعل {{batch}} (0-100)",
+        "classesTitle": "سجل الحصص",
+        "durationMin": "المدة (دقيقة)",
+        "talkTimeMin": "وقت التحدث (دقيقة)",
+        "emojis": "الرموز التعبيرية"
+    }
+}

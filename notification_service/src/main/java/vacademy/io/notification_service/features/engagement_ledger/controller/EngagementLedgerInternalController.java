@@ -34,7 +34,11 @@ import java.util.Map;
 @Slf4j
 public class EngagementLedgerInternalController {
 
+    /** Addresses one blocked-emails call may ask about: the caller pages a bigger cohort. */
+    static final int MAX_BLOCKED_EMAILS_LOOKUP = 1000;
+
     private final EngagementLedgerService engagementLedgerService;
+    private final vacademy.io.notification_service.features.bounced_emails.service.BouncedEmailService bouncedEmailService;
     private final vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppInboxService whatsAppInboxService;
 
     /**
@@ -60,6 +64,24 @@ public class EngagementLedgerInternalController {
         }
     }
 
+    /**
+     * Send a vault attachment as a native WhatsApp session media message. Body {instituteId, phone,
+     * mediaType(image|video|document|audio), mediaUrl, caption?, filename?, correlationId}. Same
+     * window guarantee and internal posture as /whatsapp-reply.
+     */
+    @PostMapping("/whatsapp-media")
+    public ResponseEntity<Map<String, Object>> whatsAppMedia(@RequestBody Map<String, String> body) {
+        try {
+            String wamid = whatsAppInboxService.sendEngagementMedia(
+                    body.get("phone"), body.get("mediaType"), body.get("mediaUrl"), body.get("caption"),
+                    body.get("filename"), body.get("instituteId"), body.get("correlationId"));
+            return ResponseEntity.ok(Map.of("accepted", true, "wamid", wamid != null ? wamid : ""));
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            log.warn("whatsapp-media rejected: {}", e.getReason());
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
     @PostMapping("/ledger-batch")
     public ResponseEntity<LedgerBatchResponse> ledgerBatch(@RequestBody LedgerBatchRequest request) {
         try {
@@ -73,18 +95,45 @@ public class EngagementLedgerInternalController {
     /**
      * Recent inbound WhatsApp replies since a cursor — the engine's reply-ingestion sweep.
      * {@code since} is epoch millis (plain digits survive the caller's URL re-encoding; an ISO
-     * string would arrive double-encoded and fail to parse).
+     * string would arrive double-encoded and fail to parse). {@code includeEmail=true} adds inbound
+     * emails (channel=EMAIL rows); without it the response is WhatsApp only, as before.
      */
     @GetMapping("/inbound-since")
     public ResponseEntity<List<Map<String, Object>>> inboundSince(
             @RequestParam String instituteId,
-            @RequestParam(required = false) Long since) {
+            @RequestParam(required = false) Long since,
+            @RequestParam(defaultValue = "false") boolean includeEmail) {
         try {
             Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
-            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor));
+            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor, includeEmail));
         } catch (IllegalArgumentException e) {
             log.warn("inbound-since rejected: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    /** WhatsApp sends Meta reported as failed since a cursor (epoch millis) — the engine's delivery check. */
+    @GetMapping("/delivery-failures-since")
+    public ResponseEntity<List<Map<String, Object>>> deliveryFailuresSince(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) Long since) {
+        try {
+            Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
+            return ResponseEntity.ok(engagementLedgerService.deliveryFailuresSince(instituteId, cursor));
+        } catch (IllegalArgumentException e) {
+            log.warn("delivery-failures-since rejected: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /** Which of these addresses are on the bounce blocklist. Body {emails: [...]} → {blocked: [lowercase]}. */
+    @PostMapping("/blocked-emails")
+    public ResponseEntity<Map<String, List<String>>> blockedEmails(@RequestBody Map<String, List<String>> body) {
+        List<String> emails = body == null ? null : body.get("emails");
+        if (emails == null || emails.size() > MAX_BLOCKED_EMAILS_LOOKUP) {
+            log.warn("blocked-emails rejected: {} addresses", emails == null ? "no" : emails.size());
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(Map.of("blocked", bouncedEmailService.filterBlockedEmails(emails)));
     }
 }

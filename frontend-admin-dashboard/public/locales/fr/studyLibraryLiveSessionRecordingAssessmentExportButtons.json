@@ -1,0 +1,66 @@
+{
+    "defaultTitle": "Évaluation",
+    "errors": {
+        "couldNotGeneratePdf": "Impossible de générer le PDF"
+    },
+    "header": {
+        "instituteLogoAlt": "Logo de l'établissement",
+        "instituteFallback": "Établissement",
+        "answerKey": "Corrigé",
+        "questionPaper": "Sujet d'examen",
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_many": "{{count}} de questions",
+        "questionsCount_other": "{{count}} questions",
+        "marksCount_one": "{{count}} point",
+        "marksCount_many": "{{count}} de points",
+        "marksCount_other": "{{count}} points"
+    },
+    "studentDetails": {
+        "ariaLabel": "Informations de l'étudiant",
+        "fields": {
+            "name": "Nom",
+            "rollNo": "N° d'inscription",
+            "classBatch": "Classe / Groupe",
+            "date": "Date"
+        }
+    },
+    "footer": {
+        "confidential": "Confidentiel"
+    },
+    "actions": {
+        "exportPdf": "Exporter en PDF"
+    },
+    "dropdown": {
+        "chooseVersion": "Choisir une version",
+        "studentVersion": "Version étudiant",
+        "answerKey": "Corrigé"
+    },
+    "dialog": {
+        "exportStudentPdf": "Exporter le PDF étudiant",
+        "exportAnswerKeyPdf": "Exporter le PDF du corrigé",
+        "cancel": "Annuler",
+        "tickSectionsHint": "Cochez les sections à inclure dans le PDF exporté.",
+        "rows": {
+            "includeStudentDetails": {
+                "label": "Inclure les champs d'informations de l'étudiant",
+                "description": "Ajoute un bandeau à remplir en page 1 — Nom, N° d'inscription, Classe / Groupe, Date. Désactivez pour un document d'entraînement plus sobre."
+            },
+            "showTitle": {
+                "label": "Afficher le titre de l'évaluation",
+                "description": "Masque le grand titre centré (actuellement « {{title}} ») sur chaque page. L'en-tête et le badge de version restent affichés."
+            },
+            "showHeaderInfo": {
+                "label": "Afficher le bandeau d'informations d'en-tête"
+            },
+            "showFooterDate": {
+                "label": "Afficher la date dans le pied de page",
+                "description": "Imprime la date d'exportation à côté du nom de l'établissement dans le pied de page."
+            },
+            "showFooterConfidential": {
+                "label": "Afficher « Confidentiel » dans le pied de page",
+                "descriptionLong": "Ajoute une mention Confidentiel au pied de page. Utile pour les examens ; à retirer pour les documents d'entraînement informels.",
+                "descriptionShort": "Ajoute une mention Confidentiel au pied de page."
+            }
+        }
+    }
+}

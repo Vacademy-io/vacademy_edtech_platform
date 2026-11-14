@@ -1,0 +1,11 @@
+{
+    "validation": {
+        "campaignNameRequired": "Campaign name is required",
+        "campaignNameMinLength": "Name must be at least 3 characters",
+        "campaignTypeRequired": "{{term}} is required",
+        "startDateRequired": "Start date is required",
+        "endDateRequired": "End date is required",
+        "initialScoreMin": "Initial lead score must be at least 0",
+        "initialScoreMax": "Initial lead score must be at most 50"
+    }
+}

@@ -139,27 +139,27 @@ export function SignUpForm({
                     >
                         <motion.div
                             whileHover={{ scale: 1.05 }}
-                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50"
+                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50 gap-2"
                         >
-                            <BookOpen className="w-6 h-6 text-gray-700 mb-2" />
+                            <BookOpen className="w-6 h-6 text-gray-700" />
                             <span className="text-sm font-medium text-gray-700">
                                 {t("signup.accessCourses", { courses: coursesPlural })}
                             </span>
                             </motion.div>
                         <motion.div
                             whileHover={{ scale: 1.05 }}
-                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50"
+                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50 gap-2"
                         >
-                            <Users className="w-6 h-6 text-gray-700 mb-2" />
+                            <Users className="w-6 h-6 text-gray-700" />
                             <span className="text-sm font-medium text-gray-700">
                                 {t("signup.joinCommunityFeature")}
                             </span>
                         </motion.div>
                         <motion.div
                             whileHover={{ scale: 1.05 }}
-                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50"
+                            className="flex flex-col items-center text-center p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200/50 gap-2"
                         >
-                            <Medal className="w-6 h-6 text-gray-700 mb-2" />
+                            <Medal className="w-6 h-6 text-gray-700" />
                             <span className="text-sm font-medium text-gray-700">
                                 {t("signup.earnCertificates")}
                             </span>
@@ -326,11 +326,11 @@ export function SignUpForm({
 
                                     transition={{ delay: 0.5 }}
 
-                                    className="text-center mb-6"
+                                    className="text-center mb-6 space-y-2"
 
                                 >
 
-                                    <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">
+                                    <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
 
                                         {t("signup.createAccount")}
 
@@ -365,8 +365,8 @@ export function SignUpForm({
                                         onBackToProviders={() => navigate({ to: "/login" })}
                                     />
                                 ) : (
-                                    <div className="text-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                    <div className="text-center py-8 space-y-4">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                                         <p className="text-gray-600">{t("signup.loadingOptions")}</p>
                                     </div>
                                 )}
@@ -393,9 +393,9 @@ export function SignUpForm({
 
                                     <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
 
-                                    <div>
+                                    <div className="space-y-1">
 
-                                        <p className="text-xs font-medium text-gray-800 mb-1">
+                                        <p className="text-xs font-medium text-gray-800">
 
                                             {t("signup.freeToStart")}
 

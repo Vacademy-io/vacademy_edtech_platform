@@ -1,4 +1,5 @@
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { useTranslation } from "react-i18next";
 
 interface PieChartProps {
     data: {
@@ -12,6 +13,7 @@ interface PieChartProps {
 }
 
 export function PieChart({ data, width, height }: PieChartProps) {
+    const { t } = useTranslation("testRecords");
     return (
         <div className="flex flex-col items-center gap-10">
             <div style={{ width, height }}>
@@ -50,7 +52,7 @@ export function PieChart({ data, width, height }: PieChartProps) {
                         </div>
                     ))
                 ) : (
-                    <p className="py-4 text-center text-subtitle">No pie chart data available</p>
+                    <p className="py-4 text-center text-subtitle">{t("pieChart.noData")}</p>
                 )}
             </div>
         </div>

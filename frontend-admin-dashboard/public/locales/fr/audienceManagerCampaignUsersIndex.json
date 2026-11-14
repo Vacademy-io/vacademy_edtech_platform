@@ -1,0 +1,12 @@
+{
+    "schema": {
+        "campaignIdRequired": "L'identifiant de la campagne est requis"
+    },
+    "navHeading": "Utilisateurs de {{audienceTerm}}",
+    "helmet": {
+        "title": "Utilisateurs de {{audienceTerm}}",
+        "description": "Consultez les utilisateurs inscrits dans {{audienceTerm}}."
+    },
+    "backButton": "Retour à {{audienceTermPlural}}",
+    "missingCampaignId": "L'identifiant de la campagne est requis"
+}

@@ -1,0 +1,15 @@
+{
+    "moveTo": "Déplacer vers",
+    "move": "Déplacer",
+    "moving": "Déplacement en cours…",
+    "movedSuccessfully": "Chapitre déplacé avec succès",
+    "movedWithCopies_one": "Chapitre déplacé, avec une copie dans {{count}} autre emplacement",
+    "movedWithCopies_many": "Chapitre déplacé, avec des copies dans {{count}} d'autres emplacements",
+    "movedWithCopies_other": "Chapitre déplacé, avec des copies dans {{count}} autres emplacements",
+    "movedWithFailedCopies_one": "Chapitre déplacé, mais {{count}} copie a échoué : {{locations}}",
+    "movedWithFailedCopies_many": "Chapitre déplacé, mais {{count}} copies ont échoué : {{locations}}",
+    "movedWithFailedCopies_other": "Chapitre déplacé, mais {{count}} copies ont échoué : {{locations}}",
+    "moveFailed": "Échec du déplacement du chapitre",
+    "partialMoveSummary": "{{done}} emplacements sur {{total}} terminés. Réessayez le reste ci-dessous.",
+    "multiHint": "Un chapitre ne se trouve qu'à un seul endroit : les emplacements supplémentaires reçoivent une copie, et le chapitre est retiré de son emplacement actuel."
+}

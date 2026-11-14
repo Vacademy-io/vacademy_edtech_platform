@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "title": "Your recent work",
+        "close": "Close",
+        "searchPlaceholder": "Search by name or filename…",
+        "clearSearch": "Clear search",
+        "itemCount_one": "{{count}} item across all tools",
+        "itemCount_other": "{{count}} items across all tools"
+    },
+    "sourceFilters": {
+        "all": "All sources",
+        "pdf": "PDFs",
+        "audio": "Audio",
+        "image": "Photos",
+        "doc": "Documents",
+        "none": "Topic-based"
+    },
+    "dateBuckets": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "earlierThisWeek": "Earlier this week",
+        "older": "Older"
+    },
+    "emptyState": {
+        "nothingHereYet": "Nothing here yet",
+        "nothingHereYetDescription": "Anything you generate will show up here.",
+        "noMatches": "No matches",
+        "noMatchesDescription": "Try a different search term or filter.",
+        "clearFilters": "Clear filters"
+    },
+    "pagination": {
+        "showingRange": "Showing {{start}}–{{end}} of {{total}}",
+        "prev": "Prev",
+        "next": "Next",
+        "pageOf": "Page {{current}} of {{total}}"
+    }
+}

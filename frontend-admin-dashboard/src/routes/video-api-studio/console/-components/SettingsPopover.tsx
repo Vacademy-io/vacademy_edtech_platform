@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,36 +17,36 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ColorPicker } from '@/components/ui/color-picker';
 import {
-    Settings2,
-    Layers,
+    GearSix as Settings2,
+    Stack as Layers,
     Monitor,
-    Smartphone,
+    DeviceMobile as Smartphone,
     Clock,
     Users,
     Globe,
-    Mic,
-    Volume2,
-    Wand2,
-    Captions,
+    Microphone as Mic,
+    SpeakerHigh as Volume2,
+    MagicWand as Wand2,
+    ClosedCaptioning as Captions,
     FileText,
     Scissors,
     Palette,
-    Type as TypeIcon,
-    Film,
-    ExternalLink,
+    TextAa as TypeIcon,
+    FilmStrip as Film,
+    ArrowSquareOut as ExternalLink,
     Play,
     Pause,
-    Loader2,
-    Sparkles as SparklesIcon,
-    Save,
-    ChevronDown,
+    CircleNotch as Loader2,
+    Sparkle as SparklesIcon,
+    FloppyDisk as Save,
+    CaretDown as ChevronDown,
     User as UserIcon,
-    Upload as UploadIcon,
+    UploadSimple as UploadIcon,
     X as XIcon,
     Lock as LockIcon,
     Cpu as CpuIcon,
-    ChevronRight as ChevronRightIcon,
-} from 'lucide-react';
+    CaretRight as ChevronRightIcon,
+} from '@phosphor-icons/react';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useFileUpload } from '@/hooks/use-file-upload';
@@ -55,12 +57,6 @@ import { getInstituteId } from '@/constants/helper';
 import {
     GenerateVideoRequest,
     LANGUAGES,
-    VOICE_GENDERS,
-    TTS_PROVIDERS,
-    TARGET_AUDIENCES,
-    TARGET_DURATIONS,
-    CONTENT_TYPES,
-    QUALITY_TIERS,
     ContentType,
     VoiceGender,
     TtsProvider,
@@ -68,7 +64,6 @@ import {
     VideoOrientation,
     TtsVoice,
     DEFAULT_OPTIONS,
-    AVATAR_MODELS,
     AvatarModel,
     AvatarQuality,
     HostConfig,
@@ -79,14 +74,22 @@ import {
     VisualStyleMode,
     listCasts,
     VideoCast,
-    VISUAL_PREFERENCE_FAMILIES,
     hasActiveVisualPreferences,
     AI_VIDEO_MODELS,
     AiVideoModel,
     ModelOverrides,
     UserOverridableStage,
-    USER_OVERRIDABLE_STAGE_META,
     BrandOverrides,
+    buildContentTypes,
+    buildTargetDurationOptions,
+    buildQualityTiers,
+    buildVoiceGenders,
+    buildTtsProviders,
+    buildTargetAudienceOptions,
+    buildAiVideoModels,
+    buildVisualPreferenceFamilies,
+    buildAvatarModels,
+    buildUserOverridableStageMeta,
 } from '../../-services/video-generation';
 import { useAIModelsList } from '@/hooks/useAiModels';
 import {
@@ -95,7 +98,7 @@ import {
     type VideoTemplate,
     type WatermarkPosition,
     FONT_OPTIONS,
-    WATERMARK_POSITIONS,
+    buildWatermarkPositions,
     updateVideoBranding,
     updateVideoStyle,
 } from '../../-services/video-style-branding';
@@ -108,6 +111,7 @@ import type {
 } from '@/features/vimotion/api/dashboardTypes';
 import { useEffectiveCreditRatio } from '@/services/ai-credits/use-credit-rate';
 import { formatCredits, usdToCredits } from '../../-utils/credits';
+import { LessonModePanel } from './LessonModePanel';
 import type { AIModel } from '@/types/ai-models';
 
 interface SettingsPopoverProps {
@@ -233,6 +237,8 @@ function SettingsBody({
     models,
     vimMode = false,
 }: SettingsPopoverProps) {
+    const { t } = useTranslation(['videoApiStudioSettingsPopover', 'videoApiStudioVideoStyleBranding']);
+    const watermarkPositions = buildWatermarkPositions(t);
     const update = <K extends keyof GenerateVideoRequest>(
         key: K,
         value: GenerateVideoRequest[K]
@@ -250,16 +256,16 @@ function SettingsBody({
     const handleSaveStyle = async () => {
         const instituteId = getInstituteId();
         if (!instituteId) {
-            toast.error('No institute selected');
+            toast.error(t('toasts.noInstituteSelected'));
             return;
         }
         setIsSavingStyle(true);
         try {
             await updateVideoStyle(instituteId, videoStyle);
-            toast.success('Video style saved');
+            toast.success(t('toasts.styleSaved'));
         } catch (err) {
             console.error('Save video style failed', err);
-            toast.error('Failed to save video style');
+            toast.error(t('toasts.styleSaveFailed'));
         } finally {
             setIsSavingStyle(false);
         }
@@ -268,16 +274,16 @@ function SettingsBody({
     const handleSaveBranding = async () => {
         const instituteId = getInstituteId();
         if (!instituteId) {
-            toast.error('No institute selected');
+            toast.error(t('toasts.noInstituteSelected'));
             return;
         }
         setIsSavingBranding(true);
         try {
             await updateVideoBranding(instituteId, videoBranding);
-            toast.success('Video branding saved');
+            toast.success(t('toasts.brandingSaved'));
         } catch (err) {
             console.error('Save video branding failed', err);
-            toast.error('Failed to save video branding');
+            toast.error(t('toasts.brandingSaveFailed'));
         } finally {
             setIsSavingBranding(false);
         }
@@ -287,19 +293,19 @@ function SettingsBody({
         <Tabs defaultValue="output" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="output" className="text-xs">
-                    Output
+                    {t('tabs.output')}
                 </TabsTrigger>
                 <TabsTrigger value="voice" className="text-xs">
-                    Voice
+                    {t('tabs.voice')}
                 </TabsTrigger>
                 <TabsTrigger value="host" className="text-xs">
-                    Host
+                    {t('tabs.host')}
                 </TabsTrigger>
                 <TabsTrigger value="visuals" className="text-xs">
-                    Branding
+                    {t('tabs.visuals')}
                 </TabsTrigger>
                 <TabsTrigger value="advanced" className="text-xs">
-                    Advanced
+                    {t('tabs.advanced')}
                 </TabsTrigger>
             </TabsList>
 
@@ -314,7 +320,7 @@ function SettingsBody({
                     carries content_type='VIDEO' (defaulted in DEFAULT_OPTIONS),
                     so no BE change is needed. */}
                 {!vimMode && (
-                    <Field icon={<Layers className="size-3.5" />} label="Content type">
+                    <Field icon={<Layers className="size-3.5" />} label={t('output.contentType.label')}>
                         <Select
                             value={options.content_type || 'VIDEO'}
                             onValueChange={(v) => update('content_type', v as ContentType)}
@@ -323,12 +329,12 @@ function SettingsBody({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {CONTENT_TYPES.map((t) => (
-                                    <SelectItem key={t.value} value={t.value} className="text-xs">
+                                {buildContentTypes(t).map((ct) => (
+                                    <SelectItem key={ct.value} value={ct.value} className="text-xs">
                                         <div className="flex flex-col">
-                                            <span>{t.label}</span>
-                                            <span className="text-[10px] text-muted-foreground">
-                                                {t.description}
+                                            <span>{ct.label}</span>
+                                            <span className="text-2xs text-muted-foreground">
+                                                {ct.description}
                                             </span>
                                         </div>
                                     </SelectItem>
@@ -336,6 +342,11 @@ function SettingsBody({
                             </SelectContent>
                         </Select>
                     </Field>
+                )}
+
+                {/* Lesson mode — education videos taught by a teacher at a board. */}
+                {!vimMode && (options.content_type || 'VIDEO') === 'VIDEO' && (
+                    <LessonModePanel options={options} onOptionsChange={onOptionsChange} />
                 )}
 
                 <Field
@@ -346,19 +357,19 @@ function SettingsBody({
                             <Smartphone className="size-3.5" />
                         )
                     }
-                    label="Orientation"
+                    label={t('output.orientation.label')}
                 >
                     <div className="inline-flex w-full rounded-lg border bg-muted p-0.5">
                         {(
                             [
                                 {
                                     value: 'landscape' as VideoOrientation,
-                                    label: 'Landscape',
+                                    label: t('output.orientation.landscape'),
                                     icon: Monitor,
                                 },
                                 {
                                     value: 'portrait' as VideoOrientation,
-                                    label: 'Portrait',
+                                    label: t('output.orientation.portrait'),
                                     icon: Smartphone,
                                 },
                             ] as const
@@ -380,7 +391,7 @@ function SettingsBody({
                     </div>
                 </Field>
 
-                <Field icon={<Clock className="size-3.5" />} label="Duration">
+                <Field icon={<Clock className="size-3.5" />} label={t('output.duration.label')}>
                     <Select
                         value={options.target_duration}
                         onValueChange={(v) => update('target_duration', v)}
@@ -389,16 +400,16 @@ function SettingsBody({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {TARGET_DURATIONS.map((d) => (
-                                <SelectItem key={d} value={d} className="text-xs">
-                                    {d}
+                            {buildTargetDurationOptions(t).map((d) => (
+                                <SelectItem key={d.value} value={d.value} className="text-xs">
+                                    {d.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </Field>
 
-                <Field icon={<SparklesIcon className="size-3.5" />} label="Quality tier">
+                <Field icon={<SparklesIcon className="size-3.5" />} label={t('output.qualityTier.label')}>
                     <Select
                         value={options.quality_tier || 'ultra'}
                         onValueChange={(v) =>
@@ -413,20 +424,20 @@ function SettingsBody({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {QUALITY_TIERS.map((tier) => (
+                            {buildQualityTiers(t).map((tier) => (
                                 <SelectItem key={tier.value} value={tier.value} className="text-xs">
                                     <div className="flex items-center gap-1.5">
                                         <span className="font-medium">{tier.label}</span>
                                         {tier.badge && (
                                             <Badge
                                                 variant="secondary"
-                                                className="h-4 px-1 text-[9px]"
+                                                className="h-4 px-1 text-2xs"
                                             >
                                                 {tier.badge}
                                             </Badge>
                                         )}
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-2xs text-muted-foreground">
                                         {tier.description}
                                     </span>
                                 </SelectItem>
@@ -446,15 +457,15 @@ function SettingsBody({
                 {!vimMode && (
                     <Field
                         icon={<Wand2 className="size-3.5" />}
-                        label="Model override"
-                        helper="Pinned automatically by tier; override only if needed."
+                        label={t('output.modelOverride.label')}
+                        helper={t('output.modelOverride.helper')}
                     >
                         <Select
                             value={options.model || ''}
                             onValueChange={(v) => update('model', v)}
                         >
                             <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Auto (recommended)" />
+                                <SelectValue placeholder={t('output.modelOverride.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-60">
                                 {models.map((m) => (
@@ -467,9 +478,9 @@ function SettingsBody({
                                         {m.is_free && (
                                             <Badge
                                                 variant="outline"
-                                                className="ml-1 h-3.5 px-1 text-[9px]"
+                                                className="ms-1 h-3.5 px-1 text-2xs"
                                             >
-                                                Free
+                                                {t('output.modelOverride.freeBadge')}
                                             </Badge>
                                         )}
                                     </SelectItem>
@@ -484,7 +495,7 @@ function SettingsBody({
             {/* VOICE — Language, Gender, Provider, Voice ID, Audience       */}
             {/* ============================================================ */}
             <TabsContent value="voice" className="mt-3 space-y-3">
-                <Field icon={<Globe className="size-3.5" />} label="Language">
+                <Field icon={<Globe className="size-3.5" />} label={t('voice.language.label')}>
                     <Select value={options.language} onValueChange={(v) => update('language', v)}>
                         <SelectTrigger className="h-8 text-xs">
                             <SelectValue />
@@ -516,7 +527,7 @@ function SettingsBody({
                     </Select>
                 </Field>
 
-                <Field icon={<Mic className="size-3.5" />} label="Voice gender">
+                <Field icon={<Mic className="size-3.5" />} label={t('voice.voiceGender.label')}>
                     <Select
                         value={options.voice_gender}
                         onValueChange={(v) => update('voice_gender', v as VoiceGender)}
@@ -525,7 +536,7 @@ function SettingsBody({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {VOICE_GENDERS.map((g) => (
+                            {buildVoiceGenders(t).map((g) => (
                                 <SelectItem key={g.value} value={g.value} className="text-xs">
                                     {g.label}
                                 </SelectItem>
@@ -534,7 +545,7 @@ function SettingsBody({
                     </Select>
                 </Field>
 
-                <Field icon={<Volume2 className="size-3.5" />} label="Audio quality">
+                <Field icon={<Volume2 className="size-3.5" />} label={t('voice.audioQuality.label')}>
                     <Select
                         value={options.tts_provider}
                         onValueChange={(v) => update('tts_provider', v as TtsProvider)}
@@ -543,11 +554,11 @@ function SettingsBody({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {TTS_PROVIDERS.map((p) => (
+                            {buildTtsProviders(t).map((p) => (
                                 <SelectItem key={p.value} value={p.value} className="text-xs">
                                     <div className="flex flex-col">
                                         <span>{p.label}</span>
-                                        <span className="text-[10px] text-muted-foreground">
+                                        <span className="text-2xs text-muted-foreground">
                                             {p.description}
                                         </span>
                                     </div>
@@ -561,7 +572,8 @@ function SettingsBody({
                 <div className="space-y-1.5">
                     <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Mic className="size-3.5" />
-                        Voice {isLoadingVoices && <Loader2 className="size-3 animate-spin" />}
+                        {t('voice.voiceList.label')}{' '}
+                        {isLoadingVoices && <Loader2 className="size-3 animate-spin" />}
                     </Label>
                     {availableVoices.length > 0 ? (
                         <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-1">
@@ -588,12 +600,12 @@ function SettingsBody({
                                             }}
                                         >
                                             <span className="font-medium">{voice.name}</span>
-                                            <span className="ml-1 text-[10px] text-muted-foreground">
+                                            <span className="ms-1 text-2xs text-muted-foreground">
                                                 {voice.provider === 'sarvam'
-                                                    ? 'Sarvam'
+                                                    ? t('voice.voiceList.providerSarvam')
                                                     : voice.provider === 'google'
-                                                      ? 'Google'
-                                                      : 'Edge'}
+                                                      ? t('voice.voiceList.providerGoogle')
+                                                      : t('voice.voiceList.providerEdge')}
                                             </span>
                                         </button>
                                         <Button
@@ -602,11 +614,17 @@ function SettingsBody({
                                             type="button"
                                             aria-label={
                                                 isPlaying
-                                                    ? `Stop preview of ${voice.name}`
-                                                    : `Play preview of ${voice.name}`
+                                                    ? t('voice.voiceList.stopPreviewAria', {
+                                                          name: voice.name,
+                                                      })
+                                                    : t('voice.voiceList.playPreviewAria', {
+                                                          name: voice.name,
+                                                      })
                                             }
                                             title={
-                                                isPlaying ? 'Stop preview' : 'Play voice preview'
+                                                isPlaying
+                                                    ? t('voice.voiceList.stopPreviewTitle')
+                                                    : t('voice.voiceList.playPreviewTitle')
                                             }
                                             className={[
                                                 'size-7 shrink-0 rounded-full p-0 transition-colors',
@@ -630,8 +648,8 @@ function SettingsBody({
                             })}
                         </div>
                     ) : !isLoadingVoices ? (
-                        <p className="text-[10px] text-muted-foreground">
-                            No voices available for this combination.
+                        <p className="text-2xs text-muted-foreground">
+                            {t('voice.voiceList.noVoices')}
                         </p>
                     ) : null}
                 </div>
@@ -644,7 +662,7 @@ function SettingsBody({
                     directly. Hidden in vimMode; the default value still
                     ships in the request via DEFAULT_OPTIONS. */}
                 {!vimMode && (
-                    <Field icon={<Users className="size-3.5" />} label="Audience">
+                    <Field icon={<Users className="size-3.5" />} label={t('voice.audience.label')}>
                         <Select
                             value={options.target_audience}
                             onValueChange={(v) => update('target_audience', v)}
@@ -653,9 +671,9 @@ function SettingsBody({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {TARGET_AUDIENCES.map((a) => (
-                                    <SelectItem key={a} value={a} className="text-xs">
-                                        {a}
+                                {buildTargetAudienceOptions(t).map((a) => (
+                                    <SelectItem key={a.value} value={a.value} className="text-xs">
+                                        {a.label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -668,7 +686,7 @@ function SettingsBody({
             {/* VISUALS — HTML quality, Captions, Style, Branding            */}
             {/* ============================================================ */}
             <TabsContent value="visuals" className="mt-3 space-y-3">
-                <Field icon={<Wand2 className="size-3.5" />} label="Visual quality">
+                <Field icon={<Wand2 className="size-3.5" />} label={t('visuals.visualQuality.label')}>
                     <Select
                         value={options.html_quality}
                         onValueChange={(v) => update('html_quality', v as 'classic' | 'advanced')}
@@ -678,10 +696,10 @@ function SettingsBody({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="classic" className="text-xs">
-                                Classic
+                                {t('visuals.visualQuality.classic')}
                             </SelectItem>
                             <SelectItem value="advanced" className="text-xs">
-                                Advanced
+                                {t('visuals.visualQuality.advanced')}
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -690,7 +708,7 @@ function SettingsBody({
                 <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-1.5 text-xs">
                         <Captions className="size-3.5 text-muted-foreground" />
-                        Captions
+                        {t('visuals.captions.label')}
                     </Label>
                     <Switch
                         checked={options.captions_enabled}
@@ -702,7 +720,7 @@ function SettingsBody({
                     <div className="space-y-1.5">
                         <Label className="flex items-center gap-1.5 text-xs">
                             <Palette className="size-3.5 text-muted-foreground" />
-                            Brand kit
+                            {t('visuals.brandKit.label')}
                         </Label>
                         <VimBrandKitSelect
                             value={options.brand_kit_id}
@@ -711,9 +729,8 @@ function SettingsBody({
                                 onOptionsChange({ ...options, brand_kit_id: kitId });
                             }}
                         />
-                        <p className="text-[10px] text-muted-foreground">
-                            Replaces palette, fonts, layout, intro / outro, and watermark for this
-                            generation.
+                        <p className="text-2xs text-muted-foreground">
+                            {t('visuals.brandKit.helper')}
                         </p>
                         <BrandKitOverridePanel
                             value={options.brand_overrides}
@@ -733,15 +750,15 @@ function SettingsBody({
                             <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 py-2 text-xs font-medium">
                                 <span className="flex items-center gap-1.5">
                                     <Palette className="size-3.5 text-muted-foreground" />
-                                    Style
+                                    {t('visuals.style.title')}
                                 </span>
                                 <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
                             </summary>
                             <div className="space-y-2.5 border-t p-2.5">
                                 {/* Background type */}
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                        Background
+                                    <Label className="text-2xs uppercase tracking-wide text-muted-foreground">
+                                        {t('visuals.style.background.label')}
                                     </Label>
                                     <div className="grid grid-cols-2 gap-1">
                                         {(['white', 'black'] as const).map((v) => (
@@ -760,7 +777,9 @@ function SettingsBody({
                                                         : 'hover:bg-muted'
                                                 }`}
                                             >
-                                                {v === 'white' ? 'Light' : 'Dark'}
+                                                {v === 'white'
+                                                    ? t('visuals.style.background.light')
+                                                    : t('visuals.style.background.dark')}
                                             </button>
                                         ))}
                                     </div>
@@ -768,13 +787,15 @@ function SettingsBody({
 
                                 {/* Layout theme — visual gallery */}
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                        Layout theme
+                                    <Label className="text-2xs uppercase tracking-wide text-muted-foreground">
+                                        {t('visuals.style.layoutTheme.label')}
                                     </Label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <ThemeCard
-                                            label="Default"
-                                            description="No template — minimal styling"
+                                            label={t('visuals.style.layoutTheme.defaultLabel')}
+                                            description={t(
+                                                'visuals.style.layoutTheme.defaultDescription'
+                                            )}
                                             selected={!videoStyle.layout_theme}
                                             onSelect={() =>
                                                 onVideoStyleChange((s) => ({
@@ -783,19 +804,19 @@ function SettingsBody({
                                                 }))
                                             }
                                         />
-                                        {videoTemplates.map((t) => (
+                                        {videoTemplates.map((tmpl) => (
                                             <ThemeCard
-                                                key={t.id}
-                                                label={t.name}
-                                                description={t.description}
-                                                previewHtml={t.preview_html}
+                                                key={tmpl.id}
+                                                label={tmpl.name}
+                                                description={tmpl.description}
+                                                previewHtml={tmpl.preview_html}
                                                 primaryColor={videoStyle.primary_color}
-                                                selected={videoStyle.layout_theme === t.id}
+                                                selected={videoStyle.layout_theme === tmpl.id}
                                                 onSelect={() =>
                                                     onVideoStyleChange((s) => ({
                                                         ...s,
-                                                        layout_theme: t.id,
-                                                        background_type: t.background_type,
+                                                        layout_theme: tmpl.id,
+                                                        background_type: tmpl.background_type,
                                                     }))
                                                 }
                                             />
@@ -805,8 +826,8 @@ function SettingsBody({
 
                                 {/* Primary color */}
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                        Primary color
+                                    <Label className="text-2xs uppercase tracking-wide text-muted-foreground">
+                                        {t('visuals.style.primaryColor')}
                                     </Label>
                                     <div className="flex items-center gap-2">
                                         <ColorPicker
@@ -827,9 +848,9 @@ function SettingsBody({
                                 {/* Fonts */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="space-y-1">
-                                        <Label className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                        <Label className="flex items-center gap-1 text-2xs uppercase tracking-wide text-muted-foreground">
                                             <TypeIcon className="size-3" />
-                                            Heading
+                                            {t('visuals.style.heading')}
                                         </Label>
                                         <Select
                                             value={videoStyle.heading_font}
@@ -861,9 +882,9 @@ function SettingsBody({
                                         </Select>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                        <Label className="flex items-center gap-1 text-2xs uppercase tracking-wide text-muted-foreground">
                                             <TypeIcon className="size-3" />
-                                            Body
+                                            {t('visuals.style.body')}
                                         </Label>
                                         <Select
                                             value={videoStyle.body_font}
@@ -905,7 +926,7 @@ function SettingsBody({
                                         ) : (
                                             <Save className="size-3" />
                                         )}
-                                        Save style
+                                        {t('visuals.style.saveStyle')}
                                     </Button>
                                 </div>
                             </div>
@@ -916,14 +937,14 @@ function SettingsBody({
                             <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 py-2 text-xs font-medium">
                                 <span className="flex items-center gap-1.5">
                                     <Film className="size-3.5 text-muted-foreground" />
-                                    Intro · Outro · Watermark
+                                    {t('visuals.branding.title')}
                                 </span>
                                 <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
                             </summary>
                             <div className="space-y-3 border-t p-2.5">
                                 {/* Intro */}
                                 <IntroOutroEditor
-                                    label="Intro"
+                                    label={t('introOutro.intro')}
                                     value={videoBranding.intro}
                                     onChange={(next) =>
                                         onVideoBrandingChange((b) => ({ ...b, intro: next }))
@@ -931,7 +952,7 @@ function SettingsBody({
                                 />
                                 {/* Outro */}
                                 <IntroOutroEditor
-                                    label="Outro"
+                                    label={t('introOutro.outro')}
                                     value={videoBranding.outro}
                                     onChange={(next) =>
                                         onVideoBrandingChange((b) => ({ ...b, outro: next }))
@@ -940,7 +961,9 @@ function SettingsBody({
                                 {/* Watermark */}
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-medium">Watermark</Label>
+                                        <Label className="text-xs font-medium">
+                                            {t('visuals.branding.watermark')}
+                                        </Label>
                                         <Switch
                                             checked={videoBranding.watermark.enabled}
                                             onCheckedChange={(v) =>
@@ -953,7 +976,7 @@ function SettingsBody({
                                     </div>
                                     {videoBranding.watermark.enabled && (
                                         <div className="grid grid-cols-2 gap-1 pl-1">
-                                            {WATERMARK_POSITIONS.map((p) => (
+                                            {watermarkPositions.map((p) => (
                                                 <button
                                                     key={p.value}
                                                     type="button"
@@ -967,7 +990,7 @@ function SettingsBody({
                                                             },
                                                         }))
                                                     }
-                                                    className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                                                    className={`rounded-md border px-2 py-1 text-2xs transition-colors ${
                                                         videoBranding.watermark.position === p.value
                                                             ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
                                                             : 'hover:bg-muted'
@@ -984,10 +1007,10 @@ function SettingsBody({
                                     <Link
                                         to="/settings"
                                         search={{ selectedTab: 'aiSettings' }}
-                                        className="flex items-center gap-1 text-[10px] text-violet-600 hover:underline"
+                                        className="flex items-center gap-1 text-2xs text-violet-600 hover:underline"
                                     >
                                         <ExternalLink className="size-2.5" />
-                                        Edit intro / outro / watermark content
+                                        {t('visuals.branding.editLink')}
                                     </Link>
                                     <Button
                                         size="sm"
@@ -1000,7 +1023,7 @@ function SettingsBody({
                                         ) : (
                                             <Save className="size-3" />
                                         )}
-                                        Save branding
+                                        {t('visuals.branding.saveBranding')}
                                     </Button>
                                 </div>
                             </div>
@@ -1016,11 +1039,17 @@ function SettingsBody({
             {/* HOST — On-screen narrator (avatar / raw)                     */}
             {/* ============================================================ */}
             <TabsContent value="host" className="mt-3 space-y-3">
-                <HostTabBody
-                    options={options}
-                    onOptionsChange={onOptionsChange}
-                    vimMode={vimMode}
-                />
+                {options.lesson?.enabled ? (
+                    <p className="rounded-lg border p-3 text-xs text-muted-foreground">
+                        {t('lesson.hostDisabled')}
+                    </p>
+                ) : (
+                    <HostTabBody
+                        options={options}
+                        onOptionsChange={onOptionsChange}
+                        vimMode={vimMode}
+                    />
+                )}
             </TabsContent>
 
             <TabsContent value="advanced" className="mt-3 space-y-3">
@@ -1029,15 +1058,15 @@ function SettingsBody({
                         <div className="flex items-center justify-between">
                             <Label className="flex items-center gap-1.5 text-xs">
                                 <FileText className="size-3.5 text-muted-foreground" />
-                                Review script first
+                                {t('advanced.reviewMode.label')}
                             </Label>
                             <Switch
                                 checked={!!reviewModeEnabled}
                                 onCheckedChange={onReviewModeChange}
                             />
                         </div>
-                        <p className="pl-5 text-[10px] text-muted-foreground">
-                            Edit the AI-generated script before audio and visuals are created.
+                        <p className="ps-5 text-2xs text-muted-foreground">
+                            {t('advanced.reviewMode.helper')}
                         </p>
                     </div>
                 )}
@@ -1046,12 +1075,12 @@ function SettingsBody({
                     <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-1.5 text-xs">
                             <Scissors className="size-3.5 text-muted-foreground" />
-                            Sub-shot split
+                            {t('advanced.subShots.label')}
                             <Badge
                                 variant="outline"
-                                className="h-4 px-1 text-[9px] uppercase tracking-wide"
+                                className="h-4 px-1 text-2xs uppercase tracking-wide"
                             >
-                                Exp
+                                {t('advanced.expBadge')}
                             </Badge>
                         </Label>
                         <Switch
@@ -1059,9 +1088,8 @@ function SettingsBody({
                             onCheckedChange={(v) => update('sub_shots_enabled', v)}
                         />
                     </div>
-                    <p className="pl-5 text-[10px] text-muted-foreground">
-                        Splits dense, motion-heavy shots into 2 focused sub-shots before HTML
-                        generation. Better visual precision; small extra LLM cost.
+                    <p className="ps-5 text-2xs text-muted-foreground">
+                        {t('advanced.subShots.helper')}
                     </p>
                 </div>
 
@@ -1069,12 +1097,12 @@ function SettingsBody({
                     <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-1.5 text-xs">
                             <Users className="size-3.5 text-muted-foreground" />
-                            Story dialogue scenes
+                            {t('advanced.dialogueScenes.label')}
                             <Badge
                                 variant="outline"
-                                className="h-4 px-1 text-[9px] uppercase tracking-wide"
+                                className="h-4 px-1 text-2xs uppercase tracking-wide"
                             >
-                                Exp
+                                {t('advanced.expBadge')}
                             </Badge>
                         </Label>
                         <Switch
@@ -1082,9 +1110,8 @@ function SettingsBody({
                             onCheckedChange={(v) => update('dialogue_scenes_enabled', v)}
                         />
                     </div>
-                    <p className="pl-5 text-[10px] text-muted-foreground">
-                        Characters act out key moments in AI-generated clips, speaking in
-                        consistent voices (lip-synced). Adds generation cost per scene.
+                    <p className="ps-5 text-2xs text-muted-foreground">
+                        {t('advanced.dialogueScenes.helper')}
                     </p>
                     {!!options.dialogue_scenes_enabled && (
                         <div className="space-y-1.5 pl-5 pt-1">
@@ -1093,13 +1120,15 @@ function SettingsBody({
                                     [
                                         {
                                             v: 'storybook',
-                                            label: 'Storybook',
-                                            desc: 'Narrator carries the video; 1-4 dialogue scenes at key moments.',
+                                            label: t('advanced.dialogueMode.storybook.label'),
+                                            desc: t(
+                                                'advanced.dialogueMode.storybook.description'
+                                            ),
                                         },
                                         {
                                             v: 'drama',
-                                            label: 'Drama',
-                                            desc: 'Pure dialogue film — every shot is a scene, no narrator, music off. Higher clip budget.',
+                                            label: t('advanced.dialogueMode.drama.label'),
+                                            desc: t('advanced.dialogueMode.drama.description'),
                                         },
                                     ] as const
                                 ).map((m) => {
@@ -1110,7 +1139,7 @@ function SettingsBody({
                                             type="button"
                                             title={m.desc}
                                             onClick={() => update('dialogue_mode', m.v)}
-                                            className={`rounded-full border px-2.5 py-0.5 text-[10px] transition-colors ${
+                                            className={`rounded-full border px-2.5 py-0.5 text-2xs transition-colors ${
                                                 active
                                                     ? 'border-primary-500 bg-primary-50 text-foreground'
                                                     : 'text-muted-foreground hover:text-foreground'
@@ -1126,13 +1155,17 @@ function SettingsBody({
                                     [
                                         {
                                             v: 'seedance-2.0',
-                                            label: 'Seedance 2.0',
-                                            desc: 'Voice-locked: characters lip-sync to our TTS — same voices every scene and sequel. ~$0.30/s, clips up to 15s.',
+                                            label: t('advanced.dialogueClipModel.seedance.label'),
+                                            desc: t(
+                                                'advanced.dialogueClipModel.seedance.description'
+                                            ),
                                         },
                                         {
                                             v: 'omni-flash',
-                                            label: 'Omni Flash',
-                                            desc: 'Gemini Omni speaks the lines itself — ~2x cheaper (~$0.13/s) but voices may vary between scenes. Clips up to 10s.',
+                                            label: t('advanced.dialogueClipModel.omniFlash.label'),
+                                            desc: t(
+                                                'advanced.dialogueClipModel.omniFlash.description'
+                                            ),
                                         },
                                     ] as const
                                 ).map((m) => {
@@ -1144,7 +1177,7 @@ function SettingsBody({
                                             type="button"
                                             title={m.desc}
                                             onClick={() => update('dialogue_clip_model', m.v)}
-                                            className={`rounded-full border px-2.5 py-0.5 text-[10px] transition-colors ${
+                                            className={`rounded-full border px-2.5 py-0.5 text-2xs transition-colors ${
                                                 active
                                                     ? 'border-primary-500 bg-primary-50 text-foreground'
                                                     : 'text-muted-foreground hover:text-foreground'
@@ -1248,50 +1281,53 @@ function AiVideoPanel({
     qualityTier: QualityTier;
     onChange: (patch: AiVideoPanelChange) => void;
 }) {
+    const { t } = useTranslation(['videoApiStudioSettingsPopover', 'videoApiStudioCredits']);
     const tierEligible = qualityTier === 'ultra' || qualityTier === 'super_ultra';
     const effectiveModel: AiVideoModel = model ?? AI_VIDEO_MODELS[0].value;
     // Live USD→credits rate (V252-driven; falls back to seed 150× when offline).
     // Used to render the per-shot range, per-video cap, and per-second
     // Veo audio rate as credit values.
     const ratio = useEffectiveCreditRatio();
-    const perShotMinCredits = formatCredits(usdToCredits(0.12, ratio), { suffix: '' });
-    const perShotMaxCredits = formatCredits(usdToCredits(0.4, ratio), { suffix: '' });
-    const perVideoCapCredits = formatCredits(usdToCredits(1.5, ratio), { suffix: 'credits' });
-    const audioOffPerSec = formatCredits(usdToCredits(0.03, ratio), { precision: 1, suffix: '' });
-    const audioOnPerSec = formatCredits(usdToCredits(0.05, ratio), { precision: 1, suffix: '' });
+    const perShotMinCredits = formatCredits(usdToCredits(0.12, ratio), { suffix: '', t });
+    const perShotMaxCredits = formatCredits(usdToCredits(0.4, ratio), { suffix: '', t });
+    const perVideoCapCredits = formatCredits(usdToCredits(1.5, ratio), { suffix: 'credits', t });
+    const audioOffPerSec = formatCredits(usdToCredits(0.03, ratio), { precision: 1, suffix: '', t });
+    const audioOnPerSec = formatCredits(usdToCredits(0.05, ratio), { precision: 1, suffix: '', t });
     return (
         <div className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
                 <Label className="flex items-center gap-1.5 text-xs font-medium">
                     <Film className="size-3.5" />
-                    AI video generation
-                    <Badge variant="outline" className="px-1 py-0 text-[9px]">
-                        Beta
+                    {t('aiVideo.label')}
+                    <Badge variant="outline" className="px-1 py-0 text-2xs">
+                        {t('aiVideo.betaBadge')}
                     </Badge>
                 </Label>
                 <Switch
                     checked={enabled && tierEligible}
                     disabled={!tierEligible}
                     onCheckedChange={(v) => onChange({ enabled: v })}
-                    aria-label="Enable AI video"
+                    aria-label={t('aiVideo.enableAria')}
                 />
             </div>
             {!tierEligible && (
-                <p className="pl-5 text-[10px] text-amber-600">
-                    Available on Ultra and Super Ultra tiers only. Switch tier above to enable.
-                </p>
+                <p className="ps-5 text-2xs text-amber-600">{t('aiVideo.tierLocked')}</p>
             )}
             {tierEligible && (
-                <p className="pl-5 text-[10px] text-muted-foreground">
-                    Generates cinematic clips with fal.ai Veo. ≈{perShotMinCredits}–
-                    {perShotMaxCredits} credits per shot, hard-capped at {perVideoCapCredits} per
-                    video. Director picks when content fits.
+                <p className="ps-5 text-2xs text-muted-foreground">
+                    {t('aiVideo.description', {
+                        minCredits: perShotMinCredits,
+                        maxCredits: perShotMaxCredits,
+                        capCredits: perVideoCapCredits,
+                    })}
                 </p>
             )}
             {enabled && tierEligible && (
                 <>
                     <div className="space-y-1.5 pl-5">
-                        <Label className="text-[10px] text-muted-foreground">Model</Label>
+                        <Label className="text-2xs text-muted-foreground">
+                            {t('aiVideo.modelLabel')}
+                        </Label>
                         <Select
                             value={effectiveModel}
                             onValueChange={(v) => onChange({ model: v as AiVideoModel })}
@@ -1300,34 +1336,35 @@ function AiVideoPanel({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {AI_VIDEO_MODELS.map((m) => (
+                                {buildAiVideoModels(t).map((m) => (
                                     <SelectItem key={m.value} value={m.value} className="text-xs">
                                         {m.label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        {AI_VIDEO_MODELS.find((m) => m.value === effectiveModel)?.hint && (
+                        {buildAiVideoModels(t).find((m) => m.value === effectiveModel)?.hint && (
                             <p className="pl-0.5 text-xs text-muted-foreground">
-                                {AI_VIDEO_MODELS.find((m) => m.value === effectiveModel)?.hint}
+                                {buildAiVideoModels(t).find((m) => m.value === effectiveModel)?.hint}
                             </p>
                         )}
                     </div>
                     <div className="flex items-center justify-between gap-3 pl-5">
-                        <Label className="flex items-center gap-1.5 text-[11px]">
+                        <Label className="flex items-center gap-1.5 text-2xs">
                             <Volume2 className="size-3" />
-                            Veo audio
+                            {t('aiVideo.veoAudioLabel')}
                         </Label>
                         <Switch
                             checked={audioEnabled}
                             onCheckedChange={(v) => onChange({ audioEnabled: v })}
-                            aria-label="Enable Veo audio"
+                            aria-label={t('aiVideo.veoAudioAria')}
                         />
                     </div>
-                    <p className="pl-5 text-[10px] text-muted-foreground">
-                        When ON, AI video shots play their own audio. Master narration is silenced
-                        during those shots. Cost rises from {audioOffPerSec} credits/s to{' '}
-                        {audioOnPerSec} credits/s.
+                    <p className="ps-5 text-2xs text-muted-foreground">
+                        {t('aiVideo.audioCostNote', {
+                            offRate: audioOffPerSec,
+                            onRate: audioOnPerSec,
+                        })}
                     </p>
                 </>
             )}
@@ -1353,7 +1390,7 @@ function Field({
                 {label}
             </Label>
             {children}
-            {helper && <p className="text-[10px] text-muted-foreground">{helper}</p>}
+            {helper && <p className="text-2xs text-muted-foreground">{helper}</p>}
         </div>
     );
 }
@@ -1365,33 +1402,73 @@ function Field({
 // so we surface a hint that family bias is applied via the script LLM only.
 // ─────────────────────────────────────────────────────────────────────────
 
-const FAMILY_BIAS_OPTIONS: ReadonlyArray<{ value: FamilyBias; label: string }> = [
-    { value: 'no', label: 'Avoid' },
-    { value: 'auto', label: 'Auto' },
-    { value: 'high', label: 'Prefer' },
-];
+function buildFamilyBiasOptions(
+    t: TFunction
+): ReadonlyArray<{ value: FamilyBias; label: string }> {
+    return [
+        { value: 'no', label: t('visualPreferences.familyBias.avoid') },
+        { value: 'auto', label: t('visualPreferences.familyBias.auto') },
+        { value: 'high', label: t('visualPreferences.familyBias.prefer') },
+    ];
+}
 
-const TEXT_DENSITY_OPTIONS: ReadonlyArray<{
+function buildTextDensityOptions(t: TFunction): ReadonlyArray<{
     value: TextDensity;
     label: string;
     desc: string;
-}> = [
-    { value: 'minimal', label: 'Minimal', desc: 'Title-only on hooks. No body anywhere.' },
-    { value: 'low', label: 'Low', desc: 'Short headlines. Drop subtitle lines.' },
-    { value: 'auto', label: 'Auto', desc: 'Pipeline default — moderate text.' },
-    { value: 'rich', label: 'Rich', desc: 'Full headlines + supporting labels.' },
-];
+}> {
+    return [
+        {
+            value: 'minimal',
+            label: t('visualPreferences.textDensity.minimal.label'),
+            desc: t('visualPreferences.textDensity.minimal.description'),
+        },
+        {
+            value: 'low',
+            label: t('visualPreferences.textDensity.low.label'),
+            desc: t('visualPreferences.textDensity.low.description'),
+        },
+        {
+            value: 'auto',
+            label: t('visualPreferences.textDensity.auto.label'),
+            desc: t('visualPreferences.textDensity.auto.description'),
+        },
+        {
+            value: 'rich',
+            label: t('visualPreferences.textDensity.rich.label'),
+            desc: t('visualPreferences.textDensity.rich.description'),
+        },
+    ];
+}
 
-const VISUAL_STYLE_OPTIONS: ReadonlyArray<{
+function buildVisualStyleOptions(t: TFunction): ReadonlyArray<{
     value: VisualStyleMode;
     label: string;
     desc: string;
-}> = [
-    { value: 'auto', label: 'Auto', desc: 'Detect from topic — marketing looks premium, lessons stay clean.' },
-    { value: 'educational', label: 'Clean', desc: 'Flat whiteboard look. Best for lessons & explainers.' },
-    { value: 'marketing', label: 'Premium', desc: 'Modern brand-film look: depth, motion, finishing, minimal text.' },
-    { value: 'bold', label: 'Bold', desc: 'Premium + high-energy social-ad styling.' },
-];
+}> {
+    return [
+        {
+            value: 'auto',
+            label: t('visualPreferences.visualStyle.auto.label'),
+            desc: t('visualPreferences.visualStyle.auto.description'),
+        },
+        {
+            value: 'educational',
+            label: t('visualPreferences.visualStyle.educational.label'),
+            desc: t('visualPreferences.visualStyle.educational.description'),
+        },
+        {
+            value: 'marketing',
+            label: t('visualPreferences.visualStyle.marketing.label'),
+            desc: t('visualPreferences.visualStyle.marketing.description'),
+        },
+        {
+            value: 'bold',
+            label: t('visualPreferences.visualStyle.bold.label'),
+            desc: t('visualPreferences.visualStyle.bold.description'),
+        },
+    ];
+}
 
 function VisualPreferencesPanel({
     prefs,
@@ -1404,6 +1481,7 @@ function VisualPreferencesPanel({
     captionsEnabled: boolean;
     onChange: (next: VisualPreferences | undefined) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     const current: VisualPreferences = prefs ?? {};
     const isActive = hasActiveVisualPreferences(current);
     const directorRuns =
@@ -1412,6 +1490,14 @@ function VisualPreferencesPanel({
     const styleMode: VisualStyleMode = (current.visual_style_mode ?? 'auto') as VisualStyleMode;
     const showCaptionsHint =
         (textDensity === 'minimal' || textDensity === 'low') && !captionsEnabled;
+    // Render the tier's friendly label (from buildQualityTiers), not the raw
+    // backend enum value — showing e.g. "super_ultra" verbatim would be a
+    // rendered-enum bug.
+    const qualityTierLabel =
+        buildQualityTiers(t).find((tier) => tier.value === qualityTier)?.label ?? qualityTier;
+    const familyBiasOptions = buildFamilyBiasOptions(t);
+    const textDensityOptions = buildTextDensityOptions(t);
+    const visualStyleOptions = buildVisualStyleOptions(t);
 
     function setStyleMode(value: VisualStyleMode) {
         const next: VisualPreferences = { ...current };
@@ -1458,13 +1544,13 @@ function VisualPreferencesPanel({
             <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-1.5 text-xs">
                     <Palette className="size-3.5 text-muted-foreground" />
-                    Visual mix
+                    {t('visualPreferences.label')}
                     {isActive && (
                         <Badge
                             variant="outline"
-                            className="h-4 px-1 text-[9px] uppercase tracking-wide"
+                            className="h-4 px-1 text-2xs uppercase tracking-wide"
                         >
-                            Active
+                            {t('visualPreferences.activeBadge')}
                         </Badge>
                     )}
                 </Label>
@@ -1472,40 +1558,39 @@ function VisualPreferencesPanel({
                     <button
                         type="button"
                         onClick={reset}
-                        className="text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+                        className="text-2xs text-muted-foreground underline-offset-2 hover:underline"
                     >
-                        Reset
+                        {t('visualPreferences.reset')}
                     </button>
                 )}
             </div>
-            <p className="text-[10px] text-muted-foreground">
-                Soft hints only. Free-text phrases in your prompt (e.g.{' '}
-                <span className="font-mono">{'"more SVG diagrams"'}</span>) override these.
+            <p className="text-2xs text-muted-foreground">
+                {t('visualPreferences.hint')}
                 {!directorRuns && (
-                    <>
-                        {' '}
-                        On <span className="font-medium">{qualityTier}</span>, family bias is
-                        applied via the script. Director-level bias starts at Premium.
-                    </>
+                    <Trans
+                        i18nKey="videoApiStudioSettingsPopover:visualPreferences.directorHint"
+                        values={{ tierLabel: qualityTierLabel }}
+                        components={{ tier: <span className="font-medium" /> }}
+                    />
                 )}
             </p>
 
             {/* Family sliders */}
             <div className="space-y-1.5 pt-0.5">
-                {VISUAL_PREFERENCE_FAMILIES.map(({ key, label }) => {
+                {buildVisualPreferenceFamilies(t).map(({ key, label }) => {
                     const value = (current[key] ?? 'auto') as FamilyBias;
                     return (
                         <div key={key} className="flex items-center justify-between gap-2">
-                            <span className="text-[11px] text-muted-foreground">{label}</span>
+                            <span className="text-2xs text-muted-foreground">{label}</span>
                             <div className="inline-flex rounded-md border bg-muted p-0.5">
-                                {FAMILY_BIAS_OPTIONS.map((opt) => {
+                                {familyBiasOptions.map((opt) => {
                                     const active = value === opt.value;
                                     return (
                                         <button
                                             key={opt.value}
                                             type="button"
                                             onClick={() => setBias(key, opt.value)}
-                                            className={`rounded-sm px-2 py-0.5 text-[10px] uppercase tracking-wide transition-colors ${
+                                            className={`rounded-sm px-2 py-0.5 text-2xs uppercase tracking-wide transition-colors ${
                                                 active
                                                     ? 'bg-background text-foreground shadow-sm'
                                                     : 'text-muted-foreground hover:text-foreground'
@@ -1523,12 +1608,12 @@ function VisualPreferencesPanel({
 
             {/* Visual style — overall aesthetic for the whole video */}
             <div className="space-y-1 pt-1.5">
-                <Label className="flex items-center gap-1.5 text-[11px]">
+                <Label className="flex items-center gap-1.5 text-2xs">
                     <SparklesIcon className="size-3.5 text-muted-foreground" />
-                    Visual style
+                    {t('visualPreferences.visualStyleLabel')}
                 </Label>
                 <div className="flex w-full rounded-md border bg-muted p-0.5">
-                    {VISUAL_STYLE_OPTIONS.map((opt) => {
+                    {visualStyleOptions.map((opt) => {
                         const active = styleMode === opt.value;
                         return (
                             <button
@@ -1536,7 +1621,7 @@ function VisualPreferencesPanel({
                                 type="button"
                                 onClick={() => setStyleMode(opt.value)}
                                 title={opt.desc}
-                                className={`flex-1 rounded-sm px-2 py-1 text-[10px] transition-colors ${
+                                className={`flex-1 rounded-sm px-2 py-1 text-2xs transition-colors ${
                                     active
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -1547,19 +1632,19 @@ function VisualPreferencesPanel({
                         );
                     })}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                    {VISUAL_STYLE_OPTIONS.find((o) => o.value === styleMode)?.desc}
+                <p className="text-2xs text-muted-foreground">
+                    {visualStyleOptions.find((o) => o.value === styleMode)?.desc}
                 </p>
             </div>
 
             {/* Text density slider */}
             <div className="space-y-1 pt-1.5">
-                <Label className="flex items-center gap-1.5 text-[11px]">
+                <Label className="flex items-center gap-1.5 text-2xs">
                     <TypeIcon className="size-3.5 text-muted-foreground" />
-                    On-screen text
+                    {t('visualPreferences.textDensityLabel')}
                 </Label>
                 <div className="flex w-full rounded-md border bg-muted p-0.5">
-                    {TEXT_DENSITY_OPTIONS.map((opt) => {
+                    {textDensityOptions.map((opt) => {
                         const active = textDensity === opt.value;
                         return (
                             <button
@@ -1567,7 +1652,7 @@ function VisualPreferencesPanel({
                                 type="button"
                                 onClick={() => setDensity(opt.value)}
                                 title={opt.desc}
-                                className={`flex-1 rounded-sm px-2 py-1 text-[10px] transition-colors ${
+                                className={`flex-1 rounded-sm px-2 py-1 text-2xs transition-colors ${
                                     active
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -1578,15 +1663,17 @@ function VisualPreferencesPanel({
                         );
                     })}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                    {TEXT_DENSITY_OPTIONS.find((o) => o.value === textDensity)?.desc}
+                <p className="text-2xs text-muted-foreground">
+                    {textDensityOptions.find((o) => o.value === textDensity)?.desc}
                 </p>
                 {showCaptionsHint && (
-                    <p className="flex items-start gap-1 rounded bg-amber-500/10 px-1.5 py-1 text-[10px] text-amber-700 dark:text-amber-400">
+                    <p className="flex items-start gap-1 rounded bg-amber-500/10 px-1.5 py-1 text-2xs text-amber-700 dark:text-amber-400">
                         <Captions className="mt-0.5 size-3 shrink-0" />
                         <span>
-                            Captions are <strong>recommended</strong> at this density — your video
-                            will rely on narration to carry meaning.
+                            <Trans
+                                i18nKey="videoApiStudioSettingsPopover:visualPreferences.captionsHint"
+                                components={{ strong: <strong /> }}
+                            />
                         </span>
                     </p>
                 )}
@@ -1611,6 +1698,7 @@ function HostTabBody({
     onOptionsChange: (options: Omit<GenerateVideoRequest, 'prompt'>) => void;
     vimMode?: boolean;
 }) {
+    const { t } = useTranslation(['videoApiStudioSettingsPopover', 'videoApiStudioCredits']);
     const tier = options.quality_tier || 'ultra';
     const tierAllowed = tier === 'ultra' || tier === 'super_ultra';
     const host = options.host;
@@ -1663,11 +1751,11 @@ function HostTabBody({
         if (!file) return;
         setUploadError(null);
         if (!file.type.startsWith('image/')) {
-            setUploadError('Please pick an image file (PNG / JPG).');
+            setUploadError(t('host.faceUpload.errors.invalidType'));
             return;
         }
         if (file.size > 10 * 1024 * 1024) {
-            setUploadError('Image must be under 10 MB.');
+            setUploadError(t('host.faceUpload.errors.tooLarge'));
             return;
         }
         try {
@@ -1679,14 +1767,15 @@ function HostTabBody({
                 sourceId: 'ADMIN',
                 publicUrl: true,
             });
-            if (!fileId) throw new Error('Upload failed');
+            if (!fileId) throw new Error(t('host.faceUpload.errors.uploadFailed'));
             const url = await getPublicUrl(fileId);
-            if (!url) throw new Error('Could not get public URL');
+            if (!url) throw new Error(t('host.faceUpload.errors.noPublicUrl'));
             patchAvatar({ face_image_url: url });
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Upload failed';
+            const msg =
+                err instanceof Error ? err.message : t('host.faceUpload.errors.uploadFailed');
             setUploadError(msg);
-            toast.error(`Face image upload failed: ${msg}`);
+            toast.error(t('host.faceUpload.errors.toast', { message: msg }));
         }
     };
 
@@ -1697,13 +1786,16 @@ function HostTabBody({
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
                     <div className="mb-1 flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
                         <LockIcon className="size-3.5" />
-                        On-screen host requires Ultra
+                        {t('host.locked.title')}
                     </div>
                     <p className="text-muted-foreground">
-                        The Host feature (AI avatar narrator) is available on{' '}
-                        <span className="font-medium">Ultra</span> and{' '}
-                        <span className="font-medium">Super Ultra</span> tiers only. Switch the
-                        Quality tier in the Output tab to enable it.
+                        <Trans
+                            i18nKey="videoApiStudioSettingsPopover:host.locked.description"
+                            components={{
+                                ultra: <span className="font-medium" />,
+                                superUltra: <span className="font-medium" />,
+                            }}
+                        />
                     </p>
                 </div>
                 {/* If a host config was previously enabled on a higher tier,
@@ -1712,21 +1804,20 @@ function HostTabBody({
                 {hostEnabled && (
                     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs">
                         <div className="mb-1 font-medium text-destructive">
-                            Saved host config will be ignored
+                            {t('host.staleConfig.title')}
                         </div>
                         <p className="mb-2 text-muted-foreground">
-                            You have a host configuration saved from a higher tier. It will cause
-                            this generation to fail unless you switch back to Ultra or clear it now.
+                            {t('host.staleConfig.description')}
                         </p>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 px-2 text-[10px]"
+                            className="h-7 px-2 text-2xs"
                             onClick={() => setHost(undefined)}
                         >
                             <XIcon className="size-3" />
-                            Clear host config
+                            {t('host.staleConfig.clearButton')}
                         </Button>
                     </div>
                 )}
@@ -1735,7 +1826,7 @@ function HostTabBody({
                     <div className="flex items-center justify-between">
                         <Label className="flex items-center gap-1.5 text-xs">
                             <UserIcon className="size-3.5 text-muted-foreground" />
-                            Enable on-screen host
+                            {t('host.enableToggle.label')}
                         </Label>
                         <Switch checked={false} />
                     </div>
@@ -1751,26 +1842,30 @@ function HostTabBody({
                 <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-1.5 text-xs">
                         <UserIcon className="size-3.5 text-muted-foreground" />
-                        Enable on-screen host
+                        {t('host.enableToggle.label')}
                     </Label>
                     <Switch checked={hostEnabled} onCheckedChange={handleEnableToggle} />
                 </div>
-                <p className="pl-5 text-[10px] text-muted-foreground">
-                    A talking-head host appears in some shots and narrates in 1st person. Costs{' '}
-                    {formatCredits(usdToCredits(0.0562, ratio), { precision: 1, suffix: '' })}{' '}
-                    credits/sec of host footage on top of the base video.
+                <p className="ps-5 text-2xs text-muted-foreground">
+                    {t('host.enableToggle.helper', {
+                        rate: formatCredits(usdToCredits(0.0562, ratio), {
+                            precision: 1,
+                            suffix: '',
+                            t,
+                        }),
+                    })}
                 </p>
             </div>
 
             {hostEnabled && host && (
                 <>
                     {/* Type selector: avatar | raw (raw is plumbed but disabled in v1) */}
-                    <Field icon={<Wand2 className="size-3.5" />} label="Host type">
+                    <Field icon={<Wand2 className="size-3.5" />} label={t('host.hostType.label')}>
                         <div className="inline-flex w-full rounded-lg border bg-muted p-0.5">
                             {(
                                 [
-                                    { value: 'avatar', label: 'AI Avatar' },
-                                    { value: 'raw', label: 'Real footage' },
+                                    { value: 'avatar', label: t('host.hostType.avatar') },
+                                    { value: 'raw', label: t('host.hostType.raw') },
                                 ] as const
                             ).map(({ value, label }) => {
                                 const disabled = value === 'raw';
@@ -1812,9 +1907,9 @@ function HostTabBody({
                                         {disabled && (
                                             <Badge
                                                 variant="outline"
-                                                className="h-4 px-1 text-[8px] uppercase"
+                                                className="h-4 px-1 text-2xs uppercase"
                                             >
-                                                Soon
+                                                {t('host.hostType.soonBadge')}
                                             </Badge>
                                         )}
                                     </button>
@@ -1834,8 +1929,8 @@ function HostTabBody({
                                        provider is built-in (their endpoint is fixed). */}
                                     <Field
                                         icon={<UserIcon className="size-3.5" />}
-                                        label="Host avatar"
-                                        helper="Pick from your saved hosts. Built-in catalog avatars (Argil / VEED) lock the model to their endpoint."
+                                        label={t('host.avatarPicker.label')}
+                                        helper={t('host.avatarPicker.helper')}
                                     >
                                         <VimSavedAvatarSelect
                                             value={host.avatar?.saved_avatar_id}
@@ -1880,7 +1975,7 @@ function HostTabBody({
                                             <div className="flex items-center justify-between">
                                                 <Label className="flex items-center gap-1.5 text-xs">
                                                     <Mic className="size-3.5 text-muted-foreground" />
-                                                    Use avatar&rsquo;s saved voice
+                                                    {t('host.useSavedVoice.label')}
                                                 </Label>
                                                 <Switch
                                                     checked={host.avatar.use_avatar_voice ?? true}
@@ -1889,10 +1984,8 @@ function HostTabBody({
                                                     }
                                                 />
                                             </div>
-                                            <p className="pl-5 text-[10px] text-muted-foreground">
-                                                On: voice / language / gender from the saved avatar
-                                                override the Voice tab. Off: keep the Voice
-                                                tab&rsquo;s settings.
+                                            <p className="ps-5 text-2xs text-muted-foreground">
+                                                {t('host.useSavedVoice.helper')}
                                             </p>
                                         </div>
                                     )}
@@ -1904,8 +1997,8 @@ function HostTabBody({
                                         <>
                                             <Field
                                                 icon={<TypeIcon className="size-3.5" />}
-                                                label="Host details (clothing, persona)"
-                                                helper="Free-form. Threaded into every per-shot avatar image prompt for consistency."
+                                                label={t('host.details.label')}
+                                                helper={t('host.details.helper')}
                                             >
                                                 <Textarea
                                                     value={host.avatar?.details_prompt || ''}
@@ -1914,14 +2007,14 @@ function HostTabBody({
                                                             details_prompt: e.target.value,
                                                         })
                                                     }
-                                                    placeholder="e.g. navy blazer, neutral office background, professional demeanour"
+                                                    placeholder={t('host.details.placeholder')}
                                                     rows={2}
                                                     className="resize-none text-xs"
                                                 />
                                             </Field>
                                             <Field
                                                 icon={<Film className="size-3.5" />}
-                                                label="Avatar model"
+                                                label={t('host.avatarModel.label')}
                                             >
                                                 <Select
                                                     value={
@@ -1938,26 +2031,31 @@ function HostTabBody({
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {AVATAR_MODELS.map((m) => (
+                                                        {buildAvatarModels(t).map((m) => (
                                                             <SelectItem
                                                                 key={m.value}
                                                                 value={m.value}
                                                                 className="text-xs"
                                                             >
-                                                                <div className="flex flex-col">
+                                                <div className="flex flex-col">
                                                                     <span>{m.label}</span>
-                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                        {formatCredits(
-                                                                            usdToCredits(
-                                                                                m.perSecondUsd,
-                                                                                ratio
-                                                                            ),
+                                                                    <span className="text-2xs text-muted-foreground">
+                                                                        {t(
+                                                                            'host.avatarModel.creditsPerSec',
                                                                             {
-                                                                                precision: 1,
-                                                                                suffix: '',
+                                                                                credits: formatCredits(
+                                                                                    usdToCredits(
+                                                                                        m.perSecondUsd,
+                                                                                        ratio
+                                                                                    ),
+                                                                                    {
+                                                                                        precision: 1,
+                                                                                        suffix: '',
+                                                                                        t,
+                                                                                    }
+                                                                                ),
                                                                             }
-                                                                        )}{' '}
-                                                                        cr/sec
+                                                                        )}
                                                                     </span>
                                                                 </div>
                                                             </SelectItem>
@@ -1973,18 +2071,18 @@ function HostTabBody({
                                     {/* Face image dropzone with preview */}
                                     <Field
                                         icon={<UploadIcon className="size-3.5" />}
-                                        label="Host face image"
-                                        helper="Clear, front-facing portrait. Used as the per-shot identity reference."
+                                        label={t('host.faceUpload.label')}
+                                        helper={t('host.faceUpload.helper')}
                                     >
                                         {host.avatar?.face_image_url ? (
                                             <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-2">
                                                 <img
                                                     src={host.avatar.face_image_url}
-                                                    alt="Host face"
+                                                    alt={t('host.faceUpload.faceAlt')}
                                                     className="size-16 shrink-0 rounded-md object-cover"
                                                 />
                                                 <div className="flex-1 space-y-1">
-                                                    <div className="break-all text-[10px] text-muted-foreground">
+                                                    <div className="break-all text-2xs text-muted-foreground">
                                                         {host.avatar.face_image_url
                                                             .split('/')
                                                             .pop()
@@ -1994,13 +2092,13 @@ function HostTabBody({
                                                         type="button"
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-6 px-2 text-[10px]"
+                                                        className="h-6 px-2 text-2xs"
                                                         onClick={() =>
                                                             patchAvatar({ face_image_url: '' })
                                                         }
                                                     >
                                                         <XIcon className="size-3" />
-                                                        Replace
+                                                        {t('host.faceUpload.replace')}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -2012,15 +2110,12 @@ function HostTabBody({
                                                 {isUploading ? (
                                                     <>
                                                         <Loader2 className="size-4 animate-spin" />
-                                                        <span>Uploading…</span>
+                                                        <span>{t('host.faceUpload.uploading')}</span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <UploadIcon className="size-4" />
-                                                        <span>
-                                                            Click or drop a face photo (PNG / JPG,
-                                                            ≤10 MB)
-                                                        </span>
+                                                        <span>{t('host.faceUpload.dropHint')}</span>
                                                     </>
                                                 )}
                                                 <input
@@ -2037,7 +2132,7 @@ function HostTabBody({
                                             </label>
                                         )}
                                         {uploadError && (
-                                            <p className="text-[10px] text-destructive">
+                                            <p className="text-2xs text-destructive">
                                                 {uploadError}
                                             </p>
                                         )}
@@ -2046,15 +2141,15 @@ function HostTabBody({
                                     {/* Details prompt */}
                                     <Field
                                         icon={<TypeIcon className="size-3.5" />}
-                                        label="Host details (clothing, persona)"
-                                        helper="Free-form. Threaded into every per-shot avatar image prompt for consistency."
+                                        label={t('host.details.label')}
+                                        helper={t('host.details.helper')}
                                     >
                                         <Textarea
                                             value={host.avatar?.details_prompt || ''}
                                             onChange={(e) =>
                                                 patchAvatar({ details_prompt: e.target.value })
                                             }
-                                            placeholder="e.g. navy blazer, neutral office background, professional demeanour"
+                                            placeholder={t('host.details.placeholder')}
                                             rows={2}
                                             className="resize-none text-xs"
                                         />
@@ -2063,7 +2158,7 @@ function HostTabBody({
                                     {/* Model picker */}
                                     <Field
                                         icon={<Film className="size-3.5" />}
-                                        label="Avatar model"
+                                        label={t('host.avatarModel.label')}
                                     >
                                         <Select
                                             value={
@@ -2078,7 +2173,7 @@ function HostTabBody({
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {AVATAR_MODELS.map((m) => (
+                                                {buildAvatarModels(t).map((m) => (
                                                     <SelectItem
                                                         key={m.value}
                                                         value={m.value}
@@ -2086,18 +2181,23 @@ function HostTabBody({
                                                     >
                                                         <div className="flex flex-col">
                                                             <span>{m.label}</span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                {formatCredits(
-                                                                    usdToCredits(
-                                                                        m.perSecondUsd,
-                                                                        ratio
-                                                                    ),
+                                                            <span className="text-2xs text-muted-foreground">
+                                                                {t(
+                                                                    'host.avatarModel.creditsPerSec',
                                                                     {
-                                                                        precision: 1,
-                                                                        suffix: '',
+                                                                        credits: formatCredits(
+                                                                            usdToCredits(
+                                                                                m.perSecondUsd,
+                                                                                ratio
+                                                                            ),
+                                                                            {
+                                                                                precision: 1,
+                                                                                suffix: '',
+                                                                                t,
+                                                                            }
+                                                                        ),
                                                                     }
-                                                                )}{' '}
-                                                                cr/sec
+                                                                )}
                                                             </span>
                                                         </div>
                                                     </SelectItem>
@@ -2111,8 +2211,8 @@ function HostTabBody({
                             {/* Quality picker */}
                             <Field
                                 icon={<Monitor className="size-3.5" />}
-                                label="Avatar quality"
-                                helper="Same per-second price; 720p produces a heavier file."
+                                label={t('host.quality.label')}
+                                helper={t('host.quality.helper')}
                             >
                                 <div className="inline-flex w-full rounded-lg border bg-muted p-0.5">
                                     {(['480p', '720p'] as const).map((q) => {
@@ -2143,8 +2243,8 @@ function HostTabBody({
                                 'fal-ai/ltx-2.3-quality/audio-to-video' && (
                                 <Field
                                     icon={<Film className="size-3.5" />}
-                                    label="Frames per second"
-                                    helper="Higher fps = smoother motion and a higher per-second cost. LTX 2.3 only."
+                                    label={t('host.fps.label')}
+                                    helper={t('host.fps.helper')}
                                 >
                                     <Select
                                         value={String(host.avatar?.avatar_fps ?? 24)}
@@ -2162,7 +2262,7 @@ function HostTabBody({
                                                     value={String(f)}
                                                     className="text-xs"
                                                 >
-                                                    {f} fps
+                                                    {t('host.fps.value', { fps: f })}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -2173,8 +2273,10 @@ function HostTabBody({
                             {/* Host-in-video percentage */}
                             <Field
                                 icon={<Users className="size-3.5" />}
-                                label={`Host on screen — ${host.host_in_video_percentage}%`}
-                                helper="Director picks which shots show the host (Hook, Recap, CTA, high-emphasis beats are prioritised). Narration audio plays continuously regardless."
+                                label={t('host.percentage.label', {
+                                    percent: host.host_in_video_percentage,
+                                })}
+                                helper={t('host.percentage.helper')}
                             >
                                 <Slider
                                     value={[host.host_in_video_percentage]}
@@ -2185,9 +2287,8 @@ function HostTabBody({
                                         setHost({ ...host, host_in_video_percentage: v[0] ?? 100 })
                                     }
                                 />
-                                <p className="text-[10px] text-muted-foreground">
-                                    Tip: Below ~25% the host barely appears — disable Host instead
-                                    to save on avatar synthesis costs.
+                                <p className="text-2xs text-muted-foreground">
+                                    {t('host.percentage.tip')}
                                 </p>
                             </Field>
                         </>
@@ -2213,10 +2314,11 @@ function ThemeCard({
     selected: boolean;
     onSelect: () => void;
 }) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     // Inject the user's primary color via CSS custom properties so previews
     // reflect the live color choice (matches AiSettings template gallery).
     const srcDoc = previewHtml
-        ? `<style>:root{--primary-color:${primaryColor || '#6366f1'};--accent-color:${primaryColor || '#6366f1'}}</style>${previewHtml}`
+        ? `<style>:root{--primary-color:${primaryColor || '#6366f1'};--accent-color:${primaryColor || '#6366f1'}}</style>${previewHtml}` // design-lint-ignore: portable literal default template color, not app theme (see EmbedCodeDialog.tsx precedent)
         : null;
 
     return (
@@ -2229,7 +2331,7 @@ function ThemeCard({
                     : 'border-border hover:border-muted-foreground/40'
             }`}
         >
-            <div className="relative h-[90px] w-full overflow-hidden bg-muted">
+            <div className="relative h-24 w-full overflow-hidden bg-muted">
                 {srcDoc ? (
                     <iframe
                         srcDoc={srcDoc}
@@ -2244,21 +2346,21 @@ function ThemeCard({
                         }}
                     />
                 ) : (
-                    <div className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
-                        Minimal styling
+                    <div className="flex size-full items-center justify-center text-2xs text-muted-foreground">
+                        {t('themeCard.minimalStyling')}
                     </div>
                 )}
             </div>
             <div className="bg-background px-1.5 py-1">
                 <p
-                    className={`truncate text-[11px] font-medium ${
+                    className={`truncate text-2xs font-medium ${
                         selected ? 'text-violet-700' : 'text-foreground'
                     }`}
                 >
                     {label}
                 </p>
                 {description && (
-                    <p className="truncate text-[9px] text-muted-foreground">{description}</p>
+                    <p className="truncate text-2xs text-muted-foreground">{description}</p>
                 )}
             </div>
         </button>
@@ -2274,6 +2376,7 @@ function IntroOutroEditor({
     value: { enabled: boolean; duration_seconds: number; html: string };
     onChange: (next: { enabled: boolean; duration_seconds: number; html: string }) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     return (
         <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -2285,7 +2388,9 @@ function IntroOutroEditor({
             </div>
             {value.enabled && (
                 <div className="flex items-center gap-2 pl-1">
-                    <Label className="text-[10px] text-muted-foreground">Duration</Label>
+                    <Label className="text-2xs text-muted-foreground">
+                        {t('introOutro.duration')}
+                    </Label>
                     <Input
                         type="number"
                         min={1}
@@ -2303,7 +2408,9 @@ function IntroOutroEditor({
                         }
                         className="h-7 w-16 text-xs"
                     />
-                    <span className="text-[10px] text-muted-foreground">seconds</span>
+                    <span className="text-2xs text-muted-foreground">
+                        {t('introOutro.seconds')}
+                    </span>
                 </div>
             )}
         </div>
@@ -2349,6 +2456,8 @@ function BrandKitOverridePanel({
     selectedKit: BrandKit | undefined;
     onChange: (next: BrandOverrides | undefined) => void;
 }) {
+    const { t } = useTranslation(['videoApiStudioSettingsPopover', 'videoApiStudioVideoStyleBranding']);
+    const watermarkPositions = buildWatermarkPositions(t);
     const ov = value ?? {};
     const active = hasActiveBrandOverrides(value);
     const [open, setOpen] = useState(active);
@@ -2369,10 +2478,10 @@ function BrandKitOverridePanel({
         set({
             palette: on
                 ? {
-                      primary: selectedKit?.palette?.primary ?? '#FF6B00',
-                      secondary: selectedKit?.palette?.secondary ?? '#0F172A',
-                      accent: selectedKit?.palette?.accent ?? '#22D3EE',
-                      background: selectedKit?.palette?.background ?? '#FFFFFF',
+                      primary: selectedKit?.palette?.primary ?? '#FF6B00', // design-lint-ignore: portable literal default brand-kit color, not app theme
+                      secondary: selectedKit?.palette?.secondary ?? '#0F172A', // design-lint-ignore: portable literal default brand-kit color, not app theme
+                      accent: selectedKit?.palette?.accent ?? '#22D3EE', // design-lint-ignore: portable literal default brand-kit color, not app theme
+                      background: selectedKit?.palette?.background ?? '#FFFFFF', // design-lint-ignore: portable literal default brand-kit color, not app theme
                   }
                 : undefined,
         });
@@ -2420,65 +2529,66 @@ function BrandKitOverridePanel({
             <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 py-2 text-xs font-medium">
                 <span className="flex items-center gap-1.5">
                     <SparklesIcon className="size-3.5 text-muted-foreground" />
-                    Override for this video
+                    {t('brandOverride.title')}
                     {active && <span className="size-1.5 rounded-full bg-violet-500" />}
                 </span>
                 <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <div className="space-y-3 border-t p-2.5">
-                <p className="text-[10px] leading-snug text-muted-foreground">
-                    One-shot tweaks for this generation only — they don&apos;t change the kit
-                    and reset after you generate.
+                <p className="text-2xs leading-snug text-muted-foreground">
+                    {t('brandOverride.intro')}
                 </p>
 
                 {/* System prompt — replaces the kit's director instructions */}
                 <div className="space-y-1">
-                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Director instructions
+                    <Label className="text-2xs uppercase tracking-wide text-muted-foreground">
+                        {t('brandOverride.directorInstructions.label')}
                     </Label>
                     <Textarea
                         rows={3}
                         maxLength={4000}
                         placeholder={
                             selectedKit?.system_prompt
-                                ? 'Replace the kit instructions for this video…'
-                                : 'e.g. Make it punchier and lead with the offer.'
+                                ? t('brandOverride.directorInstructions.placeholderReplace')
+                                : t('brandOverride.directorInstructions.placeholderDefault')
                         }
                         value={ov.system_prompt ?? ''}
                         onChange={(e) => set({ system_prompt: e.target.value })}
                         className="text-xs"
                     />
-                    <p className="text-[10px] text-muted-foreground">
-                        Replaces the kit&apos;s instructions for this video only.
+                    <p className="text-2xs text-muted-foreground">
+                        {t('brandOverride.directorInstructions.helper')}
                     </p>
                 </div>
 
                 {/* Colors */}
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Colors</Label>
+                        <Label className="text-xs font-medium">
+                            {t('brandOverride.colors.label')}
+                        </Label>
                         <Switch checked={colorsOn} onCheckedChange={toggleColors} />
                     </div>
                     {colorsOn && (
                         <div className="grid grid-cols-2 gap-2 pl-1">
                             {(
                                 [
-                                    ['primary', 'Primary'],
-                                    ['secondary', 'Secondary'],
-                                    ['accent', 'Accent'],
-                                    ['background', 'Background'],
+                                    ['primary', t('brandOverride.colors.primary')],
+                                    ['secondary', t('brandOverride.colors.secondary')],
+                                    ['accent', t('brandOverride.colors.accent')],
+                                    ['background', t('brandOverride.colors.background')],
                                 ] as const
                             ).map(([key, label]) => (
                                 <div key={key} className="space-y-1">
-                                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    <Label className="text-2xs uppercase tracking-wide text-muted-foreground">
                                         {label}
                                     </Label>
                                     <div className="flex items-center gap-1.5">
                                         <ColorPicker
-                                            value={ov.palette?.[key] ?? '#000000'}
+                                            value={ov.palette?.[key] ?? '#000000'} // design-lint-ignore: portable literal ColorPicker fallback, not app theme
                                             onChange={(color) => setPalette(key, color)}
                                         />
-                                        <span className="font-mono text-[10px] text-muted-foreground">
+                                        <span className="font-mono text-2xs text-muted-foreground">
                                             {ov.palette?.[key] ?? ''}
                                         </span>
                                     </div>
@@ -2491,13 +2601,15 @@ function BrandKitOverridePanel({
                 {/* Intro */}
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Override intro</Label>
+                        <Label className="text-xs font-medium">
+                            {t('brandOverride.overrideIntro')}
+                        </Label>
                         <Switch checked={introOn} onCheckedChange={toggleIntro} />
                     </div>
                     {introOn && ov.intro && (
                         <div className="space-y-1.5 pl-1">
                             <IntroOutroEditor
-                                label="Intro"
+                                label={t('introOutro.intro')}
                                 value={{
                                     enabled: ov.intro.enabled ?? true,
                                     duration_seconds: ov.intro.duration_seconds ?? 3,
@@ -2507,12 +2619,12 @@ function BrandKitOverridePanel({
                             />
                             <Textarea
                                 rows={2}
-                                placeholder='<div>…intro HTML…</div>'
+                                placeholder={t('brandOverride.introPlaceholder')}
                                 value={ov.intro.html ?? ''}
                                 onChange={(e) =>
                                     set({ intro: { ...ov.intro, html: e.target.value } })
                                 }
-                                className="font-mono text-[11px]"
+                                className="font-mono text-2xs"
                             />
                         </div>
                     )}
@@ -2521,13 +2633,15 @@ function BrandKitOverridePanel({
                 {/* Outro */}
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Override outro</Label>
+                        <Label className="text-xs font-medium">
+                            {t('brandOverride.overrideOutro')}
+                        </Label>
                         <Switch checked={outroOn} onCheckedChange={toggleOutro} />
                     </div>
                     {outroOn && ov.outro && (
                         <div className="space-y-1.5 pl-1">
                             <IntroOutroEditor
-                                label="Outro"
+                                label={t('introOutro.outro')}
                                 value={{
                                     enabled: ov.outro.enabled ?? true,
                                     duration_seconds: ov.outro.duration_seconds ?? 4,
@@ -2537,12 +2651,12 @@ function BrandKitOverridePanel({
                             />
                             <Textarea
                                 rows={2}
-                                placeholder='<div>…outro HTML…</div>'
+                                placeholder={t('brandOverride.outroPlaceholder')}
                                 value={ov.outro.html ?? ''}
                                 onChange={(e) =>
                                     set({ outro: { ...ov.outro, html: e.target.value } })
                                 }
-                                className="font-mono text-[11px]"
+                                className="font-mono text-2xs"
                             />
                         </div>
                     )}
@@ -2551,13 +2665,17 @@ function BrandKitOverridePanel({
                 {/* Watermark */}
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Override watermark</Label>
+                        <Label className="text-xs font-medium">
+                            {t('brandOverride.overrideWatermark')}
+                        </Label>
                         <Switch checked={watermarkOn} onCheckedChange={toggleWatermark} />
                     </div>
                     {watermarkOn && ov.watermark && (
                         <div className="space-y-1.5 pl-1">
                             <div className="flex items-center justify-between">
-                                <Label className="text-[10px] text-muted-foreground">Show</Label>
+                                <Label className="text-2xs text-muted-foreground">
+                                    {t('brandOverride.show')}
+                                </Label>
                                 <Switch
                                     checked={ov.watermark.enabled ?? true}
                                     onCheckedChange={(v) =>
@@ -2566,7 +2684,7 @@ function BrandKitOverridePanel({
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-1">
-                                {WATERMARK_POSITIONS.map((p) => (
+                                {watermarkPositions.map((p) => (
                                     <button
                                         key={p.value}
                                         type="button"
@@ -2578,7 +2696,7 @@ function BrandKitOverridePanel({
                                                 },
                                             })
                                         }
-                                        className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                                        className={`rounded-md border px-2 py-1 text-2xs transition-colors ${
                                             ov.watermark?.position === p.value
                                                 ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300'
                                                 : 'hover:bg-muted'
@@ -2590,12 +2708,12 @@ function BrandKitOverridePanel({
                             </div>
                             <Textarea
                                 rows={2}
-                                placeholder='<img src="https://…" />'
+                                placeholder={t('brandOverride.watermarkPlaceholder')}
                                 value={ov.watermark.html ?? ''}
                                 onChange={(e) =>
                                     set({ watermark: { ...ov.watermark, html: e.target.value } })
                                 }
-                                className="font-mono text-[11px]"
+                                className="font-mono text-2xs"
                             />
                         </div>
                     )}
@@ -2605,9 +2723,9 @@ function BrandKitOverridePanel({
                     <button
                         type="button"
                         onClick={() => onChange(undefined)}
-                        className="text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+                        className="text-2xs text-muted-foreground hover:text-foreground hover:underline"
                     >
-                        Clear all overrides
+                        {t('brandOverride.clearAll')}
                     </button>
                 )}
             </div>
@@ -2638,6 +2756,7 @@ function ModelOverridesPanel({
     overrides: ModelOverrides | undefined;
     onChange: (next: ModelOverrides | undefined) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     const [advancedOpen, setAdvancedOpen] = useState(false);
     // Fetch models eligible for video. Single shared query — TanStack
     // dedupes across the panel + every per-stage dropdown.
@@ -2703,32 +2822,32 @@ function ModelOverridesPanel({
             <div className="flex items-center justify-between gap-3">
                 <Label className="flex items-center gap-1.5 text-xs font-medium">
                     <CpuIcon className="size-3.5" />
-                    AI model overrides
+                    {t('modelOverrides.label')}
                 </Label>
             </div>
-            <p className="pl-5 text-[10px] text-muted-foreground">
-                Pick a model for the LLM stages of this run. Leave blank to use system defaults.
-                Vision review and small utility prompts always use system defaults to protect
-                quality and cost.
+            <p className="ps-5 text-2xs text-muted-foreground">
+                {t('modelOverrides.description')}
             </p>
             <div className="space-y-1.5 pl-5">
-                <Label className="text-[10px] text-muted-foreground">Default model</Label>
+                <Label className="text-2xs text-muted-foreground">
+                    {t('modelOverrides.defaultModelLabel')}
+                </Label>
                 <Select
                     value={defaultModel || SYSTEM_DEFAULT_VALUE}
                     onValueChange={(v) => setDefault(v === SYSTEM_DEFAULT_VALUE ? undefined : v)}
                     disabled={isLoading}
                 >
                     <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Use system defaults" />
+                        <SelectValue placeholder={t('modelOverrides.systemDefault')} />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value={SYSTEM_DEFAULT_VALUE} className="text-xs">
-                            Use system defaults
+                            {t('modelOverrides.systemDefault')}
                         </SelectItem>
                         {models.map((m) => (
                             <SelectItem key={m.model_id} value={m.model_id} className="text-xs">
                                 {m.name}
-                                <span className="ml-1 text-[9px] text-muted-foreground">
+                                <span className="ms-1 text-2xs text-muted-foreground">
                                     ({m.provider})
                                 </span>
                             </SelectItem>
@@ -2740,24 +2859,24 @@ function ModelOverridesPanel({
             <button
                 type="button"
                 onClick={() => setAdvancedOpen((v) => !v)}
-                className="flex w-full items-center gap-1 pl-5 text-[10px] text-muted-foreground hover:text-foreground"
+                className="flex w-full items-center gap-1 ps-5 text-2xs text-muted-foreground hover:text-foreground"
             >
                 <ChevronRightIcon
                     className={`size-3 transition-transform ${advancedOpen ? 'rotate-90' : ''}`}
                 />
-                Customize per stage (advanced)
+                {t('modelOverrides.advancedToggle')}
             </button>
 
             {advancedOpen && (
                 <div className="space-y-2 rounded-md border border-border/40 bg-background/60 p-2 pl-5">
-                    {USER_OVERRIDABLE_STAGE_META.map((stage) => {
+                    {buildUserOverridableStageMeta(t).map((stage) => {
                         const current = perStage[stage.value] ?? '';
                         return (
                             <div key={stage.value} className="space-y-1">
-                                <Label className="text-[10px] text-foreground/80">
+                                <Label className="text-2xs text-foreground/80">
                                     {stage.label}
                                     {stage.hint && (
-                                        <span className="ml-1 text-[9px] text-muted-foreground">
+                                        <span className="ms-1 text-2xs text-muted-foreground">
                                             — {stage.hint}
                                         </span>
                                     )}
@@ -2772,32 +2891,36 @@ function ModelOverridesPanel({
                                     }
                                     disabled={isLoading}
                                 >
-                                    <SelectTrigger className="h-7 text-[11px]">
+                                    <SelectTrigger className="h-7 text-2xs">
                                         <SelectValue
                                             placeholder={
                                                 defaultModel
-                                                    ? `Inherits default (${defaultModel})`
-                                                    : 'Inherits system default'
+                                                    ? t('modelOverrides.inheritsDefault', {
+                                                          model: defaultModel,
+                                                      })
+                                                    : t('modelOverrides.inheritsSystemDefault')
                                             }
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             value={SYSTEM_DEFAULT_VALUE}
-                                            className="text-[11px]"
+                                            className="text-2xs"
                                         >
                                             {defaultModel
-                                                ? `Inherits default (${defaultModel})`
-                                                : 'Inherits system default'}
+                                                ? t('modelOverrides.inheritsDefault', {
+                                                      model: defaultModel,
+                                                  })
+                                                : t('modelOverrides.inheritsSystemDefault')}
                                         </SelectItem>
                                         {models.map((m) => (
                                             <SelectItem
                                                 key={m.model_id}
                                                 value={m.model_id}
-                                                className="text-[11px]"
+                                                className="text-2xs"
                                             >
                                                 {m.name}
-                                                <span className="ml-1 text-[9px] text-muted-foreground">
+                                                <span className="ms-1 text-2xs text-muted-foreground">
                                                     ({m.provider})
                                                 </span>
                                             </SelectItem>
@@ -2814,6 +2937,7 @@ function ModelOverridesPanel({
 }
 
 export function SettingsPopover(props: SettingsPopoverProps) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     const [open, setOpen] = useState(false);
     const count = computeNonDefaultCount(props.options, props.reviewModeEnabled);
 
@@ -2849,14 +2973,14 @@ export function SettingsPopover(props: SettingsPopoverProps) {
                     variant="outline"
                     size="sm"
                     className="h-8 gap-1.5 bg-background text-xs font-normal hover:bg-muted"
-                    title="Generation settings"
+                    title={t('sheet.triggerTitle')}
                 >
                     <Settings2 className="size-3.5" />
-                    <span className="hidden sm:inline">Settings</span>
+                    <span className="hidden sm:inline">{t('sheet.triggerLabel')}</span>
                     {count > 0 && (
                         <Badge
                             variant="default"
-                            className="h-4 min-w-4 justify-center px-1 text-[10px]"
+                            className="h-4 min-w-4 justify-center px-1 text-2xs"
                         >
                             {count}
                         </Badge>
@@ -2865,22 +2989,22 @@ export function SettingsPopover(props: SettingsPopoverProps) {
             </SheetTrigger>
             <SheetContent
                 side="bottom"
-                className="flex max-h-[85vh] flex-col gap-0 rounded-t-xl p-0"
+                className="flex max-h-dialog-tall flex-col gap-0 rounded-t-xl p-0"
             >
                 <SheetTitle className="flex items-center justify-between gap-3 border-b px-4 py-3 text-sm font-semibold">
-                    <span>Generation settings</span>
+                    <span>{t('sheet.title')}</span>
                     {count > 0 && (
                         <button
                             type="button"
                             onClick={handleResetToDefaults}
                             className="text-xs font-normal text-muted-foreground transition-colors hover:text-foreground"
-                            title="Reset all settings to defaults (prompt and attachments are kept)"
+                            title={t('sheet.resetTitle')}
                         >
-                            Reset to defaults
+                            {t('sheet.resetToDefaults')}
                         </button>
                     )}
                 </SheetTitle>
-                <div className="mx-auto w-full max-w-[520px] flex-1 overflow-y-auto p-4">
+                <div className="mx-auto w-full max-w-lg flex-1 overflow-y-auto p-4">
                     <SettingsBody {...props} />
                 </div>
             </SheetContent>
@@ -2902,6 +3026,7 @@ function CastPicker({
     castId?: string;
     onChange: (castId: string | undefined) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioSettingsPopover');
     const [casts, setCasts] = useState<VideoCast[]>([]);
     const [loaded, setLoaded] = useState(false);
 
@@ -2925,26 +3050,30 @@ function CastPicker({
 
     if (loaded && casts.length === 0) {
         return (
-            <p className="text-[10px] text-muted-foreground">
-                New characters this video. Finish a story, then “Save cast” to reuse them in
-                the next one.
+            <p className="text-2xs text-muted-foreground">
+                {t('advanced.castPicker.noSavedCasts')}
             </p>
         );
     }
 
     return (
         <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-muted-foreground">Cast</span>
+            <span className="text-2xs text-muted-foreground">
+                {t('advanced.castPicker.label')}
+            </span>
             <select
                 value={castId ?? ''}
                 onChange={(e) => onChange(e.target.value || undefined)}
-                aria-label="Saved cast"
-                className="h-6 flex-1 rounded-md border bg-background px-1.5 text-[10px] text-foreground outline-none"
+                aria-label={t('advanced.castPicker.savedCastAria')}
+                className="h-6 flex-1 rounded-md border bg-background px-1.5 text-2xs text-foreground outline-none"
             >
-                <option value="">New cast this video</option>
+                <option value="">{t('advanced.castPicker.newCast')}</option>
                 {casts.map((c) => (
                     <option key={c.cast_id} value={c.cast_id}>
-                        {c.name} · {c.characters.length} character{c.characters.length === 1 ? '' : 's'}
+                        {c.name} ·{' '}
+                        {t('advanced.castPicker.characterCount', {
+                            count: c.characters.length,
+                        })}
                     </option>
                 ))}
             </select>

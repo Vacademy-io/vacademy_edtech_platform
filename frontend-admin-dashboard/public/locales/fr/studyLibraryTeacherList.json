@@ -1,0 +1,24 @@
+{
+    "toast": {
+        "removeSuccess": "Enseignant retiré de ce groupe",
+        "removeFailed": "Échec de la suppression de l'enseignant."
+    },
+    "table": {
+        "name": "Nom",
+        "status": "Statut",
+        "active": "Actif",
+        "actions": "Actions"
+    },
+    "removeFromBatchTitle": "Retirer de ce groupe",
+    "dialog": {
+        "title": "Retirer l'enseignant",
+        "description": "Retirer <strong>{{name}}</strong> de ce groupe ? Il n'aura plus accès pour enseigner ici.",
+        "cancel": "Annuler",
+        "removing": "Suppression...",
+        "remove": "Retirer"
+    },
+    "errors": {
+        "forbidden": "Vous n'avez pas la permission de charger les enseignants de ce groupe.",
+        "loadFailed": "Erreur lors du chargement des enseignants"
+    }
+}

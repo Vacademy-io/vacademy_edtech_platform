@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -23,12 +24,13 @@ interface DailiesDecisionProps {
 
 /** Green "QC passed" / amber "QC flagged: …" pill; nothing when QC didn't run. */
 function QcBadge({ qc }: { qc: DailiesClip['qc'] }) {
+    const { t } = useTranslation('videoApiStudioDailiesDecision');
     if (!qc) return null;
     if (qc.pass) {
         return (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
                 <CheckCircle weight="fill" className="size-3 shrink-0" />
-                QC passed
+                {t('qc.passed')}
             </span>
         );
     }
@@ -37,7 +39,7 @@ function QcBadge({ qc }: { qc: DailiesClip['qc'] }) {
         <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
             <WarningCircle weight="fill" className="size-3 shrink-0" />
             <span className="truncate">
-                QC flagged{firstIssue ? `: ${firstIssue}` : ''}
+                {firstIssue ? t('qc.flaggedWithIssue', { issue: firstIssue }) : t('qc.flagged')}
             </span>
         </span>
     );
@@ -51,6 +53,7 @@ function QcBadge({ qc }: { qc: DailiesClip['qc'] }) {
  * like the original take).
  */
 export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDecisionProps) {
+    const { t } = useTranslation('videoApiStudioDailiesDecision');
     const clips = useMemo<DailiesClip[]>(() => {
         const raw = (decision.payload?.clips as DailiesClip[]) ?? [];
         return Array.isArray(raw) ? raw.filter((c) => c && typeof c.shot_index === 'number') : [];
@@ -87,15 +90,17 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <FilmReel className="size-4 text-violet-600" />
                 </span>
-                Dailies — watch your filmed scenes
+                {t('header.title')}
                 {clips.length > 0 && (
-                    <span className="font-normal text-muted-foreground">· {clips.length}</span>
+                    <span className="font-normal text-muted-foreground">
+                        {t('header.count', { count: clips.length })}
+                    </span>
                 )}
             </div>
 
             {clips.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    No clips to review — approve to continue.
+                    {t('empty')}
                 </p>
             ) : (
                 <div className="grid max-h-96 gap-3 overflow-y-auto p-4 sm:grid-cols-2">
@@ -129,7 +134,7 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
                                             className="h-6 shrink-0 gap-1 px-1.5 text-xs"
                                         >
                                             <ArrowCounterClockwise className="size-3" />
-                                            {selected ? 'Keep it' : 'Redo'}
+                                            {selected ? t('clip.keepIt') : t('clip.redo')}
                                         </Button>
                                     </div>
                                     {c.lines ? (
@@ -139,7 +144,9 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
                                     ) : null}
                                     <div className="flex flex-wrap items-center gap-1.5">
                                         <span className="text-xs tabular-nums text-muted-foreground">
-                                            {Number(c.duration_s ?? 0).toFixed(1)}s
+                                            {t('clip.durationSeconds', {
+                                                value: Number(c.duration_s ?? 0).toFixed(1),
+                                            })}
                                         </span>
                                         <QcBadge qc={c.qc} />
                                     </div>
@@ -153,7 +160,7 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
                                                     [c.shot_index]: e.target.value,
                                                 }))
                                             }
-                                            placeholder="What must the re-take fix? e.g. she should sound angrier, wrong prop on the desk…"
+                                            placeholder={t('clip.notePlaceholder')}
                                             className="min-h-14 text-xs"
                                         />
                                     )}
@@ -167,8 +174,8 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
             <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
                 <span className="text-xs text-muted-foreground">
                     {redoCount > 0
-                        ? `${redoCount} scene${redoCount === 1 ? '' : 's'} will be re-filmed — a re-take is charged like the original clip.`
-                        : 'Re-takes are charged like the original clip.'}
+                        ? t('footer.reFilmSummary', { count: redoCount })
+                        : t('footer.reTakeNote')}
                 </span>
                 <Button
                     size="sm"
@@ -178,8 +185,8 @@ export function DailiesDecision({ decision, isSubmitting, onSubmit }: DailiesDec
                 >
                     <Check className="size-4" />
                     {redoCount > 0
-                        ? `Re-film ${redoCount} scene${redoCount === 1 ? '' : 's'} & continue`
-                        : 'Approve all & continue'}
+                        ? t('footer.reFilmSubmit', { count: redoCount })
+                        : t('footer.approveAll')}
                 </Button>
             </div>
         </div>

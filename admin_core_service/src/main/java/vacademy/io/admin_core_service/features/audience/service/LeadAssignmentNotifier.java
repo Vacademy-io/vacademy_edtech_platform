@@ -20,6 +20,9 @@ import java.util.Map;
  *   - workbench bulk reassign     (CounsellorReassignService)
  *   - pool backup reassign        (CounselorPoolService.reassignOpenLeadsToBackup)
  *
+ * Also rings the owner when one of their leads enquires again (repeat-lead
+ * reattempt, {@code AudienceService.recordReattempt}).
+ *
  * Also used by {@code LeadAutomationScheduler} for follow-up due/overdue
  * reminders — a guaranteed baseline bell alert, since the workflow-trigger
  * path those events also emit has no bell/system-alert node type and depends
@@ -44,6 +47,21 @@ public class LeadAssignmentNotifier {
             "showBadge", true,
             "isActive", true);
 
+    /**
+     * A new-lead alert that will NOT be dismissed by hand. It comes down when the
+     * counsellor actually works the lead — any timeline event on it clears the
+     * alert through {@code NotificationService.deactivateSystemAlertsForEntity}.
+     * Letting it be swiped away would defeat the only thing it is for.
+     */
+    private static final Map<String, Object> STICKY_ALERT_SETTINGS = Map.of(
+            "priority", 2,
+            "isDismissible", false,
+            "showBadge", true,
+            "isActive", true);
+
+    /** What a lead-assignment alert is filed under, so activity can find it again. */
+    public static final String LEAD_ENTITY = "LEAD";
+
     private final NotificationService notificationService;
 
     /**
@@ -55,6 +73,18 @@ public class LeadAssignmentNotifier {
      *   - neither:       You have a new lead.
      */
     public void notifyAssigned(String instituteId, String counsellorUserId, String leadName, String campaignName) {
+        notifyAssigned(instituteId, counsellorUserId, leadName, campaignName, null);
+    }
+
+    /**
+     * As above, with the lead's user id. Given one, the alert is filed against
+     * that lead and raised as non-dismissible: it sits on the bell until the
+     * counsellor logs something on the lead. Without one the old behaviour
+     * stands — an ordinary dismissible alert — so a path that cannot name the
+     * lead still notifies.
+     */
+    public void notifyAssigned(String instituteId, String counsellorUserId, String leadName,
+                               String campaignName, String leadUserId) {
         if (counsellorUserId == null || counsellorUserId.isBlank()) {
             return;
         }
@@ -66,7 +96,40 @@ public class LeadAssignmentNotifier {
             body.append(" from campaign \"").append(campaignName).append("\"");
         }
         body.append(".");
-        dispatch(instituteId, counsellorUserId, "New lead assigned", body.toString());
+        boolean sticky = leadUserId != null && !leadUserId.isBlank();
+        dispatch(instituteId, counsellorUserId, "New lead assigned", body.toString(),
+                sticky ? STICKY_ALERT_SETTINGS : ALERT_SETTINGS,
+                sticky ? LEAD_ENTITY : null, sticky ? leadUserId : null);
+    }
+
+    /**
+     * One of the counsellor's leads enquired again. Filed against the lead and sticky like a
+     * new-lead alert when {@code leadUserId} is given. {@code leadName}, {@code sourceLabel}
+     * and {@code campaignName} are optional:
+     *   "Asha" enquired again via Meta Lead Ads (campaign "Spring intake").
+     */
+    public void notifyReattempt(String instituteId, String counsellorUserId, String leadName,
+                                String sourceLabel, String campaignName, String leadUserId) {
+        if (counsellorUserId == null || counsellorUserId.isBlank()) {
+            return;
+        }
+        StringBuilder body = new StringBuilder();
+        if (leadName != null && !leadName.isBlank()) {
+            body.append("\"").append(leadName).append("\" enquired again");
+        } else {
+            body.append("Your lead enquired again");
+        }
+        if (sourceLabel != null && !sourceLabel.isBlank()) {
+            body.append(" via ").append(sourceLabel);
+        }
+        if (campaignName != null && !campaignName.isBlank()) {
+            body.append(" (campaign \"").append(campaignName).append("\")");
+        }
+        body.append(".");
+        boolean sticky = leadUserId != null && !leadUserId.isBlank();
+        dispatch(instituteId, counsellorUserId, "Reattempt", body.toString(),
+                sticky ? STICKY_ALERT_SETTINGS : ALERT_SETTINGS,
+                sticky ? LEAD_ENTITY : null, sticky ? leadUserId : null);
     }
 
     /**
@@ -109,6 +172,11 @@ public class LeadAssignmentNotifier {
     }
 
     private void dispatch(String instituteId, String counsellorUserId, String title, String body) {
+        dispatch(instituteId, counsellorUserId, title, body, ALERT_SETTINGS, null, null);
+    }
+
+    private void dispatch(String instituteId, String counsellorUserId, String title, String body,
+                          Map<String, Object> settings, String entity, String entityId) {
         try {
             notificationService.createSystemAlertAnnouncement(
                     instituteId,
@@ -118,7 +186,9 @@ public class LeadAssignmentNotifier {
                     "system",
                     "System",
                     "ADMIN",
-                    ALERT_SETTINGS);
+                    settings,
+                    entity,
+                    entityId);
         } catch (Exception e) {
             log.warn("Failed to send lead-assignment notification to counsellor={} (institute={}): {}",
                     counsellorUserId, instituteId, e.getMessage());

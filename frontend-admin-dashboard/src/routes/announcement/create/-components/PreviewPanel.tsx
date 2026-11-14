@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Bell, DeviceMobile, Laptop, PushPin } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ModeType } from '@/services/announcement';
 import type { WhatsAppTemplateDTO } from '@/routes/communication/whatsapp-templates/-services/template-api';
 import type { PushConfig, WhatsAppConfig } from '../-types';
-import { WHATSAPP_VALUE_SOURCES } from '../-utils/constants';
+import { buildWhatsAppValueSources } from '../-utils/constants';
 import { whatsAppVariableNames } from '../-utils/validation';
 
 interface PreviewPanelProps {
@@ -47,6 +48,7 @@ function InAppPreview({
     contentText: string;
     modes: ModeType[];
 }) {
+    const { t } = useTranslation('announcementCreatePreviewPanel');
     const pinned = modes.includes('DASHBOARD_PIN');
     return (
         <PhoneFrame>
@@ -54,20 +56,20 @@ function InAppPreview({
                 <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1.5 text-caption font-semibold text-muted-foreground">
                         <Bell className="size-3.5" weight="fill" />
-                        Announcement
+                        {t('inApp.badge')}
                     </span>
                     {pinned && (
                         <span className="flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption text-primary-600">
                             <PushPin className="size-3" weight="fill" />
-                            Pinned
+                            {t('inApp.pinned')}
                         </span>
                     )}
                 </div>
                 <p className="text-body font-semibold text-foreground">
-                    {title || 'Your announcement title'}
+                    {title || t('inApp.titlePlaceholder')}
                 </p>
                 <p className="mt-1 line-clamp-6 text-caption text-muted-foreground">
-                    {contentText || 'Your message appears here as learners will read it.'}
+                    {contentText || t('inApp.contentPlaceholder')}
                 </p>
             </div>
         </PhoneFrame>
@@ -75,15 +77,18 @@ function InAppPreview({
 }
 
 function PushPreview({ push, senderName }: { push: PushConfig; senderName: string }) {
+    const { t } = useTranslation('announcementCreatePreviewPanel');
     return (
         <PhoneFrame>
             <div className="rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-caption text-muted-foreground">{senderName || 'Your app'}</p>
+                <p className="text-caption text-muted-foreground">
+                    {senderName || t('push.senderPlaceholder')}
+                </p>
                 <p className="mt-1 text-body font-semibold text-foreground">
-                    {push.title || 'Push title'}
+                    {push.title || t('push.titlePlaceholder')}
                 </p>
                 <p className="line-clamp-3 text-caption text-muted-foreground">
-                    {push.body || 'Push body appears here.'}
+                    {push.body || t('push.bodyPlaceholder')}
                 </p>
             </div>
         </PhoneFrame>
@@ -103,10 +108,12 @@ function WhatsAppPreview({
     contentText: string;
     senderName: string;
 }) {
+    const { t } = useTranslation('announcementCreatePreviewPanel');
+
     if (!template) {
         return (
             <p className="rounded-md border border-dashed bg-muted/40 px-3 py-6 text-center text-caption text-muted-foreground">
-                Pick an approved WhatsApp template on the Delivery step to preview it here.
+                {t('whatsapp.noTemplate')}
             </p>
         );
     }
@@ -155,7 +162,7 @@ function WhatsAppPreview({
             default:
                 return (
                     binding.customValue ||
-                    WHATSAPP_VALUE_SOURCES.find((s) => s.value === binding.source)?.label ||
+                    buildWhatsAppValueSources(t).find((s) => s.value === binding.source)?.label ||
                     `{{${name}}}`
                 );
         }

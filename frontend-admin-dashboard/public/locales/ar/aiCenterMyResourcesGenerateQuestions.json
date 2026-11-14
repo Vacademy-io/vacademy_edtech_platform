@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "إنشاء أسئلة"
+    },
+    "dialog": {
+        "title": "إنشاء أسئلة",
+        "promptLabel": "الطلب",
+        "promptPlaceholder": "أدخل طلبك هنا",
+        "generateButton": "إنشاء"
+    },
+    "tasksList": {
+        "heading": "Vsmart Upload"
+    }
+}

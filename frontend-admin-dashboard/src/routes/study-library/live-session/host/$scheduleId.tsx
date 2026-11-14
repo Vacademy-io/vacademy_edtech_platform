@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { ArrowLeft } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import ZoomHostSdkPlayer from './-components/ZoomHostSdkPlayer';
 
 export const Route = createFileRoute('/study-library/live-session/host/$scheduleId')({
@@ -21,6 +22,7 @@ function HostLiveSession() {
     const { scheduleId } = Route.useParams();
     const { sessionId } = Route.useSearch();
     const navigate = useNavigate();
+    const { t } = useTranslation('studyLibraryLiveSessionHost');
 
     const handleBack = () => {
         if (sessionId) {
@@ -50,10 +52,10 @@ function HostLiveSession() {
                     className="group flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-800 shadow-sm transition hover:bg-white"
                 >
                     <ArrowLeft className="size-3.5" />
-                    Back to Session
+                    {t('backToSession')}
                 </button>
                 <span className="text-xs font-medium text-white/70">
-                    You are joining as host
+                    {t('joiningAsHost')}
                 </span>
             </div>
             <div className="min-h-0 flex-1">

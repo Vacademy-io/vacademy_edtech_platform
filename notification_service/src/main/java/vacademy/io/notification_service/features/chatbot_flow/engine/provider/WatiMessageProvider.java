@@ -126,8 +126,8 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
     }
 
     @Override
-    public void sendInteractive(String phone, Map<String, Object> interactivePayload,
-                                 String instituteId, String businessChannelId) {
+    public String sendInteractive(String phone, Map<String, Object> interactivePayload,
+                                   String instituteId, String businessChannelId) {
         WatiConfig config = resolveConfig(instituteId);
         if (config == null) throw new RuntimeException("WATI config not found for institute: " + instituteId);
 
@@ -139,6 +139,8 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
         } else if ("list".equals(interactiveType)) {
             sendInteractiveList(config, formattedPhone, interactivePayload);
         }
+        // WATI's interactive endpoints report no message id, same as its other sends here.
+        return null;
     }
 
     private void sendInteractiveButtons(WatiConfig config, String phone, Map<String, Object> payload) {
@@ -246,7 +248,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
     }
 
     @Override
-    public void sendMedia(String phone, String mediaType, String mediaUrl, String caption,
+    public String sendMedia(String phone, String mediaType, String mediaUrl, String caption,
                            String filename, String instituteId, String businessChannelId) {
         WatiConfig config = resolveConfig(instituteId);
         if (config == null) throw new RuntimeException("WATI config not found for institute: " + instituteId);
@@ -300,9 +302,14 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
                 if (respJson.has("result") && respJson.path("result").isBoolean()
                         && !respJson.path("result").booleanValue()) {
                     throw new RuntimeException("WATI sendSessionFile result=false: "
-                            + respJson.path("info").asText("unknown error"));
+                            + failureReason(respJson));
                 }
+                // Session-file sends usually carry no per-message id; return it when they do so
+                // the caller can attribute delivered/read webhooks to this exact message.
+                String messageId = respJson.path("message").path("whatsappMessageId").asText(null);
+                if (messageId != null && !messageId.isBlank()) return messageId;
             }
+            return null;
         } catch (RuntimeException e) {
             log.error("Failed to send document via WATI sendSessionFile: url={}, error={}", url, e.getMessage());
             throw e;
@@ -310,6 +317,24 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
             log.error("Failed to send document via WATI sendSessionFile: url={}, error={}", url, e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Why WATI refused a send. The reason lives in {@code errors.error}; {@code info} is usually
+     * absent on a refusal, so reading it alone reported "unknown error" and once hid a three-day
+     * out-of-credits outage. Order: errors.error → info → the whole errors node.
+     */
+    private String failureReason(JsonNode respJson) {
+        String error = respJson.path("errors").path("error").asText(null);
+        if (error != null && !error.isBlank()) return error;
+
+        String info = respJson.path("info").asText(null);
+        if (info != null && !info.isBlank()) return info;
+
+        JsonNode errors = respJson.path("errors");
+        if (!errors.isMissingNode() && !errors.isNull()) return errors.toString();
+
+        return "unknown error";
     }
 
     private void sendRequest(WatiConfig config, String url, Map<String, Object> payload) {
@@ -333,8 +358,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
                     boolean hasOk = respJson.has("ok");
                     JsonNode resultNode = respJson.path("result");
                     if (hasResult && resultNode.isBoolean() && !resultNode.booleanValue()) {
-                        String info = respJson.path("info").asText("unknown error");
-                        throw new RuntimeException("WATI API result=false: " + info);
+                        throw new RuntimeException("WATI API result=false: " + failureReason(respJson));
                     }
                     if (hasOk && !respJson.path("ok").asBoolean(true)) {
                         String errors = respJson.path("errors").toString();
@@ -376,8 +400,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
                     boolean hasOk = respJson.has("ok");
                     JsonNode resultNode = respJson.path("result");
                     if (hasResult && resultNode.isBoolean() && !resultNode.booleanValue()) {
-                        String info = respJson.path("info").asText("unknown error");
-                        throw new RuntimeException("WATI API result=false: " + info);
+                        throw new RuntimeException("WATI API result=false: " + failureReason(respJson));
                     }
                     if (hasOk && !respJson.path("ok").asBoolean(true)) {
                         String errors = respJson.path("errors").toString();
@@ -393,6 +416,19 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
             log.error("Failed to send message via WATI: url={}, error={}", url, e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Base URL + token for reading this institute's inbound WhatsApp media (the institute's WATI tenant).
+     * Null when the institute has no usable configuration.
+     */
+    public ProviderMediaCredentials mediaCredentials(String instituteId) {
+        WatiConfig config = resolveConfig(instituteId);
+        if (config == null || config.apiUrl == null || config.apiUrl.isBlank()
+                || config.apiKey == null || config.apiKey.isBlank()) {
+            return null;
+        }
+        return new ProviderMediaCredentials(config.apiUrl, config.apiKey);
     }
 
     private WatiConfig resolveConfig(String instituteId) {

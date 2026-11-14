@@ -1,0 +1,42 @@
+{
+    "kind": {
+        "assessment": "Assessment",
+        "notes": "Notes"
+    },
+    "status": {
+        "generating": "Generating",
+        "ready": "Ready",
+        "published": "Published",
+        "failed": "Failed"
+    },
+    "bucket": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "Earlier this week",
+        "older": "Older"
+    },
+    "rowTime": {
+        "today": "Today, {{time}}",
+        "yesterday": "Yesterday, {{time}}"
+    },
+    "error": {
+        "couldNotLoad": "Couldn't load AI history.",
+        "retry": "Retry"
+    },
+    "empty": {
+        "heading": "No AI history yet",
+        "description": "Generate an assessment or notes below — each run will show up here so you can re-export or re-publish without spending another generation."
+    },
+    "header": {
+        "title": "AI history",
+        "subtitle": "Generated from this recording",
+        "refresh": "Refresh"
+    },
+    "row": {
+        "lectureNotesChars_one": "Lecture notes · {{count}} char",
+        "lectureNotesChars_other": "Lecture notes · {{count}} chars",
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_other": "{{count}} questions",
+        "quotedTitle": "“{{title}}”"
+    }
+}

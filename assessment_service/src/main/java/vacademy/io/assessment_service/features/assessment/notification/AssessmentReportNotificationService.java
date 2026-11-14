@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.notification.service.NotificationService;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
 import vacademy.io.common.notification.dto.AttachmentNotificationDTO;
 import vacademy.io.common.notification.dto.AttachmentUsersDTO;
 import vacademy.io.common.logging.SentryLogger;
@@ -25,6 +26,11 @@ public class AssessmentReportNotificationService {
         for (Map.Entry<StudentAttempt, byte[]> entry : participantPdfReport.entrySet()) {
             StudentAttempt studentAttempt = entry.getKey();
             byte[] reportData = entry.getValue();
+            // API candidates (partner API) have no login and no email, and a blank address
+            // reaches nobody: skip both rather than hand the mailer an empty channel.
+            if (studentAttempt == null || !ApiCandidatePolicy.mayMessage(studentAttempt.getRegistration())) {
+                continue;
+            }
 
             AttachmentUsersDTO user = new AttachmentUsersDTO();
             user.setChannelId(studentAttempt.getRegistration().getUserEmail());
@@ -40,6 +46,9 @@ public class AssessmentReportNotificationService {
             usersList.add(user);
         }
 
+        if (usersList.isEmpty()) {
+            return;
+        }
         AttachmentNotificationDTO attachmentNotificationDTO = getAttachmentNotificationDTO(usersList, assessmentId);
         sendNotification(attachmentNotificationDTO, instituteId);
     }
@@ -93,6 +102,7 @@ public class AssessmentReportNotificationService {
 
         // 2. Collect user IDs for push and system alert
         List<String> userIds = participantPdfReport.keySet().stream()
+                .filter(attempt -> !ApiCandidatePolicy.isApi(attempt))
                 .map(attempt -> attempt.getRegistration().getUserId())
                 .filter(userId -> userId != null && !userId.isEmpty())
                 .toList();

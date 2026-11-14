@@ -5,6 +5,12 @@ import { getChatUser } from '@/services/chat/getChatUser';
 interface UseChatStreamArgs {
     /** Called with the message payload for a newly-received CHAT_MESSAGE event. */
     onMessage: (payload: ChatMessagePayload) => void;
+    /**
+     * Called for CHAT_MESSAGE_UPDATED — an EXISTING message changed in place (edited or deleted).
+     * Separate from onMessage because an in-place change must not count as a new arrival: it has no
+     * unread, and it must not overwrite the conversation-list preview with an older message.
+     */
+    onMessageUpdated?: (payload: ChatMessagePayload) => void;
     /** Called for CHAT_READ events (read-receipt sync). */
     onRead?: (payload: ChatMessagePayload) => void;
     /**
@@ -24,15 +30,18 @@ interface UseChatStreamArgs {
  */
 export function useChatStream({
     onMessage,
+    onMessageUpdated,
     onRead,
     onReconnect,
     enabled = true,
 }: UseChatStreamArgs): void {
     // Keep latest callbacks in refs so we don't tear down the stream on each render.
     const onMessageRef = useRef(onMessage);
+    const onMessageUpdatedRef = useRef(onMessageUpdated);
     const onReadRef = useRef(onRead);
     const onReconnectRef = useRef(onReconnect);
     onMessageRef.current = onMessage;
+    onMessageUpdatedRef.current = onMessageUpdated;
     onReadRef.current = onRead;
     onReconnectRef.current = onReconnect;
 
@@ -62,6 +71,11 @@ export function useChatStream({
             if (payload) onMessageRef.current(payload);
         };
 
+        const handleMessageUpdated = (e: MessageEvent) => {
+            const payload = parsePayload(e.data);
+            if (payload && onMessageUpdatedRef.current) onMessageUpdatedRef.current(payload);
+        };
+
         const handleRead = (e: MessageEvent) => {
             const payload = parsePayload(e.data);
             if (payload && onReadRef.current) onReadRef.current(payload);
@@ -85,6 +99,7 @@ export function useChatStream({
             });
 
             es.addEventListener('CHAT_MESSAGE', handleMessage as EventListener);
+            es.addEventListener('CHAT_MESSAGE_UPDATED', handleMessageUpdated as EventListener);
             es.addEventListener('CHAT_READ', handleRead as EventListener);
             // 'HEARTBEAT' and the initial 'connection' event are intentionally ignored.
 

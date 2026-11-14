@@ -1,0 +1,22 @@
+{
+    "title": "नियोजन",
+    "changeStatus": "स्थिति बदलें",
+    "fields": {
+        "currentStatus": "वर्तमान स्थिति",
+        "employmentType": "नियोजन प्रकार",
+        "noticePeriod": "नोटिस अवधि"
+    },
+    "noticePeriodDays_one": "{{count}} दिन",
+    "noticePeriodDays_other": "{{count}} दिन",
+    "milestones": {
+        "joined": "जॉइन किया",
+        "probationEnds": "प्रोबेशन समाप्ति",
+        "confirmed": "पुष्टि",
+        "resigned": "इस्तीफा",
+        "lastWorkingDay": "अंतिम कार्य दिवस"
+    },
+    "notRecorded": "दर्ज नहीं",
+    "employmentEnded": "नियोजन समाप्त · {{status}}",
+    "noExitReason": "कोई निकास कारण दर्ज नहीं।",
+    "settlementHint": "ERP → Payroll से उनका पूर्ण एवं अंतिम निपटान तैयार करें।"
+}

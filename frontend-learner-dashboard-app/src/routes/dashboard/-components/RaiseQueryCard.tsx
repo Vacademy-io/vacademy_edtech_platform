@@ -37,7 +37,7 @@ export const RaiseQueryCard = () => {
                 '[.ui-play_&]:rounded-play-card-sm [.ui-play_&]:border-border [.ui-play_&]:shadow-play-soft-card'
             )}
         >
-            <CardContent className="flex items-center justify-between gap-4 p-4">
+            <CardContent className="flex items-center justify-between gap-4 p-card">
                 <div className="flex items-center gap-3">
                     {isPlay || isCleanerPlay ? (
                         <img

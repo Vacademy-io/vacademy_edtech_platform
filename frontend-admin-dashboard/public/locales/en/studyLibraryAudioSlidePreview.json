@@ -1,0 +1,17 @@
+{
+    "audioDataNotFound": "Audio slide data not found",
+    "failedToLoadAudio": "Failed to load audio",
+    "failedToPlayAudio": "Failed to play audio",
+    "playbackError": "Audio playback error",
+    "audioLabel": "Audio",
+    "deletedTag": "DELETED",
+    "audioDeletedTitle": "This audio has been deleted",
+    "audioDeletedSubtitle": "The audio content is no longer available",
+    "loadingAudio": "Loading audio...",
+    "audioThumbnailAlt": "Audio thumbnail",
+    "untitledAudio": "Untitled Audio",
+    "durationLabel": "Duration: {{time}}",
+    "pauseAriaLabel": "Pause",
+    "playAriaLabel": "Play",
+    "transcriptLabel": "Transcript"
+}

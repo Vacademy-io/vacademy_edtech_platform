@@ -1,0 +1,52 @@
+{
+    "navHeading": "घोषणा बनाएं",
+    "fixIssues_one": "यह घोषणा बनाने से पहले {{count}} समस्या ठीक करें।",
+    "fixIssues_other": "यह घोषणा बनाने से पहले {{count}} समस्याएं ठीक करें।",
+    "toast": {
+        "createdImmediate": "घोषणा बना दी गई है और डिलीवरी के लिए कतार में है।",
+        "scheduled": "घोषणा शेड्यूल कर दी गई है।"
+    },
+    "sections": {
+        "howItWillLook": "यह कैसी दिखेगी"
+    },
+    "actions": {
+        "reviewAndPreview": "समीक्षा और पूर्वावलोकन",
+        "keepEditing": "संपादन जारी रखें",
+        "createAndSend": "बनाएं और भेजें",
+        "scheduleAnnouncement": "घोषणा शेड्यूल करें",
+        "creating": "बनाया जा रहा है…"
+    },
+    "dialog": {
+        "reviewHeading": "समीक्षा और पूर्वावलोकन"
+    },
+    "header": {
+        "subtitle": "एक संदेश — ऐप के अंदर, पुश, ईमेल और WhatsApp पर — किसी भी दर्शक समूह के लिए, अभी, बाद में या बार-बार।"
+    },
+    "steps": {
+        "label": "घोषणा की प्रगति",
+        "message": "संदेश",
+        "recipients": "प्राप्तकर्ता",
+        "placements": "स्थान",
+        "channels": "चैनल",
+        "schedule": "शेड्यूल",
+        "review": "समीक्षा"
+    },
+    "rail": {
+        "livePreview": "लाइव पूर्वावलोकन",
+        "soFar": "अब तक",
+        "audiences": "दर्शक",
+        "audienceCount_one": "{{count}} दर्शक समूह",
+        "audienceCount_other": "{{count}} दर्शक समूह",
+        "none": "अभी कोई नहीं",
+        "appearsIn": "कहाँ दिखेगी",
+        "channels": "किस माध्यम से",
+        "inProductOnly": "केवल ऐप के अंदर",
+        "when": "कब"
+    },
+    "footer": {
+        "blocked_one": "बनाने से पहले {{count}} समस्या ठीक करें।",
+        "blocked_other": "बनाने से पहले {{count}} समस्याएँ ठीक करें।",
+        "ready": "भेजने के लिए तैयार",
+        "progress": "{{total}} में से {{done}} चरण पूरे"
+    }
+}

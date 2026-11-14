@@ -1,0 +1,105 @@
+{
+    "changeStudent": "تغيير الطالب",
+    "refresh": "تحديث",
+    "downloadReceiptTooltip": "تنزيل الإيصال",
+    "filters": {
+        "all": "الكل",
+        "overdue": "متأخر",
+        "due": "مستحق",
+        "partial": "جزئي",
+        "paid": "مدفوع",
+        "from": "من:",
+        "to": "إلى:",
+        "clear": "مسح"
+    },
+    "emptyState": {
+        "noDues": "لم يتم العثور على مستحقات.",
+        "noPendingInstallments": "لا يوجد لدى هذا الطالب أي أقساط معلقة."
+    },
+    "summaryCards": {
+        "totalFee": "إجمالي الرسوم",
+        "paid": "مدفوع",
+        "due": "مستحق"
+    },
+    "selectAllBanner": {
+        "allSelectedOnPage_zero": "لم يتم تحديد أي صف في هذه الصفحة.",
+        "allSelectedOnPage_one": "تم تحديد الصف القابل للتحديد الوحيد في هذه الصفحة.",
+        "allSelectedOnPage_two": "تم تحديد الصفين القابلين للتحديد في هذه الصفحة.",
+        "allSelectedOnPage_few": "تم تحديد جميع الصفوف القابلة للتحديد ({{count}}) في هذه الصفحة.",
+        "allSelectedOnPage_many": "تم تحديد جميع الصفوف القابلة للتحديد ({{count}}) في هذه الصفحة.",
+        "allSelectedOnPage_other": "تم تحديد جميع الصفوف القابلة للتحديد ({{count}}) في هذه الصفحة.",
+        "selecting": "جارٍ التحديد…",
+        "selectAllFiltered_zero": "لا توجد صفوف مُصفّاة للتحديد",
+        "selectAllFiltered_one": "تحديد الصف المُصفّى ({{count}})",
+        "selectAllFiltered_two": "تحديد الصفين المُصفّيين ({{count}})",
+        "selectAllFiltered_few": "تحديد جميع الصفوف المُصفّاة ({{count}})",
+        "selectAllFiltered_many": "تحديد جميع الصفوف المُصفّاة ({{count}})",
+        "selectAllFiltered_other": "تحديد جميع الصفوف المُصفّاة ({{count}})"
+    },
+    "resultsRange": {
+        "showing": "عرض",
+        "of": "من"
+    },
+    "table": {
+        "feeType": "نوع الرسوم",
+        "cpoPlan": "خطة CPO",
+        "expected": "المتوقع",
+        "adjustment": "التعديل",
+        "paid": "مدفوع",
+        "due": "مستحق",
+        "dueOverdue": "مستحق / متأخر",
+        "dueDate": "تاريخ الاستحقاق",
+        "status": "الحالة",
+        "noResults": "لا توجد أقساط تطابق المرشحات المحددة."
+    },
+    "adjustment": {
+        "pending": "قيد الانتظار",
+        "adjustTooltip": "تعديل"
+    },
+    "status": {
+        "overdue": "متأخر",
+        "due": "مستحق",
+        "daysOverdue_zero": "(0 يوم)",
+        "daysOverdue_one": "(يوم واحد)",
+        "daysOverdue_two": "(يومان)",
+        "daysOverdue_few": "({{count}} أيام)",
+        "daysOverdue_many": "({{count}} يومًا)",
+        "daysOverdue_other": "({{count}} يوم)"
+    },
+    "pagination": {
+        "prev": "السابق",
+        "next": "التالي",
+        "page": "صفحة",
+        "of": "من"
+    },
+    "bottomBar": {
+        "installmentsSelected_zero": "لم يتم تحديد أي قسط",
+        "installmentsSelected_one": "قسط واحد محدد",
+        "installmentsSelected_two": "قسطان محددان",
+        "installmentsSelected_few": "أقساط محددة",
+        "installmentsSelected_many": "قسطًا محددًا",
+        "installmentsSelected_other": "قسط محدد",
+        "totalDue": "إجمالي المستحق:",
+        "generateInvoice": "إنشاء فاتورة",
+        "proceedToPay": "المتابعة للدفع"
+    },
+    "errors": {
+        "unableToLoad": "تعذر تحميل الأقساط",
+        "tryAgain": "يرجى المحاولة مرة أخرى."
+    },
+    "toast": {
+        "selectedInstallments_zero": "لم يتم تحديد أي قسط",
+        "selectedInstallments_one": "تم تحديد قسط واحد",
+        "selectedInstallments_two": "تم تحديد قسطين",
+        "selectedInstallments_few": "تم تحديد {{count}} أقساط",
+        "selectedInstallments_many": "تم تحديد {{count}} قسطًا",
+        "selectedInstallments_other": "تم تحديد {{count}} قسط",
+        "selectAllFailed": "فشل تحديد الكل",
+        "noReceiptFound": "لم يتم العثور على إيصال لهذا القسط",
+        "invoiceDownloaded": "تم تنزيل الفاتورة بنجاح",
+        "invoiceDownloadUrlMissing": "تم إنشاء الفاتورة ولكن رابط التنزيل غير متوفر",
+        "invoiceGenerateFailed": "فشل إنشاء الفاتورة",
+        "invoiceEmailed": "تم إرسال الفاتورة عبر البريد الإلكتروني بنجاح",
+        "invoiceEmailFailed": "فشل إرسال الفاتورة عبر البريد الإلكتروني"
+    }
+}

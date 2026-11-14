@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "Currently Active Users",
+        "subtitle": "Real-time user sessions and activity"
+    },
+    "stats": {
+        "onlineNow": "Online Now",
+        "moreUsers_one": "+{{count}} more user online",
+        "moreUsers_other": "+{{count}} more users online"
+    },
+    "error": {
+        "message": "Failed to load active users"
+    },
+    "empty": {
+        "message": "No active users at the moment"
+    },
+    "device": {
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet"
+    }
+}

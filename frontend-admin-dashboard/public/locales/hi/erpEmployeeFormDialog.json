@@ -1,0 +1,78 @@
+{
+    "validation": {
+        "joinDateRequired": "जॉइनिंग की तारीख चुनें",
+        "noticePeriodWholeNumber": "दिनों की पूर्ण संख्या का उपयोग करें",
+        "userIdRequired": "इस प्रोफ़ाइल को किसी व्यक्ति से जोड़ने के लिए एक यूज़र आईडी आवश्यक है"
+    },
+    "noDepartment": "कोई विभाग नहीं",
+    "noDesignation": "कोई पदनाम नहीं",
+    "noReportingManager": "कोई रिपोर्टिंग मैनेजर नहीं",
+    "notSet": "सेट नहीं है",
+    "toast": {
+        "updated": "कर्मचारी प्रोफ़ाइल अपडेट की गई",
+        "added": "कर्मचारी जोड़ा गया"
+    },
+    "errors": {
+        "updateFailed": "यह कर्मचारी प्रोफ़ाइल अपडेट नहीं की जा सकी",
+        "createFailed": "यह कर्मचारी जोड़ा नहीं जा सका"
+    },
+    "editEmployee": "कर्मचारी संपादित करें",
+    "addEmployee": "कर्मचारी जोड़ें",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है…",
+    "adding": "जोड़ा जा रहा है…",
+    "saveChanges": "बदलाव सहेजें",
+    "sections": {
+        "whoThisIsFor": "यह प्रोफ़ाइल किसके लिए है",
+        "roleInOrganisation": "संगठन में भूमिका",
+        "emergencyContact": "आपातकालीन संपर्क",
+        "statutoryIdentifiers": "वैधानिक पहचानकर्ता"
+    },
+    "fields": {
+        "userId": {
+            "label": "यूज़र आईडी",
+            "placeholder": "प्लेटफ़ॉर्म यूज़र आईडी",
+            "description": "आसान तरीका: Staff Coverage खोलें और पहले से टीम में मौजूद किसी व्यक्ति से सीधे HR प्रोफ़ाइल बनाएं — यह यूज़र आईडी अपने आप भर देता है।"
+        },
+        "employeeCode": {
+            "label": "कर्मचारी कोड",
+            "placeholder": "जैसे EMP-014"
+        },
+        "joinDate": {
+            "label": "जॉइनिंग तिथि"
+        },
+        "department": "विभाग",
+        "designation": "पदनाम",
+        "reportingManager": "रिपोर्टिंग मैनेजर",
+        "employmentType": "नियोजन प्रकार",
+        "noticePeriod": {
+            "label": "नोटिस अवधि (दिन)",
+            "placeholder": "जैसे 30"
+        },
+        "nationality": {
+            "label": "राष्ट्रीयता",
+            "placeholder": "जैसे भारतीय"
+        },
+        "contactName": {
+            "label": "नाम",
+            "placeholder": "संपर्क का नाम"
+        },
+        "contactPhone": {
+            "label": "फ़ोन",
+            "placeholder": "संपर्क नंबर"
+        },
+        "contactRelation": {
+            "label": "रिश्ता",
+            "placeholder": "जैसे जीवनसाथी"
+        },
+        "pan": {
+            "label": "पैन",
+            "placeholder": "जैसे ABCDE1234F"
+        },
+        "uan": {
+            "label": "यूएएन",
+            "placeholder": "प्रोविडेंट फंड यूएएन"
+        }
+    },
+    "maskedHint": "संग्रहीत नंबर छिपा हुआ है। इसे बनाए रखने के लिए इसे खाली छोड़ें।"
+}

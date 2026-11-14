@@ -1,0 +1,22 @@
+{
+    "tiles": {
+        "revenue": {
+            "label": "Collected revenue",
+            "hint": "Fee payments received this month — cash in, not billed"
+        },
+        "payrollCost": {
+            "label": "Payroll cost",
+            "hint": "Total employer cost: net pay plus employer contributions"
+        },
+        "margin": {
+            "label": "Margin",
+            "hintComputed": "Collected revenue minus payroll cost",
+            "hintReported": "Reported by the finance service for this period"
+        },
+        "costToRevenue": {
+            "label": "Cost to revenue",
+            "hintMissing": "Needs both collected revenue and payroll cost for the month",
+            "hintPresent": "Share of collected revenue spent on payroll"
+        }
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "loading": "Chargement des paramètres du formulaire…",
+    "header": {
+        "title": "Paramètres par défaut du formulaire d'audience",
+        "description": "L'écran de remerciement avec lequel chaque nouvelle liste d'audience commence. Chaque campagne peut le remplacer lors de sa création ou de sa modification — les changements effectués ici n'affectent que les campagnes créées à partir de maintenant."
+    },
+    "toasts": {
+        "saved": "Paramètres du formulaire enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres du formulaire"
+    },
+    "actions": {
+        "restoreDefaults": "Restaurer les valeurs par défaut",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "formAppearance": {
+        "title": "Apparence du formulaire",
+        "description": "Avancé. Permet à chaque campagne de personnaliser son formulaire public — mise en page, couleurs, libellés et HTML/CSS personnalisés.",
+        "toggleLabel": "Autoriser les campagnes à personnaliser leur formulaire",
+        "toggleHelp": "Désactivé : toutes les campagnes utilisent le design standard. Activé : une carte « Apparence du formulaire » apparaît lors de la création ou de la modification d'une campagne."
+    },
+    "shortLinks": {
+        "title": "Liens courts",
+        "description": "Propose une adresse courte et partageable à côté du lien complet du formulaire — pour les messages, l'impression et partout où l'URL longue est peu commode. Les instituts disposant de leur propre domaine court l'obtiennent sur ce domaine.",
+        "toggleLabel": "Proposer des liens courts lors du partage d'une campagne",
+        "toggleHelp": "Activé : les cartes de campagne, le menu ⋮ et la boîte de dialogue Partager le code QR proposent chacun un lien court. Désactivé : seule l'adresse complète du formulaire est affichée. Les liens déjà créés continuent de fonctionner dans les deux cas."
+    }
+}

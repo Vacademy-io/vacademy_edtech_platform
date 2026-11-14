@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "originalVideoDataNotFound": "Données de la vidéo d'origine introuvables",
+        "currentSlideNotFound": "Diapositive actuelle introuvable",
+        "originalVideoSlideDataNotFound": "Données de la diapositive vidéo d'origine introuvables",
+        "convertSuccess": "Retour à la diapositive vidéo effectué avec succès !",
+        "convertFailed": "Échec du retour à la diapositive vidéo"
+    },
+    "trigger": {
+        "removeSplitScreen": "Supprimer l'écran partagé"
+    },
+    "dialog": {
+        "title": "Quitter le mode écran partagé",
+        "subtitle": "Revenir à une diapositive vidéo classique",
+        "warningTitle": "Avertissement de perte de données",
+        "warningBody": "Quitter le mode écran partagé supprimera le contenu interactif et fera revenir cette diapositive à une diapositive vidéo classique. La vidéo d'origine sera restaurée.",
+        "originalVideo": "Vidéo d'origine",
+        "titleLabel": "Titre :",
+        "descriptionLabel": "Description :",
+        "untitled": "Sans titre"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "converting": "Conversion en cours...",
+        "convertToVideo": "Convertir en vidéo"
+    }
+}

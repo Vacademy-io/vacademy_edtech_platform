@@ -1,0 +1,24 @@
+{
+    "profile": {
+        "avatarAlt": "Profil",
+        "unknownName": "Inconnu"
+    },
+    "status": {
+        "cancelledMember": "Membre annulé",
+        "cancelledMemberTooltip": "Adhésion annulée — l'accès reste actif jusqu'à l'expiration du forfait"
+    },
+    "roles": {
+        "admin": "Administrateur du cabinet",
+        "learner": "Personnel du cabinet"
+    },
+    "actions": {
+        "deleteLead": "Supprimer le prospect",
+        "openFullProfile": "Ouvrir le profil complet",
+        "closePanel": "Fermer le panneau"
+    },
+    "tabBar": {
+        "ariaLabel": "Sections du profil",
+        "scrollLeft": "Faire défiler les onglets vers la gauche",
+        "scrollRight": "Faire défiler les onglets vers la droite"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "title": "Mark invoice paid",
+    "descriptionPrefix": "Records a manual / offline payment against",
+    "descriptionSuffix": "and flips its status to PAID. Both fields below are optional.",
+    "thisInvoice": "this invoice",
+    "fields": {
+        "transactionReference": "Transaction reference",
+        "transactionReferencePlaceholder": "cheque #, UPI ref, receipt no.",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional note (shown on email + side-view)"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "markAsPaid": "Mark as paid",
+    "toasts": {
+        "markedPaid": "Invoice {{invoice}} marked as paid",
+        "failed": "Failed to mark invoice as paid"
+    }
+}

@@ -1,0 +1,126 @@
+{
+    "header": {
+        "title": "Programmes de parrainage",
+        "subtitle": "Gérez plusieurs programmes de parrainage avec des structures de récompenses différentes",
+        "createNewProgram": "Créer un nouveau programme"
+    },
+    "emptyState": {
+        "title": "Aucun programme de parrainage créé",
+        "description": "Créez votre premier programme de parrainage pour encourager les parrainages"
+    },
+    "rewardTypeLabels": {
+        "percentageDiscount": "Remise en pourcentage",
+        "fixedDiscount": "Remise fixe",
+        "bonusContent": "Contenu bonus",
+        "freeDays": "Jours gratuits",
+        "pointsSystem": "Système de points"
+    },
+    "programCard": {
+        "defaultBadge": "Par défaut",
+        "refereeBenefit": {
+            "title": "Avantage du filleul",
+            "empty": "Aucun avantage filleul configuré",
+            "percentOff": "{{value}} % de réduction",
+            "amountOff": "{{value}} ₹ de réduction",
+            "freeDays": "{{value}} jours gratuits",
+            "points": "{{value}} points",
+            "bonusContentFallback": "Contenu bonus",
+            "templateLabel": "Modèle : {{template}}"
+        },
+        "referrerTiers": {
+            "title": "Paliers de parrain",
+            "empty": "Aucun palier de parrain configuré",
+            "referralCount_one": "{{count}} parrainage",
+            "referralCount_many": "{{count}} parrainages",
+            "referralCount_other": "{{count}} parrainages",
+            "pointsValue": "+{{value}} pts",
+            "percentUnit": "%",
+            "daysUnit": "j",
+            "currencyUnit": "₹",
+            "moreTiers_one": "+{{count}} palier supplémentaire",
+            "moreTiers_many": "+{{count}} paliers supplémentaires",
+            "moreTiers_other": "+{{count}} paliers supplémentaires"
+        },
+        "settings": {
+            "title": "Paramètres du programme",
+            "vestingPeriod": "Période d'acquisition",
+            "days_one": "{{count}} jour",
+            "days_many": "{{count}} jours",
+            "days_other": "{{count}} jours",
+            "combineOffers": "Combiner les offres",
+            "yes": "Oui",
+            "no": "Non"
+        },
+        "actions": {
+            "view": "Voir"
+        }
+    },
+    "modal": {
+        "subtitle": "Détails et configuration du programme",
+        "defaultBadge": "Par défaut",
+        "editProgram": "Modifier le programme",
+        "close": "Fermer",
+        "refereeBenefits": {
+            "title": "Avantages du filleul (ponctuels)",
+            "percentUnit": "%",
+            "daysUnit": " jours",
+            "pointsUnit": " points",
+            "empty": "Aucun avantage filleul configuré pour ce programme.",
+            "deliveryLabel": "Envoi :",
+            "emailBadge": "📧 E-mail",
+            "whatsappBadge": "💬 WhatsApp",
+            "contentDetails": {
+                "title": "Détails du contenu",
+                "contentType": "Type de contenu :",
+                "titleLabel": "Titre :",
+                "template": "Modèle :",
+                "templateValue": "Modèle {{number}}",
+                "file": "Fichier :",
+                "uploadedBadge": "✓ Téléversé"
+            }
+        },
+        "referrerRewards": {
+            "title": "Récompenses du parrain (par paliers)",
+            "referralCount_one": "{{count}} parrainage",
+            "referralCount_many": "{{count}} parrainages",
+            "referralCount_other": "{{count}} parrainages",
+            "deliveryLabel": "Envoi :",
+            "emailBadge": "📧 E-mail",
+            "whatsappBadge": "💬 WhatsApp",
+            "pointsSystemDetails": {
+                "title": "Détails du système de points",
+                "perReferral": "Par parrainage :",
+                "pointsEarnedValue": "+{{value}} points",
+                "rewardAt": "Récompense à :",
+                "pointsValue": "{{value}} points",
+                "referralsNeeded": "Parrainages requis :",
+                "reward": "Récompense :",
+                "percentOff": "{{value}} % de réduction",
+                "daysOff": "{{value}} jours",
+                "amountOff": "{{value}} ₹ de réduction"
+            },
+            "contentDetails": {
+                "title": "Détails du contenu",
+                "contentType": "Type de contenu :",
+                "titleLabel": "Titre :",
+                "template": "Modèle :",
+                "templateValue": "Modèle {{number}}",
+                "file": "Fichier :",
+                "uploadedBadge": "✓ Téléversé"
+            }
+        },
+        "settings": {
+            "title": "Paramètres du programme",
+            "vestingPeriod": "Période d'acquisition",
+            "days_one": "{{count}} jour",
+            "days_many": "{{count}} jours",
+            "days_other": "{{count}} jours",
+            "combineWithOtherOffers": "Combiner avec d'autres offres",
+            "yes": "Oui",
+            "no": "Non",
+            "programStatus": "Statut du programme",
+            "default": "Par défaut",
+            "available": "Disponible"
+        }
+    }
+}

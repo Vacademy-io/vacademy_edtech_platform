@@ -1,0 +1,167 @@
+{
+    "app": { "name": "Vacademy Classroom" },
+    "common": {
+        "back": "वापस",
+        "home": "होम",
+        "retry": "फिर से कोशिश करें",
+        "cancel": "रद्द करें",
+        "continue": "आगे बढ़ें"
+    },
+    "states": {
+        "loading": "लोड हो रहा है…",
+        "errorTitle": "कुछ गड़बड़ हो गई",
+        "errorDescription": "इंटरनेट कनेक्शन जाँचें और फिर से कोशिश करें।"
+    },
+    "topBar": {
+        "signOut": "साइन आउट",
+        "signedOut": "साइन आउट हो गया",
+        "signOutTitle": "इस पैनल से साइन आउट करें?",
+        "signOutBody": "अगले शिक्षक को फिर से साइन इन करना होगा। व्हाइटबोर्ड और पैनल की सेटिंग्स इसी पैनल पर रहेंगी।",
+        "signOutLiveTitle": "लाइव सत्र खत्म करके साइन आउट करें?",
+        "signOutLiveBody": "एक लाइव प्रेज़ेंटेशन अभी चल रहा है। साइन आउट करने से यह सभी छात्रों के लिए खत्म हो जाएगा।",
+        "fullscreen": "पूरी स्क्रीन",
+        "exitFullscreen": "पूरी स्क्रीन से बाहर"
+    },
+    "idle": { "signedOut": "3 घंटे तक इस्तेमाल न होने पर साइन आउट हो गया" },
+    "errors": {
+        "screenTitle": "यह स्क्रीन काम नहीं कर रही",
+        "screenBody": "फिर से कोशिश करें, या होम पर जाकर इसे दोबारा खोलें।"
+    },
+    "home": {
+        "greeting": "नमस्ते, {{name}}",
+        "greetingSignedOut": "स्वागत है",
+        "subtitle": "आज कक्षा में आप क्या करना चाहेंगे?",
+        "subtitleSignedOut": "व्हाइटबोर्ड अभी इस्तेमाल करें, या प्रेज़ेंट करने और पाठ पढ़ाने के लिए साइन इन करें।",
+        "signInToUse": "इस्तेमाल के लिए साइन इन करें",
+        "settingsUnavailable": "इस पैनल में वह सेटिंग्स स्क्रीन नहीं है",
+        "tiles": {
+            "whiteboard": "व्हाइटबोर्ड",
+            "whiteboardHint": "लिखें और बनाएँ, साइन इन की ज़रूरत नहीं",
+            "volt": "प्रेज़ेंट करें",
+            "voltHint": "अपने Volt प्रेज़ेंटेशन लाइव चलाएँ",
+            "lessons": "पाठ",
+            "lessonsHint": "कोर्स के वीडियो, PDF और स्लाइड चलाएँ",
+            "signIn": "साइन इन",
+            "signInHint": "शिक्षक और एडमिन",
+            "diagnostics": "जाँच",
+            "diagnosticsHint": "इस पैनल और इसके कनेक्शन की जाँच करें",
+            "androidSettings": "Android सेटिंग्स",
+            "androidSettingsHint": "Wi-Fi, तारीख और पैनल की अन्य सेटिंग्स",
+            "switchHome": "होम ऐप बदलें",
+            "switchHomeHint": "पैनल के अपने लॉन्चर पर वापस जाएँ"
+        }
+    },
+    "login": {
+        "title": "अपनी कक्षा में साइन इन करें",
+        "subtitle": "वही यूज़रनेम और पासवर्ड इस्तेमाल करें जो Vacademy एडमिन डैशबोर्ड में करते हैं।",
+        "sharedDeviceNote": "यह साझा पैनल है: कक्षा खत्म होने पर साइन आउट करें। 3 घंटे तक इस्तेमाल न होने पर अपने-आप साइन आउट हो जाता है।",
+        "whiteboardLink": "साइन इन किए बिना व्हाइटबोर्ड खोलें",
+        "diagnosticsLink": "पैनल की जाँच",
+        "username": "यूज़रनेम",
+        "password": "पासवर्ड",
+        "usernameRequired": "अपना यूज़रनेम लिखें",
+        "passwordRequired": "अपना पासवर्ड लिखें",
+        "submit": "साइन इन",
+        "submitting": "साइन इन हो रहा है…",
+        "errors": {
+            "WRONG_CREDENTIALS": "यूज़रनेम या पासवर्ड सही नहीं है।",
+            "STUDENT_BLOCKED": "छात्र खाते कक्षा पैनल पर साइन इन नहीं कर सकते। अपने शिक्षक से पूछें।",
+            "NO_INSTITUTE": "यह खाता किसी संस्थान में शिक्षक या एडमिन नहीं है।",
+            "NETWORK": "Vacademy से संपर्क नहीं हो पा रहा। पैनल का इंटरनेट कनेक्शन जाँचें।",
+            "SERVER": "Vacademy अभी आपको साइन इन नहीं कर सका। एक मिनट बाद फिर कोशिश करें।"
+        }
+    },
+    "language": { "label": "भाषा", "en": "English", "hi": "हिन्दी" },
+    "institutes": {
+        "title": "अपना संस्थान चुनें",
+        "subtitle": "आपका खाता एक से ज़्यादा संस्थानों में है। अभी जिसके लिए पढ़ा रहे हैं, उसे चुनें।",
+        "unnamed": "संस्थान {{id}}",
+        "current": "इस पैनल पर पिछली बार इस्तेमाल हुआ",
+        "emptyTitle": "खोलने के लिए कोई संस्थान नहीं",
+        "emptyBody": "इस खाते के पास शिक्षक या एडमिन का एक्सेस नहीं है। साइन आउट करके दूसरा खाता इस्तेमाल करें।"
+    },
+    "diagnostics": {
+        "title": "पैनल की जाँच",
+        "firstRunNote": "स्वागत है! जाँचें कि यह पैनल तैयार है, फिर आगे बढ़ें दबाएँ।",
+        "sections": {
+            "browser": "ब्राउज़र इंजन",
+            "device": "पैनल हार्डवेयर",
+            "touch": "टच जाँच",
+            "features": "सुविधाएँ",
+            "backend": "Vacademy से कनेक्शन",
+            "errors": "दर्ज त्रुटियाँ",
+            "report": "सहायता रिपोर्ट"
+        },
+        "chrome": "Chrome संस्करण",
+        "unknown": "अज्ञात",
+        "needs": "{{min}}+ चाहिए",
+        "ok": "ठीक",
+        "tooOld": "बहुत पुराना",
+        "userAgent": "यूज़र एजेंट",
+        "classroomShell": "Classroom ऐप",
+        "yes": "हाँ",
+        "no": "नहीं",
+        "viewport": "स्क्रीन क्षेत्र (CSS px)",
+        "screen": "स्क्रीन",
+        "touchPoints": "टच पॉइंट",
+        "build": "बिल्ड",
+        "preflight": "स्टार्ट-अप जाँच",
+        "preflightOk": "सभी ज़रूरी सुविधाएँ मौजूद हैं",
+        "webOnlyTitle": "ब्राउज़र में चल रहा है",
+        "webOnlyBody": "Vacademy Classroom ऐप के अंदर चलने पर पैनल हार्डवेयर की जानकारी दिखती है।",
+        "deviceErrorTitle": "पैनल की जानकारी नहीं पढ़ी जा सकी",
+        "deviceErrorBody": "ऐप के डिवाइस ब्रिज ने जवाब नहीं दिया।",
+        "webView": "सिस्टम WebView",
+        "android": "Android",
+        "model": "मॉडल",
+        "hardware": "बोर्ड / CPU",
+        "memory": "मेमोरी",
+        "display": "डिस्प्ले",
+        "app": "ऐप",
+        "defaultHome": "डिफ़ॉल्ट होम ऐप",
+        "open": {
+            "home": "होम ऐप सेटिंग्स",
+            "settings": "Android सेटिंग्स",
+            "wifi": "Wi-Fi",
+            "date": "तारीख और समय"
+        },
+        "features": {
+            "pointerEvent": "पॉइंटर इवेंट",
+            "resizeObserver": "ResizeObserver",
+            "intersectionObserver": "IntersectionObserver",
+            "webgl": "WebGL",
+            "webgl2": "WebGL 2",
+            "abortController": "AbortController",
+            "eventSource": "लाइव अपडेट (EventSource)",
+            "cryptoSubtle": "वेब क्रिप्टो",
+            "localStorage": "लोकल स्टोरेज",
+            "cookies": "कुकीज़",
+            "nativePromise": "नेटिव Promise",
+            "promiseAllSettled": "Promise.allSettled",
+            "globalThis": "globalThis",
+            "structuredClone": "structuredClone",
+            "wasm": "WebAssembly"
+        },
+        "missing": "मौजूद नहीं",
+        "backendChecking": "कनेक्शन जाँचा जा रहा है…",
+        "backendStatus": "स्थिति",
+        "unreachable": "संपर्क नहीं हुआ",
+        "latency": "जवाब का समय",
+        "endpoint": "जाँचा गया पता",
+        "testToast": "जाँच संदेश",
+        "testToastMessage": "संदेश यहाँ, स्क्रीन के ऊपर दिखते हैं",
+        "noErrors": "कोई त्रुटि दर्ज नहीं हुई",
+        "reportHint": "फ़ोन से स्कैन करके Vacademy सहायता को भेजें।",
+        "touchActive": "उंगलियाँ अभी छू रही हैं",
+        "touchMax": "एक साथ सबसे ज़्यादा: {{count}}",
+        "touchHint": "इस बॉक्स पर कई उंगलियाँ रखें"
+    },
+    "activity": {
+        "diagLabel": "भेजने के लिए गतिविधि",
+        "diagValue": "{{queued}} बाकी, {{dropped}} सीमा से ज़्यादा"
+    },
+    "update": {
+        "diagChannel": "ऐप चैनल",
+        "diagLast": "पिछला अपडेट"
+    }
+}

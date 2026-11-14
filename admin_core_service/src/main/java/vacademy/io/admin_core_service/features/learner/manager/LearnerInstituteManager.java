@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.institute_learner.repository.Stud
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSubOrgRepository;
 import vacademy.io.admin_core_service.features.learner.dto.LearnerSubOrgDTO;
 import vacademy.io.admin_core_service.features.learner.dto.StudentInstituteInfoDTO;
+import vacademy.io.admin_core_service.features.packages.enums.ChargePackageType;
 import vacademy.io.admin_core_service.features.packages.enums.PackageSessionStatusEnum;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.slide.service.SlideService;
@@ -75,7 +76,10 @@ public class LearnerInstituteManager {
         if (includeBatches) {
             instituteInfoDTO.setBatchesForSessions(
                     packageSessionRepository.findPackageSessionsByInstituteId(institute.get().getId(),
-                            List.of(PackageSessionStatusEnum.ACTIVE.name())).stream().map((obj) -> {
+                            List.of(PackageSessionStatusEnum.ACTIVE.name())).stream()
+                            // Charge packages are never a course a learner picks or filters by.
+                            .filter(obj -> !ChargePackageType.isCharge(obj.getPackageEntity().getPackageType()))
+                            .map((obj) -> {
                                 return new PackageSessionDTO(obj, getReadTimeOfPackageSession(obj.getId()));
                             }).toList());
 

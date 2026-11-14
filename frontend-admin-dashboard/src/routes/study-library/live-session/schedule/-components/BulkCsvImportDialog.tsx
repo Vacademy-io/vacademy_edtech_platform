@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { UploadSimple, CircleNotch, Warning, CheckCircle } from '@phosphor-icons/react';
 import {
@@ -34,6 +35,9 @@ export function BulkCsvImportDialog({
     allowedPlatforms,
     onImport,
 }: BulkCsvImportDialogProps) {
+    // Reuses the bulkCsv.ts namespace: parseScheduleCsv's validation/error messages
+    // live there, and this dialog just needs to pass a `t` through to it.
+    const { t } = useTranslation('studyLibraryBulkCsv');
     const [parsing, setParsing] = useState(false);
     const [fileName, setFileName] = useState<string | null>(null);
     const [result, setResult] = useState<ScheduleCsvParseResult | null>(null);
@@ -48,7 +52,7 @@ export function BulkCsvImportDialog({
         setFileName(file.name);
         setParsing(true);
         setResult(null);
-        const parsed = await parseScheduleCsv(file, { batches, allowedPlatforms });
+        const parsed = await parseScheduleCsv(file, { batches, allowedPlatforms }, t);
         setResult(parsed);
         setParsing(false);
     };
@@ -79,7 +83,12 @@ export function BulkCsvImportDialog({
                     <DialogDescription>
                         Upload a filled template. Batches are matched by their{' '}
                         <span className="font-medium">package_session_id</span> — use the
-                        &ldquo;Download batch reference&rdquo; button to get the IDs.
+                        &ldquo;Batch reference&rdquo; download to get the IDs. Teachers go in the{' '}
+                        <span className="font-medium">teacher_emails</span> column by email
+                        (recommended) or username, several separated by{' '}
+                        <span className="font-medium">|</span> &mdash; the &ldquo;Teacher
+                        reference&rdquo; download lists them. Leave it blank and whoever runs the
+                        import becomes the teacher.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -103,9 +112,9 @@ export function BulkCsvImportDialog({
                             : 'Drag a .csv here, or click to choose a file'}
                     </p>
                     <p className="text-xs text-neutral-500">
-                        Expected columns: title, subject, start_date, start_time,
-                        duration_hours, duration_minutes, platform, link,
-                        package_session_ids, description
+                        Expected columns: title, subject, start_date, start_time, duration_hours,
+                        duration_minutes, platform, link, package_session_ids, teacher_emails,
+                        description
                     </p>
                 </div>
 

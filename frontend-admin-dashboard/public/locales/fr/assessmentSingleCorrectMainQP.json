@@ -1,0 +1,13 @@
+{
+    "emptyState": "Veuillez ajouter une question pour afficher les détails de la question",
+    "comprehensionText": "Texte de compréhension",
+    "question": "Question",
+    "questionLabel": "Question {{number}}",
+    "writeQuestionPlaceholder": "Rédigez la question",
+    "explanationHint": "Affiché aux apprenants avec leur résultat.",
+    "explanationPlaceholder": "Explication",
+    "defaults": {
+        "answer": "Réponse",
+        "explanation": "Explication"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "filters": "Filters",
+    "quick": "Quick:",
+    "last1Hour": "Last 1 Hour",
+    "today": "Today",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "allTime": "All Time",
+    "clearAll": "Clear All",
+    "filterByCourseSession": "Filter by Course/Session",
+    "startDate": "Start Date",
+    "endDate": "End Date"
+}

@@ -1,7 +1,7 @@
 """Vision-LLM reviewer for one generated shot.
 
-Sends 1–3 PNG screenshots of a rendered shot to a Gemini Flash–class vision
-model along with the shot's metadata and brand palette, and parses the
+Sends 1–3 PNG screenshots of a rendered shot to a vision-capable model (the
+'vision_review' stage row; the registry's video default when unset) along with the shot's metadata and brand palette, and parses the
 model's structured JSON verdict. Returns a normalized record the pipeline
 can persist to vision_review_cases and act on (corrective regen, ship, log).
 
@@ -34,13 +34,40 @@ logger = logging.getLogger(__name__)
 # rates across rubric revisions.
 PROMPT_VERSION = "v3"
 
-# Cost per million tokens. Defaults match OpenRouter's published rates for
-# google/gemini-2.5-pro; bump if the rate card changes. Used only for
-# telemetry — does not gate behaviour. (Flash was ~17× cheaper but
-# measurably weaker at fine text/layout inspection; we eat the cost to
-# catch the defects users actually see.)
-_DEFAULT_INPUT_COST_PER_M = 1.25    # USD per 1M input tokens (incl. image tokens)
-_DEFAULT_OUTPUT_COST_PER_M = 5.00   # USD per 1M output tokens
+# Cost per million tokens when the model's price can't be read from the
+# `ai_models` registry: the live Isoquant rate for z-ai/glm-5.3-flash, the
+# registry's video model. The estimate feeds the per-run review cost cap
+# (`vision_review_run_cost_cap_usd`), so pricing GLM calls at the old Gemini
+# 2.5 Pro rates ($1.25 / $5) tripped the cap about 10x early.
+_DEFAULT_INPUT_COST_PER_M = 0.027   # USD per 1M input tokens (incl. image tokens)
+_DEFAULT_OUTPUT_COST_PER_M = 0.49   # USD per 1M output tokens
+
+try:
+    from ai_service.app.constants.model_defaults import GLM_DEFAULT as _GLM_DEFAULT
+except ImportError:
+    try:
+        from app.constants.model_defaults import GLM_DEFAULT as _GLM_DEFAULT  # type: ignore
+    except ImportError:  # pragma: no cover - no ai_service package (render worker)
+        _GLM_DEFAULT = "z-ai/glm-5.3-flash"
+
+
+def model_cost_per_m(model: Optional[str]) -> tuple:
+    """(input, output) USD per 1M tokens for `model` from the `ai_models`
+    registry (cached in-process); None means the registry's video default,
+    which is GLM. Falls back to the GLM constants above. Never raises."""
+    try:
+        try:
+            from ai_service.app.constants.models import get_model_pricing as _gmp
+        except ImportError:
+            from app.constants.models import get_model_pricing as _gmp  # type: ignore
+        pricing = _gmp(model or _GLM_DEFAULT) or {}
+        inp = float(pricing.get("input_token_price") or 0.0) * 1_000_000
+        outp = float(pricing.get("output_token_price") or 0.0) * 1_000_000
+        if inp or outp:
+            return inp, outp
+    except Exception:  # noqa: BLE001 - telemetry/cap only; never break a review
+        pass
+    return _DEFAULT_INPUT_COST_PER_M, _DEFAULT_OUTPUT_COST_PER_M
 
 ISSUE_CODES = frozenset({
     # Generic
@@ -451,10 +478,9 @@ def review_shot(
     prior_shot_screenshot: Optional[bytes] = None,  # v3 — for BG_DISCONTINUITY
     # V200: model resolution is the caller's responsibility — the pipeline
     # passes the matrix-resolved model_id from `_resolve_stage_model("vision_review")`
-    # so admins can tune via the `ai_model_stage_assignments` table. The
-    # legacy hardcoded "google/gemini-2.5-pro" default remains as a safety
-    # net for callers that haven't been migrated to per-stage routing yet.
-    model: Optional[str] = "google/gemini-2.5-pro",
+    # so admins can tune via the `ai_model_stage_assignments` table. None
+    # lets the client pick the registry's video default (the GLM chain).
+    model: Optional[str] = None,
     # Pro on OpenRouter consumes tokens on internal reasoning before emitting
     # JSON. 1200 then 2400 were BOTH still occasionally truncated (review came
     # back as cut-off/unparseable JSON → the gate silently no-ops and ships the
@@ -462,8 +488,9 @@ def review_shot(
     # shot — small on top of the input-token cost which dominates with 3 PNGs.
     max_tokens: int = 6000,
     temperature: float = 0.0,
-    input_cost_per_m: float = _DEFAULT_INPUT_COST_PER_M,
-    output_cost_per_m: float = _DEFAULT_OUTPUT_COST_PER_M,
+    # None = the model's registry price (see model_cost_per_m).
+    input_cost_per_m: Optional[float] = None,
+    output_cost_per_m: Optional[float] = None,
     # Phase A7 — resolved visual style of the run ("educational" | "marketing"
     # | "bold"): swaps the reviewer persona so brand-film shots are judged by
     # a motion-design director, not an educational-slide reviewer.
@@ -485,6 +512,10 @@ def review_shot(
     """
     if not screenshots:
         return _no_op_record(prompt_version=PROMPT_VERSION, model=model, error="no screenshots")
+    if input_cost_per_m is None or output_cost_per_m is None:
+        _in_m, _out_m = model_cost_per_m(model)
+        input_cost_per_m = _in_m if input_cost_per_m is None else input_cost_per_m
+        output_cost_per_m = _out_m if output_cost_per_m is None else output_cost_per_m
 
     user_text = _build_user_prompt(
         shot=shot,
@@ -599,7 +630,7 @@ def _estimate_cost(usage: Optional[Dict[str, Any]], in_per_m: float, out_per_m: 
 def _no_op_record(
     *,
     prompt_version: str,
-    model: str,
+    model: Optional[str],
     error: str,
     raw: Optional[str] = None,
     review_ms: int = 0,

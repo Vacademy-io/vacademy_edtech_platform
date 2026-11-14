@@ -1,0 +1,12 @@
+{
+    "heading": "Mettre le bulletin de paie en attente",
+    "headingWithCode": "Mettre le bulletin de paie en attente — {{code}}",
+    "reasonRequired": "Indiquez un motif pour la mise en attente — il est enregistré avec le bulletin de paie.",
+    "cancel": "Annuler",
+    "holding": "Mise en attente…",
+    "holdPayslip": "Mettre en attente",
+    "description": "La mise en attente retire le salaire net de cet employé du total de l'exécution. Son bulletin de paie reste calculé, donc le libérer plus tard ne nécessite aucun nouveau calcul.",
+    "reasonLabel": "Motif",
+    "reasonPlaceholder": "ex. Coordonnées bancaires non vérifiées — chèque annulé en attente.",
+    "reasonHint": "Affiché sur le registre de paie et pour la personne qui rapproche le virement."
+}

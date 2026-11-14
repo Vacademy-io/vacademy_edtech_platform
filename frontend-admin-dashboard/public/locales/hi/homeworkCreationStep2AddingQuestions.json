@@ -1,0 +1,30 @@
+{
+    "heading": "प्रश्न जोड़ें",
+    "defaultSectionName": "खंड {{number}}",
+    "actions": {
+        "update": "अपडेट करें",
+        "next": "आगे",
+        "addSection": "खंड जोड़ें"
+    },
+    "toast": {
+        "updateSuccess": "चरण 2 का डेटा सफलतापूर्वक अपडेट कर दिया गया है!",
+        "saveSuccess": "चरण 2 का डेटा सफलतापूर्वक सहेज लिया गया है!"
+    },
+    "errors": {
+        "saveQuestionsFailed": "प्रश्नों को सहेजने में विफल।"
+    },
+    "durationDistribution": {
+        "entireAssessmentLabel": "संपूर्ण मूल्यांकन अवधि",
+        "sectionWiseLabel": "खंड-वार अवधि",
+        "questionWiseLabel": "प्रश्न-वार अवधि",
+        "entireAssessmentHeading": "संपूर्ण मूल्यांकन अवधि",
+        "entireAssessmentDescription": "पूरे मूल्यांकन के लिए एक ही समय सीमा निर्धारित करें।",
+        "sectionWiseHeading": "खंड-वार अवधि",
+        "sectionWiseDescription": "खंड टैब में प्रत्येक खंड के लिए एक विशिष्ट समय निर्धारित करें। कुल मूल्यांकन अवधि सभी खंड समयों का योग होगी।",
+        "questionWiseHeading": "प्रश्न-वार अवधि",
+        "questionWiseDescription": "खंड टैब में प्रत्येक प्रश्न के लिए अलग-अलग समय सीमा निर्धारित करें, जहाँ प्रत्येक प्रश्न के पास एक समय इनपुट फ़ील्ड उपलब्ध होगी।",
+        "entireTestDurationLabel": "संपूर्ण परीक्षण अवधि",
+        "hrs": "घंटे",
+        "minutes": "मिनट"
+    }
+}

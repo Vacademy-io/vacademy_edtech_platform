@@ -12,4 +12,16 @@ public interface EmployeeDocumentRepository extends JpaRepository<EmployeeDocume
     List<EmployeeDocument> findByEmployeeIdOrderByCreatedAtDesc(String employeeId);
 
     List<EmployeeDocument> findByEmployeeIdAndDocumentType(String employeeId, String documentType);
+
+    /**
+     * Document-expiry reminder sweep (DocumentExpiryJob): candidates in a broad
+     * window, exact 30/7-day matching done per institute TZ by the job. The
+     * employee is fetch-joined because the job runs outside any session and
+     * must read employee/institute fields.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT d FROM EmployeeDocument d JOIN FETCH d.employee WHERE d.expiryDate BETWEEN :start AND :end")
+    List<EmployeeDocument> findExpiringBetweenWithEmployee(
+            @org.springframework.data.repository.query.Param("start") java.time.LocalDate start,
+            @org.springframework.data.repository.query.Param("end") java.time.LocalDate end);
 }

@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "Create a Question Paper",
+        "subtitle": "Drop a PDF, Word, or PowerPoint file. We'll draft questions you can edit before sending."
+    },
+    "dropzone": {
+        "title": "Drop your file here, or click to choose",
+        "subtitle": "PDF, Word, or PowerPoint — up to a few hundred pages."
+    },
+    "fileCard": {
+        "removeFile": "Remove file",
+        "status": {
+            "uploading": "Uploading…",
+            "processing": "Reading…",
+            "ready": "Ready to draft",
+            "generating": "Drafting in progress"
+        }
+    },
+    "workingStatus": {
+        "uploading": "Reading your file…",
+        "processing": "Getting your document ready…",
+        "generating": "Drafting your paper — usually takes ~30 seconds.",
+        "preparingPages": "Preparing pages for you to pick…"
+    },
+    "errors": {
+        "unsupportedFileType": "We can't read .{{ext}} files yet. Try PDF, Word, or PowerPoint.",
+        "uploadIncomplete": "Upload didn't complete. Want to try again?",
+        "fileUnreadable": "We couldn't read this file. Try a different one?",
+        "genericReadError": "Something went wrong while reading your file. Try again?",
+        "generateFailed": "We couldn't draft questions from this file. Want to try again?",
+        "taskFailed": "We couldn't finish your paper. Want to try again?"
+    },
+    "toolName": "Vsmart Upload",
+    "generatingState": {
+        "draftingTitle": "Drafting your paper",
+        "draftingSubtitle": "Reading your document and crafting questions. Usually ~30 seconds.",
+        "preparingPagesTitle": "Preparing pages",
+        "preparingPagesSubtitle": "Getting your document ready to pick from."
+    },
+    "questionConfig": {
+        "ctaLabel": "Draft my paper",
+        "pickPagesLabel": "or pick specific pages →"
+    },
+    "recentFiles": {
+        "title": "Your recent drafts",
+        "fallbackLabel": "Untitled draft",
+        "emptyHint": "Your drafts will appear here. Drop a file above to start your first one."
+    }
+}

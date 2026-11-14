@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { Target, Users } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,9 +14,9 @@ import {
 } from '@/components/ui/select';
 import { MyButton } from '@/components/design-system/button';
 import {
+    buildTargetMetricLabel,
     bulkApplyTargets,
     fetchTargetProgress,
-    TARGET_METRIC_LABEL,
     TARGET_METRICS,
     upsertCounsellorTarget,
     type TargetMetric,
@@ -26,10 +28,10 @@ interface DialogCounsellor {
     full_name: string | null;
 }
 
-const PERIODS: { key: TargetPeriodType; label: string }[] = [
-    { key: 'WEEK', label: 'Weekly (recurring)' },
-    { key: 'MONTH', label: 'Monthly (recurring)' },
-    { key: 'CUSTOM', label: 'Custom date range' },
+const buildPeriods = (t: TFunction): { key: TargetPeriodType; label: string }[] => [
+    { key: 'WEEK', label: t('periods.week') },
+    { key: 'MONTH', label: t('periods.month') },
+    { key: 'CUSTOM', label: t('periods.custom') },
 ];
 
 /**
@@ -50,6 +52,9 @@ export function TargetsSettingsDialog({
     counsellors: DialogCounsellor[];
     onSaved: () => void;
 }) {
+    const { t } = useTranslation('counsellorsTargetsSettingsDialog');
+    const { t: tMetrics } = useTranslation('counsellorsTargetMetrics');
+    const metricLabel = buildTargetMetricLabel(tMetrics);
     const queryClient = useQueryClient();
     const [metric, setMetric] = useState<TargetMetric>('CONVERSIONS');
     const [periodType, setPeriodType] = useState<TargetPeriodType>('MONTH');
@@ -102,11 +107,11 @@ export function TargetsSettingsDialog({
     async function handleApplyToAll() {
         const val = Number(bulkValue);
         if (!Number.isFinite(val) || val < 0) {
-            toast.error('Enter a valid number to apply to everyone');
+            toast.error(t('toast.invalidBulkValue'));
             return;
         }
         if (customIncomplete) {
-            toast.error('Pick a custom date range first');
+            toast.error(t('toast.pickDateRange'));
             return;
         }
         setSaving(true);
@@ -122,9 +127,9 @@ export function TargetsSettingsDialog({
             setDraft(Object.fromEntries(ids.map((id) => [id, String(val)])));
             await queryClient.invalidateQueries({ queryKey: ['target-prefill'] });
             onSaved();
-            toast.success(`Applied to ${ids.length} counsellor${ids.length === 1 ? '' : 's'}`);
+            toast.success(t('toast.appliedSuccess', { count: ids.length }));
         } catch (e) {
-            toast.error(errMsg(e) ?? 'Could not apply targets');
+            toast.error(errMsg(e) ?? t('toast.applyError'));
         } finally {
             setSaving(false);
         }
@@ -132,7 +137,7 @@ export function TargetsSettingsDialog({
 
     async function handleSave() {
         if (customIncomplete) {
-            toast.error('Pick a custom date range first');
+            toast.error(t('toast.pickDateRange'));
             return;
         }
         // Only persist rows that changed to a valid number.
@@ -144,7 +149,7 @@ export function TargetsSettingsDialog({
             return num !== initialByUser[id];
         });
         if (changed.length === 0) {
-            toast.info('No changes to save');
+            toast.info(t('toast.noChanges'));
             return;
         }
         setSaving(true);
@@ -163,9 +168,9 @@ export function TargetsSettingsDialog({
             );
             await queryClient.invalidateQueries({ queryKey: ['target-prefill'] });
             onSaved();
-            toast.success(`Saved ${changed.length} target${changed.length === 1 ? '' : 's'}`);
+            toast.success(t('toast.savedSuccess', { count: changed.length }));
         } catch (e) {
-            toast.error(errMsg(e) ?? 'Could not save targets');
+            toast.error(errMsg(e) ?? t('toast.saveError'));
         } finally {
             setSaving(false);
         }
@@ -176,14 +181,14 @@ export function TargetsSettingsDialog({
             <DialogContent className="flex max-h-screen w-full flex-col gap-0 p-0 sm:max-w-2xl">
                 <DialogHeader className="border-b border-neutral-200 px-5 py-4">
                     <DialogTitle className="flex items-center gap-2 text-h4">
-                        <Target size={18} className="text-primary-500" /> Set counsellor targets
+                        <Target size={18} className="text-primary-500" /> {t('title')}
                     </DialogTitle>
                 </DialogHeader>
 
                 {/* Metric + period controls */}
                 <div className="flex flex-wrap items-end gap-3 border-b border-neutral-100 px-5 py-4">
                     <label className="flex flex-col gap-1">
-                        <span className="text-caption text-neutral-500">Metric</span>
+                        <span className="text-caption text-neutral-500">{t('metric')}</span>
                         <Select value={metric} onValueChange={(v) => setMetric(v as TargetMetric)}>
                             <SelectTrigger className="h-9 w-44 bg-white">
                                 <SelectValue />
@@ -191,14 +196,14 @@ export function TargetsSettingsDialog({
                             <SelectContent>
                                 {TARGET_METRICS.map((m) => (
                                     <SelectItem key={m} value={m}>
-                                        {TARGET_METRIC_LABEL[m]}
+                                        {metricLabel[m]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </label>
                     <label className="flex flex-col gap-1">
-                        <span className="text-caption text-neutral-500">Timeline</span>
+                        <span className="text-caption text-neutral-500">{t('timeline')}</span>
                         <Select
                             value={periodType}
                             onValueChange={(v) => setPeriodType(v as TargetPeriodType)}
@@ -207,7 +212,7 @@ export function TargetsSettingsDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {PERIODS.map((p) => (
+                                {buildPeriods(t).map((p) => (
                                     <SelectItem key={p.key} value={p.key}>
                                         {p.label}
                                     </SelectItem>
@@ -218,7 +223,7 @@ export function TargetsSettingsDialog({
                     {periodType === 'CUSTOM' && (
                         <div className="flex items-end gap-1.5">
                             <label className="flex flex-col gap-1">
-                                <span className="text-caption text-neutral-500">From</span>
+                                <span className="text-caption text-neutral-500">{t('from')}</span>
                                 <input
                                     type="date"
                                     value={from}
@@ -227,7 +232,7 @@ export function TargetsSettingsDialog({
                                 />
                             </label>
                             <label className="flex flex-col gap-1">
-                                <span className="text-caption text-neutral-500">To</span>
+                                <span className="text-caption text-neutral-500">{t('to')}</span>
                                 <input
                                     type="date"
                                     value={to}
@@ -242,13 +247,15 @@ export function TargetsSettingsDialog({
                 {/* Bulk apply */}
                 <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50 px-5 py-3">
                     <Users size={16} className="text-neutral-400" />
-                    <span className="text-caption text-neutral-600">Apply to all {ids.length}:</span>
+                    <span className="text-caption text-neutral-600">
+                        {t('applyToAll.label', { count: ids.length })}
+                    </span>
                     <input
                         type="number"
                         min={0}
                         value={bulkValue}
                         onChange={(e) => setBulkValue(e.target.value)}
-                        placeholder="e.g. 50"
+                        placeholder={t('applyToAll.placeholder')}
                         className="h-9 w-24 rounded-md border border-neutral-300 px-2 text-body"
                     />
                     <MyButton
@@ -258,7 +265,7 @@ export function TargetsSettingsDialog({
                         disabled={saving || customIncomplete || bulkValue.trim() === ''}
                         onClick={handleApplyToAll}
                     >
-                        Apply to all
+                        {t('applyToAll.button')}
                     </MyButton>
                 </div>
 
@@ -266,15 +273,15 @@ export function TargetsSettingsDialog({
                 <div className="min-h-0 flex-1 overflow-auto px-5 py-3">
                     {customIncomplete ? (
                         <div className="py-8 text-center text-subtitle text-neutral-400">
-                            Pick a custom date range to edit targets.
+                            {t('list.customIncomplete')}
                         </div>
                     ) : prefillQuery.isLoading ? (
                         <div className="py-8 text-center text-subtitle text-neutral-400">
-                            Loading current targets…
+                            {t('list.loading')}
                         </div>
                     ) : counsellors.length === 0 ? (
                         <div className="py-8 text-center text-subtitle text-neutral-400">
-                            No counsellors to set targets for.
+                            {t('list.empty')}
                         </div>
                     ) : (
                         <ul className="flex flex-col divide-y divide-neutral-100">
@@ -284,7 +291,7 @@ export function TargetsSettingsDialog({
                                     className="flex items-center justify-between gap-3 py-2"
                                 >
                                     <span className="truncate text-body text-neutral-800">
-                                        {c.full_name || 'Unnamed'}
+                                        {c.full_name || t('list.unnamed')}
                                     </span>
                                     <input
                                         type="number"
@@ -293,8 +300,8 @@ export function TargetsSettingsDialog({
                                         onChange={(e) =>
                                             setDraft((d) => ({ ...d, [c.user_id]: e.target.value }))
                                         }
-                                        placeholder="—"
-                                        className="h-9 w-24 rounded-md border border-neutral-300 px-2 text-right text-body"
+                                        placeholder={t('list.noValuePlaceholder')}
+                                        className="h-9 w-24 rounded-md border border-neutral-300 px-2 text-end text-body"
                                     />
                                 </li>
                             ))}
@@ -309,7 +316,7 @@ export function TargetsSettingsDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Close
+                        {t('footer.close')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -318,7 +325,7 @@ export function TargetsSettingsDialog({
                         disabled={saving || customIncomplete}
                         onClick={handleSave}
                     >
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? t('footer.saving') : t('footer.save')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

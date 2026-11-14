@@ -112,7 +112,7 @@ export function useAudioRecording() {
                 if (ws.readyState === WebSocket.OPEN) {
                     const inputData = e.inputBuffer.getChannelData(0);
                     const int16Data = convertFloat32ToInt16(inputData);
-                    ws.send(int16Data.buffer);
+                    ws.send(int16Data.buffer as ArrayBuffer);
                 }
             };
 

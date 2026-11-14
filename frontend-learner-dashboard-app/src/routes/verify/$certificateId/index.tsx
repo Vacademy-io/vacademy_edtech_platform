@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { verifyCertificate, type VerificationResult } from "@/services/certificate-verification";
 import { BASE_URL } from "@/constants/urls";
 import {
@@ -57,6 +58,7 @@ function documentSrc(data: {
 }
 
 function CertificateVerificationPage() {
+  const { t } = useTranslation("miscRoutesA");
   const { certificateId } = Route.useParams();
   const [result, setResult] = useState<VerificationResult | null>(null);
 
@@ -88,12 +90,12 @@ function CertificateVerificationPage() {
                against the portal it is framed in. */
             <iframe
               src={documentSrc(result.data)!}
-              title="Certificate verification"
+              title={t("verify.certificateVerificationTitle")}
               sandbox=""
-              className="h-[80vh] w-full rounded-lg border bg-white shadow-sm"
+              className="h-screen-80 w-full rounded-lg border bg-white shadow-sm"
             />
           ) : (
-            <VerifiedByCertificate data={result.data} verifiedVia="QR code" />
+            <VerifiedByCertificate data={result.data} verifiedVia={t("verify.verifiedVia.qrCode")} />
           ))}
         {result?.status === "invalid" && (
           <>
@@ -106,7 +108,7 @@ function CertificateVerificationPage() {
                 to="/verify"
                 className="font-medium text-primary-500 underline underline-offset-2"
               >
-                Enter the code from the certificate instead
+                {t("verify.enterCodeInstead")}
               </Link>
             </p>
           </>

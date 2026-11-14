@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SpinnerGap, MapPin } from "@phosphor-icons/react";
 
 /**
@@ -45,12 +46,13 @@ const PINCODE_API = "https://api.postalpincode.in/pincode";
 
 const labelCls = "text-caption font-bold text-gray-900 uppercase flex items-center gap-1.5";
 const inputBase =
-  "w-full px-3 py-2 bg-gray-50 border rounded-lg transition-all focus:bg-white focus:ring-2 text-sm font-medium";
+  "w-full px-3 py-2 bg-gray-50 border rounded-catalogue-md transition-all focus:bg-white focus:ring-2 text-sm font-medium";
 const inputDefault = "border-gray-200 focus:ring-primary-50 focus:border-primary-400";
 const inputError = "border-red-300 focus:ring-red-50";
 const errorText = "text-red-500 text-caption font-semibold";
 
 export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ initial }, ref) => {
+  const { t } = useTranslation("coursePlayerB");
   const [houseNo, setHouseNo] = useState("");
   const [area, setArea] = useState("");
   const [landmark, setLandmark] = useState("");
@@ -114,11 +116,11 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
           );
         } else {
           setPostOfficeOptions([]);
-          setPinLookupError("Pincode not found — please enter address manually");
+          setPinLookupError(t("addressForm.errors.pincodeNotFound"));
         }
       } catch (e) {
         if ((e as { name?: string }).name !== "AbortError") {
-          setPinLookupError("Couldn't reach India Post. Enter address manually.");
+          setPinLookupError(t("addressForm.errors.indiaPostUnreachable"));
         }
       } finally {
         setPinLookupLoading(false);
@@ -143,14 +145,14 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
 
   const runValidation = (): Record<string, string> => {
     const next: Record<string, string> = {};
-    if (!houseNo.trim()) next.houseNo = "Required";
-    if (!area.trim()) next.area = "Required";
-    if (!pinCode.trim()) next.pinCode = "Pincode is required";
-    else if (!/^\d{6}$/.test(pinCode.trim())) next.pinCode = "Must be 6 digits";
-    if (!stateName.trim()) next.stateName = "Select a state";
-    if (!district.trim()) next.district = "Required";
-    if (!postOffice.trim()) next.postOffice = "Required";
-    if (!city.trim()) next.city = "Required";
+    if (!houseNo.trim()) next.houseNo = t("addressForm.errors.required");
+    if (!area.trim()) next.area = t("addressForm.errors.required");
+    if (!pinCode.trim()) next.pinCode = t("addressForm.errors.pincodeRequired");
+    else if (!/^\d{6}$/.test(pinCode.trim())) next.pinCode = t("addressForm.errors.pincodeDigits");
+    if (!stateName.trim()) next.stateName = t("addressForm.errors.selectState");
+    if (!district.trim()) next.district = t("addressForm.errors.required");
+    if (!postOffice.trim()) next.postOffice = t("addressForm.errors.required");
+    if (!city.trim()) next.city = t("addressForm.errors.required");
     return next;
   };
 
@@ -182,7 +184,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
   return (
     <div className="space-y-3">
       <label className={labelCls}>
-        <MapPin className="h-3 w-3" /> Delivery Address
+        <MapPin className="h-3 w-3" /> {t("addressForm.label")}
       </label>
 
       {/* House / Flat / Building No. */}
@@ -192,7 +194,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
           value={houseNo}
           onChange={(e) => { setHouseNo(e.target.value); if (errors.houseNo) setErrors((p) => ({ ...p, houseNo: "" })); }}
           onBlur={() => handleBlur("houseNo")}
-          placeholder="House / Flat / Building No."
+          placeholder={t("addressForm.placeholders.houseNo")}
           className={`${inputBase} ${errors.houseNo ? inputError : inputDefault}`}
         />
         {errors.houseNo && <p className={errorText}>{errors.houseNo}</p>}
@@ -205,7 +207,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
           value={area}
           onChange={(e) => { setArea(e.target.value); if (errors.area) setErrors((p) => ({ ...p, area: "" })); }}
           onBlur={() => handleBlur("area")}
-          placeholder="Area / Street / Locality"
+          placeholder={t("addressForm.placeholders.area")}
           className={`${inputBase} ${errors.area ? inputError : inputDefault}`}
         />
         {errors.area && <p className={errorText}>{errors.area}</p>}
@@ -216,7 +218,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
         type="text"
         value={landmark}
         onChange={(e) => setLandmark(e.target.value)}
-        placeholder="Landmark (optional)"
+        placeholder={t("addressForm.placeholders.landmark")}
         className={`${inputBase} ${inputDefault}`}
       />
 
@@ -230,7 +232,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
               value={pinCode}
               onChange={(e) => onPincodeChange(e.target.value)}
               onBlur={() => handleBlur("pinCode")}
-              placeholder="Pincode"
+              placeholder={t("addressForm.placeholders.pincode")}
               maxLength={6}
               className={`${inputBase} pe-8 ${errors.pinCode ? inputError : inputDefault}`}
             />
@@ -248,7 +250,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
             value={city}
             onChange={(e) => { setCity(e.target.value); if (errors.city) setErrors((p) => ({ ...p, city: "" })); }}
             onBlur={() => handleBlur("city")}
-            placeholder="City / Town / Village"
+            placeholder={t("addressForm.placeholders.city")}
             className={`${inputBase} ${errors.city ? inputError : inputDefault}`}
           />
           {errors.city && <p className={errorText}>{errors.city}</p>}
@@ -264,7 +266,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
             onBlur={() => handleBlur("stateName")}
             className={`${inputBase} ${errors.stateName ? inputError : inputDefault}`}
           >
-            <option value="">Select State</option>
+            <option value="">{t("addressForm.selectState")}</option>
             {INDIAN_STATES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -278,7 +280,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
             value={district}
             onChange={(e) => { setDistrict(e.target.value); if (errors.district) setErrors((p) => ({ ...p, district: "" })); }}
             onBlur={() => handleBlur("district")}
-            placeholder="District"
+            placeholder={t("addressForm.placeholders.district")}
             className={`${inputBase} ${errors.district ? inputError : inputDefault}`}
           />
           {errors.district && <p className={errorText}>{errors.district}</p>}
@@ -294,7 +296,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
             onBlur={() => handleBlur("postOffice")}
             className={`${inputBase} ${errors.postOffice ? inputError : inputDefault}`}
           >
-            <option value="">Select Post Office</option>
+            <option value="">{t("addressForm.selectPostOffice")}</option>
             {postOfficeOptions.map((po) => (
               <option key={po} value={po}>{po}</option>
             ))}
@@ -305,7 +307,7 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
             value={postOffice}
             onChange={(e) => { setPostOffice(e.target.value); if (errors.postOffice) setErrors((p) => ({ ...p, postOffice: "" })); }}
             onBlur={() => handleBlur("postOffice")}
-            placeholder="Post Office"
+            placeholder={t("addressForm.placeholders.postOffice")}
             className={`${inputBase} ${errors.postOffice ? inputError : inputDefault}`}
           />
         )}

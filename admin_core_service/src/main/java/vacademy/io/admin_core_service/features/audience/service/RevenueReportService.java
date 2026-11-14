@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.dto.reports.CohortAnalysisReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForecastDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.RevenuePaymentsDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueReportDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.sql.Timestamp;
@@ -68,44 +70,68 @@ public class RevenueReportService {
      * SAME way the rest of the report suite resolves it: the enquiry counsellor on the lead's
      * representative response (best_score_response_id → linked_users), falling back to the lead
      * profile's assigned_counselor_id. assigned_counselor_id alone is almost never populated, so
-     * scoping on it would zero out every scoped (non-admin) caller. Source falls back
-     * best_source_type → representative-response source_type → 'UNKNOWN'.
+     * scoping on it would zero out every scoped (non-admin) caller. Source = the student's first
+     * enquiry, see {@link #leadAttribution}.
      */
-    private static final String CONV_CTE = """
-            conv AS (
+    private static final String CONV_CTE = "conv AS (" + leadAttribution(true) + ")\n";
+
+    /**
+     * Lead attribution: source = the student's first enquiry (its campaign type), counsellor = the
+     * enquiry counsellor on the profile's best-scoring response, falling back to
+     * assigned_counselor_id.
+     */
+    private static String leadAttribution(boolean convertedOnly) {
+        return """
                 SELECT ulp.user_id,
-                       COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+                       """ + ReportSourceSql.firstEnquirySource("fe", "ulp.best_source_type") + """
+                           AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM user_lead_profile ulp
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+                """ + ReportSourceSql.firstEnquiryJoin("fe", "ulp.user_id", "ulp.institute_id") + """
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
                     ORDER BY lu2.created_at DESC LIMIT 1
                 ) lu ON true
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
+                """ + (convertedOnly ? """
                   AND ulp.conversion_status = 'CONVERTED'
                   AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
-            )
-            """;
+                """ : "");
+    }
 
-    /** PAID payments in-window from the scoped converted leads. payment_amount NOT NULL keeps SUM/COUNT aligned. */
+    /**
+     * PAID payments in-window from the scoped converted leads. payment_amount NOT NULL keeps
+     * SUM/COUNT aligned. The window and {@code pay_day} follow {@link ReportPaymentSql}: a hand-recorded
+     * payment counts on its transaction date, not on the day it was entered.
+     *
+     * <p>One row per payment_log row, but a payment stored per course (admission package, multi-course
+     * checkout) is several rows: money is the SUM of the rows, and "payments" counts
+     * {@code pay_key} once ({@link PaymentGroupSql}). A checkout's planless parent row repeats its
+     * courses' money and is left out.
+     */
     private static final String PAID_CTE = """
             paid AS (
                 SELECT c.user_id, c.source_type, c.counsellor_id,
-                       pl.payment_amount, pl.created_at
+                       pl.payment_amount,""" + PaymentGroupSql.GROUP_KEY_PL + """
+                    AS pay_key,""" + ReportPaymentSql.paymentDay("pl") + """
+                    AS pay_day
                 FROM payment_log pl
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
-                  AND pl.created_at >= :fromTs AND pl.created_at < :toTs
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                  AND """ + ReportPaymentSql.inWindow("pl") + """
+
             )
             """;
 
     private static final String REVENUE_TOTALS_SQL = "WITH " + CONV_CTE + ", " + PAID_CTE + """
             SELECT COALESCE(SUM(payment_amount), 0) AS revenue,
                    COUNT(DISTINCT user_id)          AS paying_leads,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             """;
 
@@ -113,7 +139,7 @@ public class RevenueReportService {
             SELECT source_type,
                    COALESCE(SUM(payment_amount), 0) AS revenue,
                    COUNT(DISTINCT user_id)          AS paying_leads,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             GROUP BY source_type
             ORDER BY revenue DESC, source_type
@@ -123,7 +149,7 @@ public class RevenueReportService {
             SELECT paid.counsellor_id              AS user_id,
                    COALESCE(SUM(paid.payment_amount), 0) AS revenue,
                    COUNT(DISTINCT paid.user_id)    AS paying_leads,
-                   COUNT(*)                        AS payments
+                   COUNT(DISTINCT paid.pay_key)    AS payments
             FROM paid
             WHERE paid.counsellor_id IS NOT NULL
             GROUP BY paid.counsellor_id
@@ -131,9 +157,9 @@ public class RevenueReportService {
             """;
 
     private static final String REVENUE_TREND_SQL = "WITH " + CONV_CTE + ", " + PAID_CTE + """
-            SELECT (created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date AS day,
+            SELECT pay_day AS day,
                    COALESCE(SUM(payment_amount), 0) AS revenue,
-                   COUNT(*)                         AS payments
+                   COUNT(DISTINCT pay_key)          AS payments
             FROM paid
             GROUP BY 1
             ORDER BY 1
@@ -196,6 +222,7 @@ public class RevenueReportService {
                     .avgDealValue(payingLeads > 0 ? round2(revenue / payingLeads) : null)
                     .build();
         });
+
         Map<String, String> names = resolveNames(
                 byCounsellor.stream().map(RevenueReportDTO.CounsellorRow::getUserId).toList());
         byCounsellor.forEach(r -> r.setName(names.getOrDefault(r.getUserId(), r.getUserId())));
@@ -217,6 +244,131 @@ public class RevenueReportService {
                 .bySource(bySource)
                 .byCounsellor(byCounsellor)
                 .trend(trend)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Revenue payments (drill-down behind a Collected number)
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static final int PAYMENTS_LIMIT = 2000;
+
+    /**
+     * The payment rows behind {@link #PAID_CTE}, with the student, receipt and course. Same CTEs, so
+     * a counsellor-scoped list sums to that counsellor's Collected. Totals are window functions,
+     * computed before the LIMIT, so they cover every match.
+     * One row per payment: the per-course rows of one payment (admission package, multi-course
+     * checkout) come back as a single row with their amounts summed, every receipt number and every
+     * course, so the count here matches the Payments figure of the tab.
+     */
+    private static final String PAYMENTS_SQL = "WITH " + CONV_CTE + ", " + """
+            paid AS (
+                SELECT pl.id, pl.user_id, pl.user_plan_id, c.source_type, c.counsellor_id,
+                       pl.payment_amount, pl.payment_mode, pl.payment_sub_mode, pl.vendor,
+                       pl.payment_reference, pl.created_at,""" + PaymentGroupSql.GROUP_KEY_PL + """
+                    AS pay_key,
+                       """ + ReportPaymentSql.paymentDay("pl") + """
+                    AS pay_day
+                FROM payment_log pl
+                JOIN conv c ON c.user_id = pl.user_id
+                WHERE pl.payment_status = 'PAID'
+                  AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                  AND """ + ReportPaymentSql.inWindow("pl") + """
+
+            ),
+            grouped AS (
+                SELECT DISTINCT ON (p.pay_key)
+                       p.pay_key, p.id, p.user_id, p.source_type, p.counsellor_id,
+                       p.payment_mode, p.payment_sub_mode, p.vendor, p.payment_reference,
+                       p.created_at, p.pay_day,
+                       SUM(p.payment_amount) OVER (PARTITION BY p.pay_key) AS payment_amount,
+                       ARRAY_AGG(p.id) OVER (PARTITION BY p.pay_key)           AS log_ids,
+                       ARRAY_AGG(p.user_plan_id) OVER (PARTITION BY p.pay_key) AS plan_ids
+                FROM paid p
+                ORDER BY p.pay_key, p.created_at, p.id
+            ),
+            page AS (
+                SELECT g.*,
+                       SUM(g.payment_amount) OVER () AS total_amount,
+                       COUNT(*) OVER ()              AS total_count
+                FROM grouped g
+                ORDER BY g.pay_day DESC, g.created_at DESC, g.id
+                LIMIT :limit
+            )
+            SELECT pg.*,
+                   (pg.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date AS entry_day,
+                   st.full_name, st.mobile_number,
+                   (SELECT string_agg(DISTINCT i.invoice_number, ', ')
+                      FROM invoice_payment_log_mapping m
+                      JOIN invoice i ON i.id = m.invoice_id
+                     WHERE m.payment_log_id = ANY(pg.log_ids)) AS receipt,
+                   (SELECT string_agg(DISTINCT pk.package_name, ', ')
+                      FROM student_session_institute_group_mapping s
+                      JOIN package_session ps ON ps.id = s.package_session_id
+                      JOIN package pk ON pk.id = ps.package_id
+                     WHERE s.user_id = pg.user_id
+                       AND s.institute_id = :instituteId
+                       AND s.user_plan_id = ANY(pg.plan_ids)) AS courses
+            FROM page pg
+            LEFT JOIN LATERAL (
+                SELECT full_name, mobile_number FROM student
+                WHERE user_id = pg.user_id
+                ORDER BY created_at DESC LIMIT 1
+            ) st ON true
+            ORDER BY pg.pay_day DESC, pg.created_at DESC, pg.id
+            """;
+
+    /**
+     * Every payment counted in the Revenue tab's Collected for the same filters. Pass the clicked
+     * counsellor as {@code counsellorUserId} to get exactly that row's payments (RBAC still applies).
+     */
+    @Transactional(readOnly = true)
+    public RevenuePaymentsDTO getRevenuePayments(String instituteId, String fromDate, String toDate,
+                                                 String teamId, String counsellorUserId, String callerUserId) {
+        LeadReportSettingService.ReportSettings settings = settingService.get(instituteId);
+        ZoneId zone = safeZone(settings.timezone());
+        Window w = resolveWindow(fromDate, toDate, zone);
+        String scopeCsv = scopeResolver.resolveScopeUsersCsv(
+                instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
+        MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv)
+                .addValue("tz", zone.getId())
+                .addValue("limit", PAYMENTS_LIMIT);
+
+        double[] total = {0};
+        long[] count = {0};
+        List<RevenuePaymentsDTO.PaymentRow> rows = jdbc.query(PAYMENTS_SQL, p, (rs, i) -> {
+            total[0] = rs.getDouble("total_amount");
+            count[0] = rs.getLong("total_count");
+            java.sql.Date entry = rs.getDate("entry_day");
+            return RevenuePaymentsDTO.PaymentRow.builder()
+                    .paymentId(rs.getString("id"))
+                    .userId(rs.getString("user_id"))
+                    .studentName(rs.getString("full_name"))
+                    .phone(rs.getString("mobile_number"))
+                    .paymentDate(rs.getDate("pay_day").toLocalDate().toString())
+                    .enteredOn(entry == null ? null : entry.toLocalDate().toString())
+                    .amount(round2(rs.getDouble("payment_amount")))
+                    .paymentMode(Optional.ofNullable(rs.getString("payment_mode")).orElse(rs.getString("vendor")))
+                    .paymentSubMode(rs.getString("payment_sub_mode"))
+                    .paymentReference(rs.getString("payment_reference"))
+                    .receiptNumber(rs.getString("receipt"))
+                    .courses(rs.getString("courses"))
+                    .sourceType(rs.getString("source_type"))
+                    .counsellorId(rs.getString("counsellor_id"))
+                    .build();
+        });
+
+        Map<String, String> names = resolveNames(rows.stream()
+                .map(RevenuePaymentsDTO.PaymentRow::getCounsellorId).filter(id -> id != null).distinct().toList());
+        rows.forEach(r -> r.setCounsellorName(r.getCounsellorId() == null ? null : names.get(r.getCounsellorId())));
+
+        return RevenuePaymentsDTO.builder()
+                .currency(resolveCurrency(instituteId))
+                .total(round2(total[0]))
+                .count(count[0])
+                .truncated(count[0] > rows.size())
+                .payments(rows)
                 .build();
     }
 
@@ -256,6 +408,7 @@ public class RevenueReportService {
                        ulp.converted_at
             """ + LEAD_SCOPE_JOIN + """
                 WHERE ulp.institute_id = :instituteId
+                  AND ulp.merged_into_user_id IS NULL
                   AND COALESCE(ulp.created_at, ulp.last_calculated_at) >= :fromTs
                   AND COALESCE(ulp.created_at, ulp.last_calculated_at) <  :toTs
             """ + LEAD_SCOPE_PRED + """
@@ -264,6 +417,7 @@ public class RevenueReportService {
                 SELECT pl.user_id, SUM(pl.payment_amount) AS revenue
                 FROM payment_log pl
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
                 GROUP BY pl.user_id
             )
             SELECT to_char((l.acq AT TIME ZONE 'UTC' AT TIME ZONE :tz), 'YYYY-MM') AS cohort,
@@ -331,6 +485,7 @@ public class RevenueReportService {
                        WHERE ulp.converted_at >= :fromTs AND ulp.converted_at < :toTs) AS conversions
             """ + LEAD_SCOPE_JOIN + """
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
             """ + LEAD_SCOPE_PRED;
 
     /** Open pipeline right now: leads not yet won or lost, scoped. */
@@ -338,6 +493,7 @@ public class RevenueReportService {
             SELECT COUNT(*) AS open_leads
             """ + LEAD_SCOPE_JOIN + """
             WHERE ulp.institute_id = :instituteId
+              AND ulp.merged_into_user_id IS NULL
               AND ulp.conversion_status = 'LEAD'
             """ + LEAD_SCOPE_PRED;
 
@@ -354,7 +510,7 @@ public class RevenueReportService {
                 toUtc(today.plusDays(1), zone));
         String scopeCsv = scopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
-        MapSqlParameterSource p = baseParams(instituteId, trailing, scopeCsv);
+        MapSqlParameterSource p = baseParams(instituteId, trailing, scopeCsv).addValue("tz", zone.getId());
 
         double[] rev = jdbc.queryForObject(TRAILING_REVENUE_SQL, p,
                 (rs, i) -> new double[]{rs.getDouble("revenue"), rs.getLong("paying_leads")});
@@ -431,10 +587,8 @@ public class RevenueReportService {
     private List<RevenueReportDTO.DayPoint> gapFillDays(Window w, ZoneId zone,
                                                         Map<String, RevenueReportDTO.DayPoint> byDay) {
         List<RevenueReportDTO.DayPoint> out = new ArrayList<>();
-        LocalDate from = w.fromUtc().toLocalDateTime().atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(zone).toLocalDate();
-        LocalDate toExclusive = w.toUtc().toLocalDateTime().atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(zone).toLocalDate();
+        LocalDate from = localDay(w.fromUtc(), zone);
+        LocalDate toExclusive = localDay(w.toUtc(), zone);
         for (LocalDate d = from; d.isBefore(toExclusive); d = d.plusDays(1)) {
             String key = d.toString();
             out.add(byDay.getOrDefault(key, RevenueReportDTO.DayPoint.builder()
@@ -448,6 +602,11 @@ public class RevenueReportService {
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         return new Window(toUtc(from, zone), toUtc(to.plusDays(1), zone));
+    }
+
+    /** Institute-TZ calendar date of a UTC wall-clock window bound. */
+    private static LocalDate localDay(Timestamp utc, ZoneId zone) {
+        return utc.toLocalDateTime().atZone(ZoneOffset.UTC).withZoneSameInstant(zone).toLocalDate();
     }
 
     private static Timestamp toUtc(LocalDate localDate, ZoneId zone) {

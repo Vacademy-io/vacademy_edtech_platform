@@ -1,0 +1,12 @@
+{
+    "heading": "شارك تفاصيل مؤسستك",
+    "logoAlt": "الشعار",
+    "instituteNameLabel": "اسم المؤسسة",
+    "instituteNamePlaceholder": "اسم المؤسسة",
+    "instituteTypeLabel": "نوع المؤسسة",
+    "continue": "متابعة",
+    "schema": {
+        "instituteNameRequired": "اسم المؤسسة مطلوب",
+        "instituteTypeRequired": "الرجاء اختيار نوع المؤسسة"
+    }
+}

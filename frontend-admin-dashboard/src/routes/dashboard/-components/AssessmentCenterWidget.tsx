@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Plus, Eye, ChartBar } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 interface AssessmentCenterWidgetProps {
     assessmentCount?: number;
@@ -16,6 +17,7 @@ export default function AssessmentCenterWidget({
     isLoading = false,
 }: AssessmentCenterWidgetProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardAssessmentCenterWidget');
 
     const handleCreateAssessment = () => {
         navigate({ to: '/assessment' });
@@ -35,24 +37,28 @@ export default function AssessmentCenterWidget({
 
     const assessmentFeatures = [
         {
+            id: 'createAssessment',
             icon: Plus,
-            title: 'Create Assessment',
+            title: t('features.createAssessment'),
             action: handleCreateAssessment,
             primary: true,
         },
         {
+            id: 'viewAssessments',
             icon: Eye,
-            title: 'View Assessments',
+            title: t('features.viewAssessments'),
             action: handleViewAssessments,
         },
         {
+            id: 'questionPapers',
             icon: FileText,
-            title: 'Question Papers',
+            title: t('features.questionPapers'),
             action: handleQuestionPapers,
         },
         {
+            id: 'evaluationCenter',
             icon: ChartBar,
-            title: 'Evaluation Center',
+            title: t('features.evaluationCenter'),
             action: handleEvaluationCenter,
         },
     ];
@@ -65,10 +71,10 @@ export default function AssessmentCenterWidget({
                         <FileText size={18} className="text-primary-500" weight="duotone" />
                         <div>
                             <CardTitle className="text-sm font-semibold">
-                                Assessment Center
+                                {t('heading.title')}
                             </CardTitle>
                             <CardDescription className="mt-1 text-xs text-neutral-600">
-                                Create, manage, and evaluate assessments
+                                {t('heading.description')}
                             </CardDescription>
                         </div>
                     </div>
@@ -79,7 +85,7 @@ export default function AssessmentCenterWidget({
                             ) : (
                                 assessmentCount
                             )}{' '}
-                            Tests
+                            {t('badges.tests')}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
                             {isLoading ? (
@@ -87,7 +93,7 @@ export default function AssessmentCenterWidget({
                             ) : (
                                 questionPaperCount
                             )}{' '}
-                            Papers
+                            {t('badges.papers')}
                         </Badge>
                     </div>
                 </div>
@@ -96,7 +102,7 @@ export default function AssessmentCenterWidget({
                 <div className="grid grid-cols-1 gap-3">
                     {assessmentFeatures.map((feature) => (
                         <MyButton
-                            key={feature.title}
+                            key={feature.id}
                             type="button"
                             scale="medium"
                             buttonType={feature.primary ? 'primary' : 'secondary'}

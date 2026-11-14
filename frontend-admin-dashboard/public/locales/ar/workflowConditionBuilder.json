@@ -1,0 +1,26 @@
+{
+    "operators": {
+        "equals": "يساوي",
+        "notEquals": "لا يساوي",
+        "greaterThan": "أكبر من",
+        "lessThan": "أصغر من",
+        "greaterOrEqual": "أكبر من أو يساوي",
+        "lessOrEqual": "أصغر من أو يساوي",
+        "contains": "يحتوي على",
+        "isEmpty": "فارغ",
+        "isNotEmpty": "غير فارغ",
+        "isTrue": "صحيح",
+        "isFalse": "خاطئ"
+    },
+    "switchToVisual": "التبديل إلى المُنشئ المرئي",
+    "rawSpelMode": "وضع تعبير SpEL الخام",
+    "ifLabel": "إذا",
+    "pickVariablePlaceholder": "اختر متغيرًا...",
+    "valuePlaceholder": "القيمة",
+    "addCondition": "إضافة شرط",
+    "switchToRawSpel": "التبديل إلى SpEL الخام",
+    "advanced": "متقدم",
+    "spelBadge": "SpEL",
+    "joinerAnd": "و",
+    "joinerOr": "أو"
+}

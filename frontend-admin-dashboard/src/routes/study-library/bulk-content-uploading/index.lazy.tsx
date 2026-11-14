@@ -2,6 +2,7 @@
 // then run the shared bulk-upload wizard against it.
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { isBulkContentUploadEnabled } from '@/components/common/study-library/bulk-content-uploading/feature-gate';
 import { Helmet } from 'react-helmet';
@@ -32,6 +33,7 @@ export const Route = createLazyFileRoute('/study-library/bulk-content-uploading/
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryBulkContentUploadingIndex');
     const navigate = useNavigate();
     const enabled = isBulkContentUploadEnabled();
 
@@ -48,11 +50,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Bulk Content Upload</title>
-                <meta
-                    name="description"
-                    content="Upload a zip of folders and files into a course in one go."
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
             <InitStudyLibraryProvider>
                 <BulkContentUploadingPage />
@@ -62,6 +61,7 @@ function RouteComponent() {
 }
 
 function BulkContentUploadingPage() {
+    const { t } = useTranslation('studyLibraryBulkContentUploadingIndex');
     const { setNavHeading } = useNavHeadingStore();
     const studyLibraryData = useStudyLibraryStore((state) => state.studyLibraryData);
     const { getPackageSessionId: getPsIdFromInstitute } = useInstituteDetailsStore();
@@ -74,9 +74,9 @@ function BulkContentUploadingPage() {
     const [levelId, setLevelId] = useState('');
 
     useEffect(() => {
-        setNavHeading('Bulk Content Upload');
+        setNavHeading(t('pageTitle'));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [t]);
 
     const courses = useMemo(
         () => (studyLibraryData ?? []).map((entry) => entry.course),
@@ -168,17 +168,18 @@ function BulkContentUploadingPage() {
             <Tabs value={mode} onValueChange={handleModeChange}>
                 <TabsList>
                     <TabsTrigger value="single" disabled={pickersLocked}>
-                        Single {courseLabel.toLowerCase()}
+                        {t('tabs.single', { term: courseLabel.toLowerCase() })}
                     </TabsTrigger>
                     <TabsTrigger value="multi" disabled={pickersLocked}>
-                        Multiple{' '}
-                        {getTerminologyPlural(
-                            ContentTerms.Course,
-                            SystemTerms.Course
-                        ).toLowerCase()}
+                        {t('tabs.multiple', {
+                            term: getTerminologyPlural(
+                                ContentTerms.Course,
+                                SystemTerms.Course
+                            ).toLowerCase(),
+                        })}
                     </TabsTrigger>
                     <TabsTrigger value="csv" disabled={pickersLocked}>
-                        By spreadsheet (CSV)
+                        {t('tabs.csv')}
                     </TabsTrigger>
                 </TabsList>
             </Tabs>
@@ -189,17 +190,15 @@ function BulkContentUploadingPage() {
                 <>
                     <div className="rounded-lg border border-neutral-200 bg-white p-4">
                         <h3 className="text-subtitle font-semibold text-neutral-700">
-                            One zip, many{' '}
-                            {getTerminologyPlural(
-                                ContentTerms.Course,
-                                SystemTerms.Course
-                            ).toLowerCase()}
+                            {t('multi.heading', {
+                                term: getTerminologyPlural(
+                                    ContentTerms.Course,
+                                    SystemTerms.Course
+                                ).toLowerCase(),
+                            })}
                         </h3>
                         <p className="mt-1 text-caption text-neutral-500">
-                            Name each top-level folder after a {courseLabel.toLowerCase()}. The
-                            content inside is matched to that {courseLabel.toLowerCase()}
-                            &apos;s existing structure automatically — you&apos;ll review everything
-                            before anything is uploaded.
+                            {t('multi.description', { term: courseLabel.toLowerCase() })}
                         </p>
                     </div>
                     <BulkContentUploadingWizard
@@ -212,12 +211,10 @@ function BulkContentUploadingPage() {
                 <>
                     <div className="rounded-lg border border-neutral-200 bg-white p-4">
                         <h3 className="text-subtitle font-semibold text-neutral-700">
-                            Where should this content go?
+                            {t('single.heading')}
                         </h3>
                         <p className="mt-1 text-caption text-neutral-500">
-                            Pick the {courseLabel.toLowerCase()} (and batch) this zip belongs to.
-                            The folder structure inside the zip becomes the{' '}
-                            {courseLabel.toLowerCase()} structure.
+                            {t('single.description', { term: courseLabel.toLowerCase() })}
                         </p>
                         <div className="mt-4 grid gap-4 sm:grid-cols-3">
                             <div className="flex flex-col gap-1">
@@ -227,9 +224,13 @@ function BulkContentUploadingPage() {
                                 <SearchableSelect
                                     options={courseItems}
                                     value={courseId}
-                                    placeholder={`Select ${courseLabel.toLowerCase()}`}
-                                    searchPlaceholder={`Search ${courseLabel.toLowerCase()}…`}
-                                    emptyText={`No ${courseLabel.toLowerCase()} found.`}
+                                    placeholder={t('selectPlaceholder', {
+                                        term: courseLabel.toLowerCase(),
+                                    })}
+                                    searchPlaceholder={t('searchPlaceholder', {
+                                        term: courseLabel.toLowerCase(),
+                                    })}
+                                    emptyText={t('noneFound', { term: courseLabel.toLowerCase() })}
                                     disabled={pickersLocked}
                                     onChange={(value) => {
                                         setCourseId(value);
@@ -245,9 +246,15 @@ function BulkContentUploadingPage() {
                                 <SearchableSelect
                                     options={sessionItems}
                                     value={sessionId}
-                                    placeholder={`Select ${sessionLabel.toLowerCase()}`}
-                                    searchPlaceholder={`Search ${sessionLabel.toLowerCase()}…`}
-                                    emptyText={`No ${sessionLabel.toLowerCase()} found.`}
+                                    placeholder={t('selectPlaceholder', {
+                                        term: sessionLabel.toLowerCase(),
+                                    })}
+                                    searchPlaceholder={t('searchPlaceholder', {
+                                        term: sessionLabel.toLowerCase(),
+                                    })}
+                                    emptyText={t('noneFound', {
+                                        term: sessionLabel.toLowerCase(),
+                                    })}
                                     disabled={pickersLocked || !courseId}
                                     onChange={(value) => {
                                         setSessionId(value);
@@ -262,9 +269,13 @@ function BulkContentUploadingPage() {
                                 <SearchableSelect
                                     options={levelItems}
                                     value={levelId}
-                                    placeholder={`Select ${levelLabel.toLowerCase()}`}
-                                    searchPlaceholder={`Search ${levelLabel.toLowerCase()}…`}
-                                    emptyText={`No ${levelLabel.toLowerCase()} found.`}
+                                    placeholder={t('selectPlaceholder', {
+                                        term: levelLabel.toLowerCase(),
+                                    })}
+                                    searchPlaceholder={t('searchPlaceholder', {
+                                        term: levelLabel.toLowerCase(),
+                                    })}
+                                    emptyText={t('noneFound', { term: levelLabel.toLowerCase() })}
                                     disabled={pickersLocked || !sessionId}
                                     onChange={setLevelId}
                                 />
@@ -280,8 +291,11 @@ function BulkContentUploadingPage() {
                     ) : (
                         <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
                             <p className="text-subtitle text-neutral-500">
-                                Select a {courseLabel.toLowerCase()}, {sessionLabel.toLowerCase()}{' '}
-                                and {levelLabel.toLowerCase()} to start uploading.
+                                {t('pickersEmptyState', {
+                                    course: courseLabel.toLowerCase(),
+                                    session: sessionLabel.toLowerCase(),
+                                    level: levelLabel.toLowerCase(),
+                                })}
                             </p>
                         </div>
                     )}

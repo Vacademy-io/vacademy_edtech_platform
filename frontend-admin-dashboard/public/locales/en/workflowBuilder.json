@@ -1,0 +1,170 @@
+{
+    "weekdays": {
+        "mon": "Mon",
+        "monShort": "M",
+        "tue": "Tue",
+        "tueShort": "T",
+        "wed": "Wed",
+        "wedShort": "W",
+        "thu": "Thu",
+        "thuShort": "T",
+        "fri": "Fri",
+        "friShort": "F",
+        "sat": "Sat",
+        "satShort": "S",
+        "sun": "Sun",
+        "sunShort": "S"
+    },
+    "schedulePicker": {
+        "heading": "Step 3 — Set the schedule",
+        "howOften": "How often should it run?",
+        "frequency": {
+            "daily": { "label": "Daily", "desc": "Every day" },
+            "weekly": { "label": "Weekly", "desc": "Pick specific days" },
+            "monthly": { "label": "Monthly", "desc": "Once a month" },
+            "interval": { "label": "Repeating", "desc": "Every X minutes" },
+            "custom": { "label": "Custom", "desc": "Cron expression" }
+        },
+        "atWhatTime": "At what time?",
+        "onWhichDays": "On which days?",
+        "presets": {
+            "weekdays": "Weekdays",
+            "weekends": "Weekends",
+            "monWedFri": "Mon, Wed, Fri",
+            "tueThu": "Tue, Thu",
+            "everyDay": "Every day"
+        },
+        "onWhichDayOfMonth": "On which day of the month?",
+        "runEvery": "Run every",
+        "minutes": "minutes",
+        "intervalPresets": {
+            "min15": "15 min",
+            "min30": "30 min",
+            "hour1": "1 hour",
+            "hours2": "2 hours",
+            "hours6": "6 hours",
+            "hours12": "12 hours"
+        },
+        "cronLabel": "Cron Expression (Quartz format)",
+        "cronPlaceholder": "0 0 9 * * ?",
+        "cronHint": "Format: sec min hr day month weekday. E.g. \"0 0 9 * * ?\" = daily 9 AM",
+        "summary": {
+            "daily": "Runs every day at {{time}}",
+            "selectAtLeastOneDay": "Select at least one day",
+            "weekdaysOnly": "Runs weekdays (Mon-Fri) at {{time}}",
+            "customDays": "Runs every {{days}} at {{time}}",
+            "monthly": "Runs on day {{day}} of every month at {{time}}",
+            "interval_one": "Runs every {{count}} minute",
+            "interval_other": "Runs every {{count}} minutes",
+            "customPlaceholder": "Enter cron expression"
+        },
+        "timezone": "Timezone",
+        "timezones": {
+            "kolkata": "Asia/Kolkata (IST)",
+            "utc": "UTC",
+            "newYork": "America/New_York (EST)",
+            "london": "Europe/London (GMT)",
+            "dubai": "Asia/Dubai (GST)"
+        },
+        "startDate": "Start Date",
+        "endDate": "End Date (optional)"
+    },
+    "setup": {
+        "title": "Create New Workflow",
+        "orManual": "or set it up manually",
+        "optional": "(optional)",
+        "back": "Back",
+        "step1": {
+            "heading": "What should we call this workflow?",
+            "subheading": "Give it a name that describes its purpose.",
+            "nameLabel": "Workflow Name",
+            "namePlaceholder": "e.g. Welcome Email after Enrollment",
+            "descriptionLabel": "Description",
+            "descriptionPlaceholder": "Briefly describe what this workflow does",
+            "next": "Next: Choose Trigger Type"
+        },
+        "step2": {
+            "heading": "When should this workflow run?",
+            "subheading": "Choose what starts the workflow — an event or a schedule.",
+            "eventDriven": {
+                "title": "When something happens",
+                "desc": "Runs when a student enrolls, fills a form, payment fails, etc."
+            },
+            "scheduled": {
+                "title": "On a schedule",
+                "desc": "Runs at fixed times — daily, weekly, monthly, or custom."
+            },
+            "nextEvent": "Next: Choose Event",
+            "nextSchedule": "Next: Set Schedule",
+            "triggerNodeName": "Trigger: {{event}}"
+        },
+        "step3": {
+            "eventHeading": "Which event should trigger this workflow?",
+            "eventSubheading": "Pick the event, then optionally restrict it to a specific entity.",
+            "selectEventLabel": "Select Event",
+            "selectEventPlaceholder": "-- Select an event --",
+            "generalCategory": "General",
+            "scopeHeading": "Scope (optional)",
+            "scopeHint": "Choose a specific {{type}} or leave it as \"All\" to fire for every one.",
+            "triggerDescriptionLabel": "Trigger description",
+            "triggerDescriptionPlaceholder": "e.g. Send welcome email when new student enrolls",
+            "scheduleHeading": "Set up the schedule",
+            "scheduleSubheading": "Choose how often and when this workflow should run.",
+            "next": "Next: Build Workflow"
+        },
+        "steps": {
+            "name": "Name",
+            "triggerType": "Trigger Type",
+            "eventSetup": "Event Setup",
+            "schedule": "Schedule",
+            "buildWorkflow": "Build Workflow"
+        }
+    },
+    "triggerSummary": {
+        "allOf": "all {{type}}s",
+        "selectedCount_one": "{{count}} selected…",
+        "selectedCount_other": "{{count}} selected…",
+        "noLongerExists": "{{id}} — no longer exists"
+    },
+    "configSummary": {
+        "eventTrigger": "Event Trigger",
+        "schedule": "Schedule",
+        "editSetup": "Edit setup",
+        "everyMinutes_one": "Every {{count}} min",
+        "everyMinutes_other": "Every {{count}} min",
+        "starts": "Starts: {{date}}",
+        "ends": "Ends: {{date}}"
+    },
+    "canvas": {
+        "namePlaceholder": "Workflow name...",
+        "eventDriven": "Event-Driven",
+        "scheduled": "Scheduled",
+        "wizard": "Wizard",
+        "testRun": "Test Run",
+        "testRunning": "Running...",
+        "saveDraft": "Save Draft",
+        "publish": "Publish",
+        "dismiss": "Dismiss",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Describe what this workflow does...",
+        "nodesUnit_one": "node",
+        "nodesUnit_other": "nodes",
+        "connectionsUnit_one": "connection",
+        "connectionsUnit_other": "connections",
+        "emptyHint": "Click a node to configure it, or drag nodes from the left palette to build your workflow.",
+        "testRunResultsHeading": "Test Run Results (Dry Run)",
+        "testRunFailedAlert": "Test run failed. Check console for details."
+    },
+    "validation": {
+        "nameRequired": "Workflow name is required",
+        "addNode": "Add at least one node",
+        "addNodeBeforeTest": "Add at least one node before testing",
+        "selectTriggerEvent": "Select a trigger event for event-driven workflows",
+        "enterCron": "Enter a cron expression for scheduled workflows",
+        "nodesNotConnected_one": "{{count}} node not connected: {{names}}",
+        "nodesNotConnected_other": "{{count}} nodes not connected: {{names}}",
+        "genericValidationError": "Validation error",
+        "unknownError": "Unknown error",
+        "saveFailed": "Failed to save: {{message}}"
+    }
+}

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchApplicantList } from '@/routes/admissions/-services/applicant-services';
 import { format } from 'date-fns';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     ClipboardText,
     Student,
@@ -54,57 +56,65 @@ type StatusConfig = {
     pillRing: string;
 };
 
-const getStatusConfig = (status: string): StatusConfig => {
-    switch (status) {
-        case 'ADMITTED':
-        case 'APPROVED':
-            return {
-                tone: 'success',
-                label: status === 'ADMITTED' ? 'Admitted' : 'Approved',
-                icon: CheckCircle,
-                pillBg: 'bg-success-50',
-                pillText: 'text-success-700',
-                pillRing: 'ring-success-200',
-            };
-        case 'REJECTED':
-            return {
-                tone: 'danger',
-                label: 'Rejected',
-                icon: XCircle,
-                pillBg: 'bg-danger-50',
-                pillText: 'text-danger-700',
-                pillRing: 'ring-danger-200',
-            };
-        case 'PENDING':
-            return {
-                tone: 'warning',
-                label: 'Pending',
-                icon: Clock,
-                pillBg: 'bg-warning-50',
-                pillText: 'text-warning-700',
-                pillRing: 'ring-warning-200',
-            };
-        case 'UNDER_REVIEW':
-        case 'SUBMITTED':
-            return {
-                tone: 'warning',
-                label: status === 'UNDER_REVIEW' ? 'Under Review' : 'Submitted',
-                icon: Spinner,
-                pillBg: 'bg-warning-50',
-                pillText: 'text-warning-700',
-                pillRing: 'ring-warning-200',
-            };
-        default:
-            return {
-                tone: 'neutral',
-                label: status || '—',
-                icon: ClipboardText,
-                pillBg: 'bg-neutral-100',
-                pillText: 'text-neutral-700',
-                pillRing: 'ring-neutral-200',
-            };
-    }
-};
+const buildStatusConfig =
+    (t: TFunction) =>
+    (status: string): StatusConfig => {
+        switch (status) {
+            case 'ADMITTED':
+            case 'APPROVED':
+                return {
+                    tone: 'success',
+                    label:
+                        status === 'ADMITTED'
+                            ? t('status.admitted')
+                            : t('status.approved'),
+                    icon: CheckCircle,
+                    pillBg: 'bg-success-50',
+                    pillText: 'text-success-700',
+                    pillRing: 'ring-success-200',
+                };
+            case 'REJECTED':
+                return {
+                    tone: 'danger',
+                    label: t('status.rejected'),
+                    icon: XCircle,
+                    pillBg: 'bg-danger-50',
+                    pillText: 'text-danger-700',
+                    pillRing: 'ring-danger-200',
+                };
+            case 'PENDING':
+                return {
+                    tone: 'warning',
+                    label: t('status.pending'),
+                    icon: Clock,
+                    pillBg: 'bg-warning-50',
+                    pillText: 'text-warning-700',
+                    pillRing: 'ring-warning-200',
+                };
+            case 'UNDER_REVIEW':
+            case 'SUBMITTED':
+                return {
+                    tone: 'warning',
+                    label:
+                        status === 'UNDER_REVIEW'
+                            ? t('status.underReview')
+                            : t('status.submitted'),
+                    icon: Spinner,
+                    pillBg: 'bg-warning-50',
+                    pillText: 'text-warning-700',
+                    pillRing: 'ring-warning-200',
+                };
+            default:
+                return {
+                    tone: 'neutral',
+                    label: status || '—',
+                    icon: ClipboardText,
+                    pillBg: 'bg-neutral-100',
+                    pillText: 'text-neutral-700',
+                    pillRing: 'ring-neutral-200',
+                };
+        }
+    };
 
 // ── Stage progress indicator ──────────────────────────────────────────────────
 //
@@ -119,10 +129,10 @@ interface Step {
     label: string;
 }
 
-const STAGE_STEPS: Step[] = [
-    { key: 'submitted', label: 'Submitted' },
-    { key: 'review', label: 'Under Review' },
-    { key: 'terminal', label: 'Decision' },
+const buildStageSteps = (t: TFunction): Step[] => [
+    { key: 'submitted', label: t('stageSteps.submitted') },
+    { key: 'review', label: t('stageSteps.review') },
+    { key: 'terminal', label: t('stageSteps.decision') },
 ];
 
 const deriveStepIndex = (status: string): number => {
@@ -146,6 +156,8 @@ const ApplicationStageProgress = ({
 }: {
     status: string;
 }) => {
+    const { t } = useTranslation('manageStudentsApplicationDetails');
+    const STAGE_STEPS = buildStageSteps(t);
     const currentIdx = deriveStepIndex(status);
     const isRejected = status === 'REJECTED';
 
@@ -159,11 +171,11 @@ const ApplicationStageProgress = ({
                 const label =
                     i === STAGE_STEPS.length - 1 && state === 'current'
                         ? status === 'REJECTED'
-                            ? 'Rejected'
+                            ? t('status.rejected')
                             : status === 'APPROVED'
-                              ? 'Approved'
+                              ? t('status.approved')
                               : status === 'ADMITTED'
-                                ? 'Admitted'
+                                ? t('status.admitted')
                                 : step.label
                         : step.label;
 
@@ -215,6 +227,8 @@ const ApplicationStageProgress = ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => {
+    const { t } = useTranslation('manageStudentsApplicationDetails');
+    const getStatusConfig = buildStatusConfig(t);
     const { instituteDetails } = useInstituteDetailsStore();
     const instituteId = instituteDetails?.id || '';
 
@@ -240,8 +254,8 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
         return (
             <ProfileEmpty
                 icon={ClipboardText}
-                title="No application found"
-                hint="No application is linked to this learner yet."
+                title={t('empty.title')}
+                hint={t('empty.hint')}
             />
         );
     }
@@ -253,8 +267,8 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
     if (isError || !data) {
         return (
             <ProfileError
-                title="Couldn't load application details"
-                hint="Something went wrong while fetching the application. Please try again."
+                title={t('error.title')}
+                hint={t('error.hint')}
                 onRetry={() => refetch()}
             />
         );
@@ -263,8 +277,8 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
     const cfg = getStatusConfig(data.overall_status);
     const stageName = data.application_stage?.stage_name;
     const heroSubtitle = [
-        data.tracking_id ? `Tracking ID: ${data.tracking_id}` : null,
-        stageName ? `Stage: ${stageName}` : null,
+        data.tracking_id ? t('hero.trackingId', { id: data.tracking_id }) : null,
+        stageName ? t('hero.stage', { stage: stageName }) : null,
     ]
         .filter(Boolean)
         .join(' · ');
@@ -273,7 +287,7 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
         <div className="flex flex-col gap-3">
             {/* Hero — status at a glance */}
             <ProfileHero
-                eyebrow="ADMISSION APPLICATION"
+                eyebrow={t('eyebrow')}
                 title={
                     <span
                         className={cn(
@@ -296,45 +310,45 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
             </ProfileHero>
 
             {/* Student Information */}
-            <ProfileSectionCard icon={Student} heading="Student Information">
+            <ProfileSectionCard icon={Student} heading={t('sections.studentInformation')}>
                 <dl className="divide-y divide-neutral-100">
                     <ProfileFieldRow
-                        label="Full Name"
-                        value={data.student_data?.full_name || 'N/A'}
+                        label={t('fields.fullName')}
+                        value={data.student_data?.full_name || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Date of Birth"
-                        value={formatDate(data.student_data?.date_of_birth) || 'N/A'}
+                        label={t('fields.dateOfBirth')}
+                        value={formatDate(data.student_data?.date_of_birth) || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Gender"
-                        value={data.student_data?.gender || 'N/A'}
+                        label={t('fields.gender')}
+                        value={data.student_data?.gender || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Class Applied For"
-                        value={data.package_session?.level_name || 'N/A'}
+                        label={t('fields.classAppliedFor')}
+                        value={data.package_session?.level_name || t('notAvailable')}
                     />
                     {data.student_data?.father_name && (
                         <ProfileFieldRow
-                            label="Father Name"
+                            label={t('fields.fatherName')}
                             value={data.student_data.father_name}
                         />
                     )}
                     {data.student_data?.mother_name && (
                         <ProfileFieldRow
-                            label="Mother Name"
+                            label={t('fields.motherName')}
                             value={data.student_data.mother_name}
                         />
                     )}
                     {data.student_data?.applying_for_class && (
                         <ProfileFieldRow
-                            label="Applying For Class"
+                            label={t('fields.applyingForClass')}
                             value={data.student_data.applying_for_class}
                         />
                     )}
                     {data.student_data?.academic_year && (
                         <ProfileFieldRow
-                            label="Academic Year"
+                            label={t('fields.academicYear')}
                             value={data.student_data.academic_year}
                         />
                     )}
@@ -342,23 +356,23 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
             </ProfileSectionCard>
 
             {/* Parent Information */}
-            <ProfileSectionCard icon={Users} heading="Parent Information">
+            <ProfileSectionCard icon={Users} heading={t('sections.parentInformation')}>
                 <dl className="divide-y divide-neutral-100">
                     <ProfileFieldRow
-                        label="Full Name"
-                        value={data.parent_data?.full_name || 'N/A'}
+                        label={t('fields.fullName')}
+                        value={data.parent_data?.full_name || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Email"
-                        value={data.parent_data?.email || 'N/A'}
+                        label={t('fields.email')}
+                        value={data.parent_data?.email || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Mobile Number"
-                        value={data.parent_data?.mobile_number || 'N/A'}
+                        label={t('fields.mobileNumber')}
+                        value={data.parent_data?.mobile_number || t('notAvailable')}
                     />
                     {data.parent_data?.address_line && (
                         <ProfileFieldRow
-                            label="Address"
+                            label={t('fields.address')}
                             value={data.parent_data.address_line}
                         />
                     )}
@@ -366,23 +380,23 @@ export const ApplicationDetails = ({ applicantId }: ApplicationDetailsProps) => 
             </ProfileSectionCard>
 
             {/* Application Timeline */}
-            <ProfileSectionCard icon={ClipboardText} heading="Application Timeline">
+            <ProfileSectionCard icon={ClipboardText} heading={t('sections.applicationTimeline')}>
                 <dl className="divide-y divide-neutral-100">
-                    <ProfileFieldRow label="Tracking ID" value={data.tracking_id} />
+                    <ProfileFieldRow label={t('fields.trackingId')} value={data.tracking_id} />
                     <ProfileFieldRow
-                        label="Current Stage"
-                        value={data.application_stage?.stage_name || 'N/A'}
+                        label={t('fields.currentStage')}
+                        value={data.application_stage?.stage_name || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Stage Status"
-                        value={data.application_stage_status || 'N/A'}
+                        label={t('fields.stageStatus')}
+                        value={data.application_stage_status || t('notAvailable')}
                     />
                     <ProfileFieldRow
-                        label="Created At"
+                        label={t('fields.createdAt')}
                         value={formatDateTime(data.created_at)}
                     />
                     <ProfileFieldRow
-                        label="Last Updated"
+                        label={t('fields.lastUpdated')}
                         value={formatDateTime(data.updated_at)}
                     />
                 </dl>

@@ -1,0 +1,38 @@
+{
+    "header": {
+        "title": "Boutons de gestion des apprenants",
+        "description": "Affichez ou masquez les boutons intégrés Inscrire / Inviter et ajoutez des boutons de lien personnalisés (par ex. un lien d'invitation ou un lien d'inscription des apprenants de la sous-organisation) à l'en-tête de gestion des apprenants."
+    },
+    "showEnrollButton": "Afficher le bouton Inscrire",
+    "showInviteButton": "Afficher le bouton Inviter",
+    "customButtons": {
+        "title": "Boutons personnalisés",
+        "addButton": "Ajouter un bouton",
+        "empty": "Aucun bouton personnalisé. Ajoutez-en un pour afficher un lien d'invitation ou un lien d'inscription des apprenants de la sous-organisation dans l'en-tête.",
+        "buttonType": {
+            "label": "Type de bouton"
+        },
+        "kindOptions": {
+            "url": {
+                "label": "URL personnalisée",
+                "hint": "Ouvre le lien que vous saisissez ci-dessous."
+            },
+            "suborgLearnerInvite": {
+                "label": "Lien d'invitation des apprenants de la sous-organisation",
+                "hint": "Remplit automatiquement le lien d'invitation des apprenants de la sous-organisation pour le cours consulté. S'affiche uniquement pour un administrateur de sous-organisation sur l'onglet Apprenants d'un cours — les apprenants qui s'inscrivent via ce lien apparaissent dans la liste des apprenants de l'administrateur de la sous-organisation."
+            },
+            "courseInvite": {
+                "label": "Lien d'invitation des apprenants du cours",
+                "hint": "Remplit automatiquement le lien d'invitation des apprenants par défaut du cours consulté."
+            }
+        },
+        "label": {
+            "label": "Libellé du bouton",
+            "placeholder": "p. ex. Inviter des apprenants"
+        },
+        "url": {
+            "label": "Lien (URL)",
+            "placeholder": "https://..."
+        }
+    }
+}

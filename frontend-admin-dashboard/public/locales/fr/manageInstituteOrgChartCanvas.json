@@ -1,0 +1,85 @@
+{
+    "header": {
+        "showingTeam": "Équipe affichée",
+        "rename": "Renommer",
+        "renameTooltip": "Renommer cette équipe",
+        "deleteTeam": "Supprimer l'équipe",
+        "deleteTeamTooltip": "Supprimer cette équipe",
+        "newTeam": "Nouvelle équipe",
+        "addPerson": "Ajouter une personne"
+    },
+    "banner": {
+        "help": "Faites glisser un utilisateur depuis la liste de gauche vers une zone vide pour l’ajouter à l’équipe, ou déposez-le sur une carte pour l’ajouter comme rattaché à cette personne. Tracez une flèche depuis le point du bas d’une carte vers le point du haut d’une autre pour définir le rattachement hiérarchique. Cliquez sur une carte ou une flèche puis appuyez sur Suppr pour la retirer. Cliquez sur le crayon d’une carte pour lui donner un intitulé de poste (par ex. « Responsable des ventes »).",
+        "dismiss": "Ignorer"
+    },
+    "canvas": {
+        "loadingTeam": "Chargement de {{name}}…",
+        "loadError": "Impossible de charger cette équipe. Veuillez actualiser.",
+        "minimapLabel": "Minicarte de l'organigramme"
+    },
+    "sidebar": {
+        "heading": "Utilisateurs de l'établissement",
+        "searchPlaceholder": "Rechercher par nom ou e-mail…",
+        "loadingUsers": "Chargement des utilisateurs…",
+        "noUsers": "Aucun utilisateur dans cet établissement pour le moment.",
+        "noMatches": "Personne ne correspond à cette recherche.",
+        "unnamed": "Sans nom",
+        "alreadyInTeamBadge": "dans l'équipe",
+        "alreadyInTeamTooltip": "Déjà dans cette équipe",
+        "dragToAddTooltip": "Faites glisser sur le canevas pour ajouter à cette équipe"
+    },
+    "emptyStates": {
+        "noTeamsTitle": "Créez votre première équipe",
+        "noTeamsBody": "Organisez votre établissement en équipes comme Ventes, Conseil ou Ingénierie. Chaque équipe peut avoir sa propre structure hiérarchique. Une personne peut appartenir à plusieurs équipes.",
+        "newTeamCta": "+ Nouvelle équipe",
+        "emptyTeamTitle": "{{teamName}} est vide",
+        "emptyTeamBody": "Faites glisser quelqu'un depuis la gauche, ou ajoutez la première personne, puis reliez les cartes pour définir qui rapporte à qui.",
+        "addFirstPersonCta": "+ Ajouter la première personne"
+    },
+    "dialogs": {
+        "newTeam": {
+            "title": "Nouvelle équipe",
+            "label": "Nom de l'équipe",
+            "placeholder": "ex. Ventes, Conseil, Ingénierie",
+            "cancel": "Annuler",
+            "create": "Créer l'équipe",
+            "creating": "Création…"
+        },
+        "renameTeam": {
+            "title": "Renommer « {{name}} »",
+            "label": "Nom de l'équipe",
+            "cancel": "Annuler",
+            "save": "Enregistrer",
+            "saving": "Enregistrement…"
+        },
+        "close": "Fermer"
+    },
+    "unnamedUser": "Utilisateur {{id}}",
+    "toast": {
+        "movedUnder": "Déplacé sous {{target}}",
+        "topOfTeam": "le sommet de l'équipe",
+        "thatManager": "ce responsable",
+        "theirManager": "son responsable",
+        "thisPerson": "cette personne",
+        "thisTeam": "cette équipe",
+        "couldNotMove": "Impossible de déplacer cette personne",
+        "addedUnder": "{{name}} ajouté(e) sous {{target}}",
+        "couldNotAdd": "Impossible d'ajouter cette personne",
+        "removedFromTeam": "Retiré(e) de l'équipe",
+        "couldNotRemove": "Impossible de retirer cette personne",
+        "teamDeleted": "Équipe supprimée",
+        "couldNotDeleteTeam": "Impossible de supprimer cette équipe",
+        "alreadyInTeamError": "Cette personne est déjà dans cette équipe",
+        "giveTeamName": "Donnez un nom à l'équipe",
+        "teamCreated": "« {{name}} » créée",
+        "couldNotCreateTeam": "Impossible de créer l'équipe",
+        "renamed": "Renommée",
+        "couldNotRenameTeam": "Impossible de renommer l'équipe"
+    },
+    "confirm": {
+        "removePerson": "Retirer {{name}} de {{teamName}} ? Ses appartenances aux autres équipes ne sont pas affectées.",
+        "deleteTeam_one": "Supprimer « {{name}} » et en retirer {{count}} membre ? Ses appartenances aux autres équipes ne sont pas affectées.",
+        "deleteTeam_many": "Supprimer « {{name}} » et en retirer ses {{count}} membres ? Leurs appartenances aux autres équipes ne sont pas affectées.",
+        "deleteTeam_other": "Supprimer « {{name}} » et en retirer ses {{count}} membres ? Leurs appartenances aux autres équipes ne sont pas affectées."
+    }
+}

@@ -1,6 +1,7 @@
 import { ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { LineChart, CartesianGrid, XAxis, YAxis, Line, ResponsiveContainer } from "recharts";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 import { UserActivityArray } from "../-types/dashboard-data-types";
 import { formatTimeFromMillis, millisToMinutes } from "@/helpers/formatTimeFromMiliseconds";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ export interface ChartDataType {
 }
 
 export const LineChartComponent = ({ userActivity }: { userActivity: UserActivityArray }) => {
+    const { t } = useTranslation("dashboard");
     const isPlay = usePlayTheme();
     const isCleanerPlay = useCleanerPlayTheme();
     const batchLabel = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
@@ -33,7 +35,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                 isPlay && "!bg-white/60 !border-transparent"
             )}>
                 <p className="text-sm font-medium text-muted-foreground">
-                    Your activity will appear here as you learn.
+                    {t("activityChart.emptyMessage")}
                 </p>
             </div>
         );
@@ -48,11 +50,11 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
 
     const chartConfig = {
         avg_daily_time_minutes: {
-            label: "Your Time",
+            label: t("activityChart.yourTime"),
             color: "hsl(var(--primary))",
         },
         avg_daily_time_minutes_batch: {
-            label: `${batchLabel} Average`,
+            label: t("activityChart.batchAverage", { batch: batchLabel }),
             color: "hsl(var(--muted-foreground))",
         },
     } satisfies ChartConfig;
@@ -83,14 +85,14 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
         if (!hasActivity) {
             // New learner with zero recorded activity: neutral, no warning color.
             return {
-                text: "Just getting started",
+                text: t("activityChart.status.justStarting"),
                 color: "bg-muted/60 text-muted-foreground border-border [.ui-play_&]:bg-play-surface [.ui-play_&]:text-play-ink [.ui-play_&]:border-transparent",
             };
         }
-        if (performanceRatio >= 1.2) return { text: "Excellent", color: "bg-success-50 text-success-700 border-success-200 [.ui-vibrant_&]:bg-success-100" };
-        if (performanceRatio >= 1.0) return { text: "Above Average", color: "bg-success-50 text-success-600 border-success-200 [.ui-vibrant_&]:bg-success-100" };
-        if (performanceRatio >= 0.8) return { text: "On Track", color: "bg-info-50 text-info-700 border-info-200 [.ui-vibrant_&]:bg-info-100" };
-        return { text: "Needs Focus", color: "bg-warning-50 text-warning-700 border-warning-200 [.ui-vibrant_&]:bg-warning-100" };
+        if (performanceRatio >= 1.2) return { text: t("activityChart.status.excellent"), color: "bg-success-50 text-success-700 border-success-200 [.ui-vibrant_&]:bg-success-100" };
+        if (performanceRatio >= 1.0) return { text: t("progressTable.aboveAverage"), color: "bg-success-50 text-success-600 border-success-200 [.ui-vibrant_&]:bg-success-100" };
+        if (performanceRatio >= 0.8) return { text: t("activityChart.status.onTrack"), color: "bg-info-50 text-info-700 border-info-200 [.ui-vibrant_&]:bg-info-100" };
+        return { text: t("activityChart.status.needsFocus"), color: "bg-warning-50 text-warning-700 border-warning-200 [.ui-vibrant_&]:bg-warning-100" };
     };
 
     const performanceStatus = getPerformanceStatus();
@@ -98,7 +100,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
     return (
         <div className="space-y-3 sm:space-y-5">
             {/* Enhanced Header with Performance Metrics */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-stack sm:gap-4">
                 <div className="flex items-center space-x-3">
                     <div className={cn(
                         "p-2 bg-primary/10 rounded-lg [.ui-play_&]:bg-play-surface [.ui-play_&]:rounded-xl",
@@ -113,13 +115,13 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                         <h3 className={cn(
                             "text-base sm:text-lg font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink",
                             isCleanerPlay && "cp-heading !text-body"
-                        )}>Learning Progress Trend</h3>
+                        )}>{t("activityChart.title")}</h3>
                         <p className={cn(
                             "text-xs sm:text-sm text-muted-foreground flex items-center space-x-1",
                             isCleanerPlay && "cp-muted !text-caption"
                         )}>
                             <Calendar size={12} className="flex-shrink-0" />
-                            <span>Weekly learning activity comparison</span>
+                            <span>{t("activityChart.subtitle")}</span>
                         </p>
                     </div>
                 </div>
@@ -136,7 +138,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                             <div className="flex items-center space-x-2 text-xs sm:text-sm">
                                 <div className="w-2 sm:w-3 h-2 sm:h-3 rounded-full bg-primary [.ui-play_&]:bg-play-info"></div>
                                 <span className="text-foreground font-medium tabular-nums [.ui-play_&]:text-play-ink">
-                                    Avg: {formatTimeFromMillis(avgUserTime * 60 * 1000, 'minutes')}
+                                    {t("activityChart.avgLabel", { time: formatTimeFromMillis(avgUserTime * 60 * 1000, 'minutes') })}
                                 </span>
                             </div>
                             <div className="w-px h-3 sm:h-4 bg-border"></div>
@@ -158,15 +160,15 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
             )}>
                 <div className="flex items-center space-x-2">
                     <div className="w-3 sm:w-4 h-0.5 sm:h-1 rounded-full bg-primary [.ui-play_&]:bg-play-info"></div>
-                    <span className="text-xs sm:text-sm font-medium text-foreground [.ui-play_&]:text-play-ink">Your Study Time</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground [.ui-play_&]:text-play-ink">{t("activityChart.yourStudyTime")}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                     <div className="w-3 sm:w-4 h-0.5 sm:h-1 rounded-full bg-muted-foreground [.ui-play_&]:bg-play-muted"></div>
-                    <span className="text-xs sm:text-sm font-medium text-foreground [.ui-play_&]:text-play-ink">{batchLabel} Average</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground [.ui-play_&]:text-play-ink">{t("activityChart.batchAverage", { batch: batchLabel })}</span>
                 </div>
                 <div className="ms-auto flex items-center space-x-1 text-xs text-muted-foreground">
                     <Clock size={10} className="sm:w-3 sm:h-3" />
-                    <span>Real-time data</span>
+                    <span>{t("activityChart.realTimeData")}</span>
                 </div>
             </div>
 
@@ -282,10 +284,10 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                                                     {payload.length >= 2 && payload[0]?.value !== undefined && payload[1]?.value !== undefined && (payload[0]?.payload?.time_spent_by_user_millis || 0) > 0 && (
                                                         <div className="mt-2 sm:mt-3 pt-2 border-t border-border">
                                                             <div className="flex items-center justify-between text-xs">
-                                                                <span className="text-muted-foreground">Performance vs {batchLabel}:</span>
+                                                                <span className="text-muted-foreground">{t("activityChart.performanceVsBatch", { batch: batchLabel })}</span>
                                                                 <span className={`font-semibold ${(payload[0].value || 0) >= (payload[1].value || 0) ? 'text-success-600' : 'text-muted-foreground'
                                                                     }`}>
-                                                                    {(payload[0].value || 0) >= (payload[1].value || 0) ? '↗ Above' : '↘ Below'}
+                                                                    {(payload[0].value || 0) >= (payload[1].value || 0) ? t("activityChart.above") : t("activityChart.below")}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -301,7 +303,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                                 <Line
                                     dataKey="avg_daily_time_minutes_batch"
                                     type="monotone"
-                                    name={`${batchLabel} Average`}
+                                    name={t("activityChart.batchAverage", { batch: batchLabel })}
                                     stroke={batchLineColor}
                                     strokeWidth={2}
                                     strokeDasharray="6 4"
@@ -324,7 +326,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                                 <Line
                                     dataKey="avg_daily_time_minutes"
                                     type="monotone"
-                                    name="Your Time"
+                                    name={t("activityChart.yourTime")}
                                     stroke={userLineColor}
                                     strokeWidth={isPlay ? 4 : 3}
                                     fill="none"
@@ -352,17 +354,17 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                 a friendly note (no zeros, no judgment) when there is none yet */}
             {chartData.length > 0 && (
                 hasActivity ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-stack sm:gap-4">
                         <div className={cn(
                             "bg-muted/40 rounded-lg p-3 sm:p-4 border border-border [.ui-play_&]:rounded-xl",
                             isCleanerPlay && "!bg-cp-bg-deep !border-cp-border !rounded-xl"
                         )}>
                             <div className="flex items-center space-x-2 mb-1">
                                 <TrendUp size={14} className="text-muted-foreground" />
-                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">Consistency</span>
+                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">{t("progressTable.consistency")}</span>
                             </div>
                             <p className="text-sm font-bold text-foreground tabular-nums [.ui-play_&]:text-play-ink">
-                                {chartData.filter(d => d.avg_daily_time_minutes > 0).length}/{chartData.length} active days
+                                {t("activityChart.activeDays", { active: chartData.filter(d => d.avg_daily_time_minutes > 0).length, total: chartData.length })}
                             </p>
                         </div>
 
@@ -372,7 +374,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                         )}>
                             <div className="flex items-center space-x-2 mb-1">
                                 <Clock size={14} className="text-muted-foreground" />
-                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">Peak Day</span>
+                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">{t("activityChart.peakDay")}</span>
                             </div>
                             <p className="text-sm font-bold text-foreground tabular-nums [.ui-play_&]:text-play-ink">
                                 {formatTimeFromMillis(Math.max(...chartData.map(d => d.time_spent_by_user_millis)), 'minutes')}
@@ -385,7 +387,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                         )}>
                             <div className="flex items-center space-x-2 mb-1">
                                 <Users size={14} className="text-muted-foreground" />
-                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">Vs {batchLabel}</span>
+                                <span className="text-xs sm:text-sm font-semibold text-foreground [.ui-play_&]:font-black [.ui-play_&]:text-play-ink">{t("activityChart.vsBatch", { batch: batchLabel })}</span>
                             </div>
                             <p className={cn(
                                 "text-sm font-bold tabular-nums",
@@ -393,7 +395,9 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                                     ? "text-success-600 [.ui-play_&]:text-play-success-deep"
                                     : "text-foreground [.ui-play_&]:text-play-ink"
                             )}>
-                                {performanceRatio > 1 ? '+' : ''}{((performanceRatio - 1) * 100).toFixed(0)}% difference
+                                {t("activityChart.percentDifference", {
+                                    percent: `${performanceRatio > 1 ? '+' : ''}${((performanceRatio - 1) * 100).toFixed(0)}`,
+                                })}
                             </p>
                         </div>
                     </div>
@@ -403,7 +407,7 @@ export const LineChartComponent = ({ userActivity }: { userActivity: UserActivit
                         isCleanerPlay && "!bg-cp-bg-deep !border-cp-border !rounded-xl"
                     )}>
                         <p className="text-sm font-medium text-muted-foreground">
-                            Your activity will appear here as you learn.
+                            {t("activityChart.emptyMessage")}
                         </p>
                     </div>
                 )

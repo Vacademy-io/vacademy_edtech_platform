@@ -1,0 +1,38 @@
+{
+    "source": {
+        "pdf": "From a PDF",
+        "audio": "From audio",
+        "image": "From a photo",
+        "doc": "From a document",
+        "none": "From a topic"
+    },
+    "status": {
+        "completed": "Ready",
+        "failed": "Failed",
+        "inProgress": "In progress"
+    },
+    "friendlyHeading": {
+        "vsmartUpload": "Your question papers",
+        "vsmartExtract": "Your extractions",
+        "vsmartImage": "Your extractions",
+        "vsmartAudio": "Your audio-based papers",
+        "vsmartTopics": "Your topic-based papers",
+        "vsmartChat": "Your chat sessions",
+        "vsmartOrganizer": "Your sorted sets",
+        "vsmartSorter": "Your sorted sets",
+        "vsmartLecturer": "Your lesson plans",
+        "vsmartFeedback": "Your lecture reviews"
+    },
+    "relativeTime": {
+        "justNow": "just now",
+        "minutesAgo_one": "{{count}} min ago",
+        "minutesAgo_other": "{{count}} min ago",
+        "hoursAgo_one": "{{count}} hr ago",
+        "hoursAgo_other": "{{count}} hr ago",
+        "daysAgo_one": "{{count}} d ago",
+        "daysAgo_other": "{{count}} d ago"
+    },
+    "taskDisplayName": {
+        "untitledDraft": "Untitled draft"
+    }
+}

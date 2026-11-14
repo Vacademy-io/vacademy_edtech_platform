@@ -1,0 +1,42 @@
+{
+    "trigger": {
+        "editProfile": "प्रोफ़ाइल संपादित करें"
+    },
+    "dialog": {
+        "title": "प्रोफ़ाइल संपादित करें"
+    },
+    "logoAlt": "लोगो",
+    "menu": {
+        "uploadNew": "नया अपलोड करें",
+        "removeImage": "छवि हटाएं"
+    },
+    "fields": {
+        "name": {
+            "label": "प्रोफ़ाइल नाम",
+            "placeholder": "पूरा नाम (पहला और अंतिम)"
+        },
+        "email": {
+            "label": "ईमेल",
+            "placeholder": "you@email.com"
+        },
+        "phone": {
+            "label": "मोबाइल नंबर",
+            "placeholder": "123 456 7890"
+        }
+    },
+    "roles": {
+        "label": "भूमिका प्रकार",
+        "empty": "कोई भूमिका निर्दिष्ट नहीं है",
+        "managedNote": "भूमिकाओं का प्रबंधन आपके संस्थान प्रशासक द्वारा किया जाता है और इन्हें यहां बदला नहीं जा सकता।"
+    },
+    "sections": {
+        "contactInformation": "संपर्क जानकारी"
+    },
+    "actions": {
+        "saveChanges": "परिवर्तन सहेजें",
+        "cancel": "रद्द करें"
+    },
+    "toast": {
+        "updateSuccess": "आपका विवरण सफलतापूर्वक अपडेट कर दिया गया है!"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "joinLink": {
+        "label": "जॉइन लिंक:"
+    },
+    "announcement": {
+        "dialogTitle": "लाइव होमवर्क घोषणा",
+        "empty": "कोई घोषणा मौजूद नहीं है",
+        "postedTodayAt": "आज, 11:28 पूर्वाह्न"
+    },
+    "actions": {
+        "save": "सेव करें",
+        "exit": "बाहर निकलें",
+        "addQuestion": "प्रश्न जोड़ें"
+    },
+    "questionType": {
+        "MCQS": "MCQ (एकल सही)",
+        "MCQM": "MCQ (बहु सही)"
+    },
+    "errors": {
+        "incompleteQuestions": "आपके कुछ प्रश्न अधूरे हैं या उन पर ध्यान देने की आवश्यकता है!"
+    }
+}

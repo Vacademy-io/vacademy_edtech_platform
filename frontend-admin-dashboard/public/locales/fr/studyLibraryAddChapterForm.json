@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "chapterNameRequired": "Le nom du chapitre est requis",
+        "descriptionMaxLength": "La description doit comporter au maximum {{max}} caractères"
+    },
+    "toast": {
+        "invalidImageFile": "Veuillez sélectionner un fichier image valide",
+        "thumbnailUploadSuccess": "Vignette téléchargée avec succès",
+        "thumbnailUploadFailed": "Échec du téléchargement de la vignette",
+        "selectPackageRequired": "Veuillez sélectionner au moins un forfait pour la visibilité",
+        "packageSessionNotFound": "Session de forfait introuvable",
+        "chapterAddSuccess": "Chapitre ajouté avec succès",
+        "noChapterToUpdate": "Aucun chapitre à mettre à jour",
+        "chapterUpdateSuccess": "Chapitre mis à jour avec succès",
+        "chapterActionFailedCreate": "Échec de la création du chapitre. Veuillez réessayer.",
+        "chapterActionFailedEdit": "Échec de la modification du chapitre. Veuillez réessayer."
+    },
+    "loadingVisibilityData": "Chargement des données complètes de visibilité...",
+    "nameLabel": "Nom du {{term}}",
+    "descriptionLabel": "Description (facultatif)",
+    "descriptionPlaceholder": "Saisir la description du {{term}}",
+    "descriptionCharCount": "Affiché sur la carte du {{term}} — {{current}}/{{max}} caractères",
+    "thumbnailLabel": "Vignette du {{term}}",
+    "optional": "(Facultatif)",
+    "thumbnailHelpText": "Téléchargez une image de vignette pour ce chapitre. Elle sera recadrée au format 16:9 pour une meilleure cohérence (16:9 recommandé).",
+    "thumbnailPreviewAlt": "Aperçu de la vignette",
+    "uploading": "Téléchargement...",
+    "selectThumbnail": "Sélectionner une vignette",
+    "visibilityHeading": "Visibilité du {{term}}",
+    "visibilityHelpText": "Sélectionnez les niveaux auxquels vous souhaitez accorder l'accès à ce chapitre. Seuls les niveaux choisis pourront voir le contenu. Vous pouvez modifier la visibilité à tout moment.",
+    "academicSession": "Session académique :",
+    "defaultSuffix": " (Par défaut)",
+    "selectAllAriaLabel": "Tout sélectionner",
+    "loadingCompleteData": "Veuillez patienter pendant le chargement des données complètes...",
+    "adding": "Ajout en cours...",
+    "updating": "Mise à jour en cours...",
+    "addButton": "Ajouter {{term}}",
+    "editButton": "Modifier {{term}}",
+    "cropDialogTitle": "Recadrer la vignette du chapitre",
+    "saveThumbnail": "Enregistrer la vignette"
+}

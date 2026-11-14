@@ -1,0 +1,82 @@
+{
+    "heading": "Épreuve écrite (correction de copies)",
+    "intro": "Les élèves téléchargent le sujet, composent sur papier et téléversent leur copie avant l'heure de fin. Remplissez ceci : l'épreuve est créée, attribuée et publiée.",
+    "fields": {
+        "name": "Titre de l'évaluation",
+        "namePlaceholder": "ex. Maths 3e — examen semestriel",
+        "start": "En ligne à partir de",
+        "end": "En ligne jusqu'à",
+        "liveHint": "Les élèves ne peuvent ouvrir l'épreuve et téléverser leur copie que pendant cette période. Laissez le début vide pour l'ouvrir tout de suite, et la fin vide pour la laisser ouverte sans date de fin.",
+        "duration": "Temps de dépôt (minutes)",
+        "durationHint": "Temps dont dispose l'élève pour téléverser sa copie après avoir cliqué sur Commencer — pas le temps de rédaction. Laissez vide pour {{minutes}} minutes.",
+        "totalMarks": "Total des points",
+        "totalMarksHint": "Avec la correction par l'IA, les points sont lus sur le sujet ; ce total sert à les vérifier.",
+        "batchHint": "Les élèves de ces groupes reçoivent l'épreuve.",
+        "instructions": "Consignes (facultatif)",
+        "instructionsPlaceholder": "Ce que les élèves doivent savoir. Le sujet est ajouté automatiquement en dessous."
+    },
+    "slot": {
+        "paper": "Sujet (PDF)",
+        "paperHint": "Les élèves téléchargent ce sujet.",
+        "answerKey": "Corrigé (PDF, facultatif)",
+        "answerKeyHint": "Uniquement pour la correction — jamais visible par les élèves. Inutile si le sujet contient déjà les réponses.",
+        "keyHasScheme": "Ce PDF contient aussi le barème",
+        "markingScheme": "Barème (PDF, facultatif)",
+        "markingSchemeHint": "Points par étape pour chaque question. Uniquement pour la correction — jamais visible par les élèves.",
+        "choose": "Déposez un PDF ici ou cliquez pour choisir",
+        "uploading": "Téléversement…",
+        "remove": "Retirer le fichier"
+    },
+    "check": {
+        "heading": "Qui corrige les copies ?",
+        "ai": {
+            "title": "L'IA corrige",
+            "description": "Le sujet est lu en questions avec leurs points (avec le corrigé et le barème s'ils sont fournis). Vous les vérifiez une fois, puis chaque copie est corrigée question par question."
+        },
+        "teacher": {
+            "title": "L'enseignant corrige",
+            "description": "Les copies sont corrigées à la main. Aucun crédit utilisé.",
+            "later": "Vous pourrez activer la correction par l'IA plus tard depuis l'onglet Soumissions de l'épreuve."
+        }
+    },
+    "ai": {
+        "estimateFailed": "Impossible de lire les fichiers téléversés.",
+        "privateNote": "Le corrigé et le barème servent uniquement à corriger ; ils ne sont pas montrés aux élèves.",
+        "uploadPaperFirst": "Téléversez le sujet pour voir le coût de lecture.",
+        "estimating": "Vérification des fichiers…",
+        "cannotRead": "{{reason}} Téléversez un PDF lisible, ou choisissez « L'enseignant corrige ».",
+        "estimateLine_one": "≈{{credits}} crédits pour lire les fichiers ({{count}} page)",
+        "estimateLine_other": "≈{{credits}} crédits pour lire les fichiers ({{count}} pages)",
+        "balance": "solde {{balance}}",
+        "insufficient": "Crédits insuffisants pour lire ces fichiers. Rechargez, ou choisissez « L'enseignant corrige ».",
+        "howItWorks": "Débité une fois, quand les questions sont prêtes. Vous les vérifiez dans l'onglet Soumissions ; chaque copie est ensuite facturée à la page."
+    },
+    "actions": {
+        "creating": "Création…",
+        "createAndRead": "Créer et lire le sujet (≈{{credits}} crédits)",
+        "createAndReadNoEstimate": "Créer et lire le sujet",
+        "create": "Créer l'évaluation",
+        "cancel": "Annuler",
+        "fullSetup": "Utiliser la configuration complète"
+    },
+    "toasts": {
+        "createFailed": "Impossible de créer l'évaluation. Veuillez réessayer.",
+        "created": "Évaluation créée et publiée.",
+        "createdReading": "Évaluation créée et publiée. Lecture du sujet en arrière-plan (≈{{credits}} crédits) — vous serez alerté quand les questions seront prêtes à vérifier.",
+        "createdReadNotStarted": "Évaluation créée et publiée, mais le sujet n'a pas pu être lu. Réessayez depuis l'onglet Soumissions, ou corrigez les copies à la main."
+    },
+    "errors": {
+        "nameRequired": "Saisissez un titre",
+        "startRequired": "Choisissez l'ouverture",
+        "endRequired": "Choisissez la fermeture",
+        "endAfterStart": "La fin doit être après le début",
+        "endInFuture": "La fin doit être dans le futur",
+        "durationMin": "Au moins 1 minute",
+        "marksMin": "Au moins 1 point",
+        "batchRequired": "Choisissez au moins un groupe",
+        "paperRequired": "Téléversez le sujet",
+        "notPdf": "Seuls les fichiers PDF sont acceptés ici.",
+        "tooBig": "Le fichier dépasse {{mb}} Mo.",
+        "uploadFailed": "Échec du téléversement. Veuillez réessayer."
+    }
+}

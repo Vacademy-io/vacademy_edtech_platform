@@ -37,6 +37,8 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
                                                   @Param("startDate") LocalDate startDate,
                                                   @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT la FROM LeaveApplication la WHERE la.appliedTo = :managerId AND la.status = 'PENDING' ORDER BY la.createdAt DESC")
-    List<LeaveApplication> findPendingForManager(@Param("managerId") String managerId);
+    @Query("SELECT la FROM LeaveApplication la WHERE la.appliedTo = :managerId AND la.instituteId = :instituteId " +
+            "AND la.status = 'PENDING' ORDER BY la.createdAt DESC")
+    List<LeaveApplication> findPendingForManagerInInstitute(@Param("managerId") String managerId,
+                                                             @Param("instituteId") String instituteId);
 }

@@ -1,0 +1,23 @@
+{
+    "logoAlt": "Logo",
+    "poweredBy": "Powered by",
+    "recentTabs": {
+        "heading": "Recently Visited",
+        "emptyTitle": "No recent tabs",
+        "emptyDescription": "Navigate to pages and they'll appear here"
+    },
+    "support": {
+        "button": "Support",
+        "planTooltip": "{{plan}} support plan",
+        "plan": {
+            "dedicated": "Dedicated",
+            "premium": "Premium",
+            "average": "Average",
+            "low": "Low",
+            "none": "No plan"
+        }
+    },
+    "settings": {
+        "searchPlaceholder": "Search settings"
+    }
+}

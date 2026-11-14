@@ -1,0 +1,11 @@
+{
+    "videoFallbackTitle": "वीडियो",
+    "unknownSplitScreenType": "अज्ञात स्प्लिट स्क्रीन प्रकार",
+    "videoNotFoundTitle": "वीडियो नहीं मिला",
+    "videoNotFoundDescription": "इस स्प्लिट स्क्रीन के लिए वीडियो स्लाइड नहीं मिली। कृपया जांचें कि क्या वीडियो स्लाइड अभी भी मौजूद है।",
+    "videoIdLabel": "वीडियो ID: {{videoId}}",
+    "splitScreenModeTitle": "स्प्लिट स्क्रीन मोड",
+    "untitledVideo": "शीर्षक रहित वीडियो",
+    "videoBeingGenerated": "वीडियो तैयार किया जा रहा है...",
+    "videoBeingGeneratedHint": "इसमें कुछ मिनट लग सकते हैं। कृपया बाद में फिर से देखें।"
+}

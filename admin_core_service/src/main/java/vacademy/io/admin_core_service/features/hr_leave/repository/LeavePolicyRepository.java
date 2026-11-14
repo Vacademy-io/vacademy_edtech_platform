@@ -19,4 +19,12 @@ public interface LeavePolicyRepository extends JpaRepository<LeavePolicy, String
     List<LeavePolicy> findActivePolicies(@Param("instituteId") String instituteId, @Param("date") LocalDate date);
 
     List<LeavePolicy> findByLeaveType_Id(String leaveTypeId);
+
+    /**
+     * Every institute that has at least one ACTIVE leave policy — the fan-out
+     * set for the daily accrual job (LeaveAccrualJob). Effective-date filtering
+     * happens inside the accrual itself, per institute timezone.
+     */
+    @Query("SELECT DISTINCT p.instituteId FROM LeavePolicy p WHERE p.status = 'ACTIVE'")
+    List<String> findDistinctInstituteIdsWithActivePolicies();
 }

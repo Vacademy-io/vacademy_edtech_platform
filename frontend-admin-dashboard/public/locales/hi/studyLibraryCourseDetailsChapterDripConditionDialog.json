@@ -1,0 +1,59 @@
+{
+    "dialog": {
+        "heading": "ड्रिप शर्तें - {{chapterName}}",
+        "defaultChapterName": "अध्याय",
+        "chapterDripConditions": "अध्याय ड्रिप शर्तें",
+        "emptyState": "इस अध्याय के लिए अभी तक कोई ड्रिप शर्त नहीं है।"
+    },
+    "packageConflict": {
+        "title": "कोर्स-स्तरीय शर्तें सक्रिय हैं",
+        "courseLevel": "कोर्स स्तर",
+        "explanation": "ये कोर्स-स्तरीय शर्तें सभी अध्यायों पर लागू होती हैं। जब कोर्स शर्तें अध्यायों को लक्षित करती हैं, तो अध्याय-विशिष्ट शर्तें अक्षम हो जाती हैं।"
+    },
+    "behavior": {
+        "lock": "लॉक"
+    },
+    "behaviorOptions": {
+        "lock": "लॉक करें (दिखाएँ पर पहुँच रोकें)",
+        "hide": "छिपाएँ (पूरी तरह छिपाएँ)"
+    },
+    "ruleTypes": {
+        "dateBased": "तिथि-आधारित",
+        "completionBased": "पूर्णता-आधारित",
+        "prerequisite": "पूर्वापेक्षा",
+        "sequential": "क्रमिक"
+    },
+    "form": {
+        "releaseDate": "रिलीज़ तिथि",
+        "metric": "मेट्रिक",
+        "averageOfAll": "सभी का औसत",
+        "averageOfLastN": "अंतिम N का औसत",
+        "count": "गिनती",
+        "thresholdPercent": "थ्रेशोल्ड %",
+        "requiredChapters": "आवश्यक अध्याय",
+        "selectChapters": "अध्याय चुनें",
+        "requiredChaptersHint": "अनलॉक होने से पहले पूर्ण किए जाने वाले अध्याय चुनें",
+        "completionThresholdPercent": "पूर्णता थ्रेशोल्ड %",
+        "prerequisiteThresholdHint": "पूर्वापेक्षित अध्यायों के लिए आवश्यक पूर्णता प्रतिशत",
+        "requiresPreviousCompletion": "पिछले अध्याय की पूर्णता आवश्यक है",
+        "sequentialThresholdHint": "पिछले अध्याय के लिए आवश्यक पूर्णता प्रतिशत",
+        "behavior": "व्यवहार",
+        "unlockRule": "अनलॉक नियम",
+        "noRuleConfigured": "कोई नियम कॉन्फ़िगर नहीं किया गया। कृपया नीचे एक अनलॉक नियम कॉन्फ़िगर करें।",
+        "enableConditionLabel": "इस अध्याय की शर्त सक्षम करें",
+        "enableConditionHint": "नियंत्रित करता है कि यह ड्रिप शर्त सक्रिय है या नहीं"
+    },
+    "actions": {
+        "addCondition": "शर्त जोड़ें",
+        "edit": "संपादित करें",
+        "deleteConditionTitle": "शर्त हटाएँ",
+        "close": "बंद करें",
+        "saving": "सहेजा जा रहा है...",
+        "saveCondition": "शर्त सहेजें"
+    },
+    "alerts": {
+        "cannotDeleteEnabled": "सक्षम शर्त को हटाया नहीं जा सकता। कृपया पहले अध्याय ड्रिप शर्त अक्षम करें।",
+        "confirmDelete": "क्या आप वाकई इस ड्रिप शर्त को हटाना चाहते हैं?",
+        "fillRequiredFields": "कृपया सभी आवश्यक फ़ील्ड भरें"
+    }
+}

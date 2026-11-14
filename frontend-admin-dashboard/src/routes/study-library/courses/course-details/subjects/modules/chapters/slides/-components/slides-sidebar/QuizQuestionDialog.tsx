@@ -5,6 +5,7 @@ import { MainViewComponentFactory } from '@/routes/assessment/question-papers/-c
 import { uploadQuestionPaperFormSchema } from '@/routes/assessment/question-papers/-utils/upload-question-paper-form-schema';
 import { Dispatch, MutableRefObject, SetStateAction, useEffect } from 'react';
 import { FormProvider, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -21,7 +22,7 @@ const QuizQuestionDialogAddPreview = ({
     previewQuestionDialog,
     setPreviewQuestionDialog,
     isAddQuestionTypeRef,
-    variantTitle = 'Quiz Question',
+    variantTitle,
     onCreate,
 }: {
     quizQuestionForm: UseFormReturn<QuestionPaperForm>;
@@ -37,6 +38,7 @@ const QuizQuestionDialogAddPreview = ({
     variantTitle?: string;
     onCreate: () => Promise<string | null>;
 }) => {
+    const { t } = useTranslation('studyLibraryQuizQuestionDialog');
     const { setActiveItem, getSlideById, updateActiveSlideQuestions } = useContentStore();
 
     useEffect(() => {
@@ -122,7 +124,9 @@ const QuizQuestionDialogAddPreview = ({
         <Dialog open={previewQuestionDialog} onOpenChange={setPreviewQuestionDialog}>
             <DialogContent className="no-scrollbar !m-0 flex h-full !w-full !max-w-full flex-col !gap-0 overflow-y-auto !rounded-none !p-0 [&>button]:hidden">
                 <div className="flex w-full items-center justify-between bg-primary-50">
-                    <h1 className="p-4 font-semibold text-primary-500">{variantTitle}</h1>
+                    <h1 className="p-4 font-semibold text-primary-500">
+                        {variantTitle || t('defaultTitle')}
+                    </h1>
                     <div className="mr-4 flex items-center gap-2">
                         <MyButton
                             type="button"
@@ -135,7 +139,7 @@ const QuizQuestionDialogAddPreview = ({
                                 setPreviewQuestionDialog(false);
                             }}
                         >
-                            Close
+                            {t('close')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -146,7 +150,7 @@ const QuizQuestionDialogAddPreview = ({
                             disabled={quizQuestionForm.getValues('questions').length === 0}
                             onClick={handleCreateQuiz}
                         >
-                            Create
+                            {t('create')}
                         </MyButton>
                     </div>
                 </div>
@@ -154,7 +158,7 @@ const QuizQuestionDialogAddPreview = ({
                 <div>
                     <FormProvider {...quizQuestionForm}>
                         {quizQuestionForm.getValues('questions')?.length === 0 ? (
-                            <p className="p-6 text-center text-muted">Nothing to show</p>
+                            <p className="p-6 text-center text-muted">{t('nothingToShow')}</p>
                         ) : (
                             <div className="my-4 flex flex-col gap-2">
                                 <MainViewComponentFactory

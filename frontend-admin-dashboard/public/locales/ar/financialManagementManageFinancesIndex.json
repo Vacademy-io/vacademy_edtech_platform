@@ -1,0 +1,11 @@
+{
+    "pageTitle": "إدارة الشؤون المالية",
+    "metaDescription": "إدارة سجل المعاملات ومدفوعات رسوم الطلاب",
+    "sessionLabel": "الدورة -",
+    "allSessions": "الكل",
+    "redesign": {
+        "subtitle": "Fee roster — one row per {{learner}} and fee plan, with what was billed, paid, due and overdue.",
+        "adjustments": "Adjustment approvals",
+        "collectPayment": "Collect payment"
+    }
+}

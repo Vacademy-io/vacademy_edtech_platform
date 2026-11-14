@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
     isEditable,
     onDataChange,
 }) => {
+    const { t } = useTranslation('studyLibraryScratchProjectSlide');
     const [projectId, setProjectId] = useState(scratchData?.projectId || '');
     const [projectName, setProjectName] = useState(scratchData?.projectName || '');
     const [showForm, setShowForm] = useState(!scratchData?.projectId);
@@ -62,12 +64,12 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
         const extractedId = extractProjectIdFromUrl(projectId);
 
         if (!extractedId) {
-            toast.error('Please enter a Scratch project ID or URL');
+            toast.error(t('errorEnterIdOrUrl'));
             return;
         }
 
         if (!validateProjectId(extractedId)) {
-            toast.error('Please enter a valid Scratch project ID (numbers only)');
+            toast.error(t('errorInvalidId'));
             return;
         }
 
@@ -86,7 +88,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
 
         // Save to backend via onDataChange
         onDataChange?.(updatedData);
-        toast.success('Scratch project configuration saved successfully!');
+        toast.success(t('successSaved'));
     };
 
     const handleEdit = () => {
@@ -101,35 +103,30 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-orange-100">
                             <Gamepad2 className="size-8 text-primary-500" />
                         </div>
-                        <CardTitle className="text-2xl">Configure Scratch Project</CardTitle>
-                        <CardDescription>
-                            Enter a Scratch project ID or URL to embed it in this slide.
-                        </CardDescription>
+                        <CardTitle className="text-2xl">{t('configureTitle')}</CardTitle>
+                        <CardDescription>{t('configureDescription')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="project-name">Project Name (Optional)</Label>
+                            <Label htmlFor="project-name">{t('projectNameLabel')}</Label>
                             <Input
                                 id="project-name"
-                                placeholder="My Awesome Game"
+                                placeholder={t('projectNamePlaceholder')}
                                 value={projectName}
                                 onChange={(e) => setProjectName(e.target.value)}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="project-id">Scratch Project ID or URL *</Label>
+                            <Label htmlFor="project-id">{t('projectIdLabel')}</Label>
                             <Input
                                 id="project-id"
-                                placeholder="123456789 or https://scratch.mit.edu/projects/123456789/"
+                                placeholder={t('projectIdPlaceholder')}
                                 value={projectId}
                                 onChange={(e) => setProjectId(e.target.value)}
                                 required
                             />
-                            <p className="text-sm text-gray-500">
-                                You can enter just the project ID (e.g., 123456789) or the full
-                                Scratch URL
-                            </p>
+                            <p className="text-sm text-gray-500">{t('projectIdHint')}</p>
                         </div>
 
                         <div className="flex gap-3 pt-4">
@@ -140,7 +137,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                                 disabled={!projectId.trim() || isSaving}
                                 className="flex-1"
                             >
-                                {isSaving ? 'Loading...' : 'Load Scratch Project'}
+                                {isSaving ? t('loadingEllipsis') : t('loadProjectButton')}
                             </MyButton>
                         </div>
                     </CardContent>
@@ -157,19 +154,15 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-gray-100">
                             <AlertCircle className="size-8 text-gray-600" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold">
-                            No Scratch Project Configured
-                        </h3>
-                        <p className="mb-4 text-gray-600">
-                            This slide doesn&apos;t have a Scratch project configured yet.
-                        </p>
+                        <h3 className="mb-2 text-lg font-semibold">{t('noProjectTitle')}</h3>
+                        <p className="mb-4 text-gray-600">{t('noProjectSubtitle')}</p>
                         {isEditable && (
                             <MyButton
                                 buttonType="primary"
                                 scale="medium"
                                 onClick={() => setShowForm(true)}
                             >
-                                Configure Project
+                                {t('configureProjectButton')}
                             </MyButton>
                         )}
                     </CardContent>
@@ -185,8 +178,8 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                 <Card className="w-full max-w-md text-center">
                     <CardContent className="p-6">
                         <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600"></div>
-                        <h3 className="mb-2 text-lg font-semibold">Loading Scratch Project...</h3>
-                        <p className="text-gray-600">Setting up your project configuration.</p>
+                        <h3 className="mb-2 text-lg font-semibold">{t('loadingProjectTitle')}</h3>
+                        <p className="text-gray-600">{t('loadingProjectSubtitle')}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -203,7 +196,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
     const handleIframeError = () => {
         setIsLoading(false);
         setEmbedError(true);
-        toast.error('Failed to load Scratch project embed.');
+        toast.error(t('errorEmbedFailed'));
     };
 
     return (
@@ -216,9 +209,9 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                     </div>
                     <div>
                         <h3 className="font-semibold">
-                            {scratchData?.projectName || 'Scratch Project'}
+                            {scratchData?.projectName || t('scratchProjectFallback')}
                         </h3>
-                        <p className="text-xs text-gray-500">Scratch</p>
+                        <p className="text-xs text-gray-500">{t('scratchLabel')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -229,7 +222,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                         className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                     >
                         <ExternalLink className="size-4" />
-                        View Project
+                        {t('viewProject')}
                     </a>
                     <a
                         href={editorUrl}
@@ -238,11 +231,11 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                         className="flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
                     >
                         <Gamepad2 className="size-4" />
-                        See Inside
+                        {t('seeInside')}
                     </a>
                     {isEditable && (
                         <MyButton buttonType="secondary" scale="small" onClick={handleEdit}>
-                            Edit
+                            {t('edit')}
                         </MyButton>
                     )}
                 </div>
@@ -254,7 +247,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
                         <div className="text-center">
                             <div className="mx-auto mb-2 size-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-600"></div>
-                            <p className="text-sm text-gray-600">Loading Scratch project...</p>
+                            <p className="text-sm text-gray-600">{t('loadingProjectInline')}</p>
                         </div>
                     </div>
                 )}
@@ -267,11 +260,10 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                                     <AlertCircle className="size-8 text-red-600" />
                                 </div>
                                 <h3 className="mb-2 text-lg font-semibold text-red-900">
-                                    Embed Not Available
+                                    {t('embedNotAvailableTitle')}
                                 </h3>
                                 <p className="mb-4 text-gray-600">
-                                    This Scratch project cannot be embedded directly. You can view
-                                    it on the Scratch website instead.
+                                    {t('embedNotAvailableSubtitle')}
                                 </p>
                                 <div className="space-y-2">
                                     <div className="flex gap-2">
@@ -282,7 +274,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                                             className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-white hover:bg-orange-700"
                                         >
                                             <ExternalLink className="size-4" />
-                                            View Project-
+                                            {t('viewProjectDash')}
                                         </a>
                                         <a
                                             href={editorUrl}
@@ -291,11 +283,13 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                                             className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
                                         >
                                             <Gamepad2 className="size-4" />
-                                            See Inside
+                                            {t('seeInside')}
                                         </a>
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                        Project ID: {scratchData.projectId}
+                                        {t('projectIdValue', {
+                                            id: scratchData.projectId,
+                                        })}
                                     </p>
                                 </div>
                             </CardContent>
@@ -305,7 +299,7 @@ export const ScratchProjectSlide: React.FC<ScratchProjectSlideProps> = ({
                     <iframe
                         src={embedUrl}
                         className="size-full border-0 bg-red-400"
-                        title={scratchData.projectName || 'Scratch Project'}
+                        title={scratchData.projectName || t('scratchProjectFallback')}
                         allowFullScreen
                         allow="autoplay"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

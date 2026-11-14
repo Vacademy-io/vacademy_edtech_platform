@@ -1,0 +1,12 @@
+{
+    "steps": {
+        "draft": "Draft",
+        "processing": "Processing",
+        "processed": "Processed",
+        "approved": "Approved",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+    },
+    "processing": "Processing…",
+    "cancelledMessage": "Cancelled — its loan deductions and reimbursements were released back. Create a new run for this month when you are ready."
+}

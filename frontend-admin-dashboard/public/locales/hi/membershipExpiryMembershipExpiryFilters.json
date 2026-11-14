@@ -1,0 +1,13 @@
+{
+    "filters": "फ़िल्टर",
+    "quick": "त्वरित:",
+    "last1Hour": "पिछला 1 घंटा",
+    "today": "आज",
+    "last7Days": "पिछले 7 दिन",
+    "last30Days": "पिछले 30 दिन",
+    "allTime": "सभी समय",
+    "clearAll": "सभी साफ़ करें",
+    "filterByCourseSession": "कोर्स/सत्र के अनुसार फ़िल्टर करें",
+    "startDate": "प्रारंभ तिथि",
+    "endDate": "समाप्ति तिथि"
+}

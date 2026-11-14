@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, X, AlertCircle, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import i18n from '@/i18n';
 import {
     listSubmissionsForSlide,
     getSubmissionDetail,
@@ -26,7 +28,7 @@ const verdictStyles: Record<Verdict, string> = {
 function fmtDate(v: string | number): string {
     const n = typeof v === 'number' ? v : Date.parse(v);
     if (!Number.isFinite(n)) return String(v);
-    return new Date(n).toLocaleString();
+    return new Date(n).toLocaleString(i18n.language);
 }
 
 function VerdictIcon({ verdict }: { verdict: Verdict }) {
@@ -36,6 +38,7 @@ function VerdictIcon({ verdict }: { verdict: Verdict }) {
 }
 
 export function SubmissionsReport({ slideId }: Props) {
+    const { t } = useTranslation('studyLibrarySubmissionsReport');
     const [rows, setRows] = useState<AdminSubmissionSummary[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -99,7 +102,7 @@ export function SubmissionsReport({ slideId }: Props) {
             <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-[220px] flex-1">
                     <label className="block text-xs font-semibold text-muted-foreground">
-                        Filter by learner ID
+                        {t('filterByLearnerId')}
                     </label>
                     <Input
                         value={learnerFilter}
@@ -107,17 +110,17 @@ export function SubmissionsReport({ slideId }: Props) {
                             setLearnerFilter(e.target.value);
                             setPage(0);
                         }}
-                        placeholder="Leave blank for all learners"
+                        placeholder={t('filterPlaceholder')}
                         className="h-8 text-xs"
                     />
                 </div>
                 <Button variant="outline" size="sm" onClick={() => load()} disabled={loading}>
                     <RefreshCw className={`mr-1 size-3 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {t('refresh')}
                 </Button>
                 <div className="ml-auto text-xs text-muted-foreground">
-                    {totalElements} submission{totalElements === 1 ? '' : 's'} across {stats.size}{' '}
-                    learner{stats.size === 1 ? '' : 's'} (this page)
+                    {t('submissionCount', { count: totalElements })}{' '}
+                    {t('acrossLearnerCount', { count: stats.size })} {t('thisPageSuffix')}
                 </div>
             </div>
 
@@ -129,7 +132,7 @@ export function SubmissionsReport({ slideId }: Props) {
 
             {!loading && rows.length === 0 && !error && (
                 <div className="rounded border border-dashed p-6 text-center text-sm text-muted-foreground">
-                    No submissions yet for this slide.
+                    {t('noSubmissions')}
                 </div>
             )}
 
@@ -176,13 +179,15 @@ export function SubmissionsReport({ slideId }: Props) {
 
                             {open && (
                                 <div className="border-t p-3 text-xs">
-                                    {!detail && <div className="text-gray-500">Loading…</div>}
+                                    {!detail && (
+                                        <div className="text-gray-500">{t('loadingEllipsis')}</div>
+                                    )}
                                     {visible && (
                                         <>
                                             <div className="mb-2 grid grid-cols-2 gap-2 text-gray-600 md:grid-cols-4">
                                                 <div>
                                                     <span className="font-semibold">
-                                                        Learner ID:
+                                                        {t('learnerIdLabel')}
                                                     </span>{' '}
                                                     <span className="font-mono">
                                                         {visible.learnerId}
@@ -190,19 +195,19 @@ export function SubmissionsReport({ slideId }: Props) {
                                                 </div>
                                                 <div>
                                                     <span className="font-semibold">
-                                                        Total time:
+                                                        {t('totalTimeLabel')}
                                                     </span>{' '}
                                                     {visible.totalTimeMs} ms
                                                 </div>
                                                 <div>
                                                     <span className="font-semibold">
-                                                        Peak memory:
+                                                        {t('peakMemoryLabel')}
                                                     </span>{' '}
                                                     {visible.peakMemoryKb} KB
                                                 </div>
                                                 <div>
                                                     <span className="font-semibold">
-                                                        Submitted:
+                                                        {t('submittedLabel')}
                                                     </span>{' '}
                                                     {fmtDate(visible.submittedAt)}
                                                 </div>
@@ -225,12 +230,15 @@ export function SubmissionsReport({ slideId }: Props) {
                                                                 <X className="size-3 text-red-600" />
                                                             )}
                                                             <span className="font-medium">
-                                                                {r.label || `Test ${i + 1}`}
+                                                                {r.label ||
+                                                                    t('testLabel', {
+                                                                        index: i + 1,
+                                                                    })}
                                                             </span>
                                                             <span className="text-gray-500">
                                                                 {r.visible
-                                                                    ? '(sample)'
-                                                                    : '(hidden)'}
+                                                                    ? t('sampleTag')
+                                                                    : t('hiddenTag')}
                                                             </span>
                                                             {r.timeMs != null && (
                                                                 <span className="ml-auto text-gray-500">
@@ -240,29 +248,36 @@ export function SubmissionsReport({ slideId }: Props) {
                                                         </div>
                                                         {(r.acceptedCount ?? 1) > 1 && (
                                                             <div className="mt-0.5 text-xs text-gray-500">
-                                                                Accepts {r.acceptedCount} outputs —{' '}
+                                                                {t('acceptsOutputs', {
+                                                                    count: r.acceptedCount,
+                                                                })}{' '}
                                                                 {r.matchedIndex != null &&
                                                                 r.matchedIndex >= 0
-                                                                    ? `learner matched #${r.matchedIndex + 1}`
-                                                                    : 'matched none'}
+                                                                    ? t('learnerMatched', {
+                                                                          index:
+                                                                              r.matchedIndex + 1,
+                                                                      })
+                                                                    : t('matchedNone')}
                                                             </div>
                                                         )}
                                                         {!r.passed && (
                                                             <div className="mt-1 grid grid-cols-2 gap-2">
                                                                 <div>
                                                                     <div className="text-[10px] font-semibold uppercase text-gray-500">
-                                                                        Their output
+                                                                        {t('theirOutputLabel')}
                                                                     </div>
                                                                     <pre className="overflow-auto rounded bg-white p-1 font-mono">
-                                                                        {r.stdout || '(empty)'}
+                                                                        {r.stdout ||
+                                                                            t('emptyPlaceholder')}
                                                                     </pre>
                                                                 </div>
                                                                 <div>
                                                                     <div className="text-[10px] font-semibold uppercase text-gray-500">
-                                                                        Expected
+                                                                        {t('expectedLabel')}
                                                                     </div>
                                                                     <pre className="overflow-auto rounded bg-white p-1 font-mono">
-                                                                        {r.expected || '(empty)'}
+                                                                        {r.expected ||
+                                                                            t('emptyPlaceholder')}
                                                                     </pre>
                                                                 </div>
                                                             </div>
@@ -278,8 +293,9 @@ export function SubmissionsReport({ slideId }: Props) {
 
                                             <details>
                                                 <summary className="cursor-pointer text-gray-600">
-                                                    View submitted code ({visible.sourceCode.length}{' '}
-                                                    chars)
+                                                    {t('viewSubmittedCode', {
+                                                        count: visible.sourceCode.length,
+                                                    })}
                                                 </summary>
                                                 <pre className="mt-2 max-h-72 overflow-auto rounded bg-gray-900 p-3 text-[11px] text-green-300">
                                                     <code>{visible.sourceCode}</code>
@@ -302,10 +318,10 @@ export function SubmissionsReport({ slideId }: Props) {
                         disabled={page === 0 || loading}
                         onClick={() => setPage((p) => Math.max(0, p - 1))}
                     >
-                        Prev
+                        {t('prev')}
                     </Button>
                     <span className="text-muted-foreground">
-                        Page {page + 1} of {totalPages}
+                        {t('pageOf', { page: page + 1, totalPages })}
                     </span>
                     <Button
                         variant="outline"
@@ -313,7 +329,7 @@ export function SubmissionsReport({ slideId }: Props) {
                         disabled={page >= totalPages - 1 || loading}
                         onClick={() => setPage((p) => p + 1)}
                     >
-                        Next
+                        {t('next')}
                     </Button>
                 </div>
             )}

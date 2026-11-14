@@ -3,19 +3,17 @@ package vacademy.io.admin_core_service.features.learner_tracking.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistryService;
+import vacademy.io.admin_core_service.features.ai_models.service.LlmGatewayRouter;
 import vacademy.io.admin_core_service.features.ai_usage.enums.ApiProvider;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
 import vacademy.io.admin_core_service.features.ai_usage.service.AiTokenUsageService;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 
 import java.time.Duration;
 import java.util.List;
@@ -30,7 +28,6 @@ import java.util.UUID;
 @Service
 public class StudentAnalyticsLLMService {
 
-        private static final String API_URL = "https://openrouter.ai";
         private static final int RESPONSE_TIMEOUT_SECONDS = 120;
 
         private static final int MAX_RETRIES_PER_MODEL = 2;
@@ -48,28 +45,23 @@ public class StudentAnalyticsLLMService {
          */
         private static final int MAX_COMPLETION_TOKENS = 12000;
 
-        private final WebClient webClient;
         private final ObjectMapper objectMapper;
         private final AiTokenUsageService aiTokenUsageService;
         private final AIModelRegistryService aiModelRegistryService;
         private final CreditClient creditClient;
+        private final LlmGatewayRouter gatewayRouter;
 
         public StudentAnalyticsLLMService(
-                        @Value("${openrouter.api.key}") String apiKey,
                         ObjectMapper objectMapper,
                         AiTokenUsageService aiTokenUsageService,
                         AIModelRegistryService aiModelRegistryService,
-                        CreditClient creditClient) {
+                        CreditClient creditClient,
+                        LlmGatewayRouter gatewayRouter) {
                 this.objectMapper = objectMapper;
                 this.aiTokenUsageService = aiTokenUsageService;
                 this.aiModelRegistryService = aiModelRegistryService;
                 this.creditClient = creditClient;
-
-                this.webClient = WebClient.builder()
-                                .baseUrl(API_URL)
-                                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                                .build();
+                this.gatewayRouter = gatewayRouter;
         }
 
         /**
@@ -186,27 +178,27 @@ public class StudentAnalyticsLLMService {
                                 "max_tokens", MAX_COMPLETION_TOKENS,
                                 "response_format", Map.of("type", "json_object"));
 
-                long requestStart = System.nanoTime();
-
-                return webClient.post()
-                                .uri("/api/v1/chat/completions")
-                                .bodyValue(payload)
-                                .retrieve()
-                                .bodyToMono(String.class)
-                                .timeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))
-                                .doOnSubscribe(sub -> log.debug("[LLM-Analytics] POST {} model={} payloadChars={}",
-                                                API_URL + "/api/v1/chat/completions", model, prompt.length()))
-                                .doOnNext(response -> {
-                                        long durationMs = Duration.ofNanos(System.nanoTime() - requestStart).toMillis();
-                                        log.debug("[LLM-Analytics] Response received model={} in {} ms, size={} chars",
-                                                        model, durationMs, response.length());
-                                        logTokenUsage(response, model, instituteId, userId);
-                                })
-                                .doOnError(error -> {
-                                        long durationMs = Duration.ofNanos(System.nanoTime() - requestStart).toMillis();
-                                        log.warn("[LLM-Analytics] Request failed model={} after {} ms: {}",
-                                                        model, durationMs, error.getMessage());
-                                })
+                // The router picks the gateway per attempt (Isoquant for routed models, one
+                // OpenRouter try when it fails) and adds GLM reasoning headroom + effort low.
+                // Deferred inside, so every retry re-resolves the route and honours a cooldown.
+                return Mono.defer(() -> {
+                        long requestStart = System.nanoTime();
+                        return gatewayRouter.callModel(model, payload, Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS), null)
+                                        .doOnSubscribe(sub -> log.debug("[LLM-Analytics] POST model={} payloadChars={}",
+                                                        model, prompt.length()))
+                                        .doOnNext(response -> {
+                                                long durationMs = Duration.ofNanos(System.nanoTime() - requestStart).toMillis();
+                                                log.info("[LLM-Analytics] Response received model={} in {} ms, size={} chars",
+                                                                model, durationMs, response.length());
+                                                // Recorded and charged under the registry id - that is what ai_models prices.
+                                                logTokenUsage(response, model, instituteId, userId);
+                                        })
+                                        .doOnError(error -> {
+                                                long durationMs = Duration.ofNanos(System.nanoTime() - requestStart).toMillis();
+                                                log.warn("[LLM-Analytics] Request failed model={} after {} ms: {}",
+                                                                model, durationMs, error.getMessage());
+                                        });
+                })
                                 .flatMap(response -> parseResponse(response, model));
         }
 
@@ -217,6 +209,9 @@ public class StudentAnalyticsLLMService {
          * trip runs on the Reactor event loop, and both swallow their own failures -
          * billing must never break analytics processing.
          */
+        /** ai_usage_event use case for these charges (ai_use_case_catalog key). */
+        static final String USE_CASE_LEARNER_ANALYTICS = "learner_analytics";
+
         private void logTokenUsage(String responseBody, String model, String instituteId, String userId) {
                 try {
                         JsonNode root = objectMapper.readTree(responseBody);
@@ -241,13 +236,18 @@ public class StudentAnalyticsLLMService {
                                         // usage_log_id is intentionally null: the ai_token_usage row above is
                                         // written asynchronously, so its id is not available here, and
                                         // ai_service would otherwise try to link a row it cannot yet see.
+                                        // Metering only: the learner rides in usage_context, so the
+                                        // ledger row stays exactly as before (no user, no subject).
                                         creditClient.deductCreditsAsync(
                                                         instituteId,
                                                         RequestType.ANALYTICS.getValue(),
                                                         model,
                                                         promptTokens,
                                                         completionTokens,
-                                                        null);
+                                                        null,
+                                                        MeteringFields.system(USE_CASE_LEARNER_ANALYTICS)
+                                                                        .subjectUserId(userId)
+                                                                        .build());
                                 } else {
                                         log.warn("[LLM-Analytics] No institute resolved for model={} - "
                                                         + "{} tokens recorded unattributed and NOT charged",
@@ -294,7 +294,7 @@ public class StudentAnalyticsLLMService {
                                                 Generate a JSON response with ALL of the following sections:
 
                                                 {
-                                                  "performance_analysis": "2-3 paragraphs: overall performance, accuracy patterns, time usage, comparison with class if class_context is available",
+                                                  "performance_analysis": "One paragraph of 60-110 words, to the student: overall performance, strongest and weakest areas, time usage, comparison with class if class_context is available",
 
                                                   "strengths": { "topic_name": 90 },
                                                   "weaknesses": { "topic_name": 30 },
@@ -360,7 +360,7 @@ public class StudentAnalyticsLLMService {
                                                       "current_level": "Beginner|Developing|Proficient",
                                                       "target_level": "Proficient|Expert",
                                                       "suggestion": "Specific actionable study advice",
-                                                      "estimated_time": "2-3 hours"
+                                                      "estimated_time": "45 minutes"
                                                     }
                                                   ]
                                                 }
@@ -379,7 +379,13 @@ public class StudentAnalyticsLLMService {
                                                 5. BEHAVIORAL: Use time_taken per question data. Look for patterns (rushing, fatigue, difficulty avoidance).
                                                 6. COMPARISON: If class_context is present, reference rank/percentile/class averages in performance_analysis.
                                                 7. FLASHCARDS: 5-10 cards focusing on concepts from wrong/partial answers.
-                                                8. LEARNING PATH: 3-5 steps ordered by priority (weakest topics first).
+                                                8. LEARNING PATH: 3-5 steps ordered by priority (weakest topics first). Give estimated_time in minutes, e.g. "45 minutes".
+                                                9. VOICE: The student reads this report, often with a parent. Write every narrative field
+                                                   (performance_analysis, insight, behavioral_insights, misconception, remediation, suggestion,
+                                                   areas_of_improvement, improvement_path, flashcard backs) to the student in the second person
+                                                   ("you", "your"), never "the student". Use their first name at most once, at the start of
+                                                   performance_analysis, if a name is in the data. Short, plain sentences a Class 5 to 12 student
+                                                   understands; encouraging but honest; no jargon such as "metadata" or "accuracy calculation".
 
                                                 CORRECTNESS: The per-question "status" field is the source of truth. Never re-grade a
                                                 question yourself from the options or the answer text.

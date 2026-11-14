@@ -7,6 +7,7 @@ import {
   getTokenFromStorage,
 } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
+import { getInstituteId } from "@/constants/helper";
 import {
   isSessionLiveTimezoneAware,
   isSessionUpcomingTimezoneAware,
@@ -21,7 +22,7 @@ export interface LiveSessionsParams {
 }
 
 const fetchLiveAndUpcomingSessions = async (
-  batchId: string,
+  batchId: string | undefined,
   params?: LiveSessionsParams
 ): Promise<{
   live_sessions: SessionDetails[];
@@ -36,12 +37,16 @@ const fetchLiveAndUpcomingSessions = async (
   try {
     const accessToken = await getTokenFromStorage(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
+    // instituteId lets the backend add the institute's public classes that have
+    // no batch (when the institute opted in), even on the no-batch call.
+    const instituteId = await getInstituteId();
     const response = await authenticatedAxiosInstance({
       method: "GET",
       url: LIVE_SESSION_GET_LIVE_AND_UPCOMING,
       params: {
         batchId,
         userId: tokenData?.user,
+        instituteId: instituteId || undefined,
         ...params,
       },
     });
@@ -109,19 +114,14 @@ const fetchLiveAndUpcomingSessionsForMultipleBatches = async (
   } | null;
 }> => {
   try {
-    // If no batch IDs, return empty results
-    if (!batchIds || batchIds.length === 0) {
-      return {
-        live_sessions: [],
-        upcoming_sessions: [],
-        totalReturned: 0,
-        defaultDayConfig: null,
-      };
-    }
+    // No batches: still ask once without a batchId, so classes the learner was
+    // invited to directly, and the institute's unassigned public classes, show.
+    const targets: (string | undefined)[] =
+      batchIds && batchIds.length > 0 ? batchIds : [undefined];
 
     // Fetch sessions for all batches in parallel
     const results = await Promise.all(
-      batchIds.map((batchId) => fetchLiveAndUpcomingSessions(batchId, params))
+      targets.map((batchId) => fetchLiveAndUpcomingSessions(batchId, params))
     );
 
     // Combine all sessions from all batches
@@ -197,7 +197,8 @@ export const useLiveSessions = (
       params?.endDate,
     ],
     queryFn: () => fetchLiveAndUpcomingSessionsForMultipleBatches(batchIds!, params),
-    enabled: !!batchIds && batchIds.length > 0,
+    // null = batches not resolved yet; [] = resolved, learner has none.
+    enabled: !!batchIds,
     refetchInterval: 60000, // Refetch every minute to keep live status updated
   });
 };

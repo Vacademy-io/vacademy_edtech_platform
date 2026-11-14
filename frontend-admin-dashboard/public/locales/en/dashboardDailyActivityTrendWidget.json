@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Daily Activity Trend",
+        "subtitle": "User activity over the past week"
+    },
+    "error": {
+        "message": "Couldn't load trend data"
+    },
+    "empty": {
+        "message": "No activity recorded this week"
+    },
+    "stats": {
+        "users": "Users",
+        "sessions": "Sessions",
+        "avgDuration": "Avg duration",
+        "avgDurationUnit": "m"
+    },
+    "chart": {
+        "months": [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec"
+        ],
+        "dateLabel": "{{month}} {{day}}"
+    }
+}

@@ -2,8 +2,9 @@
  * Preset layout variants for each component type.
  * Clicking a variant applies its props (merged with existing props) to the component.
  */
+import { patternVariantsFor } from './design-pattern-presets';
 
-interface ComponentVariant {
+export interface ComponentVariant {
     id: string;
     label: string;
     description: string;
@@ -247,3 +248,12 @@ export const COMPONENT_VARIANTS: Record<string, ComponentVariant[]> = {
         },
     ],
 };
+
+/**
+ * The switcher's options for a block: the editor's own presets, then the design-pattern
+ * registry's whole-block looks ("Editorial hero", "Brand footer"), labelled by the registry.
+ */
+export const getComponentVariants = (componentType: string): ComponentVariant[] => [
+    ...(COMPONENT_VARIANTS[componentType] ?? []),
+    ...patternVariantsFor(componentType),
+];

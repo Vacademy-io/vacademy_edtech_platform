@@ -1,0 +1,31 @@
+{
+    "heading": "Générer des questions à partir de sujets",
+    "fields": {
+        "topics": {
+            "label": "Sujets",
+            "placeholder": "Saisissez le sujet pour lequel vous souhaitez générer la question"
+        },
+        "detailsOfTopics": {
+            "label": "Détails des sujets",
+            "placeholder": "Par exemple, générez un ensemble de questions couvrant les principes clés de la photosynthèse, y compris le processus, les facteurs qui l'affectent et son importance dans l'écosystème. Concentrez-vous sur la compréhension conceptuelle et l'application"
+        },
+        "numQuestions": {
+            "label": "Nombre de questions",
+            "placeholder": "Par exemple, 10"
+        },
+        "classLevel": {
+            "placeholder": "Par exemple, 8e année"
+        },
+        "questionType": {
+            "label": "Type de question",
+            "placeholder": "Ex. Numérique, QCM, Vrai/Faux, etc."
+        },
+        "questionLanguage": {
+            "label": "Langue de la question"
+        }
+    },
+    "languages": {
+        "english": "Anglais",
+        "hindi": "Hindi"
+    }
+}

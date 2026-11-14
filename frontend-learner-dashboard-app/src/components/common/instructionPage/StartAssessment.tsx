@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
 import { useNavigate } from "@tanstack/react-router";
@@ -8,14 +9,40 @@ import { useProctoring } from "@/hooks/proctoring/useProctoring";
 import { AssessmentPreview } from "../questionLiveTest/assessment-preview";
 import { Preferences } from "@capacitor/preferences";
 import { useAssessmentStore } from "@/stores/assessment-store";
+import { usePreloadExamRoutes } from "@/hooks/use-preload-exam-routes";
 // import { enableProtection } from "@/constants/helper";
+
+export interface StartTriggerProps {
+  /** Opens the confirmation, or starts at once when `confirm` is false. */
+  onClick: () => void;
+  disabled: boolean;
+  /** The start request is in flight. */
+  isLoading: boolean;
+  /** "Start Assessment" or "Upload Answer" (manual evaluation). */
+  defaultLabel: string;
+}
 
 interface AssessmentStartModalProps {
   /** Held closed until the learner acknowledges the proctoring rules. */
   disabled?: boolean;
+  /**
+   * Draws the start button (a themed instruction page has its own). The
+   * start flow behind it is the same.
+   */
+  renderTrigger?: (props: StartTriggerProps) => ReactNode;
+  /**
+   * Show the "Start Assessment" confirmation first (default). A page whose
+   * own declaration step already confirms the start passes false.
+   */
+  confirm?: boolean;
 }
 
-const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
+const AssessmentStartModal = ({
+  disabled,
+  renderTrigger,
+  confirm = true,
+}: AssessmentStartModalProps) => {
+  const { t } = useTranslation("layoutCommonB");
   const location = useLocation();
   const pathSegments = location.pathname.split("/");
   const assessmentId = pathSegments[3];
@@ -27,6 +54,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
   // of "Start Assessment". Read from the same storage key the start flow uses.
   const [isManual, setIsManual] = useState(false);
   const navigate = useNavigate();
+  usePreloadExamRoutes();
 
   useEffect(() => {
     const loadEvaluationType = async () => {
@@ -148,6 +176,15 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
     <div className="flex flex-col items-center">
       {examHasStarted ? (
         <div className="test-container">{getContent()}</div>
+      ) : renderTrigger ? (
+        renderTrigger({
+          onClick: confirm ? () => setIsOpen(true) : handleAssessmentAction,
+          disabled: Boolean(disabled) || isLoading,
+          isLoading,
+          defaultLabel: isManual
+            ? t("instructionPage.startAssessment.uploadAnswer")
+            : t("instructionPage.startAssessment.startAssessment"),
+        })
       ) : (
         <MyButton
           onClick={() => setIsOpen(true)}
@@ -157,7 +194,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
           disable={disabled}
           className="h-12 w-full"
         >
-          {isManual ? "Upload Answer" : "Start Assessment"}
+          {isManual ? t("instructionPage.startAssessment.uploadAnswer") : t("instructionPage.startAssessment.startAssessment")}
         </MyButton>
       )}
 
@@ -166,12 +203,12 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
           <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white">
             <div className="flex items-center justify-between border-b border-neutral-100 bg-primary-50 p-4">
               <h3 className="text-title font-semibold text-primary-500">
-                Start Assessment
+                {t("instructionPage.startAssessment.startAssessment")}
               </h3>
               <button
                 type="button"
                 onClick={handleClose}
-                aria-label="Close"
+                aria-label={t("instructionPage.startAssessment.close")}
                 className="grid size-8 place-items-center rounded-full text-neutral-400 transition-colors hover:bg-white hover:text-neutral-700"
               >
                 <X size={20} />
@@ -180,9 +217,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
 
             <div className="p-5">
               <p className="text-body leading-relaxed text-neutral-600">
-                {
-                  "Once you start the assessment, you must complete it without interruption. Begin only when you're ready."
-                }
+                {t("instructionPage.startAssessment.confirmBody")}
               </p>
             </div>
 
@@ -194,7 +229,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
                 layoutVariant="default"
                 disable={isLoading}
               >
-                Cancel
+                {t("instructionPage.startAssessment.cancel")}
               </MyButton>
               <MyButton
                 onClick={handleAssessmentAction}
@@ -203,7 +238,7 @@ const AssessmentStartModal = ({ disabled }: AssessmentStartModalProps) => {
                 layoutVariant="default"
                 disable={isLoading}
               >
-                {isLoading ? "Loading..." : "Proceed"}
+                {isLoading ? t("instructionPage.startAssessment.loading") : t("instructionPage.startAssessment.proceed")}
               </MyButton>
             </div>
           </div>

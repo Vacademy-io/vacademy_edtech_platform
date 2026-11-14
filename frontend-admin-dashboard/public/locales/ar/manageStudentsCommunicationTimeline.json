@@ -1,0 +1,132 @@
+{
+    "channels": {
+        "EMAIL": "البريد الإلكتروني",
+        "WHATSAPP": "واتساب",
+        "PUSH": "إشعار فوري",
+        "SMS": "رسالة نصية",
+        "CALL": "مكالمة"
+    },
+    "statuses": {
+        "PENDING": "قيد الانتظار",
+        "SENT": "تم الإرسال",
+        "DELIVERED": "تم التسليم",
+        "READ": "تمت القراءة",
+        "CLICKED": "تم النقر",
+        "FAILED": "فشل",
+        "BOUNCED": "مرتد",
+        "COMPLAINT": "شكوى",
+        "RECEIVED": "تم الاستلام"
+    },
+    "filters": {
+        "all": "الكل"
+    },
+    "headerMedia": {
+        "viewDocument": "عرض المستند",
+        "attachmentAlt": "مرفق"
+    },
+    "expandedDetail": {
+        "senderFallback": "البريد الإلكتروني",
+        "toRecipient": "إلى {{recipient}}",
+        "messageHeading": "الرسالة",
+        "templateLabel": "القالب:",
+        "fromLabel": "من:",
+        "toLabel": "إلى:",
+        "sourceLabel": "المصدر:",
+        "deliveryTimelineHeading": "الجدول الزمني للتسليم",
+        "collapse": "طي"
+    },
+    "direction": {
+        "received": "تم الاستلام عبر {{channel}}",
+        "sent": "تم الإرسال عبر {{channel}}"
+    },
+    "noSubject": "(بدون موضوع)",
+    "emptyStates": {
+        "noContactTitle": "لا توجد بيانات اتصال",
+        "noContactHint": "اختر طالبًا لديه بريد إلكتروني أو رقم هاتف لعرض مراسلاته.",
+        "loadErrorTitle": "تعذر تحميل المراسلات",
+        "loadErrorHint": "حدث خطأ أثناء جلب الرسائل. يرجى المحاولة مرة أخرى.",
+        "noCommunicationsTitle": "لا توجد مراسلات",
+        "noChannelMessages": "لا توجد رسائل {{channel}} حتى الآن. جرّب اختيار \"{{allLabel}}\" لعرض القنوات الأخرى.",
+        "noMessagesYet": "لم يتم إرسال أو استلام أي رسائل من هذا الطالب أو إليه بعد.",
+        "sendFirstMessage": "إرسال أول رسالة",
+        "noCalls": "لا توجد مكالمات مع هذا الطالب بعد. استخدم زر الاتصال في تبويب النظرة العامة لإجراء مكالمة."
+    },
+    "sendCard": {
+        "heading": "إرسال إشعار",
+        "subheading": "رسالة عبر البريد الإلكتروني أو واتساب"
+    },
+    "resend": {
+        "button": "إعادة الإرسال",
+        "buttonTooltip": "إرسال هذه الرسالة مرة أخرى",
+        "blocked": {
+            "noTemplate": "لا يمكن إعادة إرسال سوى رسائل القوالب — هذه الرسالة كُتبت في صندوق الوارد",
+            "noBody": "لم يُحفَظ نص الرسالة الأصلية، لذا لا يوجد ما يُعاد إرساله",
+            "unsupportedChannel": "لا يمكن إعادة الإرسال عبر هذه القناة من هنا"
+        },
+        "title": "إعادة إرسال رسالة {{channel}} هذه؟",
+        "confirmQuestion": "هل أنت متأكد من إعادة إرسالها إلى {{recipient}}؟",
+        "subjectLabel": "الموضوع:",
+        "hasVariables_one": "يحتوي هذا القالب على متغير واحد ({{count}}).",
+        "hasVariables_other": "يحتوي هذا القالب على {{count}} متغيرات.",
+        "modeSame": "إعادة الإرسال كما هي",
+        "modeSameHint": "الإبقاء على القيم المُرسَلة في المرة الأولى",
+        "modeSameBlockedHint": "غير ممكن — أُرسلت الرسالة الأولى بدون {{names}}",
+        "modeEdit": "تغيير المتغيرات",
+        "modeEditHint": "تعديل القيم قبل الإرسال",
+        "variablePlaceholder": "قيمة {{name}}",
+        "variableEmpty": "(فارغ)",
+        "previewHeading": "معاينة",
+        "deliveryCaveat": "سيؤدي هذا إلى إرسال رسالة حقيقية إلى المتعلّم.",
+        "variablesRequired": "املأ كل متغير — يرفض واتساب الرسالة ما دام أي منها فارغًا.",
+        "cancel": "إلغاء",
+        "confirmSame": "إعادة الإرسال",
+        "confirmEdited": "الإرسال بالقيم الجديدة",
+        "emailSent": "تمت إعادة إرسال البريد الإلكتروني",
+        "whatsappQueued": "تم تسليم رسالة واتساب إلى المزوّد",
+        "rejected": "رفض المزوّد إعادة الإرسال",
+        "rejectedWithReason": "رفض المزوّد إعادة الإرسال: {{reason}}",
+        "failed": "تعذّرت إعادة إرسال الرسالة",
+        "noInstitute": "لم يتم اختيار أي مؤسسة",
+        "noRecipient": "لا يوجد مستلم لهذه الرسالة"
+    },
+    "pagination": {
+        "previous": "السابق",
+        "next": "التالي",
+        "pageOf": "صفحة {{current}} من {{total}}"
+    },
+    "totalCount_zero": "{{count}} رسالة إجمالاً",
+    "totalCount_one": "{{count}} رسالة إجمالاً",
+    "totalCount_two": "{{count}} رسالتان إجمالاً",
+    "totalCount_few": "{{count}} رسائل إجمالاً",
+    "totalCount_many": "{{count}} رسالة إجمالاً",
+    "totalCount_other": "{{count}} رسالة إجمالاً",
+    "call": {
+        "outbound": "مكالمة صادرة",
+        "inbound": "مكالمة واردة",
+        "aiCall": "مكالمة ذكاء اصطناعي",
+        "status": {
+            "COMPLETED": "تم الرد",
+            "NO_ANSWER": "لا يوجد رد",
+            "BUSY": "مشغول",
+            "FAILED": "فشلت",
+            "CANCELLED": "ألغيت",
+            "IN_PROGRESS": "جارية",
+            "QUEUED": "تم الاتصال",
+            "INITIATED": "تم الاتصال",
+            "COUNSELLOR_RINGING": "يرن",
+            "COUNSELLOR_ANSWERED": "جارٍ التوصيل"
+        },
+        "duration": "{{minutes}} د {{seconds}} ث",
+        "outcome": "النتيجة",
+        "attempt": "المحاولة {{n}}",
+        "recordingHeading": "التسجيل",
+        "noRecording": "لا يوجد تسجيل لهذه المكالمة",
+        "byCounsellor": "بواسطة {{name}}"
+    },
+    "origin": {
+        "workflow": "أُرسلت بواسطة سير العمل «{{name}}»",
+        "workflowUnnamed": "أُرسلت بواسطة سير عمل",
+        "chatbotFlow": "أُرسلت بواسطة تدفق روبوت المحادثة «{{name}}»",
+        "chatbotFlowUnnamed": "أُرسلت بواسطة تدفق روبوت محادثة"
+    }
+}

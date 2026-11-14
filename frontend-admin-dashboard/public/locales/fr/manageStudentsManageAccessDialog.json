@@ -1,0 +1,91 @@
+{
+    "dialogTitle": "Gérer l'accès aux cours",
+    "unlimitedLabel": "Illimité",
+    "modes": {
+        "extend": {
+            "label": "Prolonger de plusieurs jours",
+            "hint": "Ajoute des jours à la date d'expiration actuelle. Pour les apprenants déjà expirés, le calcul part d'aujourd'hui afin qu'ils bénéficient de la prolongation complète."
+        },
+        "setFromEnrollment": {
+            "label": "Définir le nombre total de jours depuis l'inscription",
+            "hint": "Recalcule l'expiration comme date d'inscription + ce nombre de jours, en ignorant la valeur actuelle."
+        },
+        "setDate": {
+            "label": "Définir une date d'expiration exacte",
+            "hint": "Remplace l'expiration par cette date exacte."
+        },
+        "unlimited": {
+            "label": "Accorder un accès illimité",
+            "hint": "Supprime totalement l'expiration — l'apprenant conserve un accès indéfiniment."
+        }
+    },
+    "config": {
+        "changePrompt": "Modifier la durée d'accès de <strong>{{name}}</strong> aux cours sélectionnés.",
+        "noEnrollments": "Aucune inscription à gérer",
+        "unnamedCourse": "Cours sans nom",
+        "expiresExpired": "Expire le {{date}} — expiré",
+        "expiresRemaining_one": "Expire le {{date}} — {{count}} jour restant",
+        "expiresRemaining_many": "Expire le {{date}} — {{count}} jours restants",
+        "expiresRemaining_other": "Expire le {{date}} — {{count}} jours restants",
+        "unlimitedAccess": "Accès illimité",
+        "whatToChange": "Que modifier",
+        "daysToAdd": "Jours à ajouter",
+        "totalDaysOfAccess": "Nombre total de jours d'accès",
+        "negativeHint": "Utilisez un nombre négatif pour raccourcir l'accès.",
+        "newExpiryDate": "Nouvelle date d'expiration",
+        "reasonLabel": "Motif (facultatif)",
+        "reasonPlaceholder": "ex. Compensation pour le report du batch",
+        "reasonHint": "Enregistré avec la modification afin que toute personne consultant l'historique puisse en voir la raison."
+    },
+    "resultList": {
+        "enrollmentFallback": "Inscription",
+        "daysDelta_one": "({{sign}}{{count}} jour)",
+        "daysDelta_many": "({{sign}}{{count}} jours)",
+        "daysDelta_other": "({{sign}}{{count}} jours)"
+    },
+    "preview": {
+        "willChange_one": "{{count}} inscription va changer",
+        "willChange_many": "{{count}} inscriptions vont changer",
+        "willChange_other": "{{count}} inscriptions vont changer",
+        "skippedCount_one": "{{count}} ignorée",
+        "skippedCount_many": "{{count}} ignorées",
+        "skippedCount_other": "{{count}} ignorées",
+        "notSaved": "Rien n'a encore été enregistré."
+    },
+    "results": {
+        "updatedCount_one": "{{count}} mise à jour",
+        "updatedCount_many": "{{count}} mises à jour",
+        "updatedCount_other": "{{count}} mises à jour",
+        "skippedCount_one": "{{count}} ignorée",
+        "skippedCount_many": "{{count}} ignorées",
+        "skippedCount_other": "{{count}} ignorées",
+        "failedCount_one": "{{count}} échouée",
+        "failedCount_many": "{{count}} échouées",
+        "failedCount_other": "{{count}} échouées"
+    },
+    "history": {
+        "loading": "Chargement de l'historique…",
+        "empty": "Aucune modification d'accès enregistrée pour le moment.",
+        "byActor": " · par {{name}}",
+        "reasonQuote": "« {{reason}} »"
+    },
+    "footer": {
+        "backToChanges": "Retour aux modifications",
+        "viewHistory": "Voir l'historique",
+        "checking": "Vérification…",
+        "previewChanges": "Aperçu des modifications",
+        "back": "Retour",
+        "applying": "Application en cours…",
+        "applyChanges": "Appliquer les modifications",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "previewFailed": "Échec de l'aperçu",
+        "accessChangeFailed": "Échec de la modification de l'accès",
+        "accessUpdated_one": "Accès mis à jour pour {{count}} inscription",
+        "accessUpdated_many": "Accès mis à jour pour {{count}} inscriptions",
+        "accessUpdated_other": "Accès mis à jour pour {{count}} inscriptions",
+        "partialUpdate": "{{updated}} mises à jour, {{failed}} échouées.",
+        "noChanges": "Aucune inscription n'a été modifiée."
+    }
+}

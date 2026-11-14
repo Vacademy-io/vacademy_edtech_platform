@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "المرفقات",
+        "optionalPdfOnly": "اختياري · PDF فقط",
+        "selectedCount_zero": "· لم يتم تحديد أي مرفق من 3 ({{count}})",
+        "selectedCount_one": "· تم تحديد مرفق واحد ({{count}}) من 3",
+        "selectedCount_two": "· تم تحديد مرفقين ({{count}}) من 3",
+        "selectedCount_few": "· تم تحديد {{count}} مرفقات من 3",
+        "selectedCount_many": "· تم تحديد {{count}} مرفقًا من 3",
+        "selectedCount_other": "· تم تحديد {{count}} من 3"
+    },
+    "description": "يتم الرفع عند إرسال هذه المدخلة.",
+    "slots": {
+        "student": {
+            "label": "ورقة إجابة الطالب",
+            "hint": "مسح ضوئي لما كتبه الطالب. يُعرض كإجابته المُقدَّمة."
+        },
+        "checked": {
+            "label": "ورقة الإجابة المُصححة",
+            "hint": "النسخة المُقيَّمة بدرجاتك وملاحظاتك. تُعرض للطالب مع نتيجته."
+        },
+        "report": {
+            "label": "التقرير",
+            "hint": "تقرير نتيجة اختياري أعددته خارج المنصة."
+        }
+    },
+    "removeAria": "إزالة {{label}}",
+    "dropzone": {
+        "uploadPrompt": "انقر للرفع أو اسحب وأفلت"
+    },
+    "rejections": {
+        "notPdf": "\"{{fileName}}\" ليس ملف PDF. يجب رفع المسح الضوئي كملفات PDF.",
+        "emptyFile": "\"{{fileName}}\" فارغ (0 بايت). أعد تصديره وحاول مرة أخرى."
+    }
+}

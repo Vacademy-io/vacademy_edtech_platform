@@ -1,19 +1,31 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CheckCircle } from '@phosphor-icons/react';
+import { CheckCircle, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_LEAD_FOLLOWUPS, CLOSE_LEAD_FOLLOWUP, CREATE_LEAD_FOLLOWUP } from '@/constants/urls';
+import {
+    FollowUpFields,
+    useFollowUpFeatures,
+    useFollowUpFields,
+    useFollowUpNotesRequired,
+} from './follow-up-fields';
 import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
+import { LOST_STATUS_KEY } from '@/hooks/use-lead-settings';
+import {
+    LeadAttributeFields,
+    invalidateLeadAttributeCaches,
+    useLeadAttributeFields,
+} from './lead-attribute-fields';
 import { cn, parseHtmlToString } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /**
  * CompleteFollowUpPopover — the single shared "Mark complete" close flow for a
- * lead follow-up (PUT /v1/lead-followup/{id}/close with an optional closer
- * reason). Extracted from the manage-students FollowUpsWidget so the
+ * lead follow-up (PUT /v1/lead-followup/{id}/close with the closing note as the
+ * closer reason — mandatory unless the institute made it optional). Extracted from the manage-students FollowUpsWidget so the
  * Follow-ups page can close follow-ups inline from list rows.
  *
  * Two host modes:
@@ -37,6 +49,10 @@ export interface LeadFollowup {
     status: string;
     is_closed: boolean;
     content: string | null;
+    student_response?: string | null;
+    follow_up_mode?: string | null;
+    next_action?: string | null;
+    interest_level?: string | null;
     closer_reason: string | null;
     closed_by: string | null;
     closed_at: string | null;
@@ -65,9 +81,11 @@ interface CompleteFollowUpPopoverProps {
     /** Extra query keys to invalidate after a successful close / schedule
      *  (e.g. the Follow-ups page passes [['follow-ups']]). */
     invalidateKeys?: string[][];
-    /** When provided, "Schedule next follow-up" defers to this callback after
-     *  the close succeeds (instead of the inline date + note fields). */
-    onScheduleNext?: () => void;
+    /** When provided, "Schedule next follow-up" defers to this callback
+     *  (instead of the inline date + note fields). Nothing is closed yet: the
+     *  host calls `closeCurrent` once the next follow-up is saved, so backing
+     *  out of its dialog leaves this one pending. */
+    onScheduleNext?: (closeCurrent: () => Promise<void>) => void;
     /** Custom trigger node; defaults to the "Mark complete" pill button. */
     trigger?: ReactNode;
     align?: 'start' | 'center' | 'end';
@@ -84,9 +102,38 @@ export function CompleteFollowUpPopover({
 }: CompleteFollowUpPopoverProps) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
-    const [scheduleNext, setScheduleNext] = useState(false);
+    // null = untouched, so the institute's default applies (settings can load
+    // after mount, which a plain useState initialiser would miss).
+    const [scheduleNextChoice, setScheduleNextChoice] = useState<boolean | null>(null);
     const [nextTime, setNextTime] = useState('');
     const [nextContent, setNextContent] = useState('');
+    // Set once the inline next follow-up is saved, so retrying a failed close
+    // does not book it a second time.
+    const [nextScheduled, setNextScheduled] = useState(false);
+    const followUpFields = useFollowUpFields();
+    // The lead's own status + tier (institute switch, off by default).
+    const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
+    const notesRequired = useFollowUpNotesRequired();
+    // Institute switches, all off by default (off = the old behaviour):
+    //  - keepPopupsOpen: pop-up closes only from X / Cancel, not an outside click / Escape.
+    //  - scheduleNextByDefault: "Schedule next follow-up" starts ticked.
+    //  - closingNoteOptional: Done no longer needs a closing note.
+    //  - markDoneLeadStatusAndTier: status/tier dropdowns in the pop-up itself
+    //    (discard / change tier while closing). Off = only inside the inline
+    //    "Schedule next" block, as before.
+    const {
+        keepPopupsOpen,
+        scheduleNextByDefault,
+        closingNoteOptional,
+        markDoneLeadStatusAndTier,
+    } = useFollowUpFeatures();
+    const markDoneAttributes = markDoneLeadStatusAndTier && leadAttributes.visible;
+    // Discarding the lead (its LOST status) means there is nothing to follow up.
+    const discarding = markDoneAttributes && leadAttributes.statusKey === LOST_STATUS_KEY;
+    const scheduleNext = !discarding && (scheduleNextChoice ?? scheduleNextByDefault);
+    useEffect(() => {
+        if (discarding) setScheduleNextChoice(false);
+    }, [discarding]);
     // Only meaningful when followupId is unknown and several are open.
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const queryClient = useQueryClient();
@@ -111,9 +158,12 @@ export function CompleteFollowUpPopover({
     const resetAndClose = () => {
         setOpen(false);
         setReason('');
-        setScheduleNext(false);
+        setScheduleNextChoice(null);
         setNextTime('');
         setNextContent('');
+        setNextScheduled(false);
+        followUpFields.reset();
+        leadAttributes.reset();
         setSelectedId(null);
     };
 
@@ -123,44 +173,124 @@ export function CompleteFollowUpPopover({
         invalidateKeys?.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
     };
 
-    const createMutation = useMutation({
-        mutationFn: () =>
-            authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
-                audience_response_id: audienceResponseId,
-                schedule_time: new Date(nextTime).toISOString(),
-                content: nextContent || null,
-            }),
-        onSuccess: () => {
-            toast.success('Next follow-up scheduled');
+    // The id to close rides along: once the next follow-up exists the lead has
+    // two open ones, and "the earliest open one" must not be re-resolved.
+    const createMutation = useMutation<unknown, unknown, { closeId: string; closerReason: string }>(
+        {
+            mutationFn: async () => {
+                // Status/tier first, so a retry after a failed save doesn't post them twice.
+                if (await leadAttributes.apply()) {
+                    invalidateLeadAttributeCaches(queryClient, userId);
+                }
+                return authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
+                    audience_response_id: audienceResponseId,
+                    schedule_time: new Date(nextTime).toISOString(),
+                    content: nextContent || null,
+                    ...followUpFields.payload,
+                });
+            },
+            onSuccess: (_data, { closeId, closerReason }) => {
+                setNextScheduled(true);
+                // Pin it for a retry too, should the close below fail.
+                setSelectedId(closeId);
+                invalidateAll();
+                closeMutation.mutate({ afterSchedule: true, id: closeId, closerReason });
+            },
+            onError: () => toast.error('Failed to schedule next follow-up'),
+        }
+    );
+
+    // `afterSchedule` rides in the variables: the callbacks are bound at
+    // mutate() time, before the nextScheduled state update has rendered.
+    // The note is captured at submit too: the popover can be reset (trigger
+    // re-clicked) while the create is in flight, which would blank `reason`.
+    const closeMutation = useMutation<
+        unknown,
+        unknown,
+        { afterSchedule: boolean; id: string; closerReason: string; applyAttributes?: boolean }
+    >({
+        mutationFn: async ({ id, closerReason, applyAttributes }) => {
+            // Status/tier first; a retry after a failed close doesn't post them again.
+            if (applyAttributes && (await leadAttributes.apply())) {
+                invalidateLeadAttributeCaches(queryClient, userId);
+            }
+            return authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(id), {
+                closer_reason: closerReason,
+            });
+        },
+        onSuccess: (_data, { afterSchedule }) => {
+            toast.success(
+                afterSchedule
+                    ? 'Follow-up marked complete, next one scheduled'
+                    : 'Follow-up marked complete'
+            );
             invalidateAll();
             resetAndClose();
         },
-        onError: () => toast.error('Failed to schedule next follow-up'),
-    });
-
-    const closeMutation = useMutation({
-        mutationFn: () =>
-            authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(effectiveFollowupId ?? ''), {
-                closer_reason: reason,
-            }),
-        onSuccess: () => {
-            toast.success('Follow-up marked complete');
-            invalidateAll();
-            if (scheduleNext && onScheduleNext) {
-                resetAndClose();
-                onScheduleNext();
-            } else if (scheduleNext && nextTime) {
-                createMutation.mutate();
-            } else {
-                resetAndClose();
-            }
-        },
-        onError: () => toast.error('Failed to close follow-up'),
+        onError: (_err, { afterSchedule }) =>
+            toast.error(
+                afterSchedule
+                    ? 'Next follow-up scheduled, but closing this one failed — press Done again'
+                    : 'Failed to close follow-up'
+            ),
     });
 
     const isBusy = closeMutation.isPending || createMutation.isPending;
     const needsInlineSchedule = scheduleNext && !onScheduleNext;
-    const canSubmit = !isBusy && !!effectiveFollowupId && (!needsInlineSchedule || !!nextTime);
+    // When "Schedule next" hands off to the host's dialog, that dialog carries
+    // the status/tier dropdowns itself — showing them here too would ask twice.
+    const showLeadAttributes = markDoneAttributes && (!onScheduleNext || !scheduleNext);
+
+    // The current follow-up is closed only after the next one exists. Closing
+    // first left it completed with nothing booked whenever scheduling failed or
+    // the schedule dialog was dismissed.
+    const submit = () => {
+        const id = effectiveFollowupId;
+        if (!id) return;
+        const closerReason = reason.trim();
+        if (scheduleNext && onScheduleNext) {
+            resetAndClose();
+            onScheduleNext(async () => {
+                try {
+                    await authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(id), {
+                        closer_reason: closerReason,
+                    });
+                    toast.success('Previous follow-up marked complete');
+                } catch {
+                    toast.error(
+                        'Next follow-up scheduled, but closing the previous one failed — mark it complete again'
+                    );
+                } finally {
+                    invalidateAll();
+                }
+            });
+        } else if (needsInlineSchedule && !nextScheduled) {
+            createMutation.mutate({ closeId: id, closerReason });
+        } else {
+            closeMutation.mutate({
+                afterSchedule: needsInlineSchedule && nextScheduled,
+                id,
+                closerReason,
+                applyAttributes: showLeadAttributes,
+            });
+        }
+    };
+
+    // Closing needs a note on what happened unless the institute made it
+    // optional. The next follow-up's note is separate and only mandatory when
+    // the institute requires notes.
+    const reasonMissing = !closingNoteOptional && !reason.trim();
+    const nextNoteMissing = needsInlineSchedule && notesRequired && !nextContent.trim();
+    const canSubmit =
+        !isBusy &&
+        !!effectiveFollowupId &&
+        !reasonMissing &&
+        (!needsInlineSchedule || !!nextTime) &&
+        !nextNoteMissing &&
+        !(needsInlineSchedule && followUpFields.missingRequired) &&
+        // The tier picked in Mark complete (or the inline block) also rides with
+        // the next follow-up, so it is required whenever one is booked here.
+        !(needsInlineSchedule && leadAttributes.visible && leadAttributes.tierMissing);
 
     const isResolving = !followupId && followupsQuery.isLoading;
     const hasNoneOpen = !followupId && !followupsQuery.isLoading && openFollowups.length === 0;
@@ -179,8 +309,31 @@ export function CompleteFollowUpPopover({
                     </button>
                 )}
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-3" align={align} onClick={(e) => e.stopPropagation()}>
-                <p className="mb-2 text-xs font-semibold text-neutral-700">Mark as complete</p>
+            <PopoverContent
+                className="w-72 p-3"
+                align={align}
+                onClick={(e) => e.stopPropagation()}
+                // Switch on: a stray click outside (or Escape) no longer drops the
+                // typed note — only X / Cancel close it.
+                onInteractOutside={keepPopupsOpen ? (e) => e.preventDefault() : undefined}
+                onEscapeKeyDown={keepPopupsOpen ? (e) => e.preventDefault() : undefined}
+            >
+                {keepPopupsOpen ? (
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold text-neutral-700">Mark as complete</p>
+                        <button
+                            type="button"
+                            onClick={resetAndClose}
+                            disabled={isBusy}
+                            aria-label="Close"
+                            className="rounded-sm p-0.5 text-neutral-400 transition-colors hover:text-neutral-700 disabled:pointer-events-none"
+                        >
+                            <X className="size-3.5" />
+                        </button>
+                    </div>
+                ) : (
+                    <p className="mb-2 text-xs font-semibold text-neutral-700">Mark as complete</p>
+                )}
 
                 {isResolving && <div className="h-10 animate-pulse rounded-lg bg-neutral-100" />}
 
@@ -233,16 +386,33 @@ export function CompleteFollowUpPopover({
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder="Closing note (optional)…"
+                            placeholder={
+                                closingNoteOptional
+                                    ? 'Closing note (optional)…'
+                                    : 'Closing note (required)…'
+                            }
                             rows={2}
                             className="w-full resize-none rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
                         />
+
+                        {/* The lead's status + tier — discard the lead or change its
+                            interest without leaving Mark complete. */}
+                        {showLeadAttributes && (
+                            <LeadAttributeFields
+                                fields={leadAttributes}
+                                portal={false}
+                                followUp={needsInlineSchedule}
+                                // Popover is narrow — stack them.
+                                className="mt-2 sm:grid-cols-1"
+                            />
+                        )}
 
                         <label className="mt-2.5 flex cursor-pointer items-center gap-2">
                             <input
                                 type="checkbox"
                                 checked={scheduleNext}
-                                onChange={(e) => setScheduleNext(e.target.checked)}
+                                disabled={nextScheduled || discarding}
+                                onChange={(e) => setScheduleNextChoice(e.target.checked)}
                                 className="size-3.5 cursor-pointer accent-primary-600"
                             />
                             <span className="text-xs font-medium text-neutral-600">
@@ -261,15 +431,50 @@ export function CompleteFollowUpPopover({
                                 <textarea
                                     value={nextContent}
                                     onChange={(e) => setNextContent(e.target.value)}
-                                    placeholder="Note for next follow-up (optional)…"
+                                    placeholder={
+                                        notesRequired
+                                            ? 'Note for next follow-up (required)…'
+                                            : 'Note for next follow-up (optional)…'
+                                    }
                                     rows={2}
                                     className="w-full resize-none rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
                                 />
+                                {nextNoteMissing && (
+                                    <p className="text-caption text-danger-600">
+                                        Your institute requires a note on every follow-up.
+                                    </p>
+                                )}
+                                {(followUpFields.missingRequired ||
+                                    (leadAttributes.visible && leadAttributes.tierMissing)) && (
+                                    <p className="text-caption text-danger-600">
+                                        Answer every field marked * before scheduling this
+                                        follow-up.
+                                    </p>
+                                )}
+                                {/* Switch off: the dropdowns ride with the inline next
+                                    follow-up only, exactly as before. */}
+                                {!markDoneAttributes && leadAttributes.visible && (
+                                    <LeadAttributeFields
+                                        fields={leadAttributes}
+                                        portal={false}
+                                        followUp
+                                        // Popover is narrow — stack them.
+                                        className="sm:grid-cols-1"
+                                    />
+                                )}
+                                {followUpFields.visible && (
+                                    <FollowUpFields
+                                        values={followUpFields.values}
+                                        onChange={followUpFields.setValues}
+                                        portal={false}
+                                    />
+                                )}
                             </div>
                         )}
                         {scheduleNext && onScheduleNext && (
                             <p className="mt-1.5 text-caption text-neutral-400">
-                                The schedule dialog opens after this is closed.
+                                The schedule dialog opens next. This one is marked complete only
+                                after the next follow-up is saved.
                             </p>
                         )}
                     </>
@@ -289,7 +494,7 @@ export function CompleteFollowUpPopover({
                         <Button
                             size="sm"
                             className="h-7 bg-success-600 px-2.5 text-xs text-white hover:bg-success-700"
-                            onClick={() => closeMutation.mutate()}
+                            onClick={submit}
                             disabled={!canSubmit}
                         >
                             {closeMutation.isPending

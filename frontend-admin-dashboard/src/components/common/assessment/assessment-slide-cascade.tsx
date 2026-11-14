@@ -4,6 +4,8 @@ import { Info } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ASSESSMENT_LINKED_SLIDES_URL } from '@/constants/urls';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 /**
  * An assessment created from a course slide exists in two halves: the assessment
@@ -95,7 +97,12 @@ export const AssessmentSlideCascadeOption = ({
                 <label htmlFor="delete-linked-slides" className="cursor-pointer text-sm">
                     Also delete{' '}
                     <span className="font-semibold">
-                        {count} course {count === 1 ? 'slide' : 'slides'}
+                        {count}{' '}
+                        {getTerminology(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}{' '}
+                        {count === 1 ? 'slide' : 'slides'}
                     </span>{' '}
                     that {count === 1 ? 'launches' : 'launch'} this assessment
                 </label>

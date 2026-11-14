@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Info, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyInput } from '@/components/design-system/input';
 import { Switch } from '@/components/ui/switch';
 
 /** Common starting points so an admin isn't staring at an empty tag box. */
-const TAG_SUGGESTIONS = [
-    'Career guidance',
-    'Exam strategy',
-    'Doubt solving',
-    'Interview prep',
-    'Study planning',
+const buildTagSuggestions = (t: TFunction): string[] => [
+    t('tagSuggestions.careerGuidance'),
+    t('tagSuggestions.examStrategy'),
+    t('tagSuggestions.doubtSolving'),
+    t('tagSuggestions.interviewPrep'),
+    t('tagSuggestions.studyPlanning'),
 ];
 
 export interface MentorProfileValues {
@@ -35,6 +37,7 @@ export function MentorProfileFields({
     /** Current mentee count — shown when editing so a cap below it is obvious. */
     assignedCount?: number | null;
 }) {
+    const { t } = useTranslation('mentorshipMentorProfileFields');
     const set = <K extends keyof MentorProfileValues>(key: K, value: MentorProfileValues[K]) =>
         onChange({ ...values, [key]: value });
 
@@ -62,19 +65,15 @@ export function MentorProfileFields({
                         set('maxMentees', e.target.value.replace(/[^0-9]/g, ''))
                     }
                     inputType="text"
-                    inputPlaceholder="Leave blank for no limit"
-                    label="Max mentees"
+                    inputPlaceholder={t('maxMenteesPlaceholder')}
+                    label={t('maxMenteesLabel')}
                     className="sm:w-full"
                 />
-                <span className="text-caption text-neutral-400">
-                    Assignment and round-robin stop adding students once a mentor hits this number.
-                    Blank means no limit.
-                </span>
+                <span className="text-caption text-neutral-400">{t('maxMenteesHelp')}</span>
                 {capBelowCurrent && (
                     <span className="flex items-center gap-1 text-caption text-warning-600">
                         <Info size={12} weight="fill" />
-                        They already have {assignedCount} mentees — existing ones stay, but no new
-                        students can be assigned.
+                        {t('capBelowCurrentWarning', { count: assignedCount ?? 0 })}
                     </span>
                 )}
             </div>
@@ -82,17 +81,16 @@ export function MentorProfileFields({
             <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-neutral-200 p-3">
                 <span className="flex flex-col">
                     <span className="text-body font-medium text-neutral-700">
-                        List in Find a mentor
+                        {t('listInFindAMentorLabel')}
                     </span>
                     <span className="text-caption text-neutral-500">
-                        Learners can see this mentor&apos;s profile and request them. Requests come
-                        to you for approval — nobody is paired automatically.
+                        {t('listInFindAMentorHelp')}
                     </span>
                 </span>
                 <Switch
                     checked={values.isDiscoverable}
                     onCheckedChange={(checked) => set('isDiscoverable', checked)}
-                    aria-label="List this mentor in Find a mentor"
+                    aria-label={t('listInFindAMentorAriaLabel')}
                 />
             </label>
         </>
@@ -110,6 +108,7 @@ function ExpertiseTagsInput({
     tags: string[];
     onChange: (tags: string[]) => void;
 }) {
+    const { t } = useTranslation('mentorshipMentorProfileFields');
     const [draft, setDraft] = useState('');
 
     const commit = (raw: string) => {
@@ -131,8 +130,9 @@ function ExpertiseTagsInput({
         }
     };
 
-    const unusedSuggestions = TAG_SUGGESTIONS.filter(
-        (s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase())
+    const tagSuggestions = buildTagSuggestions(t);
+    const unusedSuggestions = tagSuggestions.filter(
+        (s) => !tags.some((tag) => tag.toLowerCase() === s.toLowerCase())
     );
 
     return (
@@ -145,13 +145,11 @@ function ExpertiseTagsInput({
                 onKeyDown={onKeyDown}
                 onBlur={() => commit(draft)}
                 inputType="text"
-                inputPlaceholder="e.g. JEE Physics — press Enter to add"
-                label="Expertise"
+                inputPlaceholder={t('expertisePlaceholder')}
+                label={t('expertiseLabel')}
                 className="sm:w-full"
             />
-            <span className="text-caption text-neutral-400">
-                What this mentor helps with. Learners search the directory by these.
-            </span>
+            <span className="text-caption text-neutral-400">{t('expertiseHelp')}</span>
 
             {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -163,8 +161,8 @@ function ExpertiseTagsInput({
                             {tag}
                             <button
                                 type="button"
-                                aria-label={`Remove ${tag}`}
-                                onClick={() => onChange(tags.filter((t) => t !== tag))}
+                                aria-label={t('removeTagAriaLabel', { tag })}
+                                onClick={() => onChange(tags.filter((existing) => existing !== tag))}
                                 className="rounded-full p-0.5 hover:bg-primary-100"
                             >
                                 <X size={11} weight="bold" />
@@ -176,7 +174,7 @@ function ExpertiseTagsInput({
 
             {tags.length === 0 && unusedSuggestions.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    <span className="text-caption text-neutral-400">Try:</span>
+                    <span className="text-caption text-neutral-400">{t('tryLabel')}</span>
                     {unusedSuggestions.map((s) => (
                         <button
                             key={s}

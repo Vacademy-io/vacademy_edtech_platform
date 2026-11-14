@@ -19,6 +19,7 @@ export const BADGES_REWARDS_SETTING_KEY = "BADGES_REWARDS_SETTING";
 
 /** How a badge decides whether it's unlocked. */
 export type BadgeTriggerType =
+  | "manual" // never auto-unlocks; only via a staff award (learner_badge row, source MANUAL)
   | "course_count" // enrolled/assigned courses >= threshold
   | "slide_count" // slides available >= threshold
   | "streak" // current daily streak (days) >= threshold
@@ -32,10 +33,21 @@ export interface BadgeDefinitionConfig {
   id: string;
   name: string;
   description: string;
-  icon: string; // one of BADGE_ICON_NAMES
+  icon: string; // one of BADGE_ICON_NAMES, a `lib:` library token, or an uploaded file id
   trigger: BadgeTriggerType;
+  /** Unlock threshold for auto triggers; always 0 for `manual`. */
   threshold: number;
   enabled: boolean;
+  /**
+   * Hidden from the learner until earned (a "mystery" badge). Optional for
+   * back-compat; absent = visible. Named `hidden` (not `secret`) to match the admin copy.
+   */
+  hidden?: boolean;
+}
+
+/** True for the staff-awarded trigger — the badge has no automatic unlock condition. */
+export function isManualTrigger(trigger: string | undefined | null): boolean {
+  return trigger === "manual";
 }
 
 /**
@@ -180,6 +192,8 @@ function normalizeConfig(raw: unknown): BadgesRewardsConfig | null {
       trigger: item.trigger as BadgeTriggerType,
       threshold: Number.isFinite(Number(item.threshold)) ? Number(item.threshold) : 0,
       enabled: item.enabled !== false,
+      // Whitelist — any new schema field must be carried here or it is silently dropped.
+      hidden: item.hidden === true,
     });
   }
   if (badges.length === 0) return null;

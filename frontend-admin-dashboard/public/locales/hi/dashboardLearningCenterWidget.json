@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "लर्निंग सेंटर",
+        "description": "{{courseTerm}} और {{sessionTerm}} एवं अध्ययन सामग्री प्रबंधित करें"
+    },
+    "features": {
+        "studyLibrary": {
+            "title": "स्टडी लाइब्रेरी",
+            "description": "कोर्स सामग्री और संसाधनों तक पहुँचें"
+        },
+        "liveSessions": {
+            "description": "लाइव शिक्षण सत्रों का प्रबंधन करें"
+        },
+        "batchManagement": {
+            "titleTemplate": "{{term}} प्रबंधन",
+            "description": "छात्रों को बैचों में व्यवस्थित करें"
+        }
+    }
+}

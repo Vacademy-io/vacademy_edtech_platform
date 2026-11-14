@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CircleNotch, Warning } from '@phosphor-icons/react';
@@ -19,6 +20,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
     onCancel,
     isDeleting = false,
 }) => {
+    const { t } = useTranslation('studyLibraryDeleteConfirmDialog');
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isDeleting && onOpenChange(open)}>
             <DialogContent className="max-w-md">
@@ -27,11 +29,10 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                         <Warning size={20} className="text-red-600" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-slate-900">Delete Question</h3>
-                        <p className="text-sm text-slate-600">
-                            Are you sure you want to delete this question? This action cannot be
-                            undone.
-                        </p>
+                        <h3 className="text-lg font-semibold text-slate-900">
+                            {t('title')}
+                        </h3>
+                        <p className="text-sm text-slate-600">{t('description')}</p>
                     </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
@@ -41,7 +42,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                         onClick={onCancel}
                         disabled={isDeleting}
                     >
-                        Cancel
+                        {t('cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -52,10 +53,10 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                         {isDeleting ? (
                             <span className="flex items-center justify-center gap-2">
                                 <CircleNotch className="size-4 animate-spin" />
-                                Deleting...
+                                {t('deleting')}
                             </span>
                         ) : (
-                            'Delete'
+                            t('delete')
                         )}
                     </Button>
                 </div>

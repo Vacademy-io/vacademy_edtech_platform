@@ -1,0 +1,28 @@
+{
+    "heading": "تعيين وردية",
+    "cancel": "إلغاء",
+    "assignShift": "تعيين الوردية",
+    "assigning": "جارٍ التعيين…",
+    "assignedToast_zero": "تم تعيين {{count}} موظف",
+    "assignedToast_one": "تم تعيين موظف واحد",
+    "assignedToast_two": "تم تعيين موظفَين",
+    "assignedToast_few": "تم تعيين {{count}} موظفين",
+    "assignedToast_many": "تم تعيين {{count}} موظفًا",
+    "assignedToast_other": "تم تعيين {{count}} موظف",
+    "assignErrorFallback": "تعذّر تعيين الوردية.",
+    "infoNote": "يؤدي التعيين إلى إغلاق أي وردية يشغلها هؤلاء الموظفون بالفعل اعتبارًا من تاريخ السريان — الموظف يكون على وردية واحدة فقط في كل مرة. الأيام السابقة لذلك التاريخ تظل تُحتسب وفق ورديته القديمة.",
+    "shiftLabel": "الوردية",
+    "selectShiftPlaceholder": "اختر وردية",
+    "employeesLabel": "الموظفون",
+    "loadingEmployees": "جارٍ تحميل الموظفين…",
+    "employeesUnavailable": "الموظفون غير متاحين",
+    "selectEmployeesPlaceholder": "اختر الموظفين",
+    "employeesLoadError": "تعذّر تحميل الموظفين. أغلق هذا وحاول مرة أخرى.",
+    "showingFirstOfTotal": "يتم عرض أول {{count}} من أصل {{total}} موظفًا نشطًا.",
+    "effectiveFromLabel": "تاريخ السريان",
+    "validation": {
+        "shiftRequired": "اختر الوردية المراد تعيينها.",
+        "employeeRequired": "اختر موظفًا واحدًا على الأقل.",
+        "dateRequired": "اختر التاريخ الذي يبدأ منه التعيين."
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "moreBatches_one": "+{{count}} और",
+    "moreBatches_other": "+{{count}} और",
+    "assessmentBatches": "मूल्यांकन बैच",
+    "createdOn": "बनाया गया: {{date}}",
+    "subject": "विषय: {{name}}",
+    "notAvailable": "उपलब्ध नहीं",
+    "startDateAndTime": "प्रारंभ तिथि और समय: {{date}}",
+    "endDateAndTime": "समाप्ति तिथि और समय: {{date}}",
+    "durationMinutes_one": "अवधि: {{count}} मिनट",
+    "durationMinutes_other": "अवधि: {{count}} मिनट",
+    "totalParticipants_one": "कुल प्रतिभागी: {{count}}",
+    "totalParticipants_other": "कुल प्रतिभागी: {{count}}",
+    "attemptedByLabel": "प्रयास किया गया: ",
+    "pendingLabel": "लंबित: "
+}

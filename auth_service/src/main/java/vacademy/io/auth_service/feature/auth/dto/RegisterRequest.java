@@ -19,6 +19,7 @@ public class RegisterRequest {
     private String fullName;
     private String userName;
     private String email;
+    private String mobileNumber;
     private String password;
     private List<String> userRoles;
     private InstituteInfoDTO institute;

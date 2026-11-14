@@ -1,0 +1,52 @@
+{
+    "eyebrow": "Demande d'admission",
+    "status": {
+        "admitted": "Admis",
+        "approved": "Approuvé",
+        "rejected": "Rejeté",
+        "pending": "En attente",
+        "underReview": "En cours d'examen",
+        "submitted": "Soumis"
+    },
+    "stageSteps": {
+        "submitted": "Soumis",
+        "review": "En cours d'examen",
+        "decision": "Décision"
+    },
+    "hero": {
+        "trackingId": "ID de suivi : {{id}}",
+        "stage": "Étape : {{stage}}"
+    },
+    "empty": {
+        "title": "Aucune demande trouvée",
+        "hint": "Aucune demande n'est encore liée à cet apprenant."
+    },
+    "error": {
+        "title": "Impossible de charger les détails de la demande",
+        "hint": "Un problème est survenu lors de la récupération de la demande. Veuillez réessayer."
+    },
+    "sections": {
+        "studentInformation": "Informations sur l'élève",
+        "parentInformation": "Informations sur le parent",
+        "applicationTimeline": "Chronologie de la demande"
+    },
+    "fields": {
+        "fullName": "Nom complet",
+        "dateOfBirth": "Date de naissance",
+        "gender": "Genre",
+        "classAppliedFor": "Classe demandée",
+        "fatherName": "Nom du père",
+        "motherName": "Nom de la mère",
+        "applyingForClass": "Classe pour laquelle la demande est faite",
+        "academicYear": "Année académique",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "address": "Adresse",
+        "trackingId": "ID de suivi",
+        "currentStage": "Étape actuelle",
+        "stageStatus": "Statut de l'étape",
+        "createdAt": "Créé le",
+        "lastUpdated": "Dernière mise à jour"
+    },
+    "notAvailable": "N/D"
+}

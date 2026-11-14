@@ -1,0 +1,45 @@
+{
+    "aria": {
+        "selectAll": "تحديد الكل",
+        "selectRow": "تحديد الصف",
+        "openMenu": "فتح القائمة"
+    },
+    "columns": {
+        "serialNumber": "الرقم التسلسلي",
+        "class": "الصف",
+        "studentName": "اسم {{learnerLabel}}",
+        "gender": "الجنس",
+        "dateOfBirth": "تاريخ الميلاد",
+        "parentName": "اسم ولي الأمر",
+        "parentEmail": "البريد الإلكتروني لولي الأمر",
+        "parentMobile": "رقم جوال ولي الأمر",
+        "trackingId": "رقم التتبع",
+        "status": "الحالة",
+        "source": "المصدر",
+        "counsellor": "المرشد",
+        "leadInterestScore": "درجة اهتمام العميل المحتمل",
+        "actions": "الإجراءات"
+    },
+    "status": {
+        "new": "جديد",
+        "contacted": "تم التواصل",
+        "qualified": "مؤهل",
+        "notEligible": "غير مؤهل",
+        "followUp": "متابعة",
+        "closed": "مغلق",
+        "converted": "محوَّل",
+        "admitted": "مقبول"
+    },
+    "source": {
+        "website": "الموقع الإلكتروني",
+        "googleAds": "إعلانات جوجل",
+        "facebook": "فيسبوك",
+        "instagram": "إنستغرام",
+        "referral": "إحالة",
+        "other": "أخرى"
+    },
+    "actionsMenu": {
+        "viewDetails": "عرض التفاصيل",
+        "activityLog": "سجل النشاط"
+    }
+}

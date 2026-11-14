@@ -1,0 +1,21 @@
+{
+    "heading": {
+        "linkList": "Liste des liens {{term}}"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom"
+    },
+    "filters": {
+        "apply": "Appliquer les filtres",
+        "resetAll": "Tout réinitialiser"
+    },
+    "state": {
+        "error": "Erreur lors de la récupération des liens d'invitation",
+        "empty": "Aucun lien d'invitation n'a encore été créé !"
+    },
+    "card": {
+        "createdOn": "Créé le : {{date}}",
+        "acceptedBy": "Invitations acceptées par : {{count}}",
+        "inviteLink": "Lien d'invitation : "
+    }
+}

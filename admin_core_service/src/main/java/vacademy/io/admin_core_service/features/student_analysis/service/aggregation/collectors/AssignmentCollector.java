@@ -113,6 +113,12 @@ public class AssignmentCollector {
                 }
             }
 
+            // Nothing assigned and nothing submitted: there is no assignment story to tell. Reporting
+            // it as "available" printed an "Assignments Done 0" tile and zero rows.
+            if (submitted == 0 && (assigned == null || assigned == 0)) {
+                return AssignmentsSection.builder().available(false).build();
+            }
+
             return AssignmentsSection.builder()
                     .available(true)
                     .assigned(assigned)

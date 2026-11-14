@@ -29,7 +29,8 @@
         "quiz": "Quiz",
         "assignment": "Assignment",
         "scormModule": "SCORM Module",
-        "content": "Content"
+        "content": "Content",
+        "discussion": "Discussion"
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",
@@ -65,10 +66,10 @@
         "availableInFewMinutes": "Video will be available in a few minutes.",
         "pendingGeneration": "Video pending generation",
         "processing": "Processing video...",
-        "dataNotFound": "Video data not found",
-        "videoNotFound": "Video {{videoId}} not found",
-        "failedToLoadUrls": "Failed to load video URLs",
-        "tryAgainLater": "Please try again later"
+        "tryAgainLater": "Please try again later",
+        "unavailableTitle": "This video isn't available right now",
+        "loadFailedTitle": "We couldn't load this video",
+        "checkConnection": "Check your connection and try again."
     },
     "slideState": {
         "noCodeData": "No code data available",
@@ -313,5 +314,128 @@
         "doneDescription": "Completed",
         "unknownLabel": "Unknown",
         "unknownDescription": "Status unknown"
+    },
+    "discussion": {
+        "eyebrow": "Discussion",
+        "you": "You",
+        "anonymousClassmate": "Anonymous classmate",
+        "teacher": "Teacher",
+        "postedAnonymously": "posted anonymously",
+        "edited": "edited",
+        "justNow": "just now",
+        "pinned": "Pinned by your teacher",
+        "status": {
+            "pending": "Waiting for your teacher's approval",
+            "hidden": "Hidden by your teacher"
+        },
+        "reactions": {
+            "HEART": "Love this",
+            "HUG": "Sending a hug",
+            "THANKS": "Thank you",
+            "INSIGHT": "Insightful",
+            "RELATE": "I relate",
+            "STRENGTH": "You've got this",
+            "add": "React",
+            "addAria": "Add a reaction",
+            "chipAria": "{{label}}, {{count}}"
+        },
+        "menu": {
+            "more": "More options",
+            "edit": "Edit",
+            "delete": "Delete",
+            "report": "Report",
+            "reported": "Reported"
+        },
+        "delete": {
+            "titleResponse": "Delete your reply?",
+            "titleComment": "Delete your comment?",
+            "body": "It will be removed for everyone. This can't be undone.",
+            "cancel": "Keep it",
+            "confirm": "Delete"
+        },
+        "report": {
+            "title": "Report this post",
+            "body": "Your teacher will take a look. The person who wrote it won't know who reported it.",
+            "reasonLabel": "Tell your teacher what's wrong (optional)",
+            "cancel": "Cancel",
+            "submit": "Report"
+        },
+        "edit": {
+            "label": "Edit your post",
+            "save": "Save",
+            "approvalNote": "Your teacher will review the change before others see it."
+        },
+        "reply": {
+            "action": "Reply",
+            "label": "Reply to {{name}}",
+            "placeholder": "Write a kind reply…",
+            "placeholderOwn": "Add to your reply, or answer your teacher…",
+            "submit": "Reply"
+        },
+        "comments": {
+            "showMore_one": "Show {{count}} more reply",
+            "showMore_other": "Show {{count}} more replies"
+        },
+        "composer": {
+            "label": "Your reply",
+            "placeholder": "Take your time. Share as much or as little as feels right.",
+            "submit": "Share",
+            "addAnother": "Share another thought",
+            "cancel": "Cancel",
+            "anonymous": "Post anonymously",
+            "anonymousHint": "Classmates won't see your name. Your teacher will.",
+            "charactersLeft_one": "{{formatted}} character left",
+            "charactersLeft_other": "{{formatted}} characters left"
+        },
+        "audience": {
+            "OPEN": "Your classmates and teacher will see your reply",
+            "AFTER_REPLY": "You'll see classmates' replies after you share yours",
+            "PRIVATE": "Only your teacher will see your reply",
+            "approval": "Your teacher will review it before others see it"
+        },
+        "visibility": {
+            "OPEN": "Shared with your class",
+            "AFTER_REPLY": "Replies open up after you share",
+            "PRIVATE": "Private between you and your teacher"
+        },
+        "closed": {
+            "title": "This discussion is closed",
+            "body": "You can still read the replies here."
+        },
+        "careNoteLabel": "A note from your teacher",
+        "sections": {
+            "yours_one": "Your reply",
+            "yours_other": "Your replies",
+            "class": "From your class",
+            "teacher": "From your teacher"
+        },
+        "gate": {
+            "title_one": "{{formatted}} classmate has shared",
+            "title_other": "{{formatted}} classmates have shared",
+            "body": "Share yours to see theirs.",
+            "noneTitle": "No one has shared yet",
+            "noneBody": "Share yours, and you'll see classmates' replies as they come in."
+        },
+        "private": {
+            "title": "Your reply stays between you and your teacher",
+            "body": "Classmates can't see private replies. Your teacher may write back to you here."
+        },
+        "empty": {
+            "title": "Be the first to share",
+            "body": "Replies from your class will appear here.",
+            "afterMineTitle": "Thank you for sharing",
+            "afterMineBody": "No classmates have shared yet. Their replies will appear here."
+        },
+        "participants_one": "{{formatted}} person has shared",
+        "participants_other": "{{formatted}} people have shared",
+        "loadError": "Couldn't load this discussion",
+        "errors": {
+            "generic": "Something went wrong. Please try again."
+        },
+        "toast": {
+            "shared": "Thank you for sharing",
+            "sentForReview": "Sent to your teacher for review",
+            "reported": "Thanks for letting your teacher know"
+        }
     }
 }

@@ -1,0 +1,34 @@
+{
+    "header": {
+        "title": "Welcome — let's get your institute set up",
+        "subtitle": "Knock these out and your dashboard fills in automatically."
+    },
+    "progress": "{{completed}} / {{total}}",
+    "items": {
+        "profile": {
+            "label": "Complete your institute profile",
+            "description": "Add branding, contact, and basic details.",
+            "cta": "Edit profile"
+        },
+        "level": {
+            "label": "Create your first level",
+            "description": "Set up the levels your institute teaches.",
+            "cta": "Add level"
+        },
+        "course": {
+            "label": "Create your first course",
+            "description": "Add a course so you can enroll learners.",
+            "cta": "Add course"
+        },
+        "batch": {
+            "label": "Create your first batch",
+            "description": "Group learners into a batch with a session.",
+            "cta": "Add batch"
+        },
+        "learner": {
+            "label": "Invite your first learner",
+            "description": "Send an invite or enroll a student manually.",
+            "cta": "Add learner"
+        }
+    }
+}

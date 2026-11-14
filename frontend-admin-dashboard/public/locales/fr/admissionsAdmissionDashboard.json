@@ -1,0 +1,32 @@
+{
+    "navHeading": "Tableau de bord des admissions",
+    "filterBar": {
+        "title": "Pipeline d'admission",
+        "allClasses": "Toutes les classes"
+    },
+    "kpi": {
+        "totalEnquiries": "Total des demandes",
+        "totalApplications": "Total des candidatures",
+        "totalAdmissions": "Total des admissions"
+    },
+    "conversion": {
+        "enquiryToApplication": "Demande → Candidature",
+        "applicationToAdmission": "Candidature → Admission",
+        "overall": "Taux de conversion global"
+    },
+    "breakdown": {
+        "title": "Répartition des admissions",
+        "fromEnquiry": {
+            "label": "Depuis une demande",
+            "description": "Entonnoir complet : Demande → Candidature → Admission"
+        },
+        "fromApplicationOnly": {
+            "label": "Depuis une candidature seule",
+            "description": "Débuté au stade de la candidature"
+        },
+        "direct": {
+            "label": "Direct (sur place)",
+            "description": "Sans demande ni candidature"
+        }
+    }
+}

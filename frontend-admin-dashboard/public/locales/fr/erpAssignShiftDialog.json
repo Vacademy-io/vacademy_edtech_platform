@@ -1,0 +1,25 @@
+{
+    "heading": "Affecter une équipe",
+    "cancel": "Annuler",
+    "assignShift": "Affecter l'équipe",
+    "assigning": "Affectation…",
+    "assignedToast_one": "{{count}} employé affecté",
+    "assignedToast_many": "{{count}} employé affecté",
+    "assignedToast_other": "{{count}} employés affectés",
+    "assignErrorFallback": "Impossible d'affecter l'équipe.",
+    "infoNote": "L'affectation clôture toute équipe à laquelle ces employés appartiennent déjà à partir de la date d'effet — un employé n'appartient jamais qu'à une seule équipe à la fois. Les jours précédant cette date restent jugés selon leur ancienne équipe.",
+    "shiftLabel": "Équipe",
+    "selectShiftPlaceholder": "Sélectionner une équipe",
+    "employeesLabel": "Employés",
+    "loadingEmployees": "Chargement des employés…",
+    "employeesUnavailable": "Employés indisponibles",
+    "selectEmployeesPlaceholder": "Sélectionner des employés",
+    "employeesLoadError": "Impossible de charger les employés. Fermez et réessayez.",
+    "showingFirstOfTotal": "Affichage des {{count}} premiers employés actifs sur {{total}}.",
+    "effectiveFromLabel": "Date d'effet",
+    "validation": {
+        "shiftRequired": "Choisissez l'équipe à affecter.",
+        "employeeRequired": "Choisissez au moins un employé.",
+        "dateRequired": "Choisissez la date de début de l'affectation."
+    }
+}

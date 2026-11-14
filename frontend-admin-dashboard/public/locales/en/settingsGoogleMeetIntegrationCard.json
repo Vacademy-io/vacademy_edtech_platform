@@ -1,0 +1,18 @@
+{
+    "title": "Google Meet Integration",
+    "description": "Connect a Google Workspace account so admins can create Google Meet sessions directly from the live-class wizard. Learners join by opening the Meet link (Google Meet has no in-app embed).",
+    "connectButton": "Connect Google Workspace",
+    "retry": "Retry",
+    "errors": {
+        "loadAccounts": "Failed to load Google accounts.",
+        "connectionFailed": "Google connection failed ({{errorCode}}).",
+        "connectionFailedWithReason": "Google connection failed ({{errorCode}}): {{reason}}.",
+        "connectionStartFailed": "Could not start the Google connection. Please try again."
+    },
+    "toasts": {
+        "connected": "Google Workspace connected successfully."
+    },
+    "recordingNotice": {
+        "text": "This needs a <strong>Google Workspace</strong> account — connecting, creating meetings, and learners/host joining all work on <strong>any Workspace plan</strong> (a free personal @gmail.com account can’t use the Meet API). <strong>Auto-recording</strong> is the only paid-tier feature: it needs Business Standard+, Enterprise, or Education Plus, plus a teacher signed into the Workspace present. If you enable it on a plan that can’t record, we still create the meeting (without recording) and turn the toggle back off. Recordings land in the connected account’s Google Drive (admin-facing)."
+    }
+}

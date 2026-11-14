@@ -1,0 +1,10 @@
+{
+    "srNo": "N° de série",
+    "membersName": "Nom du membre",
+    "attendanceStatus": "Statut de présence",
+    "present": "Présent",
+    "absent": "Absent",
+    "unmarked": "Non marqué",
+    "membersPhoneNumber": "Numéro de téléphone du membre",
+    "membersEmail": "E-mail du membre"
+}

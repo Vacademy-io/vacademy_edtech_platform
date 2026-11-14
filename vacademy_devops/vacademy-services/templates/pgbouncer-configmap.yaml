@@ -14,6 +14,14 @@
     {{- fail (printf "pgbouncer.%s is still set to a placeholder (%q). Override it in values.secret.yaml and pass it with -f. The pgbouncer ConfigMap will NOT be applied with placeholder values." $key (toString $val)) -}}
   {{- end -}}
 {{- end -}}
+{{- /*
+  This file is what runs in prod: keep it equal to the live ConfigMap
+  (kubectl get cm pgbouncer-config). Synced from live 2026-11-13.
+  Pushing a change here runs deploy-pgbouncer.yml, which applies it AND restarts
+  pgbouncer straight away (every service loses its DB connections for a few
+  seconds), so push off-hours. The pod mounts pgbouncer.ini with subPath, so a
+  RELOAD never sees a ConfigMap edit; only a restart applies it.
+*/ -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -23,21 +31,21 @@ data:
   pgbouncer.ini: |
     [databases]
     ; Primary (read-write)
-    admin_core_service   = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=admin_core_service
-    auth_service         = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=auth_service
+    admin_core_service   = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=admin_core_service pool_size=40 reserve_pool_size=15
+    auth_service         = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=auth_service pool_size=20
     ; community_service also writes here (live session persistence) — higher pool needed
-    assessment_service   = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=assessment_service pool_size=15
-    community_service    = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=community_service
-    media_service        = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=media_service
-    notification_service = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=notification_service
+    assessment_service   = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=assessment_service pool_size=20
+    community_service    = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=community_service pool_size=15
+    media_service        = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=media_service pool_size=15
+    notification_service = host={{ .Values.pgbouncer.dbHost }} port={{ .Values.pgbouncer.dbPort }} dbname=notification_service pool_size=15
 
     ; Read replicas
-    admin_core_service_read   = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=admin_core_service
-    auth_service_read         = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=auth_service
-    assessment_service_read   = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=assessment_service
-    community_service_read    = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=community_service
-    media_service_read        = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=media_service
-    notification_service_read = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=notification_service
+    admin_core_service_read   = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=admin_core_service pool_size=10 reserve_pool_size=5
+    auth_service_read         = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=auth_service pool_size=5 reserve_pool_size=2
+    assessment_service_read   = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=assessment_service pool_size=5 reserve_pool_size=2
+    community_service_read    = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=community_service pool_size=5 reserve_pool_size=2
+    media_service_read        = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=media_service pool_size=5 reserve_pool_size=2
+    notification_service_read = host={{ .Values.pgbouncer.dbReadHost }} port={{ .Values.pgbouncer.dbPort }} dbname=notification_service pool_size=5 reserve_pool_size=2
 
     [pgbouncer]
     listen_addr = 0.0.0.0
@@ -49,7 +57,7 @@ data:
     reserve_pool_size = 5
     max_client_conn = 300
 
-    query_wait_timeout = 120
+    query_wait_timeout = 15
     server_idle_timeout = 300
     server_lifetime = 600
     server_connect_timeout = 15
@@ -61,8 +69,8 @@ data:
     log_disconnections = 0
     log_pooler_errors = 1
 
-    admin_users = postgres
-    stats_users = postgres
+    admin_users = vacademy
+    stats_users = vacademy
 
     server_reset_query = DISCARD ALL
     ignore_startup_parameters = extra_float_digits,options

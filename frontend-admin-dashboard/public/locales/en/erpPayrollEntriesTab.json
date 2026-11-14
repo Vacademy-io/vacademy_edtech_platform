@@ -1,0 +1,38 @@
+{
+    "status": {
+        "calculated": "Calculated",
+        "held": "Held",
+        "paid": "Paid"
+    },
+    "table": {
+        "showBreakdown": "Show breakdown",
+        "hideBreakdown": "Hide breakdown",
+        "columns": {
+            "employee": "Employee",
+            "working": "Working",
+            "present": "Present",
+            "absent": "Absent",
+            "leave": "Leave",
+            "gross": "Gross",
+            "deductions": "Deductions",
+            "netPay": "Net pay",
+            "status": "Status"
+        }
+    },
+    "actions": {
+        "release": "Release",
+        "releasing": "Releasing…",
+        "hold": "Hold"
+    },
+    "errors": {
+        "loadFailed": "Could not load the payroll entries for this run."
+    },
+    "empty": {
+        "title": "No entries yet",
+        "description": "Entries appear once the run is processed. If the run is already processed and this is still empty, every employee failed — check the Errors tab."
+    },
+    "description": {
+        "base": "Expand a row to see the payslip: earnings, deductions and employer contributions with subtotals.",
+        "holdHint": " Holding an employee removes their net pay from the run total until released."
+    }
+}

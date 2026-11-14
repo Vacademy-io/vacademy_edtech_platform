@@ -1,0 +1,13 @@
+{
+    "dialogHeading": "Provide Reattempt",
+    "confirmTitlePrefix": "Are you sure you want to provide reattempt to selected",
+    "confirmTitleSuffix": "?",
+    "inputLabel": "Number of attempts to grant",
+    "inputPlaceholder": "1",
+    "inputError": "Enter a whole number between 1 and 20",
+    "doneButton": "Done",
+    "toastSuccess_one": "{{count}} attempt granted to the selected participant(s).",
+    "toastSuccess_other": "{{count}} attempts granted to the selected participant(s).",
+    "toastErrorBulk": "Could not resolve the selected participants’ registrations.",
+    "toastErrorSingle": "Could not resolve this participant’s registration."
+}

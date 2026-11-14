@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Calendar, DollarSign, Edit, Trash2, Globe, Eye, Layers, ChevronDown, Loader2 } from 'lucide-react';
+import { CreditCard, Calendar, CurrencyDollar, PencilSimple, Trash, Globe, Eye, Stack, CaretDown, CircleNotch } from '@phosphor-icons/react';
 import { PaymentPlan, PaymentPlans } from '@/types/payment';
 import { getCurrencySymbol } from './utils/utils';
 import { useCPOFullDetails } from '@/routes/financial-management/fee-plans/-services/cpo-service';
@@ -16,12 +18,12 @@ const getTypeIcon = (type: string) => {
             return <Calendar className="size-5" />;
         case 'upfront':
         case 'ONE_TIME':
-            return <DollarSign className="size-5" />;
+            return <CurrencyDollar className="size-5" />;
         case 'free':
         case 'FREE':
             return <Globe className="size-5" />;
         case 'CPO':
-            return <Layers className="size-5 text-purple-600" />;
+            return <Stack className="size-5 text-purple-600" />;
         default:
             return <CreditCard className="size-5" />;
     }
@@ -33,7 +35,7 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
 
     // Handle case where config is undefined
     if (!plan.config) {
-        details.push('No configuration available');
+        details.push(i18next.t('settingsPaymentPlanList:priceDetails.noConfig'));
         return details;
     }
 
@@ -64,13 +66,18 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
                             if (discount.type === 'percentage') {
                                 discountedPrice =
                                     originalPrice * (1 - parseFloat(discount.amount) / 100);
-                                discountText = `${discount.amount}% off`;
+                                discountText = i18next.t('settingsPaymentPlanList:priceDetails.percentOff', {
+                                    amount: discount.amount,
+                                });
                             } else if (discount.type === 'fixed') {
                                 discountedPrice = Math.max(
                                     0,
                                     originalPrice - parseFloat(discount.amount)
                                 );
-                                discountText = `${symbol}${discount.amount} off`;
+                                discountText = i18next.t('settingsPaymentPlanList:priceDetails.amountOff', {
+                                    symbol,
+                                    amount: discount.amount,
+                                });
                             }
 
                             const intervalTitle =
@@ -121,18 +128,25 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
                 if (upfrontDiscount.type === 'percentage') {
                     discountedPrice =
                         originalPrice * (1 - parseFloat(upfrontDiscount.amount) / 100);
-                    discountText = `${upfrontDiscount.amount}% off`;
+                    discountText = i18next.t('settingsPaymentPlanList:priceDetails.percentOff', {
+                        amount: upfrontDiscount.amount,
+                    });
                 } else if (upfrontDiscount.type === 'fixed') {
                     discountedPrice = Math.max(
                         0,
                         originalPrice - parseFloat(upfrontDiscount.amount)
                     );
-                    discountText = `${symbol}${upfrontDiscount.amount} off`;
+                    discountText = i18next.t('settingsPaymentPlanList:priceDetails.amountOff', {
+                        symbol,
+                        amount: upfrontDiscount.amount,
+                    });
                 }
 
                 details.push(
                     <div key="upfront-discounted" className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Full Price:</span>
+                        <span className="text-sm text-gray-600">
+                            {i18next.t('settingsPaymentPlanList:priceDetails.fullPriceLabel')}
+                        </span>
                         <span className="text-sm font-medium text-gray-400 line-through">
                             {symbol}
                             {originalPrice.toFixed(2)}
@@ -150,7 +164,12 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
                     </div>
                 );
             } else {
-                details.push(`Full Price: ${symbol}${originalPrice.toFixed(2)}`);
+                details.push(
+                    i18next.t('settingsPaymentPlanList:priceDetails.fullPriceValue', {
+                        symbol,
+                        price: originalPrice.toFixed(2),
+                    })
+                );
             }
             break;
         }
@@ -158,11 +177,19 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
         case PaymentPlans.DONATION: {
             if (plan.config?.donation?.suggestedAmounts) {
                 details.push(
-                    `Suggested Amounts: ${symbol}${plan.config.donation.suggestedAmounts}`
+                    i18next.t('settingsPaymentPlanList:priceDetails.suggestedAmounts', {
+                        symbol,
+                        amount: plan.config.donation.suggestedAmounts,
+                    })
                 );
             }
             if (plan.config?.donation?.minimumAmount) {
-                details.push(`Minimum Amount: ${symbol}${plan.config.donation.minimumAmount}`);
+                details.push(
+                    i18next.t('settingsPaymentPlanList:priceDetails.minimumAmount', {
+                        symbol,
+                        amount: plan.config.donation.minimumAmount,
+                    })
+                );
             }
             break;
         }
@@ -174,13 +201,26 @@ const getPlanPriceDetails = (plan: PaymentPlan) => {
             if (cpoForm?.feeTypes?.length) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const total = cpoForm.feeTypes.reduce((s: number, ft: any) => s + (parseFloat(ft.amount ?? '0') || 0), 0);
-                details.push(`${cpoForm.feeTypes.length} fee type${cpoForm.feeTypes.length !== 1 ? 's' : ''}`);
-                if (total > 0) details.push(`Total: ₹${total.toLocaleString('en-IN')}`);
+                details.push(
+                    i18next.t('settingsPaymentPlanList:priceDetails.feeTypeCount', {
+                        count: cpoForm.feeTypes.length,
+                    })
+                );
+                if (total > 0)
+                    details.push(
+                        i18next.t('settingsPaymentPlanList:priceDetails.total', {
+                            total: total.toLocaleString('en-IN'),
+                        })
+                    );
                 if (cpoForm.packageSessionIds?.length > 0) {
-                    details.push(`${cpoForm.packageSessionIds.length} batch${cpoForm.packageSessionIds.length !== 1 ? 'es' : ''} linked`);
+                    details.push(
+                        i18next.t('settingsPaymentPlanList:priceDetails.batchLinked', {
+                            count: cpoForm.packageSessionIds.length,
+                        })
+                    );
                 }
             } else {
-                details.push('Click "View Details" to see fee breakdown');
+                details.push(i18next.t('settingsPaymentPlanList:priceDetails.clickViewDetails'));
             }
             break;
         }
@@ -248,6 +288,7 @@ function normalizeFeeTypesFromForm(cpoForm: any): NormalizedFeeType[] {
 }
 
 function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
+    const { t } = useTranslation('settingsPaymentPlanList');
     const [open, setOpen] = useState(false);
     const installmentTotal = ft.installments.reduce((s, i) => s + i.amount, 0);
 
@@ -276,23 +317,23 @@ function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
                         </p>
                         {ft.hasInstallment && ft.installments.length > 0 && (
                             <p className="text-xs text-gray-400">
-                                {ft.installments.length} installment{ft.installments.length !== 1 ? 's' : ''}
+                                {t('cpo.installmentCount', { count: ft.installments.length })}
                             </p>
                         )}
                     </div>
                     <div className="flex gap-1">
                         {ft.isRefundable && (
                             <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                                Refundable
+                                {t('cpo.refundable')}
                             </span>
                         )}
                         {ft.hasPenalty && ft.penaltyPercentage != null && (
                             <span className="rounded-md border border-red-100 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
-                                Penalty {ft.penaltyPercentage}%
+                                {t('cpo.penalty', { percent: ft.penaltyPercentage })}
                             </span>
                         )}
                     </div>
-                    <ChevronDown
+                    <CaretDown
                         className={`size-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
                     />
                 </div>
@@ -304,8 +345,12 @@ function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-gray-100">
-                                    <th className="pb-1 text-left text-xs font-semibold uppercase text-gray-400">#</th>
-                                    <th className="pb-1 text-left text-xs font-semibold uppercase text-gray-400">Amount</th>
+                                    <th className="pb-1 text-start text-xs font-semibold uppercase text-gray-400">
+                                        {t('cpo.columnNumber')}
+                                    </th>
+                                    <th className="pb-1 text-start text-xs font-semibold uppercase text-gray-400">
+                                        {t('cpo.columnAmount')}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -320,7 +365,9 @@ function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
                             </tbody>
                             <tfoot>
                                 <tr className="border-t border-gray-200">
-                                    <td className="pt-1.5 font-bold text-gray-600">Total</td>
+                                    <td className="pt-1.5 font-bold text-gray-600">
+                                        {t('cpo.totalLabel')}
+                                    </td>
                                     <td className={`pt-1.5 font-bold ${installmentTotal === ft.totalAmount ? 'text-green-600' : 'text-gray-800'}`}>
                                         ₹{installmentTotal.toLocaleString('en-IN')}
                                     </td>
@@ -329,7 +376,9 @@ function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
                         </table>
                     ) : (
                         <p className="text-sm text-gray-500">
-                            One-time payment of ₹{ft.totalAmount.toLocaleString('en-IN')}
+                            {t('cpo.oneTimePayment', {
+                                amount: ft.totalAmount.toLocaleString('en-IN'),
+                            })}
                         </p>
                     )}
                 </div>
@@ -339,6 +388,7 @@ function CPOFeeTypeAccordion({ ft }: { ft: NormalizedFeeType }) {
 }
 
 function CPOExpandedDetails({ plan, isOpen }: { plan: PaymentPlan; isOpen: boolean }) {
+    const { t } = useTranslation('settingsPaymentPlanList');
     // cpoId is the ComplexPaymentOption ID (from complex_payment_option_id on the mirror).
     // plan.id is the mirror PaymentOption ID used for makeDefault — different from the CPO id.
     const cpoId = plan.config?.cpoId || null;
@@ -362,15 +412,15 @@ function CPOExpandedDetails({ plan, isOpen }: { plan: PaymentPlan; isOpen: boole
     return (
         <div className="mt-3 flex flex-col gap-2 rounded-xl border border-purple-100 bg-purple-50/40 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-purple-500">
-                Fee Types
+                {t('cpo.feeTypesTitle')}
             </p>
             {isLoading ? (
                 <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
-                    <Loader2 className="size-4 animate-spin" />
-                    Loading installment details…
+                    <CircleNotch className="size-4 animate-spin" />
+                    {t('cpo.loadingDetails')}
                 </div>
             ) : feeTypes.length === 0 ? (
-                <p className="py-2 text-sm text-gray-400">No fee types found.</p>
+                <p className="py-2 text-sm text-gray-400">{t('cpo.noFeeTypes')}</p>
             ) : (
                 feeTypes.map((ft) => <CPOFeeTypeAccordion key={ft.id} ft={ft} />)
             )}
@@ -384,6 +434,8 @@ interface PaymentPlanListProps {
     onDelete?: (planId: string) => void;
     onSetDefault?: (planId: string) => void;
     onPreview?: (plan: PaymentPlan) => void;
+    /** Opens regional (country-based) pricing for a paid, non-CPO option. */
+    onRegionalPricing?: (plan: PaymentPlan) => void;
 }
 
 export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
@@ -392,7 +444,10 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
     onDelete,
     onSetDefault,
     onPreview,
+    onRegionalPricing,
 }) => {
+    const { t } = useTranslation('settingsPaymentPlanList');
+    const { t: tRegional } = useTranslation('settingsRegionalPricing');
     const [expandedCpoIds, setExpandedCpoIds] = useState<Set<string>>(new Set());
 
     const toggleCpo = (id: string) => {
@@ -409,7 +464,7 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <CreditCard className="size-5" />
-                    Payment Options
+                    {t('header.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -417,10 +472,8 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                     {plans.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <CreditCard className="mx-auto mb-4 size-12 text-gray-300" />
-                            <p>No payment options created yet</p>
-                            <p className="text-sm">
-                                Create your first payment option to start accepting payments
-                            </p>
+                            <p>{t('emptyState.title')}</p>
+                            <p className="text-sm">{t('emptyState.subtitle')}</p>
                         </div>
                     ) : (
                         plans.map((plan, index) => (
@@ -436,7 +489,7 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                                     variant="default"
                                                     className="bg-green-100 text-green-800"
                                                 >
-                                                    Default
+                                                    {t('badge.default')}
                                                 </Badge>
                                             )}
                                         </div>
@@ -451,10 +504,12 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                                     onClick={() => toggleCpo(plan.id)}
                                                     className="gap-1 text-purple-600 hover:text-purple-700"
                                                 >
-                                                    <ChevronDown
+                                                    <CaretDown
                                                         className={`size-4 transition-transform ${expandedCpoIds.has(plan.id) ? 'rotate-180' : ''}`}
                                                     />
-                                                    {expandedCpoIds.has(plan.id) ? 'Hide' : 'View Details'}
+                                                    {expandedCpoIds.has(plan.id)
+                                                        ? t('actions.hide')
+                                                        : t('actions.viewDetails')}
                                                 </Button>
                                             )}
                                             {onPreview &&
@@ -470,13 +525,26 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                                         <Eye className="size-4" />
                                                     </Button>
                                                 )}
+                                            {onRegionalPricing &&
+                                                (plan.type === PaymentPlans.SUBSCRIPTION ||
+                                                    plan.type === PaymentPlans.UPFRONT) && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => onRegionalPricing(plan)}
+                                                        title={tRegional('actions.openDialog')}
+                                                        aria-label={tRegional('actions.openDialog')}
+                                                    >
+                                                        <Globe className="size-4" />
+                                                    </Button>
+                                                )}
                                             {onEdit && plan.type !== PaymentPlans.CPO && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => onEdit(plan)}
                                                 >
-                                                    <Edit className="size-4" />
+                                                    <PencilSimple className="size-4" />
                                                 </Button>
                                             )}
                                             {onSetDefault && plan.tag !== 'DEFAULT' && (
@@ -487,7 +555,7 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                                         onSetDefault(plan.id);
                                                     }}
                                                 >
-                                                    Make Default
+                                                    {t('actions.makeDefault')}
                                                 </Button>
                                             )}
                                             {onDelete && plan.type !== PaymentPlans.CPO && (
@@ -497,7 +565,7 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                                     onClick={() => onDelete(plan.id)}
                                                     className="text-red-600 hover:text-red-700"
                                                 >
-                                                    <Trash2 className="size-4" />
+                                                    <Trash className="size-4" />
                                                 </Button>
                                             )}
                                         </div>
@@ -511,7 +579,7 @@ export const PaymentPlanList: React.FC<PaymentPlanListProps> = ({
                                         ))}
                                         {plan.type !== PaymentPlans.FREE && plan.type !== PaymentPlans.CPO && (
                                             <p className="mt-2 text-xs text-gray-500">
-                                                Currency: {plan.currency}
+                                                {t('currency', { currency: plan.currency })}
                                             </p>
                                         )}
                                     </div>

@@ -31,6 +31,7 @@ public class CallIntelligenceDto {
     private String inferredGoal;
     private String callType;
     private String generalSummary;
+    private String shortUpdate;
     private String genericStatus;
     private BigDecimal callerSelfGoalRating;
     private BigDecimal callOutputRating;
@@ -72,6 +73,7 @@ public class CallIntelligenceDto {
                 .inferredGoal(c.getInferredGoal())
                 .callType(c.getCallType())
                 .generalSummary(c.getGeneralSummary())
+                .shortUpdate(c.getShortUpdate())
                 .genericStatus(c.getGenericStatus())
                 .callerSelfGoalRating(c.getCallerSelfGoalRating())
                 .callOutputRating(c.getCallOutputRating())

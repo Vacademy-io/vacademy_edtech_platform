@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import {
     CheckCircle,
     Download,
@@ -62,7 +64,7 @@ const readableError = (error: unknown, fallback: string): string => {
     const backendMessage = (error as { response?: { data?: { ex?: string } } })?.response?.data?.ex;
     if (backendMessage) return backendMessage;
     if ((error as { message?: string })?.message === 'Network Error') {
-        return 'Could not reach the server. Check your connection and try again.';
+        return i18next.t('assessmentOfflineBulkImportDialog:network.unreachable');
     }
     return error instanceof Error && error.message ? error.message : fallback;
 };
@@ -90,6 +92,7 @@ export const OfflineBulkImportDialog = ({
     packageSessionIds,
     onImported,
 }: OfflineBulkImportDialogProps) => {
+    const { t } = useTranslation('assessmentOfflineBulkImportDialog');
     // Bulk import matches on username, which only the batch-learner listing
     // carries — individually registered participants have no username to match
     // against, so they stay on the one-student-at-a-time flow. Fetched here
@@ -179,7 +182,7 @@ export const OfflineBulkImportDialog = ({
             downloadTextFile(buildManifestCsv(students), 'manifest.csv', 'text/csv;charset=utf-8;');
         } catch (error) {
             console.error('Failed to build the CSV template:', error);
-            setZipError(readableError(error, 'Could not build the CSV template.'));
+            setZipError(readableError(error, t('errors.couldNotBuildCsvTemplate')));
         }
     };
 
@@ -197,7 +200,7 @@ export const OfflineBulkImportDialog = ({
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Failed to build the sample zip:', error);
-            setZipError(readableError(error, 'Could not build the sample zip.'));
+            setZipError(readableError(error, t('errors.couldNotBuildSampleZip')));
         }
     };
 
@@ -210,26 +213,20 @@ export const OfflineBulkImportDialog = ({
                 file.type === 'application/zip' ||
                 file.type === 'application/x-zip-compressed';
             if (!looksLikeZip) {
-                throw new Error(
-                    `"${file.name}" is not a .zip file. Put manifest.csv and your PDFs into a zip archive and upload that.`
-                );
+                throw new Error(t('validation.notZip', { fileName: file.name }));
             }
             if (file.size === 0) {
-                throw new Error(`"${file.name}" is empty (0 bytes). Re-create the zip and try again.`);
+                throw new Error(t('validation.emptyZip', { fileName: file.name }));
             }
 
             // Refuse to match against an empty/failed student list — otherwise every
             // row reports "no student with this username" and an outage looks
             // exactly like a file full of bad roll numbers.
             if (studentsError) {
-                throw new Error(
-                    'The student list could not be loaded, so usernames cannot be matched. Close and reopen this dialog to retry.'
-                );
+                throw new Error(t('validation.studentsNotLoaded'));
             }
             if (students.length === 0) {
-                throw new Error(
-                    'This assessment has no batch learners to match against. Bulk import matches students by username from the assessment’s batches.'
-                );
+                throw new Error(t('validation.noBatchLearners'));
             }
 
             await zipHandle?.close().catch(() => undefined);
@@ -238,23 +235,19 @@ export const OfflineBulkImportDialog = ({
             const manifestPath = findManifestPath(handle);
             if (!manifestPath) {
                 await handle.close().catch(() => undefined);
-                throw new Error(
-                    'No manifest.csv found in this zip. Download the sample zip above to see the expected layout.'
-                );
+                throw new Error(t('validation.noManifestFound'));
             }
 
             const csvText = await handle.readText(manifestPath);
             if (!csvText.trim()) {
                 await handle.close().catch(() => undefined);
-                throw new Error(`${manifestPath} is empty. Fill in at least one row and re-zip.`);
+                throw new Error(t('validation.manifestEmpty', { manifestPath }));
             }
 
             const parsed = parseManifest(csvText, handle, students);
             if (parsed.rows.length === 0 && parsed.fatalErrors.length === 0) {
                 await handle.close().catch(() => undefined);
-                throw new Error(
-                    `${manifestPath} has a header but no data rows. Add a row per student and re-zip.`
-                );
+                throw new Error(t('validation.manifestNoDataRows', { manifestPath }));
             }
 
             setZipHandle(handle);
@@ -263,7 +256,7 @@ export const OfflineBulkImportDialog = ({
             setStep('PREVIEW');
         } catch (error) {
             console.error('Failed to read the zip:', error);
-            setZipError(readableError(error, 'Could not read this zip file.'));
+            setZipError(readableError(error, t('errors.couldNotReadZip')));
         } finally {
             setIsBusy(false);
         }
@@ -313,7 +306,7 @@ export const OfflineBulkImportDialog = ({
                             source: instituteId,
                             sourceId: 'ASSESSMENT_OFFLINE_ENTRY',
                         });
-                        if (!fileId) throw new Error(`upload of "${name}" returned no file id`);
+                        if (!fileId) throw new Error(t('errors.uploadNoFileId', { name }));
                         uploaded += 1;
                         setProgress({ done: uploaded, total: fileCount });
                         return fileId as string;
@@ -347,7 +340,7 @@ export const OfflineBulkImportDialog = ({
                         failures.push({
                             line: row.line,
                             username: row.username,
-                            errors: [readableError(rowError, 'file upload failed')],
+                            errors: [readableError(rowError, t('errors.fileUploadFailed'))],
                         });
                     }
                 }
@@ -360,9 +353,7 @@ export const OfflineBulkImportDialog = ({
             }
 
             if (entries.length === 0) {
-                setImportError(
-                    'None of the rows could be uploaded, so nothing was imported. See the problems below.'
-                );
+                setImportError(t('errors.noRowsUploaded'));
                 return;
             }
 
@@ -377,15 +368,21 @@ export const OfflineBulkImportDialog = ({
             const failed = (response?.failure_count ?? 0) + failures.length;
             if (failed > 0) {
                 toast.warning(
-                    `Imported ${response?.success_count ?? 0} of ${manifest.validRows.length} students — ${failed} failed.`
+                    t('toasts.importedWithFailures', {
+                        success: response?.success_count ?? 0,
+                        count: manifest.validRows.length,
+                        failed,
+                    })
                 );
             } else {
-                toast.success(`Imported ${response?.success_count ?? 0} students.`);
+                toast.success(
+                    t('toasts.importedSuccess', { count: response?.success_count ?? 0 })
+                );
             }
             onImported?.();
         } catch (error) {
             console.error('Bulk import failed:', error);
-            setImportError(readableError(error, 'Bulk import failed. Please try again.'));
+            setImportError(readableError(error, t('errors.bulkImportFailed')));
         } finally {
             setIsBusy(false);
         }
@@ -403,7 +400,7 @@ export const OfflineBulkImportDialog = ({
             .map((result) => ({
                 line: Number(result.row_label?.replace(/\D/g, '') || 0),
                 username: result.username ?? '',
-                errors: [result.message ?? 'Import failed'],
+                errors: [result.message ?? t('errors.importFailedGeneric')],
             }));
         return [...invalid, ...uploadFailures, ...rejected].sort((a, b) => a.line - b.line);
     };
@@ -421,7 +418,7 @@ export const OfflineBulkImportDialog = ({
     const handleDownloadErrors = () => {
         const failures = allFailures();
         if (failures.length === 0) {
-            toast.info('There are no problems to download.');
+            toast.info(t('toasts.noProblemsToDownload'));
             return;
         }
         try {
@@ -432,7 +429,7 @@ export const OfflineBulkImportDialog = ({
             );
         } catch (error) {
             console.error('Failed to build the problems CSV:', error);
-            setImportError(readableError(error, 'Could not build the problems CSV.'));
+            setImportError(readableError(error, t('errors.couldNotBuildProblemsCsv')));
         }
     };
 
@@ -442,7 +439,7 @@ export const OfflineBulkImportDialog = ({
         <MyDialog
             open={open}
             onOpenChange={handleOpenChange}
-            heading="Bulk Offline Data Entry"
+            heading={t('dialog.heading')}
             dialogWidth="max-w-4xl"
             footer={
                 <>
@@ -453,7 +450,7 @@ export const OfflineBulkImportDialog = ({
                         disable={isBusy}
                         onClick={() => handleOpenChange(false)}
                     >
-                        {step === 'DONE' ? 'Close' : 'Cancel'}
+                        {step === 'DONE' ? t('footer.close') : t('footer.cancel')}
                     </MyButton>
                     {step === 'PREVIEW' && (
                         <>
@@ -464,7 +461,7 @@ export const OfflineBulkImportDialog = ({
                                 disable={isBusy}
                                 onClick={handleChooseAnotherFile}
                             >
-                                Choose another file
+                                {t('footer.chooseAnotherFile')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -472,11 +469,13 @@ export const OfflineBulkImportDialog = ({
                                 type="button"
                                 disable={isBusy || validCount === 0}
                                 onAsyncClick={handleImport}
-                                loadingText={pendingEntries ? 'Retrying...' : 'Importing...'}
+                                loadingText={
+                                    pendingEntries ? t('footer.retryingText') : t('footer.importingText')
+                                }
                             >
                                 {pendingEntries
-                                    ? 'Retry import'
-                                    : `Import ${validCount} ${validCount === 1 ? 'student' : 'students'}`}
+                                    ? t('footer.retryImport')
+                                    : t('footer.importStudents', { count: validCount })}
                             </MyButton>
                         </>
                     )}
@@ -488,26 +487,28 @@ export const OfflineBulkImportDialog = ({
                     <>
                         {studentsError != null && (
                             <ErrorNotice
-                                title="Could not load the student list"
-                                detail="Usernames can't be matched until it loads. Close and reopen this dialog to retry."
+                                title={t('pick.errors.studentsLoadFailed.title')}
+                                detail={t('pick.errors.studentsLoadFailed.detail')}
                             />
                         )}
                         {studentsError == null && !isLoadingStudents && students.length === 0 && (
                             <ErrorNotice
-                                title="No batch learners in this assessment"
-                                detail="Bulk import matches students by username from the assessment's batches. Add batches to the assessment, or enter these students one at a time."
+                                title={t('pick.errors.noBatchLearners.title')}
+                                detail={t('pick.errors.noBatchLearners.detail')}
                             />
                         )}
-                        {zipError && <ErrorNotice title="That zip couldn't be used" detail={zipError} />}
+                        {zipError && (
+                            <ErrorNotice title={t('pick.errors.zipInvalid.title')} detail={zipError} />
+                        )}
 
                         <div className="rounded-lg border border-neutral-200 p-4">
                             <p className="text-body font-medium text-neutral-700">
-                                1. Start from a template
+                                {t('pick.template.title')}
                             </p>
                             <p className="mb-3 text-caption text-neutral-500">
                                 {isLoadingStudents
-                                    ? 'Loading the student list…'
-                                    : `Both downloads come pre-filled with the ${students.length} students in this assessment's batches, so you only fill in marks and file names.`}
+                                    ? t('pick.template.loadingStudents')
+                                    : t('pick.template.description', { count: students.length })}
                             </p>
                             <div className="flex flex-wrap gap-3">
                                 <MyButton
@@ -517,7 +518,7 @@ export const OfflineBulkImportDialog = ({
                                     disable={isLoadingStudents}
                                     onClick={handleDownloadCsv}
                                 >
-                                    <Download className="size-4" /> Download CSV
+                                    <Download className="size-4" /> {t('pick.template.downloadCsv')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="secondary"
@@ -525,26 +526,29 @@ export const OfflineBulkImportDialog = ({
                                     type="button"
                                     disable={isLoadingStudents}
                                     onAsyncClick={handleDownloadSampleZip}
-                                    loadingText="Building..."
+                                    loadingText={t('pick.template.building')}
                                 >
-                                    <FileZip className="size-4" /> Download sample zip
+                                    <FileZip className="size-4" />{' '}
+                                    {t('pick.template.downloadSampleZip')}
                                 </MyButton>
                             </div>
                         </div>
 
                         <div className="rounded-lg border border-neutral-200 p-4">
                             <p className="text-body font-medium text-neutral-700">
-                                2. Upload the filled zip
+                                {t('pick.upload.title')}
                             </p>
                             <p className="mb-3 text-caption text-neutral-500">
-                                The zip must contain <span className="font-medium">manifest.csv</span>{' '}
-                                plus your scanned PDFs. PDFs in{' '}
-                                <span className="font-medium">answers/</span>,{' '}
-                                <span className="font-medium">checked/</span> or{' '}
-                                <span className="font-medium">reports/</span> named after a
-                                username are picked up automatically. No column is required — a
-                                file named after the student identifies them on its own. Nothing is
-                                saved until you review the preview.
+                                <Trans
+                                    t={t}
+                                    i18nKey="pick.upload.description"
+                                    components={{
+                                        manifest: <span className="font-medium" />,
+                                        answers: <span className="font-medium" />,
+                                        checked: <span className="font-medium" />,
+                                        reports: <span className="font-medium" />,
+                                    }}
+                                />
                             </p>
                             <Form {...form}>
                                 <FileUploadComponent
@@ -562,9 +566,13 @@ export const OfflineBulkImportDialog = ({
                                     <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-neutral-300 p-8 text-center hover:border-primary-300">
                                         <UploadSimple className="size-8 text-neutral-400" />
                                         <p className="text-body font-medium text-neutral-700">
-                                            {isBusy ? 'Reading zip...' : 'Click to upload or drag & drop'}
+                                            {isBusy
+                                                ? t('pick.upload.readingZip')
+                                                : t('pick.upload.clickOrDrag')}
                                         </p>
-                                        <p className="text-caption text-neutral-400">.zip only</p>
+                                        <p className="text-caption text-neutral-400">
+                                            {t('pick.upload.zipOnly')}
+                                        </p>
                                     </div>
                                 </FileUploadComponent>
                             </Form>
@@ -577,15 +585,16 @@ export const OfflineBulkImportDialog = ({
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="text-caption text-neutral-500">{zipName}</span>
                             <span className="flex items-center gap-1 text-caption text-success-600">
-                                <CheckCircle className="size-4" /> {validCount} ready
+                                <CheckCircle className="size-4" /> {t('preview.readyCount', { count: validCount })}
                             </span>
                             <span className="text-caption text-neutral-500">
-                                {attachedCount} PDF{attachedCount === 1 ? '' : 's'} to upload
+                                {t('preview.pdfsToUpload', { count: attachedCount })}
                             </span>
                             {failureCount > 0 && (
                                 <>
                                     <span className="flex items-center gap-1 text-caption text-danger-600">
-                                        <XCircle className="size-4" /> {failureCount} with problems
+                                        <XCircle className="size-4" />{' '}
+                                        {t('preview.problemsCount', { count: failureCount })}
                                     </span>
                                     <MyButton
                                         buttonType="text"
@@ -593,7 +602,7 @@ export const OfflineBulkImportDialog = ({
                                         type="button"
                                         onClick={handleDownloadErrors}
                                     >
-                                        Download problems CSV
+                                        {t('preview.downloadProblemsCsv')}
                                     </MyButton>
                                 </>
                             )}
@@ -601,17 +610,17 @@ export const OfflineBulkImportDialog = ({
 
                         {manifest.fatalErrors.length > 0 && (
                             <ErrorNotice
-                                title="This manifest can't be imported"
+                                title={t('preview.errors.manifestInvalid.title')}
                                 detail={manifest.fatalErrors.join(' ')}
                             />
                         )}
 
                         {importError && (
                             <ErrorNotice
-                                title="Import failed"
+                                title={t('preview.errors.importFailed.title')}
                                 detail={
                                     pendingEntries
-                                        ? `${importError} Your files are already uploaded — "Retry import" re-sends them without uploading again.`
+                                        ? `${importError} ${t('preview.errors.importFailed.retryNote')}`
                                         : importError
                                 }
                             />
@@ -620,18 +629,22 @@ export const OfflineBulkImportDialog = ({
                         {uploadFailures.length > 0 && (
                             <div className="rounded-lg border border-danger-200 bg-danger-50 p-3">
                                 <p className="text-caption font-medium text-danger-700">
-                                    {uploadFailures.length} row(s) were skipped because their files
-                                    could not be uploaded
+                                    {t('preview.uploadFailures.header', { count: uploadFailures.length })}
                                 </p>
                                 {uploadFailures.slice(0, 5).map((failure) => (
                                     <p key={failure.line} className="text-caption text-danger-600">
-                                        Line {failure.line} ({failure.username}):{' '}
-                                        {failure.errors.join('; ')}
+                                        {t('preview.uploadFailures.lineDetail', {
+                                            line: failure.line,
+                                            username: failure.username,
+                                            errors: failure.errors.join('; '),
+                                        })}
                                     </p>
                                 ))}
                                 {uploadFailures.length > 5 && (
                                     <p className="text-caption text-danger-600">
-                                        …and {uploadFailures.length - 5} more — see the problems CSV.
+                                        {t('preview.uploadFailures.andMore', {
+                                            count: uploadFailures.length - 5,
+                                        })}
                                     </p>
                                 )}
                             </div>
@@ -639,8 +652,8 @@ export const OfflineBulkImportDialog = ({
 
                         {validCount === 0 && manifest.fatalErrors.length === 0 && (
                             <ErrorNotice
-                                title="No rows are ready to import"
-                                detail="Every row in manifest.csv has a problem. Fix the issues listed below (or download the problems CSV) and upload the zip again."
+                                title={t('preview.errors.noRowsReady.title')}
+                                detail={t('preview.errors.noRowsReady.detail')}
                             />
                         )}
 
@@ -648,29 +661,26 @@ export const OfflineBulkImportDialog = ({
                             <WarningCircle className="mt-0.5 size-4 shrink-0 text-warning-600" />
                             <div className="text-caption text-warning-700">
                                 {manifest.validRows.some((row) => row.totalMarks !== null) && (
-                                    <p>
-                                        Rows with a total_marks value will have their result
-                                        released to the student.
-                                    </p>
+                                    <p>{t('preview.warnings.marksReleased')}</p>
                                 )}
                                 {/* Each import creates a fresh attempt (same as entering a
                                     student by hand), so a full re-upload double-enters
                                     everyone rather than correcting them. */}
-                                <p>
-                                    Importing adds a new attempt per student. To fix failures,
-                                    re-upload only the affected rows — not the whole file.
-                                </p>
+                                <p>{t('preview.warnings.newAttempt')}</p>
                             </div>
                         </div>
 
                         {manifest.unrecognizedHeaders.length > 0 && (
                             <div className="rounded-lg border border-neutral-200 p-3">
                                 <p className="text-caption font-medium text-neutral-700">
-                                    Ignored column(s): {manifest.unrecognizedHeaders.join(', ')}
+                                    {t('preview.ignoredColumns.header', {
+                                        columns: manifest.unrecognizedHeaders.join(', '),
+                                    })}
                                 </p>
                                 <p className="mt-1 text-caption text-neutral-400">
-                                    Check for a typo if you expected these to be read. Known
-                                    columns: {MANIFEST_COLUMNS.join(', ')}.
+                                    {t('preview.ignoredColumns.hint', {
+                                        columns: MANIFEST_COLUMNS.join(', '),
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -695,17 +705,22 @@ export const OfflineBulkImportDialog = ({
                                             : 'text-neutral-700'
                                     )}
                                 >
-                                    {manifest.unreferencedFiles.length} file(s) in the zip will be
-                                    ignored
+                                    {t('preview.unreferencedFiles.header', {
+                                        count: manifest.unreferencedFiles.length,
+                                    })}
                                     {attachedCount === 0 &&
-                                        ' — no row has a file attached, so only marks would import'}
+                                        t('preview.unreferencedFiles.noFileAttachedSuffix')}
                                 </p>
                                 <p className="mt-1 text-caption text-neutral-500">
-                                    Name them in manifest.csv, or put them in{' '}
-                                    <span className="font-medium">answers/</span>,{' '}
-                                    <span className="font-medium">checked/</span> or{' '}
-                                    <span className="font-medium">reports/</span> named after the
-                                    student&apos;s username.
+                                    <Trans
+                                        t={t}
+                                        i18nKey="preview.unreferencedFiles.hint"
+                                        components={{
+                                            answers: <span className="font-medium" />,
+                                            checked: <span className="font-medium" />,
+                                            reports: <span className="font-medium" />,
+                                        }}
+                                    />
                                 </p>
                                 <p className="mt-1 truncate text-caption text-neutral-400">
                                     {manifest.unreferencedFiles.slice(0, 5).join(', ')}
@@ -723,7 +738,10 @@ export const OfflineBulkImportDialog = ({
                                     className="h-2"
                                 />
                                 <p className="text-caption text-neutral-500">
-                                    Uploading {progress.done} of {progress.total} files…
+                                    {t('preview.progress.uploading', {
+                                        done: progress.done,
+                                        total: progress.total,
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -733,12 +751,14 @@ export const OfflineBulkImportDialog = ({
                 {step === 'DONE' && (
                     <div className="flex flex-col gap-3">
                         {importError && (
-                            <ErrorNotice title="Something went wrong" detail={importError} />
+                            <ErrorNotice title={t('done.errors.somethingWrong.title')} detail={importError} />
                         )}
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="flex items-center gap-1 text-body text-success-600">
                                 <CheckCircle className="size-5" />
-                                {results.filter((r) => r.status === 'SUCCESS').length} imported
+                                {t('done.importedCount', {
+                                    count: results.filter((r) => r.status === 'SUCCESS').length,
+                                })}
                             </span>
                             {/* Counts rows the server rejected AND rows whose files
                                 never uploaded — the latter never reach the server,
@@ -747,7 +767,7 @@ export const OfflineBulkImportDialog = ({
                                 <>
                                     <span className="flex items-center gap-1 text-body text-danger-600">
                                         <XCircle className="size-5" />
-                                        {failureCount} not imported
+                                        {t('done.notImportedCount', { count: failureCount })}
                                     </span>
                                     <MyButton
                                         buttonType="text"
@@ -755,7 +775,7 @@ export const OfflineBulkImportDialog = ({
                                         type="button"
                                         onClick={handleDownloadErrors}
                                     >
-                                        Download problems CSV
+                                        {t('preview.downloadProblemsCsv')}
                                     </MyButton>
                                 </>
                             )}
@@ -765,8 +785,11 @@ export const OfflineBulkImportDialog = ({
                                 key={`upload-${failure.line}`}
                                 className="text-caption text-danger-600"
                             >
-                                Line {failure.line} ({failure.username}):{' '}
-                                {failure.errors.join('; ')}
+                                {t('preview.uploadFailures.lineDetail', {
+                                    line: failure.line,
+                                    username: failure.username,
+                                    errors: failure.errors.join('; '),
+                                })}
                             </p>
                         ))}
                         {results
@@ -776,7 +799,11 @@ export const OfflineBulkImportDialog = ({
                                     key={`${result.row_label}-${result.username}`}
                                     className="text-caption text-danger-600"
                                 >
-                                    {result.row_label} ({result.username}): {result.message}
+                                    {t('done.resultLine', {
+                                        rowLabel: result.row_label,
+                                        username: result.username,
+                                        message: result.message,
+                                    })}
                                 </p>
                             ))}
                     </div>
@@ -786,17 +813,20 @@ export const OfflineBulkImportDialog = ({
     );
 };
 
-const SlotCell = ({ path, auto }: { path: string | null; auto: boolean }) => (
-    <td className="p-2 text-neutral-500" title={path ?? undefined}>
-        {path ? (
-            <>
-                ✓{auto && <span className="ms-1 text-neutral-400">auto</span>}
-            </>
-        ) : (
-            '—'
-        )}
-    </td>
-);
+const SlotCell = ({ path, auto }: { path: string | null; auto: boolean }) => {
+    const { t } = useTranslation('assessmentOfflineBulkImportDialog');
+    return (
+        <td className="p-2 text-neutral-500" title={path ?? undefined}>
+            {path ? (
+                <>
+                    ✓{auto && <span className="ms-1 text-neutral-400">{t('slotCell.auto')}</span>}
+                </>
+            ) : (
+                t('common.emptyValue')
+            )}
+        </td>
+    );
+};
 
 const ErrorNotice = ({ title, detail }: { title: string; detail: string }) => (
     <div
@@ -812,6 +842,7 @@ const ErrorNotice = ({ title, detail }: { title: string; detail: string }) => (
 );
 
 const PreviewTable = ({ rows }: { rows: ManifestRow[] }) => {
+    const { t } = useTranslation('assessmentOfflineBulkImportDialog');
     // Problem rows always render; clean rows are capped so a 500-sheet batch
     // doesn't lock the dialog up just to show 500 identical "Ready" lines.
     const problemRows = rows.filter((row) => row.errors.length > 0);
@@ -828,13 +859,13 @@ const PreviewTable = ({ rows }: { rows: ManifestRow[] }) => {
                 <table className="w-max min-w-full text-caption">
             <thead className="bg-neutral-50 text-left text-neutral-500">
                 <tr>
-                    <th className="p-2 font-medium">Line</th>
-                    <th className="p-2 font-medium">Student</th>
-                    <th className="p-2 font-medium">Marks</th>
-                    <th className="p-2 font-medium">Answer</th>
-                    <th className="p-2 font-medium">Checked</th>
-                    <th className="p-2 font-medium">Report</th>
-                    <th className="p-2 font-medium">Status</th>
+                    <th className="p-2 font-medium">{t('table.headers.line')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.student')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.marks')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.answer')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.checked')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.report')}</th>
+                    <th className="p-2 font-medium">{t('table.headers.status')}</th>
                 </tr>
             </thead>
                     <tbody>
@@ -848,10 +879,12 @@ const PreviewTable = ({ rows }: { rows: ManifestRow[] }) => {
                             >
                                 <td className="p-2 text-neutral-500">{row.line}</td>
                                 <td className="p-2 text-neutral-700">
-                                    {row.student?.name || row.username || '—'}
+                                    {row.student?.name || row.username || t('common.emptyValue')}
                                     <span className="block text-neutral-400">{row.username}</span>
                                 </td>
-                                <td className="p-2 text-neutral-700">{row.totalMarks ?? '—'}</td>
+                                <td className="p-2 text-neutral-700">
+                                    {row.totalMarks ?? t('common.emptyValue')}
+                                </td>
                                 {/* "auto" = matched from the zip's folder layout
                                     rather than named in the CSV. */}
                                 <SlotCell path={row.studentPath} auto={row.autoMatchedSlots.includes('student')} />
@@ -859,7 +892,7 @@ const PreviewTable = ({ rows }: { rows: ManifestRow[] }) => {
                                 <SlotCell path={row.reportPath} auto={row.autoMatchedSlots.includes('report')} />
                                 <td className="p-2">
                                     {row.errors.length === 0 ? (
-                                        <span className="text-success-600">Ready</span>
+                                        <span className="text-success-600">{t('table.status.ready')}</span>
                                     ) : (
                                         <span className="text-danger-600">
                                             {row.errors.join('; ')}
@@ -873,8 +906,12 @@ const PreviewTable = ({ rows }: { rows: ManifestRow[] }) => {
             </div>
             {hiddenCount > 0 && (
                 <p className="text-caption text-neutral-400">
-                    Showing {visible.length} of {rows.length} rows — {hiddenCount} more will import
-                    without problems.
+                    {t('table.footerNote', {
+                        visible: visible.length,
+                        total: rows.length,
+                        hidden: hiddenCount,
+                        count: hiddenCount,
+                    })}
                 </p>
             )}
         </div>

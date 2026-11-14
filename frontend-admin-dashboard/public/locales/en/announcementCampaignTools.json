@@ -1,0 +1,70 @@
+{
+    "actions": {
+        "previewRecipients": "Preview recipients",
+        "recipients": "Recipients",
+        "sendTest": "Send test",
+        "edit": "Edit",
+        "duplicate": "Duplicate"
+    },
+    "recipientPreview": {
+        "heading": "Recipients",
+        "count_one": "{{count}} person will receive this",
+        "count_other": "{{count}} people will receive this",
+        "resolvedNow": "Worked out from the audience as it stands right now.",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone"
+        },
+        "unknownUser": "Unknown user",
+        "noEmail": "No email address",
+        "noAudienceTitle": "No audience yet",
+        "noAudienceBody": "Add at least one audience rule to see who will receive this.",
+        "noMatchesTitle": "Nobody matches this audience",
+        "noMatchesBody": "Check the selected groups, filters and exclusions — as it stands, this would reach no one.",
+        "loadFailed": "Couldn't load the recipient list."
+    },
+    "testSend": {
+        "heading": "Send a test email",
+        "description": "Sends the email as it is right now, marked [Test], only to the addresses below. Your audience is not contacted and nothing is saved.",
+        "emailsLabel": "Send to",
+        "emailsPlaceholder": "you@example.com, colleague@example.com",
+        "emailsHint": "Up to {{max}} addresses, separated by commas or new lines.",
+        "invalidEmails": "Not a valid email address: {{emails}}",
+        "tooMany": "A test can go to at most {{max}} addresses.",
+        "send": "Send test",
+        "sending": "Sending…",
+        "close": "Close",
+        "failed": "The test email could not be sent.",
+        "sentMatched": "Sent — placeholders filled with this user's details.",
+        "sentUnmatched": "Sent — no user has this address, so name placeholders were left blank.",
+        "untitled": "Untitled announcement",
+        "needContent": "Add some email content before sending a test.",
+        "needEmailChannel": "Turn on the Email channel to send a test email."
+    },
+    "duplicate": {
+        "heading": "Duplicate campaign",
+        "description": "Start a new campaign from \"{{title}}\". You can change anything before sending it.",
+        "keepLegend": "Copy from the original",
+        "parts": {
+            "recipients": {
+                "label": "Recipients",
+                "hint": "The same audience rules, filters and exclusions."
+            },
+            "content": {
+                "label": "Content and template",
+                "hint": "Subject, preview text and email body. Leave unticked to choose a new template."
+            },
+            "settings": {
+                "label": "Sender and settings",
+                "hint": "Sender, priority, schedule type and timezone. The send time is never copied."
+            }
+        },
+        "note": "Nothing is created until you send or schedule the copy.",
+        "cancel": "Cancel",
+        "continue": "Duplicate and edit",
+        "pageTitle": "Duplicate email campaign",
+        "banner": "This is a copy of \"{{title}}\". Review it and pick a send time — the original campaign is not changed.",
+        "copyTitle": "Copy of {{title}}"
+    }
+}

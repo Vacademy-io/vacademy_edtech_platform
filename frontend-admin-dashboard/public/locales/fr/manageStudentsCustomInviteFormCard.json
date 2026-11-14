@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "Personnaliser le formulaire d'invitation",
+        "subtitle": "Configurez les champs que les étudiants devront remplir"
+    },
+    "quickAddButtons": {
+        "gender": "Ajouter le genre",
+        "state": "Ajouter la région",
+        "city": "Ajouter la ville",
+        "schoolCollege": "Ajouter école/collège"
+    },
+    "customFieldDialog": {
+        "triggerButton": "Ajouter un champ personnalisé",
+        "title": "Ajouter un champ personnalisé",
+        "typePrompt": "Sélectionnez le type de champ personnalisé que vous souhaitez ajouter :",
+        "fieldTypeOptions": {
+            "textField": "Champ de texte",
+            "dropdown": "Liste déroulante"
+        },
+        "textFieldNameLabel": "Nom du champ de texte",
+        "dropdownNameLabel": "Nom de la liste déroulante",
+        "dropdownOptionsLabel": "Options de la liste déroulante",
+        "addOptionButton": "Ajouter",
+        "doneButton": "Terminé"
+    },
+    "placeholders": {
+        "typeHere": "Saisissez ici"
+    },
+    "previewDialog": {
+        "triggerButton": "Aperçu du formulaire d'inscription",
+        "title": "Aperçu du formulaire d'inscription"
+    }
+}

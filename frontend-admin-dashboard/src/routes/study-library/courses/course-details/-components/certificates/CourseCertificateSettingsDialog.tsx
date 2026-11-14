@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -31,6 +32,7 @@ export const CourseCertificateSettingsDialog = ({
     packageId,
     settings,
 }: CourseCertificateSettingsDialogProps) => {
+    const { t } = useTranslation('studyLibraryCertificateCourseCertificateSettingsDialog');
     const queryClient = useQueryClient();
 
     const [enabledChoice, setEnabledChoice] = useState<EnabledChoice>('INHERIT');
@@ -72,22 +74,24 @@ export const CourseCertificateSettingsDialog = ({
                 templateHtml: templateId ? null : templateHtml,
             }),
         onSuccess: () => {
-            toast.success('Course certificate settings saved');
+            toast.success(t('toast.saveSuccess'));
             queryClient.invalidateQueries({ queryKey: ['course-certificate-settings'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-dashboard'] });
             queryClient.invalidateQueries({ queryKey: ['course-certificate-learners'] });
             onOpenChange(false);
         },
-        onError: () => toast.error('Could not save course certificate settings'),
+        onError: () => toast.error(t('toast.saveFailed')),
     });
 
-    const instituteState = settings?.institute_enabled ? 'enabled' : 'disabled';
+    const instituteState = settings?.institute_enabled
+        ? t('instituteState.enabled')
+        : t('instituteState.disabled');
     const effectiveEnabled =
         enabledChoice === 'INHERIT' ? !!settings?.institute_enabled : enabledChoice === 'ON';
 
     return (
         <MyDialog
-            heading="Certificate Settings for this Course"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-xl"
@@ -99,7 +103,7 @@ export const CourseCertificateSettingsDialog = ({
                         type="button"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -108,7 +112,7 @@ export const CourseCertificateSettingsDialog = ({
                         disable={saveMutation.isPending}
                         onClick={() => saveMutation.mutate()}
                     >
-                        {saveMutation.isPending ? 'Saving…' : 'Save'}
+                        {saveMutation.isPending ? t('saving') : t('save')}
                     </MyButton>
                 </div>
             }
@@ -116,23 +120,25 @@ export const CourseCertificateSettingsDialog = ({
             <div className="flex flex-col gap-6 p-2">
                 <div className="rounded-md bg-neutral-50 p-3">
                     <p className="text-caption text-neutral-500">
-                        Institute default: certificates are{' '}
-                        <span className="font-semibold text-neutral-700">{instituteState}</span> at{' '}
-                        <span className="font-semibold text-neutral-700">
-                            {settings?.institute_threshold_percent ?? 80}%
-                        </span>{' '}
-                        completion. Anything you set here applies to this course only.
+                        <Trans
+                            i18nKey="studyLibraryCertificateCourseCertificateSettingsDialog:instituteDefaultSummary"
+                            values={{
+                                state: instituteState,
+                                pct: settings?.institute_threshold_percent ?? 80,
+                            }}
+                            components={{ strong: <span className="font-semibold text-neutral-700" /> }}
+                        />
                     </p>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                    <Label className="text-subtitle font-medium">Certificates for this course</Label>
+                    <Label className="text-subtitle font-medium">{t('certificatesForCourse')}</Label>
                     <div className="flex flex-wrap gap-2">
                         {(
                             [
-                                ['INHERIT', 'Use institute default'],
-                                ['ON', 'Enabled'],
-                                ['OFF', 'Disabled'],
+                                ['INHERIT', t('choice.inherit')],
+                                ['ON', t('choice.enabled')],
+                                ['OFF', t('choice.disabled')],
                             ] as const
                         ).map(([value, label]) => (
                             <MyButton
@@ -147,12 +153,10 @@ export const CourseCertificateSettingsDialog = ({
                         ))}
                     </div>
                     <p className="text-caption text-neutral-500">
-                        {effectiveEnabled
-                            ? 'Learners on this course will receive certificates once they pass the threshold.'
-                            : 'No certificates will be generated for this course.'}
+                        {effectiveEnabled ? t('willReceiveCertificates') : t('noCertificates')}
                         {enabledChoice === 'ON' &&
                             !settings?.institute_enabled &&
-                            ' The institute default is off — this course is an exception.'}
+                            ` ${t('instituteDefaultOffException')}`}
                     </p>
                 </div>
 
@@ -164,7 +168,7 @@ export const CourseCertificateSettingsDialog = ({
                             onCheckedChange={setOverrideThreshold}
                         />
                         <Label htmlFor="override-threshold" className="text-subtitle font-medium">
-                            Use a different completion threshold for this course
+                            {t('overrideThresholdLabel')}
                         </Label>
                     </div>
                     {overrideThreshold && (
@@ -183,13 +187,13 @@ export const CourseCertificateSettingsDialog = ({
                                 inputPlaceholder="80"
                                 className="w-28"
                             />
-                            <span className="text-body text-neutral-500">% completion</span>
+                            <span className="text-body text-neutral-500">{t('percentCompletion')}</span>
                         </div>
                     )}
                 </div>
 
                 <div className="flex flex-col gap-3">
-                    <Label className="text-subtitle font-medium">Certificate design</Label>
+                    <Label className="text-subtitle font-medium">{t('certificateDesign')}</Label>
                     <CourseCertificatePicker
                         value={{ templateId, templateHtml }}
                         onChange={(next) => {

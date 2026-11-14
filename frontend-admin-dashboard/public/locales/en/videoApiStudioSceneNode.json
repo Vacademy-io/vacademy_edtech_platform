@@ -1,0 +1,30 @@
+{
+    "ariaLabel": "Scene {{sceneNumber}} — click for details",
+    "aiVideoTooltip": "AI-generated video (fal.ai Veo)",
+    "aiBadge": "AI",
+    "intrinsicTooltip": "{{field}} — master narration is muted in this window; the shot plays its own audio (Veo audio / source clip).",
+    "intrinsicBadge": "INTR",
+    "regenTooltip_one": "{{count}} regeneration attempt — click for the verdict log",
+    "regenTooltip_other": "{{count}} regeneration attempts — click for the verdict log",
+    "intentRoleTooltip": "Intent role: {{value}}",
+    "backgroundTreatmentTooltip": "Background treatment: {{value}}",
+    "transitionInTooltip": "Transition in: {{value}}",
+    "workingFallback": "Working…",
+    "htmlPreviewTitle": "Scene {{sceneNumber}} HTML preview",
+    "htmlSceneLabel": "html scene",
+    "textSceneLabel": "text scene",
+    "substage": {
+        "htmlGen": "Generating HTML",
+        "density": "Animation density",
+        "bboxLint": "Bounding-box check",
+        "brandAsset": "Brand asset check",
+        "visionReview": "Vision review",
+        "screenshot": "Capturing screenshot",
+        "tts": "Voicing narration",
+        "mediaPolling": "Polling media job"
+    },
+    "externalCallState": {
+        "queued": "queued",
+        "polling": "polling"
+    }
+}

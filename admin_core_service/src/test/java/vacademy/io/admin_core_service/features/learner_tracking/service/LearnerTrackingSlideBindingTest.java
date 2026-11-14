@@ -6,10 +6,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import vacademy.io.admin_core_service.features.learner_operation.service.LearnerOperationService;
+import vacademy.io.admin_core_service.features.learner_quiz.answerkey.AnswerKeyAccess;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.DocumentActivityLogDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.ActivityLog;
@@ -57,6 +59,8 @@ class LearnerTrackingSlideBindingTest {
     @Mock private LearnerOperationService learnerOperationService;
     @Mock private LearnerTrackingAsyncService learnerTrackingAsyncService;
     @Mock private ConcentrationScoreService concentrationScoreService;
+
+    @Spy private AnswerKeyAccess answerKeyAccess = new AnswerKeyAccess(false, false, false, false);
 
     @InjectMocks private LearnerTrackingService service;
 

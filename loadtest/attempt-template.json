@@ -1,0 +1,373 @@
+{
+ "clientLastSync": "2026-08-27T00:00:00.000Z",
+ "assessment": {
+  "timeElapsedInSeconds": 0
+ },
+ "sections": [
+  {
+   "sectionId": "e34f16fc-67bb-47b9-a438-c12301e9bb6b",
+   "questions": [
+    {
+     "questionId": "07cb15f3-d4ce-451a-bf18-64404ff84447",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "07cb15f3-d4ce-451a-bf18-64404ff84447-A"
+      ]
+     }
+    },
+    {
+     "questionId": "b77627ed-5449-4d8b-9f22-2affb3a728df",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "b77627ed-5449-4d8b-9f22-2affb3a728df-A"
+      ]
+     }
+    },
+    {
+     "questionId": "5c3fda57-b63e-408a-9845-47c85a24f3bc",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "5c3fda57-b63e-408a-9845-47c85a24f3bc-A"
+      ]
+     }
+    },
+    {
+     "questionId": "7fc22522-bd42-4790-89bd-0f16f3d63a8a",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "7fc22522-bd42-4790-89bd-0f16f3d63a8a-A"
+      ]
+     }
+    },
+    {
+     "questionId": "2a37746c-d928-48ff-8b8e-e3829559c9fd",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "2a37746c-d928-48ff-8b8e-e3829559c9fd-A"
+      ]
+     }
+    },
+    {
+     "questionId": "0c88f7fa-0e31-4460-bdb3-291a22867419",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "0c88f7fa-0e31-4460-bdb3-291a22867419-A"
+      ]
+     }
+    },
+    {
+     "questionId": "f1560cb7-f666-4264-a656-f1edc05bcf16",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "f1560cb7-f666-4264-a656-f1edc05bcf16-A"
+      ]
+     }
+    },
+    {
+     "questionId": "bb81cef2-8f17-417a-8509-45895a543e9c",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "bb81cef2-8f17-417a-8509-45895a543e9c-A"
+      ]
+     }
+    },
+    {
+     "questionId": "0b34b3dc-8649-4526-90dc-58203b56b8ba",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "0b34b3dc-8649-4526-90dc-58203b56b8ba-A"
+      ]
+     }
+    },
+    {
+     "questionId": "beb3d730-a195-4887-917a-f50fd14a79cd",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "beb3d730-a195-4887-917a-f50fd14a79cd-A"
+      ]
+     }
+    },
+    {
+     "questionId": "f835f611-f1f9-4180-843d-195076a6ba8b",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "f835f611-f1f9-4180-843d-195076a6ba8b-A"
+      ]
+     }
+    },
+    {
+     "questionId": "08d5292d-8281-401b-a211-2aa00a79242e",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "08d5292d-8281-401b-a211-2aa00a79242e-A"
+      ]
+     }
+    },
+    {
+     "questionId": "4efc10e3-80ce-4d37-ae51-070266f6f5f6",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "4efc10e3-80ce-4d37-ae51-070266f6f5f6-A"
+      ]
+     }
+    },
+    {
+     "questionId": "3e522ff4-2a90-4b85-be59-7ff74ef41582",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "3e522ff4-2a90-4b85-be59-7ff74ef41582-A"
+      ]
+     }
+    },
+    {
+     "questionId": "55e413db-39d1-49ff-9d89-32f1a34265b4",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "55e413db-39d1-49ff-9d89-32f1a34265b4-A"
+      ]
+     }
+    },
+    {
+     "questionId": "f7bea0aa-ce3a-454c-ac8c-fce89817678d",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "f7bea0aa-ce3a-454c-ac8c-fce89817678d-A"
+      ]
+     }
+    },
+    {
+     "questionId": "6a4f3818-224b-48b9-981a-a03e50a21e97",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "6a4f3818-224b-48b9-981a-a03e50a21e97-A"
+      ]
+     }
+    },
+    {
+     "questionId": "04df6eb7-7e94-4060-b070-c64971235814",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "04df6eb7-7e94-4060-b070-c64971235814-A"
+      ]
+     }
+    },
+    {
+     "questionId": "3960a44a-619f-4eae-a0ce-8adc6b7845ef",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "3960a44a-619f-4eae-a0ce-8adc6b7845ef-A"
+      ]
+     }
+    },
+    {
+     "questionId": "6c43a531-118d-4629-bb92-88bd6b8af3d4",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "6c43a531-118d-4629-bb92-88bd6b8af3d4-A"
+      ]
+     }
+    },
+    {
+     "questionId": "ee2a2c6f-4c56-4d99-841c-4a819751aa60",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "ee2a2c6f-4c56-4d99-841c-4a819751aa60-A"
+      ]
+     }
+    },
+    {
+     "questionId": "35a26c88-eac5-423f-8a20-89a4e3a54948",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "35a26c88-eac5-423f-8a20-89a4e3a54948-A"
+      ]
+     }
+    },
+    {
+     "questionId": "013eb896-476f-4cd4-814e-764af61837e2",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "013eb896-476f-4cd4-814e-764af61837e2-A"
+      ]
+     }
+    },
+    {
+     "questionId": "c27e8d3b-e3e2-4634-b6c3-ba3b924cd339",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "c27e8d3b-e3e2-4634-b6c3-ba3b924cd339-A"
+      ]
+     }
+    },
+    {
+     "questionId": "2feafd71-b690-4db0-bd98-1e4552394a8b",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "2feafd71-b690-4db0-bd98-1e4552394a8b-A"
+      ]
+     }
+    },
+    {
+     "questionId": "f40e780f-6451-4154-910f-a230ad0a2bd5",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "f40e780f-6451-4154-910f-a230ad0a2bd5-A"
+      ]
+     }
+    },
+    {
+     "questionId": "d1b07635-a9d0-4eb8-83fa-6aad9faa77dc",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "d1b07635-a9d0-4eb8-83fa-6aad9faa77dc-A"
+      ]
+     }
+    },
+    {
+     "questionId": "535c48bc-851a-4dd3-b03b-99b590de83e9",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "535c48bc-851a-4dd3-b03b-99b590de83e9-A"
+      ]
+     }
+    },
+    {
+     "questionId": "76a53a89-172e-47ef-a18b-e929dfb79d9a",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "76a53a89-172e-47ef-a18b-e929dfb79d9a-A"
+      ]
+     }
+    },
+    {
+     "questionId": "74a8b509-0f7a-4fdb-b677-75f4430c92bd",
+     "timeTakenInSeconds": 20,
+     "isMarkedForReview": false,
+     "isVisited": true,
+     "responseData": {
+      "type": "MCQS",
+      "optionIds": [
+       "74a8b509-0f7a-4fdb-b677-75f4430c92bd-A"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

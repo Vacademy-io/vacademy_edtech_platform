@@ -1,0 +1,35 @@
+{
+    "columns": {
+        "learnerName": "{{term}} का नाम",
+        "enrollmentNumber": "नामांकन संख्या",
+        "username": "उपयोगकर्ता नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "gender": "लिंग",
+        "dateOfBirth": "जन्म तिथि",
+        "status": "स्थिति",
+        "sessionExpiryDate": "{{term}} की समाप्ति तिथि",
+        "address": "पता",
+        "city": "शहर",
+        "state": "राज्य",
+        "country": "देश",
+        "pinCode": "पिन कोड",
+        "collegeSchool": "कॉलेज / स्कूल",
+        "fatherName": "पिता / पुरुष अभिभावक का नाम",
+        "fatherMobile": "पिता / पुरुष अभिभावक का मोबाइल",
+        "fatherEmail": "पिता / पुरुष अभिभावक का ईमेल",
+        "motherName": "माता / महिला अभिभावक का नाम",
+        "motherMobile": "माता / महिला अभिभावक का मोबाइल",
+        "motherEmail": "माता / महिला अभिभावक का ईमेल",
+        "attendancePercent": "उपस्थिति %",
+        "referralsCount": "रेफरल की संख्या",
+        "createdAt": "बनाई गई तिथि"
+    },
+    "groups": {
+        "identity": "पहचान",
+        "contactAddress": "संपर्क और पता",
+        "guardian": "अभिभावक",
+        "other": "अन्य",
+        "customFields": "कस्टम फ़ील्ड"
+    }
+}

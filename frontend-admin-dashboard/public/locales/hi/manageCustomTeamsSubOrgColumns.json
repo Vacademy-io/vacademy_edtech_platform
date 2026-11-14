@@ -1,0 +1,46 @@
+{
+    "columns": {
+        "name": "संस्थान का नाम",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "address": "पता",
+        "city": "शहर",
+        "state": "राज्य",
+        "pincode": "पिनकोड",
+        "status": "स्थिति",
+        "learners": "शिक्षार्थी",
+        "seats": "सीटें",
+        "createdOn": "बनाया गया",
+        "actions": "कार्रवाइयां"
+    },
+    "csv": {
+        "name": "नाम",
+        "admin": "एडमिन",
+        "email": "ईमेल",
+        "phone": "फ़ोन",
+        "address": "पता",
+        "city": "शहर",
+        "state": "राज्य",
+        "pincode": "पिनकोड",
+        "status": "स्थिति",
+        "learners": "शिक्षार्थी",
+        "seatsUsed": "उपयोग की गई सीटें",
+        "seatsTotal": "कुल सीटें",
+        "inviteCode": "आमंत्रण कोड",
+        "createdOn": "बनाया गया"
+    },
+    "fallback": {
+        "unknown": "अज्ञात"
+    },
+    "seats": {
+        "percentUsedAriaLabel_one": "{{percent}}% सीट उपयोग में है",
+        "percentUsedAriaLabel_other": "{{percent}}% सीटें उपयोग में हैं"
+    },
+    "actions": {
+        "ariaLabel": "{{name}} के लिए कार्रवाइयां",
+        "thisRow": "इस पंक्ति",
+        "openDetails": "विवरण खोलें",
+        "copyInviteLink": "आमंत्रण लिंक कॉपी करें",
+        "shareCredentials": "लॉगिन विवरण साझा करें"
+    }
+}

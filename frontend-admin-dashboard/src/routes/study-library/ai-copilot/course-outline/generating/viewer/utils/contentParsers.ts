@@ -1,4 +1,8 @@
 import { QuizQuestion } from '../../../../shared/types';
+// contentParsers.ts is a module-scope, non-React parsing pipeline invoked from
+// plain functions — there is no component/hook context to call useTranslation()
+// from, so the i18next singleton is used directly at the point of use.
+import i18n from '@/i18n';
 
 /**
  * Process document content and convert mermaid diagrams to images
@@ -245,7 +249,9 @@ export const parseQuizContent = (content: string): QuizQuestion[] => {
                 }
 
                 return {
-                    question: cleanQuizContent(q.question?.content || q.question || 'No question'),
+                    question: cleanQuizContent(
+                        q.question?.content || q.question || i18n.t('studyLibraryContentParsers:noQuestion')
+                    ),
                     options: options.map((opt: any) => cleanQuizContent(opt.content || opt)),
                     correctAnswerIndex: Number(correctAnswerIndex),
                     explanation: q.exp ? cleanQuizContent(q.exp) : undefined

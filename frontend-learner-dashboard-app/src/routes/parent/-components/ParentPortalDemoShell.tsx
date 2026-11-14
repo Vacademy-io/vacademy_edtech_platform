@@ -1,6 +1,7 @@
 // Demo shell — same layout as ParentPortalShell but modules receive mock data
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import {
   MOCK_OVERVIEW,
@@ -24,18 +25,19 @@ import { DocumentsDemo } from "./demos/DocumentsDemo";
 import { TrackerDemo } from "./demos/TrackerDemo";
 
 type TabId = "dashboard" | "registration" | "schedule" | "payments" | "documents" | "tracker";
-const NAV_TABS: { id: TabId; label: string; icon: React.ElementType; mobileLabel: string }[] = [
-  { id: "dashboard", label: "Dashboard", icon: House, mobileLabel: "Home" },
-  { id: "registration", label: "Registration", icon: ClipboardText, mobileLabel: "Register" },
-  { id: "schedule", label: "Interview & Assessment", icon: CalendarCheck, mobileLabel: "Schedule" },
-  { id: "payments", label: "Payments", icon: CurrencyDollar, mobileLabel: "Payments" },
-  { id: "documents", label: "Documents", icon: FileText, mobileLabel: "Docs" },
-  { id: "tracker", label: "Admission Tracker", icon: ArrowsClockwise, mobileLabel: "Tracker" },
-];
 
 interface Props { child: ChildProfile; allChildren: ChildProfile[]; onSwitchChild: () => void }
 
 export function ParentPortalDemoShell({ child, allChildren, onSwitchChild }: Props) {
+  const { t } = useTranslation("parent");
+  const NAV_TABS: { id: TabId; label: string; icon: React.ElementType; mobileLabel: string }[] = [
+    { id: "dashboard", label: t("admissionPortal.nav.dashboard"), icon: House, mobileLabel: t("admissionPortal.nav.home") },
+    { id: "registration", label: t("admissionPortal.demo.nav.registration"), icon: ClipboardText, mobileLabel: t("admissionPortal.demo.nav.register") },
+    { id: "schedule", label: t("admissionPortal.demo.nav.interviewAndAssessment"), icon: CalendarCheck, mobileLabel: t("admissionPortal.demo.nav.schedule") },
+    { id: "payments", label: t("admissionPortal.nav.payment"), icon: CurrencyDollar, mobileLabel: t("admissionPortal.nav.pay") },
+    { id: "documents", label: t("admissionPortal.demo.nav.documents"), icon: FileText, mobileLabel: t("admissionPortal.demo.nav.docs") },
+    { id: "tracker", label: t("admissionPortal.tracker.heading"), icon: ArrowsClockwise, mobileLabel: t("admissionPortal.demo.nav.tracker") },
+  ];
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const initials = child.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
@@ -57,7 +59,7 @@ export function ParentPortalDemoShell({ child, allChildren, onSwitchChild }: Pro
     <div className="min-h-screen bg-background flex flex-col">
       {/* Demo banner */}
       <div className="bg-amber-500 text-amber-950 text-center text-xs py-1 font-medium">
-        🎨 DEMO MODE — Viewing with mock data
+        {t("admissionPortal.demo.banner")}
       </div>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
@@ -70,7 +72,7 @@ export function ParentPortalDemoShell({ child, allChildren, onSwitchChild }: Pro
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground text-xs font-bold shadow-sm">{initials}</div>
               <div className="hidden sm:block">
                 <p className="text-sm font-semibold text-foreground leading-tight">{child.full_name}</p>
-                <p className="text-caption text-muted-foreground leading-tight">{child.grade_applying || "Admission in progress"}</p>
+                <p className="text-caption text-muted-foreground leading-tight">{child.grade_applying || t("admissionPortal.dashboard.inProgress")}</p>
               </div>
             </div>
           </div>
@@ -86,7 +88,7 @@ export function ParentPortalDemoShell({ child, allChildren, onSwitchChild }: Pro
             })}
           </nav>
           <div className="flex items-center gap-2">
-            {canSwitch && <button onClick={onSwitchChild} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"><Users size={16} /><span className="hidden sm:inline">Switch</span></button>}
+            {canSwitch && <button onClick={onSwitchChild} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"><Users size={16} /><span className="hidden sm:inline">{t("admissionPortal.demo.switch")}</span></button>}
             <button className="relative p-2 rounded-lg hover:bg-muted/50"><Bell size={18} className="text-muted-foreground" /><span className="absolute top-1.5 end-1.5 w-2 h-2 bg-orange-500 rounded-full" /></button>
           </div>
         </div>

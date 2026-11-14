@@ -1,0 +1,10 @@
+{
+    "heading": {
+        "title": "Notifications récentes",
+        "description": "Dernières alertes système pour votre compte"
+    },
+    "seeAll": "Voir tout",
+    "empty": {
+        "title": "Aucune notification récente"
+    }
+}

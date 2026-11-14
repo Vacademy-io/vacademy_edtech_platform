@@ -1,0 +1,20 @@
+{
+    "navHeading": "बैच प्रबंधित करें",
+    "fetchError": "बैच प्राप्त करने में असमर्थ। कृपया बाद में पुनः प्रयास करें।",
+    "heading": "{{learner}} बैच",
+    "subheading": "अपने {{learner}} बैचों को {{session}} के अनुसार प्रबंधित और व्यवस्थित करें।",
+    "selectSessionPlaceholder": "{{session}} चुनें",
+    "emptyState": {
+        "noBatchesForSession": "{{session}} के लिए कोई बैच नहीं मिला",
+        "noSessionsAvailable": "कोई सेशन उपलब्ध नहीं है",
+        "createBatchHint": "शुरू करने के लिए इस सेशन में एक नया बैच बनाएं।",
+        "createSessionHint": "बैच जोड़ने से पहले कृपया पहले एक सेशन बनाएं।"
+    },
+    "export": "निर्यात करें",
+    "summary": "{{total}} में से {{shown}} {{batches}} · {{learners}} {{learnerTerm}}",
+    "csv": {
+        "status": "स्थिति",
+        "inviteCode": "आमंत्रण कोड",
+        "startDate": "आरंभ तिथि"
+    }
+}

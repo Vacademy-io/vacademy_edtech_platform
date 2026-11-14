@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "submitFailed": "Échec de l'envoi de la demande",
+        "bulkSubmitFailed": "Échec de l'importation groupée des demandes"
+    }
+}

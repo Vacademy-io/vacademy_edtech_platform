@@ -1,0 +1,37 @@
+{
+    "searchPlaceholder": "Search by student name or phone…",
+    "clear": "Clear",
+    "filters": {
+        "allTypes": "All Types",
+        "from": "From:",
+        "to": "To:"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Penalty"
+    },
+    "errors": {
+        "unableToLoad": "Unable to load history",
+        "tryAgain": "Please try again."
+    },
+    "empty": {
+        "noActivity": "No activity",
+        "tryClearingFilters": "Try clearing filters.",
+        "noActivityYet": "No adjustment activity matches this view yet."
+    },
+    "table": {
+        "date": "Date",
+        "student": "Student",
+        "feeType": "Fee Type",
+        "type": "Type",
+        "amount": "Amount",
+        "event": "Event",
+        "by": "By",
+        "reason": "Reason"
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} of {{totalPages}}",
+        "total": "total",
+        "updating": "updating…"
+    }
+}

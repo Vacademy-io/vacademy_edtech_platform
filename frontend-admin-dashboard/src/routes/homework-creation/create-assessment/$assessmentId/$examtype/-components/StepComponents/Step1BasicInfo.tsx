@@ -2,26 +2,25 @@ import { MyButton } from '@/components/design-system/button';
 import { Separator } from '@/components/ui/separator';
 import { StepContentProps } from '@/types/assessments/step-content-props';
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { useFilterDataForAssesment } from '../../../../../assessment-list/-utils.ts/useFiltersData';
+import { unresolvedSubjectIds, useSubjectNamesByIds } from '@/services/subject-names';
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { MyInput } from '@/components/design-system/input';
 import SelectField from '@/components/design-system/select-field';
 import { Switch } from '@/components/ui/switch';
 import { timeLimit } from '@/constants/dummy-data';
-import { BasicInfoFormSchema } from '../../-utils/basic-info-form-schema';
+import {
+    buildBasicInfoFormSchema,
+    type BasicInfoFormSchemaType,
+} from '../../-utils/basic-info-form-schema';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { getAssessmentDetails, handlePostStep1Data } from '../../-services/assessment-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { getStepKey, getTimeLimitString, syncStep1DataWithStore } from '../../-utils/helper';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
-import {
-    getIdBySubjectName,
-    getSubjectNameById,
-} from '@/routes/assessment/question-papers/-utils/helper';
 import { useSavedAssessmentStore } from '../../-utils/global-states';
 import { useBasicInfoStore } from '../../-utils/zustand-global-states/step1-basic-info';
 import { toast } from 'sonner';
@@ -37,6 +36,8 @@ import { useTestAccessStore } from '../../-utils/zustand-global-states/step3-add
 import { useAccessControlStore } from '../../-utils/zustand-global-states/step4-access-control';
 import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 export function convertDateFormat(dateStr: string) {
     if (!dateStr) return '';
@@ -49,6 +50,9 @@ export function convertDateFormat(dateStr: string) {
     const normalized = hasTimezone ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
     const date = new Date(normalized);
     if (isNaN(date.getTime())) return '';
+    // "Open until 9999-12-31 UTC" is the year 10000 east of Greenwich - a value
+    // no datetime-local input can hold. It means "never closes", not a date.
+    if (date.getFullYear() >= 9000) return '';
 
     // Emit LOCAL wall-clock components for the datetime-local input, which
     // interprets its value as local time. Using toISOString() here would leak
@@ -58,7 +62,7 @@ export function convertDateFormat(dateStr: string) {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-const heading = (
+const buildHeading = (t: TFunction) => (
     <div className="flex items-center gap-4">
         <CaretLeft
             onClick={() => {
@@ -70,11 +74,11 @@ const heading = (
             }}
             className="cursor-pointer"
         />
-        <h1 className="text-lg">Create Homework</h1>
+        <h1 className="text-lg">{t('heading.createHomework')}</h1>
     </div>
 );
 
-const headingUpdate = (
+const buildHeadingUpdate = (t: TFunction) => (
     <div className="flex items-center gap-4">
         <CaretLeft
             onClick={() => {
@@ -86,7 +90,7 @@ const headingUpdate = (
             }}
             className="cursor-pointer"
         />
-        <h1 className="text-lg">Update Homework</h1>
+        <h1 className="text-lg">{t('heading.updateHomework')}</h1>
     </div>
 );
 
@@ -95,6 +99,11 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation([
+        'homeworkCreationStep1BasicInfo',
+        'homeworkCreationBasicInfoFormSchema',
+    ]);
+    const basicInfoFormSchema = buildBasicInfoFormSchema(t);
     const queryClient = useQueryClient();
     const params = useParams({ strict: false });
     const examType = params.examtype;
@@ -112,8 +121,8 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
     );
     const { SubjectFilterData } = useFilterDataForAssesment(instituteDetails);
 
-    const form = useForm<z.infer<typeof BasicInfoFormSchema>>({
-        resolver: zodResolver(BasicInfoFormSchema),
+    const form = useForm<BasicInfoFormSchemaType>({
+        resolver: zodResolver(basicInfoFormSchema),
         defaultValues: {
             status: completedSteps[currentStep] ? 'COMPLETE' : 'INCOMPLETE',
             testCreation: {
@@ -143,6 +152,30 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
 
     const { handleSubmit, control, watch } = form;
 
+    // The dropdown comes from a list admin_core deduplicates by subject name, so a
+    // perfectly valid saved subject id is often absent from it — its name lost the dedup,
+    // or its course was deleted. Radix renders a value with no matching item as the empty
+    // placeholder, which is what made an already-chosen subject look unset on reopening
+    // the wizard. Resolve the name and keep the saved id as an option of its own.
+    const selectedSubjectId = watch('testCreation.subject');
+    const missingSubjectNames = useSubjectNamesByIds(
+        unresolvedSubjectIds(instituteDetails?.subjects, [selectedSubjectId])
+    );
+    const subjectOptions = useMemo(() => {
+        const options = SubjectFilterData.map((option, index) => ({
+            value: option.id,
+            label: option.name,
+            _id: index,
+        }));
+        if (selectedSubjectId && !options.some((option) => option.value === selectedSubjectId)) {
+            const savedName = missingSubjectNames[selectedSubjectId];
+            if (savedName) {
+                options.push({ value: selectedSubjectId, label: savedName, _id: options.length });
+            }
+        }
+        return options;
+    }, [SubjectFilterData, selectedSubjectId, missingSubjectNames]);
+
     // Watch form fields
     const assessmentName = watch('testCreation.assessmentName');
     const liveDateRangeStartDate = watch('testCreation.liveDateRange.startDate');
@@ -166,7 +199,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             instituteId,
             type,
         }: {
-            data: z.infer<typeof BasicInfoFormSchema>;
+            data: BasicInfoFormSchemaType;
             assessmentId: string | null | undefined;
             instituteId: string | undefined;
             type: string | undefined;
@@ -175,7 +208,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             if (assessmentId !== 'defaultId') {
                 useBasicInfoStore.getState().reset();
                 window.history.back();
-                toast.success('Step 1 data has been updated successfully!', {
+                toast.success(t('toast.updateSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -183,7 +216,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             } else {
                 setSavedAssessmentId(data.assessment_id);
                 syncStep1DataWithStore(form);
-                toast.success('Step 1 data has been saved successfully!', {
+                toast.success(t('toast.saveSuccess'), {
                     className: 'success-toast',
                     duration: 2000,
                 });
@@ -195,20 +228,21 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                 feature: 'homework-step1-basic-info',
                 tags: { actionType: assessmentId !== 'defaultId' ? 'update' : 'create' },
                 extra: { assessmentId, instituteId: instituteDetails?.id, examType },
-                fallbackMessage: 'Failed to save basic info.',
+                fallbackMessage: t('errors.saveFailed'),
             });
         },
     });
 
-    const onSubmit = (data: z.infer<typeof BasicInfoFormSchema>) => {
+    const onSubmit = (data: BasicInfoFormSchemaType) => {
         const modifiedData = {
             ...data,
             testCreation: {
                 ...data.testCreation,
-                subject: getIdBySubjectName(
-                    instituteDetails?.subjects || [],
-                    data.testCreation.subject
-                ),
+                // The field holds the subject *id*. It used to hold the name and be
+                // converted here, which posted the literal string "N/A" whenever nothing
+                // was selected and, when something was, resolved through a
+                // name-deduplicated lookup whose winner Postgres may change at any time.
+                subject: data.testCreation.subject === 'N/A' ? '' : data.testCreation.subject,
             },
         };
         handleSubmitStep1Form.mutate({
@@ -233,9 +267,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
 
     useEffect(() => {
         if (assessmentId !== 'defaultId') {
-            setNavHeading(headingUpdate);
+            setNavHeading(buildHeadingUpdate(t));
         } else {
-            setNavHeading(heading);
+            setNavHeading(buildHeading(t));
         }
     }, []);
 
@@ -246,10 +280,10 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                 testCreation: {
                     assessmentName: assessmentDetails[currentStep]?.saved_data?.name || '',
                     subject:
-                        getSubjectNameById(
-                            instituteDetails?.subjects || [],
-                            assessmentDetails[currentStep]?.saved_data?.subject_selection || ''
-                        ) || '',
+                        assessmentDetails[currentStep]?.saved_data?.subject_selection &&
+                        assessmentDetails[currentStep]?.saved_data?.subject_selection !== 'N/A'
+                            ? assessmentDetails[currentStep]?.saved_data?.subject_selection
+                            : '',
                     assessmentInstructions:
                         assessmentDetails[currentStep]?.saved_data?.instructions.content || '',
                     liveDateRange: {
@@ -300,7 +334,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
         <FormProvider {...form}>
             <form>
                 <div className="m-0 flex items-center justify-between p-0">
-                    <h1>Basic Information</h1>
+                    <h1>{t('page.title')}</h1>
                     <MyButton
                         type="button"
                         scale="large"
@@ -308,7 +342,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         disable={assessmentId === 'defaultId' ? !isFormValid : false}
                         onClick={handleSubmit(onSubmit, onInvalid)}
                     >
-                        {assessmentId !== 'defaultId' ? 'Update' : 'Next'}
+                        {assessmentId !== 'defaultId' ? t('page.updateButton') : t('page.nextButton')}
                     </MyButton>
                 </div>
                 <Separator className="my-4" />
@@ -322,7 +356,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                     <FormControl>
                                         <MyInput
                                             inputType="text"
-                                            inputPlaceholder="Add Title"
+                                            inputPlaceholder={t('fields.assessmentName.placeholder')}
                                             input={field.value}
                                             labelStyle="font-thin"
                                             onChangeFunction={field.onChange}
@@ -332,7 +366,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                             }
                                             required={true}
                                             size="large"
-                                            label="Assessment Name"
+                                            label={t('fields.assessmentName.label')}
                                             {...field}
                                         />
                                     </FormControl>
@@ -348,11 +382,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 label={getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}
                                 name="testCreation.subject"
                                 labelStyle="font-thin"
-                                options={SubjectFilterData.map((option, index) => ({
-                                    value: option.name,
-                                    label: option.name,
-                                    _id: index,
-                                }))}
+                                options={subjectOptions}
                                 control={form.control}
                                 className="mt-2 w-56 font-thin"
                                 required={
@@ -366,7 +396,9 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         )}
                     </div>
                     <div className="flex flex-col gap-6" id="assessment-instructions">
-                        <h1 className="-mb-5 font-thin">Assessment Instructions</h1>
+                        <h1 className="-mb-5 font-thin">
+                            {t('fields.assessmentInstructions.sectionTitle')}
+                        </h1>
                         <FormField
                             control={control}
                             name="testCreation.assessmentInstructions"
@@ -377,7 +409,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                             onChange={field.onChange}
                                             onBlur={field.onBlur}
                                             value={field.value}
-                                            placeholder="Write the homework instructions"
+                                            placeholder={t('fields.assessmentInstructions.placeholder')}
                                             minHeight={160}
                                         />
                                     </FormControl>
@@ -395,7 +427,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                             assessmentDetails,
                             currentStep,
                             key: 'boundation_end_date',
-                        }) && <h1>Live Date Range</h1>}
+                        }) && <h1>{t('fields.liveDateRange.sectionTitle')}</h1>}
                     <div className="-mt-2 flex items-start gap-4" id="date-range">
                         {getStepKey({
                             assessmentDetails,
@@ -424,7 +456,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                                     }) === 'REQUIRED'
                                                 }
                                                 size="large"
-                                                label="Start Date & Time"
+                                                label={t('fields.liveDateRange.startDateLabel')}
                                                 labelStyle="font-thin"
                                                 {...field}
                                                 className="w-full"
@@ -461,7 +493,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                                     }) === 'REQUIRED'
                                                 }
                                                 size="large"
-                                                label="End Date & Time"
+                                                label={t('fields.liveDateRange.endDateLabel')}
                                                 labelStyle="font-thin"
                                                 {...field}
                                                 className="w-full"
@@ -473,7 +505,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         )}
                     </div>
                     <Separator />
-                    <h1>Attempt Settings</h1>
+                    <h1>{t('fields.attemptSettings.sectionTitle')}</h1>
                     {(examType === 'EXAM' || examType === 'SURVEY') && (
                         <FormField
                             control={control}
@@ -483,14 +515,16 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                     <FormControl>
                                         <MyInput
                                             inputType="number"
-                                            inputPlaceholder="Reattempt Count"
+                                            inputPlaceholder={t(
+                                                'fields.attemptSettings.reattemptCountPlaceholder'
+                                            )}
                                             input={field.value}
-                                            labelStyle="text-[12px]"
+                                            labelStyle="text-caption"
                                             onChangeFunction={field.onChange}
                                             error={form.formState.errors?.reattemptCount?.message}
                                             required={true}
                                             size="large"
-                                            label="Reattempt Count"
+                                            label={t('fields.attemptSettings.reattemptCountLabel')}
                                             {...field}
                                             min={0}
                                             onKeyDown={(e) => {
@@ -511,7 +545,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                             key: 'evaluation_type',
                         }) && (
                             <SelectField
-                                label="Evaluation Type"
+                                label={t('fields.evaluationType.label')}
                                 name="evaluationType"
                                 options={
                                     assessmentDetails[
@@ -542,7 +576,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 key: 'submission_type',
                             }) && (
                                 <SelectField
-                                    label="Submission Type"
+                                    label={t('fields.submissionType.label')}
                                     name="submissionType"
                                     options={
                                         assessmentDetails[
@@ -580,7 +614,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 render={({ field }) => (
                                     <FormItem className="flex w-1/2 items-center justify-between">
                                         <FormLabel>
-                                            Allow Assessment Preview
+                                            {t('fields.assessmentPreview.allowLabel')}
                                             {getStepKey({
                                                 assessmentDetails,
                                                 currentStep,
@@ -603,7 +637,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         )}
                         {watch('assessmentPreview.checked') && (
                             <SelectField
-                                label="Preview Time Limit"
+                                label={t('fields.assessmentPreview.previewTimeLimitLabel')}
                                 labelStyle="font-thin"
                                 name="assessmentPreview.previewTimeLimit"
                                 options={timeLimit.map((option, index) => ({
@@ -627,12 +661,12 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 render={({ field }) => (
                                     <FormItem className="flex w-1/2 items-center justify-between">
                                         <FormLabel>
-                                            Allow{' '}
-                                            {getTerminology(
-                                                RoleTerms.Learner,
-                                                SystemTerms.Learner
-                                            ).toLocaleLowerCase()}
-                                            s to switch between sections
+                                            {t('fields.switchSections.label', {
+                                                term: getTerminology(
+                                                    RoleTerms.Learner,
+                                                    SystemTerms.Learner
+                                                ).toLocaleLowerCase(),
+                                            })}
                                             {getStepKey({
                                                 assessmentDetails,
                                                 currentStep,

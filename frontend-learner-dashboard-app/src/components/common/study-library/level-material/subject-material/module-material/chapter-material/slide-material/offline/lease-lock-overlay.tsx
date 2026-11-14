@@ -4,21 +4,22 @@
  * icon per `LockReason` (see `src/lib/offline/resolve.ts`).
  */
 
+import { useTranslation } from "react-i18next";
 import { LockKey, Prohibit } from "@phosphor-icons/react";
 import type { LockReason } from "@/lib/offline/resolve";
 
-const COPY: Record<LockReason, { title: string; body: string }> = {
-  LEASE_EXPIRED: {
-    title: "Connect to the internet to keep offline access",
-    body: "This device periodically re-validates offline content. Reconnect briefly to renew access and keep viewing this course offline.",
-  },
-  REVOKED: {
-    title: "Offline access removed",
-    body: "Your institute revoked offline access for this device. Reconnect to see what's still available.",
-  },
-};
-
 export const LeaseLockOverlay = ({ reason }: { reason: LockReason }) => {
+  const { t } = useTranslation("libraryCommonB");
+  const COPY: Record<LockReason, { title: string; body: string }> = {
+    LEASE_EXPIRED: {
+      title: t("leaseLockOverlay.leaseExpired.title"),
+      body: t("leaseLockOverlay.leaseExpired.body"),
+    },
+    REVOKED: {
+      title: t("leaseLockOverlay.revoked.title"),
+      body: t("leaseLockOverlay.revoked.body"),
+    },
+  };
   const { title, body } = COPY[reason];
   const Icon = reason === "REVOKED" ? Prohibit : LockKey;
 

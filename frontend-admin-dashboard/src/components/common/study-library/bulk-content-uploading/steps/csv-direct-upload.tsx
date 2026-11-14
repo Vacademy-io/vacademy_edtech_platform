@@ -17,6 +17,8 @@ import { generatePrefilledManifestCsv } from '../csv-manifest';
 import { generateChapterReferenceCsv } from '../chapter-reference';
 import { setDirectFiles } from '../file-source';
 import { useBulkContentUploadingStore } from '../use-bulk-content-uploading-store';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface CsvDirectUploadProps {
     onManifestCsvSelected: (csvText: string) => void;
@@ -147,9 +149,9 @@ export const CsvDirectUpload = ({ onManifestCsvSelected }: CsvDirectUploadProps)
                             )}
                             {downloadingRef
                                 ? refProgress
-                                    ? `Chapter ids… ${refProgress.done}/${refProgress.total}`
-                                    : 'Chapter ids…'
-                                : 'Need chapter ids?'}
+                                    ? `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} ids… ${refProgress.done}/${refProgress.total}`
+                                    : `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} ids…`
+                                : `Need ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()} ids?`}
                         </MyButton>
                     </div>
                 </div>

@@ -1,0 +1,63 @@
+{
+    "header": {
+        "mcqSingleCorrect": "MCQ(Single Correct):",
+        "mcqMultipleCorrect": "MCQ(Multiple Correct):",
+        "total": "Total:"
+    },
+    "uploadSection": {
+        "title": "Upload Question Paper",
+        "uploadFromDevice": "Upload from Device",
+        "uploadFromDeviceDialogTitle": "Upload Question Paper From Device",
+        "createManually": "Create Manually",
+        "createManuallyDialogTitle": "Create Question Paper Manually",
+        "chooseSavedPaper": "Choose Saved Paper",
+        "chooseSavedDialogTitle": "Choose Saved Question Paper From List"
+    },
+    "sectionDescription": {
+        "title": "Section Description",
+        "placeholder": "Describe this section"
+    },
+    "duration": {
+        "questionDuration": "Question Duration",
+        "sectionDuration": "Section Duration",
+        "hrs": "hrs",
+        "minutes": "minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "Marks Per Question",
+            "default": "(Default)"
+        },
+        "negativeMarking": "Negative Marking",
+        "partialMarking": "Partial Marking"
+    },
+    "randomization": {
+        "problemRandomization": "Problem Randomization"
+    },
+    "table": {
+        "adaptiveMarkingRulesTitle": "Adaptive Marking Rules",
+        "headers": {
+            "qno": "Q.No.",
+            "question": "Question",
+            "questionType": "Question Type",
+            "marks": "Marks",
+            "penalty": "Penalty",
+            "time": "Time"
+        },
+        "questionTypeLabels": {
+            "MCQS": "MCQ (Single Correct)",
+            "MCQM": "MCQ (Multiple Correct)",
+            "NUMERIC": "Numerical",
+            "CMCQS": "Comprehension MCQ (Single Correct)",
+            "CMCQM": "Comprehension MCQ (Multiple Correct)",
+            "CNUMERIC": "Comprehension Numerical",
+            "ONE_WORD": "Single Word",
+            "LONG_ANSWER": "Long Answer",
+            "TRUE_FALSE": "True/False",
+            "CODING": "Coding"
+        }
+    },
+    "totalMarks": {
+        "label": "Total Marks"
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "title": "الطلاب حسب المرحلة",
+    "stages": {
+        "ENQUIRY": "استفسار",
+        "APPLICATION": "طلب التحاق",
+        "ADMITTED": "مقبول"
+    },
+    "emptyState": "لا يوجد طلاب في مرحلة {{stage}}",
+    "columns": {
+        "index": "#",
+        "studentName": "اسم الطالب",
+        "parentName": "اسم ولي الأمر",
+        "source": "المصدر",
+        "date": "التاريخ",
+        "stage": "المرحلة"
+    },
+    "pagination": {
+        "showing": "عرض {{from}}–{{to}} من {{total}}",
+        "pageOf": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    }
+}

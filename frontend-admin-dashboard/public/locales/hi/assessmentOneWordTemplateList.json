@@ -1,0 +1,16 @@
+{
+    "popover": {
+        "title": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न प्रकार"
+    },
+    "comprehensionText": "गद्यांश पाठ",
+    "question": {
+        "labelWithNumber": "प्रश्न {{number}}"
+    },
+    "answer": {
+        "label": "उत्तर"
+    },
+    "explanation": {
+        "label": "स्पष्टीकरण:"
+    }
+}

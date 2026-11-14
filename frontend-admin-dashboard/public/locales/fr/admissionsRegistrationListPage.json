@@ -1,0 +1,74 @@
+{
+    "pageTitle": "Candidatures - Admissions",
+    "navHeading": "Gestion des candidatures",
+    "search": {
+        "placeholder": "Rechercher par ID de suivi, nom..."
+    },
+    "filters": {
+        "classLabel": "Classe",
+        "statusLabel": "Statut"
+    },
+    "session": {
+        "placeholder": "Sélectionner une session",
+        "newGoTo": "New applications go to"
+    },
+    "buttons": {
+        "newApplication": "Nouvelle candidature",
+        "bulkImport": "Importation groupée",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "table": {
+        "loading": "Chargement des candidatures...",
+        "empty": {
+            "title": "Aucune candidature trouvée",
+            "subtitle": "Essayez d'ajuster vos filtres"
+        },
+        "headers": {
+            "trackingId": "ID de suivi",
+            "studentName": "Nom de l'étudiant",
+            "class": "Classe",
+            "parentName": "Nom du parent",
+            "mobile": "Mobile",
+            "date": "Date",
+            "status": "Statut",
+            "actions": "Actions"
+        },
+        "error": "Could not load applications. Please try again."
+    },
+    "status": {
+        "submitted": "Soumise",
+        "admitted": "Admis",
+        "approved": "Approuvée",
+        "pending": "En attente",
+        "rejected": "Rejetée",
+        "admissionCompleted": "Terminée"
+    },
+    "pagination": {
+        "showing_one": "Affichage de {{from}} à {{to}} sur {{count}} entrée",
+        "showing_many": "Affichage de {{from}} à {{to}} sur {{count}} d'entrées",
+        "showing_other": "Affichage de {{from}} à {{to}} sur {{count}} entrées"
+    },
+    "modal": {
+        "title": "Choisir le type de candidature",
+        "subtitle": "Sélectionnez comment vous souhaitez créer une nouvelle candidature",
+        "newApplication": {
+            "title": "Nouvelle candidature",
+            "description": "Démarrer un nouveau formulaire de candidature"
+        },
+        "fromEnquiry": {
+            "title": "À partir d'une demande",
+            "description": "Créer une candidature à partir d'une demande existante"
+        }
+    },
+    "toast": {
+        "enquiryAlreadyConverted": "Cette demande a déjà été convertie en candidature."
+    },
+    "header": {
+        "title": "Applications",
+        "subtitle": "Review applications, collect the fee, then admit."
+    },
+    "quickViews": {
+        "all": "All applications"
+    }
+}

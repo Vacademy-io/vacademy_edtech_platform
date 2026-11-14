@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Vacademy Classroom (io.vacademy.classroom) — merged over src/main/AndroidManifest.xml
+    for the vacademyClassroom flavor only. Targets classroom interactive flat panels
+    (Android 9-11, frozen system WebView) and Android TV.
+
+    - HOME + DEFAULT lets a school set the app as the panel's home screen.
+    - LEANBACK_LAUNCHER + android:banner list it in the Android TV launcher row.
+    - All hardware features are optional so panels / TVs without touch, camera or
+      mic can install it.
+    - CAMERA / RECORD_AUDIO / MODIFY_AUDIO_SETTINGS back WebView getUserMedia, which
+      Capacitor's BridgeWebChromeClient.onPermissionRequest already maps to runtime
+      permission requests. Declared for this flavor only; the admin flavor is unchanged.
+    - Push is not used by the panel app (no google-services.json for this flavor), so
+      Firebase messaging auto-init is turned off. The plugin itself never touches
+      FirebaseMessaging until JS calls it, so nothing crashes on devices without GMS.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- Lets PanelDevice.openExternal see what would open a link, on API 30 and later. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <!-- No adb backup (review finding SEC-7): on the Android 9-11 targets `adb backup`
+         would copy app_webview (the teacher's auth cookies) and localStorage off a shared
+         panel. Classroom flavor only; main / admin keep allowBackup="true". -->
+    <application
+        android:banner="@drawable/tv_banner"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        tools:replace="android:allowBackup">
+
+        <!-- Name resolves against the namespace io.vacademy.admin.app: this is the
+             SAME shared MainActivity (behaviour gated on R.bool.panel_mode). -->
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="sensorLandscape"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+
+            <!-- Selectable as the device's Home app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Android TV launcher row. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Live class host, opened only by PanelDevice.openMeeting. Classroom flavor only:
+             no other flavor can start it. Not launchable from outside the app. The theme keeps
+             MainActivity visible underneath; the Activity sets its own opaque theme and
+             landscape orientation in onCreate. -->
+        <activity
+            android:name="io.vacademy.admin.app.panel.PanelMeetingActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- TODO(classroom push): re-enable when a Firebase client exists for
+             io.vacademy.classroom and the panel actually registers for push. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+    </application>
+</manifest>

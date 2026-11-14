@@ -1,0 +1,11 @@
+{
+    "offlineSettings": "Offline settings",
+    "failedToLoadOfflineSettings": "Failed to load offline settings",
+    "offlineSettingsSaved": "Offline settings saved",
+    "failedToSaveOfflineSettings": "Failed to save offline settings",
+    "allowOfflineDownloadsByDefault": "Allow offline downloads by default",
+    "appliesToEverythingDescription": "Applies to everything in this course that isn't covered by a more specific rule.",
+    "fineTuneFromMenu": "Fine-tune per, subject, module, chapter or slide from it's <strong>menu</strong>",
+    "blockAlwaysWins": "A <strong>Block always wins</strong> - blocking a chapter blocks its slides even if they're allowed.",
+    "embeddedContentNeedsInternet": "YouTube/Vimeo/embedded content always needs internet — it can't be downloaded regardless of these settings."
+}

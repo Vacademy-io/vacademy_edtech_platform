@@ -1,0 +1,42 @@
+{
+    "header": {
+        "title": "تقييمات الذكاء الاصطناعي",
+        "subtitle": "كل عملية تقييم بالذكاء الاصطناعي لهذا الاختبار. افتح عملية لمراجعة الدرجات وتعديلها قبل اعتماد النتيجة."
+    },
+    "emptyStates": {
+        "noAssessment": "لم يتم اختيار اختبار. افتح هذه الصفحة من علامة تبويب التسليمات الخاصة بالاختبار.",
+        "error": "تعذّر تحميل التقييمات. يرجى المحاولة مرة أخرى.",
+        "noEvaluations": "لم يبدأ أي تقييم بالذكاء الاصطناعي لهذا الاختبار بعد."
+    },
+    "table": {
+        "columns": {
+            "participant": "المشارك",
+            "status": "الحالة",
+            "progress": "التقدّم",
+            "started": "بدأ في",
+            "actions": "الإجراءات"
+        },
+        "unknownParticipant": "غير معروف",
+        "notAvailable": "—"
+    },
+    "status": {
+        "completed": "مكتمل",
+        "needsReview_zero": "لا حاجة للمراجعة ({{count}})",
+        "needsReview_one": "بحاجة إلى مراجعة ({{count}})",
+        "needsReview_two": "بحاجة إلى مراجعة ({{count}})",
+        "needsReview_few": "بحاجة إلى مراجعة ({{count}} أسئلة)",
+        "needsReview_many": "بحاجة إلى مراجعة ({{count}} سؤالًا)",
+        "needsReview_other": "بحاجة إلى مراجعة ({{count}})",
+        "failed": "فشل",
+        "cancelled": "ملغى",
+        "inProgress": "قيد التنفيذ"
+    },
+    "actions": {
+        "open": "فتح",
+        "retry": "إعادة المحاولة"
+    },
+    "toasts": {
+        "restartSuccess": "تمت إعادة تشغيل تقييم الذكاء الاصطناعي",
+        "restartError": "تعذّرت إعادة تشغيل التقييم. يرجى المحاولة مرة أخرى."
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "heading": "Accès et gestion des sujets d'examen",
+    "description": "Accédez rapidement à tous les sujets d'examen par classe et par matière, et gérez-les facilement. Parcourez et organisez les sujets pour faciliter la préparation aux examens.",
+    "addQuestionPaper": "Ajouter un sujet d'examen",
+    "createManually": "Créer manuellement",
+    "createQuestionPaperManually": "Créer un sujet d'examen manuellement",
+    "uploadFromDevice": "Importer depuis l'appareil",
+    "uploadQuestionPaperFromDevice": "Importer un sujet d'examen depuis l'appareil"
+}

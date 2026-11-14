@@ -1,0 +1,319 @@
+{
+    "subTabs": {
+        "ariaLabel": "أقسام إعدادات الإشعارات",
+        "general": "عام",
+        "chat": "الدردشة والمجتمع",
+        "push": "الإشعارات الفورية",
+        "email": "البريد الإلكتروني"
+    },
+    "header": {
+        "title": "إعدادات الإشعارات",
+        "subtitle": "تكوين أذونات الإعلانات على مستوى المؤسسة",
+        "saveSettings": "حفظ الإعدادات"
+    },
+    "loading": "جارٍ التحميل...",
+    "errors": {
+        "loadSettings": "فشل تحميل الإعدادات",
+        "loadEmailConfigurations": "فشل تحميل إعدادات البريد الإلكتروني",
+        "saveSettings": "فشل حفظ إعدادات الإشعارات"
+    },
+    "toasts": {
+        "settingsSaved": "تم حفظ إعدادات الإشعارات"
+    },
+    "footer": {
+        "save": "حفظ"
+    },
+    "general": {
+        "title": "عام",
+        "approvalRequired": {
+            "label": "الموافقة مطلوبة",
+            "hint": "طلب موافقة المسؤول قبل ظهور الإعلانات"
+        },
+        "maxAnnouncementsPerDay": {
+            "label": "الحد الأقصى للإعلانات/اليوم",
+            "hint": "الحد لكل مستخدم"
+        },
+        "retentionDays": {
+            "label": "مدة الاحتفاظ (أيام)",
+            "hint": "فترة التنظيف التلقائي"
+        },
+        "defaultTimezone": {
+            "label": "المنطقة الزمنية الافتراضية",
+            "hint": "تُستخدم للجدولة والتذكيرات"
+        }
+    },
+    "community": {
+        "title": "المجتمع",
+        "studentsCanSend": "يمكن للطلاب الإرسال",
+        "adminsCanModerate": "يمكن للمسؤولين الإشراف",
+        "allowReplies": "السماح بالردود",
+        "allowedTags": "الوسوم المسموح بها"
+    },
+    "systemAlerts": {
+        "title": "تنبيهات النظام",
+        "teachersCanSend": "يمكن للمعلمين الإرسال",
+        "adminsCanSend": "يمكن للمسؤولين الإرسال",
+        "autoDismissHours": {
+            "label": "الإغلاق التلقائي (ساعات)",
+            "hint": "المسح التلقائي بعد"
+        }
+    },
+    "appOverlays": {
+        "title": "الإعلانات التراكبية للتطبيق",
+        "description": "إعلانات بملء الشاشة يراها {{role}} عند فتح التطبيق",
+        "canSend": "يمكن لـ {{role}} الإرسال"
+    },
+    "dashboardPins": {
+        "title": "تثبيتات لوحة التحكم",
+        "studentsCanCreate": "يمكن للطلاب الإنشاء",
+        "teachersCanCreate": "يمكن للمعلمين الإنشاء",
+        "adminsCanCreate": "يمكن للمسؤولين الإنشاء",
+        "maxDurationHours": {
+            "label": "المدة القصوى (ساعات)",
+            "hint": "مدة بقاء التثبيت"
+        },
+        "maxPinsPerUser": {
+            "label": "الحد الأقصى للتثبيتات لكل مستخدم",
+            "hint": "حد الإنشاء"
+        },
+        "requireApproval": "الموافقة مطلوبة"
+    },
+    "directMessages": {
+        "title": "الرسائل المباشرة",
+        "studentsCanSend": "يمكن للطلاب الإرسال",
+        "allowReplies": "السماح بالردود",
+        "moderationEnabled": "الإشراف مفعّل"
+    },
+    "push": {
+        "title": "الإشعارات الفورية (Firebase)",
+        "enable": {
+            "label": "تفعيل الإشعارات الفورية",
+            "hint": "يتطلب ملف JSON صالحًا لحساب خدمة Firebase"
+        },
+        "base64Label": "أو الصق JSON مُرمّزًا بـ Base64",
+        "base64Placeholder": "نص Base64",
+        "validateAndSave": "تحقق وحفظ",
+        "keyConfigured": "تم حفظ مفتاح حساب خدمة لهذه المؤسسة. لا يُعرض مرة أخرى؛ الصق مفتاحًا جديدًا فقط لاستبداله."
+    },
+    "streams": {
+        "title": "البثوث",
+        "teachersCanSend": "يمكن للمعلمين الإرسال",
+        "allowDuringClass": "السماح أثناء الحصة",
+        "autoArchiveHours": {
+            "label": "الأرشفة التلقائية (ساعات)",
+            "hint": "النقل التلقائي إلى الأرشيف"
+        }
+    },
+    "resources": {
+        "title": "الموارد",
+        "studentsCanUpload": "يمكن للطلاب الرفع",
+        "maxFileSizeMb": {
+            "label": "الحد الأقصى لحجم الملف (ميغابايت)",
+            "hint": "حد الرفع"
+        }
+    },
+    "chat": {
+        "title": "الرسائل داخل التطبيق",
+        "enabled": "الرسائل داخل التطبيق مفعّلة",
+        "ownMessagesTitle": "{{role}} — رسائلهم الخاصة",
+        "ownMessagesDescription": "ينطبق هذا في كل مكان يمكن فيه لـ {{studentRoleLower}} الدردشة. يحتفظ {{teacherRole}} والمسؤولون دائمًا بكلا الإجراءين.",
+        "canEditOwn": "يمكن لـ {{role}} تعديل رسائلهم الخاصة",
+        "canDeleteOwn": "يمكن لـ {{role}} حذف رسائلهم الخاصة",
+        "batchGroupsTitle": "مجموعات {{batch}}",
+        "canPost": "يمكن لـ {{role}} النشر",
+        "communityTitle": "المجتمع",
+        "communityChannelEnabled": "قناة المجتمع مفعّلة",
+        "communityRulesTitle": "قواعد المجتمع",
+        "guidelinesTitle": "عنوان الإرشادات",
+        "guidelinesTitlePlaceholder": "مثال: إرشادات المجتمع",
+        "guidelineItems": "عناصر الإرشادات",
+        "guidelineItemPlaceholder": "أضف إرشادًا واضغط Enter",
+        "acknowledgementRequired": "الإقرار مطلوب",
+        "slowModeSeconds": {
+            "label": "الوضع البطيء (ثوانٍ)",
+            "hint": "التأخير بين المنشورات"
+        },
+        "newMemberReadonlyMinutes": {
+            "label": "العضو الجديد للقراءة فقط (دقائق)",
+            "hint": "كتم الأعضاء الجدد في البداية"
+        },
+        "allowLinks": "السماح بالروابط",
+        "allowAttachments": "السماح بالمرفقات",
+        "bannedKeywords": "الكلمات المفتاحية المحظورة",
+        "bannedKeywordPlaceholder": "أضف كلمة مفتاحية واضغط Enter",
+        "autoModerationAction": "إجراء الإشراف التلقائي",
+        "selectActionPlaceholder": "اختر إجراءً",
+        "actionBlock": "حظر",
+        "actionFlag": "الإبلاغ",
+        "directMessagesTitle": "الرسائل المباشرة",
+        "directMessagesEnabled": "الرسائل المباشرة مفعّلة",
+        "senderCanMessage": "المرسل \\ يمكنه مراسلة",
+        "attachmentsTitle": "المرفقات",
+        "imagesEnabled": "الصور مفعّلة",
+        "filesEnabled": "الملفات مفعّلة",
+        "maxFileSizeMb": {
+            "label": "الحد الأقصى لحجم الملف (ميغابايت)",
+            "hint": "حد الرفع"
+        }
+    },
+    "email": {
+        "addressesTitle": "عناوين البريد الإلكتروني",
+        "addressesDescription": "هذه هي عناوين البريد الإلكتروني التي تستخدمها مؤسستك لإرسال الرسائل إلى المتعلمين والموظفين. لكل عنوان غرض — على سبيل المثال، عنوان للحملات التسويقية، وآخر لردود الدعم.",
+        "toastAddFailed": "تعذّرت إضافة عنوان البريد الإلكتروني هذا. يرجى المحاولة مرة أخرى.",
+        "toastUpdateSuccess": "تم الحفظ. ستستخدم الرسائل الجديدة المرسلة من هذا العنوان التفاصيل المحدّثة.",
+        "toastUpdateFailed": "تعذّر حفظ تغييراتك. يرجى المحاولة مرة أخرى.",
+        "toastDeleteSuccess": "تمت إزالة عنوان البريد الإلكتروني.",
+        "toastDeleteFailed": "تعذّرت إزالة عنوان البريد الإلكتروني هذا. يرجى المحاولة مرة أخرى."
+    },
+    "emailCc": {
+        "title": "نسخ البريد الإلكتروني (CC / BCC)",
+        "description": "أرسل نسخة من الرسائل التبادلية إلى فريقك — على سبيل المثال، كل فاتورة إلى صندوق وارد الحسابات. تكون النسخ معطّلة ما لم تُفعّل هذا الإعداد والرسائل الفردية أدناه معًا.",
+        "sendCopies": "إرسال نسخ من الرسائل التبادلية",
+        "noneSelected": "لم يتم تحديد أي رسائل أدناه، لذا لن تُرسَل أي نسخ.",
+        "noAddresses": "لم تتم إضافة أي عناوين، لذا لن تُرسَل أي نسخ. اكتب عنوانًا واضغط Enter لإضافته.",
+        "copyType": "نوع النسخ",
+        "copyTypeHint": "تُبقي BCC عناوين فريقك مخفية. أما CC فتُظهرها للمتعلم في البريد الإلكتروني — استخدم CC فقط إذا كان يجب أن يرى المتعلم من تلقّى نسخة أخرى.",
+        "alwaysCopy": "نسخ هذه العناوين دائمًا",
+        "alwaysCopyHint": "تُضاف إلى كل رسالة تُفعّلها أدناه. اتركها فارغة لتحديد العناوين لكل رسالة على حدة بدلاً من ذلك.",
+        "emailPlaceholder": "name@example.com — اضغط Enter للإضافة",
+        "whichEmails": "أي الرسائل يجب نسخها",
+        "alsoCopyTo": "نسخ أيضًا إلى — بالإضافة إلى العناوين أعلاه",
+        "notRecorded": "لا تُسجَّل النسخ مقابل المستلم في تقارير البريد الإلكتروني، ولا تُتابَع الردود من عنوان تم نسخه.",
+        "invalidEmail": "\"{{value}}\" ليس عنوان بريد إلكتروني صالحًا."
+    },
+    "stringListEditor": {
+        "defaultPlaceholder": "أضف واضغط Enter"
+    },
+    "tagEditor": {
+        "placeholder": "أضف وسمًا واضغط Enter"
+    },
+    "emailPurposes": {
+        "utility": {
+            "label": "إشعارات وتحديثات النظام",
+            "hint": "تنبيهات الحساب، إعادة تعيين كلمة المرور، التذكيرات"
+        },
+        "info": {
+            "label": "الإعلانات والمعلومات العامة",
+            "hint": "الأخبار، النشرات الإخبارية، تحديثات البث"
+        },
+        "transactional": {
+            "label": "الإيصالات والتأكيدات",
+            "hint": "إيصالات الدفع، تأكيدات التسجيل"
+        },
+        "marketing": {
+            "label": "التسويق والعروض",
+            "hint": "الحملات، العروض، المحتوى الترويجي"
+        },
+        "support": {
+            "label": "الدعم والمساعدة",
+            "hint": "الردود على المتعلمين أو الموظفين المحتاجين للمساعدة"
+        },
+        "other": "أخرى (غرض مخصص)…",
+        "customHint": "غرض مخصص للرسائل التي لا تندرج ضمن الفئات أعلاه."
+    },
+    "emailList": {
+        "verifiedNotice": {
+            "part1": "يجب أن يكون كل عنوان",
+            "verifiedWithService": "مُتحقَّقًا منه لدى خدمة البريد الإلكتروني",
+            "part2": "قبل أن يتمكن من الإرسال. تؤدي إضافة عنوان إلى إرسال رابط تأكيد إليه عبر البريد الإلكتروني — انقر على ذلك الرابط، ثم اضغط",
+            "refreshStatus": "تحديث الحالة",
+            "part3": ". وإلى أن يتم التحقق من العنوان، تُرسَل رسائله من العنوان الافتراضي للمنصة."
+        },
+        "unverifiedNotice": {
+            "part1": "قبل أن يتمكن أي عنوان هنا من إرسال الرسائل،",
+            "needsVerification": "يجب على فريقنا التحقق منه لدى خدمة البريد الإلكتروني",
+            "part2": ". وإلى أن يتم ذلك، لن تصل رسائل العنوان الجديد إلى المستلمين. إذا كنت قد أضفت أو غيّرت عنوانًا للتو، يرجى",
+            "contactSupport": "التواصل مع الدعم",
+            "part3": "حتى نتمكن من التحقق منه نيابةً عنك."
+        },
+        "loadingAddresses": "جارٍ تحميل عناوين بريدك الإلكتروني…",
+        "addNewTitle": "إضافة عنوان بريد إلكتروني جديد",
+        "fields": {
+            "email": "عنوان البريد الإلكتروني",
+            "emailPlaceholder": "مثال: support@yourschool.com",
+            "displayName": "اسم العرض",
+            "displayNamePlaceholder": "مثال: \"دعم أكاديمية أكمي\"",
+            "displayNameHint": "يُعرض للمستلمين بجانب عنوان البريد الإلكتروني.",
+            "purpose": "ما الغرض من هذا البريد الإلكتروني؟",
+            "purposePlaceholder": "اختر غرضًا",
+            "customPurposePlaceholder": "مثال: \"النشرة الإخبارية\" أو \"الخريجون\"",
+            "customPurposeHint": "استخدم اسمًا قصيرًا. سنحفظه داخليًا باسم {{code}}.",
+            "customPurposeDefaultCode": "YOUR_PURPOSE",
+            "notes": "ملاحظات (اختياري)",
+            "notesPlaceholder": "لمرجعية فريقك"
+        },
+        "addButton": "إضافة عنوان بريد إلكتروني",
+        "yourAddresses": "عناوين بريدك الإلكتروني ({{count}})",
+        "emptyState": "لم تُضِف أي عنوان بريد إلكتروني بعد. استخدم النموذج أعلاه لإضافة واحد.",
+        "toasts": {
+            "emailExists": "تمت إضافة عنوان البريد الإلكتروني هذا بالفعل.",
+            "purposeExists": "لديك بالفعل عنوان لهذا الغرض. عدّل العنوان الحالي أو اختر غرضًا مختلفًا.",
+            "addedVerificationStarted": "تمت إضافة عنوان البريد الإلكتروني — بدأ التحقق.",
+            "addedVerificationStartedDescription": "أرسلت AWS رسالة تأكيد إلى {{email}}. افتحها وانقر على الرابط، ثم حدّث العنوان أدناه.",
+            "added": "تمت إضافة عنوان البريد الإلكتروني.",
+            "addedVerificationFailedDescription": "تعذّر بدء التحقق تلقائيًا. استخدم زر \"التحقق من المرسل\" على العنوان أدناه.",
+            "addedNoVerificationDescription": "قبل أن يتمكن هذا العنوان من إرسال الرسائل، يجب على فريقنا التحقق منه. يرجى التواصل مع الدعم للتحقق منه — لن تصل الرسائل المُرسَلة قبل التحقق إلى المستلمين."
+        }
+    },
+    "verificationBadge": {
+        "verified": "تم التحقق",
+        "pending": "التحقق قيد الانتظار",
+        "failed": "فشل التحقق",
+        "notVerified": "غير مُتحقَّق منه"
+    },
+    "dnsTable": {
+        "toastCopied": "تم النسخ",
+        "toastCopyFailed": "تعذّر النسخ",
+        "instructions": "أضف سجلات DNS هذه إلى نطاقك، ثم اضغط تحديث الحالة:",
+        "columnType": "النوع",
+        "columnName": "الاسم / المضيف",
+        "columnValue": "القيمة",
+        "copyButton": "نسخ"
+    },
+    "emailRow": {
+        "purposeLockedTitle": "لا يمكن تغيير الغرض بعد إضافة العنوان. لاستخدام غرض مختلف، أزل هذا العنوان وأضف عنوانًا جديدًا.",
+        "purposeLocked": "لا يمكن تغيير الغرض",
+        "sendingStatus": "حالة الإرسال:",
+        "working": "جارٍ التنفيذ…",
+        "verifySender": "التحقق من المرسل",
+        "checking": "جارٍ التحقق…",
+        "refreshStatus": "تحديث الحالة",
+        "verifyDomainInstead": "تحقق من النطاق بالكامل بدلاً من ذلك (تسليم أفضل)",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "removing": "جارٍ الإزالة…",
+        "remove": "إزالة",
+        "genericError": "يرجى المحاولة مرة أخرى.",
+        "confirmDelete": "إزالة \"{{email}}\"؟\n\nلن يُستخدم بعد الآن لـ {{purpose}}.\nيمكنك إضافته مرة أخرى لاحقًا عند الحاجة.",
+        "toasts": {
+            "domainVerificationStarted": "بدأ التحقق من النطاق",
+            "verificationEmailSent": "تم إرسال رسالة التحقق",
+            "verificationStartFailed": "تعذّر بدء التحقق",
+            "refreshFailed": "تعذّر تحديث الحالة"
+        },
+        "controls": {
+            "controlsTitle": "Sending controls",
+            "controlsHint": "Optional. Cap how many emails this sender may send per day (overflow is queued for the next day) and add the unsubscribe footer required for commercial email.",
+            "maxPerDay": "Max emails per day",
+            "maxPerDayPlaceholder": "0 = unlimited",
+            "timezone": "Day boundary time zone",
+            "timezonePlaceholder": "e.g. America/New_York",
+            "sendAfterHour": "Next day's window opens at (hour, 0–23)",
+            "postalAddress": "Postal address for the footer",
+            "postalAddressPlaceholder": "Required by CAN-SPAM for commercial email",
+            "listUnsubscribe": "Add unsubscribe link and headers to every email from this sender",
+            "listUnsubscribeHint": "Promotional emails always get them; turn this on to add them to other purposes too.",
+            "rampEnabled": "Warm up gradually (recommended for a new domain)",
+            "rampEnabledHint": "Start small and raise the daily limit on a schedule. Mailbox providers judge a new sending domain on how its volume grows; anything over the day's limit is queued for the next window, not dropped.",
+            "rampStartPerDay": "Start at (emails/day)",
+            "rampStep": "Increase by",
+            "rampEveryDays": "Every (days)",
+            "rampCeiling": "Stop increasing at",
+            "rampStartedOn": "Warm-up started {{date}}. The schedule follows the calendar, so pausing does not bank extra volume.",
+            "skipWeekends": "Don't send on Saturday or Sunday",
+            "maxPerDayManaged": "Max emails per day (set by the warm-up schedule)"
+        },
+        "verifyDomainUpgrade": "Verify the whole domain for better deliverability (DKIM) — sending keeps working while DNS propagates"
+    }
+}

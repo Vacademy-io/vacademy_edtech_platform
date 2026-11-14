@@ -1,0 +1,35 @@
+{
+    "loadingGoogleAccounts": "Loading Google accounts…",
+    "notSetUpMessage": "Google Meet integration isn't set up for this institute. Connect a Google Workspace account under <strong>Settings → Live Session → Google Meet Integration</strong>, or paste a meeting link in the Live Class Link field below.",
+    "googleMeetSettings": "Google Meet Settings",
+    "googleAccountOrganizer": "Google account (organizer)",
+    "defaultSuffix": "(default)",
+    "linkCreatedOnAccount": "A Google Meet link is created on this account.",
+    "anyoneWithLinkJoins": "Anyone with the link joins (no knocking) — best for learners.",
+    "guestsMustKnock": "Guests must knock and the host admits each one.",
+    "settingsApplyToNewLinks": "The settings below apply to Meet links created now; links that already exist keep their settings.",
+    "section": {
+        "joinAccess": "Join access",
+        "recordingAndNotes": "Recording & notes",
+        "hostControls": "Host controls"
+    },
+    "field": {
+        "whoCanJoin": "Who can join without knocking",
+        "autoRecord": "Auto-record this class",
+        "autoTranscript": "Auto-generate transcript",
+        "geminiNotes": "Gemini notes (\"Take notes for me\")",
+        "attendanceReport": "Google attendance report",
+        "hostManagement": "Turn on host controls",
+        "chatHostsOnly": "Only hosts can chat",
+        "reactionsHostsOnly": "Only hosts can send reactions",
+        "presentHostsOnly": "Only hosts can share screen",
+        "joinAsViewer": "Learners join as viewers (no mic or camera)"
+    },
+    "access": {
+        "open": "Anyone with the link",
+        "trusted": "Your organisation only; others knock",
+        "restricted": "Invited people only; others knock"
+    },
+    "planHint": "Recording, transcript and notes start when the organizer or a teacher on the institute's Google Workspace joins, and are saved to the organizer's Drive. Recording and transcripts need a Workspace plan with recording (Business Standard or higher, Education Plus); Gemini notes need a Gemini licence. If the plan lacks a feature, the class is still created without it.",
+    "hostControlsWarning": "Only the organizer account ({{email}}) is a host. A teacher who joins with any other Google account is treated as a participant, so keep screen sharing open if teachers present from their own accounts."
+}

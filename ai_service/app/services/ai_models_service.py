@@ -54,11 +54,79 @@ class ResolvedModel:
     source: str  # "matrix" | "user_default" | "user_per_stage"
 
 
+LEGACY_CHANGE_REASON = "legacy /models/v2 admin endpoint (no reason captured)"
+
+# UpdateModelRequest field -> ai_models column (the ones update_model writes).
+_MODEL_UPDATE_COLUMNS = (
+    ("name", "name"), ("tier", "tier"), ("is_free", "is_free"), ("is_active", "is_active"),
+    ("input_price_per_1m", "input_price_per_1m"), ("output_price_per_1m", "output_price_per_1m"),
+    ("credit_multiplier", "credit_multiplier"), ("quality_score", "quality_score"),
+    ("speed_score", "speed_score"), ("recommended_for", "recommended_for"),
+    ("description", "description"), ("display_order", "display_order"),
+)
+
+
+def _jsonable(value: Any) -> Any:
+    """Decimals/datetimes -> strings so the value fits a JSONB column."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
 class AIModelsService:
     """Service for managing the AI models registry."""
 
     def __init__(self, db: Session):
         self.db = db
+
+    # ========================================================================
+    # Audit trail (ai_model_change_log, V569)
+    # ========================================================================
+    #
+    # The legacy /models/v2 writes below change prices, flags and defaults for
+    # every institute. They record old/new values in ai_model_change_log like
+    # the super-admin portal writes do. Best-effort: the audit never blocks or
+    # undoes the write (the table may be missing, the insert may fail), and
+    # every audit statement runs in a SAVEPOINT so a failure there cannot
+    # poison the transaction that carries the write itself.
+
+    def _change_log_ready(self) -> bool:
+        """Is ai_model_change_log there? Checked BEFORE the write so a failed
+        check can never roll the write back."""
+        try:
+            with self.db.begin_nested():
+                return bool(self.db.execute(
+                    text("SELECT to_regclass('ai_model_change_log') IS NOT NULL")
+                ).scalar())
+        except Exception:  # noqa: BLE001
+            logger.warning("could not check for ai_model_change_log; legacy model edit not audited", exc_info=True)
+            return False
+
+    def _audit_snapshot(self, sql: str, params: Dict[str, Any]) -> Optional[List[Any]]:
+        try:
+            with self.db.begin_nested():
+                return list(self.db.execute(text(sql), params).fetchall())
+        except Exception:  # noqa: BLE001
+            logger.warning("could not read the before-values for the model change log", exc_info=True)
+            return None
+
+    def _audit(self, table_name: str, row_key: str, old: Any, new: Any,
+               reason: Optional[str], actor: Optional[str]) -> None:
+        try:
+            from .model_defaults_admin import _log_change
+            with self.db.begin_nested():
+                _log_change(self.db, table_name, row_key, _jsonable(old), _jsonable(new),
+                            (reason or "").strip() or LEGACY_CHANGE_REASON, actor)
+        except Exception:  # noqa: BLE001
+            logger.warning("model change log write failed for %s %s", table_name, row_key, exc_info=True)
 
     # ========================================================================
     # Model Retrieval
@@ -573,8 +641,10 @@ class AIModelsService:
     # Admin Functions
     # ========================================================================
 
-    def create_model(self, request: CreateModelRequest) -> AIModelResponse:
+    def create_model(self, request: CreateModelRequest, *, actor: Optional[str] = None,
+                     reason: Optional[str] = None) -> AIModelResponse:
         """Create a new model in the registry."""
+        audit = self._change_log_ready()
         model_id = str(uuid4())
         now = datetime.utcnow()
         
@@ -616,13 +686,21 @@ class AIModelsService:
             "display_order": request.display_order,
             "now": now,
         })
-        
+        if audit:
+            self._audit("ai_models", request.model_id, None, {
+                "tier": request.tier, "is_free": request.is_free,
+                "input_price_per_1m": request.input_price_per_1m,
+                "output_price_per_1m": request.output_price_per_1m,
+                "credit_multiplier": request.credit_multiplier,
+            }, reason, actor)
+
         self.db.commit()
         
         logger.info(f"Created new model: {request.model_id}")
         return self.get_model_by_id(request.model_id)
 
-    def update_model(self, model_id: str, request: UpdateModelRequest) -> Optional[AIModelResponse]:
+    def update_model(self, model_id: str, request: UpdateModelRequest, *, actor: Optional[str] = None,
+                     reason: Optional[str] = None) -> Optional[AIModelResponse]:
         """Update an existing model."""
         updates = []
         params = {"model_id": model_id, "now": datetime.utcnow()}
@@ -668,7 +746,18 @@ class AIModelsService:
             return self.get_model_by_id(model_id)
         
         updates.append("updated_at = :now")
-        
+
+        changed = {col: getattr(request, field) for field, col in _MODEL_UPDATE_COLUMNS
+                   if getattr(request, field) is not None}
+        old_row = None
+        if self._change_log_ready():
+            rows = self._audit_snapshot(
+                f"SELECT {', '.join(changed)} FROM ai_models WHERE model_id = :model_id",
+                {"model_id": model_id},
+            )
+            if rows:
+                old_row = {col: getattr(rows[0], col, None) for col in changed}
+
         update_query = text(f"""
             UPDATE ai_models
             SET {", ".join(updates)}
@@ -676,15 +765,26 @@ class AIModelsService:
         """)
         
         self.db.execute(update_query, params)
+        if old_row is not None:
+            self._audit("ai_models", model_id, old_row, changed, reason, actor)
         self.db.commit()
         
         logger.info(f"Updated model: {model_id}")
         return self.get_model_by_id(model_id)
 
-    def update_free_tier(self, request: UpdateFreeTierRequest) -> FreeModelsResponse:
+    def update_free_tier(self, request: UpdateFreeTierRequest, *, actor: Optional[str] = None,
+                         reason: Optional[str] = None) -> FreeModelsResponse:
         """Update which models are in the free tier."""
         now = datetime.utcnow()
-        
+
+        old_free = None
+        if self._change_log_ready():
+            rows = self._audit_snapshot(
+                "SELECT model_id, tier FROM ai_models WHERE is_free = TRUE ORDER BY model_id", {}
+            )
+            if rows is not None:
+                old_free = [{"model_id": r.model_id, "tier": r.tier} for r in rows]
+
         # First, remove free status from all models
         reset_query = text("""
             UPDATE ai_models
@@ -701,32 +801,68 @@ class AIModelsService:
                 WHERE model_id = :model_id
             """)
             self.db.execute(update_query, {"model_id": model_id, "now": now})
-        
+
+        if old_free is not None:
+            # The reset above also moves every previously-free model to tier
+            # 'standard'; the old list keeps their tiers so that is visible.
+            self._audit("ai_models", "free_tier", {"free_models": old_free},
+                        {"free_models": [{"model_id": m, "tier": "free"} for m in request.model_ids],
+                         "others_reset_to_tier": "standard"}, reason, actor)
         self.db.commit()
         
         logger.info(f"Updated free tier models: {request.model_ids}")
         return self.get_free_models()
 
     def update_use_case_default(
-        self, 
-        use_case: str, 
-        request: UpdateUseCaseDefaultRequest
-    ) -> UseCaseDefaultResponse:
-        """Update defaults for a use case."""
+        self,
+        use_case: str,
+        request: UpdateUseCaseDefaultRequest,
+        *,
+        actor: Optional[str] = None,
+        reason: Optional[str] = None,
+    ) -> Optional[UseCaseDefaultResponse]:
+        """Update defaults for a use case. Only fields present in the request
+        change (pydantic model_fields_set); an explicit null clears the
+        fallback / free-tier model. Returns None when the use case has no row
+        (the router answers 404). default_model_id cannot be cleared (NOT NULL):
+        raises ValueError."""
+        existing = self.db.execute(
+            text("SELECT 1 FROM ai_model_defaults WHERE use_case = :use_case"),
+            {"use_case": use_case},
+        ).fetchone()
+        if not existing:
+            return None
+
+        fields_set = getattr(request, "model_fields_set", None)
+        if fields_set is None:  # pragma: no cover - pydantic v1 fallback
+            fields_set = {f for f in ("default_model_id", "fallback_model_id", "free_tier_model_id")
+                          if getattr(request, f) is not None}
+
         updates = []
         params = {"use_case": use_case, "now": datetime.utcnow()}
-        
-        if request.default_model_id is not None:
+        if "default_model_id" in fields_set:
+            if not request.default_model_id:
+                raise ValueError("default_model_id cannot be cleared")
             updates.append("default_model_id = :default")
             params["default"] = request.default_model_id
-        if request.fallback_model_id is not None:
+        if "fallback_model_id" in fields_set:
             updates.append("fallback_model_id = :fallback")
-            params["fallback"] = request.fallback_model_id
-        if request.free_tier_model_id is not None:
+            params["fallback"] = request.fallback_model_id or None
+        if "free_tier_model_id" in fields_set:
             updates.append("free_tier_model_id = :free")
-            params["free"] = request.free_tier_model_id
-        
+            params["free"] = request.free_tier_model_id or None
+
         if updates:
+            fields = ("default_model_id", "fallback_model_id", "free_tier_model_id")
+            old_defaults = None
+            if self._change_log_ready():
+                rows = self._audit_snapshot(
+                    "SELECT default_model_id, fallback_model_id, free_tier_model_id "
+                    "FROM ai_model_defaults WHERE use_case = :use_case",
+                    {"use_case": use_case},
+                )
+                if rows:
+                    old_defaults = {f: getattr(rows[0], f, None) for f in fields}
             updates.append("updated_at = :now")
             update_query = text(f"""
                 UPDATE ai_model_defaults
@@ -734,18 +870,36 @@ class AIModelsService:
                 WHERE use_case = :use_case
             """)
             self.db.execute(update_query, params)
+            if old_defaults is not None:
+                # Same shape the super-admin portal writes (all three fields).
+                new_defaults = dict(old_defaults)
+                if "default" in params:
+                    new_defaults["default_model_id"] = params["default"]
+                if "fallback" in params:
+                    new_defaults["fallback_model_id"] = params["fallback"]
+                if "free" in params:
+                    new_defaults["free_tier_model_id"] = params["free"]
+                if new_defaults != old_defaults:
+                    self._audit("ai_model_defaults", use_case, old_defaults, new_defaults, reason, actor)
             self.db.commit()
-        
+            try:
+                from .model_selection import invalidate_cache
+                invalidate_cache(use_case)
+            except Exception:  # noqa: BLE001
+                pass
+
         # Fetch updated record
         query = text("""
-            SELECT use_case, default_model_id, fallback_model_id, 
+            SELECT use_case, default_model_id, fallback_model_id,
                    free_tier_model_id, description
             FROM ai_model_defaults
             WHERE use_case = :use_case
         """)
         result = self.db.execute(query, {"use_case": use_case})
         row = result.fetchone()
-        
+        if row is None:
+            return None
+
         return UseCaseDefaultResponse(
             use_case=row.use_case,
             default_model_id=row.default_model_id,

@@ -1,0 +1,35 @@
+{
+    "answer": {
+        "empty": "No answer.",
+        "noSheet": "Nothing entered in the spreadsheet.",
+        "noText": "No written answer.",
+        "unknownPart": "Part {{number}}"
+    },
+    "solution": {
+        "heading": "Model solution & marking scheme",
+        "none": "No model solution saved for this part.",
+        "noScheme": "No marking-scheme lines.",
+        "gradingNotes": "Grading notes:"
+    },
+    "scheme": {
+        "line": "Line",
+        "marks": "Marks",
+        "expected": "Expected",
+        "cell": "Cell",
+        "guidance": "Guidance"
+    },
+    "evaluation": {
+        "marks": "{{marks}} / {{max}} marks",
+        "criteria": "Line",
+        "reason": "Reason",
+        "lineMarks": "Marks",
+        "pending": "Being checked…",
+        "failed": "The AI check failed for this attempt.",
+        "noCredits": "Not checked — the institute had no AI credits left."
+    },
+    "slide": {
+        "heading": "Spreadsheet & written answers",
+        "attempt": "Attempt {{number}}",
+        "evaluation": "AI check"
+    }
+}

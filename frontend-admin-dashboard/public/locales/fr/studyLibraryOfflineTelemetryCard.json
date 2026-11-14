@@ -1,0 +1,60 @@
+{
+    "header": {
+        "title": "Téléchargements hors ligne",
+        "reviewDiscrepancies": "Examiner les écarts de synchronisation"
+    },
+    "states": {
+        "loading": "Chargement…",
+        "loadFailed": "Impossible de charger les téléchargements hors ligne pour ce lot.",
+        "noDownloads": "Aucun apprenant n'a encore téléchargé de contenu de ce lot."
+    },
+    "actions": {
+        "tryAgain": "Réessayer",
+        "revokeAccess": "Révoquer l'accès",
+        "revoking": "Révocation en cours…",
+        "cancel": "Annuler",
+        "close": "Fermer"
+    },
+    "table": {
+        "learner": "Apprenant",
+        "username": "Nom d'utilisateur",
+        "email": "E-mail",
+        "device": "Appareil",
+        "downloaded": "Téléchargé",
+        "validTill": "Valide jusqu'au",
+        "deviceFallback": "Appareil",
+        "itemCount_one": "{{count}} élément",
+        "itemCount_many": "{{count}} éléments",
+        "itemCount_other": "{{count}} éléments"
+    },
+    "status": {
+        "active": "Actif",
+        "revoked": "Révoqué"
+    },
+    "revoke": {
+        "reason": "Révoqué depuis les téléchargements du cours",
+        "dialogHeading": "Révoquer l'accès hors ligne ?",
+        "thisLearner": "Cet apprenant",
+        "thisDevice": "cet appareil",
+        "confirmationText": "{{learnerName}} perdra l'accès hors ligne sur {{deviceName}}, et le contenu téléchargé y sera supprimé lors de la prochaine connexion. Il pourra retélécharger si vous réactivez l'accès."
+    },
+    "toast": {
+        "revokeSuccess": "Accès hors ligne révoqué",
+        "revokeFailed": "Impossible de révoquer l'accès hors ligne — veuillez réessayer"
+    },
+    "discrepancy": {
+        "dialogHeading": "Écarts de synchronisation hors ligne",
+        "explainer": "Lorsqu'un apprenant répond à un quiz ou à une question hors ligne, son appareil le note immédiatement. Nous le notons à nouveau une fois l'appareil reconnecté. Voici les réponses pour lesquelles les deux scores ne concordaient pas — le score du serveur est celui qui compte, et il a déjà été enregistré.",
+        "noOpenDiscrepancies": "Aucun écart ouvert pour ce lot.",
+        "loadFailed": "Échec du chargement des écarts",
+        "updateFailed": "Échec de la mise à jour de l'écart",
+        "markedReviewed": "Marqué comme examiné",
+        "markReviewed": "Marquer comme examiné",
+        "table": {
+            "field": "Champ",
+            "clientValue": "Valeur client",
+            "serverValue": "Valeur serveur",
+            "created": "Créé"
+        }
+    }
+}

@@ -1,0 +1,104 @@
+{
+    "dialog": {
+        "heading": "Add to course",
+        "cancel": "Cancel",
+        "createSlide": "Create slide",
+        "publishAssessment": "Publish assessment",
+        "loading": {
+            "publishing": "Publishing…",
+            "renderingPdf": "Rendering PDF…",
+            "adding": "Adding…"
+        }
+    },
+    "defaultTitle": {
+        "notes": "Lecture Notes",
+        "assessment": "Assessment"
+    },
+    "destinationLabel": {
+        "notesPdf": "Lecture notes → PDF slide",
+        "notesDoc": "Lecture notes → Document slide",
+        "quiz": "Assessment → Quiz slide",
+        "assessmentOnly": "Assessment → Assessment Center (no slide)",
+        "assessment": "Assessment → Assessment slide (linked)"
+    },
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
+    "withoutMarkedAnswer": " · {{count}} without a marked answer",
+    "slideTitleLabel": "Slide title",
+    "slideTitlePlaceholder": "Give the slide a title",
+    "addAs": "Add as",
+    "notesFormat": {
+        "docLabel": "Document slide",
+        "docHint": "Editable rich text",
+        "pdfLabel": "PDF slide",
+        "pdfHint": "Fixed page layout"
+    },
+    "watermark": {
+        "label": "Add institute logo watermark",
+        "noLogo": "(no logo set)"
+    },
+    "assessmentMode": {
+        "quizLabel": "Quiz slide",
+        "quizHint": "Embeds the questions",
+        "assessmentLabel": "Assessment slide",
+        "assessmentHintLinked": "Links the published assessment",
+        "assessmentHintPublishThenLink": "Publishes, then links it",
+        "assessmentHintPublishFirst": "Publish first",
+        "onlyLabel": "Assessment only",
+        "onlyHint": "Assessment Center · no slide"
+    },
+    "publishNote": "The assessment will be published (with its current settings) and linked as a scheduled assessment slide.",
+    "assignToBatches": "Assign to batches",
+    "selectBatchesPlaceholder": "Select batches",
+    "batchInfo_one": "Publishes to the Assessment Center, takeable by {{count}} batch. No course slide is created.",
+    "batchInfo_other": "Publishes to the Assessment Center, takeable by {{count}} batches. No course slide is created.",
+    "noBatchSelected": "No batch selected — publishes unassigned; attach batches later from the Assessment Center.",
+    "linkNeedsPublish": "Publish the assessment (Create Assessment) before linking it as an assessment slide.",
+    "scheduleAndMarking": "Schedule & marking",
+    "saveAs": "Save as",
+    "status": {
+        "draftLabel": "Draft",
+        "draftHint": "Hidden from learners",
+        "publishedLabel": "Published",
+        "publishedHint": "Visible to learners"
+    },
+    "destination": "Destination",
+    "fields": {
+        "course": "Course",
+        "selectCourse": "Select course",
+        "session": "Session",
+        "selectSession": "Select session",
+        "level": "Level",
+        "selectLevel": "Select level",
+        "subject": "Subject",
+        "selectSubject": "Select subject",
+        "module": "Module",
+        "selectModule": "Select module",
+        "chapter": "Chapter",
+        "selectChapter": "Select chapter"
+    },
+    "pickChapter": "Pick a chapter to add this slide to.",
+    "addingToCourses_one": "Adding to {{count}} course",
+    "addingToCourses_other": "Adding to {{count}} courses",
+    "selectChapterAbove": "Select a chapter above",
+    "addAnotherCourse": "Add another course",
+    "fromSelection": "from selection",
+    "removeDestination": "Remove destination",
+    "preview": "Preview",
+    "noNotesContent": "_No notes content._",
+    "noQuestions": "No questions to add.",
+    "untitledQuestion": "Untitled question",
+    "searchPlaceholder": "Search {{field}}…",
+    "noMatches": "No matches",
+    "toast": {
+        "publishedToAssessmentCenter_one": "Published to the Assessment Center ({{count}} batch)",
+        "publishedToAssessmentCenter_other": "Published to the Assessment Center ({{count}} batches)",
+        "publishedUnassigned": "Published (unassigned) to the Assessment Center",
+        "couldNotPublish": "Could not publish the assessment.",
+        "addedPartial": "Added to {{added}}; {{failed}} failed — retry the remaining below.",
+        "addedSuccess": "Added to {{summary}}",
+        "chapterCount_one": "{{count}} chapter",
+        "chapterCount_other": "{{count}} chapters",
+        "couldNotAdd": "Could not add to course"
+    }
+}

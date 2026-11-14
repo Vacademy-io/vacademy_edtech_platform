@@ -146,7 +146,9 @@ public class FormWebhookConnector {
     @Column(name = "status_detail", columnDefinition = "TEXT")
     private String statusDetail;
 
-    /** When the connector health check last ran. */
+    /** When the connector health check last ran. For Google connectors: when Google last
+     *  reached the webhook with a known key (test data or a lead); statusDetail then holds
+     *  why that delivery failed, or null if it was accepted. */
     @Column(name = "last_checked_at")
     private LocalDateTime lastCheckedAt;
 
@@ -188,6 +190,12 @@ public class FormWebhookConnector {
      */
     @Column(name = "default_values_json", columnDefinition = "TEXT")
     private String defaultValuesJson;
+
+    /** Google: give each new campaign its own lead list on its first lead (V564).
+     *  Null/false = unmapped campaigns keep feeding this connector's audience. */
+    @Column(name = "auto_create_campaign_lists")
+    @Builder.Default
+    private Boolean autoCreateCampaignLists = false;
     
     @Column(name = "created_at", updatable = false)
     @Temporal(TemporalType.TIMESTAMP)

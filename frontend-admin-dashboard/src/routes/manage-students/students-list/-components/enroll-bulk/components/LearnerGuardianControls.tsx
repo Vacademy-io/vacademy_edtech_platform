@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { WarningCircle } from '@phosphor-icons/react';
@@ -29,6 +30,7 @@ interface Props {
  * `canAddGuardian` below.
  */
 export const LearnerGuardianControls = ({ learner, index, instituteId, onChange, error }: Props) => {
+    const { t } = useTranslation('manageStudentsLearnerGuardianControls');
     const parentLink: ParentLinkChoice = learner.parentLink ?? { mode: 'none' };
     const isGuardianOn = parentLink.mode === 'is_guardian';
     const isAddGuardianOn = parentLink.mode === 'add_guardian';
@@ -78,7 +80,7 @@ export const LearnerGuardianControls = ({ learner, index, instituteId, onChange,
                         htmlFor={`${idBase}-is-guardian`}
                         className="cursor-pointer text-caption text-neutral-600"
                     >
-                        Is this a guardian?
+                        {t('toggle.isGuardianLabel')}
                     </Label>
                 </div>
 
@@ -89,7 +91,7 @@ export const LearnerGuardianControls = ({ learner, index, instituteId, onChange,
                         disabled={!canAddGuardian}
                         className="text-caption font-medium text-primary-600 hover:text-primary-800 disabled:cursor-not-allowed disabled:text-neutral-300"
                     >
-                        + Add Guardian
+                        {t('toggle.addGuardianButton')}
                     </button>
                 )}
                 {addGuardianOpen && !isGuardianOn && (
@@ -98,25 +100,25 @@ export const LearnerGuardianControls = ({ learner, index, instituteId, onChange,
                         onClick={closeAddGuardian}
                         className="text-caption text-neutral-400 hover:text-danger-500"
                     >
-                        Remove guardian
+                        {t('toggle.removeGuardianButton')}
                     </button>
                 )}
             </div>
 
             {!isNewChip && !canAddGuardian && (
                 <p className="mt-1 text-caption text-neutral-400">
-                    Add an email to this record to enable guardian linking.
+                    {t('hints.emailRequired')}
                 </p>
             )}
 
             {isGuardianOn && (
                 <div className="mt-2">
                     <p className="mb-1 text-caption font-medium text-neutral-500">
-                        Add or link the student this guardian is enrolling:
+                        {t('hints.linkStudentPrompt')}
                     </p>
                     <GuardianLinkPanel
                         instituteId={instituteId}
-                        personLabel="Student"
+                        personLabel={t('personLabels.student')}
                         searchRoles={['STUDENT']}
                         value={parentLink.mode === 'is_guardian' ? parentLink.student : undefined}
                         onChange={(student) => onChange({ mode: 'is_guardian', student })}
@@ -127,11 +129,11 @@ export const LearnerGuardianControls = ({ learner, index, instituteId, onChange,
             {addGuardianOpen && !isGuardianOn && (
                 <div className="mt-2">
                     <p className="mb-1 text-caption font-medium text-neutral-500">
-                        Add or link this learner's guardian (optional):
+                        {t('hints.linkGuardianPrompt')}
                     </p>
                     <GuardianLinkPanel
                         instituteId={instituteId}
-                        personLabel="Guardian"
+                        personLabel={t('personLabels.guardian')}
                         searchRoles={['PARENT']}
                         value={parentLink.mode === 'add_guardian' ? parentLink.guardian : undefined}
                         onChange={(guardian) => onChange({ mode: 'add_guardian', guardian })}

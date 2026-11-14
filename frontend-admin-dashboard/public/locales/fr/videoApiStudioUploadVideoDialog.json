@@ -1,0 +1,35 @@
+{
+    "title": "Téléverser une vidéo pour l'indexation",
+    "fileSize": "{{size}} Mo",
+    "filePicker": {
+        "selectPrompt": "Cliquez pour sélectionner un fichier vidéo",
+        "sizeHint": "MP4, WebM, MOV jusqu'à {{maxSize}} Mo"
+    },
+    "name": {
+        "label": "Nom",
+        "placeholder": "ex. Enregistrement de démo produit"
+    },
+    "videoType": {
+        "label": "Type de vidéo",
+        "podcast": "Podcast",
+        "demo": "Démo logicielle"
+    },
+    "progress": {
+        "uploading": "Téléversement de la vidéo...",
+        "indexing": "Démarrage de l'indexation..."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "processing": "Traitement en cours...",
+        "upload": "Téléverser et indexer"
+    },
+    "errors": {
+        "unsupportedFormat": "Format non pris en charge. Utilisez MP4, WebM ou MOV.",
+        "fileTooLarge": "Fichier trop volumineux. Maximum {{maxSize}} Mo.",
+        "uploadFailed": "Échec du téléversement",
+        "publicUrlFailed": "Échec de la récupération de l'URL publique"
+    },
+    "success": {
+        "uploadStarted": "Vidéo téléversée et indexation démarrée"
+    }
+}

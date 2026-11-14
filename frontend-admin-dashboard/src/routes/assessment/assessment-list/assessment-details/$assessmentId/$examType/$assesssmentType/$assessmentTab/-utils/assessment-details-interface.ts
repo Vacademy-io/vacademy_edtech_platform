@@ -1,3 +1,4 @@
+import type { CbeConfig } from '@/components/cbe/types';
 interface TextContent {
     id: number | null;
     type: string;
@@ -70,6 +71,10 @@ export interface AssessmentSectionQuestionInterface {
     imageDetails?: ImageDetails[];
     singleChoiceOptions?: ChoiceOption[];
     multipleChoiceOptions?: ChoiceOption[];
+    /** Passage / CBE scenario (parent_rich_text). */
+    parentRichTextContent?: string | null;
+    /** CBE_RESPONSE config, full (docs/CBE_RESPONSE_QUESTION.md §3). */
+    cbeConfig?: CbeConfig | null;
 }
 
 interface QuestionMarking {

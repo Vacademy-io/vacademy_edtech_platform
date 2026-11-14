@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ interface SubmitModalProps {
 }
 
 export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps) {
+  const { t } = useTranslation("courseComponentsExtra");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const assessment = useAssessmentStore((s) => s.assessment);
   const questionStates = useAssessmentStore((s) => s.questionStates);
@@ -68,22 +70,25 @@ export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps)
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <WarningCircle className="h-5 w-5 text-primary-500" />
-            Submit Assessment
+            {t("submitModal.title")}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {counts.total > 0 && counts.unanswered > 0
-              ? `${counts.unanswered} of ${counts.total} questions are still unanswered. You cannot return to the paper after submitting.`
-              : "You cannot return to the paper after submitting. Make sure you have given your best responses."}
+              ? t("submitModal.descriptionWithUnanswered", {
+                  unanswered: counts.unanswered,
+                  total: counts.total,
+                })
+              : t("submitModal.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {counts.total > 0 && (
           <div className="overflow-hidden rounded-xl border border-neutral-200">
             {[
-              { label: "Answered", value: counts.answered, tone: "text-success-700" },
-              { label: "Unanswered", value: counts.unanswered, tone: "text-danger-600" },
-              { label: "Marked for review", value: counts.marked, tone: "text-violet-700" },
-              { label: "Not visited", value: counts.notVisited, tone: "text-neutral-500" },
-              { label: "Total questions", value: counts.total, tone: "text-neutral-800" },
+              { label: t("submitModal.answered"), value: counts.answered, tone: "text-success-700" },
+              { label: t("submitModal.unanswered"), value: counts.unanswered, tone: "text-danger-600" },
+              { label: t("submitModal.markedForReview"), value: counts.marked, tone: "text-violet-700" },
+              { label: t("submitModal.notVisited"), value: counts.notVisited, tone: "text-neutral-500" },
+              { label: t("submitModal.totalQuestions"), value: counts.total, tone: "text-neutral-800" },
             ].map((row, index) => (
               <div
                 key={row.label}
@@ -108,10 +113,10 @@ export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps)
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2">
                 <SpinnerGap className="h-4 w-4 animate-spin" />
-                Submitting...
+                {t("submitModal.submitting")}
               </div>
             ) : (
-              "Submit"
+              t("submitModal.submit")
             )}
           </AlertDialogAction>
           <AlertDialogCancel
@@ -119,7 +124,7 @@ export function SubmitModal({ open, onOpenChange, onConfirm }: SubmitModalProps)
             disabled={isSubmitting}
             onClick={() => !isSubmitting && onOpenChange(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>

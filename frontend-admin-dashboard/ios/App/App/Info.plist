@@ -48,7 +48,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Vacademy Admin uses the camera so you can take photos for attachments and uploads.</string>
+	<string>The camera is used to scan answer copies and to take photos for attachments and uploads.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Vacademy Admin accesses your photo library so you can attach and upload images and files.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

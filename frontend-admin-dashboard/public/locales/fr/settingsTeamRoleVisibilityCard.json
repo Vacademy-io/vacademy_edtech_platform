@@ -1,0 +1,10 @@
+{
+    "title": "Onglet Équipe — Visibilité des rôles",
+    "description": "Choisissez les rôles qui apparaissent dans le filtre de rôles de l'onglet Équipe et dans la liste déroulante \"Type de rôle\" d'Inviter un utilisateur pour ce rôle. Les rôles masqués ne peuvent pas être sélectionnés lors de l'invitation ou du filtrage des membres de l'équipe.",
+    "loading": "Chargement des rôles…",
+    "empty": "Aucun rôle disponible.",
+    "selfLocked": "Activé en permanence — vous ne pouvez pas masquer votre propre rôle.",
+    "error": {
+        "loadRoles": "Échec du chargement des rôles"
+    }
+}

@@ -1,0 +1,106 @@
+{
+    "trigger": "विवरण संपादित करें",
+    "dialogHeading": "{{term}} प्रोफ़ाइल संपादित करें",
+    "discardConfirm": "असहेजे गए परिवर्तन छोड़ दें?",
+    "unsavedChanges": "असहेजे गए परिवर्तन",
+    "allChangesSaved": "सभी परिवर्तन सहेजे गए",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है...",
+    "saveChanges": "परिवर्तन सहेजें",
+    "noStudentFound": "कोई छात्र नहीं मिला",
+    "validation": {
+        "required": "यह फ़ील्ड आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल पता",
+        "invalidEmailShort": "अमान्य ईमेल"
+    },
+    "sections": {
+        "photo": {
+            "title": "प्रोफ़ाइल फ़ोटो",
+            "helper": "वर्गाकार छवि, कम से कम 200×200। अधिकतम 5 MB।"
+        },
+        "identity": {
+            "title": "पहचान",
+            "helper": "उनका नाम और बुनियादी जानकारी।"
+        },
+        "contact": {
+            "title": "संपर्क",
+            "helper": "संपर्क करने के प्राथमिक माध्यम।"
+        },
+        "address": {
+            "title": "पता",
+            "helper": "वे कहाँ रहते हैं।"
+        },
+        "institute": {
+            "title": "संस्थान",
+            "helper": "उनकी प्राथमिक शिक्षण संस्था।"
+        },
+        "family": {
+            "title": "परिवार",
+            "helper": "अभिभावक और आपातकालीन संपर्क।"
+        },
+        "custom": {
+            "title": "अतिरिक्त जानकारी",
+            "helper": "आपके संस्थान के लिए कॉन्फ़िगर किए गए कस्टम फ़ील्ड।"
+        }
+    },
+    "subgroups": {
+        "father": "पिता / पुरुष अभिभावक",
+        "mother": "माता / महिला अभिभावक"
+    },
+    "photo": {
+        "alt": "प्रोफ़ाइल",
+        "upload": "अपलोड करें",
+        "replace": "बदलें",
+        "remove": "हटाएं"
+    },
+    "fields": {
+        "fullName": {
+            "label": "पूरा नाम",
+            "placeholder": "उदा. हिमांग शर्मा"
+        },
+        "gender": {
+            "label": "लिंग",
+            "placeholder": "लिंग चुनें"
+        },
+        "email": {
+            "label": "ईमेल",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "मोबाइल नंबर",
+            "placeholder": "123 456 7890"
+        },
+        "addressLine": {
+            "label": "पता पंक्ति",
+            "placeholder": "मकान / गली / मोहल्ला"
+        },
+        "city": {
+            "label": "शहर",
+            "placeholder": "शहर"
+        },
+        "state": {
+            "label": "राज्य",
+            "placeholder": "राज्य"
+        },
+        "pincode": {
+            "label": "पिन कोड",
+            "placeholder": "उदा. 425562"
+        },
+        "instituteName": {
+            "label": "संस्थान का नाम",
+            "placeholder": "स्कूल / कॉलेज / संस्थान"
+        },
+        "fatherName": {
+            "label": "नाम",
+            "placeholder": "पिता / पुरुष अभिभावक का नाम"
+        },
+        "motherName": {
+            "label": "नाम",
+            "placeholder": "माता / महिला अभिभावक का नाम"
+        }
+    },
+    "customField": {
+        "selectPlaceholder": "{{name}} चुनें",
+        "enterPlaceholder": "{{name}} दर्ज करें"
+    }
+}

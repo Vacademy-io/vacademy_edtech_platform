@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import vacademy.io.admin_core_service.features.invoice.dto.InvoiceIssueOnPaymentLog;
 import vacademy.io.admin_core_service.features.invoice.dto.PaymentLogInvoiceProjection;
 import vacademy.io.admin_core_service.features.invoice.entity.Invoice;
 import vacademy.io.admin_core_service.features.invoice.entity.InvoicePaymentLogMapping;
@@ -29,6 +30,14 @@ public interface InvoicePaymentLogMappingRepository extends JpaRepository<Invoic
 
     Optional<InvoicePaymentLogMapping> findFirstByPaymentLogId(String paymentLogId);
 
+    List<InvoicePaymentLogMapping> findAllByPaymentLogId(String paymentLogId);
+
+    /**
+     * One lookup for a whole installment ledger. Walking it a payment at a time issued a query
+     * per ledger row, and a learner paying in instalments has one row per part-payment.
+     */
+    List<InvoicePaymentLogMapping> findAllByPaymentLogIdIn(Collection<String> paymentLogIds);
+
     /**
      * Bulk (payment log -> invoice) lookup for a page of the Manage Payments table.
      *
@@ -47,5 +56,20 @@ public interface InvoicePaymentLogMappingRepository extends JpaRepository<Invoic
     List<PaymentLogInvoiceProjection> findInvoiceSummariesByPaymentLogIds(
             @Param("instituteId") String instituteId,
             @Param("paymentLogIds") Collection<String> paymentLogIds);
+
+    /**
+     * Every live invoice on any payment log the given invoices cover — including invoices
+     * issued outside the export window, so a duplicate is recognised even when its first-issued
+     * twin falls in an earlier period.
+     */
+    @Query("SELECT m.paymentLog.id AS paymentLogId, i.id AS invoiceId, "
+            + "i.invoiceNumber AS invoiceNumber, i.invoiceDate AS invoiceDate, i.createdAt AS createdAt "
+            + "FROM InvoicePaymentLogMapping m JOIN m.invoice i "
+            + "WHERE i.instituteId = :instituteId AND i.status <> 'REJECTED' "
+            + "AND m.paymentLog.id IN (SELECT m2.paymentLog.id FROM InvoicePaymentLogMapping m2 "
+            + "WHERE m2.invoice.id IN :invoiceIds)")
+    List<InvoiceIssueOnPaymentLog> findLiveInvoicesSharingPaymentLogs(
+            @Param("instituteId") String instituteId,
+            @Param("invoiceIds") Collection<String> invoiceIds);
 }
 

@@ -20,6 +20,8 @@ import vacademy.io.admin_core_service.features.institute.service.setting.Institu
 import vacademy.io.admin_core_service.features.slide.service.SlideMetaDataService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgStaffLookupService;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +70,15 @@ class DoubtsManagerAdditiveRoutingTest {
     @Mock private SubOrgStaffLookupService subOrgStaffLookupService;
 
     @InjectMocks private DoubtsManager manager;
+
+    /** The learner raising the doubt — doubts/create raises it as the authenticated caller. */
+    private static CustomUserDetails learner() {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(LEARNER);
+        dto.setUsername(LEARNER);
+        dto.setAuthorities(List.of("STUDENT"));
+        return new CustomUserDetails(dto);
+    }
 
     private DoubtsDto slideDoubtRequest(String type) {
         return DoubtsDto.builder()
@@ -129,7 +140,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireSetting("SUBJECT_TEACHER",
                 List.of(queryType("DOUBT", "BATCH_TEACHER", List.of(STAFF_A, STAFF_B), null)));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(TEACHER, STAFF_A, STAFF_B), captureRaisedRecipients());
     }
@@ -143,7 +154,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireSetting("BATCH_TEACHER",
                 List.of(queryType("TECHNICAL", "BATCH_TEACHER", null, List.of(ADMIN_ROLE))));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("TECHNICAL"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("TECHNICAL"));
 
         assertEquals(List.of(TEACHER, ADMIN_A), captureRaisedRecipients());
     }
@@ -157,7 +168,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireSetting("BATCH_TEACHER",
                 List.of(queryType("DOUBT", "BATCH_TEACHER", List.of(STAFF_A), List.of(ADMIN_ROLE))));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(TEACHER, STAFF_A, ADMIN_A), captureRaisedRecipients());
     }
@@ -170,7 +181,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireSetting("BATCH_TEACHER",
                 List.of(queryType("DOUBT", "BATCH_TEACHER", List.of(STAFF_A), null)));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(STAFF_A), captureRaisedRecipients());
         verify(authService, never()).getUserIdsByRole(any(), any());
@@ -183,7 +194,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireBatchTeacher();
         wireSetting("BATCH_TEACHER", List.of(queryType("DOUBT", null, List.of(STAFF_A), null)));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(TEACHER, STAFF_A), captureRaisedRecipients());
     }
@@ -199,7 +210,7 @@ class DoubtsManagerAdditiveRoutingTest {
         assignee.put("user_ids", List.of(STAFF_A));
         wireSetting("BATCH_TEACHER", List.of(type));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("PAYMENT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("PAYMENT"));
 
         // The teacher must NOT leak in — the union only widens when also_* is configured.
         assertEquals(List.of(STAFF_A), captureRaisedRecipients());
@@ -219,7 +230,7 @@ class DoubtsManagerAdditiveRoutingTest {
         setting.put("another_future_block", Map.of("x", 1));
         when(instituteSettingService.getSettingByInstituteIdAndKey(INST, SETTING_KEY)).thenReturn(setting);
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         // Strict Jackson would throw here, the caller would swallow it as "no setting", and the
         // whole per-type config would vanish — the named handler is the proof it survived.
@@ -236,7 +247,7 @@ class DoubtsManagerAdditiveRoutingTest {
         wireSetting("BATCH_TEACHER",
                 List.of(queryType("DOUBT", "BATCH_TEACHER", null, List.of("EVALUATOR"))));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest("DOUBT"));
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest("DOUBT"));
 
         assertEquals(List.of(ADMIN_A), captureRaisedRecipients());
     }

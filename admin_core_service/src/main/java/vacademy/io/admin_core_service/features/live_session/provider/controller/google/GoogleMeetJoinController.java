@@ -9,17 +9,21 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleJoinPayloadResponse;
+import vacademy.io.admin_core_service.features.live_session.provider.manager.GoogleMeetManager;
 import vacademy.io.admin_core_service.features.live_session.provider.security.JoinAuthorization;
 import vacademy.io.admin_core_service.features.live_session.provider.security.LiveSessionJoinAuthorizer;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAttendanceService;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.exceptions.VacademyException;
+
+import java.util.List;
 
 /**
  * Resolves the Google Meet join URL for an authenticated learner/host and records attendance.
@@ -40,7 +44,8 @@ public class GoogleMeetJoinController {
     private final LiveSessionJoinAuthorizer joinAuthorizer;
     private final GoogleAttendanceService attendanceService;
     private final GoogleAccountStore googleAccountStore;
-    private final UserRepository userRepository;
+    private final AuthService authService;
+    private final GoogleMeetManager googleMeetManager;
 
     @GetMapping("/google-meet-join")
     public ResponseEntity<GoogleJoinPayloadResponse> join(
@@ -71,12 +76,25 @@ public class GoogleMeetJoinController {
                     user.getUserId(), userName, schedule.getProviderMeetingId());
         }
 
+        GoogleAccount account = schedule.getProviderAccountId() == null ? null
+                : googleAccountStore.findById(schedule.getProviderAccountId()).orElse(null);
         // The host should open Meet signed into the connected organizer account for auto-recording.
-        String organizerEmail = schedule.getProviderAccountId() == null ? null
-                : googleAccountStore.findById(schedule.getProviderAccountId())
-                        .map(GoogleAccount::getOrganizerEmail).orElse(null);
+        String organizerEmail = account == null ? null : account.getOrganizerEmail();
 
-        log.info("google.meet.join scheduleId={} userId={} host={}", scheduleId, user.getUserId(), host);
+        // A teacher/admin on their own Google account is only a participant in Meet; making them a
+        // co-host here gives them host controls, like a BBB moderator join.
+        String cohostEmail = null;
+        GoogleMeetManager.CohostResult cohost = GoogleMeetManager.CohostResult.SKIPPED;
+        if (host) {
+            String email = resolveUserEmail(user);
+            cohost = googleMeetManager.ensureCohost(account, schedule.getProviderMeetingId(), email);
+            if (cohost.isCohost()) {
+                cohostEmail = email;
+            }
+        }
+
+        log.info("google.meet.join scheduleId={} userId={} host={} cohost={}",
+                scheduleId, user.getUserId(), host, cohost);
 
         return ResponseEntity.ok(GoogleJoinPayloadResponse.builder()
                 .joinUrl(schedule.getCustomMeetingLink())
@@ -84,22 +102,35 @@ public class GoogleMeetJoinController {
                 .providerMeetingId(schedule.getProviderMeetingId())
                 .host(host)
                 .organizerEmail(organizerEmail)
+                .cohostEmail(cohostEmail)
+                .cohostJustAdded(cohost == GoogleMeetManager.CohostResult.ADDED)
                 .build());
     }
 
-    /** Display name — JWT full name, DB fallback, then username. */
+    /**
+     * Login email — token first, then auth_service. The token built from auth_service never carries
+     * the email, and users live in the auth_service DB (not admin_core's), so the lookup goes there.
+     */
+    private String resolveUserEmail(CustomUserDetails user) {
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            return user.getEmail();
+        }
+        try {
+            return authService.getUsersFromAuthServiceByUserIds(List.of(user.getUserId())).stream()
+                    .map(UserDTO::getEmail)
+                    .filter(e -> e != null && !e.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("google.meet.join email lookup failed userId={} reason={}", user.getUserId(), e.getMessage());
+            return null;
+        }
+    }
+
+    /** Display name — token full name, then username. */
     private String resolveUserName(CustomUserDetails user) {
         if (user.getFullName() != null && !user.getFullName().isBlank()) {
             return user.getFullName();
-        }
-        try {
-            var dbUser = userRepository.findById(user.getUserId());
-            if (dbUser.isPresent() && dbUser.get().getFullName() != null
-                    && !dbUser.get().getFullName().isBlank()) {
-                return dbUser.get().getFullName();
-            }
-        } catch (Exception e) {
-            log.warn("google.meet.join name lookup failed userId={}", user.getUserId());
         }
         return user.getUsername();
     }

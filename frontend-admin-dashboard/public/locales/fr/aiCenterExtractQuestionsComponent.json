@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "Extraire les questions"
+    },
+    "dialog": {
+        "title": "Extraire les questions",
+        "promptLabel": "Invite",
+        "promptPlaceholder": "Saisissez votre invite ici",
+        "extractButton": "Extraire"
+    },
+    "tasksList": {
+        "heading": "Vsmart Extract"
+    }
+}

@@ -1,0 +1,224 @@
+{
+    "heading": {
+        "fallbackTitle": "Audience List",
+        "addResponse": "Add Response",
+        "loadingRespondents": "Loading respondents…",
+        "respondentsCount_one": "{{formattedCount}} respondent",
+        "respondentsCount_other": "{{formattedCount}} respondents"
+    },
+    "filters": {
+        "tiers": {
+            "label": "All tiers",
+            "hot": "Hot",
+            "warm": "Warm",
+            "cold": "Cold"
+        },
+        "leadStatus": {
+            "label": "All leads",
+            "active": "Active (not enrolled)",
+            "converted": "Enrolled / Converted"
+        },
+        "sla": {
+            "label": "All SLA states",
+            "anyOverdue": "Any overdue",
+            "reachOutOverdue": "Reach-out overdue",
+            "reachOutDueSoon": "Reach-out due soon",
+            "followUpDue": "Follow-up due",
+            "followUpOverdue": "Follow-up overdue"
+        },
+        "callHistory": {
+            "placeholder": "Call history",
+            "notCalled": "Not called",
+            "called": "Called (any)",
+            "calledOnce": "Called once",
+            "calledTwicePlus": "Called 2+ times",
+            "aiCalled": "AI called",
+            "manualCalled": "Manually called"
+        },
+        "moreFilters": "More filters",
+        "dateFrom": "From",
+        "dateTo": "To",
+        "applyDates": "Apply dates",
+        "clearAll": "Clear all"
+    },
+    "chips": {
+        "search": "Search: {{query}}",
+        "datePlaceholder": "…",
+        "date": "Date: {{from}} → {{to}}",
+        "tier": "Tier: {{values}}",
+        "status": "Status: {{values}}",
+        "statusActive": "Active",
+        "statusConverted": "Converted",
+        "sla": "SLA: {{values}}",
+        "counsellor": "Counsellor: {{values}}",
+        "counsellorUnassigned": "Unassigned",
+        "counsellorSelected": "Selected",
+        "customField": "{{fieldName}}: {{value}}",
+        "customFieldFallback": "Field",
+        "removeAriaLabel": "Remove {{label}}"
+    },
+    "toolbar": {
+        "sendMessage": "Send message",
+        "importCsv": "Import CSV",
+        "exporting": "Exporting…",
+        "export": "Export"
+    },
+    "search": {
+        "placeholder": "Search leads",
+        "ariaLabel": "Search leads",
+        "loadingResults": "Loading results…",
+        "resultsCount_one": "Showing {{shown}} of {{total}} result",
+        "resultsCount_other": "Showing {{shown}} of {{total}} results"
+    },
+    "bulkToolbar": {
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "selecting": "Selecting…",
+        "selectAll": "Select all {{count}}",
+        "clear": "Clear",
+        "bulkActions": "Bulk actions",
+        "assignLeads": "Assign leads",
+        "unassignLeads": "Unassign leads",
+        "deleteLeads": "Delete leads",
+        "moveLeads": "Move to another list",
+        "sendMessage": "Send message",
+        "changeStatus": "Change status"
+    },
+    "emptyState": {
+        "errorTitle": "Couldn't load respondents",
+        "errorDescription": "Something went wrong fetching the campaign users. Try again.",
+        "noResultsTitle": "No respondents match these filters",
+        "noResultsDescription": "Try clearing the filters to see more results.",
+        "noDataTitle": "No respondents yet",
+        "noDataDescription": "When people fill out this audience form, they will show up here."
+    },
+    "exportColumns": {
+        "leadId": "Lead ID",
+        "submittedAt": "Submitted At",
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile",
+        "leadStatus": "Lead Status",
+        "counsellor": "Counsellor",
+        "activityNotes": "Activity & Notes",
+        "notesCount": "Notes Count",
+        "leadJourney": "Lead Journey (disposition & notes)"
+    },
+    "csv": {
+        "headers": {
+            "leadId": "Lead ID",
+            "submittedAt": "Submitted At",
+            "name": "Name",
+            "email": "Email",
+            "mobile": "Mobile",
+            "leadStatus": "Lead Status",
+            "counsellor": "Counsellor",
+            "activityNotes": "Activity & Notes",
+            "notesCount": "Notes Count",
+            "leadJourney": "Lead journey (disposition & notes)"
+        },
+        "noteFallbackLabel": "Note",
+        "updatedByLabel": "updatedby",
+        "dateLabel": "date"
+    },
+    "toasts": {
+        "selectAllFailed": "Failed to select all leads",
+        "noLeadsToExport": "No leads to export",
+        "exportStarting": "Starting export…",
+        "noDataToExport": "No data to export",
+        "exportSuccess_one": "Exported {{count}} lead",
+        "exportSuccess_other": "Exported {{count}} leads",
+        "exportFailed": "Failed to export leads"
+    },
+    "campaignFields": {
+        "optedOutFrom": "Opted Out From"
+    },
+    "dialogs": {
+        "campaignFallbackName": "Campaign"
+    },
+    "detail": {
+        "status": {
+            "ACTIVE": "Active",
+            "DRAFT": "Draft",
+            "INACTIVE": "Inactive"
+        },
+        "runs": "runs {{start}} → {{end}}",
+        "editList": "Edit list",
+        "none": "Not set",
+        "loadingList": "Loading list details…",
+        "pool": {
+            "title": "Leads from this list are assigned through the \"{{name}}\" pool",
+            "members_one": "{{count}} counsellor",
+            "members_other": "{{count}} counsellors"
+        },
+        "tabs": {
+            "ariaLabel": "List sections",
+            "leads": "Leads",
+            "history": "Messages sent",
+            "share": "Share & form",
+            "auto": "Automations"
+        },
+        "share": {
+            "linkTitle": "Form link",
+            "linkSub": "Share it anywhere — every response lands in this list",
+            "copy": "Copy link",
+            "copied": "Link copied",
+            "copyFailed": "Could not copy the link",
+            "open": "Preview public form",
+            "inactive": "Set this list to Active to get a shareable link.",
+            "changeStatus": "Change status",
+            "qrTitle": "QR code",
+            "qrText": "For posters and flyers — scanning it opens this form.",
+            "qrOpen": "Show QR code",
+            "embedTitle": "Embed on your website",
+            "embedText": "A button with a pop-up, or the whole form in an iFrame.",
+            "embedOpen": "Get embed code",
+            "apiTitle": "API & Zapier",
+            "apiText": "Send leads into this list from your other tools.",
+            "apiOpen": "API details",
+            "fieldsTitle": "Form fields",
+            "fieldsSub_one": "{{count}} field",
+            "fieldsSub_other": "{{count}} fields",
+            "fieldsEmpty": "No custom fields — the form asks only the standard details.",
+            "editForm": "Edit form",
+            "required": "Required",
+            "optional": "Optional",
+            "afterTitle": "After submit & look",
+            "afterText": "Thank-you screen, redirect and how the public form looks.",
+            "afterEdit": "Edit",
+            "objective": "Objective",
+            "description": "Description"
+        },
+        "auto": {
+            "workflowsTitle": "Workflows",
+            "workflowsSub_one": "{{count}} workflow runs when a lead arrives",
+            "workflowsSub_other": "{{count}} workflows run when a lead arrives",
+            "viewAll": "View all linked workflows",
+            "configure": "Configure workflow",
+            "loading": "Loading workflows…",
+            "loadError": "Could not load workflows.",
+            "workflowsEmpty": "No workflow runs when a lead arrives on this list.",
+            "thisList": "This list",
+            "allLists": "All lists",
+            "workflowsFoot": "Scheduled workflows that pick leads from this list are listed in View all linked workflows.",
+            "bookingTitle": "Booking page",
+            "bookingText": "Let leads book a call or meeting from a public page.",
+            "bookingOpen": "Booking settings",
+            "poolTitle": "Counsellor pool",
+            "poolNone": "No pool linked",
+            "leadSettings": "Lead Settings",
+            "poolEmpty": "Leads from this list stay unassigned until someone assigns them. Add the list to a pool in Lead Settings.",
+            "poolNoMembers": "This pool has no active counsellors.",
+            "counsellorFallback": "Counsellor",
+            "monthlyTarget_one": "target {{count}} / month",
+            "monthlyTarget_other": "target {{count}} / month",
+            "notifyTitle": "Notifications & scoring",
+            "edit": "Edit",
+            "teamNotify": "Team notifications",
+            "respondentEmail": "Confirmation email to the respondent",
+            "on": "On",
+            "off": "Off",
+            "initialScore": "Initial lead score"
+        }
+    }
+}

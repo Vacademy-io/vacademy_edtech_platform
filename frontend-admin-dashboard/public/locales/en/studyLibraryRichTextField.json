@@ -1,0 +1,12 @@
+{
+    "toolbar": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "bulletList": "Bullet list",
+        "numberedList": "Numbered list",
+        "insertLink": "Insert link",
+        "insertImage": "Insert image",
+        "linkPrompt": "Link URL:"
+    }
+}

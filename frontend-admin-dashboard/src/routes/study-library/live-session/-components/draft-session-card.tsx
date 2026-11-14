@@ -1,11 +1,23 @@
-import QRCode from 'react-qr-code';
-import { Copy, DownloadSimple, DotsThree } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import {
+    ArrowSquareOut,
+    CalendarBlank,
+    Clock,
+    Copy,
+    DotsThree,
+    PencilSimple,
+    QrCode,
+    SignIn,
+    Trash,
+    VideoCamera,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { copyToClipboard } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/helper';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -17,16 +29,36 @@ import { useSessionDetailsStore } from '../-store/useSessionDetailsStore';
 import { useState, useEffect } from 'react';
 import DeleteSessionDialog from './delete-session-dialog';
 import type { SessionBySessionIdResponse } from '../-services/utils';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { getSessionJoinLink } from '../-utils/live-sesstions';
+import { getSessionJoinLink, formatMeetingDate, formatClockTime } from '../-utils/live-sesstions';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import {
+    AccessBadge,
+    hasAssignedTeacher,
+    SessionBatches,
+    SessionCardFooter,
+    SessionCardHeading,
+    SessionCardShell,
+    SessionMetaDivider,
+    SessionMetaItem,
+    SessionMetaRow,
+    SessionTeacher,
+} from './session-card-shell';
+import SessionQrDialog from './session-qr-dialog';
 
 interface DraftSessionCardProps {
     session: DraftSession;
+    /** Resolved once per page by the list, so avatars cost one lookup, not one per card. */
+    avatarUrlByFileId?: Record<string, string>;
 }
 
-export default function DraftSessionCard({ session }: DraftSessionCardProps) {
+export default function DraftSessionCard({ session, avatarUrlByFileId }: DraftSessionCardProps) {
+    const { t } = useTranslation('studyLibraryLiveSessionDraftSessionCard');
+    const { t: tCard } = useTranslation('studyLibraryLiveSessionCard');
     // Local state for fetched session details
     const [scheduleInfo, setScheduleInfo] = useState<SessionBySessionIdResponse['schedule'] | null>(
         null
@@ -40,14 +72,20 @@ export default function DraftSessionCard({ session }: DraftSessionCardProps) {
             .then((res) => setScheduleInfo(res.schedule))
             .catch((err) => console.error('Failed to fetch draft session details:', err));
     }, [session.session_id]);
-    const displayDate = scheduleInfo?.meeting_date ?? session.meeting_date;
-    const displayTime = scheduleInfo?.start_time ?? session.start_time;
-    const formattedDateTime = `${displayDate || ''} ${displayTime || ''}`.trim();
+    const batchNames = (session.package_session_details ?? [])
+        .map((d) => `${d.level_name} ${d.package_name}`.trim())
+        .filter(Boolean);
+    const displayDate = formatMeetingDate(scheduleInfo?.meeting_date ?? session.meeting_date);
+    const displayTime = formatClockTime(scheduleInfo?.start_time ?? session.start_time);
+    const displayLastEntry = formatClockTime(
+        scheduleInfo?.last_entry_time ?? session.last_entry_time
+    );
 
     const navigate = useNavigate();
     const { setSessionId } = useLiveSessionStore();
     const { setSessionDetails } = useSessionDetailsStore();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [qrDialogOpen, setQrDialogOpen] = useState(false);
 
     const handleEditSession = async () => {
         try {
@@ -79,38 +117,42 @@ export default function DraftSessionCard({ session }: DraftSessionCardProps) {
     };
 
     return (
-        <div
-            className="my-6 flex cursor-pointer flex-col gap-4 rounded-xl border bg-neutral-50 p-4 transition-shadow hover:shadow-md"
-            onClick={handleCardClick}
-        >
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-semibold">{session.title}</h1>
-                    {/* <Badge className="rounded-md border border-neutral-300 bg-primary-50 py-1.5 shadow-none">
-                        <LockSimple size={16} className="mr-2" />
-                        {session.access_level}
-                    </Badge> */}
-                </div>
-
-                <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-                    {/* <Badge className="rounded-md border border-primary-200 bg-primary-50 py-1.5 shadow-none">
-                        {batchIdsList[0]}
-                    </Badge> */}
-
+        <SessionCardShell onClick={handleCardClick}>
+            <SessionCardHeading
+                title={session.title}
+                subtitle={session.subject || null}
+                badge={<AccessBadge accessLevel={session.access_level} />}
+                actions={
                     <DropdownMenu>
-                        <DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild>
                             <MyButton
                                 type="button"
-                                scale="small"
+                                scale="medium"
                                 buttonType="secondary"
-                                className="w-6 !min-w-6"
+                                layoutVariant="icon"
+                                aria-label={t('viewDetails')}
                             >
-                                <DotsThree size={32} />
+                                <DotsThree size={20} weight="bold" />
                             </MyButton>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem
-                                className="cursor-pointer"
+                                className="cursor-pointer gap-2"
+                                onClick={() => setQrDialogOpen(true)}
+                            >
+                                <QrCode size={16} />
+                                {tCard('actions.generateQrCode')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="cursor-pointer gap-2"
+                                onClick={() => copyToClipboard(joinLink)}
+                            >
+                                <Copy size={16} />
+                                {tCard('actions.copyJoinLink')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="cursor-pointer gap-2"
                                 onClick={() => {
                                     navigate({
                                         to: '/study-library/live-session/view/$sessionId',
@@ -118,84 +160,94 @@ export default function DraftSessionCard({ session }: DraftSessionCardProps) {
                                     });
                                 }}
                             >
-                                View Details
+                                <ArrowSquareOut size={16} />
+                                {t('viewDetails')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                className="cursor-pointer"
+                                className="cursor-pointer gap-2"
                                 onClick={handleEditSession}
                             >
-                                Edit Live Session
+                                <PencilSimple size={16} />
+                                {t('editLiveSession')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onClick={handleDelete}>
-                                Delete Live Session
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="cursor-pointer gap-2 text-danger-600 focus:text-danger-600"
+                                onClick={handleDelete}
+                            >
+                                <Trash size={16} />
+                                {t('deleteLiveSession')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                </div>
-            </div>
+                }
+            />
 
-            <div className="flex w-full flex-wrap items-center justify-start gap-x-6 gap-y-1 text-sm text-neutral-500 sm:gap-x-8">
-                <div className="flex items-center gap-2">
-                    <span className="text-black">
-                        {getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}:
-                    </span>
-                    <span>{session.subject}</span>
-                </div>
+            <SessionMetaRow>
+                <SessionMetaItem
+                    icon={<CalendarBlank size={16} />}
+                    tone="primary"
+                    label={tCard('meta.date')}
+                    value={displayDate ?? t('notAvailable')}
+                />
+                <SessionMetaItem
+                    icon={<Clock size={16} />}
+                    tone="info"
+                    label={tCard('meta.time')}
+                    value={displayTime ?? t('notAvailable')}
+                />
+                <SessionMetaItem
+                    icon={<SignIn size={16} />}
+                    tone="danger"
+                    label={tCard('meta.lastEntry')}
+                    value={displayLastEntry ?? t('notAvailable')}
+                />
+                <SessionMetaItem
+                    icon={<VideoCamera size={16} />}
+                    tone="warning"
+                    label={tCard('meta.meetingType')}
+                    value={<span className="capitalize">{session.recurrence_type}</span>}
+                />
+            </SessionMetaRow>
 
-                <div className="flex items-center gap-2">
-                    <span className="text-black">Start Date & Time:</span>
-                    <span>{formattedDateTime || 'N/A'}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <span className="text-black">Last Entry:</span>
-                    <span>{scheduleInfo?.last_entry_time ?? session.last_entry_time ?? 'N/A'}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <span className="text-black">Meeting Type:</span>
-                    <span>{session.recurrence_type}</span>
-                </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-2 overflow-hidden text-sm text-neutral-500">
-                    <h1 className="shrink-0 !font-normal text-black">Join Link:</h1>
-                    <span className="min-w-0 flex-1 truncate px-1 py-1 text-sm underline sm:px-3 sm:py-2">{joinLink}</span>
-                    <MyButton
-                        type="button"
-                        scale="small"
-                        buttonType="secondary"
-                        className="h-8 min-w-8 shrink-0"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(joinLink);
-                        }}
-                    >
-                        <Copy size={32} />
-                    </MyButton>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-4">
-                    <QRCode
-                        value={joinLink}
-                        className="size-16"
-                        id={`qr-code-svg-live-session-${session.session_id}`}
+            <SessionCardFooter>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-8 gap-y-3">
+                    <SessionTeacher
+                        instructors={session.instructors}
+                        label={getTerminology(RoleTerms.Teacher, SystemTerms.Teacher)}
+                        unassignedLabel={tCard('meta.teacherUnassigned')}
+                        unknownLabel={tCard('meta.teacherUnknown')}
+                        avatarUrlByFileId={avatarUrlByFileId}
                     />
+                    {hasAssignedTeacher(session.instructors) && batchNames.length ? (
+                        <SessionMetaDivider />
+                    ) : null}
+                    {batchNames.length ? (
+                        <SessionBatches
+                            batches={batchNames}
+                            maxVisible={2}
+                            label={getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}
+                            moreLabel={(count) => tCard('batches.more', { count })}
+                            lessLabel={tCard('batches.less')}
+                        />
+                    ) : null}
+                </div>
+                <div
+                    className="flex shrink-0 items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                >
                     <MyButton
                         type="button"
-                        scale="small"
-                        buttonType="secondary"
-                        className="h-8 min-w-8"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            // TODO: implement download QR code
-                        }}
+                        scale="medium"
+                        buttonType="primary"
+                        className="w-full sm:w-auto sm:!min-w-0 sm:px-5"
+                        onClick={handleEditSession}
                     >
-                        <DownloadSimple size={32} />
+                        <PencilSimple size={16} className="mr-2" />
+                        {t('editLiveSession')}
                     </MyButton>
                 </div>
-            </div>
+            </SessionCardFooter>
             <DeleteSessionDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
@@ -204,6 +256,13 @@ export default function DraftSessionCard({ session }: DraftSessionCardProps) {
                 isRecurring={session.recurrence_type !== 'once'}
                 onSuccess={handleDeleteSuccess}
             />
-        </div>
+            <SessionQrDialog
+                open={qrDialogOpen}
+                onOpenChange={setQrDialogOpen}
+                joinLink={joinLink}
+                sessionId={session.session_id}
+                heading={tCard('qrHeading')}
+            />
+        </SessionCardShell>
     );
 }

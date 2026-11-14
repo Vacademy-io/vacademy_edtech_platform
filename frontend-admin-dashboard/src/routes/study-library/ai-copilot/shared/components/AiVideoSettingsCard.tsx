@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -93,12 +95,27 @@ async function fetchVoices(
     return resp.json();
 }
 
-const DURATIONS = ['1-2 minutes', '2-3 minutes', '3-5 minutes', '5-8 minutes'];
-const QUALITY_TIERS = [
-    { value: 'free', label: 'Free (fastest, basic quality)' },
-    { value: 'standard', label: 'Standard' },
-    { value: 'premium', label: 'Premium' },
-    { value: 'ultra', label: 'Ultra (best quality)' },
+// Canonical values persisted in AiVideoSettings/the backend payload; kept in
+// English regardless of locale. Labels shown to the user are localized below.
+const DURATIONS = ['1-2 minutes', '2-3 minutes', '3-5 minutes', '5-8 minutes'] as const;
+const DURATION_LABEL_KEYS: Record<(typeof DURATIONS)[number], string> = {
+    '1-2 minutes': 'durationLabel.oneToTwoMinutes',
+    '2-3 minutes': 'durationLabel.twoToThreeMinutes',
+    '3-5 minutes': 'durationLabel.threeToFiveMinutes',
+    '5-8 minutes': 'durationLabel.fiveToEightMinutes',
+};
+
+const buildDurationOptions = (t: TFunction) =>
+    DURATIONS.map((value) => ({
+        value,
+        label: t(DURATION_LABEL_KEYS[value]),
+    }));
+
+const buildQualityTiers = (t: TFunction) => [
+    { value: 'free', label: t('qualityTier.free') },
+    { value: 'standard', label: t('qualityTier.standard') },
+    { value: 'premium', label: t('qualityTier.premium') },
+    { value: 'ultra', label: t('qualityTier.ultra') },
 ];
 
 interface AiVideoSettingsCardProps {
@@ -107,6 +124,7 @@ interface AiVideoSettingsCardProps {
 }
 
 export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProps) {
+    const { t } = useTranslation('studyLibraryAiVideoSettingsCard');
     const { data: modelsList, isLoading: modelsLoading } = useAIModelsList({ use_case: 'video' });
     const { data: voicesData, isLoading: voicesLoading } = useQuery({
         queryKey: ['tts-voices', value.language, value.voiceGender, value.ttsProvider],
@@ -115,19 +133,21 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
     });
 
     const set = (patch: Partial<AiVideoSettings>) => onChange({ ...value, ...patch });
+    const qualityTiers = buildQualityTiers(t);
+    const durationOptions = buildDurationOptions(t);
 
     return (
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 sm:p-4">
             <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <VideoCamera className="size-4 shrink-0 text-neutral-500" />
-                <span className="text-sm font-semibold text-neutral-900">AI Video Settings</span>
+                <span className="text-sm font-semibold text-neutral-900">{t('title')}</span>
                 <span className="text-xs text-neutral-500">
-                    applies to AI Video, AI Slides &amp; Storybook pages
+                    {t('appliesTo')}
                 </span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Language</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('language')}</Label>
                     <Select
                         value={value.language}
                         onValueChange={(v) => set({ language: v, voiceId: '' })}
@@ -150,16 +170,16 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Video model</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('videoModel')}</Label>
                     <Select value={value.model} onValueChange={(v) => set({ model: v })}>
                         <SelectTrigger className="h-9 bg-white text-xs">
-                            <SelectValue placeholder="Auto (recommended)" />
+                            <SelectValue placeholder={t('autoRecommended')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="auto">Auto (recommended)</SelectItem>
+                            <SelectItem value="auto">{t('autoRecommended')}</SelectItem>
                             {modelsLoading ? (
                                 <div className="px-2 py-1.5 text-xs text-neutral-500">
-                                    Loading...
+                                    {t('loading')}
                                 </div>
                             ) : (
                                 modelsList?.models.map((model) => (
@@ -172,7 +192,7 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Audio quality</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('audioQuality')}</Label>
                     <Select
                         value={value.ttsProvider}
                         onValueChange={(v) =>
@@ -183,13 +203,13 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="standard">Standard (included)</SelectItem>
-                            <SelectItem value="premium">Premium (2x credits)</SelectItem>
+                            <SelectItem value="standard">{t('audioQualityStandard')}</SelectItem>
+                            <SelectItem value="premium">{t('audioQualityPremium')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Voice gender</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('voiceGender')}</Label>
                     <Select
                         value={value.voiceGender}
                         onValueChange={(v) =>
@@ -200,25 +220,25 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">{t('genderFemale')}</SelectItem>
+                            <SelectItem value="male">{t('genderMale')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Voice</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('voice')}</Label>
                     <Select
                         value={value.voiceId || 'auto'}
                         onValueChange={(v) => set({ voiceId: v === 'auto' ? '' : v })}
                     >
                         <SelectTrigger className="h-9 bg-white text-xs">
-                            <SelectValue placeholder="Auto" />
+                            <SelectValue placeholder={t('auto')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="auto">Auto (best for language)</SelectItem>
+                            <SelectItem value="auto">{t('autoBestForLanguage')}</SelectItem>
                             {voicesLoading ? (
                                 <div className="px-2 py-1.5 text-xs text-neutral-500">
-                                    Loading...
+                                    {t('loading')}
                                 </div>
                             ) : (
                                 voicesData?.voices.map((voice) => (
@@ -231,7 +251,7 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Video duration</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('videoDuration')}</Label>
                     <Select
                         value={value.targetDuration}
                         onValueChange={(v) => set({ targetDuration: v })}
@@ -240,16 +260,16 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {DURATIONS.map((duration) => (
-                                <SelectItem key={duration} value={duration}>
-                                    {duration}
+                            {durationOptions.map((duration) => (
+                                <SelectItem key={duration.value} value={duration.value}>
+                                    {duration.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 block text-xs text-neutral-600">Quality tier</Label>
+                    <Label className="mb-1 block text-xs text-neutral-600">{t('qualityTierLabel')}</Label>
                     <Select
                         value={value.qualityTier}
                         onValueChange={(v) => set({ qualityTier: v })}
@@ -258,7 +278,7 @@ export function AiVideoSettingsCard({ value, onChange }: AiVideoSettingsCardProp
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {QUALITY_TIERS.map((tier) => (
+                            {qualityTiers.map((tier) => (
                                 <SelectItem key={tier.value} value={tier.value}>
                                     {tier.label}
                                 </SelectItem>

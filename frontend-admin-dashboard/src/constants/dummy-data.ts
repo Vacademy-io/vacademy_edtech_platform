@@ -9,6 +9,7 @@ export const QUESTION_TYPES = [
     { code: 'LONG_ANSWER', display: 'Long Answer Type Question' },
     { code: 'TRUE_FALSE', display: 'True of false type Question' },
     { code: 'CODING', display: 'Coding Question' },
+    { code: 'CBE_RESPONSE', display: 'Spreadsheet & Written Response' },
 ];
 
 export enum QuestionType {
@@ -22,6 +23,7 @@ export enum QuestionType {
     LONG_ANSWER = 'LONG_ANSWER',
     TRUE_FALSE = 'TRUE_FALSE',
     CODING = 'CODING',
+    CBE_RESPONSE = 'CBE_RESPONSE',
 }
 
 export const NUMERIC_TYPES = [

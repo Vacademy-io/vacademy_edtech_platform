@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MyDialog } from '@/components/design-system/dialog';
+import { useTranslation } from 'react-i18next';
 
 export default function Calculator({
     open,
@@ -11,6 +12,7 @@ export default function Calculator({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('evaluationCalculator');
     const [display, setDisplay] = useState('0');
     const [firstOperand, setFirstOperand] = useState<number | null>(null);
     const [operator, setOperator] = useState<string | null>(null);
@@ -115,7 +117,7 @@ export default function Calculator({
     };
 
     return (
-        <MyDialog heading="Calculator" open={open} onOpenChange={onOpenChange}>
+        <MyDialog heading={t('calculator')} open={open} onOpenChange={onOpenChange}>
             <div className="mx-auto flex size-3/4 flex-col overflow-hidden rounded-2xl bg-slate-50">
                 {/* Display */}
                 <div className="relative flex h-1/4 items-end justify-end bg-slate-100 p-6 text-black">

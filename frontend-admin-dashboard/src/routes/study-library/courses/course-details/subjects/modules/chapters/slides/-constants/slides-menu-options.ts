@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
@@ -7,15 +8,18 @@ import { getDisplaySettingsFromCache } from '@/services/display-settings';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey, Authority } from '@/constants/auth/tokens';
 
-const baseList: DropdownItem[] = [
-    { label: 'Copy to', value: 'copy' },
-    { label: 'Move to', value: 'move' },
-    { label: 'Drip Conditions', value: 'drip-conditions' },
-    { label: 'Offline Availability', value: 'offline-availability' },
-    { label: 'Delete', value: 'delete' },
-];
+function buildBaseList(t: TFunction): DropdownItem[] {
+    return [
+        { label: t('studyLibrarySlidesMenuOptions:copyTo'), value: 'copy' },
+        { label: t('studyLibrarySlidesMenuOptions:moveTo'), value: 'move' },
+        { label: t('studyLibrarySlidesMenuOptions:dripConditions'), value: 'drip-conditions' },
+        { label: t('studyLibrarySlidesMenuOptions:offlineAvailability'), value: 'offline-availability' },
+        { label: t('studyLibrarySlidesMenuOptions:delete'), value: 'delete' },
+    ];
+}
 
-export function getSlidesMenuOptions(): DropdownItem[] {
+export function getSlidesMenuOptions(t: TFunction): DropdownItem[] {
+    const baseList = buildBaseList(t);
     try {
         const accessToken = getTokenFromCookie(TokenKey.accessToken);
         const tokenData = getTokenDecodedData(accessToken);
@@ -38,6 +42,3 @@ export function getSlidesMenuOptions(): DropdownItem[] {
         return baseList;
     }
 }
-
-// Back-compat default export for existing imports
-export const dropdownList: DropdownItem[] = getSlidesMenuOptions();

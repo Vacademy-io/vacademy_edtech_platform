@@ -1,0 +1,15 @@
+{
+    "sections": {
+        "creationAccessTitle": "Homework Creation Access",
+        "liveNotificationsTitle": "Live Homework Notifications",
+        "submissionReportsTitle": "Homework Submission & Reports Access",
+        "evaluationTitle": "Evaluation Access"
+    },
+    "roles": {
+        "admin": "Admin",
+        "contentCreator": "Content Creator",
+        "assessmentCreator": "Assessment Creator",
+        "evaluator": "Evaluator",
+        "teacher": "Teacher"
+    }
+}

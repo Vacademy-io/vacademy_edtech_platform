@@ -1,0 +1,44 @@
+{
+    "dayLabels": {
+        "sun": "रवि",
+        "mon": "सोम",
+        "tue": "मंगल",
+        "wed": "बुध",
+        "thu": "गुरु",
+        "fri": "शुक्र",
+        "sat": "शनि"
+    },
+    "nav": {
+        "previousMonth": "पिछला महीना",
+        "nextMonth": "अगला महीना",
+        "today": "आज"
+    },
+    "error": {
+        "title": "फॉलो-अप लोड नहीं हो सके",
+        "description": "कैलेंडर लोड करने में कुछ गड़बड़ हुई। फिर से प्रयास करें।"
+    },
+    "overflowMore_one": "+{{count}} और",
+    "overflowMore_other": "+{{count}} और",
+    "agenda": {
+        "emptyTitle": "इस महीने कोई फॉलो-अप नहीं है",
+        "emptyDescription": "ऊपर दिए तीरों से महीना बदलें या कोई काउंसलर चुनें।",
+        "tasks_one": "{{count}} कार्य",
+        "tasks_other": "{{count}} कार्य"
+    },
+    "dayCounts": {
+        "overdue_one": "{{count}} विलंबित",
+        "overdue_other": "{{count}} विलंबित",
+        "today_one": "{{count}} आज",
+        "today_other": "{{count}} आज",
+        "upcoming_one": "{{count}} आगामी",
+        "upcoming_other": "{{count}} आगामी",
+        "none": "कोई फॉलो-अप नहीं"
+    },
+    "dayPanel": {
+        "emptyTitle": "इस दिन कुछ नहीं है",
+        "emptyDescription": "ऊपर कैलेंडर पर कोई और दिन चुनें।"
+    },
+    "pill": {
+        "openTooltip": "{{name}} खोलें"
+    }
+}

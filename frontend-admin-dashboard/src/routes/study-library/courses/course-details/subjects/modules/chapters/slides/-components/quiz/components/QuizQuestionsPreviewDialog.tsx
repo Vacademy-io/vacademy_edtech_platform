@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { X } from '@phosphor-icons/react';
@@ -28,6 +29,7 @@ const QuizQuestionsPreviewDialog = ({
     onConfirm,
     isLoading = false,
 }: QuizQuestionsPreviewDialogProps) => {
+    const { t } = useTranslation('studyLibraryQuizQuestionsPreviewDialog');
     const keyCounter = useRef(0);
     const [previewItems, setPreviewItems] = useState<PreviewItem[]>([]);
 
@@ -85,7 +87,7 @@ const QuizQuestionsPreviewDialog = ({
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-neutral-200 bg-primary-50 px-6 py-4">
                     <h1 className="font-semibold text-primary-500">
-                        Preview {count} Question{count !== 1 ? 's' : ''}
+                        {t('previewQuestions', { count })}
                     </h1>
                     <button
                         type="button"
@@ -101,7 +103,7 @@ const QuizQuestionsPreviewDialog = ({
                     {previewItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
                             <p className="text-sm text-neutral-500">
-                                All questions removed. Close this dialog to go back.
+                                {t('allQuestionsRemoved')}
                             </p>
                         </div>
                     ) : (
@@ -121,7 +123,7 @@ const QuizQuestionsPreviewDialog = ({
                 {/* Footer */}
                 <div className="flex items-center justify-between border-t border-neutral-200 bg-white px-6 py-4">
                     <p className="text-sm text-neutral-500">
-                        {count} question{count !== 1 ? 's' : ''} will be added to the quiz
+                        {t('questionsWillBeAdded', { count })}
                     </p>
                     <div className="flex gap-3">
                         <MyButton
@@ -132,7 +134,7 @@ const QuizQuestionsPreviewDialog = ({
                             onClick={() => onOpenChange(false)}
                             disabled={isLoading}
                         >
-                            Cancel
+                            {t('cancel')}
                         </MyButton>
                         <MyButton
                             type="button"
@@ -142,9 +144,7 @@ const QuizQuestionsPreviewDialog = ({
                             onClick={handleConfirm}
                             disabled={count === 0 || isLoading}
                         >
-                            {isLoading
-                                ? 'Adding…'
-                                : `Add ${count} Question${count !== 1 ? 's' : ''} to Quiz`}
+                            {isLoading ? t('adding') : t('addQuestionsToQuiz', { count })}
                         </MyButton>
                     </div>
                 </div>

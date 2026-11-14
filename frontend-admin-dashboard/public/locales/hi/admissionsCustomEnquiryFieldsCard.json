@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "अतिरिक्त जानकारी",
+        "description": "इस पूछताछ के लिए आवश्यक और वैकल्पिक विवरण"
+    },
+    "placeholder": {
+        "select": "{{fieldName}} चुनें",
+        "enter": "{{fieldName}} दर्ज करें"
+    }
+}

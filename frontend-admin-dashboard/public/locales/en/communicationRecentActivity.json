@@ -1,0 +1,17 @@
+{
+    "title": "Recent learner activity",
+    "subtitle": "Latest WhatsApp messages and email replies from your audience",
+    "emptyState": "No incoming learner activity yet.",
+    "loadingMore": "Loading…",
+    "loadMore": "Load more",
+    "noMoreActivity": "No more activity",
+    "time": {
+        "now": "now",
+        "minutes_one": "{{count}}m",
+        "minutes_other": "{{count}}m",
+        "hours_one": "{{count}}h",
+        "hours_other": "{{count}}h",
+        "days_one": "{{count}}d",
+        "days_other": "{{count}}d"
+    }
+}

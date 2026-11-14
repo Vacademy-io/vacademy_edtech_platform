@@ -1,0 +1,8 @@
+{
+    "noDoubtsHere": "No Doubts Here",
+    "emptyState": {
+        "all": "There are no doubts added for this content yet.",
+        "resolved": "No doubts have been marked as resolved yet.",
+        "other": "All doubts are currently resolved, or none have been added."
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "heading": "مصدر الحملة",
+    "labels": {
+        "firstTouch": "أول تفاعل",
+        "latestTouch": "الأحدث ({{count}} تفاعلات)"
+    },
+    "fields": {
+        "source": "المصدر",
+        "medium": "الوسيط",
+        "campaign": "الحملة",
+        "content": "المحتوى",
+        "term": "الكلمة المفتاحية",
+        "capturedOn": "سُجّل في",
+        "referrer": "المُحيل",
+        "date": "التاريخ"
+    },
+    "surface": {
+        "AUDIENCE": "نموذج الجمهور",
+        "LIVE_SESSION": "جلسة مباشرة",
+        "ASSESSMENT": "تقييم",
+        "ENROLL_INVITE": "دعوة تسجيل",
+        "PRODUCT_PAGE": "صفحة منتج",
+        "CATALOGUE": "موقع كتالوج"
+    }
+}

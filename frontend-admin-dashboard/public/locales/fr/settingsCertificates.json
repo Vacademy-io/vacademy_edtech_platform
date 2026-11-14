@@ -1,0 +1,147 @@
+{
+    "fields": {
+        "studentName": "Nom de l'étudiant",
+        "instituteName": "Nom de l'établissement",
+        "instituteLogo": "Logo de l'établissement",
+        "courseName": "Nom du cours",
+        "packageName": "Nom du programme",
+        "packageLevel": "Niveau du programme",
+        "sessionName": "Nom de la session",
+        "completionDate": "Date d'achèvement",
+        "completionPercentage": "% d'achèvement",
+        "dateOfCompletion": "Date d'achèvement",
+        "certificateId": "ID du certificat",
+        "certificateQr": "Code QR",
+        "certificateBarcode": "Code-barres",
+        "certificateShortCode": "Code de vérification",
+        "enrollmentNumber": "Numéro d'inscription",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "themeColor": "Couleur du thème"
+    },
+    "dragChip": {
+        "title": "Faites glisser sur le modèle pour placer {{field}}"
+    },
+    "customFields": {
+        "sectionLabel": "Vos propres champs",
+        "addField": "Ajouter un champ",
+        "description": "Pour tout ce que les champs intégrés ne couvrent pas — une note, le titre d'un signataire, une mention d'accréditation. Chacun devient une puce que vous pouvez glisser sur le design, où vous voulez.",
+        "empty": "Aucun champ personnalisé pour le moment.",
+        "fieldNameLabel": "Nom du champ",
+        "fieldNamePlaceholder": "Note",
+        "valueSourceLabel": "D'où vient la valeur",
+        "valueSourceStatic": "Même texte sur chaque certificat",
+        "valueSourceCustom": "La propre réponse de l'apprenant",
+        "learnerKeyLabel": "Clé du champ personnalisé de l'apprenant",
+        "textToPrintLabel": "Texte à imprimer",
+        "textToPrintPlaceholder": "Directeur des études",
+        "fallbackLabel": "Si l'apprenant n'a pas de réponse",
+        "removeField": "Supprimer {{name}}",
+        "fieldFallback": "champ",
+        "placedAsPrefix": "Placé sur le certificat sous la forme",
+        "duplicateWarning": "Deux champs partagent ce nom — seul le premier sera utilisé.",
+        "needsName": "Donnez un nom à ce champ pour pouvoir le placer.",
+        "learnerValuePlaceholder": "valeur de l'apprenant"
+    },
+    "page": {
+        "title": "Paramètres du certificat",
+        "description": "Concevez le certificat, décidez comment il est numéroté et codé, et configurez la page que les gens atteignent en le scannant.",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "warnings": {
+        "logoNotSet": "Le logo de l'établissement n'est pas défini — téléchargez-en un dans Tableau de bord → Modifier le profil de l'établissement pour qu'il apparaisse sur les certificats délivrés et la barre de navigation.",
+        "themeNotSetPart1": "La couleur du thème de l'établissement n'est pas définie — les bordures liées à",
+        "themeNotSetPart2": "reviendront par défaut à"
+    },
+    "autoIssue": {
+        "heading": "Délivrance automatique des certificats",
+        "description": "Une fois activé, les apprenants reçoivent un certificat dès que l'achèvement de leur cours dépasse le seuil ci-dessous.",
+        "thresholdLabel": "Seuil d'achèvement (%)",
+        "thresholdHint": "Les apprenants reçoivent un certificat dès que l'achèvement de leur cours dépasse ce seuil. Par défaut 80 ; le serveur le revérifie au moment de la délivrance."
+    },
+    "settingsTabs": {
+        "design": "Design",
+        "numbering": "Numérotation et codes",
+        "verification": "Page de vérification"
+    },
+    "numbering": {
+        "badgeTypeLabel": "Code scannable sur le certificat",
+        "qrOption": "Code QR (par défaut)",
+        "barcodeOption": "Code-barres (Code 128)",
+        "badgeHintPart1": "Estampillé à côté du numéro de certificat, en bas à droite — le design ci-dessous vous montre exactement où. Pour le positionner vous-même, faites glisser ce badge, ou glissez le champ",
+        "badgeHintSlash": "/",
+        "badgeHintPart2": "sur le design. Il en va de même pour le numéro : partout où vous placez",
+        "badgeHintPart3": ", il cesse d'être estampillé automatiquement, afin que vous n'en ayez jamais deux.",
+        "barcodeContentLabel": "Ce que le code-barres encode",
+        "barcodeNumberOption": "Numéro de certificat uniquement (par défaut)",
+        "barcodeVerificationOption": "Code de vérification — n'importe qui peut le scanner pour vérifier le certificat",
+        "barcodeVerificationHintPart1": "Scanner le code-barres donne un code qui vérifie le certificat sur votre page de vérification. Il contient environ deux fois plus de données que le numéro seul, il doit donc mesurer au moins",
+        "barcodeVerificationHintPart2": "de large pour rester scannable sur une page imprimée — le design ci-dessous vous avertit s'il est trop étroit.",
+        "barcodeNumberHint": "Scanner donne le numéro de certificat sous forme de texte. Cela identifie le certificat mais ne prouve rien, car le numéro seul n'est pas un justificatif. Passez au code de vérification pour qu'un scan de code-barres vérifie réellement le certificat.",
+        "autoStampHeading": "Estampille automatique",
+        "autoStampDescription": "Imprimée en bas à droite sur les certificats dont le design ne les place pas lui-même. Un champ que vous placez sur le design l'emporte toujours sur l'estampille.",
+        "stampCodeLabel": "Estampiller le {{code}}",
+        "barcodeWord": "code-barres",
+        "qrCodeWord": "code QR",
+        "stampCodeOnHint": "Chaque certificat porte un code scannable.",
+        "stampCodeOffHint": "Désactivé — les certificats sans code propre ne peuvent pas être vérifiés par scan.",
+        "stampNumberLabel": "Estampiller le numéro de certificat",
+        "stampNumberOnHint": "Chaque certificat affiche son numéro quelque part.",
+        "stampNumberOffHint": "Désactivé — le numéro est toujours attribué et reste vérifiable, il n'est simplement pas imprimé à moins que votre design ne le place."
+    },
+    "verification": {
+        "multiPageWarning": "Ce PDF comporte {{count}} pages — seule la première devient le document.",
+        "pdfReadError": "Ce PDF n'a pas pu être lu."
+    },
+    "design": {
+        "pageFieldsHeading": "Page et champs",
+        "pageFieldsDescription": "La taille à laquelle le certificat s'imprime, et toutes les valeurs que vous souhaitez y placer.",
+        "pageSizeLabel": "Taille de la page",
+        "a4Landscape": "A4 Paysage",
+        "a4Portrait": "A4 Portrait",
+        "a3Landscape": "A3 Paysage",
+        "a3Portrait": "A3 Portrait",
+        "customSize": "Personnalisé",
+        "widthLabel": "Largeur (mm)",
+        "heightLabel": "Hauteur (mm)",
+        "generatorHeading": "Conception du modèle et génération de certificats",
+        "generatorDescription": "Téléchargez un modèle et annotez-le avec les champs de données de l'étudiant",
+        "editorModeVisual": "Visuel",
+        "editorModeHtml": "HTML",
+        "downloadTemplate": "Télécharger le modèle",
+        "downloadError": "Échec du téléchargement de l'aperçu du modèle.",
+        "viewUpload": "Téléverser",
+        "viewDesign": "Design",
+        "viewPreview": "Aperçu",
+        "notDefaultWarningPart1": "Vous modifiez",
+        "thisTemplateFallback": "ce modèle",
+        "notDefaultWarningPart2": ". Les apprenants reçoivent toujours",
+        "defaultTemplateFallback": "le modèle par défaut",
+        "notDefaultWarningPart3": ". Utilisez",
+        "makeDefaultLabel": "Définir par défaut",
+        "notDefaultWarningPart4": "sur une carte ci-dessus pour changer cela.",
+        "dragAFieldLabel": "Faites glisser un champ",
+        "fieldsPlaced_one": "{{count}} champ placé",
+        "fieldsPlaced_many": "{{count}} champs placés",
+        "fieldsPlaced_other": "{{count}} champs placés"
+    },
+    "htmlEditor": {
+        "insertToken": "Insérer un jeton",
+        "resetToDefault": "Réinitialiser par défaut",
+        "insertTokenTitle": "Insérer {{token}} au curseur",
+        "textareaPlaceholder": "<!-- Collez ou écrivez le HTML de votre certificat. Utilisez les puces de jetons ci-dessus pour insérer des champs dynamiques comme {{token}}. -->",
+        "livePreview": "Aperçu en direct (données d'exemple)"
+    },
+    "preview": {
+        "zoomOut": "Zoom arrière",
+        "zoomIn": "Zoom avant",
+        "fitToScreen": "Ajuster à l'écran",
+        "htmlIframeTitle": "Aperçu du certificat HTML",
+        "iframeTitle": "Aperçu du certificat",
+        "longNamesLabel": "Aperçu avec des noms longs"
+    },
+    "save": {
+        "success": "Paramètres du certificat enregistrés avec succès !",
+        "error": "Échec de l'enregistrement des paramètres du certificat. Veuillez réessayer."
+    }
+}

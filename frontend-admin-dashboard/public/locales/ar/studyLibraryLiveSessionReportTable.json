@@ -1,0 +1,10 @@
+{
+    "srNo": "الرقم التسلسلي",
+    "membersName": "اسم العضو",
+    "attendanceStatus": "حالة الحضور",
+    "present": "حاضر",
+    "absent": "غائب",
+    "unmarked": "غير محدد",
+    "membersPhoneNumber": "رقم هاتف العضو",
+    "membersEmail": "البريد الإلكتروني للعضو"
+}

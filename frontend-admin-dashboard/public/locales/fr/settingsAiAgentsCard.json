@@ -1,0 +1,118 @@
+{
+    "header": {
+        "title": "Agents IA (Vacademy AI)",
+        "description": "Concevez les personas avec lesquelles notre propre agent d'appel IA s'exprime — le message, la phrase d'ouverture, la langue, la voix et ce qu'il doit découvrir. Enregistrer un agent l'inscrit automatiquement dans la section Campagnes / Agents ci-dessus, afin que les workflows et le SVI puissent le sélectionner par son nom."
+    },
+    "loading": "Chargement des agents…",
+    "empty": "Aucun agent pour l'instant. Créez-en un — par exemple un « Qualificateur d'admissions » qui accueille les nouveaux prospects et découvre la classe et le domaine d'intérêt de l'élève.",
+    "list": {
+        "disabled": "(désactivé)",
+        "summary": "{{direction}} · {{language}} · voix {{voice}}",
+        "maxMinutesSuffix": " · {{count}} min max"
+    },
+    "direction": {
+        "outbound": "Sortant",
+        "inbound": "Entrant",
+        "both": "Les deux"
+    },
+    "expressiveness": {
+        "default": "Par défaut du modèle",
+        "calm": "Calme et posé",
+        "natural": "Naturel",
+        "expressive": "Expressif"
+    },
+    "form": {
+        "agentName": {
+            "label": "Nom de l'agent",
+            "placeholder": "p. ex. Qualificateur d'admissions"
+        },
+        "direction": {
+            "label": "Sens"
+        },
+        "maxCallMinutes": {
+            "label": "Durée d'appel maximale (min)"
+        },
+        "enabled": {
+            "label": "Activé"
+        },
+        "language": {
+            "label": "Langue",
+            "placeholder": "hinglish | hi | en"
+        },
+        "voiceEngine": {
+            "label": "Moteur vocal"
+        },
+        "voice": {
+            "label": "Voix",
+            "placeholder": "Choisir une voix…",
+            "genderMale": "Homme",
+            "genderFemale": "Femme",
+            "genderHint": "Le bot adapte automatiquement sa grammaire hindi (kar rahi/raha hoon) au genre de la voix."
+        },
+        "speakingPace": {
+            "label": "Débit de parole",
+            "placeholder": "Défaut de la plateforme · 1,0 naturel, 1,1 vif",
+            "hint": "0,5–2,0. 1,0–1,1 convient aux appels commerciaux ; au-delà de 1,2, le débit devient précipité.",
+            "rumikHint": " Rumik n'a pas de réglage numérique de vitesse : cette valeur oriente donc son débit en mots — la moyenne correspond à ce que vous réglez, mais chaque phrase varie légèrement."
+        },
+        "expressivenessField": {
+            "label": "Expressivité",
+            "hint": "À quel point la voix varie son intonation et son émotion."
+        },
+        "voiceModulation": {
+            "label": "Modulation de la voix",
+            "hint": "Amplitude des montées et descentes de la hauteur. Appliquée à l'audio lui-même, elle fonctionne avec toutes les voix et tous les moteurs — un ton plat et lu devient conversationnel.",
+            "options": {
+                "default": "Valeur par défaut",
+                "off": "Désactivée",
+                "subtle": "Subtile",
+                "conversational": "Conversationnelle",
+                "lively": "Vive"
+            }
+        },
+        "voiceTester": {
+            "label": "Tester cette voix",
+            "stop": "Arrêter",
+            "play": "Écouter",
+            "hint": "Prononce l'exemple avec la voix, le débit et l'expressivité sélectionnés — changez la voix ci-dessus puis réécoutez pour comparer. Les appels téléphoniques paraissent légèrement plus chauds/étroits que cet aperçu (la téléphonie est en 8 kHz)."
+        },
+        "openingLine": {
+            "label": "Phrase d'ouverture",
+            "placeholder": "Ce que l'agent dit dès que l'appel est connecté…"
+        },
+        "systemPrompt": {
+            "label": "Message système",
+            "placeholder": "Qui est l'agent, son objectif, son ton et ses règles…"
+        },
+        "extractionQuestions": {
+            "label": "Questions à découvrir (une par ligne)",
+            "placeholder": "Dans quelle classe est l'élève ?\nQuel cours l'intéresse ?"
+        },
+        "handoffNumbers": {
+            "label": "Numéros de transfert (séparés par des virgules)",
+            "placeholder": "+9198xxxxxxxx — qui reçoit l'appel quand l'appelant demande un humain",
+            "hint": "Vide = le numéro de messagerie vocale/repli des paramètres d'appel."
+        },
+        "bookingPage": {
+            "label": "Réserver automatiquement les rendez-vous sur",
+            "placeholder": "Aucune page de réservation",
+            "none": "Ne pas réserver automatiquement de rendez-vous",
+            "audienceSuffix": " · ajoute le prospect à sa liste d'audience",
+            "noAudienceSuffix": " · non liée à une liste",
+            "hint": "Lorsqu'un appel convient d'une date de démo/visite, un rendez-vous est réservé sur cette page (lien Google Meet + rappels envoyés). Si la page est liée à une liste d'audience, le prospect y est aussi ajouté.",
+            "hintNoPages": " Créez d'abord une page de réservation dans CRM → Réunions → Partager le lien de réservation."
+        },
+        "cancel": "Annuler",
+        "save": "Enregistrer l'agent",
+        "saving": "Enregistrement…",
+        "newAgent": "Nouvel agent"
+    },
+    "toast": {
+        "previewSynthesisFailed": "Impossible de synthétiser l'exemple — réessayez dans un instant",
+        "previewPlaybackFailed": "Impossible de lire l'exemple",
+        "agentSaved": "Agent enregistré",
+        "agentSaveFailed": "Échec de l'enregistrement de l'agent",
+        "agentDeleted": "Agent supprimé",
+        "agentDeleteFailed": "Échec de la suppression de l'agent"
+    }
+}

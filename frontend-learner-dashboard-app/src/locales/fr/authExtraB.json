@@ -1,0 +1,108 @@
+{
+  "common": {
+    "emailInvalid": "Veuillez saisir une adresse e-mail valide",
+    "fullNameMinLength": "Le nom complet doit comporter au moins 2 caractères",
+    "usernameMinLength": "Le nom d'utilisateur doit comporter au moins 3 caractères",
+    "passwordMinLength": "Le mot de passe doit comporter au moins 8 caractères",
+    "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+    "registerFailed": "Échec de l'inscription de l'utilisateur",
+    "creatingAccount": "Création du compte...",
+    "createAccount": "Créer un compte",
+    "back": "Retour",
+    "verifyContinue": "Vérifier et continuer",
+    "completeYourProfileTitle": "Complétez votre profil",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Votre nom complet",
+    "usernameLabel": "Nom d'utilisateur *",
+    "usernamePlaceholder": "Choisissez un nom d'utilisateur",
+    "passwordLabel": "Mot de passe *",
+    "passwordPlaceholder": "Créez un mot de passe",
+    "confirmPasswordLabel": "Confirmer le mot de passe *",
+    "confirmPasswordPlaceholder": "Confirmez votre mot de passe",
+    "resendSuccessToast": "Code de vérification renvoyé !",
+    "resendFailedToast": "Échec du renvoi du code de vérification",
+    "invalidOtpToast": "Code de vérification invalide"
+  },
+  "validation": {
+    "usernameMaxLength": "Le nom d'utilisateur doit comporter moins de 30 caractères",
+    "fullNameMaxLength": "Le nom complet doit comporter moins de 100 caractères",
+    "passwordComplexity": "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre",
+    "instituteIdInvalid": "Identifiant d'établissement invalide",
+    "emailFormatError": "Format d'e-mail invalide",
+    "usernameFormatError": "Format de nom d'utilisateur invalide",
+    "fullNameFormatError": "Format de nom complet invalide",
+    "passwordFormatError": "Format de mot de passe invalide",
+    "instituteIdFormatError": "Format d'identifiant d'établissement invalide",
+    "generalFailed": "Échec de la validation"
+  },
+  "emailOtpSignup": {
+    "toast": {
+      "alreadyEnrolled": "Cet utilisateur est déjà inscrit. Veuillez plutôt vous connecter.",
+      "otpIncomplete": "Veuillez saisir le code complet à 6 chiffres",
+      "emailVerified": "E-mail vérifié avec succès !",
+      "accountCreated": "Compte créé avec succès !",
+      "accountCreateFailed": "Échec de la création du compte"
+    },
+    "otpStep": {
+      "checkEmail": "Consultez votre e-mail",
+      "codeSentTo": "Nous avons envoyé un code à 6 chiffres à",
+      "backToEmail": "Retour à l'e-mail",
+      "resendIn": "Renvoyer dans {{seconds}} s",
+      "resendCode": "Renvoyer le code",
+      "verifying": "Vérification en cours...",
+      "verifyOtp": "Vérifier le code"
+    },
+    "finalStep": {
+      "subtitle": "Veuillez fournir vos informations pour terminer l'inscription",
+      "fullNameLabelRequired": "Nom complet *",
+      "fullNamePlaceholderEnter": "Saisissez votre nom complet",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "showConfirmPassword": "Afficher la confirmation du mot de passe",
+      "hideConfirmPassword": "Masquer la confirmation du mot de passe"
+    },
+    "successStep": {
+      "title": "Compte créé avec succès !",
+      "subtitle": "Bienvenue sur notre plateforme"
+    }
+  },
+  "githubSignup": {
+    "otpLengthError": "Le code OTP doit comporter 6 chiffres",
+    "toast": {
+      "oauthFailed": "Échec de l'authentification avec GitHub",
+      "otpSent": "Code de vérification envoyé à votre e-mail !",
+      "sendOtpFailed": "Échec de l'envoi du code de vérification"
+    },
+    "processing": "Traitement en cours...",
+    "otpVerification": {
+      "title": "Vérifiez votre e-mail",
+      "subtitleSentTo": "Nous avons envoyé un code de vérification à",
+      "codeLabel": "Code de vérification",
+      "codePlaceholder": "Saisissez le code à 6 chiffres",
+      "resendIn": "Renvoyer le code dans {{seconds}} s",
+      "resendPrompt": "Vous n'avez pas reçu le code ? Renvoyer"
+    },
+    "credentialsStep": {
+      "subtitle": "Nous avons récupéré votre nom depuis GitHub. Veuillez définir votre nom d'utilisateur et votre mot de passe."
+    },
+    "emailOtpStep": {
+      "title": "Vérification de l'e-mail requise",
+      "subtitle": "Votre e-mail GitHub est privé. Veuillez fournir une adresse e-mail pour continuer.",
+      "emailLabel": "Adresse e-mail *",
+      "emailPlaceholder": "Saisissez votre adresse e-mail"
+    },
+    "button": "Continuer avec GitHub"
+  },
+  "googleSignup": {
+    "toast": {
+      "oauthFailed": "Échec de l'authentification avec Google"
+    },
+    "connecting": "Connexion à Google...",
+    "credentialsStep": {
+      "subtitle": "Nous avons récupéré votre nom depuis Google. Veuillez définir votre nom d'utilisateur et votre mot de passe."
+    },
+    "button": "Continuer avec Google",
+    "testButton": "🧪 Tester l'inscription directe",
+    "backToOptions": "← Retour aux options"
+  }
+}

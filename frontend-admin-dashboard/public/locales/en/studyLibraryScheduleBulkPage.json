@@ -1,0 +1,5 @@
+{
+    "title": "Bulk Schedule",
+    "description": "Add many independent classes at once. Each row creates one session.",
+    "recurringNote": "Note: recurring classes can't be created here — use the single-class flow for recurring schedules."
+}

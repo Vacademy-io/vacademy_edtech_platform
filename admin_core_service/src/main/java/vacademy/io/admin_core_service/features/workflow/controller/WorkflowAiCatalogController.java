@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.workflow.controller;
 
+import vacademy.io.admin_core_service.features.workflow.service.PrebuiltQueryOutputs;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import vacademy.io.admin_core_service.features.workflow.service.TriggerContextKeyRegistry;
 
 /**
  * AI-grade grounding schema for the workflow drafter (see WORKFLOW_AI_ASSIST_DESIGN.md).
@@ -31,10 +35,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WorkflowAiCatalogController {
 
+    private final TriggerContextKeyRegistry triggerContextKeyRegistry;
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAiCatalog() {
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("version", "2026-07-31");
+        out.put("version", "2026-09-11");
         out.put("workflowJsonShape", workflowJsonShape());
         out.put("generationRules", generationRules());
         out.put("nodeTypes", nodeTypes());
@@ -82,6 +88,14 @@ public class WorkflowAiCatalogController {
                 "ROUTER", "In the enum + FE palette but has NO handler — a workflow containing it cannot execute that node.",
                 "SEND_PUSH_NOTIFICATION", "Stub — logs and returns status 'dispatched' without sending. Do not use."));
         out.put("commonTriggers", commonTriggers());
+        // Every #ctx key each event puts on the seed context, from the same registry the
+        // validator enforces. Inlined because the model cannot follow the URLs under
+        // `references` — audited failure: the drafter invented #ctx['lead'] for
+        // AUDIENCE_LEAD_SUBMISSION and the trigger silently never ran.
+        out.put("triggerContextKeys", triggerContextKeys());
+        out.put("engineContextKeys", "Present on every event run in addition to triggerContextKeys: "
+                + String.join(", ", TriggerContextKeyRegistry.ENGINE_KEYS)
+                + ". Only triggerId, eventName, eventId exist while the idempotency key is evaluated.");
         out.put("references", m(
                 "allTriggerEvents", "/admin-core-service/v1/workflow/catalog/trigger-events",
                 "leadContextVariables", "/admin-core-service/v1/workflow/catalog/trigger-context-variables",
@@ -127,7 +141,8 @@ public class WorkflowAiCatalogController {
             "SEND_EMAIL / SEND_WHATSAPP 'on' must resolve to a List. Wrap a single object as a SpEL list literal: \"{#ctx['user']}\".",
             "Recipient and templateVars field names must exist in the source query's output item fields. Casing differs per query (snake_case vs camelCase) — copy from readQueries[].itemFields.",
             "Trigger scoping is by event_id only; event_applied_type is metadata and does NOT scope. Set event_id to a real institute-owned entity, or null for 'all'.",
-            "Idempotency: set trigger.idempotency_generation_setting. Per-person flows (enrollment/lead drips) need CUSTOM_EXPRESSION including the person, e.g. {\"strategy\":\"CUSTOM_EXPRESSION\",\"customExpression\":\"'wf_' + #ctx['triggerId'] + '_' + #ctx['eventId'] + '_' + #ctx['user']['id']\"}. EVENT_BASED is ONLY for periodic-scan emitters (LIVE_SESSION_START/END, MEMBERSHIP_EXPIRY) — its key has no person in it, so on an enrollment event it would let only the first learner ever enter. Omitted = UUID = no dedup (event retries double-fire).",
+            "Idempotency: set trigger.idempotency_generation_setting. Per-person flows (enrollment/lead drips) need CUSTOM_EXPRESSION including the person, e.g. {\"strategy\":\"CUSTOM_EXPRESSION\",\"customExpression\":\"'wf_' + #ctx['triggerId'] + '_' + #ctx['eventId'] + '_' + #ctx['user']['id']\"}. The person key MUST be one the event actually emits (see triggerContextKeys): #ctx['user']['id'] only where 'user' is listed; otherwise the id key that IS listed (#ctx['userId'], #ctx['responseId'], #ctx['leadId'], #ctx['userPlanId']). A key that is not there makes the SpEL throw and the trigger is skipped with NO execution row. EVENT_BASED is ONLY for periodic-scan emitters (LIVE_SESSION_START/END, MEMBERSHIP_EXPIRY) — its key has no person in it, so on an enrollment event it would let only the first learner ever enter. Omitted = UUID = no dedup (event retries double-fire).",
+            "Trigger context keys are a closed list: only reference #ctx['<key>'] values listed for the event in triggerContextKeys / commonTriggers[].producedContextKeys, in engineContextKeys, or produced by an upstream node in this graph. Never invent a key such as 'lead' or 'student' — a missing key yields null (or throws when indexed), and a send node's 'on' of \"{#ctx['missing']}\" sends nothing.",
             "Mutating prebuilt keys (see mutatingQueryKeys) are allowed ONLY when the goal explicitly asks to create/modify data (e.g. 'create the live sessions every morning'). They are skipped in Test Run (dryRun gate), but ALWAYS warn in rationale that the workflow writes real data when active. Never use them for read/reporting goals.",
             "Never use ROUTER (no handler) or SEND_PUSH_NOTIFICATION (stub). See avoidNodeTypes.",
             "DELAY config is nested: config.delay.{value,unit} or config.delay.{until:NEXT_DAY_OF_WEEK,dayOfWeek,time,timezone}. Never flat delayValue/delayUnit (executes as 0-delay).",
@@ -213,35 +228,39 @@ public class WorkflowAiCatalogController {
         List<Map<String, Object>> q = new ArrayList<>();
         q.add(query("fetch_audience_responses_filtered",
                 List.of("instituteId"), List.of("audienceId", "daysAgo", "startDate", "endDate"),
-                List.of("leads"),
+                PrebuiltQueryOutputs.keysOf("fetch_audience_responses_filtered").orElseThrow(),
                 "leads[]: email, parentEmail, parentName, mobileNumber, userId, instituteName + all custom fields in RAW case"));
         q.add(query("getAudienceResponsesByDayDifference",
                 List.of("instituteId", "audienceId", "daysAgo"), List.of("conversionStatus"),
-                List.of("leads"),
+                PrebuiltQueryOutputs.keysOf("getAudienceResponsesByDayDifference").orElseThrow(),
                 "leads[]: same as filtered but custom-field keys are LOWERCASED. Matches responses exactly N days ago."));
         q.add(query("fetch_batch_attendance_report",
                 List.of("instituteId"), List.of("batchId", "daysBack"),
-                List.of("students", "totalStudents", "batchCount", "startDate", "endDate"),
+                PrebuiltQueryOutputs.keysOf("fetch_batch_attendance_report").orElseThrow(),
                 "students[]: studentId, fullName, email, mobileNumber, attendancePercentage, sessionsAttended, totalDurationMinutes, totalChats, totalHandRaises, parentsEmail, guardianEmail, sessionsTableHtml (camelCase)"));
         q.add(query("fetch_students_by_batch",
                 List.of("instituteId"), List.of("batchId"),
-                List.of("students", "totalStudents"),
+                PrebuiltQueryOutputs.keysOf("fetch_students_by_batch").orElseThrow(),
                 "students[]: userId, fullName, email, mobileNumber, parentsEmail, guardianEmail (camelCase; lightweight, no attendance)"));
         q.add(query("fetch_ssigm_by_package",
                 List.of("instituteId"), List.of("batchId", "statusList"),
-                List.of("ssigm_list", "mapping_count"),
+                PrebuiltQueryOutputs.keysOf("fetch_ssigm_by_package").orElseThrow(),
                 "ssigm_list[]: mapping_id, user_id, expiry_date, full_name, mobile_number, email, username, package_session_id (snake_case)"));
         q.add(query("getUpcomingAutopayCharges",
-                List.of("packageSessionIds"), List.of("daysAhead"),
-                List.of("autopayDueList", "autopayDueCount"),
+                List.of("packageSessionIds"), List.of("daysAhead", "trialOnly"),
+                PrebuiltQueryOutputs.keysOf("getUpcomingAutopayCharges").orElseThrow(),
                 "autopayDueList[]: userPlanId, userId, name, mobileNumber, username, nextChargeAt, "
-                        + "endDate, chargeDate ('11 Aug 2026' label). THE audience for pre-charge notices "
-                        + "('we auto-deduct tomorrow'): plans whose next charge is exactly daysAhead days "
-                        + "away (default 1), autopay still ON — cancelled learners excluded. Use this, "
-                        + "NOT ssigm expiryDate (that is the batch ACCESS window, a different date)."));
+                        + "endDate, chargeDate ('11 Aug 2026' label), isTrial. THE audience for pre-charge "
+                        + "notices ('we auto-deduct tomorrow'): plans whose next charge is exactly daysAhead "
+                        + "days away (default 1), autopay still ON — cancelled learners excluded. Use this, "
+                        + "NOT ssigm expiryDate (that is the batch ACCESS window, a different date). "
+                        + "trialOnly=true keeps only trials ('your free trial ends tomorrow'), false keeps "
+                        + "only paying members ('your plan renews tomorrow'), omitted keeps both — a trial's "
+                        + "upcoming charge is its FIRST charge and a member's is a RENEWAL, so one wording "
+                        + "cannot serve both; split the workflow rather than reword one template."));
         q.add(query("getManualRenewalDuePlans",
                 List.of("packageSessionIds"), List.of("daysAhead", "graceDays"),
-                List.of("manualRenewalList", "manualRenewalCount"),
+                PrebuiltQueryOutputs.keysOf("getManualRenewalDuePlans").orElseThrow(),
                 "manualRenewalList[]: userPlanId, userId, name, mobileNumber, username, planStatus, "
                         + "endDate, endDateLabel ('11 Aug 2026'). THE audience for 'pay to continue your "
                         + "membership' messages: plans ending within daysAhead days (default 1) or ended up "
@@ -249,7 +268,7 @@ public class WorkflowAiCatalogController {
                         + "CANCELED / PAYMENT_FAILED / EXPIRED). Message link: manage-page base + username."));
         q.add(query("getSSIGMByStatusAndPackageSessionIds",
                 List.of("instituteId", "packageSessionIds", "statusList"), List.of(),
-                List.of("ssigmList"),
+                PrebuiltQueryOutputs.keysOf("getSSIGMByStatusAndPackageSessionIds").orElseThrow(),
                 "ssigmList[]: ssigmId, userId, name, mobileNumber, email, username, packageSessionId, "
                         + "enrolledDate, expiryDate, remainingDays, daysPastExpiry (camelCase). THE roster for "
                         + "per-day sequences: enrolledDate drives day-in-program filters, expiryDate drives "
@@ -257,15 +276,15 @@ public class WorkflowAiCatalogController {
                         + "e.g. \"#ctx['psIds']\" from a trigger settings row."));
         q.add(query("fetch_institute_admin_emails",
                 List.of("instituteId"), List.of("roles"),
-                List.of("adminContacts"),
+                PrebuiltQueryOutputs.keysOf("fetch_institute_admin_emails").orElseThrow(),
                 "adminContacts[]: userId, email, fullName, mobileNumber, role (roles default 'ADMIN,TEACHER')"));
         q.add(query("fetch_expiring_memberships",
                 List.of("instituteId"), List.of("daysUntilExpiry"),
-                List.of("expiringMemberships", "expiringCount"),
+                PrebuiltQueryOutputs.keysOf("fetch_expiring_memberships").orElseThrow(),
                 "expiringMemberships[]: userPlanId, userId, email, fullName, mobileNumber, endDate (institute-scoped, ACTIVE plans expiring within N days)"));
         q.add(query("fetch_live_session_attendance",
                 List.of("sessionId", "scheduleId"), List.of(),
-                List.of("presentStudents", "absentStudents", "presentCount", "absentCount", "sessionTitle"),
+                PrebuiltQueryOutputs.keysOf("fetch_live_session_attendance").orElseThrow(),
                 "present/absentStudents[]: fullName, email, mobileNumber, joinTime, attendedMinutes, attendancePercentage, attendanceBlockHtml"));
         q.add(query("fetch_enrollment_details",
                 List.of("userId"), List.of("packageSessionId", "packageSessionIds", "instituteId"),
@@ -273,35 +292,55 @@ public class WorkflowAiCatalogController {
                 "flat camelCase map of the learner's enrollment + payment status; used to gate abandoned-cart / webhook flows"));
         q.add(query("getUpcomingFeeInstallments",
                 List.of("instituteId"), List.of("daysBeforeWindow", "daysAfterWindow"),
-                List.of("feePaymentList"),
+                PrebuiltQueryOutputs.keysOf("getUpcomingFeeInstallments").orElseThrow(),
                 "feePaymentList[]: learner fee installments due in the window (camelCase)"));
         return q;
     }
 
+    /**
+     * producedContextKeys come from {@link TriggerContextKeyRegistry} — the same list the
+     * validator enforces — so this text can no longer drift from what the emitters set. The
+     * notes carry what a bare key list cannot: types, which key is the person, and traps.
+     */
     private List<Map<String, Object>> commonTriggers() {
         List<Map<String, Object>> t = new ArrayList<>();
         t.add(trigger("AUDIENCE_LEAD_SUBMISSION", "AUDIENCE", "audienceId (or null=all)",
-                "lead, customFields, respondentEmailRequests, adminEmailRequests, instituteName, campaignName",
-                "Fires once per form submission with that single lead's data."));
+                keysOf("AUDIENCE_LEAD_SUBMISSION"),
+                "Fires once per form submission with that single lead's data. The person is #ctx['user'] (UserDTO: id, fullName, email, mobileNumber) — there is NO 'lead' key. Send node on = \"{#ctx['user']}\"; idempotency person = #ctx['user']['id'], or #ctx['responseId'] for once-per-submission. customFields is a Map keyed by the form's field labels."));
         t.add(trigger("LEARNER_BATCH_ENROLLMENT", "PACKAGE_SESSION", "packageSessionId (or null=all)",
-                "user (UserDTO), packageSessionIds, packageId, subOrg",
-                null));
+                keysOf("LEARNER_BATCH_ENROLLMENT"),
+                "Person = #ctx['user'] (UserDTO). packageSessionIds is a SINGLE id string despite the plural name. packageName is the course name."));
         t.add(trigger("LIVE_SESSION_CREATE", "LIVE_SESSION", "liveSessionId (or null=all)",
-                "liveSession (title, startTime, defaultMeetLink...), createdBy, instituteId",
-                "No student emails in context — add a QUERY to fetch recipients."));
+                keysOf("LIVE_SESSION_CREATE"),
+                "liveSession has title, startTime, defaultMeetLink...; createdBy is the admin's user id. No student emails in context — add a QUERY to fetch recipients."));
         t.add(trigger("ABANDONED_CART", "ENROLL_INVITE", "enrollInviteId (or null=all)",
-                "user, userPlanId, packageSessionId, packageId",
-                null));
+                keysOf("ABANDONED_CART"),
+                "'user' is present only when the account could be resolved — use #ctx['userId'] as the idempotency person, not #ctx['user']['id']."));
         t.add(trigger("PAYMENT_FAILED", "ENROLL_INVITE", "enrollInviteId (or null=all)",
-                "paymentLog, user, userPlanId, packageSessionIds, enrollInviteId",
-                null));
+                keysOf("PAYMENT_FAILED"),
+                "The main (first-payment) emitter sets NO 'user' — only userId. 'user' and 'renewal' appear on the renewal-charge emitter. Idempotency person = #ctx['userId'] (or #ctx['userPlanId'])."));
         t.add(trigger("MEMBERSHIP_EXPIRY", "USER_PLAN", "null (institute-wide, daily 09:00 cron)",
-                "expiring plan context",
-                "Emitted by a daily scheduler; use EVENT_BASED idempotency."));
+                keysOf("MEMBERSHIP_EXPIRY"),
+                "Emitted by a daily scheduler, once per expiring plan; ids only (no 'user' object) — QUERY for the learner if a name/email is needed. Use EVENT_BASED idempotency."));
         t.add(trigger("LEAD_ASSIGNED_TO_COUNSELOR", "AUDIENCE", "audienceId or poolId",
-                "see /catalog/trigger-context-variables (leadName, counselorEmail, tat, ...)",
-                null));
+                keysOf("LEAD_ASSIGNED_TO_COUNSELOR"),
+                "Flat lead keys (leadName, leadEmail, leadMobile, counselorEmail...) — no 'user' object. Idempotency person = #ctx['leadId']."));
+        t.add(trigger("LEAD_REATTEMPT", "AUDIENCE", "audienceId of the list the new enquiry came in on (or null=all), or poolId",
+                keysOf("LEAD_REATTEMPT"),
+                "An existing lead enquired again (repeat / duplicate from any source). Same flat lead keys as LEAD_ASSIGNED_TO_COUNSELOR; counselorEmail is the lead's owner, so a send to the counsellor uses #ctx['counselorEmail']. reattemptSource / reattemptEmail / reattemptMobile describe the new enquiry. Fires once per new enquiry: idempotency = #ctx['reattemptResponseId']."));
         return t;
+    }
+
+    private String keysOf(String event) {
+        Set<String> keys = triggerContextKeyRegistry.emittedKeys(event);
+        return keys == null ? "(not catalogued)" : String.join(", ", keys);
+    }
+
+    /** event → comma-joined emitted keys, for every event the registry knows. */
+    private Map<String, Object> triggerContextKeys() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        triggerContextKeyRegistry.allKnown().forEach((event, keys) -> out.put(event, String.join(", ", keys)));
+        return out;
     }
 
     // ---- small builders --------------------------------------------------

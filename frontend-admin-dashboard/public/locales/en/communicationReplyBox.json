@@ -1,0 +1,81 @@
+{
+    "toast": {
+        "loadTemplatesFailed": "Failed to load templates",
+        "fileTooLarge": "{{fileName}} is {{fileSize}}. WhatsApp allows {{limit}} for {{kindLabel}}.",
+        "uploadFailed": "Upload failed. Please try again.",
+        "noPublicLink": "Could not get a public link for the uploaded file.",
+        "downgradedToDocument": "WhatsApp can't show {{fileType}} as {{asLabel}}, so it will be sent as a document.",
+        "voiceNotesUnavailable": "Voice notes need the updated notification service. The feature is built but not deployed yet.",
+        "unsupportedRecordingFormat": "This browser can only record WebM audio, which WhatsApp rejects. Try Chrome 126+, Safari or Firefox.",
+        "micAccessDenied": "Could not access the microphone. Check the browser permission.",
+        "attachmentsUnavailable": "Attachments need the updated notification service. The feature is built but not deployed yet.",
+        "messageNotSent": "Message not sent",
+        "notDeliveredNote": "It is marked as not delivered in the chat.",
+        "templateSent": "Template \"{{name}}\" sent",
+        "templateNotSent": "Template \"{{name}}\" was not sent",
+        "providerRejectedNoReason": "The provider rejected the send without giving a reason.",
+        "couldNotSendTemplate": "Could not send template \"{{name}}\"",
+        "templateHeaderFileMissing": "Template \"{{name}}\" needs a {{kind}} in its header, but none is saved on the template. Open WhatsApp Templates and upload the {{kind}} for it first."
+    },
+    "mediaKindPlural": {
+        "document": "documents",
+        "image": "images",
+        "video": "videos",
+        "audio": "audios"
+    },
+    "mediaKindLabel": {
+        "document": "document",
+        "image": "image",
+        "video": "video",
+        "audio": "audio"
+    },
+    "downgradeAsLabel": {
+        "image": "a photo",
+        "video": "a video",
+        "audio": "audio"
+    },
+    "thisFormat": "this format",
+    "sentAsDocument": "sent as a document",
+    "audioNoCaption": "WhatsApp sends audio without a caption",
+    "windowClosed": {
+        "title": "The 24-hour reply window has closed.",
+        "body": "WhatsApp will reject plain messages and attachments until they message you again — send an approved",
+        "linkText": "template",
+        "suffix": "instead."
+    },
+    "templateLabel": "[Template: {{name}}]",
+    "templateShortLabel": "[Template] {{name}}",
+    "removeAttachment": "Remove attachment",
+    "recordingInProgress": "Recording voice note · {{duration}}",
+    "cancel": "Cancel",
+    "sendTemplateTooltip": "Send template (for messages outside 24hr window)",
+    "sendTemplateHeader": "Send Template (outside 24hr window)",
+    "searchTemplatesPlaceholder": "Search templates...",
+    "noApprovedTemplates": "No approved templates found",
+    "captionPlaceholder": "Add a caption...",
+    "messagePlaceholder": "Type a message...",
+    "attachTooltip": "Attach a photo, video or document",
+    "attachmentsUnavailableTooltip": "Attachments need the updated notification service — not deployed yet",
+    "stopRecordingTooltip": "Stop and attach the recording",
+    "recordVoiceNoteTooltip": "Record a voice note",
+    "templateDialog": {
+        "heading": "Send template",
+        "to": "To {{phone}}",
+        "valuesLabel": "Fill in the values",
+        "valueFallback": "Value {{n}}",
+        "valuePlaceholder": "e.g. {{value}}",
+        "missingValues_one": "{{count}} value is still empty",
+        "missingValues_other": "{{count}} values are still empty",
+        "headerMissing": "This template needs a {{kind}} in its header, but none is saved on it. Open WhatsApp Templates and upload the {{kind}} first.",
+        "note": "This is the exact message the contact will receive. Templates cannot be edited at send time.",
+        "emptyBody": "This template has no message body.",
+        "media": {
+            "image": "Image",
+            "video": "Video",
+            "document": "Document"
+        },
+        "cancel": "Cancel",
+        "send": "Send template",
+        "sending": "Sending…"
+    }
+}

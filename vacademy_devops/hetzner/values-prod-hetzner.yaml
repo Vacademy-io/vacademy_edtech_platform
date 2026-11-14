@@ -33,6 +33,11 @@ services:
         cpu: "2000m"
         memory: "4Gi"
   assessment_service:
+    # 2 replicas is the standing exam-capacity floor, not a temporary bump: the
+    # 2026-08-27 load test measured 1000 concurrent test-takers passing on
+    # exactly this topology (every p95 < 500ms, 30% peak CPU). One replica only
+    # carries ~300. Stated explicitly so it survives a change to replicaCount.
+    replicas: 2
     # CPU raised for recurring-assessment bursts (200-1000 concurrent
     # test-takers): request 100m -> 500m, limit 1 -> 2 cores so Tomcat isn't
     # throttled at exam start/submit spikes. Memory unchanged (heap -Xmx2560m).

@@ -1,0 +1,60 @@
+{
+    "backToInstallments": "Back to Installments",
+    "selectedInstallments_one": "Selected Installment ({{count}})",
+    "selectedInstallments_other": "Selected Installments ({{count}})",
+    "paymentDetails": "Payment Details",
+    "paymentModeLabel": "Payment Mode",
+    "transactionId": "Transaction ID",
+    "optional": "optional",
+    "amount": "Amount",
+    "amountExceedsDue": "Amount exceeds total due. Excess will remain unallocated.",
+    "remarksLabel": "Remarks",
+    "processing": "Processing...",
+    "submitPayment": "Submit Payment",
+    "paymentMode": {
+        "cash": "Cash",
+        "online": "Online",
+        "upi": "UPI",
+        "card": "Card",
+        "cheque": "Cheque"
+    },
+    "placeholders": {
+        "transactionId": "e.g. TXN123456",
+        "remarks": "e.g. Cash collected at counter"
+    },
+    "table": {
+        "feeType": "Fee Type",
+        "cpoPlan": "CPO / Plan",
+        "expected": "Expected",
+        "adjustment": "Adjustment",
+        "paid": "Paid",
+        "outstanding": "Outstanding",
+        "dueDate": "Due Date",
+        "status": "Status"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Penalty"
+    },
+    "status": {
+        "overdue": "Overdue",
+        "partial": "Partial",
+        "pending": "Pending"
+    },
+    "totals": {
+        "totalConcession": "Total Concession",
+        "totalPenalty": "Total Penalty",
+        "totalOutstanding": "Total Outstanding:"
+    },
+    "remarks": {
+        "modePrefix": "Mode",
+        "txnIdPrefix": "Txn ID"
+    },
+    "errors": {
+        "instituteIdNotFound": "Institute ID not found"
+    },
+    "toast": {
+        "paymentSubmitted": "Payment submitted successfully",
+        "paymentFailed": "Payment failed"
+    }
+}

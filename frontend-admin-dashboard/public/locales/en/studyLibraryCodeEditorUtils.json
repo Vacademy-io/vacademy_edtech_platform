@@ -1,0 +1,22 @@
+{
+    "errors": {
+        "unknownPyodideError": "Unknown error occurred while loading Pyodide.",
+        "pyodideTimedOut": "Pyodide loading timed out. This might be due to slow internet connection or CDN issues. Please refresh the page and try again.",
+        "pyodideDownloadFailed": "Failed to download Pyodide. Please check your internet connection and try again.",
+        "pyodideError": "Pyodide error: {{message}}",
+        "loadingError": "Loading error: {{message}}",
+        "pyodideLoadingErrorBlock": "Pyodide Loading Error:\n{{errorMessage}}\n\nPlease try:\n1. Refresh the page\n2. Check your internet connection\n3. Try again in a few moments",
+        "noCodeToExecute": "No code to execute. Please write some code first.",
+        "judge0Error": "Judge0 error: {{message}}\n\nNote: ce.judge0.com is rate-limited; if you hit a 429, wait and retry.",
+        "genericError": "Error: {{message}}"
+    },
+    "output": {
+        "codeExecutedNoOutput": "Code executed successfully (no output)",
+        "noOutputParen": "(no output)",
+        "interactiveInputNotSupported": "\nNote: Interactive input (input()) is not supported in this environment.",
+        "errorLabel": "ERROR: {{message}}"
+    },
+    "simulation": {
+        "pythonWelcome": "Hello, {{name}}! Welcome to coding!\nSum of numbers: 15\n\nNote: This is a Python simulation. For real Python execution, you would need a Python interpreter."
+    }
+}

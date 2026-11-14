@@ -1,0 +1,21 @@
+{
+    "heading": "تسجيل الجلسة",
+    "cancel": "إلغاء",
+    "pickOutcomeFirst": "اختر النتيجة أولاً",
+    "saving": "جارٍ الحفظ…",
+    "save": "حفظ",
+    "sessionRecorded": "تم تسجيل الجلسة",
+    "markedNoShow": "تم تسجيلها كغياب",
+    "saveFailed": "تعذّر حفظ هذه الجلسة. يرجى المحاولة مرة أخرى.",
+    "sessionFallback": "الجلسة",
+    "menteeFallback": "المتدرب لديك",
+    "withMentee": "مع",
+    "whatHappened": "ماذا حدث؟",
+    "outcomeWentAhead": "تمت الجلسة",
+    "outcomeNoShow": "لم يحضر",
+    "topicLabel": "الموضوع الذي تمت تغطيته (اختياري)",
+    "topicPlaceholder": "مثال: الحركة الدورانية",
+    "notesLabel": "ملاحظات (اختياري)",
+    "notesPlaceholder": "التقدّم، العوائق، ما يجب فعله قبل الجلسة القادمة…",
+    "notesHelp": "مرئية لك ولمسؤوليك فقط. لا تُعرض أبدًا للمتعلم."
+}

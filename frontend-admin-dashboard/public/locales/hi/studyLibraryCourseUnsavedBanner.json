@@ -1,0 +1,5 @@
+{
+    "unsavedInCourse_one": "इस {{course}} में {{count}} आइटम सहेजा नहीं गया",
+    "unsavedInCourse_other": "इस {{course}} में {{count}} आइटम सहेजे नहीं गए",
+    "review": "समीक्षा करें"
+}

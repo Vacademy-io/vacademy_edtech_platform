@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import vacademy.io.admin_core_service.features.audience.dto.AudienceDTO;
+import vacademy.io.admin_core_service.features.audience.util.AudienceTagsUtil;
 
 import java.sql.Timestamp;
 
@@ -71,6 +72,14 @@ public class Audience {
     @Column(name = "sub_org_id")
     private String subOrgId;
 
+    /**
+     * Key -> value tags on this list (e.g. {"course":"MBA","state":"Maharashtra"}), stored as
+     * canonical JSON with sorted keys, or null when the list has none. Always written through
+     * {@code AudienceTagsUtil}; read directly by reports that group leads by a tag.
+     */
+    @Column(name = "tags_json", columnDefinition = "TEXT")
+    private String tagsJson;
+
     @Column(name = "created_by_user_id")
     private String createdByUserId;
 
@@ -101,6 +110,7 @@ public class Audience {
         this.defaultInitialScore = dto.getDefaultInitialScore();
         this.subOrgId = dto.getSubOrgId();
         this.createdByUserId = dto.getCreatedByUserId();
+        this.tagsJson = AudienceTagsUtil.toJson(AudienceTagsUtil.normalize(dto.getTags()));
     }
 }
 

@@ -1,0 +1,54 @@
+{
+    "card": {
+        "description": "Control whether {{roleLabel}} can access {{term}} and, if so, which {{many}} they see. Assignments made here union with any {{one}} assigned directly to a team member."
+    },
+    "toggle": {
+        "title": "Enable {{term}}",
+        "description": "Turn this on to give this role access to the {{term}} module and its sidebar entry."
+    },
+    "assignment": {
+        "title": "Assigned {{term}}",
+        "description": "Choose which channel partners every holder of this role can see. Leave empty to grant none.",
+        "emptyState": "No {{many}} found for this institute yet.",
+        "selectLabel": "{{many}}",
+        "searchPlaceholder": "Search {{many}}...",
+        "noneSelected": "No {{many}} assigned yet.",
+        "chipUnresolvedTitle": "This {{one}} (id: {{id}}) could not be found — it may have been deleted.",
+        "unknownOne": "Unknown {{one}}",
+        "removeAriaLabel": "Remove {{name}}",
+        "scopeNote": "Every request for {{many}} — search, filters, pagination and totals — is scoped server-side to this list, plus any {{one}} assigned directly to a team member."
+    },
+    "permissions": {
+        "title": "Permissions",
+        "description": "Fine-tune what this role can do with the {{term}} it can see.",
+        "screenOnlyTooltip": "This only hides the action in the interface — the server does not separately enforce it.",
+        "screenOnlyBadge": "Screen only",
+        "items": {
+            "canCreate": {
+                "label": "Create {{many}}",
+                "hint": "Allow adding a new {{one}}."
+            },
+            "canEditConfig": {
+                "label": "Edit {{one}} configuration",
+                "hint": "Allow changing settings for an existing partner."
+            },
+            "canManageTeam": {
+                "label": "Manage team",
+                "hint": "Allow adding or removing members of a {{one}}'s team."
+            },
+            "canViewFinance": {
+                "label": "View finance",
+                "hint": "Allow viewing payment and payout details."
+            },
+            "canManageFinance": {
+                "label": "Manage finance",
+                "hint": "Allow recording payments and payouts."
+            },
+            "canExport": {
+                "label": "Export data",
+                "hint": "Allow exporting a {{one}}'s data."
+            }
+        }
+    },
+    "adminNote": "Admins always see every {{one}} — this role's access can't be narrowed below full visibility."
+}

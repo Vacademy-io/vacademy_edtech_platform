@@ -1,0 +1,42 @@
+{
+    "view": {
+        "website": "Site web",
+        "websiteTitle": "Exactement ce que verront les visiteurs, avec vos modifications non enregistrées",
+        "structure": "Structure",
+        "structureTitle": "Tous les blocs de cette page sous forme de liste — réorganisez-les ou choisissez-en un à modifier"
+    },
+    "toolbar": {
+        "desktop": "Ordinateur",
+        "tablet": "Tablette (768px)",
+        "mobile": "Mobile (375px)",
+        "untitled": "Sans titre",
+        "viewLive": "Voir en ligne",
+        "viewLiveDraft": "Voir en ligne (brouillon)",
+        "viewLiveTitle": "Voir la page en ligne",
+        "unpublishedTitle": "Cette page n’est pas publiée — les visiteurs ne la voient pas encore"
+    },
+    "structure": {
+        "intro": "Les blocs de cette page, de haut en bas. Cliquez sur un bloc pour le modifier ; faites-le glisser par sa poignée pour le déplacer. Passez à Site web pour voir la page comme les visiteurs.",
+        "noPage": "Sélectionnez une page dans la barre du bas pour commencer",
+        "empty": "Cette page est vide. Faites glisser un bloc depuis la gauche, ou cliquez sur un bloc pour l'ajouter.",
+        "blockCount_one": "{{count}} bloc",
+        "blockCount_many": "{{count}} de blocs",
+        "blockCount_other": "{{count}} blocs",
+        "header": "En-tête du site",
+        "footer": "Pied de page du site",
+        "everyPage": "Sur chaque page",
+        "hidden": "Masqué",
+        "hiddenTitle": "Les visiteurs ne voient pas ce bloc. Réaffichez-le depuis Calques ou ses réglages.",
+        "noHeading": "Aucun titre",
+        "dragHandle": "Déplacer {{name}} : faites glisser, ou utilisez les flèches haut et bas",
+        "columns_one": "{{count}} colonne",
+        "columns_many": "{{count}} de colonnes",
+        "columns_other": "{{count}} colonnes",
+        "column": "Colonne {{index}}",
+        "emptyColumn": "Vide — faites glisser un bloc ici",
+        "dropHere": "Déposez ici pour ajouter le bloc à la fin de la page",
+        "showPreviews": "Afficher les aperçus",
+        "showPreviewsTitle": "Dessine un aperçu simple de chaque bloc dans sa ligne. La vue Site web montre la vraie page.",
+        "previewsAuto": "La vue Site web ne peut pas se charger ici pour ce site : chaque bloc affiche donc un aperçu simple, proche de ce que voient les visiteurs mais pas identique."
+    }
+}

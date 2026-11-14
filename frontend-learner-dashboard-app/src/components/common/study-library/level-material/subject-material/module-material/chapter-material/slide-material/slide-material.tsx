@@ -13,7 +13,6 @@ import { EmptySlideMaterial } from "@/assets/svgs";
 import YouTubePlayerWrapper from "./youtube-player";
 import VimeoPlayerWrapper from "./vimeo-player";
 import { useFileUpload } from "@/hooks/use-file-upload";
-import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { extractVideoId } from "@/utils/study-library/tracking/extractVideoId";
 import {
   resolveVideoSourceType,
@@ -28,15 +27,22 @@ import AssignmentSlide from "./assignment-slide";
 import { isItemLocked } from "@/components/drip-conditions/helpers";
 
 import { MyButton } from "@/components/design-system/button";
+import { ErrorState } from "@/components/design-system/states";
+import { isNetworkError } from "@/lib/offline/events/track-or-queue";
 import { DocViewer } from "./doc-viewer";
+import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+import { SlideDownloadButton, SlideImagesDownloadButton } from "./slide-download-button";
 import PresentationViewer from "./presentation-viewer";
 import DeckPlayer from "./deck-player";
 import { CodeEditorSlide } from "./code-editor-slide";
 import { JupyterNotebookSlide } from "./jupyter-notebook-slide";
 import { ScratchProjectSlide } from "./scratch-project-slide";
+import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import QuizViewer from "./quiz-viewer";
+import { LessonNextContext } from "./lesson-next-context";
+import { LessonScreenContext } from "./lesson-screen-context";
 import { Slide, AIVideoData } from "@/hooks/study-library/use-slides";
 import { SlideProtectionGuard } from "./SlideProtectionGuard";
 import { AIVideoPlayer } from "@/components/ai-video-player";
@@ -53,6 +59,58 @@ import { isOnlineOnlySlide } from "@/lib/offline/online-only";
 import { Network } from "@/utils/network-plugin";
 import { resolveSlideSource, getOfflineLockReason } from "@/lib/offline/resolve";
 import { getUserId } from "@/constants/getUserId";
+import { SelectionAsk } from "@/components/chatbot/moments/SelectionAskPill";
+import { LessonNotesHost, NotesButton, useNotesAllowed } from "@/components/notebook/LessonNotesHost";
+import { NoteSelectionTools } from "@/components/notebook/NoteSelectionTools";
+import { VideoStuckChip } from "@/components/chatbot/moments/VideoStuckChip";
+import { useVideoStuckMoment } from "@/components/chatbot/moments/use-video-stuck-moment";
+import { useAvailableTutor } from "@/components/chatbot/moments/tutor-moments";
+import { useMediaRefsStore } from "@/stores/mediaRefsStore";
+import { contentForSlide, type LoadedSlideContent } from "./slide-load-guard";
+import { useRouterState } from "@tanstack/react-router";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import {
+  FunLessonBottomBar,
+  FunViewerTopBar,
+} from "@/routes/study-library/courses/course-details/-components/fun/FunLesson";
+import { chapterMeanPercent } from "@/routes/study-library/courses/course-details/-components/fun/course-outline";
+
+/**
+ * Where a citation deep link (?page / ?t on the slides route) asks a slide to
+ * open: a PDF page (1-based) or a video / audio second. Only honoured for the
+ * slide it names.
+ */
+export interface SlideStartAt {
+  slideId: string;
+  page?: number;
+  t?: number;
+}
+
+const slideStartKey = (start: SlideStartAt) =>
+  `${start.slideId}|${start.page ?? ""}|${start.t ?? ""}`;
+
+/**
+ * A cited second as a player start in ms, kept a second short of the known
+ * length so a stale citation cannot land on the end (and mark it watched).
+ */
+const clampStartMs = (seconds: number, lengthMs?: number | null): number => {
+  const ms = Math.round(seconds * 1000);
+  return lengthMs && lengthMs > 1000 ? Math.min(ms, lengthMs - 1000) : ms;
+};
+
+// The seek surface the video players expose through their ref. Vimeo answers
+// getDuration with a promise; the HTML5 player answers NaN until metadata.
+type SeekableMedia = {
+  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
+  getDuration?: () => number | Promise<number>;
+};
+const SEEK_READY_POLL_MS = 250;
+const SEEK_READY_MAX_ATTEMPTS = 80; // ~20 s for the media to become seekable
+
+// The lesson pane has no fixed height on every layout, so `h-full` alone can
+// collapse to the state's own size and sit it against the toolbar.
+const VIDEO_STATE_FRAME =
+  "flex h-full min-h-screen-50 w-full items-center justify-center py-6";
 
 export const SlideMaterial = ({
   onNavigateToSlide,
@@ -61,6 +119,10 @@ export const SlideMaterial = ({
   onBeforeFirstSlide,
   manualCompletion = false,
   completionContext,
+  startAt,
+  onStartAtApplied,
+  slidesLoading = false,
+  funExit,
 }: {
   // Optional: lets the host route mirror the active slide into the URL so the
   // course-tree sidebar (which highlights by URL slideId) and a browser
@@ -82,17 +144,43 @@ export const SlideMaterial = ({
   // Parent ids the completion write needs so the backend can roll the change
   // up into chapter / module / subject / course progress.
   completionContext?: CompletionContext | undefined;
+  // Citation deep link from the URL. Applied once when its slide is on screen
+  // (on load, or straight away when that slide is already showing), after
+  // which onStartAtApplied lets the host drop the params from the URL.
+  startAt?: SlideStartAt | undefined;
+  onStartAtApplied?: (() => void) | undefined;
+  // Fun skin only: the lesson bar's close (to the course page) and, when the viewer
+  // has its own outline, the button that opens it. The app's top bar is not drawn
+  // over the Fun viewer, so these are its way out and its way to the outline.
+  funExit?: { onClose: () => void; onToggleOutline?: (() => void) | undefined } | undefined;
+  // The host is still fetching the chapter's slides, so "no active slide" does
+  // not yet mean the chapter is empty.
+  slidesLoading?: boolean;
 }) => {
   const { t, i18n } = useTranslation("studyContent");
   const { activeItem, items, setActiveItem, slideEvaluations } =
     useContentStore();
+  const isFun = useFunTheme();
+  // Fun skin: content with its own header and buttons (the quiz question and
+  // result) takes the screen, so the viewer's bars step aside while it is shown.
+  const [funScreenClaims, setFunScreenClaims] = useState(0);
+  const funBars = isFun && funScreenClaims <= 0;
+  const funCourseId = useRouterState({
+    select: (s) => (s.location.search as { courseId?: string }).courseId ?? "",
+  });
   // Course Pulse presence: keep the learner "present" on the open slide (incl. paused
   // video/audio) while the tab is visible; stops on leave so they go offline naturally.
   usePresenceHeartbeat(activeItem?.id);
   const selectionRef = useRef(null);
   const loadGenerationRef = useRef(0);
-  const [heading, setHeading] = useState(activeItem?.title || "");
-  const [content, setContent] = useState<JSX.Element | null>(null);
+  const [htmlVideoRetry, setHtmlVideoRetry] = useState(0);
+  const prevHtmlVideoRetryRef = useRef(0);
+  const heading = activeItem?.title || (!activeItem && slidesLoading ? "" : t("slideState.noContent"));
+  // Stored with the slide it was built for and read through contentForSlide, so
+  // a slide's player leaves the page in the same commit its slide stops being
+  // the active one, and nothing can show under another slide's title.
+  const [loadedContent, setLoadedContent] = useState<LoadedSlideContent<JSX.Element | null> | null>(null);
+  const content = contentForSlide(loadedContent, activeItem?.id ?? null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,7 +212,9 @@ export const SlideMaterial = ({
      * transient memory, so a 51 MB PDF failed to load offline even though it
      * had downloaded fine.
      */
-    stream = false
+    stream = false,
+    /** Set when the caller's load is no longer the current one. */
+    isStale: () => boolean = () => false
   ): Promise<string> => {
     try {
       const userId = await getUserId();
@@ -140,6 +230,10 @@ export const SlideMaterial = ({
       // Streamed sources hold a native decrypt session open; hand its closer to
       // the ref the slide lifecycle already drains on every slide change.
       if (result.kind === "offline-stream") {
+        if (isStale()) {
+          result.release?.();
+          return "";
+        }
         offlineStreamReleaseRef.current = result.release ?? null;
       }
       return result.url ?? "";
@@ -172,6 +266,17 @@ export const SlideMaterial = ({
   // with N real slides shows N, not N+1.
   const realSlides = slidesList.filter((s) => s.source_type !== "FEEDBACK");
   const realIndex = realSlides.findIndex((s) => s.id === activeItem?.id);
+  // Fun skin: the chapter's progress as the viewer's sidebar computes it, and
+  // the next real slide's name for the phone bar.
+  const funChapterPercent =
+    isFun && realSlides.length > 0 ? chapterMeanPercent(realSlides) : null;
+  const funNextReal = isFun && realIndex > -1 ? realSlides[realIndex + 1] : undefined;
+  const funUpNext = funNextReal?.title ?? null;
+  const funUpNextLocked = !!(
+    funNextReal &&
+    slideEvaluations[funNextReal.id] &&
+    isItemLocked(slideEvaluations[funNextReal.id])
+  );
 
   // Check if prev/next slides are locked
   const prevSlide = currentIndex > 0 ? slidesList[currentIndex - 1] : null;
@@ -224,10 +329,113 @@ export const SlideMaterial = ({
     if (canOverflowNext) onPastLastSlide?.();
   };
 
-  // Video time update handler - simplified since questions are now handled internally by YouTube player
-  const handleVideoTimeUpdate = () => {
-    // Questions are now handled internally by the YouTube player component
-    // This function can be used for other time-based functionality if needed
+  // Tutor moments: select-to-ask on text documents, and a "Stuck at 03:12?"
+  // offer when the learner keeps rewinding to the same part of a video.
+  const momentTutor = useAvailableTutor();
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const notesAllowed = useNotesAllowed();
+
+  // ── Citation deep links ─────────────────────────────────────────────────
+  // A start is "pending" until it has been applied once. The URL keeps the
+  // params until the host clears them, so the consumed key stops a second
+  // application meanwhile; once the URL is clean the key resets, letting the
+  // same citation be followed again later.
+  const startAtKey = startAt ? slideStartKey(startAt) : null;
+  const consumedStartKeyRef = useRef<string | null>(null);
+  if (!startAtKey) consumedStartKeyRef.current = null;
+  const pendingStartRef = useRef<SlideStartAt | null>(null);
+  pendingStartRef.current =
+    startAt && startAtKey !== consumedStartKeyRef.current ? startAt : null;
+  // The start the current slide's content was built with; a language rebuild
+  // of the same slide keeps it, any other slide drops it.
+  const appliedStartRef = useRef<SlideStartAt | null>(null);
+  const onStartAtAppliedRef = useRef(onStartAtApplied);
+  onStartAtAppliedRef.current = onStartAtApplied;
+  const activeSlideIdRef = useRef(activeItem?.id);
+  activeSlideIdRef.current = activeItem?.id;
+
+  const consumeStart = (start: SlideStartAt) => {
+    consumedStartKeyRef.current = slideStartKey(start);
+    pendingStartRef.current = null;
+    appliedStartRef.current = start;
+    onStartAtAppliedRef.current?.();
+  };
+
+  /** The start to build `slideId`'s content with, consuming a pending one. */
+  const takeStartFor = (slideId: string): SlideStartAt | null => {
+    const pending = pendingStartRef.current;
+    if (pending && pending.slideId === slideId) {
+      consumeStart(pending);
+      return pending;
+    }
+    if (appliedStartRef.current?.slideId !== slideId) {
+      appliedStartRef.current = null;
+    }
+    return appliedStartRef.current;
+  };
+
+  /**
+   * Seeks a player that has no start prop (uploaded video, audio) once it
+   * knows its length, clamped a second short of the end. The first check is
+   * deferred a beat so the previous slide's player has unmounted from the
+   * shared ref; it gives up when the learner leaves the slide.
+   */
+  const seekWhenReady = (
+    slideId: string,
+    seconds: number,
+    kind: "VIDEO" | "AUDIO"
+  ) => {
+    let attempts = 0;
+    const tick = async () => {
+      if (activeSlideIdRef.current !== slideId) return;
+      if (attempts++ >= SEEK_READY_MAX_ATTEMPTS) return;
+      if (kind === "AUDIO") {
+        const audio = contentAreaRef.current?.querySelector("audio");
+        if (
+          audio &&
+          audio.readyState >= 1 &&
+          Number.isFinite(audio.duration) &&
+          audio.duration > 0
+        ) {
+          audio.currentTime = Math.min(seconds, Math.max(0, audio.duration - 1));
+          return;
+        }
+      } else {
+        const player = playerRef.current as unknown as SeekableMedia | null;
+        let duration = 0;
+        try {
+          duration = Number(await player?.getDuration?.()) || 0;
+        } catch {
+          duration = 0;
+        }
+        if (activeSlideIdRef.current !== slideId) return;
+        if (player?.seekTo && Number.isFinite(duration) && duration > 0) {
+          player.seekTo(Math.min(seconds, Math.max(0, duration - 1)), true);
+          return;
+        }
+      }
+      setTimeout(tick, SEEK_READY_POLL_MS);
+    };
+    setTimeout(tick, SEEK_READY_POLL_MS);
+  };
+  const isTextDocument =
+    activeItem?.source_type === "DOCUMENT" &&
+    (activeItem.document_slide?.type === "PDF" ||
+      activeItem.document_slide?.type === "DOC" ||
+      // Creative HTML renders in a sandboxed frame that reports its selection.
+      activeItem.document_slide?.type === "HTML");
+  const videoMoment = useVideoStuckMoment(
+    ["VIDEO", "HTML_VIDEO", "AI_VIDEO"].includes(activeItem?.source_type?.toUpperCase() ?? "")
+      ? activeItem?.id
+      : null,
+    !!momentTutor
+  );
+
+  // Video time update handler. Questions are handled inside each player; the
+  // time only feeds the stuck-moment detector (its `track` is stable, so the
+  // copy baked into the player JSX at load time stays current).
+  const handleVideoTimeUpdate = (currentTime?: number) => {
+    videoMoment.track(currentTime);
   };
 
   const handleQuestionSubmit = async (selectedOption: string | string[]) => {
@@ -271,6 +479,20 @@ export const SlideMaterial = ({
 
   const loadContent = async (generationId: number) => {
     if (generationId !== loadGenerationRef.current) return;
+    const isStale = () => generationId !== loadGenerationRef.current;
+    // Every write below goes through this: a load that has been overtaken by a
+    // newer one can finish its awaits, but it can no longer change the page.
+    let contentWritten = false;
+    const setContent = (node: JSX.Element | null) => {
+      if (isStale()) return;
+      contentWritten = true;
+      setLoadedContent({ slideId: activeItem?.id ?? null, node });
+    };
+    // Captured before any await: the citation start this slide opens at.
+    const start =
+      activeItem && appliedStartRef.current?.slideId === activeItem.id
+        ? appliedStartRef.current
+        : null;
     setError(null);
     setIsLoading(true);
 
@@ -279,7 +501,7 @@ export const SlideMaterial = ({
       // Add slight delay for smooth transition
       await new Promise((resolve) => setTimeout(resolve, 200));
       setContent(
-        <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in duration-100 motion-reduce:animate-none">
           <div className="relative group">
             <div className="bg-neutral-50 rounded-full p-6 transition-transform duration-300 group-hover:scale-105">
               <EmptySlideMaterial />
@@ -295,7 +517,7 @@ export const SlideMaterial = ({
     }
 
     if (generationId !== loadGenerationRef.current) return;
-    setContent(<DashboardLoader />);
+    setLoadedContent({ slideId: activeItem.id, node: null });
     // Leaving whatever slide was previously shown — close any open offline
     // video decrypt session before the new slide's content (possibly a new
     // one) is resolved.
@@ -328,9 +550,6 @@ export const SlideMaterial = ({
     }
 
     try {
-      // Add artificial delay for smooth loading experience
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       switch (activeItem.source_type?.toUpperCase()) {
         case "AI_VIDEO": {
           // AI_VIDEO slides from course generation - have aiVideoData already
@@ -355,19 +574,20 @@ export const SlideMaterial = ({
             transformedData.timelineUrl &&
             transformedData.audioUrl) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <AIVideoPlayer
                     timelineUrl={transformedData.timelineUrl}
                     audioUrl={transformedData.audioUrl}
                     className="w-full"
+                    onTimeUpdate={handleVideoTimeUpdate}
                   />
                 </div>
               </div>
             );
           } else if (transformedData?.status === "GENERATING") {
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
+              <div className={VIDEO_STATE_FRAME}>
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                   <p className="text-gray-600 font-medium">{t("videoState.generating")}</p>
@@ -382,7 +602,7 @@ export const SlideMaterial = ({
             );
           } else {
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
+              <div className={VIDEO_STATE_FRAME}>
                 <div className="text-center text-gray-500">
                   <p>{t("videoState.pendingGeneration")}</p>
                   <p className="text-sm mt-2 text-gray-500">{t("videoState.availableInFewMinutes")}</p>
@@ -506,7 +726,7 @@ export const SlideMaterial = ({
           const renderHtmlVideoContent = (htmlUrl: string, audioUrl: string) => {
             if (embeddedType && embeddedData) {
               return (
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <SplitScreenHtmlVideoSlide
                     videoId={activeItem.source_id}
                     videoUrls={{ htmlUrl, audioUrl }}
@@ -522,13 +742,14 @@ export const SlideMaterial = ({
               return (
                 <div
                   key={`html-video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                     <AIVideoPlayer
                       timelineUrl={htmlUrl}
                       audioUrl={audioUrl}
                       className="w-full"
+                      onTimeUpdate={handleVideoTimeUpdate}
                     />
                   </div>
                 </div>
@@ -563,13 +784,12 @@ export const SlideMaterial = ({
               allKeys: Object.keys(activeItem),
             });
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-center text-red-500">
-                  <p>{t("videoState.dataNotFound")}</p>
-                  {/* Engineer-facing diagnostic — intentionally untranslated. */}
-                  <p className="text-xs mt-2">HTML_VIDEO slide is missing video ID and URLs</p>
-                  <p className="text-xs mt-1">Source ID: {activeItem.source_id || "N/A"}</p>
-                </div>
+              <div className={VIDEO_STATE_FRAME}>
+                <ErrorState
+                  className="mx-4 px-6"
+                  title={t("videoState.unavailableTitle")}
+                  message={t("videoState.tryAgainLater")}
+                />
               </div>
             );
             break;
@@ -592,12 +812,10 @@ export const SlideMaterial = ({
               setContent(renderHtmlVideoContent(videoUrls.htmlUrl, videoUrls.audioUrl));
             } else {
               setContent(
-                <div className="h-full w-full flex items-center justify-center">
+                <div className={VIDEO_STATE_FRAME}>
                   <div className="text-center text-gray-500">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                     <p className="text-gray-600 font-medium">{t("videoState.processing")}</p>
-                    {/* Engineer-facing diagnostic — intentionally untranslated. */}
-                    <p className="text-xs mt-2">Video URLs not available yet</p>
                     <p className="text-sm mt-2 text-gray-500">{t("videoState.availableInFewMinutes")}</p>
                   </div>
                 </div>
@@ -610,31 +828,27 @@ export const SlideMaterial = ({
               status: err.response?.status,
               message: err.message,
               response: err.response?.data,
-              // CORS error details
-              isCorsError: err.code === 'ERR_NETWORK' || err.message === 'Network Error',
             });
 
-            // Check if it's a CORS error
-            const isCorsError = err.code === 'ERR_NETWORK' || err.message === 'Network Error';
-            const errorMessage = isCorsError
-              // Engineer-facing diagnostic — intentionally untranslated.
-              ? 'CORS Error: Backend proxy route may not be configured. Please check backend configuration for /ai-service/video/urls/ endpoint.'
-              : err.response?.status === 404
-                ? t("videoState.videoNotFound", { videoId })
-                : t("videoState.failedToLoadUrls");
-
+            const missing = err.response?.status === 404;
             setContent(
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-center text-red-500 max-w-md">
-                  <p className="font-medium">{errorMessage}</p>
-                  <p className="text-xs mt-2">
-                    {isCorsError
-                      // Engineer-facing diagnostic — intentionally untranslated.
-                      ? 'The backend needs to configure a proxy route for /ai-service/video/urls/'
-                      : t("videoState.tryAgainLater")}
-                  </p>
-                  <p className="text-xs mt-1 text-gray-400">Video ID: {videoId}</p>
-                </div>
+              <div className={VIDEO_STATE_FRAME}>
+                <ErrorState
+                  className="mx-4 px-6"
+                  title={
+                    missing
+                      ? t("videoState.unavailableTitle")
+                      : t("videoState.loadFailedTitle")
+                  }
+                  message={
+                    isNetworkError(err)
+                      ? t("videoState.checkConnection")
+                      : t("videoState.tryAgainLater")
+                  }
+                  onRetry={
+                    missing ? undefined : () => setHtmlVideoRetry((n) => n + 1)
+                  }
+                />
               </div>
             );
           }
@@ -651,7 +865,7 @@ export const SlideMaterial = ({
             setContent(
               <div
                 key={`split-video-${activeItem.id}`}
-                className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
               >
                 <SplitScreenVideoSlide
                   videoSlide={videoSlide}
@@ -678,6 +892,10 @@ export const SlideMaterial = ({
               : videoSlide?.url) ||
             videoSlide?.published_url ||
             videoSlide?.url;
+          const videoLengthMs =
+            videoSlide?.published_video_length_in_millis ||
+            videoSlide?.video_length_in_millis ||
+            null;
 
           switch (videoSourceType) {
             case "VIMEO": {
@@ -686,14 +904,18 @@ export const SlideMaterial = ({
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <VimeoPlayerWrapper
                       videoId={vimeoId}
                       onTimeUpdate={handleVideoTimeUpdate}
                       ref={playerRef}
-                      ms={activeItem.progress_marker}
+                      ms={
+                        start?.t !== undefined
+                          ? clampStartMs(start.t, videoLengthMs)
+                          : activeItem.progress_marker
+                      }
                       questions={videoSlide?.questions || []}
                       concentrationSettings={concentrationSettings}
                     />
@@ -723,6 +945,10 @@ export const SlideMaterial = ({
                       resolveRemoteUrl: () => getPublicUrl(fileId),
                     })
                   : null;
+                if (isStale()) {
+                  resolved?.release?.();
+                  return;
+                }
                 if (resolved?.kind === "offline-stream" && resolved.url) {
                   videoUrl = resolved.url;
                   isOfflineVideoSource = true;
@@ -739,7 +965,7 @@ export const SlideMaterial = ({
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full overflow-hidden rounded-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full overflow-hidden rounded-lg animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <CustomVideoPlayer
@@ -753,13 +979,18 @@ export const SlideMaterial = ({
                   </div>
                 </div>
               );
+              // The uploaded-video player has no start prop: seek it once it
+              // has loaded its metadata.
+              if (start?.t !== undefined) {
+                seekWhenReady(activeItem.id, start.t, "VIDEO");
+              }
               break;
             }
             default:
               setContent(
                 <div
                   key={`video-${activeItem.id}`}
-                  className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
                 >
                   <div className="h-full w-full bg-black rounded-lg overflow-hidden border border-neutral-200">
                     <YouTubePlayerWrapper
@@ -768,7 +999,11 @@ export const SlideMaterial = ({
                       )}
                       onTimeUpdate={handleVideoTimeUpdate}
                       ref={playerRef}
-                      ms={activeItem.progress_marker}
+                      ms={
+                        start?.t !== undefined
+                          ? clampStartMs(start.t, videoLengthMs)
+                          : activeItem.progress_marker
+                      }
                       questions={videoSlide?.questions || []}
                       concentrationSettings={concentrationSettings}
                     />
@@ -789,6 +1024,7 @@ export const SlideMaterial = ({
                 time_limit_in_minutes?: number | null;
                 marks_per_question?: number;
                 negative_marking?: number;
+                partial_marking?: boolean | null;
               }
             | undefined;
           const questions = Array.isArray(quizSlide?.questions)
@@ -840,10 +1076,15 @@ export const SlideMaterial = ({
 
           setContent(
             <QuizViewer
+              key={activeItem.id}
+              slideId={activeItem.id}
+              title={activeItem.title}
+              description={activeItem.description}
               questions={mappedQuestions}
               timeLimitMinutes={quizSlide?.time_limit_in_minutes ?? null}
               marksPerQuestion={quizSlide?.marks_per_question ?? 1}
               defaultNegativeMarking={quizSlide?.negative_marking ?? 0}
+              partialMarking={quizSlide?.partial_marking === true}
               passPercentage={(quizSlide as any)?.pass_percentage ?? null}
               reAttemptCount={(quizSlide as any)?.re_attempt_count ?? null}
               onAnswer={async (_questionId, selectedOptionId) => {
@@ -899,6 +1140,10 @@ export const SlideMaterial = ({
             });
             setContent(
               <QuizViewer
+                key={activeItem.id}
+                slideId={activeItem.id}
+                title={activeItem.title}
+                description={activeItem.description}
                 questions={mappedQuestions}
                 passPercentage={(quizSlide as any)?.pass_percentage ?? null}
               reAttemptCount={(quizSlide as any)?.re_attempt_count ?? null}
@@ -915,7 +1160,7 @@ export const SlideMaterial = ({
           // Legacy: single question slide
           if (activeItem.question_slide) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <QuestionSlide
                     questionData={activeItem.question_slide}
@@ -926,7 +1171,7 @@ export const SlideMaterial = ({
             );
           } else {
             setContent(
-              <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="bg-red-50 rounded-full p-6 transition-transform duration-300">
                   <svg
                     className="w-8 h-8 text-red-500"
@@ -958,16 +1203,21 @@ export const SlideMaterial = ({
               pdfFileId,
               activeItem.id,
               "application/pdf",
-              true
+              true,
+              isStale
             );
             if (!url) throw new Error("Failed to retrieve PDF URL");
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   {/* Keyed by slide so moving between two PDF slides mounts a
                       fresh viewer instead of reusing one carrying the previous
                       slide's activity id and page-view buffer. */}
-                  <PDFViewer key={activeItem.id} pdfUrl={url} />
+                  <PDFViewer
+                    key={activeItem.id}
+                    pdfUrl={url}
+                    startPage={start?.page}
+                  />
                 </div>
               </div>
             );
@@ -990,7 +1240,21 @@ export const SlideMaterial = ({
               // 'HTML' = creative, self-contained HTML → sandboxed iframe.
               const isCreativeHtml = activeItem.document_slide?.type === "HTML";
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="relative h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                  {/* Content Protection → Document (Docs) / Images (in Docs): off for learners unless switched on. */}
+                  <div className="absolute end-3 top-3 z-10 flex gap-2">
+                    <SlideImagesDownloadButton
+                      title={activeItem.title}
+                      html={activeItem.document_slide.published_data || ""}
+                      className="bg-white"
+                    />
+                    <SlideDownloadButton
+                      typeKey={SlideDownloadTypeKey.DOCUMENT_DOC}
+                      title={activeItem.title}
+                      html={activeItem.document_slide.published_data || ""}
+                      className="bg-white"
+                    />
+                  </div>
                   <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                     <DocViewer
                       docUrl={activeItem.document_slide.published_data || ""}
@@ -1005,10 +1269,18 @@ export const SlideMaterial = ({
               const url = await resolvePlaybackUrl(
                 activeItem.document_slide.published_data || "",
                 activeItem.id,
-                "application/octet-stream"
+                "application/octet-stream",
+                false,
+                isStale
               );
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="relative h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                  <SlideDownloadButton
+                    typeKey={SlideDownloadTypeKey.DOCUMENT_DOC}
+                    title={activeItem.title}
+                    url={url}
+                    className="absolute end-3 top-3 z-10 bg-white"
+                  />
                   <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                     <DocViewer
                       docUrl={url || ""}
@@ -1023,11 +1295,13 @@ export const SlideMaterial = ({
             const url = await resolvePlaybackUrl(
               activeItem.document_slide.published_data || "",
               activeItem.id,
-              "application/octet-stream"
+              "application/octet-stream",
+              false,
+              isStale
             );
             if (!url) throw new Error("Failed to retrieve presentation URL");
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <PresentationViewer slide={activeItem} />
                 </div>
@@ -1045,7 +1319,7 @@ export const SlideMaterial = ({
             // depends on the parent resolving a height (a pure h-full child
             // collapses to 0 here, unlike PDF/pdf.js which self-sizes).
             setContent(
-              <div className="flex h-full w-full items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex h-full w-full items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="aspect-video w-full overflow-hidden rounded-lg border border-neutral-200">
                   <DeckPlayer baseUrl={deckBase} />
                 </div>
@@ -1057,7 +1331,7 @@ export const SlideMaterial = ({
             if (publishedData) {
               console.log("[SlideMaterial] Creating CodeEditorSlide component");
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <CodeEditorSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1076,7 +1350,7 @@ export const SlideMaterial = ({
             const publishedData = activeItem.document_slide.published_data;
             if (publishedData) {
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <JupyterNotebookSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1089,7 +1363,7 @@ export const SlideMaterial = ({
             const publishedData = activeItem.document_slide.published_data;
             if (publishedData) {
               setContent(
-                <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                   <ScratchProjectSlide
                     published_data={publishedData}
                     documentId={activeItem.id}
@@ -1097,13 +1371,21 @@ export const SlideMaterial = ({
                 </div>
               );
             }
+          } else if (activeItem.document_slide?.type === "DISCUSSION") {
+            // Discussion: the teacher's question, the learner's reply and the
+            // class's. Reads its batch / chapter ids from the route itself.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <DiscussionSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
           }
           break;
 
         case "ASSIGNMENT": {
           if (activeItem.assignment_slide) {
             setContent(
-              <div className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-neutral-200">
                   <AssignmentSlide
                     assignmentData={activeItem.assignment_slide}
@@ -1124,14 +1406,17 @@ export const SlideMaterial = ({
             setContent(
               <div
                 key={`audio-${activeItem.id}`}
-                className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+                className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
               >
                 <AudioPlayer audioSlide={audioSlide} />
               </div>
             );
+            if (start?.t !== undefined) {
+              seekWhenReady(activeItem.id, start.t, "AUDIO");
+            }
           } else {
             setContent(
-              <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
                 <p className="text-red-500 font-medium">{t("slideState.audioDataMissing")}</p>
               </div>
             );
@@ -1143,7 +1428,7 @@ export const SlideMaterial = ({
           setContent(
             <div
               key={`scorm-${activeItem.id}`}
-              className="h-full w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+              className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none"
             >
               <ScormSlideComponent
                 slide={activeItem}
@@ -1157,7 +1442,7 @@ export const SlideMaterial = ({
           setContent(
             <div
               key={`assessment-${activeItem.id}`}
-              className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
+              className="w-full animate-in fade-in duration-100 motion-reduce:animate-none"
             >
               <AssessmentSlideViewer activeItem={activeItem} />
             </div>
@@ -1168,12 +1453,17 @@ export const SlideMaterial = ({
         default:
           break;
       }
+      // A slide type or empty payload with nothing to show says so, rather than
+      // leaving the frame blank.
+      if (!contentWritten) {
+        setContent(<SlideEmptyState label={t("slideState.noStudyMaterial")} />);
+      }
     } catch (err) {
       console.error("Error loading content:", err);
       if (generationId === loadGenerationRef.current) {
         setError(err instanceof Error ? err.message : "Failed to load content");
         setContent(
-          <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex h-reg-300 flex-col items-center justify-center animate-in fade-in duration-100 motion-reduce:animate-none">
             <div className="bg-red-50 rounded-full p-4 transition-transform duration-300">
               <svg
                 className="w-8 h-8 text-red-500"
@@ -1196,11 +1486,14 @@ export const SlideMaterial = ({
         );
       }
     } finally {
-      setIsLoading(false);
+      if (!isStale()) setIsLoading(false);
     }
   };
 
+  const showSkeleton = isLoading || (!activeItem && slidesLoading);
+
   const prevSlideIdRef = useRef<string | null>(null);
+  const prevSourceIdRef = useRef<string | undefined>(undefined);
   const prevLangRef = useRef<string>(i18n.language);
 
   useEffect(() => {
@@ -1209,45 +1502,151 @@ export const SlideMaterial = ({
     // showing the previous language until the learner navigated away.
     const languageChanged = prevLangRef.current !== i18n.language;
     if (languageChanged) prevLangRef.current = i18n.language;
+    const retried = prevHtmlVideoRetryRef.current !== htmlVideoRetry;
+    prevHtmlVideoRetryRef.current = htmlVideoRetry;
 
-    // Only reload content if the slide ID actually changed (or the language did)
-    if (activeItem?.id !== prevSlideIdRef.current || languageChanged) {
+    // Only reload content if the slide actually changed (or the language did, or
+    // the learner asked to retry). Resuming from the dashboard opens a slide from
+    // its id and title alone, so the same id gaining its source is the real slide
+    // arriving.
+    if (
+      activeItem?.id !== prevSlideIdRef.current ||
+      activeItem?.source_id !== prevSourceIdRef.current ||
+      languageChanged ||
+      retried
+    ) {
       loadGenerationRef.current += 1;
       const currentGeneration = loadGenerationRef.current;
 
-      if (activeItem) {
-        setHeading(activeItem.title || "");
+      if (activeItem && !activeItem.source_id && slidesLoading) {
+        // Nothing to build from yet: hold the skeleton until the list arrives.
+        prevSlideIdRef.current = null;
+        setIsLoading(true);
+      } else if (activeItem) {
+        prevSourceIdRef.current = activeItem.source_id;
+        // Settles which citation start (if any) this build opens at, before
+        // loadContent reads it.
+        takeStartFor(activeItem.id);
         loadContent(currentGeneration);
         prevSlideIdRef.current = activeItem.id;
       } else {
-        setHeading(t("slideState.noContent"));
         prevSlideIdRef.current = null;
-        if (currentGeneration === loadGenerationRef.current) {
-          setContent(
-            <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-neutral-50 rounded-full p-6 transition-transform duration-300 group-hover:scale-105">
-                <EmptySlideMaterial />
-              </div>
-              <p className="mt-6 text-neutral-500 animate-in fade-in duration-700 delay-200 text-center">
-                {t("slideState.noStudyMaterial")}
-              </p>
-            </div>
-          );
-        }
+        prevSourceIdRef.current = undefined;
+        setIsLoading(false);
+        setLoadedContent({
+          slideId: null,
+          node: <SlideEmptyState label={t("slideState.noStudyMaterial")} />,
+        });
       }
-    } else if (activeItem) {
-      // Slide ID is the same, just update heading (no content reload)
-      setHeading(activeItem.title || "");
     }
-  }, [activeItem, t, i18n.language]);
+  }, [activeItem, t, i18n.language, slidesLoading, htmlVideoRetry]);
+
+  // The slide on screen when a citation for another slide became pending. The
+  // host may take a render or two to open the cited slide, so a mismatch alone
+  // proves nothing; but once the active slide moves to a third slide (the cited
+  // one was drip-locked or hidden and the host fell back, or the learner picked
+  // another slide) the citation has lost and is dropped, so a later navigation
+  // that keeps its params cannot replay it onto a slide it never named.
+  const pendingBaselineRef = useRef<{
+    key: string;
+    activeId: string;
+  } | null>(null);
+
+  // A citation for the slide already on screen (a chat link to the lesson
+  // being read) does not reload it, so apply the start to the live viewer.
+  // A slide still to load picks its start up in the effect above instead.
+  useEffect(() => {
+    const pending = pendingStartRef.current;
+    if (!pending) {
+      pendingBaselineRef.current = null;
+      return;
+    }
+    if (!activeItem) return;
+    if (pending.slideId !== activeItem.id) {
+      const key = slideStartKey(pending);
+      const baseline = pendingBaselineRef.current;
+      if (!baseline || baseline.key !== key) {
+        pendingBaselineRef.current = { key, activeId: activeItem.id };
+      } else if (baseline.activeId !== activeItem.id) {
+        // Dropped without clearing the URL: the host's clean-up navigation
+        // keeps the URL's slideId and would race the learner's own
+        // navigation to the slide now open.
+        consumedStartKeyRef.current = key;
+        pendingStartRef.current = null;
+        pendingBaselineRef.current = null;
+      }
+      return;
+    }
+    pendingBaselineRef.current = null;
+    if (prevSlideIdRef.current !== activeItem.id) return;
+    consumeStart(pending);
+    if (
+      pending.page !== undefined &&
+      activeItem.source_type === "DOCUMENT" &&
+      activeItem.document_slide?.type === "PDF"
+    ) {
+      const { currentPdfLength, navigateToPdfPage } =
+        useMediaRefsStore.getState();
+      const lastPageIndex = currentPdfLength > 0 ? currentPdfLength - 1 : null;
+      const pageIndex = pending.page - 1;
+      navigateToPdfPage(
+        lastPageIndex !== null ? Math.min(pageIndex, lastPageIndex) : pageIndex
+      );
+    }
+    if (pending.t !== undefined) {
+      if (activeItem.source_type === "VIDEO") {
+        seekWhenReady(activeItem.id, pending.t, "VIDEO");
+      } else if (activeItem.source_type === "AUDIO") {
+        seekWhenReady(activeItem.id, pending.t, "AUDIO");
+      }
+    }
+    // Keyed on the link itself; the helpers read refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startAtKey, activeItem?.id]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-white" ref={selectionRef}>
+    <div className="flex h-full w-full flex-col bg-white" ref={selectionRef} data-lesson-root>
       <SlideProtectionGuard />
       {/* Compact Header */}
+      {isFun ? (
+        funBars && <FunViewerTopBar
+          courseId={funCourseId}
+          heading={heading}
+          index={realSlides.length > 0 && realIndex > -1 ? realIndex + 1 : null}
+          total={realSlides.length}
+          chapterPercent={funChapterPercent}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={goToPrev}
+          onNext={goToNext}
+          showNav="wide"
+          onClose={funExit?.onClose}
+          onToggleOutline={funExit?.onToggleOutline}
+          tools={
+            <>
+              {manualCompletion &&
+                activeItem &&
+                MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
+                  activeItem.source_type || ""
+                ) &&
+                // A discussion completes by posting a reply, not by hand.
+                activeItem.document_slide?.type !== "DISCUSSION" && (
+                  <MarkCompleteButton
+                    slideId={activeItem.id}
+                    slideType={activeItem.source_type as string}
+                    percentageCompleted={activeItem.percentage_completed || 0}
+                    context={completionContext ?? {}}
+                    compact
+                  />
+                )}
+              <AskDoubtButton />
+            </>
+          }
+        />
+      ) : (
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-neutral-100 bg-white px-3 py-1.5 sm:px-4">
         <h3 className="text-xs sm:text-sm font-medium text-neutral-700 leading-tight truncate min-w-0 flex-1">
-          {heading || "No content"}
+          {heading || "\u00A0"}
         </h3>
 
         <div
@@ -1289,7 +1688,9 @@ export const SlideMaterial = ({
             activeItem &&
             MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
               activeItem.source_type || ""
-            ) && (
+            ) &&
+            // A discussion completes by posting a reply, not by hand.
+            activeItem.document_slide?.type !== "DISCUSSION" && (
               <MarkCompleteButton
                 slideId={activeItem.id}
                 slideType={activeItem.source_type as string}
@@ -1302,15 +1703,18 @@ export const SlideMaterial = ({
           <AskDoubtButton />
         </div>
       </div>
+      )}
 
-      {/* Play-theme mobile: inline slide nav right below the compact header.
+      {/* Play themes on mobile: inline slide nav right below the compact header.
           Sits in flex flow so it pushes the content down (no fixed-overlap).
           Standalone nav already renders its row at every breakpoint, so this
           one stands down there rather than stacking a second set of arrows. */}
       <div
         className={cn(
           "flex-shrink-0 items-center gap-2 border-b border-neutral-100 bg-white px-3 py-2",
-          standaloneNav ? "hidden" : "hidden sm:hidden [.ui-play_&]:flex",
+          standaloneNav
+            ? "hidden"
+            : "hidden [.ui-play_&]:flex sm:[.ui-play_&]:hidden [.ui-cleaner-play_&]:flex sm:[.ui-cleaner-play_&]:hidden",
         )}
       >
         <MyButton
@@ -1347,19 +1751,48 @@ export const SlideMaterial = ({
         </MyButton>
       </div>
 
-      <div className="w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0">
-        <div className="h-full w-full transition-all duration-500">
-          {content}
+      <div
+        className={cn(
+          "w-full flex-1 min-h-0 relative pb-16 sm:pb-0 [.ui-play_&]:pb-0 [.ui-cleaner-play_&]:pb-0",
+          // Nothing else gives this area a height until the content arrives.
+          showSkeleton && "min-h-reg-500",
+          isFun && (funBars ? "fun-lesson-content" : "fun-lesson-content--own"),
+        )}
+      >
+        <div ref={contentAreaRef} className="h-full w-full">
+          {/* The viewer's Next, for content that offers it (the Fun quiz result). */}
+          <LessonScreenContext.Provider value={setFunScreenClaims}>
+            <LessonNextContext.Provider value={canGoNext ? goToNext : null}>
+              {!activeItem && slidesLoading ? null : content}
+            </LessonNextContext.Provider>
+          </LessonScreenContext.Provider>
         </div>
+        <SelectionAsk
+          containerRef={contentAreaRef}
+          lessonName={activeItem?.title}
+          enabled={isTextDocument && !isLoading}
+          {...(notesAllowed && {
+            tools: (selection, done) => <NoteSelectionTools selection={selection} onDone={done} />,
+          })}
+        />
+        {videoMoment.stuckAt !== null && !isLoading && (
+          <VideoStuckChip
+            stuckAt={videoMoment.stuckAt}
+            lessonName={activeItem?.title}
+            onDismiss={videoMoment.dismiss}
+            className="absolute start-3 top-3 z-20 max-w-pct-80"
+          />
+        )}
 
         {/* Loading skeleton of slide content */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white z-50 animate-in fade-in duration-200 p-4 sm:p-6 overflow-hidden">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="h-6 w-2/3 rounded-md bg-neutral-200 animate-pulse" />
-              <div className="h-3 w-1/3 rounded-md bg-neutral-100 animate-pulse" />
-              <div className="aspect-video w-full rounded-lg bg-neutral-100 animate-pulse mt-4" />
-              <div className="space-y-2 mt-6">
+        {/* Held back so a slide that is ready within a moment never flashes it. */}
+        {showSkeleton && (
+          <div className="absolute inset-0 bg-white z-50 animate-in fade-in fill-mode-both delay-150 duration-150 p-4 pb-20 sm:p-6 [.ui-play_&]:pb-4 sm:[.ui-play_&]:pb-6 [.ui-cleaner-play_&]:pb-4 sm:[.ui-cleaner-play_&]:pb-6 overflow-hidden">
+            <div className="max-w-4xl h-full mx-auto flex flex-col gap-4">
+              <div className="h-6 w-2/3 shrink-0 rounded-md bg-neutral-200 animate-pulse" />
+              <div className="h-3 w-1/3 shrink-0 rounded-md bg-neutral-100 animate-pulse" />
+              <div className="min-h-0 w-full flex-1 rounded-lg bg-neutral-100 animate-pulse" />
+              <div className="shrink-0 space-y-2 pt-2">
                 <div className="h-3 w-full rounded bg-neutral-100 animate-pulse" />
                 <div className="h-3 w-[94%] rounded bg-neutral-100 animate-pulse"></div>{/* design-lint-ignore: decorative skeleton width */}
                 <div className="h-3 w-[88%] rounded bg-neutral-100 animate-pulse"></div>{/* design-lint-ignore: decorative skeleton width */}
@@ -1395,15 +1828,25 @@ export const SlideMaterial = ({
         </div>
       )}
 
-      {/* Mobile bottom navigation — default theme only. In play theme the app
+      {/* Mobile bottom navigation — default theme only. In the play themes the app
           bottom tab bar hides this, so we render the inline top version above. */}
-      <div className="sm:hidden fixed bottom-0 start-0 end-0 z-40 [.ui-play_&]:hidden">
+      {isFun ? (
+        funBars && <FunLessonBottomBar
+          upNext={funUpNext}
+          upNextLocked={funUpNextLocked}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={goToPrev}
+          onNext={goToNext}
+        />
+      ) : (
+      <div className="sm:hidden fixed bottom-0 start-0 end-0 z-40 [.ui-play_&]:hidden [.ui-cleaner-play_&]:hidden">
         <div className="pointer-events-none absolute -top-3 start-0 end-0 h-3 bg-gradient-to-t from-white to-transparent"></div>
         <div className="bg-white border-t border-neutral-100 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.08)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+10px)]"> {/* design-lint-ignore: custom shadow, safe-area viewport math */}
           {/* Context strip: slide title + position */}
           <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-1.5 mb-2">
             <span className="text-2xs font-medium text-neutral-600 truncate flex-1 min-w-0">
-              {heading || "No content"}
+              {heading || "\u00A0"}
             </span>
             {slidesList.length > 0 && currentIndex > -1 && (
               <span className="text-2xs font-semibold text-neutral-400 shrink-0 tabular-nums">
@@ -1442,11 +1885,22 @@ export const SlideMaterial = ({
           </div>
         </div>
       </div>
+      )}
 
       <DoubtResolutionSidebar />
+      <LessonNotesHost contentRef={contentAreaRef} />
     </div>
   );
 };
+
+const SlideEmptyState = ({ label }: { label: string }) => (
+  <div className="flex h-reg-500 flex-col items-center justify-center rounded-lg py-10 animate-in fade-in fill-mode-both delay-150 duration-100 motion-reduce:animate-none">
+    <div className="bg-neutral-50 rounded-full p-6">
+      <EmptySlideMaterial />
+    </div>
+    <p className="mt-6 text-neutral-500 text-center">{label}</p>
+  </div>
+);
 
 const AskDoubtButton = () => {
   const { t } = useTranslation("studyContent");
@@ -1458,17 +1912,21 @@ const AskDoubtButton = () => {
       )
       .catch(() => setEnabled(true));
   }, []);
-  if (!enabled) return null;
   return (
-    <button
-      onClick={() => {
-        const { openSidebar } = useDoubtSidebarStore.getState();
-        openSidebar();
-      }}
-      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-600 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-    >
-      <ChatText size={12} className="text-neutral-500" />
-      <span>{t("slideNav.doubts")}</span>
-    </button>
+    <>
+      <NotesButton />
+      {enabled && (
+        <button
+          onClick={() => {
+            const { openSidebar } = useDoubtSidebarStore.getState();
+            openSidebar();
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-neutral-600 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+        >
+          <ChatText size={12} className="text-neutral-500" />
+          <span>{t("slideNav.doubts")}</span>
+        </button>
+      )}
+    </>
   );
 };

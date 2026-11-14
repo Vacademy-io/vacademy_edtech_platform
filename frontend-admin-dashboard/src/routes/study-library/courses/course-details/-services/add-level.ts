@@ -2,6 +2,7 @@ import { AddLevelData } from '@/routes/study-library/courses/course-details/-com
 import { ADD_LEVEL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateInstituteDetails } from '@/services/student-list-section/getInstituteDetails';
 import { getInstituteId } from '@/constants/helper';
 
 export const useAddLevel = () => {
@@ -28,6 +29,8 @@ export const useAddLevel = () => {
             queryClient.invalidateQueries({ queryKey: ['GET_INIT_STUDY_LIBRARY'] });
             queryClient.invalidateQueries({ queryKey: ['GET_SESSION_DATA'] });
             queryClient.invalidateQueries({ queryKey: ['GET_BATCHES'] });
+            // Package sessions changed: refresh the institute-details store too.
+            invalidateInstituteDetails(queryClient);
         },
     });
 };

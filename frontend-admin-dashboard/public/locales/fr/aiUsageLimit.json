@@ -1,0 +1,48 @@
+{
+    "title": "Limite d'IA atteinte",
+    "defaultMessage": "Vous avez atteint la limite d'utilisation pour {{feature}}.",
+    "fallbackFeature": "cette fonction d'IA",
+    "fields": {
+        "feature": "Fonction",
+        "resets": "Réinitialisation",
+        "setBy": "Définie par"
+    },
+    "usedOfLimit": {
+        "credits": "{{used}} sur {{limit}} crédits",
+        "requests": "{{used}} sur {{limit}} requêtes",
+        "usd": "{{used}} sur {{limit}} USD"
+    },
+    "periodUsage": {
+        "DAY": "Utilisé aujourd'hui",
+        "WEEK": "Utilisé cette semaine",
+        "MONTH": "Utilisé ce mois-ci",
+        "PLAN_PERIOD": "Utilisé sur la période du forfait",
+        "OTHER": "Utilisé"
+    },
+    "setBy": {
+        "INSTITUTE": "Votre établissement",
+        "PLATFORM": "{{brandTitle}}"
+    },
+    "scope": {
+        "USER": "Votre limite personnelle",
+        "ROLE": "La limite de votre rôle",
+        "ROLE_CLASS": "La limite de votre rôle",
+        "INSTITUTE": "La limite de l'établissement",
+        "PLATFORM": "Une limite de la plateforme",
+        "OTHER": "Une limite d'utilisation"
+    },
+    "hint": {
+        "admin": "Vous pouvez augmenter ou supprimer cette limite dans Paramètres → IA → Limites.",
+        "adminPlatform": "Cette limite est fixée par {{brand}}. Contactez-les pour la modifier.",
+        "member": "Réessayez après la réinitialisation, ou demandez à l'administrateur d'augmenter la limite."
+    },
+    "actions": {
+        "reviewLimits": "Voir les limites",
+        "ok": "OK"
+    },
+    "warning": {
+        "withPct": "Vous avez utilisé {{pct}} % de la limite d'IA pour {{feature}}.",
+        "noPct": "Vous approchez de la limite d'IA pour {{feature}}.",
+        "description": "La fonction cessera de fonctionner pour vous une fois la limite atteinte."
+    }
+}

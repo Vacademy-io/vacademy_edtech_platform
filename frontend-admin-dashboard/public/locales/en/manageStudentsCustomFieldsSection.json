@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Form Fields ({{count}})",
+        "subtitle": "Drag to reorder fields"
+    },
+    "quickAddButtons": {
+        "gender": "Add Gender",
+        "state": "Add State",
+        "city": "Add City",
+        "schoolCollege": "Add School/College",
+        "address": "Add Address",
+        "pincode": "Pincode",
+        "fatherName": "Father Name",
+        "motherName": "Mother Name",
+        "parentPhoneNumber": "Parent Phone Number",
+        "parentEmail": "Parent Email"
+    },
+    "addCustomFieldButton": "Add Custom Field"
+}

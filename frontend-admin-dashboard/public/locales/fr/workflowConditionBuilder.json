@@ -1,0 +1,26 @@
+{
+    "operators": {
+        "equals": "égal à",
+        "notEquals": "différent de",
+        "greaterThan": "supérieur à",
+        "lessThan": "inférieur à",
+        "greaterOrEqual": "supérieur ou égal",
+        "lessOrEqual": "inférieur ou égal",
+        "contains": "contient",
+        "isEmpty": "est vide",
+        "isNotEmpty": "n'est pas vide",
+        "isTrue": "est vrai",
+        "isFalse": "est faux"
+    },
+    "switchToVisual": "Passer au constructeur visuel",
+    "rawSpelMode": "Mode expression SpEL brute",
+    "ifLabel": "Si",
+    "pickVariablePlaceholder": "Choisir une variable...",
+    "valuePlaceholder": "valeur",
+    "addCondition": "Ajouter une condition",
+    "switchToRawSpel": "Passer au SpEL brut",
+    "advanced": "Avancé",
+    "spelBadge": "SpEL",
+    "joinerAnd": "ET",
+    "joinerOr": "OU"
+}

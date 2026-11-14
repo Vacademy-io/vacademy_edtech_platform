@@ -1,0 +1,28 @@
+{
+    "heading": "يتطلب الانتباه",
+    "allClear": "كل شيء على ما يرام — لا شيء يتطلب الانتباه الآن.",
+    "items": {
+        "tnc": {
+            "title": "لم يتم توقيع الشروط والأحكام",
+            "description": "مطلوب قبل الحصة الأولى"
+        },
+        "outstanding": {
+            "title": "₹{{amount}} مبلغ مستحق",
+            "description": "فواتير غير مدفوعة مسجّلة"
+        },
+        "behind": {
+            "title_zero": "متأخر في {{count}} دورة",
+            "title_one": "متأخر في {{count}} دورة واحدة",
+            "title_two": "متأخر في {{count}} دورتين",
+            "title_few": "متأخر في {{count}} دورات",
+            "title_many": "متأخر في {{count}} دورة",
+            "title_other": "متأخر في {{count}} دورة",
+            "description": "التسجيلات النشطة أقل من 25% من التقدّم"
+        }
+    },
+    "actions": {
+        "send": "إرسال",
+        "collect": "تحصيل",
+        "review": "مراجعة"
+    }
+}

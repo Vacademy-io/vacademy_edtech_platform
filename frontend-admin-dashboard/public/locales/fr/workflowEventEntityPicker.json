@@ -1,0 +1,42 @@
+{
+    "unknown": "Inconnu",
+    "untitledSession": "Session sans titre",
+    "codeLabel": "Code : {{code}}",
+    "typeLabels": {
+        "packageSession": "Lot / Session de forfait",
+        "audience": "Audience / Campagne",
+        "liveSession": "Session en direct",
+        "enrollInvite": "Invitation d'inscription",
+        "institute": "Établissement",
+        "assessment": "Évaluation",
+        "userPlan": "Adhésion / Plan utilisateur",
+        "payment": "Paiement"
+    },
+    "institute": {
+        "appliesToWhole": "Ce déclencheur s'applique à l'ensemble de l'établissement. Aucune sélection d'entité spécifique n'est nécessaire."
+    },
+    "manual": {
+        "restrictLabel": "Restreindre à des {{type}}(s) spécifique(s) (facultatif)",
+        "pickFromList": "Choisir dans la liste",
+        "placeholder": "Saisissez le ou les ID de {{type}}, séparés par des virgules, ou laissez vide pour tous",
+        "willFireForAll": "Laissez vide et le workflow se déclenche pour chaque {{type}} de votre établissement.",
+        "willFireForSelected_one": "Ce workflow se déclenchera pour {{count}} {{type}} sélectionné.",
+        "willFireForSelected_many": "Ce workflow se déclenchera pour {{count}} {{type}} sélectionnés.",
+        "willFireForSelected_other": "Ce workflow se déclenchera pour {{count}} {{type}}(s) sélectionné(s)."
+    },
+    "checklist": {
+        "selectLabel": "Sélectionnez {{type}}(s) — laissez décoché pour tous",
+        "enterIdManually": "Saisir l'ID manuellement",
+        "loading": "Chargement...",
+        "noneFound": "Aucun {{type}} trouvé",
+        "summaryNone": "Aucune sélection — le workflow se déclenche pour chaque {{type}} de votre établissement.",
+        "summarySelected_one": "Le workflow se déclenche uniquement pour le {{type}} sélectionné.",
+        "summarySelected_many": "Le workflow se déclenche pour {{count}} {{type}} sélectionnés. Une ligne de déclenchement sera créée par sélection.",
+        "summarySelected_other": "Le workflow se déclenche pour {{count}} {{type}}(s) sélectionné(s). Une ligne de déclenchement sera créée par sélection.",
+        "searchPlaceholder": "Rechercher des {{type}}...",
+        "noMatches": "Aucun résultat pour « {{search}} ».",
+        "hiddenBySearch_one": "{{count}} élément sélectionné est masqué par la recherche",
+        "hiddenBySearch_many": "{{count}} éléments sélectionnés sont masqués par la recherche",
+        "hiddenBySearch_other": "{{count}} éléments sélectionnés sont masqués par la recherche"
+    }
+}

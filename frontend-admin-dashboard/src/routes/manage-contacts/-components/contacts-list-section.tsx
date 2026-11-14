@@ -10,13 +10,42 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { StudentSidebar } from '@/routes/manage-students/students-list/-components/students-list/student-side-view/student-side-view';
 import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-providers/student-sidebar-provider';
 import { ContactUser } from '../-types/contact-types';
-import { getContactColumns } from './contacts-table-columns';
+import { getContactColumnLabel, getContactColumns } from './contacts-table-columns';
+import { CountBadge } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/count-badge';
+import { ManageColumnsPopover } from '@/components/shared/leads/manage-columns-popover';
+import {
+    useLeadColumnPrefs,
+    useColumnOrderPrefs,
+    orderColumnIds,
+    type LeadColumnToggle,
+} from '@/components/shared/leads/use-lead-column-prefs';
+import { useCompactMode } from '@/hooks/use-compact-mode';
 import EmptyStudentListImage from '@/assets/svgs/empty-students-image.svg';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useLeadSettings } from '@/hooks/use-lead-settings';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
 import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
 import { getCustomFieldSettings } from '@/services/custom-field-settings';
+
+/** Per-browser column layout, same keys convention as Manage Payments / sub-orgs. */
+const COLUMN_PREFS_KEY = 'contacts:hidden-columns';
+const COLUMN_ORDER_KEY = 'contacts:column-order';
+
+/** System fields an institute can switch off in Settings → Custom Fields; ids are `user.<accessor>`. */
+const SYSTEM_FIELD_ACCESSORS = [
+    'full_name',
+    'username',
+    'email',
+    'mobile_number',
+    'gender',
+    'region',
+    'city',
+] as const;
+
+/** Opens the side view and is pinned left by MyTable, so it is neither hidden nor moved. */
+const DETAILS_COLUMN_ID = 'details';
+/** A row without the name is not a contact row: it can be moved but not switched off. */
+const LOCKED_COLUMN_IDS = new Set(['user.full_name']);
 
 export const ContactsListSection = () => {
     const { setNavHeading } = useNavHeadingStore();
@@ -43,6 +72,16 @@ export const ContactsListSection = () => {
     const showCounselor = leadReady;
 
     const [assignDialog, setAssignDialog] = useState<{ userId: string; userName: string } | null>(null);
+
+    const { isCompact } = useCompactMode();
+    // Column layout, remembered per browser: which columns are on, and their order.
+    const { hiddenColumns, toggleColumn, resetColumns } = useLeadColumnPrefs(COLUMN_PREFS_KEY);
+    const { columnOrder, setColumnOrder, resetColumnOrder } = useColumnOrderPrefs(COLUMN_ORDER_KEY);
+    /** "Reset" restores both halves of the layout — hidden columns and order. */
+    const handleResetColumns = () => {
+        resetColumns();
+        resetColumnOrder();
+    };
 
     useEffect(() => {
         setNavHeading(<h1 className="text-lg">Contacts</h1>);
@@ -92,12 +131,44 @@ export const ContactsListSection = () => {
     if (error) return <SmartErrorPage />;
 
     // Columns — counsellor assign callback only when lead system is active
-    const columns = getContactColumns(
+    const allColumns = getContactColumns(
         handleSort,
         showLeadScore,
         showCounselor ? (userId, userName) => setAssignDialog({ userId, userName }) : undefined,
         showCounselor
     );
+    // A system field switched off in Settings → Custom Fields stays off and is not offered in
+    // Manage Column either; turning it back on belongs to that setting. Read on every render,
+    // like before, so the refreshed settings cache takes effect.
+    const systemVisibility = getSystemFieldColumnVisibility();
+    const systemHidden = new Set(
+        SYSTEM_FIELD_ACCESSORS.filter((accessor) => systemVisibility[accessor] === false).map(
+            (accessor) => `user.${accessor}`
+        )
+    );
+    const detailsColumn = allColumns.find((column) => column.id === DETAILS_COLUMN_ID);
+    const columnsById = new Map(
+        allColumns
+            .filter(
+                (column) =>
+                    column.id && column.id !== DETAILS_COLUMN_ID && !systemHidden.has(column.id)
+            )
+            .map((column) => [column.id as string, column])
+    );
+    // Saved order reconciled with the columns that exist now (the lead columns appear only
+    // once lead settings load), so a new column keeps its natural slot.
+    const orderedColumnIds = orderColumnIds([...columnsById.keys()], columnOrder);
+    const columnToggles: LeadColumnToggle[] = orderedColumnIds.map((id) => ({
+        id,
+        label: getContactColumnLabel(columnsById.get(id)!),
+        locked: LOCKED_COLUMN_IDS.has(id),
+    }));
+    const columns = [
+        ...(detailsColumn ? [detailsColumn] : []),
+        ...orderedColumnIds
+            .filter((id) => LOCKED_COLUMN_IDS.has(id) || !hiddenColumns.has(id))
+            .map((id) => columnsById.get(id)!),
+    ];
 
     return (
         <ErrorBoundary>
@@ -113,6 +184,32 @@ export const ContactsListSection = () => {
             )}
             <StudentSidebarProvider>
                 <section className="animate-fadeIn flex max-w-full flex-col gap-3 overflow-visible">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-subtitle font-semibold text-neutral-700">
+                                All Contacts
+                            </h2>
+                            {/* Total for the current filters — the same number the pages add up to. */}
+                            {isLoading ? (
+                                <span className="h-4 w-20 animate-pulse rounded-full bg-neutral-100" />
+                            ) : (
+                                <CountBadge
+                                    label="Total"
+                                    value={contactTableData?.total_elements ?? 0}
+                                    tone="total"
+                                    isCompact={isCompact}
+                                />
+                            )}
+                        </div>
+                        <ManageColumnsPopover
+                            columns={columnToggles}
+                            hiddenColumns={hiddenColumns}
+                            onToggle={toggleColumn}
+                            onReset={handleResetColumns}
+                            onReorder={setColumnOrder}
+                        />
+                    </div>
+
                     <ContactFilters filters={filters} />
 
                     {isLoading ? (
@@ -143,33 +240,9 @@ export const ContactsListSection = () => {
                                                 total_elements: contactTableData.total_elements,
                                                 last: contactTableData.is_last,
                                             }}
+                                            // Already ordered and narrowed to the visible
+                                            // columns (Manage Column + Settings → Custom Fields).
                                             columns={columns}
-                                            tableState={{
-                                                columnVisibility: (() => {
-                                                    // Preserve existing visibility (none today),
-                                                    // then hide any system field toggled off in
-                                                    // Settings → Custom Fields. Contacts columns use
-                                                    // `user.<accessor>` ids.
-                                                    const visibility: Record<string, boolean> = {};
-                                                    const systemVis = getSystemFieldColumnVisibility();
-                                                    (
-                                                        [
-                                                            'full_name',
-                                                            'username',
-                                                            'email',
-                                                            'mobile_number',
-                                                            'gender',
-                                                            'region',
-                                                            'city',
-                                                        ] as const
-                                                    ).forEach((accessor) => {
-                                                        if (systemVis[accessor] === false) {
-                                                            visibility[`user.${accessor}`] = false;
-                                                        }
-                                                    });
-                                                    return visibility;
-                                                })(),
-                                            }}
                                             isLoading={isLoading}
                                             error={error}
                                             onSort={handleSort}
@@ -192,6 +265,8 @@ export const ContactsListSection = () => {
                                     currentPage={page}
                                     totalPages={contactTableData?.total_pages || 1}
                                     onPageChange={handlePageChange}
+                                    totalElements={contactTableData.total_elements}
+                                    pageSize={contactTableData.page_size}
                                 />
                             </div>
                         </div>

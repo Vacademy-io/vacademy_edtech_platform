@@ -1,0 +1,21 @@
+{
+  "header": {
+    "title": "Welcome",
+    "description": "You have access to both admin and learner features. Choose how you'd like to proceed:"
+  },
+  "options": {
+    "learner": {
+      "title": "Continue as Learner",
+      "description": "Access your courses and learning materials"
+    },
+    "admin": {
+      "title": "Continue as Admin",
+      "description": "Manage your institute and courses"
+    }
+  },
+  "actions": {
+    "goToLearnerPortal": "Go to Learner Portal",
+    "stayAsAdmin": "Stay as Admin",
+    "dontShowAgain": "Don't show this again"
+  }
+}

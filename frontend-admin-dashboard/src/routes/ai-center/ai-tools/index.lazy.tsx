@@ -4,6 +4,7 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { useEffect, useMemo, useState } from 'react';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { handleQueryGetListIndividualTopics } from '../-services/ai-center-service';
 import { handleGetAdminDetails } from '@/services/student-list-section/getAdminDetails';
 import {
@@ -25,12 +26,13 @@ import {
 import { AITaskIndividualListInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
 import {
     FileFamily,
+    buildSourceLabel,
     classifyFile,
     headingForQuestionTask,
+    isHistoryTask,
     isQuestionTask,
     relativeTime,
-    routeForFamily,
-    sourceLabel,
+    routeForTask,
     statusLabel,
     statusStyles,
     taskDisplayName,
@@ -40,29 +42,26 @@ import AIQuestionsPreview from '../-components/AIQuestionsPreview';
 
 type Category = 'assessment' | 'lecture-plan' | 'lecture-review';
 
-const CATEGORIES: Array<{
+// Static (non-translatable) metadata for each top-level category. The
+// title/subtitle/step2Heading copy lives in the aiCenterAiToolsIndex
+// catalog and is resolved inside the component via t(`categories.${id}...`).
+const CATEGORY_META: Array<{
     id: Category;
-    title: string;
-    subtitle: string;
     Icon: React.ComponentType<any>;
     accent: string;
     accentBg: string;
     directRoute?: string;
-    step2Heading?: string;
+    hasStep2Heading?: boolean;
 }> = [
     {
         id: 'assessment',
-        title: 'Create an assessment',
-        subtitle: 'A question paper, quiz, or test — from any source you have.',
         Icon: Exam,
         accent: 'text-blue-600',
         accentBg: 'bg-blue-50',
-        step2Heading: 'How would you like to generate the questions?',
+        hasStep2Heading: true,
     },
     {
         id: 'lecture-plan',
-        title: 'Plan a lecture',
-        subtitle: 'A time-based plan with key points and optional homework.',
         Icon: ChalkboardSimple,
         accent: 'text-violet-600',
         accentBg: 'bg-violet-50',
@@ -70,8 +69,6 @@ const CATEGORIES: Array<{
     },
     {
         id: 'lecture-review',
-        title: 'Review my teaching',
-        subtitle: 'Get a kind, specific review of a class you recorded.',
         Icon: MicrophoneStage,
         accent: 'text-teal-600',
         accentBg: 'bg-teal-50',
@@ -79,54 +76,48 @@ const CATEGORIES: Array<{
     },
 ];
 
-type SubOption = {
-    title: string;
-    subtitle: string;
+type SubOptionMeta = {
+    key: string;
     route: string;
     Icon: React.ComponentType<any>;
 };
 
-const SUB_OPTIONS: Record<Category, SubOption[]> = {
+// Static metadata for the step-2 sub-options. title/subtitle copy is
+// resolved inside the component via t(`subOptions.${category}.${key}...`).
+const SUB_OPTION_META: Record<Category, SubOptionMeta[]> = {
     assessment: [
         {
-            title: 'From a topic',
-            subtitle: 'Type a topic, we draft the questions.',
+            key: 'fromTopic',
             route: '/ai-center/ai-tools/vsmart-prompt',
             Icon: PencilSimple,
         },
         {
-            title: 'From a document',
-            subtitle: 'PDF, Word, or PowerPoint — fresh questions about its content.',
+            key: 'fromDocument',
             route: '/ai-center/ai-tools/vsmart-upload',
             Icon: FilePdf,
         },
         {
-            title: 'From an audio recording',
-            subtitle: 'Upload a recording — questions based on what was said.',
+            key: 'fromAudio',
             route: '/ai-center/ai-tools/vsmart-audio',
             Icon: FileAudio,
         },
         {
-            title: 'From a photo of a paper',
-            subtitle: 'Snap a printed paper — turn it into editable questions.',
+            key: 'fromPhoto',
             route: '/ai-center/ai-tools/vsmart-image',
             Icon: FileImage,
         },
         {
-            title: 'From an existing question paper',
-            subtitle: 'Digitize a question paper you already have.',
+            key: 'fromExistingPaper',
             route: '/ai-center/ai-tools/vsmart-extract',
             Icon: FileText,
         },
         {
-            title: 'From my question bank',
-            subtitle: 'Auto-sort by topic, or pull specific questions.',
+            key: 'fromQuestionBank',
             route: '/ai-center/ai-tools/vsmart-sorter',
             Icon: SortAscending,
         },
         {
-            title: 'Chat with a document',
-            subtitle: 'Have a back-and-forth about a PDF — ask for questions or summaries.',
+            key: 'chatWithDocument',
             route: '/ai-center/ai-tools/vsmart-chat',
             Icon: ChatCircleDots,
         },
@@ -143,11 +134,13 @@ const FamilyIcon = ({ family }: { family: FileFamily }) => {
     return <FileText size={20} weight="fill" className={cls} />;
 };
 
-const greetingPrefix = () => {
+// Time-of-day greeting key, resolved via the catalog. A separate "Named" key
+// is used (rather than a fixed comma + name concatenation) so each locale can
+// order/punctuate the name-inclusive greeting on its own terms.
+const greetingKey = (named: boolean) => {
     const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    const period = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
+    return named ? `greeting${period}Named` : `greeting${period}`;
 };
 
 const firstName = (full?: string | null) => {
@@ -166,6 +159,8 @@ export const Route = createLazyFileRoute('/ai-center/ai-tools/')({
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('aiCenterAiToolsIndex');
+    const { t: tFormat } = useTranslation('aiCenterFormat');
     const { setNavHeading } = useNavHeadingStore();
     const navigate = useNavigate();
     const [category, setCategory] = useState<Category | null>(null);
@@ -179,13 +174,12 @@ function RouteComponent() {
             setPreviewOpen(true);
             return;
         }
-        const family = classifyFile(task.file_detail?.file_type);
-        navigate({ to: routeForFamily[family] });
+        navigate({ to: routeForTask(task) });
     };
 
     useEffect(() => {
-        setNavHeading('Teaching Assistant');
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     const { data: adminDetails } = useQuery(handleGetAdminDetails());
     const { data: recentTasksData } = useQuery({
@@ -193,29 +187,33 @@ function RouteComponent() {
         staleTime: 60 * 1000,
     });
 
-    const continueItems = useMemo(() => {
+    const historyTasks = useMemo(() => {
         const list: AITaskIndividualListInterface[] = Array.isArray(recentTasksData)
             ? recentTasksData
             : [];
-        return [...list]
-            .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
-            .slice(0, 3);
+        return list.filter(isHistoryTask);
     }, [recentTasksData]);
 
+    const continueItems = useMemo(
+        () => [...historyTasks].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, 3),
+        [historyTasks]
+    );
+
+    const sourceLabel = useMemo(() => buildSourceLabel(tFormat), [tFormat]);
+
     const name = firstName(adminDetails?.full_name);
-    const activeCategory = category ? CATEGORIES.find((c) => c.id === category) : null;
-    const subOptions = category ? SUB_OPTIONS[category] : [];
+    const activeCategoryMeta = category
+        ? CATEGORY_META.find((c) => c.id === category)
+        : null;
+    const subOptionMetas = category ? SUB_OPTION_META[category] : [];
 
     return (
         <div className="flex w-full flex-col gap-10 pb-12">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    {greetingPrefix()}
-                    {name ? `, ${name}` : ''}.
+                    {name ? t(greetingKey(true), { name }) : t(greetingKey(false))}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Let&apos;s get you to the right tool in a couple of clicks.
-                </p>
+                <p className="text-sm text-gray-500">{t('headerSubtitle')}</p>
             </header>
 
             <section className="flex flex-col gap-5">
@@ -227,16 +225,15 @@ function RouteComponent() {
                             </span>
                             <div className="flex flex-col gap-0.5">
                                 <h2 className="text-lg font-semibold text-gray-900">
-                                    What brings you here today?
+                                    {t('step1Heading')}
                                 </h2>
                                 <p className="text-xs text-neutral-500">
-                                    Pick the broad goal. We&apos;ll narrow down on the next
-                                    step.
+                                    {t('step1Subtitle')}
                                 </p>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            {CATEGORIES.map((c) => (
+                            {CATEGORY_META.map((c) => (
                                 <button
                                     key={c.id}
                                     type="button"
@@ -254,14 +251,14 @@ function RouteComponent() {
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <span className="text-base font-semibold text-gray-900">
-                                            {c.title}
+                                            {t(`categories.${c.id}.title`)}
                                         </span>
                                         <span className="text-sm text-neutral-500">
-                                            {c.subtitle}
+                                            {t(`categories.${c.id}.subtitle`)}
                                         </span>
                                     </div>
                                     <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary-500 opacity-0 transition-opacity group-hover:opacity-100">
-                                        {c.directRoute ? 'Open' : 'Continue'}
+                                        {c.directRoute ? t('ctaOpen') : t('ctaContinue')}
                                         <CaretRight size={12} weight="bold" />
                                     </span>
                                 </button>
@@ -277,7 +274,7 @@ function RouteComponent() {
                                 className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700"
                             >
                                 <ArrowLeft size={14} />
-                                Back
+                                {t('back')}
                             </button>
                             <div className="flex items-baseline gap-3">
                                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-semibold text-primary-600">
@@ -285,18 +282,22 @@ function RouteComponent() {
                                 </span>
                                 <div className="flex flex-col gap-0.5">
                                     <h2 className="text-lg font-semibold text-gray-900">
-                                        {activeCategory!.step2Heading ??
-                                            `${activeCategory!.title} — which one?`}
+                                        {activeCategoryMeta!.hasStep2Heading
+                                            ? t(`categories.${activeCategoryMeta!.id}.step2Heading`)
+                                            : t('step2HeadingFallback', {
+                                                  title: t(
+                                                      `categories.${activeCategoryMeta!.id}.title`
+                                                  ),
+                                              })}
                                     </h2>
                                     <p className="text-xs text-neutral-500">
-                                        Pick how you want to start. The next screen asks for
-                                        the specifics.
+                                        {t('step2Subtitle')}
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            {subOptions.map((opt) => (
+                            {subOptionMetas.map((opt) => (
                                 <button
                                     key={opt.route}
                                     type="button"
@@ -304,16 +305,20 @@ function RouteComponent() {
                                     className="group flex items-start gap-4 rounded-xl border border-neutral-200 bg-white p-4 text-left transition-all hover:border-primary-200 hover:shadow-md"
                                 >
                                     <div
-                                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${activeCategory!.accentBg} ${activeCategory!.accent}`}
+                                        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${activeCategoryMeta!.accentBg} ${activeCategoryMeta!.accent}`}
                                     >
                                         <opt.Icon size={20} weight="fill" />
                                     </div>
                                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                                         <span className="text-sm font-semibold text-gray-900">
-                                            {opt.title}
+                                            {t(
+                                                `subOptions.${category}.${opt.key}.title`
+                                            )}
                                         </span>
                                         <span className="text-xs text-neutral-500">
-                                            {opt.subtitle}
+                                            {t(
+                                                `subOptions.${category}.${opt.key}.subtitle`
+                                            )}
                                         </span>
                                     </div>
                                     <ArrowRight
@@ -334,7 +339,7 @@ function RouteComponent() {
                         <div className="flex items-center gap-2">
                             <ClockCounterClockwise size={18} className="text-neutral-500" />
                             <h2 className="text-base font-semibold text-gray-900">
-                                Your recent work
+                                {t('recentWorkHeading')}
                             </h2>
                         </div>
                         <button
@@ -342,14 +347,18 @@ function RouteComponent() {
                             onClick={() => setOpenAllWork(true)}
                             className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary-500 transition-colors hover:bg-primary-50 hover:text-primary-600"
                         >
-                            View all
+                            {t('viewAll')}
                             <ArrowRight size={12} weight="bold" />
                         </button>
                     </header>
                     <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {continueItems.map((task) => {
                             const family = classifyFile(task.file_detail?.file_type);
-                            const display = taskDisplayName(task, 'Topic-based questions');
+                            const display = taskDisplayName(
+                                task,
+                                tFormat,
+                                t('topicBasedQuestionsFallback')
+                            );
                             return (
                                 <button
                                     key={task.id}
@@ -367,15 +376,15 @@ function RouteComponent() {
                                             </span>
                                             <span className="text-xs text-neutral-500">
                                                 {sourceLabel[family]} ·{' '}
-                                                {relativeTime(task.updated_at)}
+                                                {relativeTime(task.updated_at, tFormat)}
                                             </span>
                                         </div>
                                         <span
-                                            className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusStyles(
+                                            className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-2xs font-medium ring-1 ring-inset ${statusStyles(
                                                 task.status
                                             )}`}
                                         >
-                                            {statusLabel(task.status)}
+                                            {statusLabel(task.status, tFormat)}
                                         </span>
                                     </div>
                                 </button>
@@ -388,11 +397,7 @@ function RouteComponent() {
             <RecentWorkDialog
                 open={openAllWork}
                 onOpenChange={setOpenAllWork}
-                tasks={
-                    Array.isArray(recentTasksData)
-                        ? (recentTasksData as AITaskIndividualListInterface[])
-                        : []
-                }
+                tasks={historyTasks}
                 onPreviewTask={(task) => {
                     setOpenAllWork(false);
                     setPreviewTask(task);

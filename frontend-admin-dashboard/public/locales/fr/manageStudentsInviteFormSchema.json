@@ -1,0 +1,7 @@
+{
+    "validation": {
+        "inviteLinkRequired": "Le lien d'invitation est requis",
+        "maxCoursesRequired": "Ce champ est requis",
+        "inviteLinkAlreadyPresent": "Un lien d'invitation pour ce groupe existe déjà"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "free": "Free",
+    "planStatus": "Plan status",
+    "planLabel": "{{plan}} plan",
+    "awaitingAdmin": "Awaiting admin",
+    "noPlan": "No plan",
+    "totalLearners": "Total Learners",
+    "totalSeats": "Total Seats",
+    "adminOutstanding": "Admin Outstanding"
+}

@@ -1,0 +1,28 @@
+{
+    "loading": "Loading form settings…",
+    "header": {
+        "title": "Audience Form Defaults",
+        "description": "The thank-you screen every new audience list starts with. Each campaign can override it while being created or edited — changes here only affect campaigns created from now on."
+    },
+    "toasts": {
+        "saved": "Form settings saved",
+        "saveFailed": "Failed to save form settings"
+    },
+    "actions": {
+        "restoreDefaults": "Restore Defaults",
+        "saving": "Saving…",
+        "saveChanges": "Save Changes"
+    },
+    "formAppearance": {
+        "title": "Form Appearance",
+        "description": "Advanced. Lets each campaign restyle its public response form — layout, colours, wording, and custom HTML/CSS.",
+        "toggleLabel": "Allow campaigns to restyle their form",
+        "toggleHelp": "Off: every campaign uses the standard form design. On: a Form Appearance card appears when creating or editing a campaign."
+    },
+    "shortLinks": {
+        "title": "Short Links",
+        "description": "Offers a short, shareable address next to the full form link — for messages, print, and anywhere the long URL is unwieldy. Institutes with their own short domain get it on that domain.",
+        "toggleLabel": "Offer short links when sharing a campaign",
+        "toggleHelp": "On: campaign cards, the ⋮ menu and the Share QR dialog each offer a short link. Off: only the full form address is shown. Links already created keep working either way."
+    }
+}

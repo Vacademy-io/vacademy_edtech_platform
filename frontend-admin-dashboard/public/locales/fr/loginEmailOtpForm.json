@@ -1,0 +1,29 @@
+{
+    "invalidEmail": "Adresse e-mail invalide",
+    "emailPlaceholder": "Entrez votre adresse e-mail",
+    "emailLabel": "Adresse e-mail",
+    "sendingCode": "Envoi du code en cours...",
+    "sendVerificationCode": "Envoyer le code de vérification",
+    "checkYourEmail": "Consultez votre e-mail",
+    "codeSentTo": "Nous avons envoyé un code à 6 chiffres au",
+    "validOtpRequired": "Veuillez saisir un code de vérification valide à 6 chiffres",
+    "verifying": "Vérification en cours...",
+    "verifyAndSignIn": "Vérifier et se connecter",
+    "backToEmail": "Retour à l'e-mail",
+    "resendIn_one": "Renvoyer dans {{count}}s",
+    "resendIn_many": "Renvoyer dans {{count}}s",
+    "resendIn_other": "Renvoyer dans {{count}}s",
+    "resendCode": "Renvoyer le code",
+    "preferUsernameLogin": "Préférez-vous vous connecter avec un identifiant ?",
+    "usePhoneOtpInstead": "Utiliser le code par téléphone à la place ?",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "createOne": "Créer un compte",
+    "toast": {
+        "otpSent": "Code envoyé avec succès",
+        "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée",
+        "emailNotRegisteredDescription": "Veuillez réessayer avec une adresse e-mail enregistrée",
+        "invalidOtp": "Code invalide",
+        "invalidOtpDescription": "Veuillez vérifier votre code et réessayer",
+        "fillAllOtpFields": "Veuillez remplir tous les champs du code"
+    }
+}

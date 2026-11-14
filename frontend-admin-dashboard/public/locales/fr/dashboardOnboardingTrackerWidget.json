@@ -1,0 +1,24 @@
+{
+    "header": {
+        "progress_one": "Votre état d'implémentation · {{count}} % terminé",
+        "progress_many": "Votre état d'implémentation · {{count}} % terminé",
+        "progress_other": "Votre état d'implémentation · {{count}} % terminé"
+    },
+    "empty": {
+        "message": "Aucun jalon pour le moment."
+    },
+    "status": {
+        "done": "Terminé",
+        "inProgress": "En cours",
+        "blocked": "Bloqué",
+        "notStarted": "Non commencé"
+    },
+    "milestone": {
+        "eta": "Prévu le {{date}}",
+        "confirmButton": "Confirmer"
+    },
+    "comment": {
+        "placeholder": "Ajouter un commentaire pour l'équipe…",
+        "sendButton": "Envoyer"
+    }
+}

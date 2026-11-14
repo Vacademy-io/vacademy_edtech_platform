@@ -1,0 +1,11 @@
+{
+    "presets": {
+        "today": "Aujourd'hui",
+        "week": "7 jours",
+        "fortnight": "15 jours",
+        "month": "30 jours"
+    },
+    "custom": "Personnalisé",
+    "startDate": "Date de début",
+    "endDate": "Date de fin"
+}

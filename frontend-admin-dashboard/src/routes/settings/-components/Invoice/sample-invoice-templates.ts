@@ -61,6 +61,21 @@ const PDF_VARIABLES = [
     '{{line_items}}', '{{subtotal}}', '{{discount_amount}}', '{{tax_amount}}', '{{total_amount}}',
     '{{currency_symbol}}', '{{tax_components}}', '{{tax_registration_number}}', '{{hsn_code}}',
     '{{country}}', '{{tax_label}}', '{{tax_rate}}', '{{terms_and_conditions}}',
+    '{{institute_tagline}}',
+    // Fee-receipt fields. A receipt has to say where a payment leaves the learner, which an
+    // invoice does not: the course price, what was already paid, what is still owed and the
+    // next installment. Amounts are rendered from the learner fee schedule and are read-only.
+    '{{course_name}}', '{{course_code}}', '{{course_code_bracketed}}', '{{user_mobile}}',
+    '{{course_fees}}', '{{total_fees}}', '{{previous_paid}}', '{{fees_paid_now}}',
+    '{{total_fees_due}}', '{{total_amount_paid}}',
+    '{{next_installment_amount}}', '{{next_installment_date}}', '{{amount_in_words}}',
+    // Monthly fee invoices: the month billed (from the due date), who the invoice is addressed
+    // to when the learner is a child, and the institute's email for the contact block.
+    '{{billing_month}}', '{{billing_year}}', '{{billing_period}}',
+    '{{parent_name}}', '{{year_group}}', '{{institute_email}}',
+    // One row per class (Session N | Date | Subject | Day | Fee) from line items written as
+    // "date | subject". Goes inside a 5-column <table><tbody>, like {{line_items}}.
+    '{{session_rows}}',
 ];
 
 const EMAIL_VARIABLES = [

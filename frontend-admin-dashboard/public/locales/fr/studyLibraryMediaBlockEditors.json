@@ -1,0 +1,20 @@
+{
+    "uploading": "Téléversement…",
+    "noImage": "Aucune image",
+    "uploadImage": "Téléverser une image",
+    "imageUploadFailed": "Échec du téléversement de l'image",
+    "altTextPlaceholder": "Texte alternatif (facultatif)",
+    "noVideo": "Aucune vidéo",
+    "uploadVideo": "Téléverser une vidéo",
+    "videoUploadFailed": "Échec du téléversement de la vidéo",
+    "noFile": "Aucun fichier",
+    "uploadFile": "Téléverser un fichier",
+    "fileUploadFailed": "Échec du téléversement du fichier",
+    "downloadFile": "Télécharger le fichier",
+    "noEmbed": "Aucun contenu intégré",
+    "embedUrlPlaceholder": "Collez une URL YouTube / Vimeo / Loom / autre",
+    "embed": "Intégrer",
+    "embeddedContentTitle": "Contenu intégré",
+    "calloutPlaceholder": "Rédigez un encadré…",
+    "themeAriaLabel": "Thème {{theme}}"
+}

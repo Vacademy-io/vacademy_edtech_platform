@@ -10,6 +10,7 @@ import { StudentSidebarContext } from '@/routes/manage-students/students-list/-c
 import { StudentTable } from '@/types/student-table-types';
 import { ArrowCounterClockwise } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
@@ -46,6 +47,8 @@ const QuestionAssessmentStatus = ({
     assesssmentType,
     questionStatus,
 }: QuestionAssessmentStatusProps) => {
+    const { t: tHelper } = useTranslation('homeworkCreationAssessmentDetailsHelper');
+    const { t: tStudentColumns } = useTranslation('homeworkCreationStudentColumns');
     const [isLoading, setIsLoading] = useState(false);
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const { BatchesFilterData } = useFilterDataForAssesment(initData);
@@ -487,7 +490,7 @@ const QuestionAssessmentStatus = ({
                         </TabsList>
                     )}
                 </div>
-                <div className="flex max-h-[72vh] flex-col gap-6 overflow-y-auto px-4">
+                <div className="flex max-h-dialog-tall flex-col gap-6 overflow-y-auto px-4">
                     <TabsContent value={selectedParticipantsTab}>
                         <MyTable
                             data={{
@@ -495,7 +498,8 @@ const QuestionAssessmentStatus = ({
                                     participantsData.content,
                                     assesssmentType,
                                     selectedParticipantsTab,
-                                    initData?.batches_for_sessions
+                                    initData?.batches_for_sessions,
+                                    tHelper
                                 ),
                                 total_pages: participantsData.total_pages,
                                 page_no: pageNo,
@@ -508,11 +512,13 @@ const QuestionAssessmentStatus = ({
                                 selectedParticipantsTab === 'internal'
                                     ? getAllColumnsForTableQuestionWise(
                                           assesssmentType,
-                                          selectedParticipantsTab
+                                          selectedParticipantsTab,
+                                          tStudentColumns
                                       ).studentInternalOrCloseQuestionWise
                                     : getAllColumnsForTableQuestionWise(
                                           assesssmentType,
-                                          selectedParticipantsTab
+                                          selectedParticipantsTab,
+                                          tStudentColumns
                                       ).studentExternalQuestionWise || []
                             }
                             columnWidths={

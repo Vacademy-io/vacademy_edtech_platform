@@ -1,0 +1,9 @@
+{
+    "block": {
+        "title": "Table of Contents",
+        "subtitle": "Auto-lists your document headings — click one to jump to it.",
+        "addHeading": "Add a heading:",
+        "emptyState": "No headings yet. Add one below — it shows up here and you can click it to jump.",
+        "jumpToHeadingTitle": "Click to jump to this heading"
+    }
+}

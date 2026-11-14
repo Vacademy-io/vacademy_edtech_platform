@@ -1,0 +1,65 @@
+{
+    "dialog": {
+        "headingEdit": "Modifier les critères d'évaluation",
+        "headingAdd": "Ajouter des critères d'évaluation"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "save": "Enregistrer les critères"
+    },
+    "questionInfo": {
+        "typeLabel": "Type de question :",
+        "maxMarksLabel": "Note maximale :"
+    },
+    "tabs": {
+        "manual": "Manuel",
+        "ai": "Génération IA",
+        "template": "Utiliser un modèle"
+    },
+    "manual": {
+        "criteriaHeading": "Critère {{index}}",
+        "nameLabel": "Nom du critère",
+        "namePlaceholder": "ex. : Qualité du contenu",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "ex. : Profondeur et exactitude du contenu",
+        "maxMarksLabel": "Note maximale",
+        "maxMarksPlaceholder": "0",
+        "addCriteria": "Ajouter un critère",
+        "saveAsTemplateLabel_one": "Enregistrer comme modèle réutilisable ({{questionType}} - {{count}} point)",
+        "saveAsTemplateLabel_many": "Enregistrer comme modèle réutilisable ({{questionType}} - {{count}} points)",
+        "saveAsTemplateLabel_other": "Enregistrer comme modèle réutilisable ({{questionType}} - {{count}} points)",
+        "totalMarks_one": "Total : {{achieved}} / {{count}} point",
+        "totalMarks_many": "Total : {{achieved}} / {{count}} points",
+        "totalMarks_other": "Total : {{achieved}} / {{count}} points",
+        "totalMarksValidSuffix": " ✓",
+        "totalMarksInvalidSuffix": " (doit correspondre aux points de la question)"
+    },
+    "ai": {
+        "generatedBanner": "✓ Critères générés avec succès !",
+        "marksBadge_one": "{{count}} point",
+        "marksBadge_many": "{{count}} points",
+        "marksBadge_other": "{{count}} points",
+        "regenerate": "Régénérer",
+        "emptyPrompt": "Laissez l'IA générer des critères d'évaluation pour cette question",
+        "generateButton": "Générer avec l'IA"
+    },
+    "template": {
+        "selectPrompt": "Sélectionnez un modèle à utiliser :",
+        "emptyState": "Aucun modèle trouvé pour ce type de question",
+        "criteriaCount_one": "{{count}} critère",
+        "criteriaCount_many": "{{count}} critères",
+        "criteriaCount_other": "{{count}} critères",
+        "marksCount_one": "{{count}} point",
+        "marksCount_many": "{{count}} points",
+        "marksCount_other": "{{count}} points"
+    },
+    "toasts": {
+        "criteriaGenerated": "Critères générés avec succès !",
+        "generateFailed": "Échec de la génération des critères. Veuillez réessayer.",
+        "templateSaved": "Critères enregistrés comme modèle !",
+        "templateSaveFailed": "Échec de l'enregistrement du modèle",
+        "invalidMarksDistribution": "Répartition des points invalide",
+        "criteriaSaved": "Critères enregistrés avec succès !",
+        "incompleteCriteria": "Veuillez compléter les critères avant d'enregistrer"
+    }
+}

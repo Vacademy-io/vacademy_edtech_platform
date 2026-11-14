@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import {
     FileText,
@@ -35,7 +37,8 @@ import { isYouTubeUrl, getYouTubeEmbedUrl } from '../../../shared/utils/youtube'
  */
 function extractVideoDisplayContent(
     content: string,
-    slideType: string
+    slideType: string,
+    t: TFunction
 ): { label: string; html: string } {
     if (!content) return { label: '', html: '' };
 
@@ -64,7 +67,7 @@ function extractVideoDisplayContent(
                         (_: string, lang: string, code: string) =>
                             `<pre><code class="language-${lang || 'text'}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`
                     );
-                return { label: 'Script', html };
+                return { label: t('video.scriptLabel'), html };
             }
 
             // Fallback: show status info
@@ -72,12 +75,12 @@ function extractVideoDisplayContent(
             const stage = parsed?.video?.currentStage || parsed?.currentStage || '';
             if (status) {
                 return {
-                    label: 'Script',
-                    html: `<p>Video generation status: <strong>${status}</strong>${stage ? ` (${stage})` : ''}</p><p>The script will appear once generation completes.</p>`,
+                    label: t('video.scriptLabel'),
+                    html: `<p>${t('video.generationStatusLabel')} <strong>${status}</strong>${stage ? ` (${stage})` : ''}</p><p>${t('video.scriptWillAppear')}</p>`,
                 };
             }
 
-            return { label: 'Script', html: '' };
+            return { label: t('video.scriptLabel'), html: '' };
         } else {
             // YouTube video types: description is in video.description or video.title
             const title = parsed?.video?.title || '';
@@ -85,7 +88,7 @@ function extractVideoDisplayContent(
             let html = '';
             if (title) html += `<h3>${title}</h3>`;
             if (description) html += `<p>${description}</p>`;
-            return { label: 'Description', html };
+            return { label: t('video.descriptionLabel'), html };
         }
     } catch {
         // Not JSON — it's HTML (VIDEO type stores content as HTML)
@@ -94,7 +97,7 @@ function extractVideoDisplayContent(
             .replace(/<p[^>]*>YouTube URL:.*?<\/p>/gi, '')
             .replace(/<a[^>]*href="[^"]*(?:youtube\.com|youtu\.be)[^"]*"[^>]*>.*?<\/a>/gi, '')
             .replace(/<p[^>]*>\s*<\/p>/gi, '');
-        return { label: isAiVideo ? 'Script' : 'Description', html: html.trim() };
+        return { label: isAiVideo ? t('video.scriptLabel') : t('video.descriptionLabel'), html: html.trim() };
     }
 }
 
@@ -181,23 +184,33 @@ interface ContentEditorPanelProps {
     onSave: (slideId: string) => void;
 }
 
-const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [
-    {
-        question: 'What is the main concept covered in this section?',
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctAnswerIndex: 0,
-        explanation: 'This is the explanation for the correct answer.',
-    },
-];
+function buildDefaultQuizQuestions(t: TFunction): QuizQuestion[] {
+    return [
+        {
+            question: t('quiz.defaultQuestion'),
+            options: [
+                t('quiz.defaultOptionA'),
+                t('quiz.defaultOptionB'),
+                t('quiz.defaultOptionC'),
+                t('quiz.defaultOptionD'),
+            ],
+            correctAnswerIndex: 0,
+            explanation: t('quiz.defaultExplanation'),
+        },
+    ];
+}
 
 export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
     slide,
     onContentChange,
     onSave,
 }) => {
+    const { t } = useTranslation('studyLibraryContentEditorPanel');
     const [documentContent, setDocumentContent] = useState<string>('');
     const [codeContent, setCodeContent] = useState<string>('');
-    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(DEFAULT_QUIZ_QUESTIONS);
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(() =>
+        buildDefaultQuizQuestions(t)
+    );
     const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
     const [isEditing, setIsEditing] = useState(true);
@@ -216,14 +229,14 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
             slide.slideType === 'code-editor' ||
             slide.slideType === 'solution'
         ) {
-            setCodeContent(slide.content || '// Start writing your code here');
+            setCodeContent(slide.content || t('code.defaultComment'));
         } else if (
             slide.slideType === 'quiz' ||
             slide.slideType === 'assessment' ||
             slide.slideType === 'ASSESSMENT'
         ) {
             const { questions, answers } = parseQuizContent(slide.content || '');
-            setQuizQuestions(questions.length > 0 ? questions : DEFAULT_QUIZ_QUESTIONS);
+            setQuizQuestions(questions.length > 0 ? questions : buildDefaultQuizQuestions(t));
             setSelectedAnswers(answers);
             setCurrentQuizIndex(0);
         }
@@ -272,7 +285,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                 <div className="flex flex-1 items-center justify-center text-neutral-400">
                     <div className="text-center">
                         <FileText className="mx-auto mb-3 size-10 opacity-50 sm:size-12" />
-                        <p className="text-xs sm:text-sm">Select a page to view its content</p>
+                        <p className="text-xs sm:text-sm">{t('emptyState.selectPage')}</p>
                     </div>
                 </div>
             </div>
@@ -291,7 +304,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                         </h3>
                         <span className="flex items-center gap-1 text-xs text-neutral-500">
                             <Clock className="size-3.5" />
-                            Pending
+                            {t('status.pending')}
                         </span>
                     </div>
                 </div>
@@ -303,13 +316,13 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                             <Sparkles className="size-6 text-amber-600" />
                         </div>
                         <h4 className="mb-2 text-lg font-medium text-neutral-900">
-                            AI Generation Prompt
+                            {t('prompt.heading')}
                         </h4>
                         <p className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
-                            {slide.prompt || 'No prompt available for this slide.'}
+                            {slide.prompt || t('prompt.noPromptAvailable')}
                         </p>
                         <p className="mt-4 text-xs text-neutral-400">
-                            Content will be generated when you click "Generate Page Content"
+                            {t('prompt.contentWillGenerate')}
                         </p>
                     </div>
                 </div>
@@ -329,7 +342,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                         </h3>
                         <span className="flex items-center gap-1 text-xs text-indigo-600">
                             <Loader2 className="size-3.5 animate-spin" />
-                            Generating...
+                            {t('status.generating')}
                         </span>
                     </div>
                 </div>
@@ -341,14 +354,14 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                             <Loader2 className="size-8 animate-spin text-indigo-600" />
                         </div>
                         <h4 className="mb-2 text-lg font-medium text-neutral-900">
-                            Generating Content
+                            {t('generating.heading')}
                         </h4>
                         <p className="text-sm text-neutral-500">
-                            AI is creating content for this page...
+                            {t('generating.subtext')}
                         </p>
                         {slide.prompt && (
                             <p className="mx-auto mt-4 max-w-sm text-xs text-neutral-400">
-                                Prompt: {slide.prompt.substring(0, 100)}...
+                                {t('generating.promptPreview', { prompt: slide.prompt.substring(0, 100) })}
                             </p>
                         )}
                     </div>
@@ -396,7 +409,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                     slide.slideType === 'ai-video' ||
                     slide.slideType === 'video-code' ||
                     slide.slideType === 'ai-video-code') && (() => {
-                    const { label, html } = extractVideoDisplayContent(slide.content || '', slide.slideType);
+                    const { label, html } = extractVideoDisplayContent(slide.content || '', slide.slideType, t);
                     return (
                         <div className="h-full overflow-y-auto px-6 py-4 sm:px-8 sm:py-6">
                             <h4 className="mb-4 text-sm font-medium uppercase tracking-wide text-neutral-500">
@@ -405,7 +418,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                             <div
                                 className="prose prose-base max-w-none prose-headings:text-neutral-900 prose-h3:text-lg prose-h3:font-semibold prose-p:text-neutral-700 prose-p:leading-relaxed"
                                 dangerouslySetInnerHTML={{
-                                    __html: html || '<p class="text-neutral-400">No content available</p>',
+                                    __html: html || `<p class="text-neutral-400">${t('video.noContentAvailable')}</p>`,
                                 }}
                             />
                         </div>
@@ -445,7 +458,10 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                                     {/* Question Navigation */}
                                     <div className="mb-6 flex items-center justify-between">
                                         <span className="text-sm font-medium text-neutral-600">
-                                            Question {currentQuizIndex + 1} of {quizQuestions.length}
+                                            {t('quiz.questionOf', {
+                                                current: currentQuizIndex + 1,
+                                                total: quizQuestions.length,
+                                            })}
                                         </span>
                                         <div className="flex items-center gap-2">
                                             <button
@@ -519,7 +535,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                                     {quizQuestions[currentQuizIndex]?.explanation && (
                                         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                                             <p className="text-sm text-green-800">
-                                                <span className="font-medium">Explanation: </span>
+                                                <span className="font-medium">{t('quiz.explanationLabel')} </span>
                                                 {quizQuestions[currentQuizIndex]?.explanation}
                                             </p>
                                         </div>
@@ -535,7 +551,7 @@ export const ContentEditorPanel: React.FC<ContentEditorPanelProps> = ({
                         <div
                             className="prose prose-base max-w-none prose-headings:text-neutral-900 prose-h1:text-2xl prose-h1:font-bold prose-h2:text-xl prose-h2:font-semibold prose-h3:text-lg prose-h3:font-semibold prose-p:text-neutral-700 prose-p:leading-relaxed"
                             dangerouslySetInnerHTML={{
-                                __html: slide.content || '<p>No assignment content</p>',
+                                __html: slide.content || `<p>${t('assignment.noContent')}</p>`,
                             }}
                         />
                     </div>

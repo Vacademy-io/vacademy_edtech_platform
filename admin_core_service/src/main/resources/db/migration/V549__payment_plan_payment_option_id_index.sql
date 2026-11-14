@@ -1,0 +1,21 @@
+-- payment_plan is indexed on status and the primary key, and on nothing else.
+-- The foreign key everything actually looks it up by, payment_option_id, has no
+-- index, so reading one option's plans is a sequential scan of the whole table:
+-- measured at 7.4ms against ~14.7k rows, every time.
+--
+-- That is paid on every path that loads a PaymentOption and maps it to a DTO —
+-- product pages, bulk course setup, invite building — and it was paid 6,665
+-- times in a row by the plan picker before @BatchSize on
+-- PaymentOption.paymentPlans batched those lookups.
+--
+-- Honest about what this does and doesn't fix: the batched form (IN over ~500
+-- ids) may well keep its sequential scan, since a 14.7k-row table is cheap to
+-- scan and the planner already chose a Hash Semi Join for it. The win here is
+-- the single-option lookups, which go from a full scan to an index probe. It
+-- could not be measured against production directly because the role there
+-- cannot create an index on this table.
+--
+-- The table is small, so the index is small and its write-path cost is
+-- negligible against how often these rows are read.
+CREATE INDEX IF NOT EXISTS idx_payment_plan_payment_option_id
+    ON payment_plan (payment_option_id);

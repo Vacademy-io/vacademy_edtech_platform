@@ -263,6 +263,16 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
     @Override
     public PaymentResponseDTO chargeRecurring(MandateInfo mandate, PaymentInitiationRequestDTO request,
             Map<String, Object> paymentGatewaySpecificData) {
+        return chargeRecurring(mandate, request, paymentGatewaySpecificData, PaymentType.RENEWAL);
+    }
+
+    /**
+     * {@link #chargeRecurring(MandateInfo, PaymentInitiationRequestDTO, Map)} with the
+     * {@code notes.payment_type} the webhook routes on (F12). The learner autopay path keeps
+     * RENEWAL; null also means RENEWAL.
+     */
+    public PaymentResponseDTO chargeRecurring(MandateInfo mandate, PaymentInitiationRequestDTO request,
+            Map<String, Object> paymentGatewaySpecificData, PaymentType paymentType) {
         if (mandate == null || !StringUtils.hasText(mandate.getProviderRef())
                 || !StringUtils.hasText(mandate.getCustomerId())) {
             throw new VacademyException("Razorpay recurring charge requires a customerId + token mandate");
@@ -280,17 +290,26 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             orderRequest.put("currency", request.getCurrency().toUpperCase());
             orderRequest.put("receipt", request.getOrderId());
             orderRequest.put("payment_capture", 1);
+            // NOTE: do NOT send token_id on this order. The public docs list it as
+            // mandatory for subsequent recurring payments, but this account rejects it
+            // outright: "BAD_REQUEST_ERROR: token_id is/are not required and should not
+            // be sent" -- and it fails at orders.create, so the charge never even starts.
             JSONObject notes = new JSONObject();
             notes.put("orderId", request.getOrderId());
             notes.put("instituteId", request.getInstituteId());
-            notes.put("payment_type", PaymentType.RENEWAL.name());
+            notes.put("payment_type", (paymentType != null ? paymentType : PaymentType.RENEWAL).name());
             orderRequest.put("notes", notes);
             Order order = razorpayClient.orders.create(orderRequest);
 
             JSONObject rec = new JSONObject();
             rec.put("email", request.getEmail());
-            if (StringUtils.hasText(request.getVendorId())) {
-                rec.put("contact", request.getVendorId());
+            // The payer's phone number -- NOT vendorId, which is the invite's gateway
+            // id ("RAZORPAY") and is rejected as an invalid contact.
+            String contact = request.getRazorpayRequest() != null
+                    ? request.getRazorpayRequest().getContact()
+                    : null;
+            if (StringUtils.hasText(contact)) {
+                rec.put("contact", contact);
             }
             rec.put("amount", amountInPaise);
             rec.put("currency", request.getCurrency().toUpperCase());
@@ -339,6 +358,69 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             razorpayClient.payments.refund(razorpayPaymentId, refundRequest);
         } catch (RazorpayException e) {
             throw new VacademyException("Error refunding Razorpay payment " + razorpayPaymentId
+                    + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Refund a captured payment, fully ({@code amountMinor} null) or partially.
+     * {@code receipt} is Razorpay's idempotency key for the refund: a repeat with the same
+     * receipt on the same payment is refused ("Duplicate receipt found for this refund
+     * request"), so a retried auto-refund can never pay twice.
+     * Docs: https://razorpay.com/docs/api/refunds/create-normal/
+     *
+     * @return the refund entity as a map ({@code id}, {@code amount}, {@code status}, ...)
+     */
+    public Map<String, Object> refundPayment(String razorpayPaymentId, Long amountMinor, String receipt,
+            Map<String, String> notes, Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId)) {
+            throw new VacademyException("Cannot refund Razorpay payment: missing payment id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            com.razorpay.Refund refund = razorpayClient.payments.refund(razorpayPaymentId,
+                    buildRefundRequest(amountMinor, receipt, notes));
+            return jsonToMap(refund.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error refunding Razorpay payment " + razorpayPaymentId
+                    + ": " + e.getMessage());
+        }
+    }
+
+    /** The refund request body; package-private for tests. */
+    static JSONObject buildRefundRequest(Long amountMinor, String receipt, Map<String, String> notes) {
+        JSONObject refundRequest = new JSONObject();
+        refundRequest.put("speed", "normal");
+        if (amountMinor != null) {
+            if (amountMinor <= 0) {
+                throw new VacademyException("Refund amount must be positive");
+            }
+            refundRequest.put("amount", amountMinor);
+        }
+        if (StringUtils.hasText(receipt)) {
+            refundRequest.put("receipt", receipt.length() > 40 ? receipt.substring(0, 40) : receipt);
+        }
+        if (notes != null && !notes.isEmpty()) {
+            refundRequest.put("notes", limitedNotes(notes, 15));
+        }
+        return refundRequest;
+    }
+
+    /**
+     * {@code GET /v1/payments/:id}: status, amount, amount_refunded, order_id, invoice_id,
+     * token_id, customer_id, notes. Used to verify a payment before a manual fulfilment and to
+     * check {@code amount_refunded} before an automatic refund.
+     */
+    public Map<String, Object> fetchPayment(String razorpayPaymentId, Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId)) {
+            throw new VacademyException("Cannot fetch Razorpay payment: missing payment id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            Payment payment = razorpayClient.payments.fetch(razorpayPaymentId);
+            return jsonToMap(payment.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching Razorpay payment " + razorpayPaymentId
                     + ": " + e.getMessage());
         }
     }
@@ -463,70 +545,260 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
      */
     public Map<String, Object> createPaymentLink(UserDTO user, PaymentInitiationRequestDTO request,
             Map<String, Object> paymentGatewaySpecificData, String callbackUrl) {
+        return createPaymentLink(user, request, paymentGatewaySpecificData, callbackUrl, null);
+    }
+
+    /**
+     * Per-link options for {@link #createPaymentLink(UserDTO, PaymentInitiationRequestDTO, Map, String,
+     * PaymentLinkOptions)}. Every field is optional; null means "as before" (no expiry, no
+     * reminders, no Razorpay SMS/email, account business name, no extra notes).
+     *
+     * @param expireBy       link {@code expire_by}. Razorpay: Unix seconds, at least 15 minutes in
+     *                       the future, at most six months after creation (default validity is six
+     *                       months). https://razorpay.com/docs/api/payments/payment-links/create-standard/
+     * @param reminderEnable Razorpay's own reminders ({@code reminder_enable}); we keep them off
+     *                       and send our own brand-correct emails
+     * @param checkoutName   {@code options.checkout.name}: the business name shown in the checkout
+     *                       section of the hosted page (no per-link logo field is documented).
+     *                       https://razorpay.com/docs/api/payments/payment-links/change-business-name/
+     * @param extraNotes     added to {@code notes} (Razorpay allows 15 keys, 256 chars each); the
+     *                       routing keys orderId / instituteId / payment_type always win
+     */
+    public record PaymentLinkOptions(
+            java.time.Instant expireBy,
+            Boolean reminderEnable,
+            String checkoutName,
+            Map<String, String> extraNotes) {
+
+        public static PaymentLinkOptions expiringAt(java.time.Instant expireBy) {
+            return new PaymentLinkOptions(expireBy, null, null, null);
+        }
+    }
+
+    /** Razorpay refuses an {@code expire_by} closer than 15 minutes; keep a margin for clock skew. */
+    static final java.time.Duration MIN_LINK_LIFETIME = java.time.Duration.ofMinutes(16);
+    /** Razorpay refuses an {@code expire_by} more than six months after creation. */
+    static final java.time.Duration MAX_LINK_LIFETIME = java.time.Duration.ofDays(180);
+
+    /**
+     * {@link #createPaymentLink(UserDTO, PaymentInitiationRequestDTO, Map, String)} with per-link
+     * options (F7). The response map also carries {@code expireBy} (epoch seconds) when set.
+     */
+    public Map<String, Object> createPaymentLink(UserDTO user, PaymentInitiationRequestDTO request,
+            Map<String, Object> paymentGatewaySpecificData, String callbackUrl, PaymentLinkOptions options) {
         try {
             validateRequest(request);
+            JSONObject plReq = buildPaymentLinkRequest(user, request, callbackUrl, options, java.time.Instant.now());
             RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
-            long amountInPaise = CurrencyRegistry.toMinorUnits(request.getAmount(), request.getCurrency());
-
-            JSONObject plReq = new JSONObject();
-            plReq.put("amount", amountInPaise);
-            plReq.put("currency", request.getCurrency().toUpperCase());
-            plReq.put("accept_partial", false);
-            // reference_id must be unique per link — our platform_payment_id is.
-            plReq.put("reference_id", request.getOrderId());
-            if (StringUtils.hasText(request.getDescription())) {
-                plReq.put("description", request.getDescription());
-            }
-
-            // Prefill the payer (best-effort — Razorpay still collects on its page).
-            JSONObject customer = new JSONObject();
-            if (user != null) {
-                if (StringUtils.hasText(user.getFullName())) customer.put("name", user.getFullName());
-                if (StringUtils.hasText(user.getEmail())) customer.put("email", user.getEmail());
-                if (StringUtils.hasText(user.getMobileNumber())) customer.put("contact", user.getMobileNumber());
-            } else if (StringUtils.hasText(request.getEmail())) {
-                customer.put("email", request.getEmail());
-            }
-            if (customer.length() > 0) {
-                plReq.put("customer", customer);
-            }
-
-            // We drive the return + balance refresh ourselves; suppress Razorpay's
-            // own SMS/email so the user isn't double-notified.
-            JSONObject notify = new JSONObject();
-            notify.put("sms", false);
-            notify.put("email", false);
-            plReq.put("notify", notify);
-            plReq.put("reminder_enable", false);
-
-            // notes MUST mirror createRazorpayOrder so PlatformRazorpayWebHookService
-            // (keyed on notes.orderId + notes.payment_type) grants exactly as today.
-            JSONObject notes = new JSONObject();
-            notes.put("orderId", request.getOrderId());
-            notes.put("instituteId", request.getInstituteId());
-            notes.put("payment_type", request.getPaymentType() != null
-                    ? request.getPaymentType().name() : PaymentType.INITIAL.name());
-            if (StringUtils.hasText(request.getDescription())) {
-                notes.put("description", request.getDescription());
-            }
-            plReq.put("notes", notes);
-
-            if (StringUtils.hasText(callbackUrl)) {
-                plReq.put("callback_url", callbackUrl);
-                plReq.put("callback_method", "get");
-            }
-
             PaymentLink paymentLink = razorpayClient.paymentLink.create(plReq);
 
             Map<String, Object> out = new HashMap<>();
             out.put("paymentLinkId", paymentLink.has("id") ? paymentLink.get("id") : null);
             out.put("paymentLinkUrl", paymentLink.has("short_url") ? paymentLink.get("short_url") : null);
             out.put("razorpayKeyId", extractApiKey(paymentGatewaySpecificData));
+            if (plReq.has("expire_by")) {
+                out.put("expireBy", plReq.getLong("expire_by"));
+            }
             return out;
 
         } catch (RazorpayException e) {
             throw new VacademyException("Error creating Razorpay payment link: " + e.getMessage());
         }
+    }
+
+    /**
+     * The Payment Link request body. With {@code options == null} it is exactly the body this
+     * class sent before F7 (packs relied on it). Package-private for tests.
+     */
+    static JSONObject buildPaymentLinkRequest(UserDTO user, PaymentInitiationRequestDTO request,
+            String callbackUrl, PaymentLinkOptions options, java.time.Instant now) {
+        long amountInPaise = CurrencyRegistry.toMinorUnits(request.getAmount(), request.getCurrency());
+
+        JSONObject plReq = new JSONObject();
+        plReq.put("amount", amountInPaise);
+        plReq.put("currency", request.getCurrency().toUpperCase());
+        plReq.put("accept_partial", false);
+        // reference_id must be unique per link — our platform_payment_id is.
+        plReq.put("reference_id", request.getOrderId());
+        if (StringUtils.hasText(request.getDescription())) {
+            plReq.put("description", request.getDescription());
+        }
+
+        // Prefill the payer (best-effort — Razorpay still collects on its page).
+        JSONObject customer = new JSONObject();
+        if (user != null) {
+            if (StringUtils.hasText(user.getFullName())) customer.put("name", user.getFullName());
+            if (StringUtils.hasText(user.getEmail())) customer.put("email", user.getEmail());
+            if (StringUtils.hasText(user.getMobileNumber())) customer.put("contact", user.getMobileNumber());
+        } else if (StringUtils.hasText(request.getEmail())) {
+            customer.put("email", request.getEmail());
+        }
+        if (customer.length() > 0) {
+            plReq.put("customer", customer);
+        }
+
+        // We drive the return + balance refresh ourselves; suppress Razorpay's
+        // own SMS/email so the user isn't double-notified.
+        JSONObject notify = new JSONObject();
+        notify.put("sms", false);
+        notify.put("email", false);
+        plReq.put("notify", notify);
+        plReq.put("reminder_enable", options != null && Boolean.TRUE.equals(options.reminderEnable()));
+
+        // notes MUST mirror createRazorpayOrder so PlatformRazorpayWebHookService
+        // (keyed on notes.orderId + notes.payment_type) grants exactly as today.
+        JSONObject notes = new JSONObject();
+        if (options != null && options.extraNotes() != null) {
+            // 4 keys below are always added; Razorpay allows 15 in all.
+            JSONObject extra = limitedNotes(options.extraNotes(), 11);
+            for (java.util.Iterator<String> it = extra.keys(); it.hasNext(); ) {
+                String k = it.next();
+                notes.put(k, extra.get(k));
+            }
+        }
+        notes.put("orderId", request.getOrderId());
+        notes.put("instituteId", request.getInstituteId());
+        notes.put("payment_type", request.getPaymentType() != null
+                ? request.getPaymentType().name() : PaymentType.INITIAL.name());
+        if (StringUtils.hasText(request.getDescription())) {
+            notes.put("description", request.getDescription());
+        }
+        plReq.put("notes", notes);
+
+        if (StringUtils.hasText(callbackUrl)) {
+            plReq.put("callback_url", callbackUrl);
+            plReq.put("callback_method", "get");
+        }
+
+        if (options != null && options.expireBy() != null) {
+            java.time.Instant expireBy = options.expireBy();
+            if (expireBy.isBefore(now.plus(MIN_LINK_LIFETIME))) {
+                throw new VacademyException("Payment link expiry must be at least "
+                        + MIN_LINK_LIFETIME.toMinutes() + " minutes away");
+            }
+            if (expireBy.isAfter(now.plus(MAX_LINK_LIFETIME))) {
+                expireBy = now.plus(MAX_LINK_LIFETIME);
+            }
+            plReq.put("expire_by", expireBy.getEpochSecond());
+        }
+        if (options != null && StringUtils.hasText(options.checkoutName())) {
+            JSONObject checkout = new JSONObject();
+            checkout.put("name", options.checkoutName().trim());
+            JSONObject opts = new JSONObject();
+            opts.put("checkout", checkout);
+            plReq.put("options", opts);
+        }
+        return plReq;
+    }
+
+    /**
+     * {@code POST /v1/payment_links/:id/cancel}. Razorpay refuses to cancel a paid or partially
+     * paid link ("cannot cancel or expire an already paid/partially paid link"): the caller must
+     * then {@link #fetchPaymentLink fetch} it and fulfil instead.
+     * Docs: https://razorpay.com/docs/api/payments/payment-links/cancel-standard/
+     *
+     * @return the link as {@link #fetchPaymentLink} returns it
+     */
+    public Map<String, Object> cancelPaymentLink(String paymentLinkId, Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(paymentLinkId)) {
+            throw new VacademyException("Cannot cancel Razorpay payment link: missing id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            PaymentLink link = razorpayClient.paymentLink.cancel(paymentLinkId);
+            return summarizePaymentLink(link.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error cancelling Razorpay payment link " + paymentLinkId
+                    + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * {@code GET /v1/payment_links/:id}: {@code status} (created | partially_paid | paid |
+     * expired | cancelled), {@code amount}, {@code amountPaid}, {@code expireBy} and the
+     * {@code payments} made on it (each {@code paymentId}, {@code status}, {@code amount}).
+     * Used by the reconcile pass to recover a lost webhook.
+     */
+    public Map<String, Object> fetchPaymentLink(String paymentLinkId, Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(paymentLinkId)) {
+            throw new VacademyException("Cannot fetch Razorpay payment link: missing id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            PaymentLink link = razorpayClient.paymentLink.fetch(paymentLinkId);
+            return summarizePaymentLink(link.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching Razorpay payment link " + paymentLinkId
+                    + ": " + e.getMessage());
+        }
+    }
+
+    /** Flattens a payment-link entity to the fields callers use; package-private for tests. */
+    static Map<String, Object> summarizePaymentLink(JSONObject link) {
+        Map<String, Object> out = new HashMap<>();
+        out.put("id", link.optString("id", null));
+        out.put("status", link.optString("status", null));
+        out.put("referenceId", link.optString("reference_id", null));
+        out.put("amount", link.has("amount") && !link.isNull("amount") ? link.getLong("amount") : null);
+        out.put("amountPaid", link.has("amount_paid") && !link.isNull("amount_paid") ? link.getLong("amount_paid") : 0L);
+        out.put("expireBy", link.has("expire_by") && !link.isNull("expire_by") ? link.getLong("expire_by") : null);
+        java.util.List<Map<String, Object>> payments = new java.util.ArrayList<>();
+        Object raw = link.opt("payments");
+        if (raw instanceof org.json.JSONArray arr) {
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject p = arr.optJSONObject(i);
+                if (p == null) continue;
+                Map<String, Object> m = new HashMap<>();
+                m.put("paymentId", p.optString("payment_id", null));
+                m.put("status", p.optString("status", null));
+                m.put("amount", p.has("amount") && !p.isNull("amount") ? p.getLong("amount") : null);
+                payments.add(m);
+            }
+        }
+        out.put("payments", payments);
+        return out;
+    }
+
+    /** At most {@code max} notes (Razorpay allows 15), values cut to 255 characters. */
+    static JSONObject limitedNotes(Map<String, String> notes, int max) {
+        java.util.TreeMap<String, String> sorted = new java.util.TreeMap<>();
+        for (Map.Entry<String, String> e : notes.entrySet()) {
+            if (e.getKey() != null && e.getValue() != null) {
+                sorted.put(e.getKey(), e.getValue());
+            }
+        }
+        JSONObject out = new JSONObject();
+        for (Map.Entry<String, String> e : sorted.entrySet()) {
+            if (out.length() >= max) break;
+            String v = e.getValue();
+            out.put(e.getKey(), v.length() > 255 ? v.substring(0, 255) : v);
+        }
+        return out;
+    }
+
+    /**
+     * A Razorpay entity as plain maps / lists. Walks {@code keys()} rather than calling
+     * {@code toMap()}, which the android-json copy of org.json on the test classpath lacks.
+     */
+    static Map<String, Object> jsonToMap(JSONObject json) {
+        Map<String, Object> out = new HashMap<>();
+        if (json == null) return out;
+        for (java.util.Iterator<String> it = json.keys(); it.hasNext(); ) {
+            String k = it.next();
+            out.put(k, jsonValue(json.opt(k)));
+        }
+        return out;
+    }
+
+    private static Object jsonValue(Object v) {
+        if (v == null || v == JSONObject.NULL) return null;
+        if (v instanceof JSONObject o) return jsonToMap(o);
+        if (v instanceof org.json.JSONArray a) {
+            java.util.List<Object> list = new java.util.ArrayList<>(a.length());
+            for (int i = 0; i < a.length(); i++) list.add(jsonValue(a.opt(i)));
+            return list;
+        }
+        return v;
     }
 
     private JSONObject buildRazorpayCustomerParams(UserDTO user, PaymentInitiationRequestDTO request) {

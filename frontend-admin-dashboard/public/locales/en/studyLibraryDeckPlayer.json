@@ -1,0 +1,13 @@
+{
+    "error": {
+        "noSlides": "This presentation has no slides.",
+        "loadFailed": "Couldn't load the presentation."
+    },
+    "slideAlt": "Slide {{number}}",
+    "aria": {
+        "previous": "Previous",
+        "next": "Next",
+        "exitFullScreen": "Exit full screen",
+        "playFullScreen": "Play full screen"
+    }
+}

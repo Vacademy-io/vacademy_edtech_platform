@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -30,7 +32,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { BookOpen, Plus, Pencil, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    BookOpen,
+    Plus,
+    PencilSimple,
+    Trash,
+    MagnifyingGlass,
+    CaretDown,
+    CaretUp,
+} from '@phosphor-icons/react';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 import { getInstituteId } from '@/constants/helper';
@@ -49,14 +59,14 @@ interface KnowledgeItem {
     updated_at: string;
 }
 
-const CATEGORIES = [
-    { value: 'event', label: 'Event' },
-    { value: 'policy', label: 'Policy' },
-    { value: 'process', label: 'Process' },
-    { value: 'faq', label: 'FAQ' },
-    { value: 'announcement', label: 'Announcement' },
-    { value: 'result', label: 'Result' },
-    { value: 'general', label: 'General' },
+const buildCategories = (t: TFunction) => [
+    { value: 'event', label: t('categories.event') },
+    { value: 'policy', label: t('categories.policy') },
+    { value: 'process', label: t('categories.process') },
+    { value: 'faq', label: t('categories.faq') },
+    { value: 'announcement', label: t('categories.announcement') },
+    { value: 'result', label: t('categories.result') },
+    { value: 'general', label: t('categories.general') },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -72,6 +82,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const KnowledgeBase: React.FC = () => {
+    const { t } = useTranslation('settingsKnowledgeBase');
+    const CATEGORIES = buildCategories(t);
     const [items, setItems] = useState<KnowledgeItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -108,7 +120,7 @@ const KnowledgeBase: React.FC = () => {
         } catch (error: any) {
             if (error.response?.status !== 404) {
                 console.error('Error fetching knowledge base items:', error);
-                toast.error('Failed to load knowledge base items');
+                toast.error(t('toasts.loadFailed'));
             }
         } finally {
             setIsLoading(false);
@@ -142,18 +154,18 @@ const KnowledgeBase: React.FC = () => {
     const handleSave = async () => {
         if (!instituteId) return;
         if (!formTitle.trim()) {
-            toast.error('Title is required');
+            toast.error(t('toasts.titleRequired'));
             return;
         }
         if (!formContent.trim()) {
-            toast.error('Content is required');
+            toast.error(t('toasts.contentRequired'));
             return;
         }
 
         setIsSaving(true);
         const tags = formTags
             .split(',')
-            .map((t) => t.trim())
+            .map((tag) => tag.trim())
             .filter(Boolean);
 
         const payload = {
@@ -169,19 +181,19 @@ const KnowledgeBase: React.FC = () => {
                     `${AI_SERVICE_BASE_URL}/knowledge-base/v1/institute/${instituteId}/items/${editingItem.id}`,
                     payload
                 );
-                toast.success('Knowledge item updated');
+                toast.success(t('toasts.itemUpdated'));
             } else {
                 await authenticatedAxiosInstance.post(
                     `${AI_SERVICE_BASE_URL}/knowledge-base/v1/institute/${instituteId}/items`,
                     payload
                 );
-                toast.success('Knowledge item created');
+                toast.success(t('toasts.itemCreated'));
             }
             setIsFormOpen(false);
             await fetchItems();
         } catch (error) {
             console.error('Error saving knowledge item:', error);
-            toast.error('Failed to save knowledge item');
+            toast.error(t('toasts.saveFailed'));
         } finally {
             setIsSaving(false);
         }
@@ -205,10 +217,10 @@ const KnowledgeBase: React.FC = () => {
             setItems((prev) =>
                 prev.map((i) => (i.id === item.id ? { ...i, is_active: !i.is_active } : i))
             );
-            toast.success(`Item ${!item.is_active ? 'activated' : 'deactivated'}`);
+            toast.success(!item.is_active ? t('toasts.itemActivated') : t('toasts.itemDeactivated'));
         } catch (error) {
             console.error('Error toggling item:', error);
-            toast.error('Failed to update item status');
+            toast.error(t('toasts.toggleFailed'));
         }
     };
 
@@ -222,10 +234,10 @@ const KnowledgeBase: React.FC = () => {
                 `${AI_SERVICE_BASE_URL}/knowledge-base/v1/institute/${instituteId}/items/${deleteItemId}`
             );
             setItems((prev) => prev.filter((i) => i.id !== deleteItemId));
-            toast.success('Knowledge item deleted');
+            toast.success(t('toasts.itemDeleted'));
         } catch (error) {
             console.error('Error deleting knowledge item:', error);
-            toast.error('Failed to delete knowledge item');
+            toast.error(t('toasts.deleteFailed'));
         } finally {
             setIsDeleting(false);
             setDeleteItemId(null);
@@ -239,7 +251,7 @@ const KnowledgeBase: React.FC = () => {
             !searchQuery ||
             item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+            item.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
         return matchesSearch && matchesCategory;
     });
@@ -259,20 +271,18 @@ const KnowledgeBase: React.FC = () => {
                                 <BookOpen className="size-5" />
                             </div>
                             <div>
-                                <CardTitle className="text-xl">Knowledge Base</CardTitle>
-                                <CardDescription>
-                                    Add institute-specific knowledge for the AI chatbot (events, policies, FAQs, etc.)
-                                </CardDescription>
+                                <CardTitle className="text-xl">{t('header.title')}</CardTitle>
+                                <CardDescription>{t('header.description')}</CardDescription>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                                {items.length} item{items.length !== 1 ? 's' : ''}
+                                {t('header.itemCount', { count: items.length })}
                             </span>
                             {isCollapsed ? (
-                                <ChevronDown className="size-5 text-gray-400" />
+                                <CaretDown className="size-5 text-gray-400" />
                             ) : (
-                                <ChevronUp className="size-5 text-gray-400" />
+                                <CaretUp className="size-5 text-gray-400" />
                             )}
                         </div>
                     </div>
@@ -284,20 +294,20 @@ const KnowledgeBase: React.FC = () => {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex flex-1 gap-2">
                                 <div className="relative flex-1 max-w-sm">
-                                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                                    <MagnifyingGlass className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
                                     <Input
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search knowledge items..."
+                                        placeholder={t('toolbar.searchPlaceholder')}
                                         className="border-indigo-100 pl-9 focus:border-indigo-300"
                                     />
                                 </div>
                                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                    <SelectTrigger className="w-[150px] border-indigo-100">
-                                        <SelectValue placeholder="All Categories" />
+                                    <SelectTrigger className="w-36 border-indigo-100">
+                                        <SelectValue placeholder={t('toolbar.allCategories')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Categories</SelectItem>
+                                        <SelectItem value="all">{t('toolbar.allCategories')}</SelectItem>
                                         {CATEGORIES.map((cat) => (
                                             <SelectItem key={cat.value} value={cat.value}>
                                                 {cat.label}
@@ -311,7 +321,7 @@ const KnowledgeBase: React.FC = () => {
                                 className="bg-indigo-600 text-white hover:bg-indigo-700"
                             >
                                 <Plus className="mr-1 size-4" />
-                                Add Knowledge
+                                {t('toolbar.addButton')}
                             </Button>
                         </div>
 
@@ -325,8 +335,8 @@ const KnowledgeBase: React.FC = () => {
                                 <BookOpen className="mx-auto mb-3 size-10 text-gray-300" />
                                 <p className="text-sm text-gray-500">
                                     {items.length === 0
-                                        ? 'No knowledge items yet. Add your first item to make the chatbot smarter.'
-                                        : 'No items match your search.'}
+                                        ? t('list.emptyNoItems')
+                                        : t('list.emptyNoMatch')}
                                 </p>
                             </div>
                         ) : (
@@ -342,13 +352,13 @@ const KnowledgeBase: React.FC = () => {
                                                     {item.title}
                                                 </h4>
                                                 <Badge
-                                                    className={`shrink-0 border-0 text-[10px] ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS.general}`}
+                                                    className={`shrink-0 border-0 text-2xs ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS.general}`}
                                                 >
                                                     {item.category}
                                                 </Badge>
                                                 {!item.is_active && (
-                                                    <Badge variant="outline" className="shrink-0 text-[10px] text-gray-400">
-                                                        Inactive
+                                                    <Badge variant="outline" className="shrink-0 text-2xs text-gray-400">
+                                                        {t('list.inactiveBadge')}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -360,7 +370,7 @@ const KnowledgeBase: React.FC = () => {
                                                     {item.tags.map((tag, idx) => (
                                                         <span
                                                             key={idx}
-                                                            className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600"
+                                                            className="rounded bg-gray-100 px-1.5 py-0.5 text-2xs text-gray-600"
                                                         >
                                                             {tag}
                                                         </span>
@@ -379,7 +389,7 @@ const KnowledgeBase: React.FC = () => {
                                                 className="size-8 border-indigo-100 text-indigo-600 hover:bg-indigo-50"
                                                 onClick={() => openEditForm(item)}
                                             >
-                                                <Pencil className="size-3.5" />
+                                                <PencilSimple className="size-3.5" />
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -387,7 +397,7 @@ const KnowledgeBase: React.FC = () => {
                                                 className="size-8 border-red-200 text-red-600 hover:bg-red-50"
                                                 onClick={() => setDeleteItemId(item.id)}
                                             >
-                                                <Trash2 className="size-3.5" />
+                                                <Trash className="size-3.5" />
                                             </Button>
                                         </div>
                                     </div>
@@ -403,32 +413,32 @@ const KnowledgeBase: React.FC = () => {
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
-                            {editingItem ? 'Edit Knowledge Item' : 'Add Knowledge Item'}
+                            {editingItem ? t('form.editTitle') : t('form.addTitle')}
                         </DialogTitle>
                         <DialogDescription>
                             {editingItem
-                                ? 'Update this knowledge item. Changes will be reflected in chatbot responses.'
-                                : 'Add a new knowledge item that the AI chatbot can reference during conversations.'}
+                                ? t('form.editDescription')
+                                : t('form.addDescription')}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-2">
                         <div className="space-y-2">
                             <Label htmlFor="kb-title" className="text-sm font-medium">
-                                Title <span className="text-red-500">*</span>
+                                {t('form.titleLabel')} <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="kb-title"
                                 value={formTitle}
                                 onChange={(e) => setFormTitle(e.target.value)}
-                                placeholder="e.g., Annual Sports Day 2026"
+                                placeholder={t('form.titlePlaceholder')}
                                 className="border-indigo-100 focus:border-indigo-300"
                             />
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="kb-category" className="text-sm font-medium">
-                                Category
+                                {t('form.categoryLabel')}
                             </Label>
                             <Select value={formCategory} onValueChange={setFormCategory}>
                                 <SelectTrigger
@@ -449,34 +459,34 @@ const KnowledgeBase: React.FC = () => {
 
                         <div className="space-y-2">
                             <Label htmlFor="kb-content" className="text-sm font-medium">
-                                Content <span className="text-red-500">*</span>
+                                {t('form.contentLabel')} <span className="text-red-500">*</span>
                             </Label>
                             <textarea
                                 id="kb-content"
                                 value={formContent}
                                 onChange={(e) => setFormContent(e.target.value)}
-                                placeholder="Enter the knowledge content that the AI chatbot should know about..."
+                                placeholder={t('form.contentPlaceholder')}
                                 rows={6}
                                 className="w-full rounded-md border border-indigo-100 px-3 py-2 text-sm focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-100"
                             />
-                            <p className="text-[10px] text-gray-500">
-                                This text will be embedded and searched by the AI chatbot during conversations.
+                            <p className="text-2xs text-gray-500">
+                                {t('form.contentHint')}
                             </p>
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="kb-tags" className="text-sm font-medium">
-                                Tags
+                                {t('form.tagsLabel')}
                             </Label>
                             <Input
                                 id="kb-tags"
                                 value={formTags}
                                 onChange={(e) => setFormTags(e.target.value)}
-                                placeholder="e.g., sports, annual, 2026 (comma-separated)"
+                                placeholder={t('form.tagsPlaceholder')}
                                 className="border-indigo-100 focus:border-indigo-300"
                             />
-                            <p className="text-[10px] text-gray-500">
-                                Comma-separated tags to help categorize and find this item.
+                            <p className="text-2xs text-gray-500">
+                                {t('form.tagsHint')}
                             </p>
                         </div>
                     </div>
@@ -487,7 +497,7 @@ const KnowledgeBase: React.FC = () => {
                             onClick={() => setIsFormOpen(false)}
                             disabled={isSaving}
                         >
-                            Cancel
+                            {t('form.cancel')}
                         </Button>
                         <Button
                             onClick={handleSave}
@@ -497,12 +507,12 @@ const KnowledgeBase: React.FC = () => {
                             {isSaving ? (
                                 <>
                                     <span className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    Saving...
+                                    {t('form.saving')}
                                 </>
                             ) : editingItem ? (
-                                'Update Item'
+                                t('form.updateItem')
                             ) : (
-                                'Add Item'
+                                t('form.addItem')
                             )}
                         </Button>
                     </DialogFooter>
@@ -513,14 +523,13 @@ const KnowledgeBase: React.FC = () => {
             <AlertDialog open={!!deleteItemId} onOpenChange={(open) => !open && setDeleteItemId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Knowledge Item</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this knowledge item? This action cannot be undone
-                            and the chatbot will no longer have access to this information.
+                            {t('deleteDialog.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isDeleting}>{t('deleteDialog.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             disabled={isDeleting}
@@ -529,10 +538,10 @@ const KnowledgeBase: React.FC = () => {
                             {isDeleting ? (
                                 <>
                                     <span className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    Deleting...
+                                    {t('deleteDialog.deleting')}
                                 </>
                             ) : (
-                                'Delete'
+                                t('deleteDialog.confirm')
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

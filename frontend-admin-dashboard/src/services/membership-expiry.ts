@@ -39,6 +39,29 @@ export const fetchMembershipExpiry = async (
 };
 
 /**
+ * Fetch every membership row matching the filters (used by CSV export).
+ * Walks the paginated endpoint so the export isn't limited to the visible page.
+ */
+export const fetchAllMembershipExpiry = async (
+    requestBody: Omit<MembershipFilterDTO, 'institute_id'>,
+    pageSize: number = 200
+): Promise<MembershipDetailsResponse['content']> => {
+    const rows: MembershipDetailsResponse['content'] = [];
+    let pageNo = 0;
+    let totalPages = 1;
+
+    while (pageNo < totalPages) {
+        const page = await fetchMembershipExpiry(pageNo, pageSize, requestBody);
+        rows.push(...page.content);
+        totalPages = page.totalPages;
+        if (page.last || page.content.length === 0) break;
+        pageNo += 1;
+    }
+
+    return rows;
+};
+
+/**
  * Query Key for React Query
  */
 export const getMembershipExpiryQueryKey = (

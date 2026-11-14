@@ -2,20 +2,25 @@ package vacademy.io.assessment_service.features.assessment.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.assessment_service.features.assessment.dto.LeaderBoardDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.AssessmentOverviewDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.MarksRankDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.ParticipantsQuestionOverallDetailDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentAttemptHistoryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportDto;
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.CohortAssessmentAttemptProjection;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.UserAssessmentHistorySummaryProjection;
 import vacademy.io.assessment_service.features.assessment.dto.manual_evaluation.ManualAttemptResponseDto;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
 
@@ -289,7 +294,18 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                 COALESCE(sa.status, 'PENDING') AS attemptStatus,
                 sa.created_at AS attemptDate,
                 sa.total_time_in_seconds AS durationInSeconds,
-                sa.total_marks AS totalMarks,
+                -- Learner list (hideHeldManualMarks = true) -- a manual-result attempt, or any
+                -- attempt held PENDING for a teacher, shows no score until released. Admin views pass false.
+                -- NB no apostrophes or colons in these comments -- Spring Data parses the
+                -- whole string for quotes and parameters and cannot see SQL comments.
+                CASE
+                    WHEN :hideHeldManualMarks = TRUE
+                     AND ((a.result_type = 'MANUAL'
+                           AND (sa.report_release_status IS NULL OR sa.report_release_status <> 'RELEASED'))
+                          OR sa.report_release_status = 'PENDING')
+                    THEN NULL
+                    ELSE sa.total_marks
+                END AS totalMarks,
                 aim.subject_id as subjectId,
                 CASE
                     WHEN a.bound_end_time < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN 'ENDED'
@@ -316,6 +332,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -338,13 +369,84 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, nativeQuery = true)
-    Page<StudentReportDto> findAssessmentForUserWithFilter(@Param("userId") String userId,
+    Page<StudentReportDto> findAssessmentForUserWithFilter(@Param("hideHeldManualMarks") boolean hideHeldManualMarks,
+                                                           @Param("userId") String userId,
                                                            @Param("instituteId") String instituteId,
                                                            @Param("statusList") List<String> statusList,
                                                            @Param("releaseResultStatus") List<String> releaseStatus,
                                                            @Param("assessmentType") List<String> assessmentTypes,
+                                                           @Param("scopeToBatches") boolean scopeToBatches,
+                                                           @Param("batchIds") List<String> batchIds,
                                                            Pageable pageable);
+
+    /**
+     * Learner chatbot: the learner's latest ENDED attempt per published test in an institute,
+     * newest first, with NO release filter so the caller can split released results from ones
+     * awaiting release (a held MANUAL attempt has a NULL release status, which an IN-list filter
+     * cannot express). Same columns as findAssessmentForUserWithFilter; marks of any attempt that
+     * is not RELEASED on a MANUAL or NO_AUTO_RELEASE test, or that is held PENDING, are NULL here
+     * as well, so a held score never leaves this query.
+     */
+    @Query(value = """
+            SELECT
+                a.id AS assessmentId,
+                a.name AS assessmentName,
+                sa.id AS attemptId,
+                a.play_mode AS playMode,
+                a.evaluation_type AS evaluationType,
+                a.bound_start_time AS startTime,
+                a.bound_end_time AS endTime,
+                sa.status AS attemptStatus,
+                sa.created_at AS attemptDate,
+                sa.total_time_in_seconds AS durationInSeconds,
+                CASE
+                    WHEN sa.report_release_status = 'PENDING'
+                      OR (a.result_type IN ('MANUAL', 'NO_AUTO_RELEASE')
+                          AND (sa.report_release_status IS NULL OR sa.report_release_status <> 'RELEASED'))
+                    THEN NULL
+                    ELSE sa.total_marks
+                END AS totalMarks,
+                aim.subject_id AS subjectId,
+                'ENDED' AS assessmentStatus,
+                sa.report_release_status AS reportReleaseStatus
+            FROM public.assessment a
+            JOIN public.assessment_institute_mapping aim
+                ON a.id = aim.assessment_id AND aim.institute_id = :instituteId
+            JOIN public.assessment_user_registration aur
+                ON a.id = aur.assessment_id AND aur.user_id = :userId
+            JOIN public.student_attempt sa
+                ON aur.id = sa.registration_id
+                AND sa.id = (
+                    SELECT sa_inner.id
+                    FROM public.student_attempt sa_inner
+                    WHERE sa_inner.registration_id = aur.id
+                    ORDER BY sa_inner.created_at DESC
+                    LIMIT 1
+                )
+            WHERE sa.status = 'ENDED'
+              AND a.status = 'PUBLISHED'
+            ORDER BY sa.created_at DESC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<StudentReportDto> findLatestEndedAttemptsForLearnerChat(@Param("userId") String userId,
+                                                                 @Param("instituteId") String instituteId,
+                                                                 @Param("maxRows") int maxRows);
 
 
     @Query(value = """
@@ -359,7 +461,18 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                 COALESCE(sa.status, 'PENDING') AS attemptStatus,
                 sa.created_at AS attemptDate,
                 sa.total_time_in_seconds AS durationInSeconds,
-                sa.total_marks AS totalMarks,
+                -- Learner list (hideHeldManualMarks = true) -- a manual-result attempt, or any
+                -- attempt held PENDING for a teacher, shows no score until released. Admin views pass false.
+                -- NB no apostrophes or colons in these comments -- Spring Data parses the
+                -- whole string for quotes and parameters and cannot see SQL comments.
+                CASE
+                    WHEN :hideHeldManualMarks = TRUE
+                     AND ((a.result_type = 'MANUAL'
+                           AND (sa.report_release_status IS NULL OR sa.report_release_status <> 'RELEASED'))
+                          OR sa.report_release_status = 'PENDING')
+                    THEN NULL
+                    ELSE sa.total_marks
+                END AS totalMarks,
                 aim.subject_id as subjectId,
                 CASE
                     WHEN a.bound_end_time < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN 'ENDED'
@@ -392,6 +505,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -420,13 +548,31 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, nativeQuery = true)
-    Page<StudentReportDto> findAssessmentForUserWithFilterAndSearch(@Param("name") String name,
+    Page<StudentReportDto> findAssessmentForUserWithFilterAndSearch(@Param("hideHeldManualMarks") boolean hideHeldManualMarks,
+                                                                    @Param("name") String name,
                                                                     @Param("userId") String userId,
                                                                     @Param("instituteId") String instituteId,
                                                                     @Param("statusList") List<String> statusList,
                                                                     @Param("releaseResultStatus") List<String> releaseStatus,
                                                                     @Param("assessmentType") List<String> assessmentTypes,
+                                                                    @Param("scopeToBatches") boolean scopeToBatches,
+                                                                    @Param("batchIds") List<String> batchIds,
                                                                     Pageable pageable);
 
     @Query(value = """
@@ -517,6 +663,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             join assessment a on a.id = aur.assessment_id
             where a.id = :assessmentId
             and aur.status not in (:statusList)
+            and aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             """, nativeQuery = true)
     List<StudentAttempt> findAllParticipantsFromAssessmentAndStatusNotIn(@Param("assessmentId") String assessmentId,
                                                                          @Param("statusList") List<String> statusList);
@@ -527,6 +674,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             join assessment a on a.id = aur.assessment_id
             where a.id = :assessmentId
             and aur.status not in (:statusList)
+            and aur.source IS DISTINCT FROM 'COPY_CHECK_ONLY'
             and (sa.report_release_status IS NULL OR sa.report_release_status = 'PENDING')
             """, nativeQuery = true)
     List<StudentAttempt> findAllParticipantsFromAssessmentAndStatusNotInAndReportNotReleased(@Param("assessmentId") String assessmentId,
@@ -585,9 +733,9 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             JOIN assessment_institute_mapping aim ON aim.assessment_id = aur.assessment_id
             WHERE aim.assessment_id = :assessmentId
             AND aim.institute_id = :instituteId
-            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))
+            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))
             AND (:evaluationStatus IS NULL OR sa.result_status IN (:evaluationStatus))
-            AND (:name IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', :name, '%')))
+            AND (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
             AND (sa.status = 'ENDED')
             """, countQuery = """
             SELECT count(*)
@@ -596,9 +744,9 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             JOIN assessment_institute_mapping aim ON aim.assessment_id = aur.assessment_id
             WHERE aim.assessment_id = :assessmentId
             AND aim.institute_id = :instituteId
-            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))
+            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))
             AND (:evaluationStatus IS NULL OR sa.result_status IN (:evaluationStatus))
-            AND (:name IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', :name, '%')))
+            AND (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
             AND (sa.status = 'ENDED')
             """, nativeQuery = true)
     Page<ManualAttemptResponseDto> findAllAssignedAttemptForUserIdWithFilter(@Param("userId") String userId,
@@ -610,21 +758,32 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
 
     List<StudentAttempt> findByStatusNotIn(List<String> name);
 
+    /**
+     * Open attempts on assessments that have no clock (practice, survey). One
+     * query, so the hourly attempt-end sweep does not walk a lazy
+     * registration -> assessment chain per attempt outside a transaction.
+     */
+    @Query("SELECT sa.id FROM StudentAttempt sa WHERE sa.status NOT IN :statuses "
+            + "AND sa.registration.assessment.playMode IN :playModes")
+    List<String> findOpenAttemptIdsByPlayModes(@Param("statuses") List<String> statuses,
+                                               @Param("playModes") List<String> playModes);
+
     Optional<StudentAttempt> findTopByRegistrationOrderByCreatedAtDesc(vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration registration);
 
     /**
      * List the most-recent attempt per assessment for a student within an institute and optional
      * date range, ordered newest first.  Used by the internal student-analysis endpoint.
      *
-     * Dates are inclusive bounds on sa.created_at (attempt creation date).  Pass null to skip
-     * either bound.
+     * Dates are inclusive bounds on the attempt's EXAM date — COALESCE(submit_time, start_time,
+     * created_at). Not created_at alone: bulk-imported offline marks are all created in one
+     * import run, so created_at is the import time, not the exam. Pass null to skip either bound.
      */
     @Query(value = """
             SELECT
                 a.id              AS assessmentId,
                 a.name            AS assessmentName,
                 sa.id             AS attemptId,
-                sa.created_at     AS attemptDate,
+                COALESCE(sa.submit_time, sa.start_time, sa.created_at) AS attemptDate,
                 sa.total_marks    AS totalMarks,
                 sa.total_time_in_seconds AS durationInSeconds,
                 sa.result_status  AS resultStatus
@@ -647,14 +806,16 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     FROM public.student_attempt sa_inner
                     WHERE sa_inner.registration_id = aur.id
                       AND sa_inner.status = 'ENDED'
-                      AND (CAST(:startDate AS timestamp) IS NULL OR sa_inner.created_at >= CAST(:startDate AS timestamp))
-                      AND (CAST(:endDate   AS timestamp) IS NULL OR sa_inner.created_at <= CAST(:endDate AS timestamp))
-                    ORDER BY sa_inner.created_at DESC
+                      AND (CAST(:startDate AS timestamp) IS NULL
+                           OR COALESCE(sa_inner.submit_time, sa_inner.start_time, sa_inner.created_at) >= CAST(:startDate AS timestamp))
+                      AND (CAST(:endDate   AS timestamp) IS NULL
+                           OR COALESCE(sa_inner.submit_time, sa_inner.start_time, sa_inner.created_at) <= CAST(:endDate AS timestamp))
+                    ORDER BY COALESCE(sa_inner.submit_time, sa_inner.start_time, sa_inner.created_at) DESC, sa_inner.id
                     LIMIT 1
                 )
             WHERE a.status = 'PUBLISHED'
               AND sa.status = 'ENDED'
-            ORDER BY sa.created_at DESC
+            ORDER BY COALESCE(sa.submit_time, sa.start_time, sa.created_at) DESC, sa.id
             """, nativeQuery = true)
     List<StudentAttemptHistoryProjection> findAssessmentHistoryForUserInDateRange(
             @Param("userId") String userId,
@@ -729,17 +890,134 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             @Param("userIds") List<String> userIds,
             @Param("since") Date since);
 
+    /**
+     * Cohort attempts for the batch report: one row per learner and assessment, the latest
+     * ENDED attempt created inside the window, on PUBLISHED assessments mapped to the institute.
+     * Percentage uses the same achievable-marks basis as findAssessmentHistorySummaryForUsersSince
+     * and is null when it cannot be computed.
+     */
     @Query(value = """
-            SELECT sa.* FROM student_attempt sa
-            JOIN assessment_user_registration aur ON aur.id = sa.registration_id
-            JOIN assessment a ON a.id = aur.assessment_id
-            WHERE a.result_type = 'AUTO_AFTER_ASSESSMENT_END'
-            AND CURRENT_TIMESTAMP AT TIME ZONE 'UTC' > a.bound_end_time
-            AND sa.status = 'ENDED'
-            AND sa.result_status = 'COMPLETED'
-            AND (sa.report_release_status IS NULL OR sa.report_release_status = 'PENDING')
+            WITH attempts AS (
+                SELECT DISTINCT ON (aur.user_id, a.id)
+                    aur.user_id     AS user_id,
+                    a.id            AS assessment_id,
+                    a.name          AS assessment_name,
+                    sa.created_at   AS attempt_at,
+                    sa.total_marks  AS earned_marks
+                FROM public.student_attempt sa
+                JOIN public.assessment_user_registration aur
+                    ON aur.id = sa.registration_id
+                    AND aur.user_id IN (:userIds)
+                JOIN public.assessment a
+                    ON a.id = aur.assessment_id
+                    AND a.status = 'PUBLISHED'
+                JOIN public.assessment_institute_mapping aim
+                    ON aim.assessment_id = a.id
+                    AND aim.institute_id = :instituteId
+                WHERE sa.status = 'ENDED'
+                  AND sa.created_at >= :startDate
+                  AND sa.created_at < :endDate
+                ORDER BY aur.user_id, a.id, sa.created_at DESC
+            ),
+            achievable AS (
+                SELECT s.assessment_id       AS assessment_id,
+                       SUM(s.total_marks)    AS total_achievable
+                FROM public.section s
+                WHERE s.status <> 'DELETED'
+                  AND s.assessment_id IN (SELECT DISTINCT assessment_id FROM attempts)
+                GROUP BY s.assessment_id
+            )
+            SELECT
+                t.user_id           AS userId,
+                t.assessment_id     AS assessmentId,
+                t.assessment_name   AS assessmentName,
+                t.attempt_at        AS attemptAt,
+                CASE
+                    WHEN t.earned_marks IS NOT NULL AND ach.total_achievable > 0
+                    THEN (t.earned_marks / ach.total_achievable) * 100.0
+                END                 AS percentage
+            FROM attempts t
+            LEFT JOIN achievable ach ON ach.assessment_id = t.assessment_id
             """, nativeQuery = true)
-    List<StudentAttempt> findUnreleasedAttemptsForEndedAutoReleaseAssessments();
+    List<CohortAssessmentAttemptProjection> findCohortAttemptsBetween(
+            @Param("instituteId") String instituteId,
+            @Param("userIds") List<String> userIds,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate);
+
+    /**
+     * Institute-wide sibling of findCohortAttemptsBetween for the all-batches report: the latest
+     * ENDED attempt of every learner on every institute assessment inside the window, capped by
+     * maxRows. Same percentage basis.
+     */
+    @Query(value = """
+            WITH attempts AS (
+                SELECT DISTINCT ON (aur.user_id, a.id)
+                    aur.user_id     AS user_id,
+                    a.id            AS assessment_id,
+                    a.name          AS assessment_name,
+                    sa.created_at   AS attempt_at,
+                    sa.total_marks  AS earned_marks
+                FROM public.student_attempt sa
+                JOIN public.assessment_user_registration aur
+                    ON aur.id = sa.registration_id
+                JOIN public.assessment a
+                    ON a.id = aur.assessment_id
+                    AND a.status = 'PUBLISHED'
+                JOIN public.assessment_institute_mapping aim
+                    ON aim.assessment_id = a.id
+                    AND aim.institute_id = :instituteId
+                WHERE sa.status = 'ENDED'
+                  AND sa.created_at >= :startDate
+                  AND sa.created_at < :endDate
+                  AND aur.user_id IS NOT NULL
+                ORDER BY aur.user_id, a.id, sa.created_at DESC
+            ),
+            achievable AS (
+                SELECT s.assessment_id       AS assessment_id,
+                       SUM(s.total_marks)    AS total_achievable
+                FROM public.section s
+                WHERE s.status <> 'DELETED'
+                  AND s.assessment_id IN (SELECT DISTINCT assessment_id FROM attempts)
+                GROUP BY s.assessment_id
+            )
+            SELECT
+                t.user_id           AS userId,
+                t.assessment_id     AS assessmentId,
+                t.assessment_name   AS assessmentName,
+                t.attempt_at        AS attemptAt,
+                CASE
+                    WHEN t.earned_marks IS NOT NULL AND ach.total_achievable > 0
+                    THEN (t.earned_marks / ach.total_achievable) * 100.0
+                END                 AS percentage
+            FROM attempts t
+            LEFT JOIN achievable ach ON ach.assessment_id = t.assessment_id
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<CohortAssessmentAttemptProjection> findInstituteAttemptsBetween(
+            @Param("instituteId") String instituteId,
+            @Param("startDate") Date startDate,
+            @Param("endDate") Date endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
+     * Queues the result email of an attempt released on submit (AutoResultReleaseJob sends it).
+     * REQUIRES_NEW: called from an afterCommit hook, where joining the finished transaction
+     * would never commit.
+     */
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = TRUE WHERE id = :attemptId", nativeQuery = true)
+    int markResultNoticePending(@Param("attemptId") String attemptId);
+
+    /**
+     * A release that sent (or deliberately skipped) its own email: nothing left for the job.
+     * REQUIRES_NEW for the same reason as markResultNoticePending (afterCommit hook).
+     */
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = "UPDATE student_attempt SET result_notice_pending = NULL WHERE id IN (:attemptIds) AND result_notice_pending IS NOT NULL", nativeQuery = true)
+    int clearResultNoticePending(@Param("attemptIds") Collection<String> attemptIds);
 }
 
 

@@ -1,0 +1,31 @@
+{
+    "edit": "संपादित करें",
+    "sections": {
+        "profile": "प्रोफ़ाइल",
+        "emergencyContact": "आपातकालीन संपर्क",
+        "statutoryIdentifiers": "सांविधिक पहचानकर्ता"
+    },
+    "fields": {
+        "employeeCode": "कर्मचारी कोड",
+        "name": "नाम",
+        "employmentStatus": "नियोजन स्थिति",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "employmentType": "नियोजन प्रकार",
+        "department": "विभाग",
+        "designation": "पदनाम",
+        "reportingManager": "रिपोर्टिंग मैनेजर",
+        "joinDate": "जॉइनिंग तिथि",
+        "noticePeriod": "नोटिस अवधि",
+        "nationality": "राष्ट्रीयता",
+        "phone": "फ़ोन",
+        "relation": "रिश्ता",
+        "bloodGroup": "ब्लड ग्रुप",
+        "maritalStatus": "वैवाहिक स्थिति",
+        "pan": "पैन",
+        "uan": "यूएएन"
+    },
+    "noticePeriodDays_one": "{{count}} दिन",
+    "noticePeriodDays_other": "{{count}} दिन",
+    "maskedNumbersHint": "संग्रहीत नंबर आंशिक रूप से छिपे हुए दिखाए जाते हैं। संपादन तभी नंबर बदलता है जब आप नया नंबर टाइप करें।"
+}

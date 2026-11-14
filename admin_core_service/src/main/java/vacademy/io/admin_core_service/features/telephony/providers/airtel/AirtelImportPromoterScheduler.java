@@ -42,6 +42,12 @@ public class AirtelImportPromoterScheduler {
     // max-per-run rows), but each row is promoted in its own transaction and a
     // recording promotion can reach media_service, so 200 rows is not reliably a
     // sub-2-minute unit of work.
+    //
+    // lockAtLeastFor stays at 30s here, unlike the importer. The waste the importer
+    // needed to suppress was its re-probe of every key in the lookback window; this
+    // job instead pulls a bounded, indexed batch of RECEIVED rows, so an extra run
+    // costs one cheap query and drains any backlog sooner. Only concurrency needs
+    // preventing, which is what the lock already does.
     @SchedulerLock(name = "AirtelImportPromoterScheduler_poll", lockAtMostFor = "PT15M", lockAtLeastFor = "PT30S")
     public void poll() {
         List<AirtelCallImport> batch;

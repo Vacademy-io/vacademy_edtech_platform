@@ -23,12 +23,17 @@ import type {
   ViewMode,
 } from "../-types/types";
 import { getPackageSessionName } from "../-utils/getPackageSessionName";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 export const Route = createFileRoute("/planning/planning-logs/")({
   component: PlanningLogsPage,
 });
 
 function PlanningLogsPage() {
+  const { t } = useTranslation("planning");
+  const teacher = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
   const [pageNo, setPageNo] = useState(0);
   const [pageSize] = useState(10);
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
@@ -49,8 +54,8 @@ function PlanningLogsPage() {
 
   // Set navigation heading
   useEffect(() => {
-    setNavHeading("My Plannings");
-  }, [setNavHeading]);
+    setNavHeading(t("planningLogsPage.navHeading"));
+  }, [setNavHeading, t]);
 
   // Fetch batch names
   useEffect(() => {
@@ -160,9 +165,9 @@ function PlanningLogsPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-3xl font-bold">My Plannings</h2>
+            <h2 className="text-3xl font-bold">{t("planningLogsPage.navHeading")}</h2>
             <p className="text-sm text-muted-foreground">
-              View plans and schedules
+              {t("planningLogsPage.subtitle")}
             </p>
           </div>
           <div className="flex gap-2">
@@ -176,12 +181,12 @@ function PlanningLogsPage() {
               {viewMode === "table" ? (
                 <>
                   <List className="size-4" />
-                  Timeline
+                  {t("common.viewModeTimeline")}
                 </>
               ) : (
                 <>
                   <TableIcon className="size-4" />
-                  Table
+                  {t("common.viewModeTable")}
                 </>
               )}
             </Button>
@@ -191,7 +196,7 @@ function PlanningLogsPage() {
         {/* Interval Type Selector */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Select Period
+            {t("common.selectPeriod")}
           </h3>
           <IntervalTypeSelector
             selectedType={selectedPeriod}
@@ -210,14 +215,14 @@ function PlanningLogsPage() {
           </div>
         ) : error ? (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-8 text-center">
-            <p className="text-destructive">Failed to load plannings</p>
+            <p className="text-destructive">{t("planningLogsPage.errorLoad")}</p>
           </div>
         ) : !hasPlannings ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
             <CalendarCheck className="mb-4 size-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-semibold">No plannings yet</h3>
+            <h3 className="mb-2 text-lg font-semibold">{t("planningLogsPage.empty.title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Your instructor hasn't added any plannings for this period
+              {t("planningLogsPage.empty.description", { teacher })}
             </p>
           </div>
         ) : viewMode === "table" ? (
@@ -245,10 +250,10 @@ function PlanningLogsPage() {
                   disabled={pageNo === 0}
                   onClick={() => handlePageChange(pageNo - 1)}
                 >
-                  Previous
+                  {t("common.previous")}
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Page {pageNo + 1} of {data.totalPages}
+                  {t("common.pageOf", { page: pageNo + 1, total: data.totalPages })}
                 </span>
                 <Button
                   variant="outline"
@@ -256,7 +261,7 @@ function PlanningLogsPage() {
                   disabled={pageNo >= data.totalPages - 1}
                   onClick={() => handlePageChange(pageNo + 1)}
                 >
-                  Next
+                  {t("common.next")}
                 </Button>
               </div>
             )}

@@ -1,0 +1,82 @@
+{
+    "sections": {
+        "residentialAddress": "आवासीय पता (वर्तमान)"
+    },
+    "fields": {
+        "houseNo": {
+            "label": "मकान नंबर / फ्लैट नंबर / भवन का नाम",
+            "placeholder": "उदा., 12-A, सनराइज़ अपार्टमेंट्स"
+        },
+        "street": {
+            "label": "गली / सड़क का नाम",
+            "placeholder": "उदा., एम.जी. रोड"
+        },
+        "area": {
+            "label": "क्षेत्र / मोहल्ला / सेक्टर",
+            "placeholder": "उदा., अरेरा कॉलोनी"
+        },
+        "landmark": {
+            "label": "लैंडमार्क",
+            "placeholder": "उदा., सिटी मॉल के पास"
+        },
+        "city": {
+            "label": "शहर",
+            "placeholder": "उदा., भोपाल"
+        },
+        "state": {
+            "label": "राज्य",
+            "placeholder": "राज्य चुनें"
+        },
+        "pincode": {
+            "label": "पिनकोड",
+            "placeholder": "उदा., 462001",
+            "hint": "6 अंक"
+        },
+        "country": {
+            "label": "देश",
+            "placeholder": "देश चुनें"
+        }
+    },
+    "stateOptions": {
+        "andhraPradesh": "आंध्र प्रदेश",
+        "arunachalPradesh": "अरुणाचल प्रदेश",
+        "assam": "असम",
+        "bihar": "बिहार",
+        "chhattisgarh": "छत्तीसगढ़",
+        "goa": "गोवा",
+        "gujarat": "गुजरात",
+        "haryana": "हरियाणा",
+        "himachalPradesh": "हिमाचल प्रदेश",
+        "jharkhand": "झारखंड",
+        "karnataka": "कर्नाटक",
+        "kerala": "केरल",
+        "madhyaPradesh": "मध्य प्रदेश",
+        "maharashtra": "महाराष्ट्र",
+        "manipur": "मणिपुर",
+        "meghalaya": "मेघालय",
+        "mizoram": "मिज़ोरम",
+        "nagaland": "नागालैंड",
+        "odisha": "ओडिशा",
+        "punjab": "पंजाब",
+        "rajasthan": "राजस्थान",
+        "sikkim": "सिक्किम",
+        "tamilNadu": "तमिलनाडु",
+        "telangana": "तेलंगाना",
+        "tripura": "त्रिपुरा",
+        "uttarPradesh": "उत्तर प्रदेश",
+        "uttarakhand": "उत्तराखंड",
+        "westBengal": "पश्चिम बंगाल",
+        "andamanAndNicobarIslands": "अंडमान और निकोबार द्वीप समूह",
+        "chandigarh": "चंडीगढ़",
+        "dadraAndNagarHaveliAndDamanAndDiu": "दादरा और नगर हवेली और दमन और दीव",
+        "delhi": "दिल्ली",
+        "jammuAndKashmir": "जम्मू और कश्मीर",
+        "ladakh": "लद्दाख",
+        "lakshadweep": "लक्षद्वीप",
+        "puducherry": "पुदुचेरी"
+    },
+    "countryOptions": {
+        "india": "भारत",
+        "other": "अन्य"
+    }
+}

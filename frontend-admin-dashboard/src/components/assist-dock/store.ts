@@ -4,6 +4,7 @@ import { create } from 'zustand';
 export type AssistPanel =
     | 'none'
     | 'tutorials'
+    | 'training'
     | 'assistant'
     | 'support'
     | 'roadmap'

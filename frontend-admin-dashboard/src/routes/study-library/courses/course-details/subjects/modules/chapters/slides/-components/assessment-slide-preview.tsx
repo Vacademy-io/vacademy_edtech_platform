@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import {
     ListChecks,
     ArrowSquareOut,
@@ -110,6 +111,7 @@ const Stat = ({
 );
 
 const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => {
+    const { t } = useTranslation('studyLibraryAssessmentSlidePreview');
     const router = useRouter();
     const assessmentSlide = activeItem.assessment_slide;
     const assessmentId = assessmentSlide?.assessment_id;
@@ -216,7 +218,7 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
             <div className="flex h-96 flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50">
                 <ListChecks className="size-8 text-neutral-400" />
                 <p className="mt-3 text-sm text-neutral-500">
-                    No assessment linked to this slide.
+                    {t('noAssessmentLinked')}
                 </p>
             </div>
         );
@@ -255,10 +257,10 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
     );
     const availabilityChip: { text: string; status: 'SUCCESS' | 'WARNING' | 'INFO' } =
         availability.state === 'NOT_STARTED'
-            ? { text: 'Scheduled', status: 'WARNING' }
+            ? { text: t('status.scheduled'), status: 'WARNING' }
             : availability.state === 'CLOSED'
-              ? { text: 'Closed', status: 'INFO' }
-              : { text: 'Open', status: 'SUCCESS' };
+              ? { text: t('status.closed'), status: 'INFO' }
+              : { text: t('status.open'), status: 'SUCCESS' };
 
     const availabilityLabel = (() => {
         const opens = availability.start
@@ -268,10 +270,10 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
             availability.end && !availability.noExpiry
                 ? convertToLocalDateTime(availability.end.toISOString())
                 : null;
-        if (opens && closes) return `${opens} → ${closes}`;
-        if (opens) return `From ${opens}`;
-        if (closes) return `Until ${closes}`;
-        return 'Anytime';
+        if (opens && closes) return t('availability.range', { opens, closes });
+        if (opens) return t('availability.from', { opens });
+        if (closes) return t('availability.until', { closes });
+        return t('availability.anytime');
     })();
 
     return (
@@ -283,10 +285,10 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                     </div>
                     <div className="flex flex-col">
                         <span className="text-2xs uppercase tracking-wide text-neutral-500">
-                            Linked assessment
+                            {t('linkedAssessment')}
                         </span>
                         <h3 className="text-base font-semibold text-neutral-900">
-                            {isLoading && !displayName ? 'Loading…' : displayName}
+                            {isLoading && !displayName ? t('loadingEllipsis') : displayName}
                         </h3>
                         {/* Only once the overview actually resolved — a failed
                             fetch must not read as a confident "Open". */}
@@ -309,7 +311,7 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                         onClick={() => goToAssessmentDetails('submissions')}
                     >
                         <span className="inline-flex items-center gap-1 text-xs">
-                            View Submissions
+                            {t('viewSubmissions')}
                             <ArrowSquareOut className="size-3.5" />
                         </span>
                     </MyButton>
@@ -319,7 +321,7 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                         onClick={() => goToAssessmentDetails('overview')}
                     >
                         <span className="inline-flex items-center gap-1 text-xs">
-                            Manage in Assessments
+                            {t('manageInAssessments')}
                             <ArrowSquareOut className="size-3.5" />
                         </span>
                     </MyButton>
@@ -328,14 +330,14 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
 
             {isError && (
                 <p className="text-xs text-red-500">
-                    Could not load assessment details. The link may still work for learners.
+                    {t('couldNotLoadDetails')}
                 </p>
             )}
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Stat
                     icon={<Trophy className="size-4" />}
-                    label="Total marks"
+                    label={t('totalMarks')}
                     value={
                         typeof totalMarks?.total_achievable_marks === 'number'
                             ? totalMarks.total_achievable_marks
@@ -344,7 +346,7 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                 />
                 <Stat
                     icon={<CalendarBlank className="size-4" />}
-                    label="Available to learners"
+                    label={t('availableToLearners')}
                     value={availabilityLabel}
                 />
             </div>
@@ -356,8 +358,16 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                     <Lock className="mt-0.5 size-4 shrink-0 text-warning-600" weight="fill" />
                     <p className="text-xs text-warning-700">
                         {availability.state === 'NOT_STARTED'
-                            ? `This slide is locked for learners until ${availability.start ? convertToLocalDateTime(availability.start.toISOString()) : 'it opens'}.`
-                            : `This slide closed${availability.end ? ` on ${convertToLocalDateTime(availability.end.toISOString())}` : ''} — learners can no longer attempt it.`}
+                            ? t('lockedUntil', {
+                                  date: availability.start
+                                      ? convertToLocalDateTime(availability.start.toISOString())
+                                      : t('itOpens'),
+                              })
+                            : availability.end
+                              ? t('closedOnDate', {
+                                    date: convertToLocalDateTime(availability.end.toISOString()),
+                                })
+                              : t('closedNoDate')}
                     </p>
                 </div>
             )}
@@ -367,18 +377,18 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
                 <div className="flex items-center gap-2">
                     <FileText className="size-4 text-primary-500" />
                     <span className="text-2xs uppercase tracking-wide text-neutral-500">
-                        Instructions
+                        {t('instructions')}
                     </span>
                 </div>
                 {detailsQuery.isLoading ? (
-                    <p className="text-sm text-neutral-400">Loading instructions…</p>
+                    <p className="text-sm text-neutral-400">{t('loadingInstructions')}</p>
                 ) : instructionsHtml ? (
                     <div
                         dangerouslySetInnerHTML={{ __html: instructionsHtml }}
                         className="custom-html-content prose prose-sm max-w-none text-sm text-neutral-700"
                     />
                 ) : (
-                    <p className="text-sm text-neutral-500">No instructions provided.</p>
+                    <p className="text-sm text-neutral-500">{t('noInstructionsProvided')}</p>
                 )}
             </div>
 
@@ -387,11 +397,13 @@ const AssessmentSlidePreview = ({ activeItem }: AssessmentSlidePreviewProps) => 
             <div className="flex items-center gap-3 rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
                 <Users className="size-4 text-primary-500" />
                 <span>
-                    <span className="font-semibold text-neutral-800">{submittedCount}</span> submitted
+                    <span className="font-semibold text-neutral-800">{submittedCount}</span>{' '}
+                    {t('submitted')}
                 </span>
                 <span className="text-neutral-400">·</span>
                 <span>
-                    <span className="font-semibold text-neutral-800">{participantCount}</span> enrolled
+                    <span className="font-semibold text-neutral-800">{participantCount}</span>{' '}
+                    {t('enrolled')}
                 </span>
             </div>
 

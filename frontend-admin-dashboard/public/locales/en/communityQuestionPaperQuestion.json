@@ -1,0 +1,7 @@
+{
+    "questionNumber": "Question {{number}}",
+    "questionImageAlt": "Question image {{number}}",
+    "marksCount_one": "{{count}} mark",
+    "marksCount_other": "{{count}} marks",
+    "minLabel": "min"
+}

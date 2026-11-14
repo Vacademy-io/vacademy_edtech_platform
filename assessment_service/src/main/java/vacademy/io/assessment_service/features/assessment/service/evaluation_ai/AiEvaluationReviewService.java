@@ -13,6 +13,7 @@ import vacademy.io.assessment_service.features.assessment.repository.AiQuestionE
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
 import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 
 import java.math.BigDecimal;
@@ -34,15 +35,50 @@ public class AiEvaluationReviewService {
     private final AiQuestionEvaluationRepository questionEvaluationRepository;
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
     private final StudentAttemptRepository studentAttemptRepository;
+    private final TypedAnswerEvaluation typedAnswerEvaluation;
+    private final ResultLockGuard resultLockGuard;
+
+    /** Partner API feed: an override is a change the partner must see. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed submissionFeed;
+
+    /** A reviewed mark changes what the AI reports say. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private CopyCheckReportDataSender reportDataSender;
+
+    /** Key in ai_question_evaluation.evaluation_result_json holding the teacher's pen-note edits. */
+    public static final String ANNOTATION_EDITS_KEY = "reviewer_annotation_edits";
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
+            new com.fasterxml.jackson.databind.ObjectMapper();
 
     @Transactional
     public void overrideQuestion(String processId, String questionId, Double marks, String feedback,
             String editorUserId) {
+        overrideQuestion(processId, questionId, marks, feedback, null, editorUserId);
+    }
+
+    /**
+     * As {@link #overrideQuestion(String, String, Double, String, String)}, plus the
+     * teacher's changes to the pen notes the AI drew for this question (null = keep the
+     * saved list). They are kept beside the AI verdict and applied when the checked copy
+     * is re-drawn ({@link CopyCheckReRenderService}).
+     */
+    @Transactional
+    public void overrideQuestion(String processId, String questionId, Double marks, String feedback,
+            java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> annotationEdits,
+            String editorUserId) {
         AiEvaluationProcess process = processRepository.findByIdWithStudentAttempt(processId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
 
-        AiQuestionEvaluation row = questionEvaluationRepository
-                .findByEvaluationProcessIdAndQuestionId(processId, questionId)
+        // A released result on a partner-API exam is finalized: no edits until it is
+        // unfinalized (gate G8). Dashboard exams keep today's behaviour.
+        resultLockGuard.requireNotFinalizedForApiExam(process.getStudentAttempt());
+
+        // Newest row: a pre-V53 double dispatch left two, and a single-result
+        // lookup threw "2 results were returned" at the reviewer.
+        AiQuestionEvaluation row = AiQuestionEvaluationService.newest(questionEvaluationRepository
+                        .findAllByEvaluationProcessIdAndQuestionIdOrderByCreatedAtDesc(processId, questionId))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Question evaluation not found for question " + questionId));
 
@@ -56,6 +92,9 @@ public class AiEvaluationReviewService {
             row.setFeedback(feedback);
         }
         row.setStatus("COMPLETED");
+        if (annotationEdits != null) {
+            row.setEvaluationResultJson(withAnnotationEdits(row.getEvaluationResultJson(), annotationEdits));
+        }
         row.setIsEdited(true);
         row.setEditedBy(editorUserId);
         row.setEditedAt(new Date());
@@ -82,8 +121,41 @@ public class AiEvaluationReviewService {
         }
 
         recomputeAttemptTotals(process);
+        if (submissionFeed != null && attemptId != null) {
+            submissionFeed.touch(attemptId);
+        }
+        if (reportDataSender != null && attemptId != null) {
+            reportDataSender.sendAfterCommit(attemptId);
+        }
         log.info("[copy-check] question {} of process {} overridden to {} by {}",
                 questionId, processId, clamped, editorUserId);
+    }
+
+    /** The stored verdict JSON with the teacher's pen-note edits replaced. */
+    static String withAnnotationEdits(String resultJson,
+            java.util.List<vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.QuestionOverrideRequest.AnnotationEdit> edits) {
+        com.fasterxml.jackson.databind.node.ObjectNode root;
+        try {
+            com.fasterxml.jackson.databind.JsonNode parsed = resultJson == null ? null : JSON.readTree(resultJson);
+            root = parsed instanceof com.fasterxml.jackson.databind.node.ObjectNode o ? o : JSON.createObjectNode();
+        } catch (Exception e) {
+            root = JSON.createObjectNode();
+        }
+        com.fasterxml.jackson.databind.node.ArrayNode list = root.putArray(ANNOTATION_EDITS_KEY);
+        for (var e : edits) {
+            if (e == null) continue;
+            String action = "EDIT".equalsIgnoreCase(e.getAction()) ? "EDIT" : "DELETE";
+            com.fasterxml.jackson.databind.node.ObjectNode n = list.addObject();
+            n.put("style", e.getStyle());
+            n.put("target", e.getTarget());
+            n.put("page_id", e.getPageId());
+            n.put("text", e.getText());
+            n.put("action", action);
+            if ("EDIT".equals(action)) {
+                n.put("new_text", e.getNewText());
+            }
+        }
+        return root.toString();
     }
 
     /**
@@ -95,12 +167,9 @@ public class AiEvaluationReviewService {
         if (process.getStudentAttempt() == null) {
             return;
         }
-        var rows = questionEvaluationRepository
-                .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId());
-        double total = rows.stream()
-                .filter(q -> "COMPLETED".equals(q.getStatus()) && q.getMarksAwarded() != null)
-                .mapToDouble(q -> q.getMarksAwarded().doubleValue())
-                .sum();
+        var rows = AiQuestionEvaluationService.newestPerQuestion(questionEvaluationRepository
+                .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId()));
+
         // Non-COMPLETED, not just FAILED: a PENDING row mid-run counts as
         // ungraded, otherwise a teacher tweaking one already-graded question
         // while the AI is still working would promote the attempt (and its
@@ -110,6 +179,7 @@ public class AiEvaluationReviewService {
         StudentAttempt attempt = studentAttemptRepository.findById(process.getStudentAttempt().getId())
                 .orElse(null);
         if (attempt != null) {
+            double total = typedAnswerEvaluation.attemptTotal(attempt, rows);
             attempt.setTotalMarks(total);
             attempt.setResultMarks(total);
             // Counterpart of CopyCheckCallbackService.onComplete leaving the

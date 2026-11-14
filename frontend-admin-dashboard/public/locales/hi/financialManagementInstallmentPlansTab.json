@@ -1,0 +1,68 @@
+{
+    "feeType": {
+        "installmentCount_one": "{{count}} किस्त",
+        "installmentCount_other": "{{count}} किस्तें",
+        "refundable": "वापसी योग्य",
+        "penalty": "जुर्माना {{percent}}%",
+        "loadingInstallments": "किस्तें लोड हो रही हैं...",
+        "columns": {
+            "number": "#",
+            "amount": "राशि",
+            "startDate": "प्रारंभ तिथि",
+            "endDate": "समाप्ति तिथि",
+            "dueDate": "देय तिथि",
+            "status": "स्थिति"
+        },
+        "total": "कुल",
+        "noSchedule": "कोई किस्त अनुसूची नहीं — एकमुश्त भुगतान {{amount}}"
+    },
+    "package": {
+        "totalLabel": "कुल <b>{{amount}}</b>",
+        "feeTypeCount_one": "{{count}} शुल्क प्रकार",
+        "feeTypeCount_other": "{{count}} शुल्क प्रकार"
+    },
+    "header": {
+        "title": "शुल्क योजना",
+        "subtitle": "शुल्क प्रकार और किस्त अनुसूचियों के साथ शुल्क योजनाएं प्रबंधित करें।"
+    },
+    "filters": {
+        "allClasses": "सभी कक्षाएं"
+    },
+    "actions": {
+        "createPlan": "योजना बनाएं"
+    },
+    "loading": "शुल्क योजनाएं लोड हो रही हैं...",
+    "error": {
+        "prefix": "शुल्क योजना लोड करने में विफल।",
+        "genericMessage": "कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "title": "कोई शुल्क योजना नहीं मिली।",
+        "hint": "पहली योजना जोड़ने के लिए <b>{{createPlan}}</b> पर क्लिक करें।"
+    },
+    "summary": {
+        "packageCount_one": "{{count}} पैकेज दिखाया जा रहा है",
+        "packageCount_other": "{{count}} पैकेज दिखाए जा रहे हैं"
+    },
+    "redesign": {
+        "feeTypesHeading": "शुल्क प्रकार और किस्त अनुसूचियां",
+        "stats": {
+            "plans": "शुल्क योजनाएं",
+            "plansDetail": "{{count}} सक्रिय",
+            "avg": "औसत योजना मूल्य",
+            "avgDetail": "शुल्क वाली {{count}} योजनाओं में",
+            "feeTypes": "उपयोग में शुल्क प्रकार",
+            "feeTypesDetail": "इन योजनाओं में अलग-अलग शुल्क प्रकार",
+            "classes": "जुड़े {{batches}}",
+            "classesDetail": "कम से कम एक योजना से जुड़े",
+            "unlinked_one": "{{count}} योजना से कोई {{batch}} नहीं जुड़ा",
+            "unlinked_other": "{{count}} योजनाओं से कोई {{batch}} नहीं जुड़ा"
+        },
+        "views": {
+            "all": "सभी योजनाएं"
+        },
+        "searchPlaceholder": "योजना या शुल्क प्रकार खोजें",
+        "sessionAria": "सत्र",
+        "noMatch": "इस खोज से कोई शुल्क योजना मेल नहीं खाती।"
+    }
+}

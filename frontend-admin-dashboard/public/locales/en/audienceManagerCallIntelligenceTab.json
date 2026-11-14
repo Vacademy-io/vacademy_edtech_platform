@@ -1,0 +1,52 @@
+{
+    "kpi": {
+        "callsAnalyzed": {
+            "label": "Calls analyzed"
+        },
+        "avgCallerRating": {
+            "label": "Avg caller rating",
+            "sub": "how well reps advanced their goal"
+        },
+        "avgOutcomeRating": {
+            "label": "Avg outcome rating",
+            "sub": "how calls landed for the lead"
+        },
+        "positiveSentiment": {
+            "label": "Positive sentiment",
+            "sub_one": "{{positive}} of {{count}} lead",
+            "sub_other": "{{positive}} of {{count}} leads"
+        }
+    },
+    "breakdown": {
+        "callOutcomesTitle": "Call outcomes",
+        "leadSentimentTitle": "Lead sentiment"
+    },
+    "section": {
+        "teamCallQualityTitle": "Team — call quality"
+    },
+    "table": {
+        "counsellor": "Counsellor",
+        "calls": "Calls",
+        "avgCaller": "Avg caller",
+        "avgOutcome": "Avg outcome"
+    },
+    "emptyHint": {
+        "noAnalyzedCalls": "No analyzed calls in this range. Enable CRM Intelligence and analyze calls to populate this report.",
+        "noPerCounsellorData": "No per-counsellor data in this range."
+    },
+    "status": {
+        "connectedPositive": "Positive",
+        "connectedNeutral": "Neutral",
+        "connectedNegative": "Negative",
+        "callbackRequested": "Callback requested",
+        "notInterested": "Not interested",
+        "informationOnly": "Info only",
+        "noClearOutcome": "No clear outcome",
+        "wrongNumber": "Wrong number"
+    },
+    "sentiment": {
+        "positive": "Positive",
+        "neutral": "Neutral",
+        "negative": "Negative"
+    }
+}

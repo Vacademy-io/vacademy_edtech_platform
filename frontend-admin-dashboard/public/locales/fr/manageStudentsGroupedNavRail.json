@@ -1,0 +1,11 @@
+{
+  "ariaLabelProfileSections": "Sections du profil",
+  "group": {
+    "Snapshot": "Aperçu",
+    "Learning": "Apprentissage",
+    "Finance": "Finances",
+    "CRM": "CRM",
+    "Account": "Compte",
+    "Records": "Dossiers"
+  }
+}

@@ -1,0 +1,11 @@
+{
+    "videoFallbackTitle": "Vidéo",
+    "unknownSplitScreenType": "Type d'écran partagé inconnu",
+    "videoNotFoundTitle": "Vidéo introuvable",
+    "videoNotFoundDescription": "La diapositive vidéo de cet écran partagé est introuvable. Veuillez vérifier qu'elle existe toujours.",
+    "videoIdLabel": "ID vidéo : {{videoId}}",
+    "splitScreenModeTitle": "Mode écran partagé",
+    "untitledVideo": "Vidéo sans titre",
+    "videoBeingGenerated": "La vidéo est en cours de génération...",
+    "videoBeingGeneratedHint": "Cela peut prendre quelques minutes. Veuillez revenir plus tard."
+}

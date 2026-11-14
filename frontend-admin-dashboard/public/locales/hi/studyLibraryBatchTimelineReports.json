@@ -1,0 +1,61 @@
+{
+    "form": {
+        "startDateRequired": "आरंभ तिथि आवश्यक है",
+        "endDateRequired": "समाप्ति तिथि आवश्यक है",
+        "dateRangeTooLong": "आरंभ तिथि और समाप्ति तिथि के बीच का अंतर एक महीने से कम होना चाहिए।",
+        "errorsHeading": "कृपया निम्नलिखित त्रुटियाँ ठीक करें:",
+        "batchRequired": "कम से कम एक बैच चुनें"
+    },
+    "range": {
+        "label": "अवधि:",
+        "last7Days": "पिछले 7 दिन",
+        "hide": "छिपाएँ",
+        "change": "बदलें"
+    },
+    "actions": {
+        "generateReport": "रिपोर्ट तैयार करें",
+        "exporting": "निर्यात हो रहा है…",
+        "exportPdf": "PDF निर्यात करें",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "toast": {
+        "exportSuccess": "बैच रिपोर्ट निर्यात हुई",
+        "exportFailed": "PDF निर्यात करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल"
+    },
+    "report": {
+        "duration": "अवधि:",
+        "courseCompletedLabel": "{{term}} पूर्ण",
+        "acrossBatch": "पूरे बैच में",
+        "dailyTimeSpentAvg": "दैनिक व्यतीत समय (औसत)",
+        "concentrationScoreAvg": "एकाग्रता स्कोर (औसत)",
+        "dailyLearningPerformance": "दैनिक सीखने का प्रदर्शन",
+        "trackDailyProgress": "दैनिक प्रगति और गतिविधि पैटर्न ट्रैक करें",
+        "activitySummary": "गतिविधि सारांश",
+        "leaderboard": "लीडरबोर्ड",
+        "topPerformingStudents": "बैच में सर्वश्रेष्ठ प्रदर्शन करने वाले छात्र",
+        "multiBatchTitle": "{{term}} रिपोर्ट · {{count}} चयनित",
+        "comparisonTitle": "{{term}} तुलना",
+        "comparisonSubtitle": "चुने गए हर बैच के मुख्य आँकड़े एक साथ",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।",
+        "loadFailed": "रिपोर्ट लोड करते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
+    },
+    "csv": {
+        "fileStem": "learning-timeline",
+        "summaryTitle": "सारांश",
+        "startDate": "आरंभ तिथि",
+        "endDate": "समाप्ति तिथि",
+        "courseCompleted": "{{term}} पूर्ण (%)",
+        "dailyTimeMin": "दैनिक औसत समय (मिनट)",
+        "concentration": "एकाग्रता स्कोर (%)",
+        "dailyTitle": "दैनिक समय",
+        "date": "तिथि",
+        "avgDailyTimeMin": "औसत समय (मिनट)",
+        "leaderboardTitle": "लीडरबोर्ड",
+        "rank": "रैंक",
+        "name": "नाम",
+        "email": "ईमेल",
+        "totalTimeMin": "कुल समय (मिनट)"
+    }
+}

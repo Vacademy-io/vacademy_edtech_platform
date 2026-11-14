@@ -1,0 +1,116 @@
+{
+    "otaUpdate": {
+        "version": "Version {{version}}",
+        "autoUpdating": {
+            "title": "Mise à jour de l'application…",
+            "pleaseWait": "Veuillez patienter un instant"
+        },
+        "forceUpdate": {
+            "title": "Mise à jour requise",
+            "downloading": "Téléchargement de la mise à jour...",
+            "updateNow": "Mettre à jour maintenant"
+        },
+        "banner": {
+            "updateAvailable": "Mise à jour {{version}} disponible",
+            "releaseNotesSuffix": " — {{notes}}",
+            "downloading": "Téléchargement...",
+            "update": "Mettre à jour",
+            "dismiss": "Ignorer"
+        }
+    },
+    "tutorialsHelpButton": {
+        "ariaLabel": "Aide et tutoriels",
+        "viewedAriaLabel": "Vu",
+        "title": "Tutoriels",
+        "description": "Visites guidées rapides de l'application. Choisissez-en une pour commencer.",
+        "pdfGuide": {
+            "preparing": "Préparation de votre guide...",
+            "label": "Guide pratique complet (PDF)",
+            "description": "Téléchargez un manuel détaillé pour tout ce qui précède."
+        },
+        "toast": {
+            "downloadFailed": "Impossible de télécharger le guide. Veuillez réessayer."
+        }
+    },
+    "notificationInitializer": {
+        "newNotification": "Nouvelle notification"
+    },
+    "modernDesignShowcase": {
+        "header": {
+            "title": "Système de design moderne",
+            "subtitle": "Découvrez notre système de design complet avec des composants modernes, de belles animations et des interactions intuitives."
+        },
+        "notification": {
+            "initiated": "{{action}} en cours...",
+            "completed": "{{action}} terminé avec succès !"
+        },
+        "actions": {
+            "play": "Lecture",
+            "download": "Téléchargement",
+            "formSubmit": "Envoi du formulaire"
+        },
+        "buttons": {
+            "buttonComponents": "Composants de boutons",
+            "primaryActions": "Actions principales",
+            "startLearning": "Commencer à apprendre",
+            "downloadResources": "Télécharger les ressources",
+            "quickAction": "Action rapide",
+            "secondaryActions": "Actions secondaires",
+            "settings": "Paramètres",
+            "share": "Partager",
+            "like": "J'aime"
+        },
+        "cards": {
+            "progressTracker": "Suivi de la progression",
+            "courseCompletionRate": "Taux d'achèvement du {{course}}",
+            "notificationsTitle": "Notifications",
+            "notificationsDescription": "Restez informé de votre progression d'apprentissage",
+            "enableNotifications": "Activer les notifications",
+            "quickStats": "Statistiques rapides",
+            "coursesLabel": "{{courses}}",
+            "completedLabel": "Terminé"
+        },
+        "forms": {
+            "formComponents": "Composants de formulaire",
+            "standardInputs": "Champs standard",
+            "fullNameLabel": "Nom complet",
+            "fullNamePlaceholder": "Entrez votre nom complet",
+            "emailLabel": "Adresse e-mail",
+            "emailPlaceholder": "Entrez votre e-mail",
+            "emailHelper": "Nous ne partagerons jamais votre e-mail",
+            "passwordLabel": "Mot de passe",
+            "passwordPlaceholder": "Entrez votre mot de passe",
+            "passwordError": "Le mot de passe doit contenir au moins 8 caractères",
+            "enhancedInputs": "Champs avancés",
+            "searchLabel": "Rechercher",
+            "searchPlaceholder": "Rechercher des {{courses}}...",
+            "usernameLabel": "Nom d'utilisateur",
+            "usernamePlaceholder": "Choisissez un nom d'utilisateur",
+            "usernameHelper": "Ce nom d'utilisateur est disponible !",
+            "loadingExampleLabel": "Exemple de chargement",
+            "loadingExamplePlaceholder": "Vérification de la disponibilité...",
+            "submitForm": "Envoyer le formulaire",
+            "reset": "Réinitialiser"
+        },
+        "animations": {
+            "title": "Exemples d'animation",
+            "hoverLift": {
+                "title": "Effet de levée",
+                "description": "Légère levée au survol"
+            },
+            "scaleEffect": {
+                "title": "Effet d'échelle",
+                "description": "Léger agrandissement au survol"
+            },
+            "clickEffect": {
+                "title": "Effet de clic",
+                "description": "Retour visuel à l'état actif"
+            }
+        },
+        "footer": {
+            "description": "Ce système de design fournit une base solide pour créer des interfaces utilisateur modernes, accessibles et performantes.",
+            "viewDocumentation": "Voir la documentation",
+            "githubRepository": "Dépôt GitHub"
+        }
+    }
+}

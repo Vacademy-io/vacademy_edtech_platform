@@ -1,0 +1,28 @@
+{
+    "header": {
+        "questionOf": "Question {{current}} of {{total}}",
+        "typeAndMaxMarks": "{{type}} | Max Marks: {{maxMarks}}"
+    },
+    "question": {
+        "noContent": "No question text available"
+    },
+    "options": {
+        "selectOne": "Select one option:",
+        "selectAll": "Select all that apply:",
+        "optionFallback": "Option {{number}}"
+    },
+    "directMarks": {
+        "marksLabel": "Marks",
+        "statusLabel": "Status",
+        "statusSelect": "Select",
+        "statusCorrect": "Correct",
+        "statusIncorrect": "Incorrect",
+        "statusPartialCorrect": "Partial Correct"
+    },
+    "navigation": {
+        "clearResponse": "Clear Response",
+        "previous": "Previous",
+        "submit": "Submit",
+        "next": "Next"
+    }
+}

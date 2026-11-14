@@ -1,6 +1,7 @@
 import {
   GET_OPEN_REGISTRATION_DETAILS,
   GET_PARTICIPANTS_STATUS,
+  REGISTRATION_VERIFIED_URL,
   GET_USERID_URL,
   PUBLIC_INSTITUTE_BRANDING_URL,
   REGISTER_PARTICIPANT_URL,
@@ -17,6 +18,10 @@ import {
   DynamicSchemaData,
   ParticipantsDataInterface,
 } from "@/types/assessment-open-registration";
+import { trackUtmAttribution } from "@/lib/utm-attribution";
+import { isTransientRequestError } from "../-utils/request-error";
+
+export const OPEN_REGISTRATION_DETAILS_QUERY_KEY = "GET_OPEN_REGISTRATION_DETAILS";
 
 const handleGetOpenTestRegistrationDetails = async (code: string | number) => {
   const response = await axios({
@@ -30,10 +35,30 @@ const handleGetOpenTestRegistrationDetails = async (code: string | number) => {
 };
 export const getOpenTestRegistrationDetails = (code: string | number) => {
   return {
-    queryKey: ["GET_OPEN_REGISTRATION_DETAILS", code],
+    queryKey: [OPEN_REGISTRATION_DETAILS_QUERY_KEY, code],
     queryFn: () => handleGetOpenTestRegistrationDetails(code),
     staleTime: 3600000,
+    // A dropped connection or a pod mid-restart deserves a couple of quiet
+    // retries before the learner sees an error screen; a bad share code or a
+    // backend rejection (510/511) is final and should surface immediately.
+    retry: (failureCount: number, error: unknown) =>
+      isTransientRequestError(error) && failureCount < 2,
   };
+};
+
+/**
+ * Tells the backend the learner just verified their email with the OTP, so it can send the
+ * "You're registered" email (it waits for this; the backend sends it once). Never blocks or
+ * fails the sign-in: any error is only logged.
+ */
+export const notifyRegistrationVerified = (assessmentId: string) => {
+  authenticatedAxiosInstance({
+    method: "POST",
+    url: REGISTRATION_VERIFIED_URL,
+    params: { assessmentId },
+  }).catch((error) => {
+    console.warn("[register] registration-verified call failed:", error);
+  });
 };
 
 export const handleGetParticipantsTest = async (
@@ -85,6 +110,18 @@ export const handleRegisterOpenParticipant = async (
         custom_field_request_list
       ).custom_field_request_list,
     },
+  });
+  // Axios throws on a non-2xx, so reaching here means the registration stuck.
+  // Recorded in the service rather than at each caller — the form registers
+  // from two separate paths (new registrant and already-known email) and one
+  // of them would inevitably be missed.
+  trackUtmAttribution({
+    instituteId: institute_id,
+    userId: participantsDto.user_id,
+    email: participantsDto.email,
+    mobileNumber: participantsDto.mobile_number,
+    sourceType: "ASSESSMENT",
+    sourceId: assessment_id,
   });
   return response?.data;
 };

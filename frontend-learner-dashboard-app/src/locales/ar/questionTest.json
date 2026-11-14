@@ -1,0 +1,485 @@
+{
+    "common": {
+        "submit": "إرسال",
+        "returnToTest": "العودة إلى الاختبار",
+        "yourAnswer": "إجابتك",
+        "questionNumber": "السؤال {{number}}",
+        "tabSwitchWarning": "تحذير: أنت تحاول مغادرة بيئة الاختبار. هذا هو التحذير رقم {{count}} من 3. إذا حاولت المغادرة مرة أخرى، فسيتم إرسال اختبارك تلقائياً.",
+        "tools": {
+            "calculator": "الآلة الحاسبة",
+            "scratchpad": "المسودة"
+        }
+    },
+    "preview": {
+        "header": {
+            "title": "معاينة",
+            "subtitle": "للقراءة فقط — تبدأ الإجابة عند انتهاء هذه المدة"
+        },
+        "nav": {
+            "sectionsAriaLabel": "الأقسام"
+        },
+        "actions": {
+            "starting": "جارٍ البدء...",
+            "startTest": "بدء الاختبار"
+        }
+    },
+    "navbar": {
+        "autoSave": {
+            "saved": "تم الحفظ",
+            "saving": "جارٍ الحفظ…",
+            "notSaved": "لم يتم الحفظ"
+        },
+        "timer": {
+            "title": "الوقت المتبقي"
+        },
+        "help": {
+            "ariaLabel": "المساعدة والطلبات",
+            "menu": {
+                "instructions": "التعليمات",
+                "alerts": "تنبيهات الاختبار",
+                "reattempt": "طلب إعادة المحاولة",
+                "timeIncrease": "طلب زيادة الوقت"
+            }
+        },
+        "questionPanel": {
+            "hide": "إخفاء لوحة الأسئلة",
+            "show": "إظهار لوحة الأسئلة"
+        },
+        "pdf": {
+            "preview": "معاينة ملف PDF",
+            "upload": "رفع",
+            "uploading": "جارٍ الرفع...",
+            "back": "رجوع",
+            "replace": "استبدال ملف PDF"
+        },
+        "exitWarning": {
+            "description": "اختبارك لا يزال قيد التقدم. لا يمكنك الرجوع أثناء المحاولة. استخدم زر الإرسال عند الانتهاء — يتم حفظ إجاباتك تلقائياً."
+        },
+        "toast": {
+            "missingAttemptId": "فشل الإرسال: معرّف المحاولة مفقود.",
+            "submitSuccess": "تم إرسال الاختبار بنجاح!",
+            "retrying": "فشل الإرسال. جارٍ إعادة المحاولة ({{attempt}}/{{max}})...",
+            "submitFailed": "فشل إرسال اختبارك. يرجى التحقق من اتصالك والمحاولة مرة أخرى."
+        }
+    },
+    "networkStatus": {
+        "offline": {
+            "title": "لا يوجد اتصال بالإنترنت",
+            "description": "إجاباتك محفوظة على هذا الجهاز وسيُعاد إرسالها عند عودة الاتصال."
+        },
+        "saveFailed": {
+            "title": "الإجابات لا تتم مزامنتها",
+            "description": "إنها آمنة على هذا الجهاز. اضغط على إعادة المحاولة للمزامنة الآن."
+        },
+        "online": {
+            "title": "عاد الاتصال",
+            "description": "تمت استعادة اتصالك بالشبكة."
+        },
+        "retry": "إعادة المحاولة"
+    },
+    "footer": {
+        "actions": {
+            "questionPalette": "لوحة الأسئلة",
+            "tools": "الأدوات",
+            "closeToolsMenu": "إغلاق قائمة الأدوات"
+        },
+        "markForReview": {
+            "mark": "وضع علامة للمراجعة",
+            "unmark": "إزالة علامة المراجعة",
+            "marked": "تم وضع علامة للمراجعة"
+        },
+        "clearResponse": {
+            "ariaLabel": "مسح الإجابة",
+            "label": "مسح"
+        },
+        "nav": {
+            "previous": "السابق",
+            "previousAriaLabel": "السؤال السابق",
+            "next": "التالي",
+            "saveAndNext": "حفظ والتالي"
+        }
+    },
+    "coding": {
+        "problem": {
+            "missing": "(لا يوجد نص للمسألة)"
+        },
+        "badges": {
+            "maxPoints": "أقصى درجات: {{max}}",
+            "cpu": "المعالج {{seconds}} ث",
+            "tests": "الاختبارات: {{count}}"
+        },
+        "actions": {
+            "run": "تشغيل"
+        },
+        "loadingRuntime": "جارٍ تحميل بيئة تشغيل Python…",
+        "tabs": {
+            "tests": "الاختبارات",
+            "output": "المخرجات"
+        },
+        "tests": {
+            "noneProvided": "لا توجد اختبارات نموذجية متاحة.",
+            "sampleFallback": "نموذج {{number}}",
+            "hiddenFallback": "مخفي {{number}}",
+            "input": "المدخلات",
+            "expected": "المتوقع",
+            "empty": "(فارغ)",
+            "compilerError": "خطأ في الترجمة / التشغيل",
+            "yourOutput": "مخرجاتك",
+            "hiddenBadge": "مخفي"
+        },
+        "output": {
+            "none": "لا توجد مخرجات بعد.",
+            "testFallback": "اختبار {{number}}",
+            "stdoutLabel": "المخرج القياسي",
+            "stderrLabel": "الخطأ القياسي / المترجم"
+        }
+    },
+    "longAnswer": {
+        "wordCount_zero": "{{count}} كلمة",
+        "wordCount_one": "{{count}} كلمة",
+        "wordCount_two": "{{count}} كلمتان",
+        "wordCount_few": "{{count}} كلمات",
+        "wordCount_many": "{{count}} كلمة",
+        "wordCount_other": "{{count}} كلمة",
+        "placeholder": "اكتب إجابتك هنا. تُمنح الدرجات على أساس المنطق، وليس الطول."
+    },
+    "oneWord": {
+        "placeholder": "اكتب إجابتك المكوّنة من كلمة واحدة"
+    },
+    "numeric": {
+        "ariaLabel": "إجابتك الرقمية",
+        "noNegativeMarking": "لا توجد علامات سالبة على هذا السؤال.",
+        "pad": {
+            "show": "إظهار لوحة الأرقام",
+            "hide": "إخفاء لوحة الأرقام",
+            "decimalPointAriaLabel": "الفاصلة العشرية",
+            "backspaceAriaLabel": "مسح للخلف"
+        }
+    },
+    "paragraph": {
+        "readMore": "قراءة المزيد",
+        "readLess": "قراءة أقل"
+    },
+    "page": {
+        "toast": {
+            "savingResumed": "تتم الآن إعادة حفظ إجاباتك",
+            "savingFailed": "لا يتم حالياً تسجيل إجاباتك"
+        }
+    },
+    "questionDisplay": {
+        "selectPrompt": "اختر سؤالاً للبدء",
+        "sectionTimeUp": "انتهى الوقت لهذا القسم. يرجى الانتقال إلى القسم التالي المتاح.",
+        "ofTotal": "من {{total}}",
+        "codingMissingConfig": "سؤال البرمجة يفتقر إلى الإعدادات.",
+        "answerOptionsAriaLabel": "خيارات الإجابة",
+        "unsupportedType": "لا يمكن عرض هذا النوع من الأسئلة هنا.",
+        "types": {
+            "MCQS": "اختيار واحد",
+            "MCQM": "اختيار متعدد",
+            "TRUE_FALSE": "صح / خطأ",
+            "ONE_WORD": "كلمة واحدة",
+            "LONG_ANSWER": "إجابة مطوّلة",
+            "NUMERIC": "رقمي",
+            "CODING": "برمجة",
+            "CBE_RESPONSE": "جدول بيانات وإجابة كتابية"
+        }
+    },
+    "questionList": {
+        "itemAriaLabel": "السؤال {{number}}، {{status}}"
+    },
+    "questionNavigator": {
+        "sectionFallback": "القسم",
+        "questionCount_zero": "{{count}} سؤال",
+        "questionCount_one": "{{count}} سؤال",
+        "questionCount_two": "{{count}} سؤالان",
+        "questionCount_few": "{{count}} أسئلة",
+        "questionCount_many": "{{count}} سؤالاً",
+        "questionCount_other": "{{count}} سؤال",
+        "legendAriaLabel": "مفتاح حالة الأسئلة",
+        "submitPaper": "إرسال الورقة",
+        "hidePanel": "إخفاء لوحة الأسئلة"
+    },
+    "questionPassage": {
+        "label": "النص",
+        "tapToRead": "اضغط للقراءة"
+    },
+    "questionStatus": {
+        "answered": "تمت الإجابة",
+        "answeredMarked": "تمت الإجابة ووُضعت عليها علامة",
+        "marked": "وُضعت عليه علامة للمراجعة",
+        "notAnswered": "لم تتم الإجابة",
+        "notVisited": "لم تتم زيارته"
+    },
+    "sectionTabs": {
+        "ariaLabel": "أقسام الاختبار"
+    },
+    "sectionTimer": {
+        "ariaLabel": "الوقت المتبقي للقسم: {{minutes}} دقيقة و{{seconds}} ثانية"
+    },
+    "sidebar": {
+        "paletteAriaLabel": "لوحة الأسئلة"
+    },
+    "calculator": {
+        "genericError": "خطأ",
+        "errors": {
+            "factorialWholeNumber": "المضروب يتطلب عدداً صحيحاً",
+            "tooLarge": "القيمة كبيرة جداً",
+            "unexpectedChar": "رمز غير متوقع \"{{char}}\"",
+            "malformedNumber": "رقم غير صالح",
+            "divideByZero": "القسمة على صفر",
+            "outOfDomain": "خارج النطاق المسموح",
+            "unknownFunction": "دالة غير معروفة",
+            "incompleteExpression": "تعبير غير مكتمل",
+            "missingParen": "قوس إغلاق ) مفقود",
+            "empty": "فارغ",
+            "unbalancedParen": "قوس ) غير متوازن",
+            "notANumber": "ليس رقماً",
+            "outOfRange": "خارج النطاق"
+        },
+        "keys": {
+            "clear": "مسح",
+            "backspace": "مسح للخلف",
+            "percent": "نسبة مئوية",
+            "divide": "قسمة",
+            "multiply": "ضرب",
+            "minus": "طرح",
+            "plus": "جمع",
+            "decimalPoint": "الفاصلة العشرية",
+            "equals": "يساوي",
+            "secondFunction": "الدالة الثانوية",
+            "toggleAngleUnit": "التبديل بين الدرجات والراديان",
+            "openBracket": "قوس فتح",
+            "closeBracket": "قوس إغلاق",
+            "squareRoot": "الجذر التربيعي",
+            "square": "التربيع",
+            "power": "الأس",
+            "pi": "بي (π)",
+            "eulersNumber": "ثابت أويلر",
+            "toggleSign": "تبديل الإشارة",
+            "factorial": "المضروب"
+        }
+    },
+    "scratchpad": {
+        "placeholder": "مسودة عمل — لا تُرسل مع ورقتك.",
+        "ariaLabel": "مسودة للعمل التقريبي"
+    },
+    "toolPanel": {
+        "closeAriaLabel": "إغلاق {{title}}"
+    },
+    "viewToggle": {
+        "grid": "عرض شبكي",
+        "list": "عرض قائمة"
+    },
+    "cbe": {
+        "scenarioLabel": "الحالة",
+        "requirementsLabel": "المطلوب",
+        "desktopNotice": "يتضمن هذا السؤال جدول بيانات يجب تعبئته. يُفضَّل الإجابة عنه على حاسوب محمول أو مكتبي.",
+        "resizeLabel": "تغيير حجم لوحتي الحالة والإجابة",
+        "resizeValue": "الحالة {{pct}}% من العرض",
+        "pasteBlocked": "لا يُسمح باللصق من خارج منطقة الإجابة. النسخ واللصق داخل إجابتك متاحان.",
+        "missingConfig": "إعداد الإجابة لهذا السؤال مفقود. يُرجى إبلاغ المدرّس.",
+        "kit": {
+            "kindSpreadsheet": "جدول بيانات",
+            "kindDocument": "مستند",
+            "marks_zero": "{{count}} درجة",
+            "marks_one": "درجة واحدة",
+            "marks_two": "درجتان",
+            "marks_few": "{{count}} درجات",
+            "marks_many": "{{count}} درجة",
+            "marks_other": "{{count}} درجة",
+            "partAnswer": "إجابة {{tab}}",
+            "noParts": "لا يحتوي هذا السؤال على أجزاء للإجابة.",
+            "sizeTooLarge": "إجابتك أكبر من أن تُحفظ ({{size}} من {{max}}). احذف الصفوف أو الأوراق أو المحتوى الملصق غير الضروري.",
+            "sizeNearLimit": "إجابتك تقترب من الحد الأقصى للحجم ({{size}} من {{max}}).",
+            "spreadsheetLoadFailed": "تعذّر تحميل جدول البيانات.",
+            "documentLoadFailed": "تعذّر تحميل محرر المستند.",
+            "tryAgain": "حاول مرة أخرى",
+            "documentPlaceholder": "اكتب إجابتك هنا…",
+            "writtenAnswer": "الإجابة الكتابية",
+            "spreadsheetAnswer": "إجابة جدول البيانات",
+            "noSpreadsheetAnswer": "لا توجد إجابة في جدول البيانات.",
+            "noWrittenAnswer": "لا توجد إجابة كتابية.",
+            "emptyTab": "هذه الورقة فارغة.",
+            "rowHeader": "الصف",
+            "tools": {
+                "spreadsheetToolbar": "تنسيق جدول البيانات",
+                "textToolbar": "تنسيق النص",
+                "undo": "تراجع",
+                "redo": "إعادة",
+                "bold": "غامق",
+                "italic": "مائل",
+                "underline": "تسطير",
+                "alignLeft": "محاذاة لليسار",
+                "alignCentre": "توسيط",
+                "alignRight": "محاذاة لليمين",
+                "thousands": "فاصل الآلاف (#,##0)",
+                "moreDecimals": "زيادة المنازل العشرية",
+                "fewerDecimals": "تقليل المنازل العشرية",
+                "percent": "نسبة مئوية",
+                "topBorder": "حد علوي",
+                "bottomBorder": "حد سفلي",
+                "clearBorders": "مسح الحدود",
+                "mergeCells": "دمج الخلايا",
+                "unmergeCells": "إلغاء دمج الخلايا",
+                "bulletList": "قائمة نقطية",
+                "numberedList": "قائمة مرقمة",
+                "insertTable": "إدراج جدول",
+                "addRowBelow": "إضافة صف أسفل",
+                "addColumnRight": "إضافة عمود يمينًا",
+                "deleteRow": "حذف الصف",
+                "deleteColumn": "حذف العمود",
+                "deleteTable": "حذف الجدول"
+            }
+        }
+    },
+    "examThemes": {
+        "tcs": {
+            "actions": {
+                "saveNext": "حفظ والتالي",
+                "markReviewNext": "وضع علامة للمراجعة والتالي",
+                "saveMarkReview": "حفظ ووضع علامة للمراجعة",
+                "clearResponse": "مسح الإجابة",
+                "back": "<< السابق",
+                "next": "التالي >>",
+                "submit": "إرسال"
+            },
+            "links": {
+                "questionPaper": "ورقة الأسئلة",
+                "instructions": "التعليمات",
+                "viewInstructions": "عرض التعليمات"
+            },
+            "legend": {
+                "ariaLabel": "دليل حالات الأسئلة",
+                "answered": "تمت الإجابة",
+                "notAnswered": "لم تتم الإجابة",
+                "notVisited": "لم تتم زيارته",
+                "marked": "عليه علامة للمراجعة",
+                "answeredMarked": "تمت الإجابة وعليه علامة للمراجعة (يُحتسب في التقييم)"
+            },
+            "summary": {
+                "title": "ملخص الاختبار",
+                "section": "اسم القسم",
+                "questions": "عدد الأسئلة",
+                "answeredMarked": "تمت الإجابة وعليه علامة للمراجعة",
+                "confirm": "هل تريد إرسال الاختبار الآن؟ لا يمكنك تغيير إجاباتك بعد ذلك.",
+                "yes": "نعم",
+                "no": "لا",
+                "submitting": "جارٍ الإرسال..."
+            },
+            "questionTypes": {
+                "mcq": "اختيار من متعدد",
+                "msq": "اختيارات متعددة",
+                "nat": "NAT",
+                "numerical": "رقمي"
+            },
+            "keypad": {
+                "answer": "إجابتك",
+                "ariaLabel": "لوحة الأرقام",
+                "backspace": "حذف",
+                "clearAll": "مسح الكل",
+                "left": "إلى اليسار",
+                "right": "إلى اليمين",
+                "minus": "سالب"
+            },
+            "instructions": {
+                "notVisited": "لم تفتح هذا السؤال بعد.",
+                "notAnswered": "فتحت هذا السؤال ولم تحفظ إجابة.",
+                "answered": "إجابتك محفوظة.",
+                "marked": "لا توجد إجابة محفوظة ووضعت علامة للعودة إلى السؤال.",
+                "answeredMarked": "إجابتك محفوظة وعليها علامة للعودة إليها؛ وتُحتسب عند التصحيح.",
+                "testTitle": "تعليمات هذا الاختبار"
+            },
+            "timeLeft": "الوقت المتبقي",
+            "sectionTimeLeft": "الوقت المتبقي للقسم",
+            "questionTimeLeft": "الوقت المتبقي للسؤال",
+            "sections": "الأقسام",
+            "questionType": "نوع السؤال",
+            "marksCorrect": "درجات الإجابة الصحيحة",
+            "marksNegative": "الدرجات السالبة",
+            "viewIn": "العرض بـ",
+            "questionNo": "السؤال رقم {{number}}",
+            "scrollBottom": "الانتقال إلى أسفل السؤال",
+            "scrollTop": "الانتقال إلى أعلى السؤال",
+            "scrollTabsBack": "الأقسام السابقة",
+            "scrollTabsForward": "الأقسام التالية",
+            "sectionSummary": "{{name}}: ملخص الأسئلة",
+            "chooseQuestion": "اختر سؤالاً",
+            "questionPalette": "لوحة الأسئلة",
+            "candidate": "المرشح",
+            "chipAriaLabel": "السؤال {{number}}، {{status}}",
+            "submitLocked": "يُفتح الإرسال عند انتهاء الوقت (متبقٍ {{time}})",
+            "calculator": "الآلة الحاسبة",
+            "zoomIn": "تكبير",
+            "zoomOut": "تصغير",
+            "close": "إغلاق",
+            "showPalette": "إظهار لوحة الأسئلة",
+            "hidePalette": "إخفاء لوحة الأسئلة",
+            "questionColon": "السؤال {{number}}:",
+            "remainingTime": "الوقت المتبقي",
+            "candidateName": "اسم المرشح",
+            "subjectName": "اسم المادة",
+            "paperLanguage": "لغة الورقة",
+            "subjects": "المواد",
+            "general": {
+                "clockTitle": "المؤقت",
+                "clockDuration_one": "مدة هذا الاختبار {{count}} دقيقة. يعرض المؤقت أعلى شاشة الاختبار الوقت المتبقي.",
+                "clockDuration_other": "مدة هذا الاختبار {{count}} دقيقة. يعرض المؤقت أعلى شاشة الاختبار الوقت المتبقي.",
+                "clockUntimed": "هذا الاختبار بلا حد زمني.",
+                "clockEnd": "عندما يصل المؤقت إلى الصفر ينتهي الاختبار تلقائيًا وتُرسل الإجابات التي حفظتها. لا تحتاج إلى الضغط على {{submit}}.",
+                "clockSubmitLocked": "يبقى زر {{submit}} معطّلًا حتى ينتهي الوقت.",
+                "clockSubmitEarly": "يمكنك أيضًا الضغط على {{submit}} لإنهاء الاختبار قبل انتهاء الوقت.",
+                "sectionClockStrict": "لكل قسم أيضًا مؤقته الخاص. عندما يصل إلى الصفر يُفتح القسم التالي تلقائيًا، ويضيع أي اختيار لم تحفظه في السؤال المفتوح.",
+                "questionClockStrict": "لكل سؤال أيضًا مؤقته الخاص. عندما يصل إلى الصفر يُفتح السؤال التالي تلقائيًا، ويضيع أي اختيار لم تحفظه.",
+                "paletteTitle": "لوحة الأسئلة",
+                "paletteIntro": "تعرض اللوحة بجانب السؤال رقمًا لكل سؤال في القسم المفتوح. يدل شكله ولونه على حالة السؤال:",
+                "paletteIntroPaper": "تعرض اللوحة بجانب السؤال رقمًا لكل سؤال في الاختبار، في جميع المواد. يدل شكله ولونه على حالة السؤال:",
+                "paletteCollapse": "السهم الصغير على حافة اللوحة يخفيها ليمنح السؤال مساحة أكبر؛ اضغط عليه مرة أخرى لإظهارها.",
+                "moveTitle": "التنقل بين الأسئلة",
+                "moveJump": "اضغط على رقم في اللوحة للانتقال مباشرة إلى ذلك السؤال.",
+                "moveSections": "اضغط على اسم قسم في الشريط فوق السؤال لفتحه، إذا كان الاختبار يسمح بالتنقل بين الأقسام.",
+                "moveNoSave": "الانتقال إلى سؤال بهذه الطريقة لا يحفظ الإجابة في الشاشة التي تغادرها.",
+                "moveBackNext": "{{back}} و {{next}} يفتحان السؤال السابق أو التالي دون حفظ الإجابة المعروضة.",
+                "answerTitle": "الإجابة عن سؤال",
+                "answerPickStrict": "اختر خيارًا أو أدخل رقمًا للإجابة. لا يُحفظ اختيارك حتى تضغط أحد أزرار الحفظ أدناه.",
+                "answerPickPractice": "اختر خيارًا أو أدخل رقمًا للإجابة. يُحفظ اختيارك فور قيامك به.",
+                "saveNextStrict": "يحفظ {{saveNext}} إجابتك ويفتح السؤال التالي.",
+                "saveNextPractice": "يفتح {{saveNext}} السؤال التالي.",
+                "saveMarkReview": "يحفظ {{saveMarkReview}} إجابتك ويضع علامة مراجعة على السؤال ويفتح السؤال التالي.",
+                "markReviewNext": "يضع {{markReviewNext}} علامة مراجعة على السؤال ويحفظ أي إجابة اخترتها ويفتح السؤال التالي. السؤال المعلَّم الذي له إجابة يُحتسب عند التصحيح.",
+                "clearResponse": "يزيل {{clearResponse}} إجابة السؤال المعروض.",
+                "sectionEnd": "بعد آخر سؤال في القسم، يكون السؤال التالي هو أول سؤال في القسم الذي يليه.",
+                "changeAnswer": "لتغيير إجابة محفوظة، افتح السؤال مرة أخرى واختر من جديد ثم اضغط {{saveNext}}.",
+                "numericStrict": "أسئلة {{label}} إجابتها رقم. أدخله باستخدام لوحة الأرقام على الشاشة؛ لوحة مفاتيح الحاسوب لا تعمل في خانة الإجابة.",
+                "numericPractice": "أسئلة {{label}} إجابتها رقم. أدخله باستخدام لوحة الأرقام على الشاشة أو اكتبه.",
+                "multiple": "عندما يمكن أن يكون أكثر من خيار صحيحًا، اختر كل خيار تعتقد أنه صحيح.",
+                "readyTitle": "قبل أن تبدأ",
+                "roughPaper": "جهّز ورقًا للمسودة وقلمًا. لا توجد في شاشة الاختبار مساحة للمسودة.",
+                "calculator": "تُفتح الآلة الحاسبة من أيقونتها في الطرف الأيمن من الشريط فوق الأقسام.",
+                "fullScreen": "يعمل الاختبار في وضع ملء الشاشة. يُسجَّل الخروج من ملء الشاشة أو الانتقال إلى تبويب أو نافذة أخرى، وقد تؤدي التحذيرات المتكررة إلى إرسال اختبارك تلقائيًا.",
+                "disclaimer": "هذه شاشة تدريب مصممة مثل الاختبار الحاسوبي. وهي غير تابعة لأي جهة امتحانات وغير معتمدة منها."
+            },
+            "brief": {
+                "title": "التعليمات",
+                "aboutTitle": "عن هذا الاختبار",
+                "readCarefully": "اقرأ ما يلي بعناية قبل أن تبدأ.",
+                "generalTitle": "تعليمات عامة",
+                "duration_one": "المدة: {{count}} دقيقة",
+                "duration_other": "المدة: {{count}} دقيقة",
+                "untimed": "المدة: بلا حد زمني",
+                "sectionSwitchYes": "يمكنك التنقل بين الأقسام في أي وقت أثناء الاختبار.",
+                "sectionSwitchNo": "تُفتح الأقسام واحدًا تلو الآخر؛ بعد مغادرة قسم لا يمكنك العودة إليه.",
+                "preview": "قبل بدء الإجابة تحصل على بعض الوقت لقراءة الورقة.",
+                "attempt": "هذه المحاولة {{used}} من {{max}}.",
+                "noTestInstructions": "لم تُضف مؤسستك تعليمات أخرى لهذا الاختبار.",
+                "attachment": "مرفق",
+                "declaration": "قرأت التعليمات وفهمتها. لن أستخدم أي وسيلة غير مشروعة أثناء هذا الاختبار. أفهم أن الخروج من ملء الشاشة يُسجَّل وقد يؤدي إلى إرسال اختباري، وأن الاختبار يجب إكماله في جلسة واحدة بعد بدئه.",
+                "tickToBegin": "ضع علامة في المربع أعلاه للبدء.",
+                "leave": "< رجوع",
+                "next": "التالي >",
+                "previous": "< السابق",
+                "ready": "أنا مستعد للبدء",
+                "starting": "جارٍ البدء..."
+            }
+        }
+    }
+}

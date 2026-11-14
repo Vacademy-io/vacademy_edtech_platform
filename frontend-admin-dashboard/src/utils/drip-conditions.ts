@@ -9,6 +9,20 @@ import {
     DripScheduleDefaults,
     RelativeDateParams,
 } from '@/types/course-settings';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+
+/**
+ * Rules that wait on the learner doing something, as opposed to the clock.
+ *
+ * Only these sit behind the institute's "apply progress rules" opt-in on the
+ * learner side; date and day-wise rules are enforced as soon as they are saved.
+ */
+export const isProgressRule = (rule: DripConditionRule): boolean =>
+    rule.type !== 'date_based' && rule.type !== 'relative_date';
 
 /**
  * Generate a unique ID for drip conditions
@@ -107,13 +121,13 @@ export const getBehaviorIcon = (behavior: DripConditionBehavior): string => {
 export const getLevelDisplayName = (level: DripConditionLevel): string => {
     switch (level) {
         case 'package':
-            return 'Course';
+            return getTerminology(ContentTerms.Course, SystemTerms.Course);
         case 'subject':
             return 'Subject';
         case 'module':
             return 'Module';
         case 'chapter':
-            return 'Chapter';
+            return getTerminology(ContentTerms.Chapters, SystemTerms.Chapters);
         case 'slide':
             return 'Slide';
         default:
@@ -173,7 +187,9 @@ export const validateDripCondition = (
 
         // Validate target is required
         if (!config.target) {
-            errors.push(`${prefix} Target is required (subject, module, chapter or slide)`);
+            errors.push(
+                `${prefix} Target is required (subject, module, ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()} or slide)`
+            );
         }
 
         // Validate behavior
@@ -262,7 +278,9 @@ const validateRule = (rule: DripConditionRule, index: number): string[] => {
                 threshold?: number;
             };
             if (!preqParams.required_chapters && !preqParams.required_slides) {
-                errors.push(`${prefix} Required chapters or slides must be specified`);
+                errors.push(
+                    `${prefix} Required ${getTerminologyPlural(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()} or slides must be specified`
+                );
             }
             if (
                 (preqParams.required_chapters && preqParams.required_chapters.length === 0) ||

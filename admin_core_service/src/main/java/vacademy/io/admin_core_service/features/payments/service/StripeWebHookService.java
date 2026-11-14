@@ -40,6 +40,8 @@ public class StripeWebHookService {
     private PaymentLogService paymentLogService;
     @Autowired
     private RenewalPaymentService renewalPaymentService;
+    @Autowired
+    private vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
 
     public ResponseEntity<String> processWebHook(String payload, String sigHeader) {
         log.info("Received Stripe webhook payload.");
@@ -198,6 +200,11 @@ public class StripeWebHookService {
         if (paymentType != null && PaymentType.RENEWAL.name().equals(paymentType)) {
             log.info("Processing RENEWAL payment webhook for orderId: {}", orderId);
             handleRenewalPayment(event, paymentIntent, orderId, instituteId);
+        } else if (paymentType != null && PaymentType.PLAN_CHANGE.name().equals(paymentType)) {
+            // Must be its own branch: the else below routes to handleInitialPayment, which
+            // would treat an upgrade as a first enrollment and never apply the plan swap.
+            log.info("Processing PLAN_CHANGE payment webhook for orderId: {}", orderId);
+            handlePlanChangePayment(paymentIntent, orderId, instituteId);
         } else {
             log.info("Processing INITIAL payment webhook for orderId: {}", orderId);
             handleInitialPayment(event, orderId, instituteId);
@@ -303,6 +310,17 @@ public class StripeWebHookService {
         }
     }
     
+    /** An upgrade payment settled. Applying the change is idempotent inside PlanChangeService. */
+    private void handlePlanChangePayment(PaymentIntent paymentIntent, String orderId, String instituteId) {
+        try {
+            PaymentStatusEnum paymentStatus = determinePaymentStatus(paymentIntent.getStatus());
+            log.info("Processing plan-change payment: orderId={}, status={}", orderId, paymentStatus);
+            planChangeService.handlePlanChangePaymentConfirmation(orderId, instituteId, paymentStatus);
+        } catch (Exception e) {
+            log.error("Error processing plan-change payment webhook for orderId {}", orderId, e);
+        }
+    }
+
     private PaymentStatusEnum determinePaymentStatus(String stripeStatus) {
         if ("succeeded".equals(stripeStatus)) {
             return PaymentStatusEnum.PAID;

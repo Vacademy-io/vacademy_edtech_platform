@@ -1,0 +1,27 @@
+{
+    "columns": {
+        "details": "التفاصيل",
+        "name": "الاسم",
+        "attemptDate": "تاريخ المحاولة",
+        "startTime": "وقت البدء",
+        "endTime": "وقت الانتهاء",
+        "duration": "المدة",
+        "score": "الدرجة",
+        "evaluationStatus": "حالة التقييم",
+        "enrollmentNumber": "رقم التسجيل",
+        "gender": "الجنس",
+        "responseTime": "وقت الاستجابة",
+        "phoneNumber": "رقم الهاتف",
+        "emailId": "البريد الإلكتروني",
+        "city": "المدينة",
+        "state": "المنطقة"
+    },
+    "status": {
+        "evaluated": "تم التقييم",
+        "pending": "قيد الانتظار"
+    },
+    "sort": {
+        "ascending": "تصاعدي",
+        "descending": "تنازلي"
+    }
+}

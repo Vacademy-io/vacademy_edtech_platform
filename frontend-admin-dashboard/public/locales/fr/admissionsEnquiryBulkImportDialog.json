@@ -1,0 +1,54 @@
+{
+  "dialog": {
+    "title": "Importation groupée des réponses aux demandes",
+    "description": "Téléchargez le CSV, choisissez éventuellement une classe, prévisualisez et confirmez l'importation"
+  },
+  "steps": {
+    "stepLabel": "Étape {{step}}"
+  },
+  "upload": {
+    "templateHint": "Téléchargez le modèle CSV et importez les réponses des apprenants remplies",
+    "downloadTemplateButton": "Télécharger le modèle",
+    "dropzoneHint": "Cliquez pour importer un fichier `.csv`",
+    "validSummary": "Lignes valides : {{valid}} | Lignes ignorées : {{skipped}}",
+    "onlyCsvSupported": "Seuls les fichiers .csv sont pris en charge",
+    "missingColumns_one": "Colonne obligatoire manquante : {{columns}}",
+    "missingColumns_many": "Colonnes obligatoires manquantes : {{columns}}",
+    "missingColumns_other": "Colonnes obligatoires manquantes : {{columns}}",
+    "parseFailed": "Échec de l'analyse du fichier CSV"
+  },
+  "classStep": {
+    "selectClassHint": "Sélectionnez une classe (facultatif). Si aucune n'est sélectionnée, la classe ne sera pas envoyée dans les données.",
+    "noClassOption": "Aucune classe sélectionnée"
+  },
+  "preview": {
+    "previewingRows_one": "Aperçu de {{count}} ligne valide",
+    "previewingRows_many": "Aperçu de {{count}} de lignes valides",
+    "previewingRows_other": "Aperçu de {{count}} lignes valides"
+  },
+  "columns": {
+    "studentName": "Nom de l'élève",
+    "gender": "Genre",
+    "dateOfBirth": "Date de naissance",
+    "parentName": "Nom du parent",
+    "parentEmail": "E-mail du parent",
+    "parentMobile": "Mobile du parent",
+    "relationWithChild": "Lien avec l'enfant",
+    "relation": "Lien",
+    "status": "Statut",
+    "source": "Source"
+  },
+  "actions": {
+    "back": "Retour",
+    "cancel": "Annuler",
+    "next": "Suivant",
+    "importing": "Importation...",
+    "confirmImport": "Confirmer l'importation"
+  },
+  "toasts": {
+    "importResult_one": "{{success}} réponse importée ({{failed}} en échec)",
+    "importResult_many": "{{success}} de réponses importées ({{failed}} en échec)",
+    "importResult_other": "{{success}} réponses importées ({{failed}} en échec)",
+    "importFailed": "Échec de l'importation des demandes"
+  }
+}

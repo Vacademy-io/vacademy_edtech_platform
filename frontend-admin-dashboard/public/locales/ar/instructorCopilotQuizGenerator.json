@@ -1,0 +1,15 @@
+{
+    "defaultTitle": "اختبار",
+    "assessmentPaperSuffix": "{{title}} (ورقة تقييم)",
+    "totalQuestions_zero": "لا أسئلة",
+    "totalQuestions_one": "إجمالي الأسئلة: سؤال واحد",
+    "totalQuestions_two": "إجمالي الأسئلة: سؤالان",
+    "totalQuestions_few": "إجمالي الأسئلة: {{count}}",
+    "totalQuestions_many": "إجمالي الأسئلة: {{count}}",
+    "totalQuestions_other": "إجمالي الأسئلة: {{count}}",
+    "difficultySuffix": " | الصعوبة: {{difficulty}}",
+    "assessmentInstructions": "التعليمات: أجب عن جميع الأسئلة. اكتب إجاباتك بوضوح.",
+    "questionNumber": "السؤال {{number}}",
+    "answerLabel": "الإجابة:",
+    "explanationLabel": "الشرح:"
+}

@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { format, subDays } from 'date-fns';
 import {
     Sparkle,
@@ -55,17 +57,18 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: s
 }
 
 export function CounsellorInsightsTab({ instituteId, counsellorUserId }: Props) {
+    const { t } = useTranslation('counsellorsInsightsTab');
     return (
         <div className="flex flex-col gap-5">
-            <WorkSummarySection instituteId={instituteId} counsellorUserId={counsellorUserId} />
-            <CoachingInsights instituteId={instituteId} counsellorUserId={counsellorUserId} />
+            <WorkSummarySection instituteId={instituteId} counsellorUserId={counsellorUserId} t={t} />
+            <CoachingInsights instituteId={instituteId} counsellorUserId={counsellorUserId} t={t} />
         </div>
     );
 }
 
 // ── Work summary: what the counsellor DID (dispositions + call reach) ──────────
 
-function WorkSummarySection({ instituteId, counsellorUserId }: Props) {
+function WorkSummarySection({ instituteId, counsellorUserId, t }: Props & { t: TFunction }) {
     // Stable yyyy-MM-dd strings (constant within the day) so the query key doesn't
     // churn every render.
     const toDate = format(new Date(), 'yyyy-MM-dd');
@@ -94,17 +97,17 @@ function WorkSummarySection({ instituteId, counsellorUserId }: Props) {
         <section className="rounded-lg border border-neutral-200 bg-white p-4">
             <div className="mb-3 flex items-center gap-1.5 text-body font-medium text-neutral-800">
                 <ArrowsLeftRight size={16} className="text-primary-500" />
-                Work summary
+                {t('workSummary.title')}
                 <span className="text-caption font-normal text-neutral-400">
-                    · last {WINDOW_DAYS} days
+                    {t('workSummary.lastDaysSuffix', { count: WINDOW_DAYS })}
                 </span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Metric label="Status changes" value={String(totalChanges)} />
-                <Metric label="Calls made" value={String(dials)} />
-                <Metric label="Connected" value={String(connected)} />
+                <Metric label={t('metric.statusChanges')} value={String(totalChanges)} />
+                <Metric label={t('metric.callsMade')} value={String(dials)} />
+                <Metric label={t('metric.connected')} value={String(connected)} />
                 <Metric
-                    label="Reach"
+                    label={t('metric.reach')}
                     value={reach == null ? '—' : `${reach}%`}
                     tone={
                         reach == null
@@ -120,7 +123,7 @@ function WorkSummarySection({ instituteId, counsellorUserId }: Props) {
             {changeRows.length > 0 && (
                 <div className="mt-4">
                     <p className="mb-2 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                        <PhoneCall size={13} /> Statuses moved to
+                        <PhoneCall size={13} /> {t('workSummary.statusesMovedTo')}
                     </p>
                     <div className="space-y-2">
                         {changeRows.map(([key, count]) => {
@@ -152,7 +155,7 @@ function WorkSummarySection({ instituteId, counsellorUserId }: Props) {
 
 // ── AI coaching from call transcripts ─────────────────────────────────────────
 
-function CoachingInsights({ instituteId, counsellorUserId }: Props) {
+function CoachingInsights({ instituteId, counsellorUserId, t }: Props & { t: TFunction }) {
     const { data, isLoading, isError } = useQuery({
         queryKey: ['counsellor-coaching', counsellorUserId, instituteId],
         queryFn: () => fetchCounsellorCoaching(counsellorUserId),
@@ -161,23 +164,22 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
     });
 
     if (isLoading) {
-        return <div className="p-4 text-subtitle text-neutral-500">Loading coaching insights…</div>;
+        return (
+            <div className="p-4 text-subtitle text-neutral-500">{t('coaching.loading')}</div>
+        );
     }
     if (isError) {
         return (
-            <div className="p-4 text-subtitle text-danger-600">
-                Couldn’t load insights. If Call Intelligence isn’t deployed on this backend, this
-                won’t be available yet.
-            </div>
+            <div className="p-4 text-subtitle text-danger-600">{t('coaching.loadError')}</div>
         );
     }
     if (!data || data.totalAnalyzed === 0) {
         return (
             <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-neutral-300 p-8 text-center text-subtitle text-neutral-500">
                 <Sparkle size={22} className="text-neutral-400" />
-                No AI-analyzed calls yet for this counsellor.
+                {t('coaching.noAnalyzedCalls')}
                 <span className="text-caption text-neutral-400">
-                    Enable CRM Intelligence and analyze some calls to see call-quality coaching.
+                    {t('coaching.enableHint')}
                 </span>
             </div>
         );
@@ -189,19 +191,19 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
         <div className="flex flex-col gap-5">
             {/* Headline metrics */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Metric label="Calls analyzed" value={String(data.totalAnalyzed)} />
+                <Metric label={t('coaching.metric.callsAnalyzed')} value={String(data.totalAnalyzed)} />
                 <Metric
-                    label="Avg caller rating"
+                    label={t('coaching.metric.avgCallerRating')}
                     value={fmt(data.avgCallerSelfGoalRating)}
                     tone={scoreTone(data.avgCallerSelfGoalRating).text}
                 />
                 <Metric
-                    label="Avg outcome rating"
+                    label={t('coaching.metric.avgOutcomeRating')}
                     value={fmt(data.avgCallOutputRating)}
                     tone={scoreTone(data.avgCallOutputRating).text}
                 />
                 <Metric
-                    label="Focus areas"
+                    label={t('coaching.metric.focusAreas')}
                     value={focusAreas.length ? String(focusAreas.length) : '—'}
                 />
             </div>
@@ -211,9 +213,9 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                 <section className="rounded-lg border border-neutral-200 bg-white p-4">
                     <div className="mb-3 flex items-center gap-1.5 text-body font-medium text-neutral-800">
                         <ChartBar size={16} className="text-primary-500" />
-                        Skill breakdown
+                        {t('coaching.skillBreakdown.title')}
                         <span className="text-caption font-normal text-neutral-400">
-                            · weakest first
+                            {t('coaching.skillBreakdown.weakestFirst')}
                         </span>
                     </div>
                     <div className="space-y-2.5">
@@ -252,19 +254,19 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                 <section className="rounded-lg border border-primary-100 bg-primary-50/40 p-4">
                     <div className="mb-2 flex items-center gap-1.5 text-body font-medium text-primary-700">
                         <Lightbulb size={16} weight="fill" />
-                        What to improve
+                        {t('coaching.whatToImprove')}
                     </div>
                     <ul className="space-y-1.5">
-                        {data.topCoachingTips.map((t, i) => (
+                        {data.topCoachingTips.map((tip, i) => (
                             <li
                                 key={i}
                                 className="flex items-start gap-2 text-body text-neutral-700"
                             >
                                 <Target className="mt-0.5 size-4 shrink-0 text-primary-400" />
-                                <span className="flex-1">{t.text}</span>
-                                {t.count > 1 && (
+                                <span className="flex-1">{tip.text}</span>
+                                {tip.count > 1 && (
                                     <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-caption text-neutral-500">
-                                        {t.count}× calls
+                                        {t('coaching.tipCallCount', { count: tip.count })}
                                     </span>
                                 )}
                             </li>
@@ -278,7 +280,7 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                 <section className="rounded-lg border border-neutral-200 bg-white p-4">
                     <div className="mb-2 flex items-center gap-1.5 text-body font-medium text-neutral-800">
                         <Warning size={16} className="text-warning-500" />
-                        Objections they hit most
+                        {t('coaching.objections.title')}
                     </div>
                     <ul className="space-y-1.5">
                         {data.topObjections.map((o, i) => (
@@ -288,7 +290,10 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                             >
                                 <span className="flex-1">{o.objection}</span>
                                 <span className="shrink-0 text-caption text-neutral-500">
-                                    handled {o.handledCount}/{o.count}
+                                    {t('coaching.objections.handled', {
+                                        handled: o.handledCount,
+                                        total: o.count,
+                                    })}
                                 </span>
                             </li>
                         ))}
@@ -301,7 +306,7 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                 <section>
                     <div className="mb-2 flex items-center gap-1.5 text-body font-medium text-neutral-800">
                         <Star size={16} weight="fill" className="text-neutral-400" />
-                        Recent analyzed calls
+                        {t('coaching.recentCalls.title')}
                     </div>
                     <ul className="space-y-1.5">
                         {data.recentCalls.map((c) => (
@@ -317,7 +322,9 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                                                 scoreTone(c.callerSelfGoalRating).text
                                             )}
                                         >
-                                            Caller {fmt(c.callerSelfGoalRating)}
+                                            {t('coaching.recentCalls.callerRating', {
+                                                rating: fmt(c.callerSelfGoalRating),
+                                            })}
                                         </span>
                                         <span
                                             className={cn(
@@ -325,7 +332,9 @@ function CoachingInsights({ instituteId, counsellorUserId }: Props) {
                                                 scoreTone(c.callOutputRating).text
                                             )}
                                         >
-                                            Outcome {fmt(c.callOutputRating)}
+                                            {t('coaching.recentCalls.outcomeRating', {
+                                                rating: fmt(c.callOutputRating),
+                                            })}
                                         </span>
                                         {c.genericStatus && (
                                             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-600">

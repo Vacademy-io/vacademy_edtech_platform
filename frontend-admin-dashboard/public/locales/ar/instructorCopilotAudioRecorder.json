@@ -1,0 +1,12 @@
+{
+    "status": {
+        "paused": "متوقف مؤقتًا",
+        "recording": "جاري التسجيل..."
+    },
+    "startRecording": "بدء التسجيل",
+    "pause": "إيقاف مؤقت",
+    "resume": "استئناف",
+    "stop": "إيقاف",
+    "reset": "إعادة تعيين",
+    "transcriptionHeading": "النص المفرغ في الوقت الفعلي"
+}

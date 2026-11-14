@@ -4,7 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.hr_payroll.dto.CreateReimbursementDTO;
 import vacademy.io.admin_core_service.features.hr_payroll.dto.ReimbursementActionDTO;
 import vacademy.io.admin_core_service.features.hr_payroll.dto.ReimbursementDTO;
@@ -19,15 +20,16 @@ public class ReimbursementController {
     private ReimbursementService reimbursementService;
 
     @Autowired
-    private InstituteAccessValidator instituteAccessValidator;
+    private HrAccessGuard hrAccessGuard;
 
     @PostMapping
     public ResponseEntity<String> submitReimbursement(
             @RequestBody CreateReimbursementDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = reimbursementService.submitReimbursement(dto, instituteId);
+        // Guarded inside the service: employee must belong to the institute and
+        // non-HR callers may only submit for their own employee record
+        String id = reimbursementService.submitReimbursement(dto, instituteId, user);
         return ResponseEntity.ok(id);
     }
 
@@ -39,20 +41,32 @@ public class ReimbursementController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        if (employeeId != null) {
+            // Employee-scoped view: HR staff, or the employee themselves
+            hrAccessGuard.requireSelfOrHrStaff(user, instituteId, employeeId);
+        } else {
+            // Institute-wide view: HR staff only
+            hrAccessGuard.requireHrStaff(user, instituteId);
+        }
         Page<ReimbursementDTO> page = reimbursementService.getReimbursements(
                 instituteId, status, employeeId, pageNo, pageSize);
         return ResponseEntity.ok(page);
     }
 
     @PutMapping("/{id}/action")
+    @Auditable(
+            entityType = "HR_REIMBURSEMENT",
+            action = "ACTION",
+            actionExpr = "#actionDTO?.action",
+            entityIdExpr = "#id",
+            descriptionExpr = "#actionDTO?.action + ' reimbursement ' + #id")
     public ResponseEntity<String> approveRejectReimbursement(
             @PathVariable("id") String id,
             @RequestBody ReimbursementActionDTO actionDTO,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = reimbursementService.approveRejectReimbursement(id, actionDTO, user.getUserId());
+        hrAccessGuard.requireHrStaff(user, instituteId);
+        String resultId = reimbursementService.approveRejectReimbursement(id, actionDTO, user.getUserId(), instituteId);
         return ResponseEntity.ok(resultId);
     }
 }

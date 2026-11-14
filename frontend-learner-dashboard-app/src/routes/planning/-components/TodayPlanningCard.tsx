@@ -5,6 +5,7 @@ import type { PlanningLog } from "../-types/types";
 import { formatDistanceToNow } from "date-fns";
 import { ReadOnlyQuillViewer } from "@/components/quill/ReadOnlyQuillViewer";
 import FileAttachments from "./FileAttachments";
+import { useTranslation } from "react-i18next";
 
 interface TodayPlanningCardProps {
   log: PlanningLog;
@@ -15,13 +16,14 @@ export default function TodayPlanningCard({
   log,
   showBatchName,
 }: TodayPlanningCardProps) {
+  const { t } = useTranslation("planning");
   const getIntervalTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      daily: "Daily",
-      weekly: "This Week",
-      monthly: "This Month",
-      yearly_month: "This Month",
-      yearly_quarter: "This Quarter",
+      daily: t("todayIntervalLabel.daily"),
+      weekly: t("todayIntervalLabel.weekly"),
+      monthly: t("todayIntervalLabel.monthly"),
+      yearly_month: t("todayIntervalLabel.yearlyMonth"),
+      yearly_quarter: t("todayIntervalLabel.yearlyQuarter"),
     };
     return labels[type] || type;
   };
@@ -45,7 +47,9 @@ export default function TodayPlanningCard({
               )}
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
-                Updated {formatDistanceToNow(new Date(log.updated_at))} ago
+                {t("todayCard.updatedAgo", {
+                  time: formatDistanceToNow(new Date(log.updated_at)),
+                })}
               </span>
             </div>
           </div>
@@ -72,7 +76,7 @@ export default function TodayPlanningCard({
         )}
 
         <div className="flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-          <span>Created by {log.created_by}</span>
+          <span>{t("todayCard.createdBy", { name: log.created_by })}</span>
           <span>{new Date(log.created_at).toLocaleDateString()}</span>
         </div>
       </CardContent>

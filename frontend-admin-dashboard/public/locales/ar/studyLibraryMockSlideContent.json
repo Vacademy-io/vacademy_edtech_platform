@@ -1,0 +1,5 @@
+{
+    "defaultObjectives": "<h2>أهداف التعلم</h2><p>بحلول نهاية هذه الجلسة، سيحقق الطلاب أهداف التعلم الموضحة لـ {{sessionTitle}}.</p>",
+    "defaultTopic": "<h2>{{slideTitle}}</h2><p>يغطي هذا الموضوع مفاهيم مهمة متعلقة بـ {{sessionTitle}}.</p>",
+    "defaultAssignment": "أكمل الواجب الخاص بـ {{sessionTitle}}."
+}

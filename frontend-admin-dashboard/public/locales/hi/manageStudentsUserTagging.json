@@ -1,0 +1,25 @@
+{
+  "errors": {
+    "loadTitle": "टैग लोड नहीं हो सके",
+    "loadHint": "इस शिक्षार्थी के टैग लाते समय कुछ गड़बड़ हो गई।"
+  },
+  "toast": {
+    "addSuccess": "टैग सफलतापूर्वक जोड़ा गया",
+    "addError": "टैग जोड़ने में विफल",
+    "removeSuccess": "टैग सफलतापूर्वक हटाया गया",
+    "removeError": "टैग हटाने में विफल"
+  },
+  "activeSection": {
+    "heading": "टैग",
+    "activeCount_one": "{{count}} सक्रिय",
+    "activeCount_other": "{{count}} सक्रिय",
+    "inputPlaceholder": "एक टैग जोड़ें (जैसे VIP, उच्च प्रदर्शन)",
+    "addButton": "जोड़ें",
+    "defaultLabel": "(डिफ़ॉल्ट)",
+    "removeAriaLabel": "टैग {{tagName}} हटाएं",
+    "emptyState": "अभी तक कोई टैग नहीं — इस शिक्षार्थी को वर्गीकृत करना शुरू करने के लिए ऊपर एक टैग जोड़ें।"
+  },
+  "inactiveSection": {
+    "heading": "निष्क्रिय टैग"
+  }
+}

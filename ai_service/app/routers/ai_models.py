@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..db import db_dependency
-from ..core.security import get_current_user
+from ..core.security import get_current_user, is_platform_staff
 from ..services.ai_models_service import AIModelsService
 from ..schemas.ai_models import (
     AIModelResponse,
@@ -55,17 +55,13 @@ def get_models_service(db: Session = Depends(db_dependency)) -> AIModelsService:
 
 
 def check_root_admin(user) -> bool:
-    """Check if user is a root admin (super admin)."""
-    if not user:
-        return False
-    # Primary check: is_root_user boolean flag (matches Java User.isRootUser)
-    if hasattr(user, "is_root_user") and user.is_root_user:
-        return True
-    # Fallback: check roles list
-    roles = getattr(user, "roles", []) if not isinstance(user, dict) else user.get("roles", [])
-    if isinstance(roles, str):
-        roles = [r.strip() for r in roles.split(",")]
-    return "ROOT_ADMIN" in roles
+    """
+    Gate for the registry writes below, which are GLOBAL (every institute's
+    models and defaults). Platform staff only (SUPER_ADMIN_USER_IDS): is_root_user
+    and the ROOT_ADMIN role are set for ordinary admins and learners, so they no
+    longer pass.
+    """
+    return is_platform_staff(user)
 
 
 # ============================================================================
@@ -239,33 +235,6 @@ def create_model(
     return service.create_model(request)
 
 
-@router.patch(
-    "/{model_id:path}",
-    response_model=AIModelResponse,
-    summary="Update a model (ROOT_ADMIN only)",
-)
-def update_model(
-    model_id: str,
-    request: UpdateModelRequest,
-    service: AIModelsService = Depends(get_models_service),
-    current_user: Optional[dict] = Depends(get_current_user),
-):
-    """Update an existing model."""
-    if not check_root_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only ROOT_ADMIN can update models",
-        )
-    
-    model = service.update_model(model_id, request)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Model '{model_id}' not found",
-        )
-    return model
-
-
 @router.put(
     "/free-tier",
     response_model=FreeModelsResponse,
@@ -308,5 +277,43 @@ def update_use_case_default(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only ROOT_ADMIN can update defaults",
         )
+
+    try:
+        updated = service.update_use_case_default(use_case, request)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Use case '{use_case}' has no defaults row",
+        )
+    return updated
+
+
+# Registered LAST: the catch-all path parameter would otherwise swallow
+# PATCH /defaults/{use_case} (model_id="defaults/agent" -> 404).
+@router.patch(
+    "/{model_id:path}",
+    response_model=AIModelResponse,
+    summary="Update a model (ROOT_ADMIN only)",
+)
+def update_model(
+    model_id: str,
+    request: UpdateModelRequest,
+    service: AIModelsService = Depends(get_models_service),
+    current_user: Optional[dict] = Depends(get_current_user),
+):
+    """Update an existing model."""
+    if not check_root_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only ROOT_ADMIN can update models",
+        )
     
-    return service.update_use_case_default(use_case, request)
+    model = service.update_model(model_id, request)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Model '{model_id}' not found",
+        )
+    return model

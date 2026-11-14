@@ -1,0 +1,10 @@
+{
+    "errorMessage": "تعذر تحميل {{widgetName}}",
+    "sessionExpiredNotice": "ربما تكون جلستك قد انتهت أو تتطلب إعادة المصادقة.",
+    "debugInfoLabel": "معلومات التصحيح",
+    "actions": {
+        "refreshPage": "تحديث الصفحة",
+        "login": "تسجيل الدخول",
+        "tryAgain": "إعادة المحاولة"
+    }
+}

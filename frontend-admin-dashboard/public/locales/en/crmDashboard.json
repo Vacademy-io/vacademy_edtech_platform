@@ -1,0 +1,211 @@
+{
+    "header": {
+        "title": "CRM Dashboard",
+        "greeting": "Good to see you, {{name}}",
+        "subtitleAdmin": "How leads, follow-ups and calls are going across the institute.",
+        "subtitleScoped": "Your leads, follow-ups and calls — the same ones you see in your lead lists.",
+        "updated_zero": "Updated just now",
+        "updated_one": "Updated {{count}} minute ago",
+        "updated_other": "Updated {{count}} minutes ago"
+    },
+    "range": {
+        "days_one": "{{count}} day",
+        "days_other": "{{count}}d"
+    },
+    "common": {
+        "refresh": "Refresh",
+        "retry": "Try again",
+        "viewAll": "View all",
+        "vsPrevious": "Compared with the previous period of the same length",
+        "noLeads": "No leads in this period yet.",
+        "unavailable": "Not available for your role.",
+        "loadFailed": "Couldn't load the dashboard numbers.",
+        "noAccess": "You haven't been given access to any lead lists yet, so there is nothing to show. Ask an admin to grant you lists in Settings."
+    },
+    "quick": {
+        "recentLeads": "Recent leads",
+        "checkLead": "Check lead",
+        "followUps": "Follow-ups",
+        "callLog": "Call log",
+        "leadLists": "Lead lists",
+        "reports": "Reports",
+        "announce": "Send announcement"
+    },
+    "hero": {
+        "eyebrow": "Leads · last {{days}} days",
+        "unit": "new leads",
+        "sub": "{{converted}} converted · {{rate}} conversion",
+        "compare": "Previous {{days}} days: {{total}} leads",
+        "series": {
+            "leads": "New leads",
+            "converted": "Converted",
+            "previous": "Previous period",
+            "contacted": "Contacted"
+        }
+    },
+    "today": {
+        "overdue": "Overdue follow-ups",
+        "overdueDetail": "past their due time",
+        "dueToday": "Due today",
+        "dueTodayDetail": "still to do today",
+        "closedToday": "{{count}} closed today",
+        "upcoming": "Upcoming",
+        "upcomingDetail": "after today",
+        "notContacted": "Not contacted yet",
+        "notContactedDetail": "new leads since {{days}}",
+        "calls": "Calls",
+        "callsDetail": "{{rate}} connected"
+    },
+    "kpi": {
+        "newLeads": "New leads",
+        "newLeadsDetail": "about {{perDay}} a day",
+        "firstResponse": "First response (median)",
+        "firstResponseDetail": "{{share}} of new leads contacted so far",
+        "converted": "Converted",
+        "convertedDetail": "{{rate}} of new leads",
+        "overdue": "Follow-ups overdue",
+        "overdueDetail": "{{today}} more due today"
+    },
+    "insights": {
+        "overdueCounsellor": {
+            "title": "{{name}} has {{count}} overdue",
+            "text": "The most overdue follow-ups on the team. Open the list to call or reassign."
+        },
+        "uncontacted": {
+            "title": "{{count}} new leads not contacted",
+            "text": "{{share}} of this period's leads have had no call, note or message yet."
+        },
+        "bestSource": {
+            "title": "{{source}} converts best",
+            "text": "{{rate}} of its {{count}} leads joined in this period."
+        },
+        "topCounsellor": {
+            "title": "{{name}} converted {{count}}",
+            "text": "Top converter this period, at {{rate}} of assigned leads."
+        },
+        "dueToday": {
+            "title": "{{count}} follow-ups due today",
+            "text": "Clear them before the end of the day to keep leads warm."
+        }
+    },
+    "pipeline": {
+        "title": "Lead pipeline",
+        "subtitle": "Leads that arrived in this period, by their current status. Click a stage to open it.",
+        "noStatus": "No status",
+        "showAll": "Show all {{count}} statuses",
+        "showLess": "Show fewer",
+        "more_one": "+{{count}} more status ({{leads}} leads)",
+        "more_other": "+{{count}} more statuses ({{leads}} leads)"
+    },
+    "sources": {
+        "title": "Where leads come from",
+        "subtitle": "Leads and conversions by source",
+        "row": "{{leads}} leads · {{converted}} joined ({{rate}}%)"
+    },
+    "followups": {
+        "title": "Follow-up health",
+        "subtitle": "Right now — same counts as the Follow-ups page",
+        "overdue": "Overdue",
+        "today": "Due today",
+        "upcoming": "Upcoming",
+        "closedToday": "Closed today",
+        "byCounsellor": "Overdue by counsellor"
+    },
+    "attention": {
+        "title": "Needs attention",
+        "subtitle": "Most urgent first",
+        "allClear": "Nothing urgent right now.",
+        "open": "Open",
+        "overdue": {
+            "title": "{{total}} follow-ups are overdue",
+            "text": "Leads waiting past the promised call-back time"
+        },
+        "counsellor": {
+            "title": "{{name}} has {{count}} overdue follow-ups",
+            "text": "Check in or reassign some of their leads"
+        },
+        "notContacted": {
+            "title": "{{total}} new leads not contacted",
+            "text": "No call, note or message yet"
+        },
+        "today": {
+            "title": "{{total}} follow-ups due today",
+            "text": "Still open for today"
+        },
+        "coldList": {
+            "title": "{{name}} has no conversions",
+            "text": "{{total}} leads this period and none joined yet"
+        }
+    },
+    "counsellors": {
+        "title": "Counsellor performance",
+        "subtitle": "Leads that arrived in this period, by owner",
+        "empty": "No assigned leads in this period.",
+        "contacted": "{{share}} contacted",
+        "col": {
+            "name": "Counsellor",
+            "assigned": "Assigned",
+            "converted": "Converted",
+            "firstResponse": "First response",
+            "overdue": "Overdue"
+        }
+    },
+    "leaderboard": {
+        "title": "Top converters",
+        "subtitle": "This period",
+        "empty": "No conversions in this period yet.",
+        "joined": "{{count}} joined"
+    },
+    "calls": {
+        "title": "Calls",
+        "subtitle": "When calls connect · day × hour",
+        "dials": "Dials",
+        "connected": "Connected",
+        "talk": "Talk time",
+        "empty": "No calls in this period.",
+        "cellTip": "{{count}} connected at {{hour}}:00",
+        "bestWindow": "Calls connect best between {{from}}:00 and {{to}}:00."
+    },
+    "weekday": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+    },
+    "lists": {
+        "title": "Lead lists & campaigns",
+        "subtitle": "Busiest lists this period",
+        "col": {
+            "name": "Lead list",
+            "leads": "Leads",
+            "contacted": "Contacted",
+            "converted": "Converted"
+        }
+    },
+    "quality": {
+        "title": "Lead quality & age",
+        "subtitle": "Open leads right now (not converted or lost)",
+        "notScored": "Not scored",
+        "ageTitle": "Days since the last touch",
+        "age": {
+            "TODAY": "Today",
+            "D1_3": "1–3 days",
+            "D4_7": "4–7 days",
+            "D8_14": "8–14 days",
+            "D15_PLUS": "15+ days"
+        }
+    },
+    "lms": {
+        "title": "LMS Dashboard",
+        "subtitle": "Classes, {{learners}}, doubts and learning activity — the learning side of the home page.",
+        "links": {
+            "pulse": "Institute Pulse",
+            "liveDashboard": "Live class dashboard",
+            "reports": "Learning reports",
+            "assessments": "Assessments"
+        }
+    }
+}

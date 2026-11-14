@@ -1,0 +1,14 @@
+{
+    "title": "Boîte de réception e-mail",
+    "refresh": "Actualiser",
+    "inboxFor": "Boîte de réception pour",
+    "noSendersConfigured": "Aucun expéditeur configuré",
+    "allSenders": "Tous les expéditeurs ({{count}})",
+    "direction": {
+        "all": "Tout",
+        "sent": "Envoyés",
+        "received": "Reçus"
+    },
+    "searchPlaceholder": "Rechercher par e-mail ou objet",
+    "clearSearch": "Effacer la recherche"
+}

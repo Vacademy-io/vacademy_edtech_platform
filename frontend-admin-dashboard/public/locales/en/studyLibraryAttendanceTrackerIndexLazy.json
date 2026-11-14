@@ -1,0 +1,132 @@
+{
+    "pageTitle": "Live Class Attendance",
+    "pageDescription": "Track and manage student attendance for live classes",
+    "navHeading": "Attendance Tracker",
+    "duration": {
+        "minutes": "{{count}} min",
+        "hoursOnly": "{{count}}h",
+        "hoursMinutes": "{{hours}}h {{minutes}}m"
+    },
+    "time": {
+        "am": "AM",
+        "pm": "PM"
+    },
+    "sessionColumns": {
+        "class": "Class",
+        "date": "Date",
+        "time": "Time",
+        "status": "Status"
+    },
+    "status": {
+        "present": "Present",
+        "absent": "Absent"
+    },
+    "modal": {
+        "loadingAttendance": "Loading attendance…",
+        "classAttendanceTitle": "{{name}} - Class Attendance",
+        "attendanceLabel": "Attendance",
+        "totalClasses": "Total Classes",
+        "noSessions": "No sessions found for this learner",
+        "classCount_one": "{{count}} class",
+        "classCount_other": "{{count}} classes"
+    },
+    "exportButton": {
+        "exporting": "Exporting...",
+        "export": "Export CSV"
+    },
+    "filters": {
+        "searchLabel": "Search",
+        "searchPlaceholder": "Search students...",
+        "clearFilters": "Clear Filters",
+        "allBatches": "All Batches",
+        "selectLabel": "Select {{term}}"
+    },
+    "studentsCount": {
+        "loading": "Loading students...",
+        "showing": "Showing",
+        "of": "of",
+        "students_one": "student",
+        "students_other": "students"
+    },
+    "errors": {
+        "title": "Error loading attendance data",
+        "description": "Please try refreshing the page or adjusting your filters"
+    },
+    "empty": {
+        "title": "No students found",
+        "description": "Try adjusting your search or filter criteria",
+        "clearAll": "Clear all filters"
+    },
+    "bulk": {
+        "selected": "Selected",
+        "reset": "Reset",
+        "exportAccountDetails": "Export Account Details",
+        "exportData": "Export Data",
+        "bulkActions": "Bulk Actions"
+    },
+    "exportDialog": {
+        "heading": "Export Attendance CSV",
+        "cancel": "Cancel",
+        "downloadCsv": "Download CSV",
+        "description": "Choose which attendance records to include in the export.",
+        "scope": {
+            "both": {
+                "label": "Present & Absent",
+                "desc": "Include both attended and missed classes (default)"
+            },
+            "present": {
+                "label": "Present only",
+                "desc": "Only the classes the learner attended"
+            },
+            "absent": {
+                "label": "Absent only",
+                "desc": "Only the classes the learner missed"
+            }
+        }
+    },
+    "table": {
+        "detailsHeader": "Details",
+        "viewDetails": "View learner details",
+        "learnerName": "Learner Name",
+        "sortLearnerName": "Sort learner name",
+        "username": "Username",
+        "mobileNumber": "Mobile Number",
+        "email": "Email",
+        "avgDuration": "Avg Duration",
+        "liveClassesAttendance": "Live Classes and Attendance",
+        "attended": "Attended",
+        "viewMore": "View More"
+    },
+    "toasts": {
+        "accountDetailsSuccess": "Account details exported successfully",
+        "accountDetailsFailure": "Failed to export account details",
+        "fullDataSuccess": "Attendance data exported successfully",
+        "fullDataFailure": "Failed to export attendance data"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "enrollmentNumber": "Enrollment Number",
+        "course": "Course",
+        "gender": "Gender",
+        "enrollmentStatus": "Enrollment Status",
+        "attendancePercent": "Attendance %",
+        "classesAttended": "Classes Attended",
+        "avgDuration": "Avg Duration"
+    },
+    "dateFilter": {
+        "label": "Date range",
+        "custom": "Custom",
+        "pickCustomRange": "Pick a custom range",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days"
+    },
+    "batchDropdown": {
+        "clearCount": "Clear ({{count}})",
+        "searchPlaceholder": "Search...",
+        "noBatchesFound": "No batches found",
+        "batchesSelected_one": "{{count}} batch selected",
+        "batchesSelected_other": "{{count}} batches selected"
+    }
+}

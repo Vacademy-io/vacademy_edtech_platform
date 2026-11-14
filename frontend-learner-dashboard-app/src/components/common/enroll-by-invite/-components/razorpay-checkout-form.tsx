@@ -5,7 +5,11 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { parseHtmlToString } from "@/lib/utils";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { releaseStockHold } from "../-services/enroll-invite-services";
 
 // Razorpay rejects payment creation when `description` exceeds 255 characters
 // ("Could not validate payment create request due to: description: the length
@@ -19,9 +23,14 @@ import { parseHtmlToString } from "@/lib/utils";
 const RAZORPAY_DESCRIPTION_MAX_BYTES = 255;
 const RAZORPAY_DESCRIPTION_ELLIPSIS = "..."; // ASCII: 1 byte per char
 
-function toRazorpayDescription(raw: string): string {
+// How long the Razorpay window stays open, in seconds. Matches the 30 minutes
+// the server holds stock for an unpaid order, so a window left open never
+// outlives the hold it is paying for.
+const RAZORPAY_CHECKOUT_TIMEOUT_SECONDS = 1800;
+
+function toRazorpayDescription(raw: string, fallback: string): string {
   const text = parseHtmlToString(raw).replace(/\s+/g, " ").trim();
-  if (!text) return "Payment for course enrollment";
+  if (!text) return fallback;
 
   const encoder = new TextEncoder();
   if (encoder.encode(text).length <= RAZORPAY_DESCRIPTION_MAX_BYTES) {
@@ -54,6 +63,10 @@ export interface RazorpayCheckoutFormRef {
     // make Razorpay Checkout open in mandate mode (UPI Autopay / card e-mandate).
     recurring?: number;
     customerId?: string;
+    // The payment log the enroll call created (its `payment_response.order_id`).
+    // When given, closing the window without paying releases the stock held
+    // for that order straight away instead of after the 30-minute expiry.
+    paymentLogId?: string;
   }) => void;
 }
 
@@ -88,11 +101,18 @@ export const RazorpayCheckoutForm = forwardRef<
       onPaymentReady,
       onError,
       userName = "",
-      courseName = "Course Enrollment",
-      courseDescription = "Payment for course enrollment",
+      courseName,
+      courseDescription,
     },
     ref
   ) => {
+    const { t } = useTranslation("enrollmentA");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const resolvedCourseName =
+      courseName ?? t("razorpayCheckout.defaultCourseName", { course });
+    const resolvedCourseDescription =
+      courseDescription ??
+      t("razorpayCheckout.defaultCourseDescription", { course });
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
     const [scriptError, setScriptError] = useState<string | null>(null);
     const razorpayInstanceRef = useRef<RazorpayInstance | null>(null);
@@ -119,9 +139,9 @@ export const RazorpayCheckoutForm = forwardRef<
 
       script.onerror = () => {
         console.error("Failed to load Razorpay script");
-        setScriptError("Failed to load Razorpay payment gateway");
+        setScriptError(t("razorpayCheckout.scriptLoadFailed"));
         if (onError) {
-          onError("Failed to load payment gateway");
+          onError(t("razorpayCheckout.gatewayLoadFailed"));
         }
       };
 
@@ -146,11 +166,12 @@ export const RazorpayCheckoutForm = forwardRef<
         email: string;
         recurring?: number;
         customerId?: string;
+        paymentLogId?: string;
       }) => {
         if (!isScriptLoaded) {
           console.error("Razorpay script not loaded");
           if (onError) {
-            onError("Payment gateway not ready");
+            onError(t("razorpayCheckout.gatewayNotReady"));
           }
           return;
         }
@@ -158,16 +179,21 @@ export const RazorpayCheckoutForm = forwardRef<
         if (!window.Razorpay) {
           console.error("Razorpay object not found");
           if (onError) {
-            onError("Payment gateway not initialized");
+            onError(t("razorpayCheckout.gatewayNotInitialized"));
           }
           return;
         }
+
+        // Set once Razorpay reports a payment, so a dismiss that follows the
+        // success never gives back stock the learner has just paid for.
+        let paymentSubmitted = false;
 
         const options: Record<string, unknown> = {
           key: orderDetails.razorpayKeyId,
           amount: orderDetails.amount,
           currency: orderDetails.currency,
           order_id: orderDetails.razorpayOrderId,
+          timeout: RAZORPAY_CHECKOUT_TIMEOUT_SECONDS,
           // Autopay: run Checkout in recurring/mandate mode so the learner
           // authorizes UPI Autopay / a card e-mandate (needs a customer_id + an
           // order created with a token block, both from the backend).
@@ -177,13 +203,17 @@ export const RazorpayCheckoutForm = forwardRef<
                 customer_id: orderDetails.customerId,
               }
             : {}),
-          name: courseName,
-          description: toRazorpayDescription(courseDescription),
+          name: resolvedCourseName,
+          description: toRazorpayDescription(
+            resolvedCourseDescription,
+            t("razorpayCheckout.defaultCourseDescription", { course })
+          ),
           handler: function (response: {
             razorpay_payment_id: string;
             razorpay_order_id: string;
             razorpay_signature: string;
           }) {
+            paymentSubmitted = true;
             if (onPaymentReady) {
               onPaymentReady({
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -202,10 +232,13 @@ export const RazorpayCheckoutForm = forwardRef<
           },
           modal: {
             ondismiss: function () {
+              // Fire and forget: the release never throws and must not delay
+              // the cancelled handling below.
+              if (!paymentSubmitted) {
+                void releaseStockHold(orderDetails.paymentLogId);
+              }
               if (onError) {
-                onError(
-                  "Payment cancelled. The enrollment is created but payment is pending."
-                );
+                onError(t("razorpayCheckout.paymentCancelled"));
               }
             },
           },
@@ -217,7 +250,7 @@ export const RazorpayCheckoutForm = forwardRef<
         } catch (err) {
           console.error("Error opening Razorpay checkout:", err);
           if (onError) {
-            onError("Failed to open payment gateway");
+            onError(t("razorpayCheckout.gatewayOpenFailed"));
           }
         }
       },
@@ -226,19 +259,19 @@ export const RazorpayCheckoutForm = forwardRef<
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              💳 Razorpay Payment
+          <div className="text-center mb-6 space-y-2">
+            <h2 className="text-2xl font-bold text-gray-800">
+              💳 {t("razorpayCheckout.title")}
             </h2>
             <p className="text-gray-600">
-              Click "Complete Enrollment" to proceed with payment
+              {t("razorpayCheckout.description")}
             </p>
           </div>
 
           {/* Amount Display */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex justify-between items-center">
-              <span className="text-gray-700 font-medium">Amount to Pay:</span>
+              <span className="text-gray-700 font-medium">{t("common.amountToPay")}</span>
               <span className="text-2xl font-bold text-blue-600">
                 {currency.toUpperCase()} {amount.toFixed(2)}
               </span>
@@ -249,7 +282,7 @@ export const RazorpayCheckoutForm = forwardRef<
           {(error || scriptError) && (
             <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg">
               <strong className="text-red-800 flex items-center gap-2">
-                <span>❌</span> Error
+                <span>❌</span> {t("common.error")}
               </strong>
               <p className="text-red-700 text-sm mt-1">
                 {error || scriptError}
@@ -260,9 +293,9 @@ export const RazorpayCheckoutForm = forwardRef<
           {/* Security Notice */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              🔒 Your payment is secured by Razorpay
+              🔒 {t("razorpayCheckout.securedBy")}
               <br />
-              Razorpay supports Credit/Debit Cards, Net Banking, UPI & Wallets
+              {t("razorpayCheckout.methods")}
             </p>
           </div>
         </div>

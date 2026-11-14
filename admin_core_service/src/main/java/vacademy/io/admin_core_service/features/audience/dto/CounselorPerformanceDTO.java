@@ -23,7 +23,9 @@ public class CounselorPerformanceDTO {
 
     private String fromDate;
     private String toDate;
-    /** TAT threshold used for the tat_met calculation (null when the institute has TAT disabled). */
+    /** TAT threshold in minutes used for the tat_met calculation (null when TAT is disabled). */
+    private Integer tatMinutes;
+    /** Same threshold in whole hours, rounded up — kept for older clients; prefer tatMinutes. */
     private Integer tatHours;
 
     private List<Row> rows;
@@ -38,7 +40,7 @@ public class CounselorPerformanceDTO {
         private String counselorId;
         private String counselorName;   // resolved from auth-service; falls back to id if lookup fails
         private long leadsAssigned;     // distinct leads ever assigned to this counsellor in range
-        private long leadsResponded;    // leads where this counsellor has at least one timeline_event
+        private long leadsResponded;    // leads with at least one response event (see AudienceResponseRepository)
         private long conversions;
         private Double conversionRate;  // %
         private Double avgResponseMinutes;

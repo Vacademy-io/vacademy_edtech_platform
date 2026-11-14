@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -12,12 +13,13 @@ import {
 import {
     Article,
     BellRinging,
+    EyeSlash,
     Globe,
     Lightning,
     UsersThree as UsersThreeIcon,
     Warning,
 } from '@phosphor-icons/react';
-import { STREAMING_OPTIONS } from '../-constants/options';
+import { buildStreamingOptions } from '../-constants/options';
 
 export type PreviewSelectedLevel = {
     courseId: string;
@@ -114,6 +116,12 @@ interface LiveSessionPreviewDialogProps {
     submittingLabel?: string;
     backLabel?: string;
     footerNote?: string;
+    /**
+     * Institute runs live classes in "attendance only" mode
+     * (LIVE_SESSION_SETTING.attendanceOnlyMode): learners won't see these
+     * classes, only their attendance. Renders a notice so the admin knows.
+     */
+    attendanceOnly?: boolean;
 }
 
 export function LiveSessionPreviewDialog({
@@ -131,46 +139,61 @@ export function LiveSessionPreviewDialog({
     sessionList,
     recurrenceBanner,
     topLevelDescription,
-    title = 'Review & confirm',
-    description = 'Make sure everything looks right. Confirm to create — or go back and edit.',
-    confirmLabel = 'Confirm & create',
-    submittingLabel = 'Creating…',
-    backLabel = 'Back to edit',
+    title: titleProp,
+    description: descriptionProp,
+    confirmLabel: confirmLabelProp,
+    submittingLabel: submittingLabelProp,
+    backLabel: backLabelProp,
     footerNote,
+    attendanceOnly = false,
 }: LiveSessionPreviewDialogProps) {
+    const { t, i18n } = useTranslation([
+        'studyLibraryLiveSessionPreviewDialog',
+        'studyLibraryOptions',
+    ]);
+    const STREAMING_OPTIONS = buildStreamingOptions(t);
+    const title = titleProp ?? t('reviewAndConfirm');
+    const description = descriptionProp ?? t('reviewAndConfirmDescription');
+    const confirmLabel = confirmLabelProp ?? t('confirmAndCreate');
+    const submittingLabel = submittingLabelProp ?? t('creating');
+    const backLabel = backLabelProp ?? t('backToEdit');
     const totalSessions = sessions.length;
     const features = sessionFeatures ?? {};
     const notifyBy = notifications?.notifyBy ?? {};
     const notifySettings = notifications?.notifySettings ?? {};
 
     const channelLabels = [
-        notifyBy.mail ? 'Email' : null,
-        notifyBy.whatsapp ? 'WhatsApp' : null,
-        notifyBy.push_notification ? 'Push' : null,
-        notifyBy.system_notification ? 'System' : null,
+        notifyBy.mail ? t('channels.email') : null,
+        notifyBy.whatsapp ? t('channels.whatsapp') : null,
+        notifyBy.push_notification ? t('channels.push') : null,
+        notifyBy.system_notification ? t('channels.system') : null,
     ].filter(Boolean) as string[];
 
     const triggerLabels: string[] = [];
-    if (notifySettings.onCreate) triggerLabels.push('On create');
+    if (notifySettings.onCreate) triggerLabels.push(t('triggers.onCreate'));
     // This dialog re-renders on every notification toggle (its props are
     // watch()ed), so guard against any malformed reminder entry (null / missing
     // `time`) reaching here — accessing `.time` on a bad element would throw
     // during render and trip the route-level "System Crashed" page.
     const beforeTimes = (notifySettings.beforeLiveTime ?? []).filter(
-        (t): t is { time: string } => !!t && typeof t.time === 'string' && t.time.length > 0
+        (bt): bt is { time: string } => !!bt && typeof bt.time === 'string' && bt.time.length > 0
     );
     if (beforeTimes.length > 0) {
-        triggerLabels.push(`Before live (${beforeTimes.map((t) => t.time).join(', ')})`);
+        triggerLabels.push(
+            t('triggers.beforeLive', { times: beforeTimes.map((bt) => bt.time).join(', ') })
+        );
     }
-    if (notifySettings.onLive) triggerLabels.push('On live');
-    if (notifySettings.onAttendance) triggerLabels.push('On attendance');
+    if (notifySettings.onLive) triggerLabels.push(t('triggers.onLive'));
+    if (notifySettings.onAttendance) triggerLabels.push(t('triggers.onAttendance'));
 
     const playbackLabel = (() => {
         const blocked = [
-            features.allowRewind ? null : 'rewind',
-            features.allowPause ? null : 'pause',
+            features.allowRewind ? null : t('playback.rewind'),
+            features.allowPause ? null : t('playback.pause'),
         ].filter(Boolean);
-        return blocked.length === 0 ? 'Unrestricted' : `Blocked: ${blocked.join(', ')}`;
+        return blocked.length === 0
+            ? t('playback.unrestricted')
+            : t('playback.blocked', { items: blocked.join(', ') });
     })();
 
     const showValidBadge = typeof validCount === 'number' && validCount < totalSessions;
@@ -209,14 +232,14 @@ export function LiveSessionPreviewDialog({
                                 variant="secondary"
                                 className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700"
                             >
-                                {totalSessions} session{totalSessions === 1 ? '' : 's'}
+                                {t('sessionCount', { count: totalSessions })}
                             </Badge>
                             {showValidBadge && (
                                 <Badge
                                     variant="outline"
                                     className="rounded-full px-3 py-1 text-xs font-normal text-neutral-500"
                                 >
-                                    {validCount} fully filled
+                                    {t('fullyFilledCount', { count: validCount })}
                                 </Badge>
                             )}
                         </div>
@@ -225,22 +248,35 @@ export function LiveSessionPreviewDialog({
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-5">
+                    {attendanceOnly && (
+                        <div className="mb-4 flex items-start gap-3 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
+                            <EyeSlash size={18} className="mt-0.5 shrink-0 text-warning-700" />
+                            <div>
+                                <div className="text-sm font-semibold text-warning-800">
+                                    {t('attendanceOnly.title')}
+                                </div>
+                                <div className="mt-0.5 text-xs text-warning-700">
+                                    {t('attendanceOnly.description')}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid gap-3 lg:grid-cols-3">
                         {/* Schedule */}
                         <div className="rounded-lg border border-neutral-200 bg-white p-4">
                             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                 <Globe size={14} />
-                                Schedule
+                                {t('schedule')}
                             </div>
                             <dl className="mt-3 space-y-2 text-sm">
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Timezone</dt>
+                                    <dt className="text-neutral-500">{t('timezone')}</dt>
                                     <dd className="font-medium text-neutral-800">
                                         {timeZone || '—'}
                                     </dd>
                                 </div>
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Access</dt>
+                                    <dt className="text-neutral-500">{t('access')}</dt>
                                     <dd className="font-medium capitalize text-neutral-800">
                                         {accessType || '—'}
                                     </dd>
@@ -252,33 +288,37 @@ export function LiveSessionPreviewDialog({
                         <div className="rounded-lg border border-neutral-200 bg-white p-4">
                             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                 <UsersThreeIcon size={14} />
-                                Session features
+                                {t('sessionFeatures')}
                             </div>
                             <dl className="mt-3 space-y-2 text-sm">
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Waiting room</dt>
+                                    <dt className="text-neutral-500">{t('waitingRoom')}</dt>
                                     <dd className="font-medium text-neutral-800">
                                         {features.enableWaitingRoom
-                                            ? `Opens ${features.waitingRoomMinutes ?? '—'}m before`
-                                            : 'Disabled'}
+                                            ? t('waitingRoomOpensBefore', {
+                                                  minutes: features.waitingRoomMinutes ?? '—',
+                                              })
+                                            : t('disabled')}
                                     </dd>
                                 </div>
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Playback</dt>
+                                    <dt className="text-neutral-500">{t('playbackLabel')}</dt>
                                     <dd className="font-medium text-neutral-800">
                                         {playbackLabel}
                                     </dd>
                                 </div>
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Feedback</dt>
+                                    <dt className="text-neutral-500">{t('feedback')}</dt>
                                     <dd className="font-medium text-neutral-800">
-                                        {features.enableFeedback ? 'Default form' : 'Off'}
+                                        {features.enableFeedback
+                                            ? t('defaultForm')
+                                            : t('off')}
                                     </dd>
                                 </div>
                                 <div className="flex items-baseline justify-between gap-3">
-                                    <dt className="text-neutral-500">Recording</dt>
+                                    <dt className="text-neutral-500">{t('recording')}</dt>
                                     <dd className="font-medium text-neutral-800">
-                                        {features.recordSession ? 'On' : 'Off'}
+                                        {features.recordSession ? t('on') : t('off')}
                                     </dd>
                                 </div>
                             </dl>
@@ -288,14 +328,16 @@ export function LiveSessionPreviewDialog({
                         <div className="rounded-lg border border-neutral-200 bg-white p-4">
                             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                 <BellRinging size={14} />
-                                Notifications
+                                {t('notifications')}
                             </div>
                             <div className="mt-3 space-y-3 text-sm">
                                 <div>
-                                    <div className="text-xs text-neutral-500">Channels</div>
+                                    <div className="text-xs text-neutral-500">{t('channelsLabel')}</div>
                                     <div className="mt-1 flex flex-wrap gap-1">
                                         {channelLabels.length === 0 ? (
-                                            <span className="text-xs text-neutral-400">None</span>
+                                            <span className="text-xs text-neutral-400">
+                                                {t('none')}
+                                            </span>
                                         ) : (
                                             channelLabels.map((c) => (
                                                 <Badge
@@ -310,10 +352,12 @@ export function LiveSessionPreviewDialog({
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-xs text-neutral-500">Triggers</div>
+                                    <div className="text-xs text-neutral-500">{t('triggersLabel')}</div>
                                     <div className="mt-1 flex flex-wrap gap-1">
                                         {triggerLabels.length === 0 ? (
-                                            <span className="text-xs text-neutral-400">None</span>
+                                            <span className="text-xs text-neutral-400">
+                                                {t('none')}
+                                            </span>
                                         ) : (
                                             triggerLabels.map((t) => (
                                                 <Badge
@@ -335,7 +379,7 @@ export function LiveSessionPreviewDialog({
                         <div className="mt-5 rounded-lg border border-neutral-200 bg-white p-4">
                             <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                 <Article size={14} />
-                                Description
+                                {t('description')}
                             </div>
                             <div
                                 className="prose prose-sm max-w-none text-sm text-neutral-700"
@@ -359,7 +403,9 @@ export function LiveSessionPreviewDialog({
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-neutral-600">
                                 {recurrenceBanner.days && recurrenceBanner.days.length > 0 && (
                                     <div className="flex items-center gap-1.5">
-                                        <span className="font-medium text-neutral-500">Days:</span>
+                                        <span className="font-medium text-neutral-500">
+                                            {t('daysLabel')}
+                                        </span>
                                         <div className="flex flex-wrap gap-1">
                                             {recurrenceBanner.days.map((d) => (
                                                 <span
@@ -374,7 +420,9 @@ export function LiveSessionPreviewDialog({
                                 )}
                                 {recurrenceBanner.until && (
                                     <span className="text-neutral-600">
-                                        <span className="font-medium text-neutral-500">Ends:</span>{' '}
+                                        <span className="font-medium text-neutral-500">
+                                            {t('endsLabel')}
+                                        </span>{' '}
                                         {recurrenceBanner.until}
                                     </span>
                                 )}
@@ -386,14 +434,15 @@ export function LiveSessionPreviewDialog({
                     <div className="mt-5 flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-neutral-800">
                             {recurrenceBanner
-                                ? 'Weekly schedule'
+                                ? t('weeklySchedule')
                                 : totalSessions === 1
-                                  ? 'Session to be created'
-                                  : 'Sessions to be created'}
+                                  ? t('sessionToBeCreated')
+                                  : t('sessionsToBeCreated')}
                         </h3>
                         <span className="text-xs text-neutral-500">
-                            {totalSessions} {recurrenceBanner ? 'slot' : 'row'}
-                            {totalSessions === 1 ? '' : 's'}
+                            {recurrenceBanner
+                                ? t('slotCount', { count: totalSessions })
+                                : t('rowCount', { count: totalSessions })}
                         </span>
                     </div>
                     <div className="mt-2 overflow-hidden rounded-lg border border-neutral-200">
@@ -405,25 +454,25 @@ export function LiveSessionPreviewDialog({
                                             #
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Title
+                                            {t('table.title')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Subject
+                                            {t('table.subject')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            When
+                                            {t('table.when')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Duration
+                                            {t('table.duration')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Platform
+                                            {t('table.platform')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Link
+                                            {t('table.link')}
                                         </TableHead>
                                         <TableHead className="text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Batches
+                                            {t('table.batches')}
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -439,8 +488,11 @@ export function LiveSessionPreviewDialog({
                                             Number(row.durationMinutes || '0');
                                         const durationLabel =
                                             totalMins >= 60
-                                                ? `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`
-                                                : `${totalMins}m`;
+                                                ? t('durationHoursMinutes', {
+                                                      hours: Math.floor(totalMins / 60),
+                                                      minutes: totalMins % 60,
+                                                  })
+                                                : t('durationMinutes', { minutes: totalMins });
                                         const rowLevels = row.selectedLevels ?? [];
                                         const batchLabels = rowLevels.map((sl) => {
                                             const course = courses.find(
@@ -455,7 +507,7 @@ export function LiveSessionPreviewDialog({
                                                 .find((l) => l.id === sl.levelId)
                                                 ?.name?.trim();
                                             const courseName =
-                                                course?.courseName?.trim() || 'Course';
+                                                course?.courseName?.trim() || t('courseFallback');
                                             const sessionName = sessionEntry?.name?.trim();
                                             const levelIsGeneric =
                                                 !levelName || levelName.toLowerCase() === 'default';
@@ -473,7 +525,7 @@ export function LiveSessionPreviewDialog({
                                                 const d = new Date(
                                                     `${row.startDate}T${row.startTime || '00:00'}`
                                                 );
-                                                return d.toLocaleDateString(undefined, {
+                                                return d.toLocaleDateString(i18n.language, {
                                                     month: 'short',
                                                     day: 'numeric',
                                                     year: 'numeric',
@@ -493,7 +545,7 @@ export function LiveSessionPreviewDialog({
                                                 <TableCell className="font-medium text-neutral-800">
                                                     {row.title || (
                                                         <span className="text-danger-500">
-                                                            (empty)
+                                                            {t('emptyTitle')}
                                                         </span>
                                                     )}
                                                 </TableCell>
@@ -528,7 +580,7 @@ export function LiveSessionPreviewDialog({
                                                 <TableCell className="max-w-[260px]">
                                                     {batchLabels.length === 0 ? (
                                                         <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
-                                                            No batches
+                                                            {t('noBatches')}
                                                         </span>
                                                     ) : (
                                                         <div className="flex flex-wrap gap-1">
@@ -557,8 +609,8 @@ export function LiveSessionPreviewDialog({
                             <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                 <Article size={14} />
                                 {perRowDescriptions.length === 1
-                                    ? 'Description'
-                                    : 'Per-class descriptions'}
+                                    ? t('description')
+                                    : t('perClassDescriptions')}
                             </div>
                             <div className="flex flex-col gap-2">
                                 {perRowDescriptions.map(({ idx, row, html }) => (
@@ -585,11 +637,7 @@ export function LiveSessionPreviewDialog({
                     {showValidBadge && missingCount > 0 && (
                         <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                             <Warning size={14} className="mt-0.5 shrink-0" />
-                            <span>
-                                {missingCount} row{missingCount === 1 ? '' : 's'} still missing
-                                required fields. Sessions will still be created for fully-filled
-                                rows; failed rows will appear in the result dialog.
-                            </span>
+                            <span>{t('missingFieldsWarning', { count: missingCount })}</span>
                         </div>
                     )}
                 </div>
@@ -599,10 +647,10 @@ export function LiveSessionPreviewDialog({
                     <span className="text-xs text-neutral-500">
                         {footerNote ??
                             (recurrenceBanner
-                                ? `By confirming, the system creates this recurring class with ${totalSessions} weekly slot${totalSessions === 1 ? '' : 's'} and applies access & notification settings.`
+                                ? t('footerNote.recurring', { count: totalSessions })
                                 : totalSessions === 1
-                                  ? 'By confirming, the system creates this live class and applies access & notification settings.'
-                                  : `By confirming, the system creates ${totalSessions} sessions and applies access & notification settings to each.`)}
+                                  ? t('footerNote.single')
+                                  : t('footerNote.multiple', { count: totalSessions }))}
                     </span>
                     <div className="flex gap-2">
                         <MyButton

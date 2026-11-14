@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "عرض توضيحي لتحليل الإجابات",
+        "subtitle": "قبل مقابل بعد: كيف تُعرض الإجابات الآن"
+    },
+    "card": {
+        "title": "س{{number}}. سؤال الاستبيان {{number}}",
+        "beforeLabel": "❌ قبل (JSON الخام):",
+        "afterLabel": "✅ بعد (تم التحليل):",
+        "visited": "تمت الزيارة",
+        "markedForReview": "مُعلَّم للمراجعة",
+        "timeTaken": "الوقت المستغرق: {{seconds}} ث",
+        "durationLeft": "الوقت المتبقي: {{seconds}} ث",
+        "questionId": "معرّف السؤال: {{id}}"
+    },
+    "improvements": {
+        "title": "✨ التحسينات الرئيسية:",
+        "humanReadable": {
+            "bold": "إجابات قابلة للقراءة البشرية",
+            "text": "بدلاً من JSON الخام"
+        },
+        "questionTypeBadges": {
+            "bold": "شارات نوع السؤال",
+            "text": "لسهولة التعرف عليه"
+        },
+        "statusIndicators": {
+            "bold": "مؤشرات حالة الإجابة",
+            "text": "(تمت الزيارة، مُعلَّم للمراجعة)"
+        },
+        "timeTracking": {
+            "bold": "تتبع الوقت",
+            "text": "(الوقت المستغرق، الوقت المتبقي)"
+        },
+        "questionIdReference": {
+            "bold": "مرجع معرّف السؤال",
+            "text": "لأغراض التصحيح"
+        },
+        "surveySpecific": {
+            "bold": "معالجة خاصة بالاستبيانات",
+            "text": "(لا حاجة لإجابات صحيحة)"
+        }
+    },
+    "response": {
+        "unknown": "غير معروف",
+        "unknownType": "نوع إجابة غير معروف",
+        "parseError": "خطأ في تحليل بيانات الإجابة",
+        "selectedOptions": "الخيارات المحددة: {{options}}",
+        "noOptionsSelected": "لم يتم تحديد أي خيارات",
+        "answerValue": "الإجابة: {{value}}",
+        "noNumericAnswer": "لم يتم تقديم إجابة رقمية",
+        "noTextAnswer": "لم يتم تقديم إجابة نصية"
+    }
+}

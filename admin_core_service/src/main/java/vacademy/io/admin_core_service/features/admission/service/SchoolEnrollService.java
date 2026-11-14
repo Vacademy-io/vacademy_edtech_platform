@@ -363,6 +363,8 @@ public class SchoolEnrollService {
                                 PaymentStatusEnum.PAID.name(),
                                 JsonUtil.toJson(paymentSpecificData));
 
+                paymentLogService.recordOfflinePaymentLiveActivity(paymentLogId, enrollInvite.getInstituteId());
+
                 log.info("Created payment log {} for offline payment of {} {}", paymentLogId, payment.getAmount(),
                                 currency);
 

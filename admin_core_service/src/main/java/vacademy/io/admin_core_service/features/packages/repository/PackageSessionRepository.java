@@ -183,14 +183,52 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             @Param("instituteId") String instituteId,
             @Param("statuses") List<String> statuses);
 
+    /**
+     * Batch cards for one course: name, status, learner count and the invite code
+     * to share.
+     *
+     * <p>Two things this deliberately does not do, both of which used to leave the
+     * Manage Batches page unusable for institutes whose data was migrated in bulk:
+     *
+     * <ul>
+     * <li><b>It does not throw away the batch name.</b> The title used to be
+     * level + course. An institute migrated in bulk carries the level name
+     * "default" on every session, so every batch of a course rendered with an
+     * identical title and nothing on the page told them apart - while
+     * package_session.name held the real, distinct name all along. The name wins
+     * when it is set; the placeholder names "DEFAULT" and "General" fall back to
+     * level + course, which is what those institutes already see today.
+     * <li><b>It does not require a DEFAULT-tagged invite.</b> The tag is a
+     * preference in the ORDER BY, not a filter. Requiring it blanked the invite
+     * code on every batch of an institute whose invites carry no tag - 2,935 of
+     * them on one - even though those invites were ACTIVE and usable. Note the
+     * code is per invite, not per batch, so batches sharing a course-level invite
+     * legitimately show the same code.
+     * </ul>
+     *
+     * <p>Prose stays here rather than inside the query text: an apostrophe in a SQL
+     * comment inside a {@code @Query} string crash-loops the service at boot.
+     */
     @Query(value = """
             SELECT
                 ps.id AS packageSessionId,
-                CONCAT(l.level_name, ' ', p.package_name) AS batchName,
+                CASE
+                    WHEN COALESCE(TRIM(ps.name), '') <> ''
+                     AND UPPER(TRIM(ps.name)) NOT IN ('DEFAULT', 'GENERAL')
+                    THEN ps.name
+                    ELSE CONCAT(l.level_name, ' ', p.package_name)
+                END AS batchName,
                 ps.status AS batchStatus,
                 ps.start_time AS startDate,
                 COUNT(ssigm.id) AS countStudents,
-                ei.invite_code AS inviteCode,
+                (SELECT ei.invite_code
+                   FROM package_session_learner_invitation_to_payment_option psli
+                   JOIN enroll_invite ei ON ei.id = psli.enroll_invite_id
+                  WHERE psli.package_session_id = ps.id
+                    AND psli.status = 'ACTIVE'
+                    AND ei.status = 'ACTIVE'
+                  ORDER BY (ei.tag = 'DEFAULT') DESC NULLS LAST, ei.created_at DESC
+                  LIMIT 1) AS inviteCode,
                 ps.is_parent AS isParent,
                 ps.parent_id AS parentId
             FROM package_session ps
@@ -199,16 +237,9 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             LEFT JOIN student_session_institute_group_mapping ssigm
                 ON ssigm.package_session_id = ps.id
                 AND ssigm.status IN (:studentSessionStatuses)
-            LEFT JOIN package_session_learner_invitation_to_payment_option psli
-                ON psli.package_session_id = ps.id
-                AND psli.status = 'ACTIVE'
-            LEFT JOIN enroll_invite ei
-                ON ei.id = psli.enroll_invite_id
-                AND ei.tag = 'DEFAULT'
-                AND ei.status = 'ACTIVE'
             WHERE p.id = :packageId
               AND ps.status IN (:packageSessionStatuses)
-            GROUP BY ps.id, batchName, ps.status, ps.start_time, ei.invite_code, ps.is_parent, ps.parent_id
+            GROUP BY ps.id, ps.name, l.level_name, p.package_name, ps.status, ps.start_time, ps.is_parent, ps.parent_id
             ORDER BY ps.start_time DESC
             """, nativeQuery = true)
     List<BatchProjection> findBatchDetailsWithLatestInviteCode(
@@ -259,6 +290,67 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
 
     @Query("SELECT ps FROM PackageSession ps WHERE ps.level.id IN :levelIds")
     List<PackageSession> findByLevelIds(@Param("levelIds") List<String> levelIds);
+
+    // --- Level and session delete, scoped to one institute -------------------------------
+    // level and session have no institute column and the rows DEFAULT and INVITED are shared
+    // by every institute, so ownership is read through package_institute.
+    // A course belongs to the institute that was linked to it FIRST: the institute needs a link
+    // and no other institute may hold an older one (created_at is set by the database and never
+    // updated). A link alone is not enough, because the course routes let staff of any institute
+    // link any course to their own institute; such a late link owns nothing here. Links created
+    // in the same transaction carry the same created_at and own the course together.
+
+    /** Batches (any status) on the given levels whose course belongs to the institute (see above). */
+    @Query(value = "SELECT ps.* FROM package_session ps " +
+            "WHERE ps.level_id IN (:levelIds) " +
+            "AND EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<PackageSession> findByLevelIdsAndInstituteId(@Param("levelIds") List<String> levelIds,
+            @Param("instituteId") String instituteId);
+
+    /** Batches (any status) on the given sessions whose course belongs to the institute (see above). */
+    @Query(value = "SELECT ps.* FROM package_session ps " +
+            "WHERE ps.session_id IN (:sessionIds) " +
+            "AND EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<PackageSession> findBySessionIdsAndInstituteId(@Param("sessionIds") List<String> sessionIds,
+            @Param("instituteId") String instituteId);
+
+    /**
+     * Of the given levels, those still used by a batch that is not DELETED and whose course does
+     * NOT belong to the institute (another institute still uses the level).
+     */
+    @Query(value = "SELECT DISTINCT ps.level_id FROM package_session ps " +
+            "WHERE ps.level_id IN (:levelIds) " +
+            "AND ps.status IS DISTINCT FROM 'DELETED' " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<String> findLevelIdsUsedOutsideInstitute(@Param("levelIds") List<String> levelIds,
+            @Param("instituteId") String instituteId);
+
+    /**
+     * Of the given sessions, those still used by a batch that is not DELETED and whose course does
+     * NOT belong to the institute (another institute still uses the session).
+     */
+    @Query(value = "SELECT DISTINCT ps.session_id FROM package_session ps " +
+            "WHERE ps.session_id IN (:sessionIds) " +
+            "AND ps.status IS DISTINCT FROM 'DELETED' " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<String> findSessionIdsUsedOutsideInstitute(@Param("sessionIds") List<String> sessionIds,
+            @Param("instituteId") String instituteId);
 
     @Query("""
                 SELECT ps
@@ -341,8 +433,21 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
     List<PackageSession> findAllInvitedByPackageIds(@Param("packageIds") Set<String> packageIds);
 
     /**
-     * Autocomplete search for packages by name with relevance scoring
-     * Optimized for 20,000+ packages with database indexing and LIMIT 10
+     * Autocomplete search for batches with relevance scoring.
+     *
+     * Matches any part of the course name (substring), not just a prefix, so the batch filter
+     * finds "Advanced Nursing Care" from "nursing". Relevance still ranks an exact name first,
+     * then a prefix match, then a match that starts a word inside the name, then any substring.
+     *
+     * It also matches, and returns, the batch's OWN name (package_session.name). An institute
+     * whose batches are all one course could not find a single one of them here: every row the
+     * search returned carried the same course name and the same level name, so the picker showed
+     * a column of identical entries and typing the batch name found nothing at all.
+     *
+     * The selective predicate here is package_institute.institute_id (idx_package_institute_access),
+     * which bounds the scan to one institute's packages before the name filter runs — the
+     * LOWER(package_name) b-tree from V84 no longer helps a leading-wildcard LIKE. The added
+     * batch-name match is OR-ed into that same already-bounded row set, so it costs no extra scan.
      */
     @Query(value = """
                         SELECT
@@ -353,10 +458,14 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
                 l.level_name AS levelName,
                 s.id AS sessionId,
                 s.session_name AS sessionName,
+                ps.name AS batchName,
                 CASE
                     WHEN LOWER(p.package_name) = LOWER(:query) THEN 100
-                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT(:query, '%')) THEN 90
-                    ELSE 50
+                    WHEN LOWER(COALESCE(ps.name, '')) = LOWER(:query) THEN 100
+                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT(CAST(:query AS text), '%')) THEN 90
+                    WHEN LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT(CAST(:query AS text), '%')) THEN 90
+                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT('% ', CAST(:query AS text), '%')) THEN 80
+                    ELSE 70
                 END AS matchScore
             FROM package_session ps
             JOIN package p ON ps.package_id = p.id
@@ -365,11 +474,12 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             JOIN session s ON ps.session_id = s.id
                         WHERE
                             pi.institute_id = :instituteId
-                            AND LOWER(p.package_name) LIKE LOWER(CONCAT(:query, '%'))
+                            AND (LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                                 OR LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')))
                             AND (:sessionId IS NULL OR :sessionId = '' OR ps.session_id = :sessionId)
                             AND (:levelId IS NULL OR :levelId = '' OR ps.level_id = :levelId)
                             AND ps.status IN ('ACTIVE', 'HIDDEN','DRAFT')
-                        ORDER BY matchScore DESC, p.package_name ASC
+                        ORDER BY matchScore DESC, p.package_name ASC, ps.name ASC
                         LIMIT :limit
                         """, nativeQuery = true)
     List<vacademy.io.admin_core_service.features.packages.dto.PackageAutocompleteProjection> autocompletePackages(
@@ -525,6 +635,9 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
      */
     boolean existsByContentCopiedFromPackageSessionId(String sourcePackageSessionId);
 
+    /** True when any batch of any course still uses this session in one of the given statuses. */
+    boolean existsBySession_IdAndStatusIn(String sessionId, List<String> statuses);
+
     /**
      * Reverse-lookup for content-copy lineage with package/session/level joined
      * in one round-trip (avoids the 1+3N fan-out you get from the LAZY relations
@@ -549,5 +662,93 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             "LEFT JOIN FETCH ps.level " +
             "WHERE ps.id = :id")
     Optional<PackageSession> findByIdWithRelations(@Param("id") String id);
+
+    // ── Stock (max_seats / available_slots): one conditional UPDATE each, never read-then-save.
+    // Two payments for the same book used to read the same count and both save it (a lost
+    // update), or trip @Version and roll back the webhook. These bump version too, so a stale
+    // PackageSession entity saved later in the same transaction fails loudly instead of
+    // writing its old count back. No @Transactional: callers are transactional services, and a
+    // participating proxy would mark a webhook transaction rollback-only on any exception.
+    //
+    // A MEMBERSHIP package's max_seats is not stock (the rent feature reads it as books per
+    // period, available_slots as books at once) and a charge package (DELIVERY_CHARGE /
+    // SECURITY_DEPOSIT) has no copies: these UPDATEs never touch either, whoever calls them.
+    // Keep the type list in step with StockHoldService.isStockPackageType.
+
+    /** Takes :qty only when that much is left. 1 = taken; 0 = short, unlimited, not stock, or no such row. */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = available_slots - :qty, version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL AND available_slots >= :qty
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
+            """, nativeQuery = true)
+    int takeAvailableSlots(@Param("id") String id, @Param("qty") int qty);
+
+    /** Gives :qty back, capped at max_seats. 0 = unlimited, not stock, or no such row. */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = LEAST(COALESCE(available_slots, 0) + :qty, max_seats),
+                version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
+            """, nativeQuery = true)
+    int giveBackAvailableSlots(@Param("id") String id, @Param("qty") int qty);
+
+    /**
+     * The old decrementAvailability semantics in one statement: takes up to :qty and stops at 0
+     * instead of refusing. 0 = nothing left, unlimited, not stock, or no such row.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE package_session
+            SET available_slots = GREATEST(available_slots - :qty, 0), version = COALESCE(version, 0) + 1
+            WHERE id = :id AND max_seats IS NOT NULL AND available_slots > 0
+              AND NOT EXISTS (SELECT 1 FROM package p WHERE p.id = package_session.package_id
+                              AND upper(trim(p.package_type)) IN ('MEMBERSHIP', 'DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
+            """, nativeQuery = true)
+    int decrementAvailableSlotsClamped(@Param("id") String id, @Param("qty") int qty);
+
+    /** Stock and naming facts for stock holds, read fresh (a projection never comes from a stale entity). */
+    interface StockInfoProjection {
+        String getPackageSessionId();
+        Integer getMaxSeats();
+        Integer getAvailableSlots();
+        String getLevelId();
+        String getPackageId();
+        String getPackageName();
+        String getPackageType();
+    }
+
+    @Query("""
+            SELECT ps.id AS packageSessionId, ps.maxSeats AS maxSeats, ps.availableSlots AS availableSlots,
+                   l.id AS levelId, p.id AS packageId, p.packageName AS packageName, p.packageType AS packageType
+            FROM PackageSession ps
+            LEFT JOIN ps.level l
+            LEFT JOIN ps.packageEntity p
+            WHERE ps.id IN :ids
+            """)
+    List<StockInfoProjection> findStockInfoByIds(@Param("ids") java.util.Collection<String> ids);
+
+    /** The subset of {@code ids} whose package belongs to the institute. */
+    @Query(value = """
+            SELECT DISTINCT ps.id FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            WHERE ps.id IN (:ids) AND pi.institute_id = :instituteId
+            """, nativeQuery = true)
+    List<String> findIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
+                                    @Param("instituteId") String instituteId);
+
+    /** The subset of {@code ids} that are live (ACTIVE or HIDDEN) package sessions whose package belongs to the institute. */
+    @Query(value = """
+            SELECT DISTINCT ps.id FROM package_session ps
+            JOIN package_institute pi ON pi.package_id = ps.package_id
+            WHERE ps.id IN (:ids) AND pi.institute_id = :instituteId AND ps.status IN ('ACTIVE', 'HIDDEN')
+            """, nativeQuery = true)
+    List<String> findActiveIdsOfInstitute(@Param("ids") java.util.Collection<String> ids,
+                                          @Param("instituteId") String instituteId);
 
 }

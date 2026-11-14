@@ -52,11 +52,12 @@ export const getPlatformFlavorInfo = async (): Promise<PlatformFlavorInfo> => {
         flavorConfigData
       );
     } catch {
-      // App plugin may not be available in Electron; read appId from env var
-      // set at build time (VITE_ELECTRON_APP_ID), or fall back to default
-      const electronAppId =
-        (import.meta.env as Record<string, string>)?.VITE_ELECTRON_APP_ID ||
-        "io.vacademy.student.app";
+      // @capacitor/app has no Electron implementation — its web fallback throws
+      // `unimplemented` for getInfo() — so this catch is the ONLY path desktop
+      // builds ever take. The appId therefore has to come from the build-time
+      // define (see vite.config.ts); reading import.meta.env here silently gave
+      // `undefined` and sent every flavor to SSDC Horizon's domain.
+      const electronAppId = __ELECTRON_APP_ID__ || "io.vacademy.student.app";
       appId = electronAppId;
       flavorConfigData = flavorConfig[electronAppId] || null;
       console.log(

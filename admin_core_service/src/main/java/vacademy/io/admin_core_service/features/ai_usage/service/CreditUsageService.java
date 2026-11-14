@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.ai_usage.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -9,12 +10,16 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatLogRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatMessageRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlatSessionRow;
+import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlowAiUsageLogRow;
+import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlowAiUsageRow;
+import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.FlowAiUsageSummary;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.RoleSummaryRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.UsageLogRow;
 import vacademy.io.admin_core_service.features.ai_usage.dto.CreditUsageDtos.UserUsageRow;
 import vacademy.io.admin_core_service.features.ai_usage.repository.ConversationRepository;
 import vacademy.io.admin_core_service.features.ai_usage.repository.CreditUsageRepository;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.credits.client.CreditClient;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.sql.Timestamp;
@@ -33,6 +38,7 @@ import java.util.stream.Collectors;
  * bounded, so role-filter + sort + pagination happen in memory after enrichment.
  */
 @Service
+@Slf4j
 public class CreditUsageService {
 
     @Autowired
@@ -43,6 +49,10 @@ public class CreditUsageService {
 
     @Autowired
     private AuthService authService;
+
+    /** Only for the live balance shown next to the Automations chatbot usage figures. */
+    @Autowired
+    private CreditClient creditClient;
 
     public Page<UserUsageRow> listUsers(String instituteId, Timestamp from, Timestamp to,
                                         String role, String name, Pageable pageable) {
@@ -236,6 +246,91 @@ public class CreditUsageService {
                     .build());
         }
         return out;
+    }
+
+    // ── Automations chatbot AI usage (request_type='chatbot') ───────────────
+
+    /**
+     * Header figures + per-flow rollup for the Automations chatbot's AI spend, plus the
+     * institute's live balance so the panel can render the "paused, out of credits" state
+     * from the same call the numbers come from.
+     */
+    public FlowAiUsageSummary chatbotFlowUsage(String instituteId, Timestamp from, Timestamp to) {
+        List<Object[]> totals = repository.findChatbotTotals(instituteId, from, to);
+        Object[] t = totals.isEmpty() ? new Object[]{0, 0L, 0L} : totals.get(0);
+
+        List<FlowAiUsageRow> byFlow = repository.findChatbotUsageByFlow(instituteId, from, to).stream()
+                .map(r -> FlowAiUsageRow.builder()
+                        .flowId(str(r[0]))
+                        .flowName(flowNameFromDescription(str(r[5])))
+                        .totalCredits(round(dbl(r[1])))
+                        .turnCount(lng(r[2]))
+                        .userCount(lng(r[3]))
+                        .lastUsedAt(millis(r[4]))
+                        .build())
+                .toList();
+
+        Double balance = null;
+        boolean enabled = false;
+        try {
+            Map<String, Object> b = creditClient.getBalance(instituteId);
+            if (b != null && b.get("current_balance") != null) {
+                balance = dbl(b.get("current_balance"));
+                enabled = balance > 0d;
+            }
+        } catch (Exception e) {
+            // Unreadable balance reads as "cannot confirm funds" — the same fail-closed
+            // answer ChatbotAiService gives, so the UI never promises a working bot the
+            // engine would refuse to run.
+            log.warn("Balance lookup failed for institute {}: {}", instituteId, e.getMessage());
+        }
+
+        return FlowAiUsageSummary.builder()
+                .totalCredits(round(dbl(t[0])))
+                .turnCount(lng(t[1]))
+                .userCount(lng(t[2]))
+                .flowCount(byFlow.size())
+                .currentBalance(balance)
+                .aiEnabled(enabled)
+                .byFlow(byFlow)
+                .build();
+    }
+
+    /** Paginated per-turn charge log, optionally narrowed to one flow. */
+    public Page<FlowAiUsageLogRow> chatbotFlowLogs(String instituteId, String flowId, Timestamp from,
+                                                   Timestamp to, Pageable pageable) {
+        Page<Object[]> page = repository.findChatbotLogs(instituteId, flowId, from, to, pageable);
+        List<String> ids = page.getContent().stream()
+                .map(r -> str(r[3])).filter(Objects::nonNull).distinct().toList();
+        Map<String, UserDTO> users = resolveUsersByIds(ids);
+        return page.map(r -> {
+            String uid = str(r[3]);
+            UserDTO u = users.get(uid);
+            return FlowAiUsageLogRow.builder()
+                    .id(str(r[0]))
+                    .createdAt(millis(r[1]))
+                    .flowId(str(r[2]))
+                    .userId(uid)
+                    .name(u != null ? u.getFullName() : null)
+                    .email(u != null ? u.getEmail() : null)
+                    .model(str(r[4]))
+                    .credits(round(dbl(r[5])))
+                    .description(str(r[6]))
+                    .build();
+        });
+    }
+
+    /**
+     * Pull the flow name back out of "Chatbot AI reply — {flow}". The name is snapshotted
+     * into the description at charge time precisely because chatbot_flow lives in another
+     * service's database and cannot be joined here.
+     */
+    private static String flowNameFromDescription(String description) {
+        if (description == null) return null;
+        int sep = description.indexOf('—');
+        if (sep < 0 || sep + 1 >= description.length()) return null;
+        String name = description.substring(sep + 1).trim();
+        return name.isEmpty() ? null : name;
     }
 
     /** Excel cells cap at 32767 chars; keep the session preview short anyway. */

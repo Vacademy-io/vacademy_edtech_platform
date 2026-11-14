@@ -1,0 +1,4 @@
+{
+    "authSuccess": "تم المصادقة بنجاح",
+    "authFailed": "فشلت المصادقة عبر OAuth"
+}

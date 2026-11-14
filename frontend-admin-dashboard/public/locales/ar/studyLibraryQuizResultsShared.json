@@ -1,0 +1,33 @@
+{
+    "never": "أبدًا",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "daysAgo_zero": "منذ {{count}} يوم",
+    "daysAgo_one": "منذ يوم واحد",
+    "daysAgo_two": "منذ يومين",
+    "daysAgo_few": "منذ {{count}} أيام",
+    "daysAgo_many": "منذ {{count}} يومًا",
+    "daysAgo_other": "منذ {{count}} يوم",
+    "questionType": {
+        "singleChoice": "اختيار واحد",
+        "multipleChoice": "اختيار متعدد",
+        "trueFalse": "صح / خطأ",
+        "numeric": "رقمي",
+        "oneWord": "كلمة واحدة",
+        "longAnswer": "إجابة طويلة"
+    },
+    "learnerStatus": {
+        "passed": "ناجح",
+        "failed": "راسب",
+        "completed": "مكتمل",
+        "partlyDone": "منجز جزئيًا",
+        "notAttempted": "لم تتم المحاولة"
+    },
+    "difficulty": {
+        "wellUnderstood": "مفهوم جيدًا",
+        "mixed": "متفاوت",
+        "struggling": "يواجه صعوبة",
+        "needsReteaching": "يحتاج إلى إعادة الشرح"
+    },
+    "noResponses": "لا توجد إجابات"
+}

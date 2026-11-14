@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.workflow.dto.*;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowTemplate;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowTrigger;
@@ -79,6 +80,14 @@ public class WorkflowController {
     }
 
     @PostMapping
+    @Auditable(
+            entityType = "AUTOMATION",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            // A builder payload is the whole node graph — big, and re-readable
+            // from the workflow itself. The name is what an audit row needs.
+            payload = Auditable.PayloadMode.NONE,
+            descriptionExpr = "'created automation ' + (#dto?.name ?: '')")
     public ResponseEntity<WorkflowBuilderDTO> createWorkflow(
             @RequestBody WorkflowBuilderDTO dto,
             @RequestParam(value = "userId") String userId) {
@@ -95,6 +104,12 @@ public class WorkflowController {
      * the original behind. Use this when saving edits from the visual builder.
      */
     @PutMapping("/{workflowId}")
+    @Auditable(
+            entityType = "AUTOMATION",
+            action = "UPDATE",
+            entityIdExpr = "#workflowId",
+            payload = Auditable.PayloadMode.NONE,
+            descriptionExpr = "'updated automation ' + (#dto?.name ?: #workflowId)")
     public ResponseEntity<WorkflowBuilderDTO> updateWorkflow(
             @PathVariable String workflowId,
             @RequestBody WorkflowBuilderDTO dto,
@@ -115,6 +130,11 @@ public class WorkflowController {
     }
 
     @DeleteMapping("/{workflowId}")
+    @Auditable(
+            entityType = "AUTOMATION",
+            action = "DELETE",
+            entityIdExpr = "#workflowId",
+            descriptionExpr = "'deleted an automation'")
     public ResponseEntity<Void> deleteWorkflow(
             @PathVariable String workflowId) {
 
@@ -200,6 +220,11 @@ public class WorkflowController {
      * {@code initialContext}.
      */
     @PostMapping("/{workflowId}/trigger-now")
+    @Auditable(
+            entityType = "AUTOMATION",
+            action = "TRIGGER",
+            entityIdExpr = "#workflowId",
+            descriptionExpr = "'manually ran an automation'")
     public ResponseEntity<Map<String, Object>> triggerWorkflowNow(
             @PathVariable String workflowId,
             @RequestBody(required = false) Map<String, Object> sampleContext) {

@@ -1,0 +1,94 @@
+{
+    "description": "Ce que l'établissement devrait à son personnel au titre de l'ancienneté, ainsi que la prime légale annuelle. Ce sont des provisions comptables — rien ici ne verse quoi que ce soit tant que vous ne l'intégrez pas à la paie.",
+    "tabs": {
+        "eosb": "Indemnité de fin de service (EOSB)",
+        "gratuity": "Gratification (Gratuity)",
+        "bonus": "Prime légale"
+    },
+    "asOf": {
+        "label": "À la date du",
+        "downloadCsv": "Télécharger le CSV",
+        "preparing": "Préparation…"
+    },
+    "gratuity": {
+        "downloadSuccess": "Provision de gratification téléchargée",
+        "downloadError": "Impossible de télécharger la provision de gratification.",
+        "computeError": "Impossible de calculer la provision de gratification.",
+        "emptyTitle": "Aucun employé à provisionner",
+        "emptyDescription": "Personne dans l'effectif n'a d'ancienneté enregistrée à cette date.",
+        "stats": {
+            "employees": "Employés",
+            "totalLiability": "Passif total",
+            "vested": "Acquis",
+            "monthlyRunRate": "Taux mensuel"
+        },
+        "table": {
+            "employee": "Employé",
+            "years": "Années",
+            "monthlyBasic": "Salaire de base mensuel",
+            "liability": "Passif",
+            "runRate": "Taux mensuel",
+            "vested": "Acquis"
+        },
+        "vestedChip": "Acquis",
+        "notYetChip": "Pas encore"
+    },
+    "eosb": {
+        "downloadSuccess": "Provision EOSB téléchargée",
+        "downloadError": "Impossible de télécharger la provision EOSB.",
+        "description": "Le passif légal est ce qu'un employé pourrait réclamer aujourd'hui ; la charge comptable est ce que les livres devraient déjà porter. Les deux diffèrent avant qu'un employé ne devienne éligible.",
+        "computeError": "Impossible de calculer la provision EOSB.",
+        "emptyTitle": "Aucun employé à provisionner",
+        "emptyDescription": "Personne dans l'effectif n'a d'ancienneté enregistrée à cette date.",
+        "stats": {
+            "employees": "Employés",
+            "statutoryLiability": "Passif légal",
+            "accountingAccrual": "Charge comptable",
+            "monthlyRunRate": "Taux mensuel"
+        },
+        "table": {
+            "employee": "Employé",
+            "years": "Années",
+            "monthlyBasic": "Salaire de base mensuel",
+            "statutory": "Légal",
+            "accrual": "Charge",
+            "eligible": "Éligible"
+        },
+        "eligibleChip": "Éligible",
+        "notYetChip": "Pas encore"
+    },
+    "bonus": {
+        "financialYear": "Exercice fiscal",
+        "rate": "Taux (%)",
+        "rateHint": "La loi autorise de 8,33 % à 20 %.",
+        "invalidRateTitle": "Entrez un taux compris entre 8,33 et 20",
+        "invalidRateDescription": "La loi sur le versement des primes fixe ces bornes comme minimum et maximum.",
+        "computeError": "Impossible de calculer la prime.",
+        "emptyTitle": "Personne à calculer",
+        "emptyDescription": "Aucun employé n'était présent dans l'effectif durant cet exercice fiscal.",
+        "stats": {
+            "eligibleEmployees": "Employés éligibles",
+            "totalBonus": "Prime totale",
+            "appliedRate": "Taux appliqué"
+        },
+        "payCardTitle": "Verser cette prime",
+        "payCardDescription": "Crée un ajustement de type BONUS pour chaque employé éligible. Un cycle de paie pour ce mois-là les paie et les impose.",
+        "payoutLabel": "Versement",
+        "materializing": "Création…",
+        "materialize": "Créer",
+        "table": {
+            "employee": "Employé",
+            "monthlyBasic": "Salaire de base mensuel",
+            "months": "Mois",
+            "wageBase": "Base salariale",
+            "bonus": "Prime"
+        },
+        "materializeSuccess_one": "{{count}} ajustement de prime créé pour {{period}}",
+        "materializeSuccess_many": "{{count}} ajustements de prime créés pour {{period}}",
+        "materializeSuccess_other": "{{count}} ajustements de prime créés pour {{period}}",
+        "alreadyExisted_one": " · {{count}} existait déjà",
+        "alreadyExisted_many": " · {{count}} existaient déjà",
+        "alreadyExisted_other": " · {{count}} existaient déjà",
+        "materializeError": "Impossible de créer les ajustements de prime."
+    }
+}

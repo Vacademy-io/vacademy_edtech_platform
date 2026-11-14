@@ -5,8 +5,8 @@ export const DomainRoutingTest: React.FC = () => {
   const domainRouting = useDomainRouting();
 
   return (
-    <div className="p-4 bg-gray-100 rounded-lg">
-      <h3 className="text-lg font-semibold mb-2">Domain Routing Debug Info</h3>
+    <div className="p-4 bg-gray-100 rounded-catalogue-md space-y-2">
+      <h3 className="text-lg font-semibold">Domain Routing Debug Info</h3>
       <div className="space-y-2 text-sm">
         <div>
           <strong>Loading:</strong> {domainRouting.isLoading ? "Yes" : "No"}

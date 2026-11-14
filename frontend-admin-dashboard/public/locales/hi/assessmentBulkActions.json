@@ -1,0 +1,9 @@
+{
+    "selectedCount_one": "[{{count}}] चयनित",
+    "selectedCount_other": "[{{count}}] चयनित",
+    "reset": "रीसेट करें",
+    "bulkActions": "बल्क कार्रवाइयां",
+    "selectAll_one": "सभी {{count}} चुनें",
+    "selectAll_other": "सभी {{count}} चुनें",
+    "selectingAll": "सभी चुने जा रहे हैं…"
+}

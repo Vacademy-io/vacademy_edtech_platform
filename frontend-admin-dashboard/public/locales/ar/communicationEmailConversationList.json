@@ -1,0 +1,11 @@
+{
+    "endOfConversations": "نهاية المحادثات",
+    "noConversations": "لا توجد محادثات بريد إلكتروني بعد",
+    "noConversationsHint": "تظهر المحادثات فور إرسال أو استلام بريد إلكتروني",
+    "yesterday": "أمس",
+    "you": "أنت",
+    "deliveryFailed": "فشل التسليم",
+    "noSubject": "(بدون موضوع)",
+    "hasAttachments": "تحتوي على مرفقات",
+    "noMatches": "لا توجد محادثات تطابق بحثك"
+}

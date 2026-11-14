@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
 import vacademy.io.admin_core_service.features.learner_payment_method.dto.LearnerBillingDetailsDTO;
 import vacademy.io.admin_core_service.features.learner_payment_method.dto.LearnerCardUpdateRequestDTO;
@@ -185,6 +186,12 @@ public class LearnerPaymentMethodService {
         LearnerBillingDetailsDTO billing = new LearnerBillingDetailsDTO();
         String firstName = textOrNull(ewayCustomer, "FirstName");
         String lastName = textOrNull(ewayCustomer, "LastName");
+        // eWay refuses an empty LastName, so a learner who gave only a first name is
+        // sent to the gateway as "Jane Jane" (see EwayPaymentManager#ensureLastName).
+        // That padding is for eWay alone — collapse it back to the single name here.
+        if (lastName != null && lastName.equalsIgnoreCase(firstName)) {
+            lastName = null;
+        }
         String fullName = ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
         billing.setName(StringUtils.hasText(fullName) ? fullName : null);
         billing.setEmail(textOrNull(ewayCustomer, "Email"));
@@ -311,10 +318,13 @@ public class LearnerPaymentMethodService {
             snapshot.put("institute_id", plan.getEnrollInvite().getInstituteId());
         }
         if (plan.getPaymentPlan() != null) {
-            snapshot.put("amount", plan.getPaymentPlan().getActualPrice());
+            snapshot.put("amount", RegionalPriceLock.listPrice(plan));
             if (!StringUtils.hasText(snapshot.path("currency").asText(null))) {
                 snapshot.put("currency", plan.getPaymentPlan().getCurrency());
             }
+        }
+        if (RegionalPriceLock.isLocked(plan)) {
+            snapshot.put("currency", plan.getRegionalCurrency());
         }
         snapshot.putObject("stripe_request").put("customer_id", customerId);
         return snapshot;

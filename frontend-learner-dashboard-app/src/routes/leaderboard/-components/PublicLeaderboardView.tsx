@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Crown, Trophy, Medal, ShieldCheck, CaretRight } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -67,13 +68,16 @@ function EntryBadgesDialog({
   entry: LeaderboardEntry | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("miscRoutesA");
   return (
     <Dialog open={Boolean(entry)} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trophy weight="fill" className="size-5 text-warning-500" />
-            {entry?.name ? `${entry.name}'s badges` : "Badges"}
+            {entry?.name
+              ? t("leaderboard.badgesDialog.titleNamed", { name: entry.name })
+              : t("leaderboard.badgesDialog.titleGeneric")}
           </DialogTitle>
         </DialogHeader>
         {entry && entry.badges?.length > 0 ? (
@@ -84,7 +88,7 @@ function EntryBadgesDialog({
           </div>
         ) : (
           <p className="py-6 text-center text-caption text-muted-foreground">
-            No badges earned yet.
+            {t("leaderboard.badgesDialog.none")}
           </p>
         )}
       </DialogContent>
@@ -127,6 +131,7 @@ function PodiumSpot({
   place: 1 | 2 | 3;
   onClick?: () => void;
 }) {
+  const { t } = useTranslation("miscRoutesA");
   if (!entry) return <div className="flex-1" />;
   const first = place === 1;
   const tone = PLACE[place];
@@ -146,7 +151,7 @@ function PodiumSpot({
             }
           : undefined
       }
-      title={clickable ? "View badges" : undefined}
+      title={clickable ? t("leaderboard.viewBadges") : undefined}
       className={cn(
         "flex flex-1 flex-col items-center justify-end gap-2",
         clickable && "cursor-pointer"
@@ -176,7 +181,9 @@ function PodiumSpot({
       </div>
       <div className="flex w-full flex-col items-center px-1 text-center">
         <p className="w-full truncate text-caption font-bold text-foreground">{entry.name}</p>
-        <p className="text-caption font-semibold tabular-nums text-primary-500">{entry.points} pts</p>
+        <p className="text-caption font-semibold tabular-nums text-primary-500">
+          {t("leaderboard.pointsSuffix", { points: entry.points })}
+        </p>
         {entry.badgeCount > 0 && (
           <span className="mt-1 flex items-center justify-center rounded-full bg-warning-50 px-2 py-1 ring-1 ring-warning-100">
             <BadgeIcons entry={entry} size={first ? 30 : 26} />
@@ -196,6 +203,7 @@ function PodiumSpot({
 }
 
 function ListRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => void }) {
+  const { t } = useTranslation("miscRoutesA");
   const clickable = Boolean(onClick) && entry.badgeCount > 0;
   return (
     <div
@@ -212,7 +220,7 @@ function ListRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => 
             }
           : undefined
       }
-      title={clickable ? "View badges" : undefined}
+      title={clickable ? t("leaderboard.viewBadges") : undefined}
       className={cn(
         "flex items-center gap-3 rounded-xl border border-neutral-100 bg-card px-3 py-2.5 transition-colors hover:border-primary-100",
         clickable && "cursor-pointer"
@@ -226,7 +234,9 @@ function ListRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => 
       <BadgeIcons entry={entry} size={24} />
       <span className="w-16 text-end text-body font-bold tabular-nums text-foreground">
         {entry.points}
-        <span className="ms-0.5 text-caption font-normal text-muted-foreground">pts</span>
+        <span className="ms-0.5 text-caption font-normal text-muted-foreground">
+          {t("leaderboard.pts")}
+        </span>
       </span>
       {clickable && <CaretRight className="size-3.5 shrink-0 text-neutral-300" />}
     </div>
@@ -267,6 +277,7 @@ export function PublicLeaderboardView({
   loading,
   error,
 }: PublicLeaderboardViewProps) {
+  const { t } = useTranslation("miscRoutesA");
   const entries = data?.entries ?? [];
   const top3 = entries.slice(0, 3);
   const rest = entries.slice(3);
@@ -298,7 +309,7 @@ export function PublicLeaderboardView({
                 {instituteName}
               </p>
             )}
-            <h1 className="mt-1 text-h1 font-bold leading-tight">Leaderboard</h1>
+            <h1 className="mt-1 text-h1 font-bold leading-tight">{t("leaderboard.title")}</h1>
             {subtitle && (
               <span className="mt-2 inline-flex max-w-full items-center truncate rounded-full bg-white/15 px-3 py-1 text-caption font-medium text-white ring-1 ring-white/20">
                 {subtitle}
@@ -313,9 +324,11 @@ export function PublicLeaderboardView({
             ) : error ? (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <Trophy weight="fill" className="size-9 text-neutral-300" />
-                <p className="text-body font-medium text-foreground">Couldn’t load the leaderboard</p>
+                <p className="text-body font-medium text-foreground">
+                  {t("leaderboard.error.title")}
+                </p>
                 <p className="text-caption text-muted-foreground">
-                  Please check the link or try again in a moment.
+                  {t("leaderboard.error.description")}
                 </p>
               </div>
             ) : entries.length === 0 ? (
@@ -323,9 +336,11 @@ export function PublicLeaderboardView({
                 <div className="grid size-14 place-items-center rounded-full bg-primary-50">
                   <Trophy weight="fill" className="size-7 text-primary-300" />
                 </div>
-                <p className="text-body font-semibold text-foreground">No rankings yet</p>
+                <p className="text-body font-semibold text-foreground">
+                  {t("leaderboard.empty.title")}
+                </p>
                 <p className="max-w-xs text-caption text-muted-foreground">
-                  Learners climb the ranks as they study, attend live classes, and earn badges.
+                  {t("leaderboard.empty.description")}
                 </p>
               </div>
             ) : (
@@ -349,7 +364,7 @@ export function PublicLeaderboardView({
                   <span className="font-semibold text-foreground">
                     {data?.totalLearners ?? entries.length}
                   </span>{" "}
-                  learners · ranked by learning activity
+                  {t("leaderboard.footerSummary")}
                 </p>
               </>
             )}
@@ -361,11 +376,13 @@ export function PublicLeaderboardView({
           {data?.anonymized !== false && (
             <p className="inline-flex items-center gap-1.5 text-caption text-muted-foreground">
               <ShieldCheck weight="fill" className="size-3.5 text-neutral-400" />
-              Names are anonymized for privacy
+              {t("leaderboard.namesAnonymized")}
             </p>
           )}
           {instituteName && (
-            <p className="text-caption text-muted-foreground">Powered by {instituteName}</p>
+            <p className="text-caption text-muted-foreground">
+              {t("leaderboard.poweredBy", { instituteName })}
+            </p>
           )}
         </div>
       </div>

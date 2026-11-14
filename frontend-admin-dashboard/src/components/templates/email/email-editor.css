@@ -206,6 +206,156 @@
     scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
+/* Text block → Border section (BorderControls.tsx) */
+.vac-border-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vac-border-controls__mode {
+    display: flex;
+}
+
+.vac-border-controls__mode .arco-radio {
+    flex: 1;
+    text-align: center;
+}
+
+.vac-border-controls__header {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: -6px;
+}
+
+.vac-border-row__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.vac-border-row__controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vac-border-row__width {
+    flex: 0 0 96px;
+    width: 96px !important;
+}
+
+.vac-border-row__style {
+    flex: 0 0 92px;
+    width: 92px !important;
+}
+
+.vac-border-style-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vac-border-style-option__line {
+    display: inline-block;
+    width: 16px;
+    border-top-width: 2px;
+    border-top-color: currentColor;
+}
+
+.vac-color-swatch {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.vac-color-swatch__chip {
+    position: relative;
+    flex: 0 0 24px;
+    height: 24px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+/* The native picker stays clickable but invisible under the chip. */
+.vac-color-swatch__chip input[type='color'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+    padding: 0;
+}
+
+.vac-color-swatch__hex {
+    min-width: 0;
+    flex: 1;
+}
+
+/* Button panel → Link field (ContactLinks.tsx) */
+.vac-link-field__label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #1e293b;
+    min-height: 24px;
+}
+
+.vac-link-field__item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vac-link-field__kind {
+    display: flex;
+}
+
+.vac-link-field__kind .arco-radio {
+    flex: 1;
+    text-align: center;
+}
+
+/* "+" panel → Contact category previews */
+.vac-contact-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vac-contact-presets__item {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+.vac-contact-presets__button {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: pre;
+}
+
+.vac-contact-presets__text {
+    justify-content: flex-start;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
 /*
  * Note: The email preview whitespace (left/right of content) is the actual
  * email background-color area. It renders inside a Shadow DOM so external

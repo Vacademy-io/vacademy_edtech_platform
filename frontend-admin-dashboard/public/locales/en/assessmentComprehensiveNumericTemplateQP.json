@@ -1,0 +1,19 @@
+{
+    "errors": {
+        "formNotInitialized": "Form not properly initialized",
+        "noQuestions": "Please add a question to show question details"
+    },
+    "settings": {
+        "title": "Questions Settings",
+        "numericalType": "Numerical Type",
+        "decimalPrecisionPlaceholder": "Decimal precision"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "defaults": {
+        "answer": "Answer:",
+        "explanation": "Explanation:"
+    }
+}

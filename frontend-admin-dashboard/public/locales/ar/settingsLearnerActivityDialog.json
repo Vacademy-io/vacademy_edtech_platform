@@ -1,0 +1,48 @@
+{
+    "header": {
+        "credits_zero": "{{value}} رصيد",
+        "credits_one": "{{value}} رصيد",
+        "credits_two": "{{value}} رصيدين",
+        "credits_few": "{{value}} أرصدة",
+        "credits_many": "{{value}} رصيدًا",
+        "credits_other": "{{value}} رصيد",
+        "requests_zero": "{{count}} طلب",
+        "requests_one": "{{count}} طلب",
+        "requests_two": "{{count}} طلبين",
+        "requests_few": "{{count}} طلبات",
+        "requests_many": "{{count}} طلبًا",
+        "requests_other": "{{count}} طلب"
+    },
+    "toolLabel": {
+        "usedTool": "تم استخدام الأداة: {{name}}",
+        "usedToolGeneric": "استخدم الذكاء الاصطناعي أداة",
+        "toolResult": "نتيجة {{name}}",
+        "toolResultGeneric": "نتيجة الأداة"
+    },
+    "transcript": {
+        "selectConversation": "اختر محادثة لقراءة النص الكامل.",
+        "loading": "جارٍ تحميل النص…",
+        "loadError": "تعذّر تحميل هذا النص.",
+        "empty": "لا تحتوي هذه المحادثة على أي رسائل."
+    },
+    "conversations": {
+        "loading": "جارٍ تحميل المحادثات…",
+        "emptyTitle": "لا توجد محادثات ذكاء اصطناعي بعد",
+        "emptyDescription": "لم يتحدث {{name}} مع مدرّس الذكاء الاصطناعي للطلاب خلال النطاق الزمني المحدد. جرّب توسيع النطاق الزمني لرؤية المزيد.",
+        "thisMember": "هذا العضو",
+        "noMessagePreview": "لا توجد رسالة من المتعلم"
+    },
+    "activity": {
+        "columns": {
+            "when": "الوقت",
+            "tool": "الأداة",
+            "model": "النموذج",
+            "credits": "الأرصدة"
+        },
+        "description": "كل خصم رصيد عبر جميع أدوات الذكاء الاصطناعي خلال الفترة المحددة."
+    },
+    "tabs": {
+        "conversations": "المحادثات",
+        "creditActivity": "نشاط الأرصدة"
+    }
+}

@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ArrowClockwise, CheckCircle, Clock, XCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -15,11 +18,13 @@ import {
 } from '@/services/reattempt-requests';
 import { Route } from '..';
 
-const STATUS_FILTERS: Array<{ label: string; value: ReattemptRequestStatus | 'ALL' }> = [
-    { label: 'Pending', value: 'PENDING' },
-    { label: 'Approved', value: 'APPROVED' },
-    { label: 'Rejected', value: 'REJECTED' },
-    { label: 'All', value: 'ALL' },
+const buildStatusFilters = (
+    t: TFunction
+): Array<{ label: string; value: ReattemptRequestStatus | 'ALL' }> => [
+    { label: t('filters.pending'), value: 'PENDING' },
+    { label: t('filters.approved'), value: 'APPROVED' },
+    { label: t('filters.rejected'), value: 'REJECTED' },
+    { label: t('filters.all'), value: 'ALL' },
 ];
 
 /**
@@ -42,9 +47,21 @@ const Badge = ({ tone, children }: { tone: 'neutral' | 'success' | 'danger' | 'w
 );
 
 const statusChip = (status: ReattemptRequestStatus) => {
-    if (status === 'APPROVED') return <Badge tone="success">Approved</Badge>;
-    if (status === 'REJECTED') return <Badge tone="danger">Rejected</Badge>;
-    return <Badge tone="warning">Pending</Badge>;
+    if (status === 'APPROVED')
+        return (
+            <Badge tone="success">
+                {i18next.t('assessmentReattemptRequestsTab:status.approved')}
+            </Badge>
+        );
+    if (status === 'REJECTED')
+        return (
+            <Badge tone="danger">
+                {i18next.t('assessmentReattemptRequestsTab:status.rejected')}
+            </Badge>
+        );
+    return (
+        <Badge tone="warning">{i18next.t('assessmentReattemptRequestsTab:status.pending')}</Badge>
+    );
 };
 
 /**
@@ -63,6 +80,7 @@ const RequestRow = ({
     instituteId: string;
     onReviewed: () => void;
 }) => {
+    const { t, i18n } = useTranslation('assessmentReattemptRequestsTab');
     const [grantedCount, setGrantedCount] = useState('1');
     const parsedCount = Number.parseInt(grantedCount, 10);
     const isCountValid = Number.isFinite(parsedCount) && parsedCount >= 1 && parsedCount <= 20;
@@ -78,10 +96,11 @@ const RequestRow = ({
         onSuccess: (_data, status) => {
             toast.success(
                 status === 'APPROVED'
-                    ? `Granted ${parsedCount} attempt${parsedCount === 1 ? '' : 's'} to ${
-                          request.participant_name ?? 'the learner'
-                      }.`
-                    : 'Request rejected.',
+                    ? t('toasts.granted', {
+                          count: parsedCount,
+                          name: request.participant_name ?? t('toasts.theLearner'),
+                      })
+                    : t('toasts.rejected'),
                 { className: 'success-toast', duration: 4000 }
             );
             onReviewed();
@@ -89,7 +108,7 @@ const RequestRow = ({
         onError: (error: unknown) => {
             const message =
                 (error as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message ?? 'Could not update this request. Please try again.';
+                    ?.message ?? t('toasts.updateFailed');
             toast.error(message, { className: 'error-toast', duration: 5000 });
         },
     });
@@ -110,7 +129,9 @@ const RequestRow = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge tone="neutral">
-                        {request.request_type === 'TIME_INCREASE' ? 'Time increase' : 'Reattempt'}
+                        {request.request_type === 'TIME_INCREASE'
+                            ? t('requestType.timeIncrease')
+                            : t('requestType.reattempt')}
                     </Badge>
                     {statusChip(request.status)}
                 </div>
@@ -123,10 +144,13 @@ const RequestRow = ({
             )}
 
             <p className="text-caption text-neutral-500">
-                Currently allowed: {request.attempts_allowed ?? '—'} · Used:{' '}
-                {request.attempts_used ?? '—'}
+                {t('summary.currentlyAllowed', { value: request.attempts_allowed ?? '—' })}
+                {' · '}
+                {t('summary.used', { value: request.attempts_used ?? '—' })}
                 {request.created_at
-                    ? ` · Requested ${new Date(request.created_at).toLocaleString()}`
+                    ? ` · ${t('summary.requested', {
+                          date: new Date(request.created_at).toLocaleString(i18n.language),
+                      })}`
                     : ''}
             </p>
 
@@ -138,9 +162,9 @@ const RequestRow = ({
                             inputPlaceholder="1"
                             input={grantedCount}
                             onChangeFunction={(e) => setGrantedCount(e.target.value)}
-                            label="Attempts to grant"
+                            label={t('form.attemptsToGrantLabel')}
                             size="medium"
-                            error={isCountValid ? undefined : '1 to 20'}
+                            error={isCountValid ? undefined : t('form.attemptsRangeError')}
                         />
                     )}
                     <MyButton
@@ -150,7 +174,7 @@ const RequestRow = ({
                         disable={reviewMutation.isPending || !isCountValid}
                         onClick={() => reviewMutation.mutate('APPROVED')}
                     >
-                        <CheckCircle size={16} /> Approve
+                        <CheckCircle size={16} /> {t('actions.approve')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -159,16 +183,18 @@ const RequestRow = ({
                         disable={reviewMutation.isPending}
                         onClick={() => reviewMutation.mutate('REJECTED')}
                     >
-                        <XCircle size={16} /> Reject
+                        <XCircle size={16} /> {t('actions.reject')}
                     </MyButton>
                 </div>
             ) : (
                 <p className="text-caption text-neutral-500">
                     {request.status === 'APPROVED'
-                        ? `Granted ${request.granted_count ?? 1} attempt(s)`
-                        : 'Rejected'}
+                        ? t('summary.grantedCount', { count: request.granted_count ?? 1 })
+                        : t('status.rejected')}
                     {request.reviewed_at
-                        ? ` on ${new Date(request.reviewed_at).toLocaleString()}`
+                        ? ` ${t('summary.reviewedOn', {
+                              date: new Date(request.reviewed_at).toLocaleString(i18n.language),
+                          })}`
                         : ''}
                 </p>
             )}
@@ -177,12 +203,14 @@ const RequestRow = ({
 };
 
 export const ReattemptRequestsTab = () => {
+    const { t } = useTranslation('assessmentReattemptRequestsTab');
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId() ?? '';
     const queryClient = useQueryClient();
     const [statusFilter, setStatusFilter] = useState<ReattemptRequestStatus | 'ALL'>('PENDING');
+    const statusFilters = buildStatusFilters(t);
 
-    const { data, isLoading, isError, refetch } = useQuery({
+    const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['reattempt-requests', instituteId, assessmentId, statusFilter],
         queryFn: () =>
             getReattemptRequests({
@@ -202,13 +230,20 @@ export const ReattemptRequestsTab = () => {
     if (isLoading) return <DashboardLoader />;
 
     if (isError) {
+        // Name the actual failure. A bare "Could not load requests" is indistinguishable
+        // between a dead endpoint, a rejected request line and an auth problem, and the
+        // pending-count badge keeps ticking either way — so the tab looks merely empty.
+        const status = (error as unknown as { response?: { status?: number } })?.response?.status;
+        const reason = status !== undefined ? `HTTP ${status}` : error?.message ?? '';
+
         return (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
                 <p className="text-subtitle font-semibold text-neutral-700">
-                    Could not load requests
+                    {t('error.title')}
                 </p>
+                {reason && <p className="text-caption text-neutral-500">{reason}</p>}
                 <MyButton buttonType="secondary" scale="medium" onClick={() => refetch()}>
-                    <ArrowClockwise size={16} /> Try again
+                    <ArrowClockwise size={16} /> {t('error.tryAgain')}
                 </MyButton>
             </div>
         );
@@ -219,15 +254,15 @@ export const ReattemptRequestsTab = () => {
     return (
         <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-wrap items-center gap-2">
-                {STATUS_FILTERS.map((filter) => (
+                {statusFilters.map((flt) => (
                     <MyButton
-                        key={filter.value}
-                        buttonType={statusFilter === filter.value ? 'primary' : 'secondary'}
+                        key={flt.value}
+                        buttonType={statusFilter === flt.value ? 'primary' : 'secondary'}
                         scale="medium"
                         layoutVariant="default"
-                        onClick={() => setStatusFilter(filter.value)}
+                        onClick={() => setStatusFilter(flt.value)}
                     >
-                        {filter.label}
+                        {flt.label}
                     </MyButton>
                 ))}
             </div>
@@ -236,12 +271,13 @@ export const ReattemptRequestsTab = () => {
                 <div className="flex flex-col items-center gap-2 py-12 text-center">
                     <Clock size={40} className="text-neutral-300" />
                     <p className="text-subtitle font-semibold text-neutral-700">
-                        No {statusFilter === 'ALL' ? '' : statusFilter.toLowerCase()} requests
+                        {statusFilter === 'ALL'
+                            ? t('empty.titleAll')
+                            : t('empty.titleFiltered', {
+                                  status: statusFilter.toLowerCase(),
+                              })}
                     </p>
-                    <p className="max-w-sm text-body text-neutral-500">
-                        Learners can ask for another attempt or more time from inside the exam.
-                        Their requests land here.
-                    </p>
+                    <p className="max-w-sm text-body text-neutral-500">{t('empty.description')}</p>
                 </div>
             ) : (
                 requests.map((request) => (

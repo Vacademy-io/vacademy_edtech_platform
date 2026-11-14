@@ -1,0 +1,38 @@
+{
+    "title": "{{tier}} levels",
+    "description": "How leads are ranked (Hot / Warm / Cold by default). Rename, recolour, reorder or add your own — e.g. Very Cold → Super Hot. Give a level a \"from score\" and leads land in it automatically by score (highest matching band wins); leave it blank for a level counsellors set by hand. Default levels can be edited but not deleted.",
+    "loading": "Loading levels…",
+    "empty": "No levels yet. Add your first level below.",
+    "preview": {
+        "fromScore": "· from {{score}}",
+        "manual": "· manual"
+    },
+    "row": {
+        "changeColorTitle": "Change colour",
+        "colorAriaLabel": "Colour for {{name}}",
+        "tierFallback": "level",
+        "namePlaceholder": "Level name (e.g. Super Hot)",
+        "fromScore": "from score",
+        "fromScoreAriaLabel": "Minimum score for {{name}}",
+        "manualPlaceholder": "manual",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "systemDefaultTitle": "Default level — can be renamed, recoloured or re-banded",
+        "systemDefaultBadge": "Default",
+        "deleteAriaLabel": "Delete {{name}}",
+        "saveBeforeDelete": "Save your changes before deleting a level"
+    },
+    "addTier": "Add {{tier}} level",
+    "footer": {
+        "hintBanded": "Order top-to-bottom = most to least important. A lead's level follows its score unless set by hand.",
+        "hintManual": "No score bands set — levels are assigned by hand only.",
+        "saving": "Saving…",
+        "save": "Save levels"
+    },
+    "toasts": {
+        "saveSuccess": "Levels saved",
+        "saveError": "Failed to save levels",
+        "deleteSuccess": "Deleted {{name}}",
+        "deleteError": "Failed to delete level"
+    }
+}

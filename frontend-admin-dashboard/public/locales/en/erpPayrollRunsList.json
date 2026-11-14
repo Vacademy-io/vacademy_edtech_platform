@@ -1,0 +1,30 @@
+{
+    "description": "One run per month and run type. A run computes nothing until you process it, and pays nobody until it is approved and marked paid.",
+    "yearPlaceholder": "Year",
+    "actions": {
+        "newPayrollRun": "New payroll run",
+        "open": "Open"
+    },
+    "table": {
+        "columns": {
+            "period": "Period",
+            "type": "Type",
+            "status": "Status",
+            "employees": "Employees",
+            "totalNetPay": "Total net pay",
+            "processed": "Processed",
+            "approved": "Approved"
+        },
+        "defaultRunType": "Regular",
+        "processedByLabel": "by payroll",
+        "approvedByLabel": "by finance"
+    },
+    "errors": {
+        "loadFailed": "Could not load payroll runs for this year."
+    },
+    "empty": {
+        "title": "No payroll runs in {{year}}",
+        "adminDescription": "Create a run for the month you want to pay. Salary structures must be assigned first, or employees will land in the run errors.",
+        "staffDescription": "Nothing has been run for this year yet. An HR admin creates payroll runs."
+    }
+}

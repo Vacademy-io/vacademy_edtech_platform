@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { getLearnerTrackingSettings } from "@/services/learner-tracking-settings";
 import { ArrowSquareOut, BookOpen } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
   published_data,
   documentId,
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const [notebookData, setNotebookData] = useState<JupyterNotebookData | null>(
     null
   );
@@ -458,7 +460,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
       handleDocumentLoad();
     } catch (err) {
       console.error("Failed to parse Jupyter notebook data:", err);
-      setError("Failed to load notebook configuration");
+      setError(t("jupyterSlide.errors.loadConfigFailed"));
       setIsLoading(false);
     }
   }, [published_data]);
@@ -474,9 +476,9 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-stack">
           <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
-          <div className="text-neutral-500">Loading Jupyter Notebook...</div>
+          <div className="text-neutral-500">{t("jupyterSlide.loadingNotebook")}</div>
         </div>
       </div>
     );
@@ -485,12 +487,12 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
   if (error || !notebookData) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-stack">
           <div className="bg-red-50 rounded-full p-4">
             <BookOpen size={32} className="text-red-500" />
           </div>
           <div className="text-red-500">
-            {error || "Failed to load notebook"}
+            {error || t("jupyterSlide.errors.loadFailed")}
           </div>
         </div>
       </div>
@@ -506,23 +508,25 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
             <div className="p-2">
               <div className="mt-1">
                 <p className="text-xs text-neutral-600">
-                  Just ensuring that you are actively learning, please click the
-                  number{" "}
-                  <span className="text-primary-500">
-                    {Math.max(
-                      ...verificationNumbers.filter(
-                        (n) =>
-                          n !== verificationNumbers[0] ||
-                          (verificationNumbers[0] !== verificationNumbers[1] &&
-                            verificationNumbers[0] !== verificationNumbers[2])
-                      )
-                    )}
-                  </span>{" "}
-                  within{" "}
-                  <span className="text-primary-500">
-                    {verificationCountdown}{" "}
-                  </span>
-                  seconds.
+                  <Trans
+                    i18nKey="jupyterSlide.verification.prompt"
+                    t={t}
+                    values={{
+                      number: Math.max(
+                        ...verificationNumbers.filter(
+                          (n) =>
+                            n !== verificationNumbers[0] ||
+                            (verificationNumbers[0] !== verificationNumbers[1] &&
+                              verificationNumbers[0] !== verificationNumbers[2])
+                        )
+                      ),
+                      countdown: verificationCountdown,
+                    }}
+                    components={{
+                      num: <span className="text-primary-500" />,
+                      cnt: <span className="text-primary-500" />,
+                    }}
+                  />
                 </p>
               </div>
               <div className="mt-2 flex justify-center space-x-2">
@@ -544,19 +548,18 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
       {/* Pause overlay */}
       {isPaused && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-6 text-center">
-            <h3 className="mb-4 text-lg font-semibold">
-              Jupyter Notebook Paused
+          <div className="rounded-lg bg-white p-6 text-center space-y-4">
+            <h3 className="text-lg font-semibold">
+              {t("jupyterSlide.paused.title")}
             </h3>
-            <p className="mb-4 text-sm text-gray-600">
-              You've switched tabs {tabSwitchCount} times. Please click below to
-              resume your notebook session.
+            <p className="text-sm text-gray-600">
+              {t("jupyterSlide.paused.body", { count: tabSwitchCount })}
             </p>
             <button
               onClick={handleResumeActivity}
               className="rounded bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
             >
-              Resume Notebook
+              {t("jupyterSlide.paused.resume")}
             </button>
           </div>
         </div>
@@ -574,8 +577,10 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                   {notebookData.projectName}
                 </h3>
                 <p className="text-xs text-neutral-500">
-                  Branch: {notebookData.contentBranch} â¢ Location:{" "}
-                  {notebookData.notebookLocation}
+                  {t("jupyterSlide.header.branchLocation", {
+                    branch: notebookData.contentBranch,
+                    location: notebookData.notebookLocation,
+                  })}
                 </p>
               </div>
             </div>
@@ -591,7 +596,7 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
                 className="flex items-center gap-1.5"
               >
                 <ArrowSquareOut size={14} />
-                Open in New Tab
+                {t("jupyterSlide.openInNewTab")}
               </Button>
             </div>
           </div>
@@ -609,16 +614,16 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
               handleUserActivity(); // Track iframe load
               handleActionChange(2); // Action type 2 for notebook interaction
             }}
-            onError={() => setError("Failed to load notebook")}
+            onError={() => setError(t("jupyterSlide.errors.loadFailed"))}
           />
 
           {/* Loading overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-b-lg">
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-stack">
                 <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
                 <div className="text-neutral-500">
-                  Loading notebook interface...
+                  {t("jupyterSlide.loadingInterface")}
                 </div>
               </div>
             </div>
@@ -627,12 +632,12 @@ export const JupyterNotebookSlide: React.FC<JupyterNotebookSlideProps> = ({
           {/* Footer overlay */}
           <div className="absolute bottom-0 start-0 end-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-2 flex items-center justify-between text-xs text-neutral-500">
             <div className="flex items-center gap-4">
-              <span>Type: Jupyter Notebook</span>
-              <span>Active Tab: {notebookData.activeTab}</span>
+              <span>{t("jupyterSlide.footer.type")}</span>
+              <span>{t("jupyterSlide.footer.activeTab", { tab: notebookData.activeTab })}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-                Interactive
+                {t("jupyterSlide.footer.interactive")}
               </span>
             </div>
           </div>

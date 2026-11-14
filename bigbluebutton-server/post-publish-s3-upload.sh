@@ -85,10 +85,29 @@ log() {
 # recording every time their captions/process/publish chain replays.
 # Set BBB_RECORDING_FORCE=1 to override (e.g. to genuinely re-upload).
 UPLOADED_MARKER="/var/spool/bbb-recording-uploaded/${INTERNAL_MEETING_ID}"
+# Parts that already reached S3 on an earlier attempt at this recording. The
+# real marker is promoted from this file only once every part succeeded, so
+# "marker exists" means complete rather than "something uploaded" — PHASE 3.
+PARTIAL_MARKER="${UPLOADED_MARKER}.partial"
+# How hard to try one S3 PUT before handing the recording back to the drain
+# queue, which returns with a freshly signed upload URL.
+UPLOAD_ATTEMPTS="${BBB_RECORDING_UPLOAD_ATTEMPTS:-3}"
+UPLOAD_RETRY_DELAY="${BBB_RECORDING_UPLOAD_RETRY_DELAY:-10}"
+# ...and how many whole-recording retries before we stop, so a part that can
+# never upload does not rebuild a 400 MB MP4 on every drain tick forever.
+MAX_RECORDING_ATTEMPTS="${BBB_RECORDING_MAX_ATTEMPTS:-5}"
+
 if [ -f "$UPLOADED_MARKER" ] && [ "${BBB_RECORDING_FORCE:-0}" != "1" ]; then
     log "Already uploaded to S3 (marker present) — skipping duplicate post-publish for $INTERNAL_MEETING_ID"
     exit 0
 fi
+[ "${BBB_RECORDING_FORCE:-0}" = "1" ] && rm -f "$PARTIAL_MARKER" 2>/dev/null
+
+# Did this part already reach S3? Lets a re-queued recording ship only what is
+# missing instead of re-encoding and re-uploading what is already there.
+part_done() {
+    [ -f "$PARTIAL_MARKER" ] && grep -q "^$1=" "$PARTIAL_MARKER" 2>/dev/null
+}
 
 log "=========================================="
 log "Post-publish started for internal meeting: $INTERNAL_MEETING_ID"
@@ -301,19 +320,43 @@ upload_recording() {
     log "[$rec_type] Got presigned URL. FileId: $file_id"
 
     # Step 2: Upload to S3
+    #
+    # This used to be one bare curl with no retry and no timeout. A single
+    # stalled connection (HTTP 000 after 138 s on a 390 MB body, 2026-10-28)
+    # lost the part permanently, because the caller deletes the built MP4 as
+    # soon as this returns. Three things changed:
+    #   -T streams the file instead of --data-binary reading all 400 MB into
+    #     memory, and lets curl rewind cleanly on a retry;
+    #   --speed-limit/--speed-time abort a stalled transfer instead of hanging
+    #     until something upstream cuts it with no HTTP status at all;
+    #   the loop retries, and if every attempt fails the caller now reports the
+    #     recording as incomplete so the drain re-queues it with a fresh URL.
+    # Expect: is suppressed to keep the request shape identical to the old one.
     log "[$rec_type] Uploading to S3 ($(du -h "$mp4_file" | cut -f1))..."
-    local upload_http_code
-    upload_http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
-        -H "Content-Type: ${file_type}" \
-        --data-binary "@${mp4_file}" \
-        "$upload_url")
+    local upload_http_code attempt=0
+    while :; do
+        attempt=$((attempt + 1))
+        upload_http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+            --connect-timeout 30 \
+            --speed-limit 10240 --speed-time 120 \
+            -H "Content-Type: ${file_type}" \
+            -H "Expect:" \
+            -T "${mp4_file}" \
+            "$upload_url")
 
-    if [ "$upload_http_code" != "200" ] && [ "$upload_http_code" != "204" ]; then
-        log "[$rec_type] ERROR: S3 upload failed (HTTP $upload_http_code)"
-        return 1
-    fi
+        if [ "$upload_http_code" = "200" ] || [ "$upload_http_code" = "204" ]; then
+            break
+        fi
 
-    log "[$rec_type] S3 upload complete (HTTP $upload_http_code)"
+        if [ "$attempt" -ge "$UPLOAD_ATTEMPTS" ]; then
+            log "[$rec_type] ERROR: S3 upload failed (HTTP $upload_http_code) after $attempt attempt(s)"
+            return 1
+        fi
+        log "[$rec_type] WARN: S3 upload attempt $attempt failed (HTTP $upload_http_code) — retrying in ${UPLOAD_RETRY_DELAY}s"
+        sleep "$UPLOAD_RETRY_DELAY"
+    done
+
+    log "[$rec_type] S3 upload complete (HTTP $upload_http_code, attempt $attempt)"
 
     # Step 3: Register in backend
     log "[$rec_type] Registering recording in backend..."
@@ -339,17 +382,14 @@ upload_recording() {
         log "[$rec_type] WARN: Registration returned HTTP $complete_code: $complete_body"
     else
         log "[$rec_type] Recording registered successfully"
-        # Drop a marker so the health dashboard can show this recording as
-        # "Uploaded" without having to call the backend. One marker per
-        # recordId — once ANY rec_type (content/webcams/presenter) has
-        # registered we consider the recording present in S3.
+        # Record "type=fileId" so the health dashboard can surface the S3 file
+        # id, and so a retry of this recording knows to skip this part. These
+        # lines go to the staging file: PHASE 3 promotes it to the real marker
+        # only when the whole recording made it, because every pending check on
+        # this box treats the marker as "this recording is in S3".
         mkdir -p /var/spool/bbb-recording-uploaded 2>/dev/null
-        # Record "type=fileId" so the health dashboard can surface/copy the S3
-        # file id for this recording. Marker existence still signals "uploaded";
-        # each variant (content/webcams/presenter) appends its own line.
-        MARKER="/var/spool/bbb-recording-uploaded/${INTERNAL_MEETING_ID}"
-        if ! printf '%s=%s\n' "$rec_type" "$file_id" >> "$MARKER" 2>/dev/null; then
-            touch "$MARKER" 2>/dev/null || true
+        if ! printf '%s=%s\n' "$rec_type" "$file_id" >> "$PARTIAL_MARKER" 2>/dev/null; then
+            touch "$PARTIAL_MARKER" 2>/dev/null || true
         fi
     fi
 
@@ -678,9 +718,22 @@ fi
 # ══════════════════════════════════════════════════════════════
 
 UPLOAD_COUNT=0
+FAILED_PARTS=0        # parts whose upload failed — the recording is incomplete
+CONTENT_ATTEMPTED=0   # a content video exists, so webcams is NOT the whole class
+CONTENT_FAILED=0      # ...and it did not reach S3
+
+mkdir -p /var/spool/bbb-recording-uploaded 2>/dev/null
+RECORDING_ATTEMPT=1
+if [ -f "$PARTIAL_MARKER" ]; then
+    RECORDING_ATTEMPT=$(( $(grep -c '^attempt=' "$PARTIAL_MARKER" 2>/dev/null || echo 0) + 1 ))
+fi
+printf 'attempt=%s\n' "$RECORDING_ATTEMPT" >> "$PARTIAL_MARKER" 2>/dev/null || true
+[ "$RECORDING_ATTEMPT" -gt 1 ] && log "Retry $RECORDING_ATTEMPT/$MAX_RECORDING_ATTEMPTS for $INTERNAL_MEETING_ID — only missing parts will be rebuilt"
+
+[ -n "$CONTENT_VIDEO" ] && CONTENT_ATTEMPTED=1
 
 # ── Recording A: Content (screen share / camera-as-content / presenter) ──
-if [ -n "$CONTENT_VIDEO" ]; then
+if [ -n "$CONTENT_VIDEO" ] && ! part_done content; then
     MP4_CONTENT="/tmp/vacademy-recording-${MEETING_ID}-content.mp4"
     log "Building content recording from: $CONTENT_VIDEO"
 
@@ -690,6 +743,9 @@ if [ -n "$CONTENT_VIDEO" ]; then
         FILE_NAME_CONTENT="recording-${MEETING_ID}-content.mp4"
         if upload_recording "$MP4_CONTENT" "$FILE_NAME_CONTENT" "content"; then
             UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+        else
+            FAILED_PARTS=$((FAILED_PARTS + 1))
+            CONTENT_FAILED=1
         fi
 
         # Cleanup
@@ -699,7 +755,15 @@ if [ -n "$CONTENT_VIDEO" ]; then
         fi
     else
         log "ERROR: Failed to build content MP4"
+        # A build failure is deterministic (bad source), so it is NOT counted as
+        # a failed upload — retrying would rebuild and fail again every tick.
+        # It still means the screen share is missing, which the webcams branch
+        # below needs to know so it does not call itself the full recording.
+        CONTENT_FAILED=1
     fi
+elif [ -n "$CONTENT_VIDEO" ]; then
+    log "[content] already in S3 from an earlier attempt — not rebuilding"
+    UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
 else
     log "No content video source found — skipping content recording"
 fi
@@ -715,7 +779,7 @@ for candidate in \
     fi
 done
 
-if [ -n "$WEBCAMS_SOURCE" ]; then
+if [ -n "$WEBCAMS_SOURCE" ] && ! part_done webcams && ! part_done full; then
     MP4_WEBCAMS="/tmp/vacademy-recording-${MEETING_ID}-webcams.mp4"
     log "Building webcams recording from: $WEBCAMS_SOURCE"
 
@@ -723,16 +787,26 @@ if [ -n "$WEBCAMS_SOURCE" ]; then
     if build_mp4 "$WEBCAMS_SOURCE" "" "$MP4_WEBCAMS"; then
         log "Webcams MP4 created: $(du -h "$MP4_WEBCAMS" | cut -f1)"
 
-        # If this is the only recording, tag it as "full" for backward compatibility
+        # When a class had no screen share, the webcam video genuinely IS the
+        # whole recording, so it is tagged "full" for backward compatibility.
+        # This used to key off "UPLOAD_COUNT -eq 0", which is also true when the
+        # content upload FAILED — so a class whose 70-minute screen share had
+        # just been lost got its webcam-only video registered as the complete
+        # recording. Decide on whether a content video existed, not on whether
+        # anything happened to upload.
         local_type="webcams"
-        if [ $UPLOAD_COUNT -eq 0 ]; then
+        if [ "$CONTENT_ATTEMPTED" -eq 0 ]; then
             local_type="full"
-            log "No content recording — tagging webcams as 'full'"
+            log "No content video in this recording — tagging webcams as 'full'"
+        elif [ "$CONTENT_FAILED" -eq 1 ]; then
+            log "Content did not reach S3 — keeping this as 'webcams', NOT 'full' (the screen share is still missing)"
         fi
 
         FILE_NAME_WEBCAMS="recording-${MEETING_ID}-webcams.mp4"
         if upload_recording "$MP4_WEBCAMS" "$FILE_NAME_WEBCAMS" "$local_type"; then
             UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+        else
+            FAILED_PARTS=$((FAILED_PARTS + 1))
         fi
 
         # Cleanup
@@ -743,12 +817,15 @@ if [ -n "$WEBCAMS_SOURCE" ]; then
     else
         log "ERROR: Failed to build webcams MP4"
     fi
+elif [ -n "$WEBCAMS_SOURCE" ]; then
+    log "[webcams] already in S3 from an earlier attempt — not rebuilding"
+    UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
 else
     log "WARN: No published webcams video found"
 fi
 
 # ── Recording C: Presenter-only webcam (individual stream, no students) ──
-if [ -n "$PRESENTER_BEST_VIDEO" ]; then
+if [ -n "$PRESENTER_BEST_VIDEO" ] && ! part_done presenter; then
     MP4_PRESENTER="/tmp/vacademy-recording-${MEETING_ID}-presenter.mp4"
     log "Building presenter-only recording from: $PRESENTER_BEST_VIDEO"
 
@@ -760,6 +837,8 @@ if [ -n "$PRESENTER_BEST_VIDEO" ]; then
         FILE_NAME_PRESENTER="recording-${MEETING_ID}-presenter.mp4"
         if upload_recording "$MP4_PRESENTER" "$FILE_NAME_PRESENTER" "presenter"; then
             UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+        else
+            FAILED_PARTS=$((FAILED_PARTS + 1))
         fi
 
         # Cleanup
@@ -770,12 +849,18 @@ if [ -n "$PRESENTER_BEST_VIDEO" ]; then
     else
         log "ERROR: Failed to build presenter MP4"
     fi
+elif [ -n "$PRESENTER_BEST_VIDEO" ]; then
+    log "[presenter] already in S3 from an earlier attempt — not rebuilding"
+    UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
 else
     log "No presenter webcam found — skipping presenter-only recording"
 fi
 
-# ── Fallback: if nothing was uploaded, try any available video ──
-if [ $UPLOAD_COUNT -eq 0 ]; then
+# ── Fallback: if there was nothing to upload, try any available video ──
+# Only when nothing FAILED. If a part was built and its upload failed, the
+# right answer is to let the drain retry it, not to ship a different, worse
+# video under the name "full" and call the recording done.
+if [ $UPLOAD_COUNT -eq 0 ] && [ $FAILED_PARTS -eq 0 ]; then
     log "No recordings uploaded yet — trying any available video as fallback"
 
     FALLBACK_VIDEO=""
@@ -820,5 +905,45 @@ else
     log "Analytics script not found, skipping"
 fi
 
+# ══════════════════════════════════════════════════════════════
+# PHASE 3: Publish the marker only if the recording is complete
+# ══════════════════════════════════════════════════════════════
+# Every pending check on this box asks one question: does
+# /var/spool/bbb-recording-uploaded/<id> exist? Writing that file the moment
+# any single part registered is what let a class keep its webcam video and
+# silently lose its 70-minute screen share while every check still reported
+# "0 pending". So the per-part lines are staged in <id>.partial and only
+# promoted here, which also means the drain and the nightly sweep keep seeing
+# an incomplete recording as pending and retry it with a fresh upload URL.
+if [ "$FAILED_PARTS" -gt 0 ] && [ "$RECORDING_ATTEMPT" -lt "$MAX_RECORDING_ATTEMPTS" ]; then
+    log "INCOMPLETE (attempt $RECORDING_ATTEMPT/$MAX_RECORDING_ATTEMPTS): $FAILED_PARTS part(s) did not reach S3"
+    log "Leaving $INTERNAL_MEETING_ID unmarked so it is picked up again — uploaded $UPLOAD_COUNT so far"
+    log "=========================================="
+    exit 1
+fi
+
+if [ "$FAILED_PARTS" -gt 0 ]; then
+    # Out of retries. Mark it so the drain stops rebuilding this MP4 on every
+    # tick, but say so loudly: the recording IS short a part, and the parts
+    # listed in the marker are the ones that actually made it.
+    log "GIVING UP after $RECORDING_ATTEMPT attempts — $FAILED_PARTS part(s) never reached S3"
+    log "RECORDING INCOMPLETE IN S3: $INTERNAL_MEETING_ID — compare the marker's parts against the published dir"
+fi
+
+if [ -f "$PARTIAL_MARKER" ]; then
+    # Strip the attempt bookkeeping so the marker holds only "type=fileId"
+    # lines, the format the health dashboard already reads. grep exits 1 when
+    # it filters every line out (a recording that gave up with nothing
+    # uploaded), so the move must not be gated on grep's status.
+    grep -v '^attempt=' "$PARTIAL_MARKER" > "${PARTIAL_MARKER}.tmp" 2>/dev/null
+    if mv -f "${PARTIAL_MARKER}.tmp" "$UPLOADED_MARKER" 2>/dev/null; then
+        rm -f "$PARTIAL_MARKER" 2>/dev/null
+    else
+        rm -f "${PARTIAL_MARKER}.tmp" 2>/dev/null
+        log "WARN: could not promote $PARTIAL_MARKER to $UPLOADED_MARKER — left for the next run"
+    fi
+fi
+
 log "Post-publish complete for meeting: $MEETING_ID (uploaded $UPLOAD_COUNT recording(s))"
 log "=========================================="
+exit 0

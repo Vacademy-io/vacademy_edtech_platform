@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Info, PencilSimple } from '@phosphor-icons/react';
 
 import {
@@ -35,9 +36,9 @@ const EMPTY: Cascade = {
 
 const toOptions = <T,>(
     items: T[],
-    value: (t: T) => string,
-    label: (t: T) => string
-): SearchableSelectOption[] => items.map((t) => ({ value: value(t), label: label(t) }));
+    value: (item: T) => string,
+    label: (item: T) => string
+): SearchableSelectOption[] => items.map((item) => ({ value: value(item), label: label(item) }));
 
 /**
  * Institute-wide Course → Session → Level → Subject → Module → Chapter
@@ -54,6 +55,7 @@ export function DefaultRecordingDestinationPicker({
     value: Destination | null | undefined;
     onChange: (next: Destination | null) => void;
 }) {
+    const { t } = useTranslation('settingsDefaultRecordingDestination');
     const [sel, setSel] = useState<Cascade>(EMPTY);
     // Once a saved destination has been hydrated into the cascade, show a
     // collapsed summary line instead of the full picker until "Change" is
@@ -188,14 +190,14 @@ export function DefaultRecordingDestinationPicker({
         const chapterName =
             chapters.find((c) => c.chapter.id === value.chapterId)?.chapter.chapter_name ?? '';
         const parts = [courseName, selectedLevel?.name, chapterName].filter(Boolean);
-        return parts.length > 0 ? parts.join(' › ') : 'Destination selected';
-    }, [value, selectedCourse, selectedLevel, chapters]);
+        return parts.length > 0 ? parts.join(' › ') : t('summary.fallback');
+    }, [value, selectedCourse, selectedLevel, chapters, t]);
 
     if (!editing && value?.chapterId) {
         return (
             <div className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
                 <span className="min-w-0 truncate text-caption text-neutral-700">
-                    Default destination: <span className="font-medium">{summary}</span>
+                    {t('summary.prefix')} <span className="font-medium">{summary}</span>
                 </span>
                 <MyButton
                     type="button"
@@ -204,7 +206,7 @@ export function DefaultRecordingDestinationPicker({
                     onClick={() => setEditing(true)}
                 >
                     <PencilSimple className="mr-1 size-3.5" />
-                    Change
+                    {t('button.change')}
                 </MyButton>
             </div>
         );
@@ -214,8 +216,8 @@ export function DefaultRecordingDestinationPicker({
         <div className="flex flex-col gap-2">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <CascadeField
-                    label="Course"
-                    placeholder="Select course"
+                    label={t('cascadeField.labels.course')}
+                    placeholder={t('cascadeField.placeholders.course')}
                     value={sel.courseId}
                     onChange={setCourse}
                     disabled={!studyLibraryData || isInitLoading}
@@ -227,8 +229,8 @@ export function DefaultRecordingDestinationPicker({
                 />
                 {showSession && (
                     <CascadeField
-                        label="Session"
-                        placeholder="Select session"
+                        label={t('cascadeField.labels.session')}
+                        placeholder={t('cascadeField.placeholders.session')}
                         value={sel.sessionId}
                         onChange={setSession}
                         disabled={!sel.courseId}
@@ -241,8 +243,8 @@ export function DefaultRecordingDestinationPicker({
                 )}
                 {showLevel && (
                     <CascadeField
-                        label="Level"
-                        placeholder="Select level"
+                        label={t('cascadeField.labels.level')}
+                        placeholder={t('cascadeField.placeholders.level')}
                         value={sel.levelId}
                         onChange={setLevel}
                         disabled={!sel.sessionId}
@@ -255,8 +257,8 @@ export function DefaultRecordingDestinationPicker({
                 )}
                 {showSubject && (
                     <CascadeField
-                        label="Subject"
-                        placeholder="Select subject"
+                        label={t('cascadeField.labels.subject')}
+                        placeholder={t('cascadeField.placeholders.subject')}
                         value={sel.subjectId}
                         onChange={setSubject}
                         disabled={!sel.levelId}
@@ -269,8 +271,8 @@ export function DefaultRecordingDestinationPicker({
                 )}
                 {showModule && (
                     <CascadeField
-                        label="Module"
-                        placeholder="Select module"
+                        label={t('cascadeField.labels.module')}
+                        placeholder={t('cascadeField.placeholders.module')}
                         value={sel.moduleId}
                         onChange={setModule}
                         disabled={!sel.subjectId || !packageSessionId || modulesQuery.isLoading}
@@ -282,8 +284,8 @@ export function DefaultRecordingDestinationPicker({
                     />
                 )}
                 <CascadeField
-                    label="Chapter"
-                    placeholder="Select chapter"
+                    label={t('cascadeField.labels.chapter')}
+                    placeholder={t('cascadeField.placeholders.chapter')}
                     value={sel.chapterId}
                     onChange={setChapter}
                     disabled={!sel.moduleId}
@@ -297,7 +299,7 @@ export function DefaultRecordingDestinationPicker({
             {!value?.chapterId && (
                 <p className="flex items-center gap-1.5 text-caption text-amber-600">
                     <Info size={14} />
-                    No default set — only sessions with their own destination will auto-upload.
+                    {t('noDefaultSet')}
                 </p>
             )}
         </div>
@@ -319,6 +321,7 @@ function CascadeField({
     onChange: (v: string) => void;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation('settingsDefaultRecordingDestination');
     return (
         <div className="flex w-full flex-col gap-1">
             <label className="text-caption font-medium text-neutral-600">{label}</label>
@@ -327,8 +330,10 @@ function CascadeField({
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
-                searchPlaceholder={`Search ${label.toLowerCase()}…`}
-                emptyText="No matches"
+                searchPlaceholder={t('cascadeField.searchPlaceholder', {
+                    label: label.toLowerCase(),
+                })}
+                emptyText={t('cascadeField.emptyText')}
                 disabled={disabled}
                 triggerClassName="h-9 text-caption"
             />

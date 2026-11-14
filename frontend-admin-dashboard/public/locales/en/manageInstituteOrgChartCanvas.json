@@ -1,0 +1,84 @@
+{
+    "header": {
+        "showingTeam": "Showing team",
+        "rename": "Rename",
+        "renameTooltip": "Rename this team",
+        "deleteTeam": "Delete team",
+        "deleteTeamTooltip": "Delete this team",
+        "newTeam": "New team",
+        "addPerson": "Add person"
+    },
+    "banner": {
+        "help": "Drag a user from the left list onto an empty area to add them to the team, or drop them on a card to add them as that person’s report. Draw an arrow from the bottom dot of a card to the top dot of another to set reports-to. Click a card or arrow then press Delete to remove it. Click the pencil on a card to give them a position label (e.g. “Sales Head”).",
+        "dismiss": "Dismiss"
+    },
+    "canvas": {
+        "loadingTeam": "Loading {{name}}…",
+        "loadError": "Could not load this team. Try refreshing.",
+        "minimapLabel": "Org chart minimap"
+    },
+    "sidebar": {
+        "heading": "Institute users",
+        "searchPlaceholder": "Search by name or email…",
+        "loadingUsers": "Loading users…",
+        "noUsers": "No users in this institute yet.",
+        "noMatches": "No one matches that search.",
+        "unnamed": "Unnamed",
+        "alreadyInTeamBadge": "in team",
+        "alreadyInTeamTooltip": "Already in this team",
+        "dragToAddTooltip": "Drag onto the canvas to add to this team"
+    },
+    "emptyStates": {
+        "noTeamsTitle": "Create your first team",
+        "noTeamsBody": "Group your institute into teams like Sales, Counselling, or Engineering. Each team can have its own reporting structure. People can belong to more than one team.",
+        "newTeamCta": "+ New team",
+        "emptyTeamTitle": "{{teamName}} is empty",
+        "emptyTeamBody": "Drag someone from the left, or add the first person, then connect cards to set who reports to whom.",
+        "addFirstPersonCta": "+ Add the first person"
+    },
+    "dialogs": {
+        "newTeam": {
+            "title": "New team",
+            "label": "Team name",
+            "placeholder": "e.g. Sales, Counselling, Engineering",
+            "cancel": "Cancel",
+            "create": "Create team",
+            "creating": "Creating…"
+        },
+        "renameTeam": {
+            "title": "Rename \"{{name}}\"",
+            "label": "Team name",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving…"
+        },
+        "close": "Close"
+    },
+    "unnamedUser": "User {{id}}",
+    "toast": {
+        "movedUnder": "Moved under {{target}}",
+        "topOfTeam": "top of team",
+        "thatManager": "that manager",
+        "theirManager": "their manager",
+        "thisPerson": "this person",
+        "thisTeam": "this team",
+        "couldNotMove": "Could not move this person",
+        "addedUnder": "Added {{name}} under {{target}}",
+        "couldNotAdd": "Could not add this person",
+        "removedFromTeam": "Removed from team",
+        "couldNotRemove": "Could not remove this person",
+        "teamDeleted": "Team deleted",
+        "couldNotDeleteTeam": "Could not delete this team",
+        "alreadyInTeamError": "This person is already in this team",
+        "giveTeamName": "Give the team a name",
+        "teamCreated": "Created \"{{name}}\"",
+        "couldNotCreateTeam": "Could not create team",
+        "renamed": "Renamed",
+        "couldNotRenameTeam": "Could not rename team"
+    },
+    "confirm": {
+        "removePerson": "Remove {{name}} from {{teamName}}? Their memberships in other teams are not affected.",
+        "deleteTeam_one": "Delete \"{{name}}\" and remove {{count}} member from it? Their memberships in other teams are not affected.",
+        "deleteTeam_other": "Delete \"{{name}}\" and remove all {{count}} members from it? Their memberships in other teams are not affected."
+    }
+}

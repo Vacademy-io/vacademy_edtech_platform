@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { StatusChip } from '@/components/design-system/status-chips';
@@ -30,18 +32,54 @@ const POLL_INTERVAL_MS = 5000;
 const statusChipFor = (status: ReportZipStatus['status'] | string) => {
     switch (status) {
         case 'COMPLETED':
-            return <StatusChip text="Completed" textSize="text-caption" status="SUCCESS" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.completed')}
+                    textSize="text-caption"
+                    status="SUCCESS"
+                />
+            );
         case 'PARTIAL':
-            return <StatusChip text="Partial" textSize="text-caption" status="WARNING" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.partial')}
+                    textSize="text-caption"
+                    status="WARNING"
+                />
+            );
         case 'FAILED':
-            return <StatusChip text="Failed" textSize="text-caption" status="DANGER" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.failed')}
+                    textSize="text-caption"
+                    status="DANGER"
+                />
+            );
         case 'CANCELLED':
-            return <StatusChip text="Cancelled" textSize="text-caption" status="INFO" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.cancelled')}
+                    textSize="text-caption"
+                    status="INFO"
+                />
+            );
         case 'IN_PROGRESS':
-            return <StatusChip text="In progress" textSize="text-caption" status="INFO" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.inProgress')}
+                    textSize="text-caption"
+                    status="INFO"
+                />
+            );
         case 'PENDING':
         default:
-            return <StatusChip text="Queued" textSize="text-caption" status="INFO" />;
+            return (
+                <StatusChip
+                    text={i18next.t('assessmentReportZipExportDialog:statusChips.queued')}
+                    textSize="text-caption"
+                    status="INFO"
+                />
+            );
     }
 };
 
@@ -66,6 +104,7 @@ export const AssessmentReportZipExportDialog = ({
     open: controlledOpen,
     onOpenChange,
 }: AssessmentReportZipExportDialogProps) => {
+    const { t } = useTranslation('assessmentReportZipExportDialog');
     const isControlled = controlledOpen !== undefined;
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const open = isControlled ? controlledOpen : uncontrolledOpen;
@@ -108,12 +147,16 @@ export const AssessmentReportZipExportDialog = ({
             });
             setActiveJobId(response.job_id);
             if (response.already_running) {
-                toast.info('An export for this assessment is already running — showing its progress.');
+                toast.info(t('toasts.alreadyRunning'));
             } else {
-                toast.success(`Export started for ${response.total_count} submission(s).`);
+                toast.success(
+                    t('toasts.exportStarted', {
+                        count: response.total_count,
+                    })
+                );
             }
         } catch {
-            toast.error('Failed to start the export. Please try again.');
+            toast.error(t('toasts.startFailed'));
         } finally {
             setIsStarting(false);
         }
@@ -124,10 +167,10 @@ export const AssessmentReportZipExportDialog = ({
         setIsActing(true);
         try {
             await continueReportZipExport(activeJobId, instituteId);
-            toast.success('Resuming the export…');
+            toast.success(t('toasts.resuming'));
             statusQuery.refetch();
         } catch {
-            toast.error('Failed to resume the export.');
+            toast.error(t('toasts.resumeFailed'));
         } finally {
             setIsActing(false);
         }
@@ -138,10 +181,10 @@ export const AssessmentReportZipExportDialog = ({
         setIsActing(true);
         try {
             await cancelReportZipExport(activeJobId, instituteId);
-            toast.success('Export cancelled.');
+            toast.success(t('toasts.cancelled'));
             statusQuery.refetch();
         } catch {
-            toast.error('Failed to cancel the export.');
+            toast.error(t('toasts.cancelFailed'));
         } finally {
             setIsActing(false);
         }
@@ -158,7 +201,7 @@ export const AssessmentReportZipExportDialog = ({
             // stale between actions.
             const fresh = await getReportZipExportStatus(jobId, instituteId);
             if (!fresh.download_url) {
-                toast.error('The download link is not ready yet. Please try again in a moment.');
+                toast.error(t('toasts.downloadNotReady'));
                 return;
             }
             // Fetch the bytes and save under our own name. A plain <a download>
@@ -169,7 +212,7 @@ export const AssessmentReportZipExportDialog = ({
             await downloadFileFromUrl(fresh.download_url, baseName, 'zip');
             if (jobId === activeJobId) statusQuery.refetch();
         } catch {
-            toast.error('Failed to prepare the download.');
+            toast.error(t('toasts.downloadFailed'));
         } finally {
             setIsActing(false);
         }
@@ -183,7 +226,8 @@ export const AssessmentReportZipExportDialog = ({
         <MyDialog
             open={open}
             onOpenChange={setOpen}
-            heading="Export Reports (ZIP)"
+            heading={t('dialog.heading')}
+            triggerTooltip={t('trigger.tooltip')}
             dialogWidth="max-w-xl"
             trigger={
                 isControlled ? undefined : (
@@ -191,10 +235,12 @@ export const AssessmentReportZipExportDialog = ({
                         type="button"
                         scale="small"
                         buttonType="secondary"
-                        className="font-medium"
+                        className="!h-10 !min-w-0 gap-1.5 px-3 font-medium"
+                        title={t('trigger.label')}
+                        aria-label={t('trigger.label')}
                     >
                         <FileZip size={16} />
-                        Export Reports (ZIP)
+                        {t('trigger.short')}
                     </MyButton>
                 )
             }
@@ -204,8 +250,8 @@ export const AssessmentReportZipExportDialog = ({
                     <>
                         <p className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-body text-neutral-700">
                             {isBulkSelection
-                                ? `Generates a ZIP of report PDFs for the ${attemptIds.length} selected submission(s).`
-                                : 'Generates a ZIP of report PDFs for all submissions matching the current filter.'}
+                                ? t('description.bulk', { count: attemptIds.length })
+                                : t('description.all')}
                         </p>
                         <label className="flex cursor-pointer items-center gap-2">
                             <input
@@ -214,7 +260,7 @@ export const AssessmentReportZipExportDialog = ({
                                 onChange={(e) => setRegenerate(e.target.checked)}
                             />
                             <span className="text-caption text-neutral-600">
-                                Regenerate reports even if one already exists for a student
+                                {t('regenerateLabel')}
                             </span>
                         </label>
                         <MyButton
@@ -224,7 +270,7 @@ export const AssessmentReportZipExportDialog = ({
                             disable={isStarting}
                             onClick={handleStart}
                         >
-                            {isStarting ? 'Starting…' : 'Start Export'}
+                            {isStarting ? t('starting') : t('startButton')}
                         </MyButton>
                     </>
                 )}
@@ -233,7 +279,7 @@ export const AssessmentReportZipExportDialog = ({
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <p className="text-body font-semibold text-neutral-700">
-                                {status.output_file_name || 'Assessment reports'}
+                                {status.output_file_name || t('defaultFileName')}
                             </p>
                             {statusChipFor(status.status)}
                         </div>
@@ -241,19 +287,23 @@ export const AssessmentReportZipExportDialog = ({
                         <div className="flex flex-col gap-1">
                             <Progress value={progressPercent} />
                             <p className="text-caption text-neutral-500">
-                                {status.completed_count} of {status.total_count} completed
-                                {status.failed_count > 0 ? ` · ${status.failed_count} failed` : ''}
-                                {status.skipped_count > 0 ? ` · ${status.skipped_count} skipped` : ''}
+                                {t('progress.summary', {
+                                    completed: status.completed_count,
+                                    total: status.total_count,
+                                })}
+                                {status.failed_count > 0
+                                    ? ` · ${t('progress.failedCount', { count: status.failed_count })}`
+                                    : ''}
+                                {status.skipped_count > 0
+                                    ? ` · ${t('progress.skippedCount', { count: status.skipped_count })}`
+                                    : ''}
                             </p>
                         </div>
 
                         {status.context_drift && (
                             <div className="flex items-start gap-2 rounded-md border border-warning-300 bg-warning-50 p-3 text-caption text-warning-700">
                                 <Warning size={16} className="mt-0.5 shrink-0" />
-                                <span>
-                                    Class statistics were recalculated partway through this export — some
-                                    reports may quote slightly different numbers than others in this ZIP.
-                                </span>
+                                <span>{t('warnings.contextDrift')}</span>
                             </div>
                         )}
 
@@ -261,8 +311,7 @@ export const AssessmentReportZipExportDialog = ({
                             <div className="flex items-start gap-2 rounded-md border border-warning-300 bg-warning-50 p-3 text-caption text-warning-700">
                                 <Warning size={16} className="mt-0.5 shrink-0" />
                                 <span>
-                                    {status.stale_item_count} report(s) were generated before the student&apos;s
-                                    attempt was updated (e.g. re-evaluated). Regenerate the export to refresh them.
+                                    {t('warnings.staleItems', { count: status.stale_item_count })}
                                 </span>
                             </div>
                         )}
@@ -279,7 +328,7 @@ export const AssessmentReportZipExportDialog = ({
                                     onClick={() => setFailuresExpanded((v) => !v)}
                                 >
                                     {failuresExpanded ? <CaretUp size={14} /> : <CaretDown size={14} />}
-                                    {status.failures.length} failure(s)
+                                    {t('failures.count', { count: status.failures.length })}
                                 </button>
                                 {failuresExpanded && (
                                     <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md border border-neutral-200 p-2">
@@ -287,7 +336,10 @@ export const AssessmentReportZipExportDialog = ({
                                             <div key={f.attempt_id} className="text-caption text-neutral-600">
                                                 <span className="font-medium">{f.student_name || f.attempt_id}</span>
                                                 {' — '}
-                                                {f.reason} ({f.retry_count} retr{f.retry_count === 1 ? 'y' : 'ies'})
+                                                {t('failures.detail', {
+                                                    reason: f.reason,
+                                                    count: f.retry_count,
+                                                })}
                                             </div>
                                         ))}
                                     </div>
@@ -305,7 +357,7 @@ export const AssessmentReportZipExportDialog = ({
                                     onClick={() => downloadJob(activeJobId, false)}
                                 >
                                     <DownloadSimple size={16} />
-                                    Download ZIP
+                                    {t('downloadZip')}
                                 </MyButton>
                             )}
                             {status.resumable && (
@@ -316,7 +368,7 @@ export const AssessmentReportZipExportDialog = ({
                                     disable={isActing}
                                     onClick={handleContinue}
                                 >
-                                    Continue ({status.remaining_count} remaining)
+                                    {t('continueButton', { count: status.remaining_count })}
                                 </MyButton>
                             )}
                             {status.assemblable && status.status !== 'COMPLETED' && (
@@ -328,7 +380,7 @@ export const AssessmentReportZipExportDialog = ({
                                     onClick={() => downloadJob(activeJobId, true)}
                                 >
                                     <DownloadSimple size={16} />
-                                    Download {status.completed_count} completed
+                                    {t('downloadCompleted', { count: status.completed_count })}
                                 </MyButton>
                             )}
                             {(status.status === 'PENDING' || status.status === 'IN_PROGRESS') && (
@@ -339,7 +391,7 @@ export const AssessmentReportZipExportDialog = ({
                                     disable={isActing}
                                     onClick={handleCancel}
                                 >
-                                    Cancel
+                                    {t('cancelButton')}
                                 </MyButton>
                             )}
                             <MyButton
@@ -348,7 +400,7 @@ export const AssessmentReportZipExportDialog = ({
                                 buttonType="text"
                                 onClick={() => setActiveJobId(null)}
                             >
-                                Start a new export
+                                {t('startNewExport')}
                             </MyButton>
                         </div>
                         {/* What's inside the ZIP — index.html is the primary
@@ -356,11 +408,11 @@ export const AssessmentReportZipExportDialog = ({
                             index files don't confuse the admin. */}
                         {status.assemblable && (
                             <p className="text-caption text-neutral-500">
-                                After extracting the ZIP, open{' '}
-                                <span className="font-semibold text-neutral-600">index.html</span> to
-                                view and open each student&apos;s report.{' '}
+                                {t('zipContentsNote.prefix')}{' '}
+                                <span className="font-semibold text-neutral-600">index.html</span>{' '}
+                                {t('zipContentsNote.suffix')}{' '}
                                 <span className="text-neutral-400">
-                                    (index.csv holds the same list as spreadsheet data.)
+                                    {t('zipContentsNote.csvNote')}
                                 </span>
                             </p>
                         )}
@@ -369,7 +421,9 @@ export const AssessmentReportZipExportDialog = ({
 
                 {!activeJobId && recentQuery.data && recentQuery.data.jobs.length > 0 && (
                     <div className="flex flex-col gap-2 border-t border-neutral-100 pt-4">
-                        <p className="text-body font-semibold text-neutral-700">Recent exports</p>
+                        <p className="text-body font-semibold text-neutral-700">
+                            {t('recentExports.title')}
+                        </p>
                         {recentQuery.data.jobs.map((job: ReportZipJobSummary) => (
                             <div
                                 key={job.job_id}
@@ -381,7 +435,10 @@ export const AssessmentReportZipExportDialog = ({
                                     <div className="flex items-center gap-2">
                                         {statusChipFor(job.status)}
                                         <span className="text-caption text-neutral-500">
-                                            {job.completed_count}/{job.total_count} completed
+                                            {t('recentExports.completedCount', {
+                                                completed: job.completed_count,
+                                                total: job.total_count,
+                                            })}
                                         </span>
                                     </div>
                                     <span className="text-caption text-neutral-400">
@@ -395,7 +452,7 @@ export const AssessmentReportZipExportDialog = ({
                                         buttonType="text"
                                         onClick={() => setActiveJobId(job.job_id)}
                                     >
-                                        View
+                                        {t('recentExports.view')}
                                     </MyButton>
                                     {job.download_url && (
                                         <MyButton

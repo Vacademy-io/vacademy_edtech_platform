@@ -40,31 +40,41 @@ public class RecipientResolutionService {
     public List<String> resolveRecipientsToUsers(String announcementId) {
         log.info("Resolving recipients for announcement: {}", announcementId);
 
+        // Fetch announcement to get institute ID
+        Announcement announcement = announcementRepository.findById(announcementId)
+            .orElseThrow(() -> new RuntimeException("Announcement not found: " + announcementId));
+
+        return resolveUserIds(announcement.getInstituteId(), announcementId,
+                recipientRepository.findByAnnouncementId(announcementId));
+    }
+
+    /**
+     * Resolves recipient rows — persisted, or built in memory for a draft that has not been saved
+     * (see {@code AnnouncementService.buildRecipientEntities}) — to unique user IDs.
+     * Tries the centralized admin-core API first and falls back to the per-type resolvers.
+     *
+     * @param label only used in logs (the announcement ID, or a description of the draft)
+     */
+    public List<String> resolveUserIds(String instituteId, String label, List<AnnouncementRecipient> allRecipients) {
         try {
             // Try to use centralized resolution first
-            return resolveRecipientsToUsersCentralized(announcementId);
+            return resolveRecipientsToUsersCentralized(instituteId, label, allRecipients);
         } catch (Exception e) {
-            log.warn("Centralized recipient resolution failed for announcement {}, falling back to legacy method", announcementId, e);
+            log.warn("Centralized recipient resolution failed for {}, falling back to legacy method", label, e);
             // Fallback to legacy method
-            return resolveRecipientsToUsersLegacy(announcementId);
+            return resolveRecipientsToUsersLegacy(instituteId, label, allRecipients);
         }
     }
 
     /**
      * New centralized resolution method - uses admin-core-service centralized API
      */
-    private List<String> resolveRecipientsToUsersCentralized(String announcementId) {
-        log.debug("Using centralized recipient resolution for announcement: {}", announcementId);
-
-        // Fetch announcement to get institute ID
-        Announcement announcement = announcementRepository.findById(announcementId)
-            .orElseThrow(() -> new RuntimeException("Announcement not found: " + announcementId));
-
-        // Fetch all recipients
-        List<AnnouncementRecipient> allRecipients = recipientRepository.findByAnnouncementId(announcementId);
+    private List<String> resolveRecipientsToUsersCentralized(String instituteId, String label,
+                                                            List<AnnouncementRecipient> allRecipients) {
+        log.debug("Using centralized recipient resolution for {}", label);
 
         // Build centralized request
-        CentralizedRecipientResolutionRequest request = buildCentralizedRequest(announcement, allRecipients);
+        CentralizedRecipientResolutionRequest request = buildCentralizedRequest(instituteId, label, allRecipients);
 
         // Call centralized API with pagination to get all users
         List<String> allUserIds = new ArrayList<>();
@@ -86,36 +96,24 @@ public class RecipientResolutionService {
             }
         }
 
-        log.info("Centralized resolution completed for announcement {}: {} unique users", announcementId, allUserIds.size());
+        log.info("Centralized resolution completed for {}: {} unique users", label, allUserIds.size());
         return allUserIds;
     }
 
     /**
      * Legacy resolution method - kept as fallback
      */
-    private List<String> resolveRecipientsToUsersLegacy(String announcementId) {
-        log.debug("Using legacy recipient resolution for announcement: {}", announcementId);
+    private List<String> resolveRecipientsToUsersLegacy(String announcementInstituteId, String label,
+                                                       List<AnnouncementRecipient> allRecipients) {
+        log.debug("Using legacy recipient resolution for {}", label);
 
-        // Fetch all recipients and separate inclusions from exclusions based on prefix
-        List<AnnouncementRecipient> allRecipients = recipientRepository.findByAnnouncementId(announcementId);
+        // Separate inclusions from exclusions based on prefix
         List<AnnouncementRecipient> recipients = allRecipients.stream()
                 .filter(r -> !r.isExclusion())
                 .toList();
         List<AnnouncementRecipient> exclusions = allRecipients.stream()
                 .filter(AnnouncementRecipient::isExclusion)
                 .toList();
-
-        Announcement announcement = null;
-        String announcementInstituteId = null;
-        try {
-            announcement = announcementRepository.findById(announcementId)
-                .orElse(null);
-            if (announcement != null) {
-                announcementInstituteId = announcement.getInstituteId();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch announcement {} while resolving recipients", announcementId, e);
-        }
 
         // Step 1: Resolve all included recipients
         Set<String> includedUserIds = resolveRecipientList(recipients, announcementInstituteId, "inclusions");
@@ -136,7 +134,7 @@ public class RecipientResolutionService {
         }
 
         List<String> finalUserList = new ArrayList<>(includedUserIds);
-        log.info("Final resolved recipients for announcement {}: {} unique users", announcementId, finalUserList.size());
+        log.info("Final resolved recipients for {}: {} unique users", label, finalUserList.size());
 
         return finalUserList;
     }
@@ -159,9 +157,10 @@ public class RecipientResolutionService {
      *    a display name. Try parsing as exclusions; if it's not an exclusion shape, treat it
      *    as a display name and continue without exclusions.
      */
-    private CentralizedRecipientResolutionRequest buildCentralizedRequest(Announcement announcement, List<AnnouncementRecipient> allRecipients) {
+    private CentralizedRecipientResolutionRequest buildCentralizedRequest(String instituteId, String label,
+                                                                          List<AnnouncementRecipient> allRecipients) {
         CentralizedRecipientResolutionRequest request = new CentralizedRecipientResolutionRequest();
-        request.setInstituteId(announcement.getInstituteId());
+        request.setInstituteId(instituteId);
         request.setPageNumber(0);
         request.setPageSize(1000);
 
@@ -178,7 +177,7 @@ public class RecipientResolutionService {
 
             // USER / ROLE: pre-resolve to concrete user IDs, then emit them as USER recipients.
             if ("USER".equals(type) || "ROLE".equals(type)) {
-                Set<String> resolvedUserIds = preResolveToUserIds(type, actualRecipientId, announcement.getInstituteId());
+                Set<String> resolvedUserIds = preResolveToUserIds(type, actualRecipientId, instituteId);
                 if (resolvedUserIds.isEmpty()) {
                     log.warn("Pre-resolution of {} recipient '{}' yielded no users; skipping",
                             type, actualRecipientId);
@@ -212,11 +211,11 @@ public class RecipientResolutionService {
             } else {
                 // Try recipientName as stored exclusions JSON; otherwise treat as a display name.
                 List<CentralizedRecipientResolutionRequest.RecipientWithExclusions.Exclusion> exclusions =
-                        parseStoredExclusions(recipient.getRecipientName(), announcement.getInstituteId());
+                        parseStoredExclusions(recipient.getRecipientName(), instituteId);
                 if (!exclusions.isEmpty()) {
                     rwe.setExclusions(exclusions);
-                    log.info("Attached {} exclusions to recipient {}={} for announcement {}",
-                            exclusions.size(), type, actualRecipientId, announcement.getId());
+                    log.info("Attached {} exclusions to recipient {}={} for {}",
+                            exclusions.size(), type, actualRecipientId, label);
                 }
             }
 

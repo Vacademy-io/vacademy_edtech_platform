@@ -1,0 +1,10 @@
+{
+    "viewDetails": "View Details",
+    "editLiveSession": "Edit Live Session",
+    "deleteLiveSession": "Delete Live Session",
+    "startDateTime": "Start Date & Time:",
+    "lastEntry": "Last Entry:",
+    "meetingType": "Meeting Type:",
+    "joinLink": "Join Link:",
+    "notAvailable": "N/A"
+}

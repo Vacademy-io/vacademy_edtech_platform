@@ -1,0 +1,47 @@
+{
+    "header": {
+        "title": "डिज़ाइन पहचान"
+    },
+    "emptyState": {
+        "noIdentity": "इस निर्णय के साथ कोई डिज़ाइन पहचान संलग्न नहीं थी।"
+    },
+    "styleframe": {
+        "altText": "स्टाइलफ़्रेम — {{name}}",
+        "caption": "स्टाइलफ़्रेम — हर शॉट जिस लुक का अनुसरण करता है",
+        "notRendered": "इस रन के लिए कोई स्टाइलफ़्रेम रेंडर नहीं किया गया"
+    },
+    "typography": {
+        "label": "टाइपोग्राफ़ी",
+        "lockedByBrand": "आपकी ब्रांड किट द्वारा लॉक: {{display}} / {{body}}",
+        "pairingCaption": "हेडलाइन के लिए {{display}} · बॉडी के लिए {{body}}"
+    },
+    "motion": {
+        "label": "मोशन व्यक्तित्व"
+    },
+    "finishing": {
+        "groups": {
+            "grain": "ग्रेन",
+            "vignette": "विनेट",
+            "light": "लाइट"
+        },
+        "options": {
+            "none": "कोई नहीं",
+            "soft": "हल्का",
+            "film": "फ़िल्म",
+            "medium": "मध्यम",
+            "glow": "चमक"
+        }
+    },
+    "advanced": {
+        "toggle": "उन्नत",
+        "colorArc": "रंग आर्क",
+        "colorArcPlaceholder": "वीडियो में रंग कैसे विकसित होता है",
+        "imageArtDirection": "इमेज आर्ट दिशा",
+        "imageArtPlaceholder": "जनरेट की गई इमेज कैसी दिखनी चाहिए"
+    },
+    "actions": {
+        "letAiDecide": "AI को तय करने दें",
+        "saveAndContinue": "सहेजें और जारी रखें",
+        "approveAndContinue": "स्वीकृत करें और जारी रखें"
+    }
+}

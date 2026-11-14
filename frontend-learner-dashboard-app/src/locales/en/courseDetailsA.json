@@ -1,0 +1,166 @@
+{
+  "leaderboard": {
+    "trigger": {
+      "compactAriaLabel": "{{course}} leaderboard",
+      "compactTitle": "Leaderboard",
+      "cardTitle": "Leaderboard",
+      "cardSubtitleRanked_one": "You're {{rank}} · {{count}} badge",
+      "cardSubtitleRanked_other": "You're {{rank}} · {{count}} badges",
+      "cardSubtitleDefault": "See how you rank in this {{course}}",
+      "unranked": "unranked"
+    },
+    "dialog": {
+      "title": "{{course}} Leaderboard",
+      "copyLinkTitle": "Copy public link",
+      "shareTitle": "Share",
+      "shareAriaLabel": "Share leaderboard",
+      "loading": "Loading leaderboard…",
+      "emptyText": "No leaderboard activity yet — start learning to climb the ranks!",
+      "rankingLabel": "Ranking",
+      "learnersCount": "{{count}} {{learners}}",
+      "footer": "Ranked by learning activity • climbs as you learn"
+    },
+    "standing": {
+      "label": "Your standing",
+      "unranked": "Unranked",
+      "badgesEarned_one": "badge earned",
+      "badgesEarned_other": "badges earned",
+      "viewYourBadgesTitle": "View your badges"
+    },
+    "row": {
+      "viewBadgesTitle": "View badges"
+    },
+    "badgesDialog": {
+      "yourBadges": "Your badges",
+      "othersBadges": "{{name}}'s badges",
+      "defaultName": "Learner",
+      "empty": "No badges earned yet."
+    },
+    "toast": {
+      "linkCopied": "Leaderboard link copied"
+    }
+  },
+  "subscriptionCancel": {
+    "autoRenewing": "Auto-renewing subscription",
+    "renewsOn": "Renews on {{date}}",
+    "recurringActive": "Recurring subscription active",
+    "cancelButton": "Cancel subscription",
+    "cancelling": "Cancelling...",
+    "confirmTitle": "Cancel this subscription?",
+    "confirmDescription": "Auto-renewal will stop. You'll keep access until {{endDate}}, and won't be charged again.",
+    "endOfCurrentPeriod": "the end of your current period",
+    "keepButton": "Keep subscription",
+    "toast": {
+      "successTitle": "Autopay cancelled",
+      "successDescription": "You keep access until the end of your current period.",
+      "errorTitle": "Couldn't cancel autopay",
+      "errorDescription": "Please try again in a moment."
+    }
+  },
+  "certificate": {
+    "completedTitle": "{{course}} Completed!",
+    "congratsMessage": "Congratulations! You've earned a certificate.",
+    "viewCertificate": "View Certificate",
+    "downloadCertificate": "Download Certificate",
+    "previewAriaLabel": "Certificate preview",
+    "previewTitle": "Certificate Preview",
+    "previewHeading": "{{courseTitle}} — Certificate Preview",
+    "refreshAriaLabel": "Refresh certificate",
+    "refreshTitle": "Re-issue with the latest template",
+    "refreshing": "Refreshing",
+    "refresh": "Refresh",
+    "closePreviewAriaLabel": "Close preview",
+    "close": "Close",
+    "courseFieldLabel": "{{course}}:",
+    "sessionFieldLabel": "Session:",
+    "levelFieldLabel": "Level:"
+  },
+  "contentSections": {
+    "aboutThisCourse": "About This {{course}}",
+    "whatYoullLearn": "What You'll Learn",
+    "whoShouldJoin": "Who Should Join"
+  },
+  "detailsCollapsible": {
+    "highlights": "{{course}} Highlights"
+  },
+  "detailsPage": {
+    "heading": "{{course}} Details"
+  },
+  "ratings": {
+    "heading": "Ratings & Reviews",
+    "subheading": "Community feedback and ratings",
+    "form": {
+      "feedbackLabel": "Your Feedback",
+      "feedbackPlaceholder": "Write your feedback...",
+      "ratingLabel": "Rating",
+      "starCount_one": "{{count}} Star",
+      "starCount_other": "{{count}} Stars",
+      "submitting": "Submitting...",
+      "submit": "Submit Feedback"
+    },
+    "reviewsCount": "{{count}} reviews",
+    "empty": {
+      "title": "No reviews yet",
+      "description": "Be the first to share your experience with this {{course}}"
+    },
+    "toast": {
+      "submitFailed": "Failed to submit rating",
+      "unexpectedError": "An unexpected error occurred",
+      "thankYou": "Thank you for your feedback!",
+      "selectRatingFirst": "Please select a rating before submitting"
+    }
+  },
+  "detailsSkeleton": {
+    "loadingAriaLabel": "Loading {{course}} content"
+  },
+  "enrollment": {
+    "configurationTitle": "{{course}} Configuration",
+    "previewMode": "{{course}} Preview Mode",
+    "previewNotice": "Browse structure. Enroll to access {{slides}} and materials.",
+    "classSection": "Class / Section",
+    "classSectionPlaceholder": "Select class or section",
+    "noActiveSessions": "No active {{sessions}}",
+    "notEnrolled": "Not enrolled",
+    "requiresConfiguration": "This {{course}} requires configuration.",
+    "contactTeacherToEnroll": "Please contact your {{teacher}} to get enrolled.",
+    "enrollNow": "Enroll Now"
+  },
+  "header": {
+    "viewLess": "View less",
+    "viewMore": "View more",
+    "courseMediaAlt": "{{course}} Media",
+    "courseBannerAlt": "{{course}} Banner"
+  },
+  "sidebar": {
+    "overview": "{{course}} Overview",
+    "author": "Author",
+    "courseTime": "{{course}} Time",
+    "enrollNow": "Enroll Now",
+    "courseProgress": "{{course}} Progress",
+    "completion": "Completion",
+    "certificateOnCompletion": "Certificate will be generated upon completion",
+    "unknownInstructor": "Unknown {{teacher}}"
+  },
+  "statsSidebar": {
+    "overview": "{{course}} Overview",
+    "author": "Author",
+    "courseTime": "{{course}} Time"
+  },
+  "schema": {
+    "invalidEmail": "Invalid email address.",
+    "instructorNameRequired": "Instructor name is required.",
+    "levelNameRequired": "Level name is required.",
+    "durationNonNegative": "Duration must be a non-negative integer.",
+    "sessionNameRequired": "Session name is required.",
+    "statusNameRequired": "Status name is required.",
+    "startDateFormat": "Start date must be in YYYY-MM-DD format.",
+    "levelDetailRequired": "At least one level detail is required per session.",
+    "titleRequired": "Title is required.",
+    "descriptionMinLength": "Description must be at least 10 characters.",
+    "tagRequired": "At least one tag is required.",
+    "invalidImageUrl": "Must be a valid URL for the image.",
+    "instructorRequired": "At least one instructor is required.",
+    "sessionRequired": "At least one session is required.",
+    "mockCourseTitleRequired": "Mock {{course}} title is required."
+  }
+}

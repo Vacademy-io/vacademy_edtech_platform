@@ -1,0 +1,67 @@
+{
+    "navHeading": "المساعد التعليمي",
+    "greetingMorning": "صباح الخير.",
+    "greetingMorningNamed": "صباح الخير، {{name}}.",
+    "greetingAfternoon": "نهارك سعيد.",
+    "greetingAfternoonNamed": "نهارك سعيد، {{name}}.",
+    "greetingEvening": "مساء الخير.",
+    "greetingEveningNamed": "مساء الخير، {{name}}.",
+    "headerSubtitle": "لنساعدك في الوصول إلى الأداة المناسبة خلال نقرتين فقط.",
+    "step1Heading": "ما الذي أتى بك إلى هنا اليوم؟",
+    "step1Subtitle": "اختر الهدف العام، وسنحدد التفاصيل في الخطوة التالية.",
+    "ctaOpen": "فتح",
+    "ctaContinue": "متابعة",
+    "back": "رجوع",
+    "step2HeadingFallback": "{{title}} — أي نوع؟",
+    "step2Subtitle": "اختر كيف تريد البدء. ستطلب منك الشاشة التالية التفاصيل.",
+    "recentWorkHeading": "أعمالك الأخيرة",
+    "viewAll": "عرض الكل",
+    "topicBasedQuestionsFallback": "أسئلة قائمة على موضوع",
+    "categories": {
+        "assessment": {
+            "title": "إنشاء تقييم",
+            "subtitle": "ورقة أسئلة أو اختبار قصير أو امتحان — من أي مصدر لديك.",
+            "step2Heading": "كيف تريد إنشاء الأسئلة؟"
+        },
+        "lecture-plan": {
+            "title": "التخطيط لمحاضرة",
+            "subtitle": "خطة زمنية مع النقاط الرئيسية وواجب منزلي اختياري."
+        },
+        "lecture-review": {
+            "title": "مراجعة أسلوب تدريسي",
+            "subtitle": "احصل على مراجعة لطيفة ودقيقة لحصة سجلتها."
+        }
+    },
+    "subOptions": {
+        "assessment": {
+            "fromTopic": {
+                "title": "من موضوع",
+                "subtitle": "اكتب موضوعًا، وسنصيغ الأسئلة."
+            },
+            "fromDocument": {
+                "title": "من مستند",
+                "subtitle": "PDF أو Word أو PowerPoint — أسئلة جديدة حول محتواه."
+            },
+            "fromAudio": {
+                "title": "من تسجيل صوتي",
+                "subtitle": "ارفع تسجيلاً — أسئلة بناءً على ما قيل."
+            },
+            "fromPhoto": {
+                "title": "من صورة لورقة أسئلة",
+                "subtitle": "التقط صورة لورقة مطبوعة — حوّلها إلى أسئلة قابلة للتعديل."
+            },
+            "fromExistingPaper": {
+                "title": "من ورقة أسئلة موجودة",
+                "subtitle": "حوّل ورقة أسئلة لديك بالفعل إلى نسخة رقمية."
+            },
+            "fromQuestionBank": {
+                "title": "من بنك الأسئلة الخاص بي",
+                "subtitle": "فرز تلقائي حسب الموضوع، أو اختيار أسئلة محددة."
+            },
+            "chatWithDocument": {
+                "title": "الدردشة مع مستند",
+                "subtitle": "تبادل الحديث حول ملف PDF — اطلب أسئلة أو ملخصات."
+            }
+        }
+    }
+}

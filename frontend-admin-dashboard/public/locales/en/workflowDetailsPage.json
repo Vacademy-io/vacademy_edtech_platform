@@ -1,0 +1,67 @@
+{
+    "backToWorkflows": "Back to Workflows",
+    "unknownDate": "Unknown",
+    "unknownError": "Unknown error",
+    "type": "Type:",
+    "created": "Created {{time}}",
+    "updated": "Updated {{time}}",
+    "notFound": {
+        "title": "Workflow not found",
+        "description": "The workflow you're looking for doesn't exist or has been removed."
+    },
+    "actions": {
+        "edit": "Edit",
+        "runNow": "Run now",
+        "running": "Running...",
+        "dismiss": "Dismiss",
+        "cancel": "Cancel",
+        "triggering": "Triggering...",
+        "yesRunNow": "Yes, run now",
+        "deactivating": "Deactivating...",
+        "yesDeactivate": "Yes, deactivate",
+        "deactivate": "Deactivate"
+    },
+    "runConfirm": {
+        "title": "Trigger workflow now?",
+        "bodyPrefix": "This will run",
+        "bodyMiddle": "immediately in",
+        "productionMode": "production mode",
+        "warnEmails": "Real emails will be sent to all matching recipients.",
+        "warnUndo": "This cannot be undone once started.",
+        "warnIntentional": "Use this only when you intentionally want to fire the workflow outside its schedule.",
+        "triggeredSuccess": "Triggered successfully. Engine status: {{status}}.",
+        "completedStatus": "completed",
+        "triggerFailed": "Failed to trigger: {{message}}"
+    },
+    "deactivateConfirm": {
+        "title": "Deactivate this workflow?",
+        "body": "will become inactive. Its schedules and event triggers will be disabled.",
+        "warnNoNewExecutions": "New scheduled and event-triggered runs will stop.",
+        "warnHistoryPreserved": "All past execution history will be preserved.",
+        "warnInProgress": "Executions already in progress may continue.",
+        "success": "Workflow is now inactive.",
+        "failed": "Could not deactivate the workflow. Please try again."
+    },
+    "tabs": {
+        "diagram": "Diagram",
+        "configuration": "Configuration",
+        "executions": "Executions",
+        "debug": "Debug"
+    },
+    "diagram": {
+        "loading": "Loading diagram...",
+        "loadFailed": "Failed to load diagram",
+        "noData": "No diagram data available"
+    },
+    "debug": {
+        "debugging": "Debugging execution:",
+        "selectDifferent": "Select different execution",
+        "noSelection": "No execution selected",
+        "hint": "Go to the Executions tab, click on a run, then press \"View on Diagram\" to see the visual debug flow with node-level status and logs.",
+        "goToExecutions": "Go to Executions"
+    },
+    "trigger": {
+        "firesOn": "Fires on",
+        "for": "for"
+    }
+}

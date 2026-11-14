@@ -1,0 +1,26 @@
+{
+    "title": "Membership & Payment Behaviour",
+    "description": "Institute-wide switches for how memberships renew and whether members can move between plans. Both are off by default.",
+    "loading": "Loading payment settings…",
+    "toggle": {
+        "enabled": "नवीनीकरण शेड्यूलर सक्षम है",
+        "disabled": "नवीनीकरण शेड्यूलर अक्षम है"
+    },
+    "button": {
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है…"
+    },
+    "toasts": {
+        "saveSuccess": "Payment settings saved",
+        "saveError": "Failed to save payment settings"
+    },
+    "renewal": {
+        "hint": "यह इस संस्थान की सदस्य योजनाओं का दैनिक स्कैन चलाता है और प्रत्येक बैच की नामांकन नीति लागू करता है: समाप्ति-पूर्व अनुस्मारक, समाप्ति के बाद की प्रतीक्षा अवधि, और अंतिम समाप्ति। डिफ़ॉल्ट रूप से बंद — बंद रहने पर, इस संस्थान की कोई भी योजना शेड्यूलर द्वारा कभी संसाधित नहीं की जाती।"
+    },
+    "planChange": {
+        "enabled": "Plan switching is on",
+        "disabled": "Plan switching is off",
+        "hintOn": "Members can move between the plans you've marked switchable in the payment options below. Upgrades charge the prorated difference; downgrades take effect at the end of their paid cycle.",
+        "hintOff": "Members never see a “change plan” option. Turn this on to expose it, then choose which payment options and plans they may switch to."
+    }
+}

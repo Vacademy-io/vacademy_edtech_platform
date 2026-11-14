@@ -48,6 +48,16 @@ public class AiCallingSettingsPojo {
     private int maxCallsPerDayPerLead = 3;
 
     /**
+     * A connected call in which the caller said at least this many words is treated as
+     * ENGAGED: if it still lands on a "no conclusion" disposition (Incomplete, an
+     * unmapped label, a refused booking) it is handed to a human instead of re-dialed.
+     * Measured by the bot from the transcript, not judged by the model. 40 is the
+     * threshold at which the 2026-09-09 audit found every call was a real two-sided
+     * conversation rather than a greeting exchange; voicemail greetings run 25–35.
+     */
+    private int engagedCallerWords = 40;
+
+    /**
      * Hard ceiling on AI dials for the WHOLE institute in a rolling 24h window
      * (across every lead, campaign and click-to-call — all funnel through
      * {@code AiCallService.placeCall}). The cheapest runaway-spend guardrail: one
@@ -92,8 +102,46 @@ public class AiCallingSettingsPojo {
      */
     private List<String> customDispositions = new ArrayList<>();
 
+    /**
+     * Disposition -> lead-status-key map, e.g. {@code {"Quiz_Link_Sent": "FOLLOWUP"}}.
+     *
+     * <p>Without this the only workflow-independent status writer matches a disposition
+     * to a status whose NAME equals it, so an agent vocabulary like {@code Quiz_Link_Sent}
+     * or {@code Counselling_Scheduled} matches nothing and the lead keeps whatever it had.
+     * That is survivable while a workflow is alive to route the outcome, and silently
+     * wrong the moment one is not — a booked counselling session sitting at Not Reachable
+     * because the call landed after the workflow closed.
+     *
+     * <p>Consulted BEFORE the name match, which stays as the fallback. Keys are matched
+     * case- and separator-insensitively, so "quiz link sent" finds "Quiz_Link_Sent".
+     * An unmapped disposition, or one pointing at a status the institute does not have,
+     * leaves the lead untouched exactly as before.
+     */
+    private java.util.Map<String, String> dispositionStatusMap = new java.util.LinkedHashMap<>();
+
     private String assignmentMode = "ROUND_ROBIN";
     private boolean assignExhaustedToHuman = true;
+
+    /**
+     * Hand a lead the AI has QUALIFIED to the audience's counsellor pool even when the lead
+     * already has an owner.
+     *
+     * <p>Off by default, because the owner-keeps-the-lead rule exists for a real flow: a
+     * counsellor rings a lead, marks it DNP, the bot re-calls it, and rotating that lead away
+     * would take it off the person actively working it.
+     *
+     * <p>On, for the opposite flow: a bulk list of previously-worked leads is moved into an
+     * AI-calling list. Every one of them arrives already owned, so the pool is never consulted
+     * and a booked counselling session lands silently on whoever last held the lead — often
+     * someone who has already given up on it. Turning this on makes a genuine qualification
+     * route to the pool that the list is attached to.
+     *
+     * <p>Scope is deliberately narrow: only a REAL qualification (a disposition in
+     * {@link #assignOnDispositions}) can move an owned lead. The exhausted-retries hand-off
+     * ({@link #assignExhaustedToHuman}) never does — "nobody picked up" is not a reason to
+     * take a lead off its counsellor.
+     */
+    private boolean reassignQualifiedToPool = false;
 
     /**
      * Auto-capture unknown INBOUND callers as leads. When the AI helpline answers a

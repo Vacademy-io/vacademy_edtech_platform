@@ -1,6 +1,7 @@
 // subject-card.tsx
 import { DotsSixVertical } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddSubjectForm } from './add-subject-form';
 import { MyDialog } from '@/components/design-system/dialog';
 import { useRouter } from '@tanstack/react-router';
@@ -28,6 +29,7 @@ interface SubjectCardProps {
 }
 
 export const SubjectCard = ({ subject, onDelete, onEdit, currentSession }: SubjectCardProps) => {
+    const { t } = useTranslation('studyLibrarySubjectCard');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false);
     // No Offline Availability action while the institute master switch is off —
@@ -136,7 +138,9 @@ export const SubjectCard = ({ subject, onDelete, onEdit, currentSession }: Subje
 
             <MyDialog
                 trigger={<></>}
-                heading={`Edit ${getTerminology(ContentTerms.Subject, SystemTerms.Subject)}`}
+                heading={t('editHeading', {
+                    term: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
+                })}
                 dialogWidth="w-[400px]"
                 open={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}

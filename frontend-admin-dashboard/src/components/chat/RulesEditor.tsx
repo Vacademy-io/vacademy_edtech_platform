@@ -340,7 +340,7 @@ export function RulesEditor({
                     <Button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="bg-primary-500 hover:bg-primary-600"
+                        className="bg-primary-500 text-white hover:opacity-90"
                     >
                         {isSaving ? <SpinnerGap size={16} className="animate-spin" /> : 'Save rules'}
                     </Button>

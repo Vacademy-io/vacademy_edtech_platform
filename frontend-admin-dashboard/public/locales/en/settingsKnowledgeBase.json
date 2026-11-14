@@ -1,0 +1,66 @@
+{
+    "header": {
+        "title": "Knowledge Base",
+        "description": "Add institute-specific knowledge for the AI chatbot (events, policies, FAQs, etc.)",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
+    },
+    "toolbar": {
+        "searchPlaceholder": "Search knowledge items...",
+        "allCategories": "All Categories",
+        "addButton": "Add Knowledge"
+    },
+    "list": {
+        "emptyNoItems": "No knowledge items yet. Add your first item to make the chatbot smarter.",
+        "emptyNoMatch": "No items match your search.",
+        "inactiveBadge": "Inactive"
+    },
+    "categories": {
+        "event": "Event",
+        "policy": "Policy",
+        "process": "Process",
+        "faq": "FAQ",
+        "announcement": "Announcement",
+        "result": "Result",
+        "general": "General"
+    },
+    "form": {
+        "editTitle": "Edit Knowledge Item",
+        "addTitle": "Add Knowledge Item",
+        "editDescription": "Update this knowledge item. Changes will be reflected in chatbot responses.",
+        "addDescription": "Add a new knowledge item that the AI chatbot can reference during conversations.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g., Annual Sports Day 2026",
+        "categoryLabel": "Category",
+        "contentLabel": "Content",
+        "contentPlaceholder": "Enter the knowledge content that the AI chatbot should know about...",
+        "contentHint": "This text will be embedded and searched by the AI chatbot during conversations.",
+        "tagsLabel": "Tags",
+        "tagsPlaceholder": "e.g., sports, annual, 2026 (comma-separated)",
+        "tagsHint": "Comma-separated tags to help categorize and find this item.",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "updateItem": "Update Item",
+        "addItem": "Add Item"
+    },
+    "deleteDialog": {
+        "title": "Delete Knowledge Item",
+        "description": "Are you sure you want to delete this knowledge item? This action cannot be undone and the chatbot will no longer have access to this information.",
+        "cancel": "Cancel",
+        "deleting": "Deleting...",
+        "confirm": "Delete"
+    },
+    "toasts": {
+        "loadFailed": "Failed to load knowledge base items",
+        "titleRequired": "Title is required",
+        "contentRequired": "Content is required",
+        "itemUpdated": "Knowledge item updated",
+        "itemCreated": "Knowledge item created",
+        "saveFailed": "Failed to save knowledge item",
+        "itemActivated": "Item activated",
+        "itemDeactivated": "Item deactivated",
+        "toggleFailed": "Failed to update item status",
+        "itemDeleted": "Knowledge item deleted",
+        "deleteFailed": "Failed to delete knowledge item"
+    }
+}

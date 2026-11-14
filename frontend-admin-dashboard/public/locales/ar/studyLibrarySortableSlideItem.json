@@ -1,0 +1,64 @@
+{
+    "labels": {
+        "videoScript": "نص الفيديو",
+        "mermaidDiagramCode": "كود مخطط ميرميد",
+        "codeSnippet": "مقتطف الكود",
+        "diagramPreview": "معاينة المخطط",
+        "mermaidCode": "كود ميرميد",
+        "video": "الفيديو",
+        "code": "الكود",
+        "output": "الناتج",
+        "aiVideo": "فيديو الذكاء الاصطناعي",
+        "aiGeneratedVideo": "فيديو تم إنشاؤه بالذكاء الاصطناعي",
+        "quizContent": "محتوى الاختبار",
+        "content": "المحتوى",
+        "assignment": "الواجب",
+        "aiPrompt": "موجّه الذكاء الاصطناعي"
+    },
+    "actions": {
+        "regenerate": "إعادة الإنشاء",
+        "regenerateVideoScript": "إعادة إنشاء نص الفيديو",
+        "regenerateDiagram": "إعادة إنشاء المخطط",
+        "regenerateCode": "إعادة إنشاء الكود",
+        "regenerateContent": "إعادة إنشاء المحتوى",
+        "regenerateQuiz": "إعادة إنشاء الاختبار",
+        "regenerateAssignment": "إعادة إنشاء الواجب",
+        "regenerateSection": "إعادة إنشاء {{label}}",
+        "runCode": "تشغيل الكود",
+        "running": "قيد التشغيل...",
+        "showOutput": "إظهار الناتج",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "watchOnYoutube": "▶ المشاهدة على يوتيوب",
+        "hideAiPrompt": "إخفاء موجّه الذكاء الاصطناعي",
+        "viewAiPrompt": "عرض موجّه الذكاء الاصطناعي",
+        "hideContent": "إخفاء المحتوى",
+        "viewContent": "عرض المحتوى"
+    },
+    "status": {
+        "generatingDocument": "جارٍ إنشاء المستند...",
+        "generatingQuiz": "جارٍ إنشاء الاختبار...",
+        "generatingVideo": "جارٍ إنشاء الفيديو...",
+        "generatingContent": "جارٍ إنشاء المحتوى...",
+        "generatingVideoProgress": "جارٍ إنشاء الفيديو... {{progress}}٪",
+        "noContentAvailable": "لا يوجد محتوى متاح بعد",
+        "noVideoAvailable": "لا يوجد فيديو متاح",
+        "videoNotAvailableYet": "الفيديو غير متاح بعد",
+        "loadingPythonEnv": "جارٍ تحميل بيئة Python (قد يستغرق ذلك بضع ثوانٍ عند أول تشغيل)...",
+        "noOutputYet": "لا يوجد ناتج بعد. انقر على \"تشغيل الكود\" للتنفيذ.",
+        "failedToLoadScript": "فشل تحميل النص",
+        "mermaidSectionEmpty": "⚠️ قسم ميرميد لا يحتوي على أي محتوى",
+        "youtubeVideoAvailable": "فيديو يوتيوب متاح",
+        "noVideoUrlFound": "لم يتم العثور على رابط فيديو",
+        "checkContentForYoutubeLinks": "يرجى التحقق من روابط يوتيوب في المحتوى"
+    },
+    "alt": {
+        "videoThumbnail": "صورة مصغّرة للفيديو"
+    },
+    "quizNote": {
+        "label": "ملاحظة:",
+        "body": "صِغ الأسئلة بصيغة \"السؤال 1\"، \"السؤال 2\"، وهكذا، مع قوائم مرقّمة للخيارات. اكتب الإجابة الصحيحة أسفل قائمة الخيارات بصيغة \"الإجابة الصحيحة: [نص الخيار]\"."
+    }
+}

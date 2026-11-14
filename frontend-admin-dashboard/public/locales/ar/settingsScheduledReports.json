@@ -1,0 +1,159 @@
+{
+    "page": {
+        "title": "التقارير المجدولة",
+        "description": "أرسل نشاط المعهد إلى فريقك وفق جدول زمني، بدلاً من انتظار أن يأتي أحدهم للاطلاع عليه.",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…"
+    },
+    "toggles": {
+        "enable": {
+            "label": "تفعيل التقارير المجدولة",
+            "description": "عند الإيقاف، لا يتم إنشاء أي شيء ولا يتم خصم أي رسوم."
+        },
+        "timezone": {
+            "label": "المنطقة الزمنية",
+            "description": "يتم تحديد أيام التقارير وأوقاتها وفق هذه المنطقة الزمنية."
+        },
+        "skip": {
+            "label": "تخطي عند عدم وجود ما يُبلَّغ عنه",
+            "description": "موصى به. وإلا فإن أسبوعًا هادئًا سيُرسل تقريرًا فارغًا."
+        }
+    },
+    "defaultNames": {
+        "daily": "الملخص اليومي",
+        "weekly": "الملخص الأسبوعي",
+        "monthly": "الملخص الشهري"
+    },
+    "schedule": {
+        "remove": "إزالة",
+        "sectionsLabel": "الأقسام",
+        "namesLearnersBadge": "يذكر أسماء المتعلمين",
+        "noDataBadge": "لا توجد بيانات في الأيام الثلاثين الماضية",
+        "sectionsError": "تعذّر تحميل الأقسام المتاحة. أعد التحميل للمحاولة مرة أخرى — هذا لا يعني عدم وجود بيانات.",
+        "sectionsLoading": "جارٍ التحقق من الأقسام التي تحتوي على بيانات…",
+        "noSectionsAvailable": "لا يوجد أي قسم يحتوي على بيانات لهذا المعهد حتى الآن.",
+        "hourSuffix": "الساعة ({{timezone}})",
+        "checkReports": "تحقق من عدد التقارير",
+        "previewButton": "معاينة",
+        "building": "جارٍ الإنشاء…",
+        "sendNow": "إرسال الآن",
+        "sendToLabel": "إرسال إلى"
+    },
+    "frequency": {
+        "daily": "يومي",
+        "weekly": "أسبوعي",
+        "monthly": "شهري"
+    },
+    "days": {
+        "MON": "الاثنين",
+        "TUE": "الثلاثاء",
+        "WED": "الأربعاء",
+        "THU": "الخميس",
+        "FRI": "الجمعة",
+        "SAT": "السبت",
+        "SUN": "الأحد"
+    },
+    "scopes": {
+        "INSTITUTE": "المعهد بالكامل",
+        "BATCH": "لكل دفعة",
+        "SUBJECT": "لكل مادة",
+        "FACULTY": "لكل عضو هيئة تدريس"
+    },
+    "roles": {
+        "ADMIN": "المسؤول",
+        "TEACHER": "المعلم",
+        "EVALUATOR": "المقيّم"
+    },
+    "preview": {
+        "reportsPerRun_zero": "تقرير لكل تشغيل ×",
+        "reportsPerRun_one": "تقرير لكل تشغيل ×",
+        "reportsPerRun_two": "تقريران لكل تشغيل ×",
+        "reportsPerRun_few": "تقارير لكل تشغيل ×",
+        "reportsPerRun_many": "تقريرًا لكل تشغيل ×",
+        "reportsPerRun_other": "تقرير لكل تشغيل ×",
+        "runsEqualsMonth": "تشغيل =",
+        "aMonth": "في الشهر.",
+        "exceedsCap": "هذا يتجاوز الحد الأقصى البالغ {{max}} لكل تشغيل ولن يتم تشغيله. قلّص النطاق.",
+        "freeNoAi": "مجاني — لا يوجد تحليل ذكاء اصطناعي في هذا الجدول.",
+        "creditsPerReport": "رصيدًا لكل تقرير",
+        "perRun": "لكل تشغيل،",
+        "aMonthAiAnalysis": "في الشهر مقابل تحليل الذكاء الاصطناعي. التقرير نفسه مجاني؛ والمستلمون مجانيون؛ النطاق هو ما يضاعف التكلفة.",
+        "exampleLabel": "مثال:"
+    },
+    "ai": {
+        "label": "إضافة تحليل بالذكاء الاصطناعي",
+        "badge": "رصيدان لكل تقرير",
+        "description": "يقرأ الأرقام أدناه ويكتب ما يجب فعله حيالها — ما الذي يجب إصلاحه، ومن يجب التواصل معه، وما الذي يطلبه المتعلمون. التقرير نفسه مجاني؛ يُحصَّل هذا فقط، وفقط عند إنتاج تحليل فعلي."
+    },
+    "creditCap": {
+        "prefix": "رفض أي تشغيل تكلفته أكثر من",
+        "placeholder": "بلا حد",
+        "suffix": "رصيدًا"
+    },
+    "recipients": {
+        "helperText": "فقط من لديهم حساب يمكنهم استلام هذه التقارير — إذ قد تذكر التقارير أسماء المتعلمين، لذا لا يوجد خيار بريد إلكتروني بنص حر. يقتصر المعلمون تلقائيًا على دفعاتهم الخاصة."
+    },
+    "addSchedule": "إضافة جدول",
+    "history": {
+        "title": "التقارير الأخيرة",
+        "loadError": "تعذّر تحميل سجل التسليم.",
+        "empty": "لم يُرسَل شيء بعد. تظهر التقارير هنا بمجرد تشغيل أحد الجداول.",
+        "columns": {
+            "when": "الوقت",
+            "report": "التقرير",
+            "status": "الحالة",
+            "recipients": "المستلمون",
+            "learnersNamed": "المتعلمون المذكورون",
+            "whoReceivedIt": "من استلمه"
+        },
+        "statusWithSkipReason": "{{status}} — {{skipReason}}"
+    },
+    "whoReceivedDialog": {
+        "heading": "من استلمه",
+        "instituteReportFallback": "تقرير المعهد",
+        "loading": "جارٍ التحميل…",
+        "emptyState": "لم يستلمه أحد في هذا التشغيل. إذا تم تخطّيه، فالسبب مذكور أعلاه.",
+        "noEmail": "(لا يوجد بريد إلكتروني مسجل)",
+        "unknownRole": "دور غير معروف",
+        "delivered": "تم التسليم",
+        "notDelivered": "لم يتم التسليم",
+        "namedLearners_zero": "{{count}} متعلم مذكور",
+        "namedLearners_one": "{{count}} متعلم مذكور",
+        "namedLearners_two": "{{count}} متعلمان مذكوران",
+        "namedLearners_few": "{{count}} متعلمين مذكورين",
+        "namedLearners_many": "{{count}} متعلمًا مذكورًا",
+        "namedLearners_other": "{{count}} متعلم مذكور"
+    },
+    "reportPreviewDialog": {
+        "heading": "معاينة التقرير",
+        "iframeTitle": "معاينة التقرير",
+        "subtitle": "بالضبط ما ستستلمه. لم يُرسَل شيء ولم يُخصَم أي رصيد.",
+        "openInNewTab": "فتح في تبويب جديد",
+        "downloadHtml": "تنزيل HTML",
+        "nothingToSend": "لن يُرسَل شيء لهذا الجدول."
+    },
+    "toasts": {
+        "previewScopeError": "تعذّر معرفة عدد التقارير التي سيُنشئها هذا",
+        "previewBuildError": "تعذّر إنشاء المعاينة",
+        "sendError": "تعذّر إرسال التقرير",
+        "saveSuccess": "تم حفظ التقارير المجدولة",
+        "saveError": "تعذّر حفظ التقارير المجدولة",
+        "recipientsLoadError": "تعذّر تحميل قائمة المستلمين لهذا التشغيل.",
+        "popupBlocked": "اسمح بالنوافذ المنبثقة لفتح المعاينة في تبويب جديد."
+    },
+    "confirmSend": {
+        "message": "إرسال \"{{name}}\" الآن إلى {{who}}؟\n\nهذا يرسل بريدًا إلكترونيًا حقيقيًا، ويخصم رصيدًا، ولا يمكن التراجع عنه. استخدم المعاينة إذا كنت تريد رؤيته فقط.",
+        "roleAudience": "كل من لديه دور {{roles}}",
+        "selectedAudience_zero": "{{count}} مستلم محدد",
+        "selectedAudience_one": "{{count}} مستلم محدد",
+        "selectedAudience_two": "{{count}} مستلمان محددان",
+        "selectedAudience_few": "{{count}} مستلمين محددين",
+        "selectedAudience_many": "{{count}} مستلمًا محددًا",
+        "selectedAudience_other": "{{count}} مستلم محدد"
+    },
+    "validation": {
+        "exceedsCap": "سيؤدي \"{{name}}\" إلى إنشاء {{documentsPerRun}} تقارير لكل تشغيل، أي أكثر من الحد الأقصى البالغ {{max}}. قلّص النطاق أولاً.",
+        "noSections": "لا يوجد أي قسم محدد في \"{{name}}\".",
+        "noRecipients": "لا يوجد أي مستلم لـ \"{{name}}\"."
+    }
+}

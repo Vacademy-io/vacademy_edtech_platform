@@ -1,0 +1,21 @@
+{
+    "slideType": {
+        "aiContent": "AI सामग्री",
+        "scorm": "SCORM",
+        "slide": "स्लाइड"
+    },
+    "slideTitle": {
+        "assessmentFallback": "असेसमेंट {{ordinal}}",
+        "untitled": "शीर्षकहीन"
+    },
+    "statusBadge": {
+        "draft": "D",
+        "unsync": "U",
+        "deleted": "DEL"
+    },
+    "unsavedChangesTitle": "सहेजे न गए परिवर्तन",
+    "empty": {
+        "heading": "अभी तक कोई {{term}} नहीं",
+        "description": "शुरू करने के लिए अपनी पहली {{term}} जोड़ें"
+    }
+}

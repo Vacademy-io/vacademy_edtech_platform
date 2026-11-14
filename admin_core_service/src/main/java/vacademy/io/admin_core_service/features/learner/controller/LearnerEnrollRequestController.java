@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.learner.dto.OpenLearnerEnrollRequestDTO;
+import vacademy.io.admin_core_service.features.learner.service.AdditionalChargeValidator;
 import vacademy.io.admin_core_service.features.learner.service.LearnerEnrollRequestService;
 import vacademy.io.admin_core_service.features.learner.service.OpenLearnerEnrollService;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
 
@@ -21,13 +23,32 @@ public class LearnerEnrollRequestController {
     @Autowired
     private OpenLearnerEnrollService openLearnerEnrollService;
 
+    @Autowired
+    private AdditionalChargeValidator additionalChargeValidator;
+
+    @Autowired
+    private PublicEnrollRoleGuard publicEnrollRoleGuard;
+
     @PostMapping
     public ResponseEntity<LearnerEnrollResponseDTO> enrollLearner(@RequestBody LearnerEnrollRequestDTO learnerEnrollRequestDTO){
-        return ResponseEntity.ok(learnerEnrollRequestService.recordLearnerRequest(learnerEnrollRequestDTO));
+        // No login on this route: the body's role names never reach auth-service as written.
+        publicEnrollRoleGuard.restrictToLearnerRoles(learnerEnrollRequestDTO.getUser(),
+                learnerEnrollRequestDTO.getInstituteId());
+        // Public entry point only (the v2 order, admin, manual and renewal paths call the service
+        // directly): a membership whose security deposit is due must go through the v2 rent
+        // order, which carries it, and rent picks are capped and must be this institute's. A
+        // gateway's payment confirmation of an enrollment already made is never refused here.
+        if (!learnerEnrollRequestService.isClientPaymentConfirmation(learnerEnrollRequestDTO)) {
+            additionalChargeValidator.validateLegacyRentRequest(learnerEnrollRequestDTO);
+        }
+        // Public learner entry point: an expired / inactive link must not enroll.
+        return ResponseEntity.ok(learnerEnrollRequestService.recordLearnerRequest(learnerEnrollRequestDTO,
+                java.util.Map.of(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true)));
     }
 
     @PostMapping("/detail")
     public ResponseEntity<String> enrollLearnerDetail(@RequestBody OpenLearnerEnrollRequestDTO openLearnerEnrollRequestDTO,String instituteId){
+        publicEnrollRoleGuard.restrictToLearnerRoles(openLearnerEnrollRequestDTO.getUserDTO(), instituteId);
         return ResponseEntity.ok(openLearnerEnrollService.enrollUserInPackageSession(openLearnerEnrollRequestDTO,instituteId));
     }
 }

@@ -44,6 +44,13 @@ export interface LearnerSummary {
   badges: LeaderboardBadge[];
 }
 
+/**
+ * Ranking metric. POINTS reads points_ledger — engagement answers, activity days and
+ * streak bonuses, all server-side and comparable between learners. ACTIVITY is the
+ * legacy ranking by raw focused minutes, which no configured scoring ever touched.
+ */
+const LEADERBOARD_METRIC = "POINTS";
+
 export async function fetchCourseLeaderboard(
   packageSessionId: string
 ): Promise<CourseLeaderboardData | null> {
@@ -52,7 +59,7 @@ export async function fetchCourseLeaderboard(
     if (!instituteId || !packageSessionId) return null;
     const { data } = await authenticatedAxiosInstance.get(
       `${BASE_URL}/admin-core-service/leaderboard/v1/course/me`,
-      { params: { packageSessionId, instituteId } }
+      { params: { packageSessionId, instituteId, metric: LEADERBOARD_METRIC } }
     );
     return (data as CourseLeaderboardData) ?? null;
   } catch (error) {
@@ -112,7 +119,7 @@ export async function fetchMyInstituteRank(): Promise<
     if (!instituteId) return null;
     const { data } = await authenticatedAxiosInstance.get(
       `${BASE_URL}/admin-core-service/leaderboard/v1/institute/me`,
-      { params: { instituteId } }
+      { params: { instituteId, metric: LEADERBOARD_METRIC } }
     );
     const d = data as CourseLeaderboardData;
     return { rank: d?.currentUser?.rank ?? null, totalLearners: d?.totalLearners ?? 0 };

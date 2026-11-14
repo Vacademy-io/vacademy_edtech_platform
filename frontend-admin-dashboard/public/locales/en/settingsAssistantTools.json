@@ -1,0 +1,84 @@
+{
+    "loading": "Loading settings…",
+    "header": {
+        "title": "Vacademy Assistant",
+        "description": "The in-app AI assistant for your team. Control which capabilities it can use for everyone, and grant extra capabilities to specific roles below. Access is always limited to this institute."
+    },
+    "capabilities": {
+        "title": "Capabilities for everyone",
+        "description": "Enabled for every non-learner role in your institute."
+    },
+    "perRole": {
+        "title": "Per-role access (advanced)",
+        "description": "Grant extra capabilities to specific roles, on top of the institute-wide set above. Leave a role uncustomized to use the institute-wide settings.",
+        "suggestedPresets": "Suggested presets:",
+        "customize": "Customize"
+    },
+    "footer": {
+        "save": "Save settings",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "settingsSaved": "Assistant settings saved",
+        "saveFailed": "Failed to save assistant settings",
+        "presetApplied": "Preset applied — click Save settings to confirm."
+    },
+    "tools": {
+        "search_help_knowledge": {
+            "label": "Help & how-to guidance",
+            "description": "Answers “how do I / where do I” questions about using the portal, with step-by-step instructions."
+        },
+        "learner_data": {
+            "label": "Learner data lookup",
+            "description": "Find learners by name/email/phone and answer questions about their attendance, assessment scores, activity, course progress and login summary — and generate their full analysis report. On by default for Admins; grant to other roles below."
+        },
+        "payments": {
+            "label": "Payments & fees",
+            "description": "Answer questions about a learner’s payment history, outstanding/overdue fees, and payment plans. On by default for Admins."
+        },
+        "batch_data": {
+            "label": "Batch rosters",
+            "description": "List the learners in a batch and answer batch headcount questions. On by default for Admins."
+        },
+        "schedule": {
+            "label": "Class schedule",
+            "description": "Answer “what classes are live/upcoming” and “what do I have today” from the live-session schedule. On by default for Admins."
+        },
+        "institute_overview": {
+            "label": "Institute overview",
+            "description": "Institute-wide snapshots: total overdue fees, live classes right now, active learner counts. On by default for Admins."
+        },
+        "learner_edits": {
+            "label": "Learner edits (actions)",
+            "description": "Let the assistant PROPOSE changes — edit a learner’s details, extend access, move batch, activate/deactivate. Every change requires the user to press Confirm on a card before anything is applied. On by default for Admins; other roles are opt-in."
+        },
+        "assessments": {
+            "label": "Assessment results",
+            "description": "Find assessments and answer questions about submissions, scores, pending evaluations, and leaderboards. On by default for Admins."
+        },
+        "website_builder": {
+            "label": "Website: view",
+            "description": "See the institute’s websites — pages, what each section shows (which courses, which lead campaign), traffic, lead capture health and pre-publish checks — and run the interview needed before a site is generated. Read-only. On by default for Admins."
+        },
+        "website_builder_edits": {
+            "label": "Website: edit drafts",
+            "description": "Let the assistant build and change websites by conversation — compose pages, edit sections, set colours and fonts, wire forms to lead campaigns. Every change is saved as a draft; nothing goes live until you publish it in Manage Pages. Uses no AI credits. Off by default."
+        },
+        "audience_forms": {
+            "label": "Lead forms: view",
+            "description": "See lead campaigns (Audience Manager): their form fields, where they are used on the websites, leads received and recent leads. Read-only. On by default for Admins."
+        },
+        "audience_forms_edits": {
+            "label": "Lead forms: edit",
+            "description": "Let the assistant create lead campaigns, add fields to their forms and send test leads. It never removes anything. Off by default."
+        },
+        "announcements": {
+            "label": "Announcements",
+            "description": "See planned/past announcements, and PROPOSE sending one to batches, roles, or specific learners — sending always requires pressing Confirm on a card. On by default for Admins."
+        }
+    },
+    "presets": {
+        "TEACHER": "Teachers: learner data + schedule + assessments",
+        "EVALUATOR": "Evaluators: learner data + assessments"
+    }
+}

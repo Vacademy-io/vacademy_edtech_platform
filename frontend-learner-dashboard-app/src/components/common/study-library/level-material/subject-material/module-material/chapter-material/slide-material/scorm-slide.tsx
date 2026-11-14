@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFileUpload } from '@/hooks/use-file-upload';
@@ -58,6 +59,7 @@ const ScormSlideComponent = ({
     slide,
     packageSessionId: propPackageSessionId = '',
 }: ScormSlideComponentProps) => {
+    const { t } = useTranslation('libraryCommonB');
     const [launchUrl, setLaunchUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -252,7 +254,7 @@ const ScormSlideComponent = ({
     useEffect(() => {
         const fetchLaunchUrl = async () => {
             if (!scormSlide) {
-                setError('SCORM slide data not found');
+                setError(t('scormSlide.errors.dataNotFound'));
                 setIsLoading(false);
                 return;
             }
@@ -274,11 +276,11 @@ const ScormSlideComponent = ({
                     const url = await getPublicUrl(fullFileId);
                     setLaunchUrl(url);
                 } else {
-                    setError('SCORM launch path is not configured');
+                    setError(t('scormSlide.errors.launchPathNotConfigured'));
                 }
             } catch (err) {
                 console.error('Error resolving SCORM launch URL:', err);
-                setError('Failed to load SCORM content');
+                setError(t('scormSlide.errors.loadFailed'));
             } finally {
                 setIsLoading(false);
             }
@@ -290,10 +292,10 @@ const ScormSlideComponent = ({
     if (isLoading) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-stack">
                     <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-500"></div>
                     <p className="text-sm text-neutral-500">
-                        Loading SCORM content...
+                        {t('scormSlide.loading')}
                     </p>
                 </div>
             </div>
@@ -303,8 +305,8 @@ const ScormSlideComponent = ({
     if (error) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+                <div className="text-center space-y-4">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
                         <svg
                             className="h-7 w-7 text-red-500"
                             fill="none"
@@ -329,7 +331,7 @@ const ScormSlideComponent = ({
         return (
             <div className="flex h-full w-full items-center justify-center">
                 <p className="text-sm text-neutral-500">
-                    SCORM content URL not available
+                    {t('scormSlide.urlNotAvailable')}
                 </p>
             </div>
         );
@@ -350,7 +352,7 @@ const ScormSlideComponent = ({
                 ref={iframeRef}
                 src={launchUrl}
                 className="absolute inset-0 block h-full w-full border-0"
-                title={slide.title || 'SCORM Content'}
+                title={slide.title || t('scormSlide.defaultTitle')}
                 allow="fullscreen; autoplay; encrypted-media; clipboard-read; clipboard-write"
                 onLoad={() => {
                     console.log('[SCORM] iframe loaded, sending init data');

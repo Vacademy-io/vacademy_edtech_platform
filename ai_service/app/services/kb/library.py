@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+from . import taxonomy
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +34,13 @@ _LISTING_COLUMNS = """
     l.id, l.knowledge_base_id, l.title, l.summary, l.description,
     l.cover_file_id, l.cover_alt, l.subject, l.level, l.board, l.language,
     l.tags, l.status, l.sort_weight, l.published_at, l.published_by,
-    l.created_at, l.updated_at
+    l.created_at, l.updated_at, l.collection
 """
+
+# knowledge_base_listing.collection value for pre-loaded curriculum libraries
+# (V517). Access runs through the institute setting, not an entitlement, and
+# they are kept out of the paid catalogue.
+CURRICULUM = "CURRICULUM"
 
 
 def _row(r: Any) -> Dict[str, Any]:
@@ -57,6 +64,7 @@ def _row(r: Any) -> Dict[str, Any]:
         "board": m["board"],
         "language": m["language"],
         "tags": tags or [],
+        "collection": m["collection"] if "collection" in m.keys() else None,
         "status": m["status"],
         "sort_weight": m["sort_weight"],
         "published_at": m["published_at"].isoformat() if m["published_at"] else None,
@@ -67,12 +75,51 @@ def _row(r: Any) -> Dict[str, Any]:
         "unlocked": bool(m["unlocked"]) if "unlocked" in m.keys() else None,
         "sources": m["sources"] if "sources" in m.keys() else None,
         "pages": m["pages"] if "pages" in m.keys() else None,
+        # "SYLLABUS" when the base is an official syllabus rather than a
+        # textbook, so the card can say so before the teacher opens it.
+        "curriculum_kind": m["curriculum_kind"] if "curriculum_kind" in m.keys() else None,
     }
 
 
 # ---------------------------------------------------------------------------
 # Catalogue (client-facing)
 # ---------------------------------------------------------------------------
+
+def _selection_sql(
+    selection: taxonomy.Selection, params: Dict[str, Any]
+) -> Tuple[List[str], List[Any]]:
+    """WHERE fragments for a resolved picker selection.
+
+    Each group is `(l.board = :b AND l.level IN :lv)`, OR-ed together, so
+    "CBSE → Class 10" becomes `(board='CBSE' AND level IN ('10')) OR
+    (board='NCERT' AND level IN ('10'))`. IN-lists use expanding bind
+    parameters, which is how SQLAlchemy binds a Python tuple safely."""
+    where: List[str] = []
+    expanding: List[Any] = []
+    if selection.impossible:
+        where.append("FALSE")
+        return where, expanding
+    if selection.groups:
+        parts: List[str] = []
+        for i, g in enumerate(selection.groups):
+            conds: List[str] = []
+            if g.board is not None:
+                conds.append(f"l.board = :g{i}_board")
+                params[f"g{i}_board"] = g.board
+            if g.levels:
+                conds.append(f"l.level IN :g{i}_levels")
+                params[f"g{i}_levels"] = list(g.levels)
+                expanding.append(bindparam(f"g{i}_levels", expanding=True))
+            if conds:
+                parts.append("(" + " AND ".join(conds) + ")")
+        if parts:
+            where.append("(" + " OR ".join(parts) + ")")
+    if selection.subjects:
+        where.append("l.subject IN :subjects")
+        params["subjects"] = list(selection.subjects)
+        expanding.append(bindparam("subjects", expanding=True))
+    return where, expanding
+
 
 def list_catalogue(
     db: Session,
@@ -81,25 +128,42 @@ def list_catalogue(
     subject: Optional[str] = None,
     level: Optional[str] = None,
     board: Optional[str] = None,
+    exam: Optional[str] = None,
     language: Optional[str] = None,
     query: Optional[str] = None,
     limit: int = 60,
+    collection: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Published libraries, each flagged with whether this institute owns it.
 
     UNLISTED rows are excluded: withdrawn from sale, but an institute that
     already unlocked one keeps using it through the normal KB list.
+
+    Curriculum listings are ordinary free platform libraries and appear beside
+    other published libraries, such as STEM.
+
+    `board`, `exam`, `level` and `subject` are a picker selection and go
+    through the taxonomy (see taxonomy.resolve): a CBSE or UP Board request
+    is answered with the NCERT books those boards prescribe, and an exam with
+    the classes it is built on.
     """
     where = ["l.status = 'PUBLISHED'"]
+    if collection:
+        where.append("l.collection = :collection")
+        params_collection = collection
+    else:
+        params_collection = None
     params: Dict[str, Any] = {"institute_id": institute_id, "limit": limit}
+    if params_collection:
+        params["collection"] = params_collection
 
-    for facet, value in (
-        ("subject", subject), ("level", level),
-        ("board", board), ("language", language),
-    ):
-        if value:
-            where.append(f"l.{facet} = :{facet}")
-            params[facet] = value
+    selection = taxonomy.resolve(board=board, exam=exam, level=level, subject=subject)
+    selection_where, expanding = _selection_sql(selection, params)
+    where.extend(selection_where)
+
+    if language:
+        where.append("l.language = :language")
+        params["language"] = language
 
     if query:
         # Title, summary and tags. Deliberately not the corpus itself — the
@@ -119,11 +183,14 @@ def list_catalogue(
                    (SELECT COALESCE(SUM(s.page_count), 0)
                       FROM knowledge_base_source s
                      WHERE s.knowledge_base_id = l.knowledge_base_id) AS pages,
-                   EXISTS (
+                   -- The Library is free: a published listing is "unlocked" for
+                   -- everyone; an entitlement still counts for withdrawn ones.
+                   (l.status = 'PUBLISHED' OR EXISTS (
                        SELECT 1 FROM knowledge_base_entitlement e
                         WHERE e.knowledge_base_id = l.knowledge_base_id
                           AND e.institute_id = :institute_id
-                   ) AS unlocked
+                   )) AS unlocked,
+                   kb.meta_json -> 'curriculum' ->> 'kind' AS curriculum_kind
             FROM knowledge_base_listing l
             JOIN knowledge_base kb ON kb.id = l.knowledge_base_id
             WHERE {' AND '.join(where)}
@@ -131,10 +198,40 @@ def list_catalogue(
             ORDER BY l.sort_weight DESC, l.published_at DESC
             LIMIT :limit
             """
-        ),
+        ).bindparams(*expanding),
         params,
     ).fetchall()
     return [_row(r) for r in rows]
+
+
+def published_counts(
+    db: Session, language: Optional[str] = None
+) -> List[taxonomy.Count]:
+    """The published catalogue as (board, level, subject, n) — the input the
+    taxonomy tree is annotated with. Listings without a board (STEM) have no
+    place in the picker and are left out."""
+    where = ["l.status = 'PUBLISHED'", "kb.status = 'ACTIVE'", "l.board IS NOT NULL"]
+    params: Dict[str, Any] = {}
+    if language:
+        where.append("l.language = :language")
+        params["language"] = language
+    rows = db.execute(
+        text(
+            f"""
+            SELECT l.board, l.level, l.subject, COUNT(*) AS n
+              FROM knowledge_base_listing l
+              JOIN knowledge_base kb ON kb.id = l.knowledge_base_id
+             WHERE {' AND '.join(where)}
+             GROUP BY l.board, l.level, l.subject
+            """
+        ),
+        params,
+    ).fetchall()
+    return [
+        (r._mapping["board"], r._mapping["level"] or "", r._mapping["subject"] or "",
+         int(r._mapping["n"]))
+        for r in rows
+    ]
 
 
 def facet_values(db: Session) -> Dict[str, List[str]]:
@@ -169,12 +266,16 @@ def get_listing(
                    (SELECT COALESCE(SUM(s.page_count), 0)
                       FROM knowledge_base_source s
                      WHERE s.knowledge_base_id = l.knowledge_base_id) AS pages,
-                   EXISTS (
+                   -- The Library is free: a published listing is "unlocked" for
+                   -- everyone; an entitlement still counts for withdrawn ones.
+                   (l.status = 'PUBLISHED' OR EXISTS (
                        SELECT 1 FROM knowledge_base_entitlement e
                         WHERE e.knowledge_base_id = l.knowledge_base_id
                           AND e.institute_id = :institute_id
-                   ) AS unlocked
+                   )) AS unlocked,
+                   kb.meta_json -> 'curriculum' ->> 'kind' AS curriculum_kind
             FROM knowledge_base_listing l
+            JOIN knowledge_base kb ON kb.id = l.knowledge_base_id
             WHERE l.knowledge_base_id = :kb_id
             """
         ),
@@ -203,9 +304,13 @@ def upsert_listing(
     tags: Optional[List[str]] = None,
     sort_weight: int = 0,
     created_by: Optional[str] = None,
+    collection: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create or edit the catalogue entry. Never changes status — publishing is
-    a separate, deliberate act."""
+    a separate, deliberate act.
+
+    `collection` None on an existing listing leaves the stored value alone
+    (see the UPDATE); it is set by the curriculum loader, not by the dialog."""
     existing = db.execute(
         text("SELECT id FROM knowledge_base_listing WHERE knowledge_base_id = :kb_id"),
         {"kb_id": kb_id},
@@ -217,6 +322,7 @@ def upsert_listing(
         "cover_alt": cover_alt, "subject": subject, "level": level,
         "board": board, "language": language,
         "tags": json.dumps(tags or []), "sort_weight": sort_weight,
+        "collection": collection,
     }
 
     if existing:
@@ -229,6 +335,12 @@ def upsert_listing(
                        subject = :subject, level = :level, board = :board,
                        language = :language, tags = CAST(:tags AS JSONB),
                        sort_weight = :sort_weight,
+                       -- NULL means "not mentioned", never "clear it": the
+                       -- publisher's Edit dialog does not know about
+                       -- collection, and an ordinary cover/summary edit that
+                       -- nulled it would turn a curriculum textbook into a paid
+                       -- library and revoke every institute's access.
+                       collection = COALESCE(CAST(:collection AS VARCHAR), collection),
                        updated_at = CURRENT_TIMESTAMP
                  WHERE knowledge_base_id = :kb_id
                 """
@@ -244,11 +356,11 @@ def upsert_listing(
                 INSERT INTO knowledge_base_listing (
                     id, knowledge_base_id, title, summary, description,
                     cover_file_id, cover_alt, subject, level, board, language,
-                    tags, sort_weight, created_by
+                    tags, sort_weight, created_by, collection
                 ) VALUES (
                     :id, :kb_id, :title, :summary, :description,
                     :cover_file_id, :cover_alt, :subject, :level, :board, :language,
-                    CAST(:tags AS JSONB), :sort_weight, :created_by
+                    CAST(:tags AS JSONB), :sort_weight, :created_by, :collection
                 )
                 """
             ),
@@ -339,7 +451,7 @@ def list_all_for_publisher(db: Session, institute_id: str) -> List[Dict[str, Any
                    l.id, l.title, l.summary, l.description, l.cover_file_id,
                    l.cover_alt, l.subject, l.level, l.board, l.language,
                    l.tags, l.status, l.sort_weight, l.published_at,
-                   l.published_by, l.created_at, l.updated_at
+                   l.published_by, l.created_at, l.updated_at, l.collection
               FROM knowledge_base kb
               LEFT JOIN knowledge_base_listing l ON l.knowledge_base_id = kb.id
              WHERE kb.institute_id = :institute_id
@@ -429,7 +541,7 @@ def list_unlocked(db: Session, institute_id: str) -> List[str]:
 
 
 __all__ = [
-    "FACETS", "list_catalogue", "facet_values", "get_listing",
+    "FACETS", "list_catalogue", "published_counts", "facet_values", "get_listing",
     "upsert_listing", "set_status", "list_all_for_publisher",
     "is_entitled", "grant", "list_unlocked",
 ]

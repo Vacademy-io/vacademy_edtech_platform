@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 import vacademy.io.admin_core_service.features.invoice.dto.PaymentLogInvoiceDTO;
 import vacademy.io.common.auth.dto.UserDTO;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,4 +32,24 @@ public class PaymentLogWithUserPlanDTO {
      * the separate bulk lookup, which the optional Invoice column drives.
      */
     private PaymentLogInvoiceDTO invoice;
+    /**
+     * When the learner joined the batch this payment's plan is for (the stored enrolled_date),
+     * shown on renewal attempts too. Null for invoice rows and for someone never enrolled there. See
+     * UserPlanRepository.findPlanDates.
+     */
+    private LocalDate enrolledDate;
+    /**
+     * When the plan's next payment falls due, as an ISO string. A plain date (2026-10-15) for an
+     * instalment or an unpaid invoice's due day, or a UTC instant (2026-10-18T18:30:00Z) for a
+     * subscription renewal, which the client shows in its own zone. Null when nothing is due: the
+     * plan is not ACTIVE, is one-time or free, or is fully paid.
+     */
+    private String nextDueOn;
+    /**
+     * Grouped listing only (PaymentLogFilterRequestDTO.groupPayments): every row of this payment
+     * that matched the filters, one per course, oldest first, each with its own payment_amount.
+     * Null on an ungrouped listing; a payment on its own lists just itself. When it holds more than
+     * one row, this row's payment_log.payment_amount is their sum: the payment's total.
+     */
+    private List<PaymentLogWithUserPlanDTO> groupLines;
 }

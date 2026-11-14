@@ -2,48 +2,24 @@
 import { cn } from "@/lib/utils";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { distribution_duration_types } from "@/types/assessment";
+import { useLiveTestEngine } from "./engine/live-test-engine-context";
+import { formatSectionClock } from "./engine/clock-logic";
 
 const LOW_TIME_MS = 3 * 60 * 1000;
 
+/**
+ * Section tabs. Draws only: the section clocks tick in the engine
+ * (engine/use-exam-clock.ts) and the switching rules live in
+ * engine/use-question-navigation.ts.
+ */
 export function SectionTabs() {
-  const {
-    assessment,
-    currentSection,
-    setCurrentSection,
-    sectionTimers,
-    setCurrentQuestion,
-    updateSectionTimer,
-    moveToNextAvailableSection,
-  } = useAssessmentStore();
+  const { t } = useTranslation("questionTest");
+  const { assessment, currentSection, sectionTimers } = useAssessmentStore();
+  const { navigation } = useLiveTestEngine();
 
   const activeTabRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (
-      assessment?.distribution_duration !== distribution_duration_types.SECTION
-    )
-      return;
-
-    const timer = setInterval(() => {
-      const currentTimer = sectionTimers[currentSection];
-
-      if (currentTimer && currentTimer.timeLeft > 0) {
-        updateSectionTimer(currentSection, currentTimer.timeLeft - 1000);
-      } else if (!assessment?.can_switch_section) {
-        // Automatically move to next section when time ends if switching is disabled
-        moveToNextAvailableSection();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [
-    assessment,
-    currentSection,
-    sectionTimers,
-    updateSectionTimer,
-    moveToNextAvailableSection,
-  ]);
 
   // The tab strip scrolls horizontally on a phone, so a section reached via the
   // footer's "next" (rather than a tap) would otherwise sit off-screen.
@@ -57,36 +33,12 @@ export function SectionTabs() {
 
   if (!assessment || assessment.section_dtos.length <= 1) return null;
 
-  const handleSectionChange = (index: number) => {
-    // If switching is disabled, only allow changing to the first non-completed section
-    if (!assessment.can_switch_section) {
-      const isFirstAvailableSection = assessment.section_dtos
-        .slice(0, index)
-        .every((_, i) => sectionTimers[i]?.timeLeft === 0);
-
-      if (!isFirstAvailableSection) return;
-    }
-
-    if (sectionTimers[index]?.timeLeft === 0) return;
-
-    setCurrentSection(index);
-    const firstQuestion =
-      assessment.section_dtos[index].question_preview_dto_list[0];
-    setCurrentQuestion(firstQuestion);
-  };
-
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  };
-
   const isSectionTimed =
     assessment.distribution_duration === distribution_duration_types.SECTION;
 
   return (
     <nav
-      aria-label="Assessment sections"
+      aria-label={t("sectionTabs.ariaLabel")}
       className="flex flex-none gap-5 overflow-x-auto border-b border-neutral-200 bg-white px-4 [scrollbar-width:none] md:px-6 [&::-webkit-scrollbar]:hidden"
     >
       {assessment?.section_dtos
@@ -96,11 +48,7 @@ export function SectionTabs() {
           const timer = sectionTimers[originalIndex];
           const isTimeUp = timer?.timeLeft === 0;
           const isActive = currentSection === originalIndex;
-          const isAvailable =
-            assessment.can_switch_section ||
-            assessment.section_dtos
-              .slice(0, originalIndex)
-              .every((_, i) => sectionTimers[i]?.timeLeft === 0);
+          const isAvailable = navigation.isSectionTabAvailable(originalIndex);
           const isLowOnTime =
             isSectionTimed && !isTimeUp && (timer?.timeLeft ?? 0) < LOW_TIME_MS;
 
@@ -109,7 +57,7 @@ export function SectionTabs() {
               key={section.id}
               ref={isActive ? activeTabRef : undefined}
               type="button"
-              onClick={() => handleSectionChange(originalIndex)}
+              onClick={() => navigation.goToSection(originalIndex)}
               disabled={!isAvailable || isTimeUp}
               aria-current={isActive ? "page" : undefined}
               className={cn(
@@ -135,7 +83,7 @@ export function SectionTabs() {
                       : "bg-neutral-100 text-neutral-500",
                   )}
                 >
-                  {formatTime(timer?.timeLeft || 0)}
+                  {formatSectionClock(timer?.timeLeft || 0)}
                 </span>
               )}
             </button>

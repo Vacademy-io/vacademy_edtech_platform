@@ -1,0 +1,74 @@
+---
+title: "VS Code (GitHub Copilot)"
+sidebarTitle: "VS Code"
+description: "Add your institute's server to VS Code's mcp.json and use the tools from Copilot chat."
+icon: "code"
+---
+
+VS Code's Copilot chat can use Vacademy MCP as a remote HTTP server. VS Code handles the sign-in through your browser.
+
+<Note>
+Menus and commands may change. These steps match the VS Code documentation as of October 2026. See [Use MCP servers in VS Code](https://code.visualstudio.com/docs/copilot/customization/mcp-servers).
+</Note>
+
+## Add the server
+
+<Tabs>
+  <Tab title="Guided">
+    1. Open the Command Palette and run **MCP: Add Server**.
+    2. Choose **HTTP**.
+    3. Paste the server URL from **Settings → MCP Server** in your admin portal.
+    4. Name it, for example `vacademy`, and choose whether to save it for your user or this workspace.
+  </Tab>
+  <Tab title="Edit mcp.json">
+    Run **MCP: Open User Configuration** (all workspaces) or **MCP: Open Workspace Folder MCP Configuration** (this workspace, saved in `.vscode/mcp.json`). Add:
+
+    ```json .vscode/mcp.json
+    {
+      "servers": {
+        "vacademy": {
+          "type": "http",
+          "url": "https://<your backend>/ai-service/mcp/i/<institute_id>"
+        }
+      }
+    }
+    ```
+
+    Note that VS Code's file uses `servers`, not `mcpServers`.
+  </Tab>
+</Tabs>
+
+The file holds only the URL, never a token, so a workspace file is safe to commit. Each person still signs in as themselves.
+
+## Sign in
+
+<Steps>
+  <Step title="Start the server">
+    VS Code starts the server when you first use it, or from **MCP: List Servers**. If VS Code asks whether you trust the server, confirm.
+  </Step>
+  <Step title="Approve in your browser">
+    VS Code asks to sign in and opens a browser tab on **your institute's admin portal**. Sign in with your own account and click **Approve**.
+  </Step>
+  <Step title="Check the connection">
+    In Copilot chat, using agent mode, ask:
+
+    ```text
+    Who am I connected as?
+    ```
+
+    Copilot calls the `whoami` tool to answer.
+  </Step>
+</Steps>
+
+No client ID is needed. VS Code registers itself.
+
+## Choose which tools Copilot may use
+
+Click **Configure Tools** in the chat input to turn individual Vacademy tools on or off. VS Code may ask you to confirm each tool call. Keep confirmations on for edit tools.
+
+## Using a fixed client ID
+
+Only needed if your organisation requires every app to use a pre-registered client.
+
+1. An admin creates a client ID in **Settings → MCP Server → Client IDs for other apps** with VS Code's redirect URLs. VS Code's developer guide lists `http://127.0.0.1:33418` and `https://vscode.dev/redirect`. Check the [VS Code MCP developer guide](https://code.visualstudio.com/api/extension-guides/ai/mcp) for the current list.
+2. When VS Code asks for a client ID, paste it. There is no client secret.

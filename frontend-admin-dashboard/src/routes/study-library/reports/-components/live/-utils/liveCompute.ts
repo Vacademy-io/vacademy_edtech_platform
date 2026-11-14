@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { LiveSessionRow, LiveStudentReport } from '../-services/liveReportApi';
 
 /**
@@ -35,6 +36,13 @@ export function parseEngagement(raw: string | null | undefined): Engagement | nu
     if (!raw) return null;
     try {
         const e = JSON.parse(raw);
+        // The opt-in activeness score lands in the same JSON during the class; with
+        // none of BBB's counters present there is no engagement data yet (not zeros).
+        const hasBbbCounters =
+            !!e &&
+            typeof e === 'object' &&
+            ['chats', 'talks', 'talkTime', 'raisehand', 'raiseHand', 'emojis', 'pollVotes'].some((k) => k in e);
+        if (!hasBbbCounters) return null;
         return {
             chats: Number(e.chats) || 0,
             talks: Number(e.talks) || 0,
@@ -92,15 +100,21 @@ function mean(values: number[]): number {
     return values.reduce((s, v) => s + v, 0) / values.length;
 }
 
-export function formatDuration(minutes: number | null | undefined): string {
-    if (minutes == null || Number.isNaN(minutes)) return '—';
+/**
+ * `t` is optional so this shared util still works, untranslated, for callers
+ * that don't (yet) have a namespace wired up. Pass a `t` bound to the
+ * `studyLibraryBatchLiveReport` namespace (its `duration.*` keys) to get a
+ * localized short duration like "5m" / "2h" / "2h 30m".
+ */
+export function formatDuration(minutes: number | null | undefined, t?: TFunction): string {
+    if (minutes == null || Number.isNaN(minutes)) return t ? t('duration.none') : '—';
     const total = Math.round(minutes);
-    if (total <= 0) return '0m';
+    if (total <= 0) return t ? t('duration.minutes', { count: 0 }) : '0m';
     const h = Math.floor(total / 60);
     const m = total % 60;
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
+    if (h === 0) return t ? t('duration.minutes', { count: m }) : `${m}m`;
+    if (m === 0) return t ? t('duration.hours', { count: h }) : `${h}h`;
+    return t ? t('duration.hoursMinutes', { h, m }) : `${h}h ${m}m`;
 }
 
 // ---------------------------------------------------------------------------

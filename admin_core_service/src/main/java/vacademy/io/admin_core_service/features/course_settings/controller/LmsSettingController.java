@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.course_settings.dto.ApplyLmsConnectionRequest;
+import vacademy.io.admin_core_service.features.course_settings.dto.LmsConnectionHealthDTO;
 import vacademy.io.admin_core_service.features.course_settings.dto.LmsConnectionTestRequest;
 import vacademy.io.admin_core_service.features.course_settings.dto.LmsConnectionTestResultDTO;
 import vacademy.io.admin_core_service.features.course_settings.dto.PackageTriggerDTO;
@@ -41,6 +42,28 @@ public class LmsSettingController {
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestBody LmsConnectionTestRequest request) {
         return ResponseEntity.ok(lmsSettingService.testConnection(request));
+    }
+
+    /**
+     * Live health of every LMS connection the institute has saved — backs the dashboard
+     * "LMS connection health" widget.
+     *
+     * <p>Unlike {@link #testConnection}, which tests unsaved form values, this tests the STORED
+     * credentials server-side, so nothing secret is sent to the browser. The response carries only
+     * each connection's host, never its key or token.</p>
+     *
+     * <p>Always 200: a connection being down is a result to render, not a request failure.</p>
+     */
+    @GetMapping("/connection-health")
+    public ResponseEntity<LmsConnectionHealthDTO> getConnectionHealth(
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam(value = "force", required = false, defaultValue = "false") boolean force) {
+        // force=true is the widget's manual refresh: skip the 1-minute cache so an admin who has
+        // just fixed a connection sees the real result instead of the failure that is still cached.
+        return ResponseEntity.ok(force
+                ? lmsSettingService.refreshConnectionHealth(instituteId)
+                : lmsSettingService.getConnectionHealth(instituteId));
     }
 
     /**

@@ -1,0 +1,67 @@
+{
+    "backToWorkflows": "Retour aux workflows",
+    "unknownDate": "Inconnu",
+    "unknownError": "Erreur inconnue",
+    "type": "Type :",
+    "created": "Créé {{time}}",
+    "updated": "Mis à jour {{time}}",
+    "notFound": {
+        "title": "Workflow introuvable",
+        "description": "Le workflow que vous recherchez n'existe pas ou a été supprimé."
+    },
+    "actions": {
+        "edit": "Modifier",
+        "runNow": "Exécuter maintenant",
+        "running": "Exécution en cours...",
+        "dismiss": "Ignorer",
+        "cancel": "Annuler",
+        "triggering": "Déclenchement en cours...",
+        "yesRunNow": "Oui, exécuter maintenant",
+        "deactivating": "Désactivation en cours...",
+        "yesDeactivate": "Oui, désactiver",
+        "deactivate": "Désactiver"
+    },
+    "runConfirm": {
+        "title": "Déclencher le workflow maintenant ?",
+        "bodyPrefix": "Cela va exécuter",
+        "bodyMiddle": "immédiatement en",
+        "productionMode": "mode production",
+        "warnEmails": "De vrais e-mails seront envoyés à tous les destinataires correspondants.",
+        "warnUndo": "Cette action est irréversible une fois lancée.",
+        "warnIntentional": "N'utilisez ceci que lorsque vous souhaitez délibérément déclencher le workflow en dehors de son planning.",
+        "triggeredSuccess": "Déclenché avec succès. État du moteur : {{status}}.",
+        "completedStatus": "terminé",
+        "triggerFailed": "Échec du déclenchement : {{message}}"
+    },
+    "deactivateConfirm": {
+        "title": "Désactiver ce workflow ?",
+        "body": "deviendra inactif. Ses planifications et déclencheurs d’événements seront désactivés.",
+        "warnNoNewExecutions": "Les nouvelles exécutions planifiées ou déclenchées par un événement seront arrêtées.",
+        "warnHistoryPreserved": "Tout l'historique d'exécution passé sera conservé.",
+        "warnInProgress": "Les exécutions déjà en cours peuvent se poursuivre.",
+        "success": "Le workflow est maintenant inactif.",
+        "failed": "Impossible de désactiver le workflow. Veuillez réessayer."
+    },
+    "tabs": {
+        "diagram": "Diagramme",
+        "configuration": "Configuration",
+        "executions": "Exécutions",
+        "debug": "Débogage"
+    },
+    "diagram": {
+        "loading": "Chargement du diagramme...",
+        "loadFailed": "Échec du chargement du diagramme",
+        "noData": "Aucune donnée de diagramme disponible"
+    },
+    "debug": {
+        "debugging": "Débogage de l'exécution :",
+        "selectDifferent": "Sélectionner une autre exécution",
+        "noSelection": "Aucune exécution sélectionnée",
+        "hint": "Allez dans l'onglet Exécutions, cliquez sur une exécution, puis appuyez sur « Voir sur le diagramme » pour afficher le flux de débogage visuel avec l'état et les journaux au niveau des nœuds.",
+        "goToExecutions": "Aller aux exécutions"
+    },
+    "trigger": {
+        "firesOn": "Se déclenche sur",
+        "for": "pour"
+    }
+}

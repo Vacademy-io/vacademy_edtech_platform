@@ -1,0 +1,30 @@
+{
+    "heading": "النشاط الأخير",
+    "viewAll": "الكل",
+    "loading": "جارٍ تحميل النشاط…",
+    "fallbackTitle": "نشاط",
+    "empty": {
+        "title": "لا يوجد نشاط حديث",
+        "hint": "ستظهر الملاحظات والمكالمات والمتابعات هنا."
+    },
+    "relativeTime": {
+        "minutesAgo_zero": "منذ أقل من {{count}} دقيقة",
+        "minutesAgo_one": "منذ {{count}} دقيقة",
+        "minutesAgo_two": "منذ {{count}} دقيقتين",
+        "minutesAgo_few": "منذ {{count}} دقائق",
+        "minutesAgo_many": "منذ {{count}} دقيقة",
+        "minutesAgo_other": "منذ {{count}} دقيقة",
+        "hoursAgo_zero": "منذ أقل من {{count}} ساعة",
+        "hoursAgo_one": "منذ {{count}} ساعة",
+        "hoursAgo_two": "منذ {{count}} ساعتين",
+        "hoursAgo_few": "منذ {{count}} ساعات",
+        "hoursAgo_many": "منذ {{count}} ساعة",
+        "hoursAgo_other": "منذ {{count}} ساعة",
+        "daysAgo_zero": "منذ أقل من {{count}} يوم",
+        "daysAgo_one": "منذ {{count}} يوم",
+        "daysAgo_two": "منذ {{count}} يومين",
+        "daysAgo_few": "منذ {{count}} أيام",
+        "daysAgo_many": "منذ {{count}} يومًا",
+        "daysAgo_other": "منذ {{count}} يوم"
+    }
+}

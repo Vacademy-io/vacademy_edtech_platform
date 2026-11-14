@@ -1,0 +1,16 @@
+{
+    "verbs": {
+        "submitted": "submitted",
+        "ran": "ran",
+        "answered": "answered",
+        "updated": "updated"
+    },
+    "aLearner": "A learner",
+    "aSlide": "a slide",
+    "loadError": "Couldn't load the live feed.",
+    "retry": "Retry",
+    "windowSummary_one": "last {{count}} min · newest first",
+    "windowSummary_other": "last {{count}} min · newest first",
+    "emptyTitle": "Nothing has happened in this batch yet",
+    "emptySubtitle": "Submissions, attempts and code runs show up here as they land."
+}

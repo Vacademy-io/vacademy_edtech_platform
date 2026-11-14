@@ -1,0 +1,33 @@
+{
+    "views": {
+        "learners": "शिक्षार्थी",
+        "questionAnalysis": "प्रश्न विश्लेषण"
+    },
+    "loadErrorTitle": "इस क्विज़ के परिणाम लोड नहीं हो सके",
+    "loadErrorSubtitle": "अनुरोध विफल रहा। अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
+    "retry": "पुनः प्रयास करें",
+    "untitledQuiz": "शीर्षकहीन क्विज़",
+    "notMappedToChapter": "किसी अध्याय से मैप नहीं किया गया",
+    "timeLimitSuffix_one": "{{count}} मिनट की सीमा",
+    "timeLimitSuffix_other": "{{count}} मिनट की सीमा",
+    "reAttemptsSuffix_one": "{{count}} पुनः प्रयास की अनुमति",
+    "reAttemptsSuffix_other": "{{count}} पुनः प्रयासों की अनुमति",
+    "refreshAriaLabel": "इस क्विज़ के परिणाम रीफ़्रेश करें",
+    "stats": {
+        "attempted": "प्रयास किया गया",
+        "attemptsInTotal_one": "कुल {{count}} प्रयास",
+        "attemptsInTotal_other": "कुल {{count}} प्रयास",
+        "averageScore": "औसत स्कोर",
+        "medianOutOfMarks": "माध्यिका {{median}} · {{total}} अंकों में से",
+        "passed": "उत्तीर्ण",
+        "scoreRange": "स्कोर सीमा",
+        "passMark": "उत्तीर्ण अंक {{percent}}%",
+        "noPassMark": "इस क्विज़ का कोई उत्तीर्ण अंक नहीं है",
+        "averageTime": "औसत समय",
+        "perLearnerLatestAttempt": "प्रति शिक्षार्थी, नवीनतम प्रयास"
+    },
+    "ungradedNotice_one": "{{count}} उत्तर को हाथ से जाँचने की आवश्यकता है (मुक्त-पाठ या मैन्युअल रूप से मूल्यांकित प्रश्न)। इसे गलत मानने के बजाय ऊपर के स्कोर से बाहर रखा गया है, इसलिए यहाँ के प्रतिशत केवल स्वचालित रूप से जाँचे गए भाग को दर्शाते हैं।",
+    "ungradedNotice_other": "{{count}} उत्तरों को हाथ से जाँचने की आवश्यकता है (मुक्त-पाठ या मैन्युअल रूप से मूल्यांकित प्रश्न)। इन्हें गलत मानने के बजाय ऊपर के स्कोर से बाहर रखा गया है, इसलिए यहाँ के प्रतिशत केवल स्वचालित रूप से जाँचे गए भाग को दर्शाते हैं।",
+    "resultViewsAriaLabel": "क्विज़ परिणाम दृश्य",
+    "allQuizzes": "सभी क्विज़"
+}

@@ -1,0 +1,14 @@
+{
+    "activeUsers": "المستخدمون النشطون",
+    "reachedSuffix": "من أصل {{total}} تم الوصول إليهم",
+    "usersReached": "المستخدمون الذين تم الوصول إليهم",
+    "totalUniqueUsers": "إجمالي المستخدمين الفريدين",
+    "totalMessages": "إجمالي الرسائل",
+    "sentAndReceived": "مُرسَلة ومُستلَمة",
+    "responseRate": "معدل الاستجابة",
+    "overallEngagement": "التفاعل العام",
+    "completionRate": "معدل الإتمام",
+    "challengeCompleted": "التحدي المكتمل",
+    "totalDays": "إجمالي الأيام",
+    "challengeDuration": "مدة التحدي"
+}

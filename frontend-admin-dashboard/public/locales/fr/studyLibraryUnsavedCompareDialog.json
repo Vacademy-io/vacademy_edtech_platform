@@ -1,0 +1,7 @@
+{
+    "heading": "Comparer avec la version enregistrée",
+    "description": "À gauche, la dernière version enregistrée de ce {{slide}} ; à droite, votre modification actuelle non enregistrée (conservée uniquement dans ce navigateur). Utilisez Enregistrer le brouillon ou Publier pour conserver la version actuelle, ou Annuler les modifications pour revenir à la version enregistrée.",
+    "saved": "Enregistrée",
+    "currentUnsaved": "Actuelle (non enregistrée)",
+    "noSavedVersion": "Aucune version enregistrée pour le moment"
+}

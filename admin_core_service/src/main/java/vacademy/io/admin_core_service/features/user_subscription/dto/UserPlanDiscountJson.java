@@ -27,7 +27,7 @@ import java.util.Map;
  * <p>Shape (snake_case via Jackson):
  * <pre>
  * {
- *   "cpo_discount":            { type, value, resolved_amount, reason, applied_by, applied_at },
+ *   "cpo_discount":            { type, value, resolved_amount, allocation, shares, reason, applied_by, applied_at },
  *   "installment_discounts":   { "&lt;sfpId&gt;": { aft_installment_id, type, value, resolved_amount, reason, applied_by, applied_at } },
  *   "manual_amount_overrides": { "&lt;sfpId&gt;": { previous_amount, new_amount, reason, applied_by, applied_at } },
  *   "history":                 [ { action, scope, target_id, before, after, by, at } ]
@@ -63,6 +63,13 @@ public class UserPlanDiscountJson {
         private String type;            // PERCENTAGE | FLAT
         private Double value;           // raw input — % or absolute
         private BigDecimal resolvedAmount;
+        /**
+         * How the discount is spread (CpoDiscountAllocator modes). Null = the original way:
+         * every installment in proportion, re-derived on each edit.
+         */
+        private String allocation;
+        /** sfpId → amount off, frozen when the discount was applied. Null when {@code allocation} is null. */
+        private Map<String, BigDecimal> shares;
         private String reason;
         private String appliedBy;
         private LocalDateTime appliedAt;

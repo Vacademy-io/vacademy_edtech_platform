@@ -1,0 +1,22 @@
+{
+    "dropzoneHint": "Glissez-déposez un document ici, ou cliquez pour en sélectionner un",
+    "dropzoneFormats": "DOC ou DOCX, jusqu'à 25 Mo",
+    "invalidFileType": "Veuillez téléverser uniquement des fichiers de document (DOC, DOCX)",
+    "fileTooLarge": "Le fichier fait {{sizeMb}} Mo. La taille maximale est de 25 Mo.",
+    "fileSelected": "Document sélectionné avec succès",
+    "selectFileFirst": "Veuillez d'abord sélectionner un fichier",
+    "titleRequired": "Veuillez saisir un titre pour le document",
+    "stageStarting": "Démarrage…",
+    "stageConverting": "Conversion du document…",
+    "stageProcessingImages": "Traitement des images…",
+    "stageGeneratingPreview": "Génération de l'aperçu…",
+    "stageSaving": "Enregistrement de la diapositive…",
+    "stageFinalizing": "Finalisation…",
+    "stageDone": "Terminé",
+    "uploadSuccess": "Document téléversé avec succès !",
+    "conversionFailed": "Échec de la conversion. Veuillez réessayer.",
+    "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+    "processingHint": "Cela peut prendre quelques instants…",
+    "uploading": "Téléversement…",
+    "uploadDocument": "Téléverser le document"
+}

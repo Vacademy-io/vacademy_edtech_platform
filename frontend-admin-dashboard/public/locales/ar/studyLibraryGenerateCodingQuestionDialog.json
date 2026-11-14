@@ -1,0 +1,60 @@
+{
+    "heading": "إنشاء سؤال برمجي باستخدام الذكاء الاصطناعي",
+    "errors": {
+        "generationFailed": "فشل الإنشاء. يرجى المحاولة مرة أخرى."
+    },
+    "working": {
+        "generating": "جارٍ إنشاء السؤال…",
+        "verifying": "جارٍ التحقق من حالات الاختبار مقابل الحل المرجعي…",
+        "etaHint": "عادةً ما يستغرق هذا من 10 إلى 30 ثانية."
+    },
+    "review": {
+        "testFallbackLabel": "اختبار",
+        "summaryLine_zero": "{{languages}} · لا توجد حالات اختبار · النموذج {{model}}",
+        "summaryLine_one": "{{languages}} · حالة اختبار واحدة · النموذج {{model}}",
+        "summaryLine_two": "{{languages}} · حالتا اختبار · النموذج {{model}}",
+        "summaryLine_few": "{{languages}} · {{count}} حالات اختبار · النموذج {{model}}",
+        "summaryLine_many": "{{languages}} · {{count}} حالة اختبار · النموذج {{model}}",
+        "summaryLine_other": "{{languages}} · {{count}} حالة اختبار · النموذج {{model}}",
+        "verifySummary_zero": "تم تشغيل الحل المرجعي مقابل الاختبارات: {{passed}} متطابقة",
+        "verifySummary_one": "تم تشغيل الحل المرجعي مقابل الاختبار الوحيد: {{passed}} متطابقة",
+        "verifySummary_two": "تم تشغيل الحل المرجعي مقابل الاختبارين: {{passed}} متطابقة",
+        "verifySummary_few": "تم تشغيل الحل المرجعي مقابل جميع الاختبارات الـ {{count}}: {{passed}} متطابقة",
+        "verifySummary_many": "تم تشغيل الحل المرجعي مقابل جميع الاختبارات الـ {{count}}: {{passed}} متطابقة",
+        "verifySummary_other": "تم تشغيل الحل المرجعي مقابل جميع الاختبارات الـ {{count}}: {{passed}} متطابقة",
+        "autoCorrectSuffix_zero": "",
+        "autoCorrectSuffix_one": " · سيتم تصحيح اختبار واحد تلقائيًا إلى مخرجات المرجع",
+        "autoCorrectSuffix_two": " · سيتم تصحيح اختبارين تلقائيًا إلى مخرجات المرجع",
+        "autoCorrectSuffix_few": " · سيتم تصحيح {{count}} اختبارات تلقائيًا إلى مخرجات المرجع",
+        "autoCorrectSuffix_many": " · سيتم تصحيح {{count}} اختبارًا تلقائيًا إلى مخرجات المرجع",
+        "autoCorrectSuffix_other": " · سيتم تصحيح {{count}} اختبار تلقائيًا إلى مخرجات المرجع",
+        "status": {
+            "verified": "(تم التحقق)",
+            "errored": "(حدث خطأ في الحل — تم الاحتفاظ بمخرجات الذكاء الاصطناعي)",
+            "mismatch": "(عدم تطابق — يُستخدم مخرج المرجع)"
+        },
+        "aiExpected": "المتوقع من الذكاء الاصطناعي",
+        "referenceOutput": "مخرجات المرجع",
+        "empty": "(فارغ)",
+        "applyHint": "طبّق لتحميل هذا في علامات التبويب المشكلة / حالات الاختبار / الإعدادات / كود البداية، حيث يمكنك المراجعة والتعديل قبل الحفظ."
+    },
+    "input": {
+        "describeLabel": "صف المشكلة",
+        "describePlaceholder": "مثال: بالنظر إلى مصفوفة وهدف، أعد مؤشرَي الرقمين اللذين يجمعان إلى الهدف. لا بأس بوصف تقريبي — سيملأ الذكاء الاصطناعي تنسيق الإدخال/الإخراج والاختبارات وكود البداية.",
+        "languagesLabel": "اللغات",
+        "difficultyLabel": "الصعوبة",
+        "difficulties": {
+            "easy": "سهل",
+            "medium": "متوسط",
+            "hard": "صعب"
+        },
+        "testCasesLabel": "حالات الاختبار",
+        "insufficientCredits": "لا يوجد رصيد كافٍ من الذكاء الاصطناعي لهذا الإجراء."
+    },
+    "footer": {
+        "startOver": "البدء من جديد",
+        "applyToQuestion": "تطبيق على السؤال",
+        "cancel": "إلغاء",
+        "generate": "إنشاء"
+    }
+}

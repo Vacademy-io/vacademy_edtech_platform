@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import {
-    SECTION_REGISTRY,
+    buildSectionRegistry,
     GROUP_ORDER,
     GROUP_TO_MODULE,
     type SectionGroup,
@@ -36,23 +37,29 @@ export const GroupedNavRail = ({
         always on (no module gates it). */
     enabledModules: Record<'learning' | 'finance' | 'crm' | 'account' | 'records', boolean>;
 }) => {
+    const { t } = useTranslation('manageStudentsGroupedNavRail');
+    // Separate hook for nav-groups.ts's own namespace — SECTION_REGISTRY's
+    // `label` field lives there, not in this file's catalog.
+    const { t: tNav } = useTranslation('manageStudentsNavGroups');
+    const translatedSections = buildSectionRegistry(tNav);
+
     const groups = GROUP_ORDER.map((g) => {
         const module = GROUP_TO_MODULE[g];
         // Module-gated group disabled → drop entire group.
         if (module && !enabledModules[module]) return null;
-        const items = SECTION_REGISTRY.filter(
+        const items = translatedSections.filter(
             (s) => s.group === g && visibleIds.has(s.id)
         );
         if (items.length === 0) return null;
         return { group: g, items };
     }).filter(Boolean) as Array<{
         group: SectionGroup;
-        items: typeof SECTION_REGISTRY[number][];
+        items: typeof translatedSections[number][];
     }>;
 
     return (
         <nav
-            aria-label="Profile sections"
+            aria-label={t('ariaLabelProfileSections')}
             // Handoff: 208px (w-52) width, warm cream surface (bg-neutral-50
             // ≈ --bg-warm), 14px vertical / 12px horizontal padding, hairline
             // right border.
@@ -63,7 +70,7 @@ export const GroupedNavRail = ({
                     {/* Handoff group label: ~10.5px / 700 / wide tracking /
                         uppercase / muted. Sits in 0 10px 6px padding. */}
                     <div className="px-2.5 pb-1.5 text-caption font-bold uppercase tracking-widest text-muted-foreground">
-                        {group}
+                        {t(`group.${group}`)}
                     </div>
                     {items.map((item) => {
                         const isActive = item.id === activeId;

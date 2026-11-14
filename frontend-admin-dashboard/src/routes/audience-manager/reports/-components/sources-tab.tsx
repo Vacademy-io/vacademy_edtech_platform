@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { CaretRight, Megaphone } from '@phosphor-icons/react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ import {
     fmtCurrency,
     fmtNumber,
     fmtPct,
+    sourceDrillSearch,
     type ReportTabProps,
 } from './report-shared';
 
@@ -52,6 +54,7 @@ export function SourcesTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerSourcesTab');
     const navigate = useNavigate();
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId, audienceId };
 
@@ -103,7 +106,7 @@ export function SourcesTab({
 
     return (
         <ReportSection
-            title="Source performance"
+            title={t('title')}
             icon={<Megaphone size={18} />}
             actions={
                 <ExportWithColumnPickerButton
@@ -113,19 +116,19 @@ export function SourcesTab({
                         const exportable = totals ? [...rows, totals] : rows;
                         return {
                             headers: [
-                                'Source',
-                                'Leads',
-                                'Connected',
-                                'Interested',
-                                'Won',
-                                'Conv %',
-                                'Revenue',
-                                'Spend',
-                                'CPL',
-                                'ROI',
+                                t('columns.source'),
+                                t('columns.leads'),
+                                t('columns.connected'),
+                                t('columns.interested'),
+                                t('columns.won'),
+                                t('columns.convRate'),
+                                t('columns.revenue'),
+                                t('columns.spend'),
+                                t('columns.cpl'),
+                                t('columns.roi'),
                             ],
                             rows: exportable.map((r) => [
-                                r.source_type ?? 'TOTAL',
+                                r.source_type ?? t('csvTotalRow'),
                                 r.leads,
                                 r.connected_leads,
                                 r.interested,
@@ -142,15 +145,15 @@ export function SourcesTab({
             }
         >
             {rows.length === 0 ? (
-                <EmptyHint message="No leads in this range." />
+                <EmptyHint message={t('emptyMessage')} />
             ) : (
                 <TooltipProvider delayDuration={150}>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <tr className="border-b border-neutral-200 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 whitespace-nowrap">
                                     <SortableHeader
-                                        label="Source"
+                                        label={t('columns.source')}
                                         sortKey="source_type"
                                         current={sortKey}
                                         dir={sortDir}
@@ -158,50 +161,50 @@ export function SourcesTab({
                                         align="left"
                                     />
                                     <SortableHeader
-                                        label="Leads"
+                                        label={t('columns.leads')}
                                         sortKey="leads"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Connected"
+                                        label={t('columns.connected')}
                                         sortKey="connected_leads"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Interested"
+                                        label={t('columns.interested')}
                                         sortKey="interested"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Won"
+                                        label={t('columns.won')}
                                         sortKey="won"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Conv %"
+                                        label={t('columns.convRate')}
                                         sortKey="conversion_rate"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Revenue"
+                                        label={t('columns.revenue')}
                                         sortKey="revenue"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
-                                    <th className="py-2 pr-3 text-right">Spend</th>
-                                    <th className="py-2 pr-3 text-right">CPL</th>
-                                    <th className="py-2 pr-3 text-right">ROI</th>
+                                    <th className="py-2 pe-3 text-end">{t('columns.spend')}</th>
+                                    <th className="py-2 pe-3 text-end">{t('columns.cpl')}</th>
+                                    <th className="py-2 pe-3 text-end">{t('columns.roi')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -212,40 +215,40 @@ export function SourcesTab({
                                         onClick={() =>
                                             navigate({
                                                 to: RECENT_LEADS_ROUTE,
-                                                search: { source: r.source_type ?? undefined },
+                                                search: sourceDrillSearch(r),
                                             })
                                         }
                                     >
-                                        <td className="py-2.5 pr-3">
+                                        <td className="py-3 pr-3">
                                             <span className="flex items-center gap-1 font-medium text-neutral-900">
-                                                {r.source_type ?? 'UNKNOWN'}
+                                                {r.source_type ?? t('unknownSource')}
                                                 <CaretRight
                                                     size={12}
                                                     className="text-neutral-300 transition-colors group-hover:text-neutral-500"
                                                 />
                                             </span>
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.connected_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.interested)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                        <td className="py-3 pr-3 text-right text-neutral-800">
                                             {fmtNumber(r.won)}
                                         </td>
                                         <td
                                             className={cn(
-                                                'py-2.5 pr-3 text-right',
+                                                'py-3 pr-3 text-right',
                                                 convRateClass(r.conversion_rate)
                                             )}
                                         >
                                             {fmtPct(r.conversion_rate)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right font-medium text-green-700">
+                                        <td className="py-3 pr-3 text-right font-medium text-green-700">
                                             {r.revenue ? fmtCurrency(r.revenue) : '—'}
                                         </td>
                                         <WaveTwoCell value={r.spend} />
@@ -257,28 +260,28 @@ export function SourcesTab({
                             {totals && (
                                 <tfoot>
                                     <tr className="border-t border-neutral-200 bg-neutral-50/60 font-semibold text-neutral-900">
-                                        <td className="py-2.5 pr-3">Total</td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pe-3">{t('footerTotal')}</td>
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.connected_leads)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.interested)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right">
+                                        <td className="py-3 pr-3 text-right">
                                             {fmtNumber(totals.won)}
                                         </td>
                                         <td
                                             className={cn(
-                                                'py-2.5 pr-3 text-right',
+                                                'py-3 pr-3 text-right',
                                                 convRateClass(totals.conversion_rate)
                                             )}
                                         >
                                             {fmtPct(totals.conversion_rate)}
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-green-700">
+                                        <td className="py-3 pr-3 text-right text-green-700">
                                             {totals.revenue ? fmtCurrency(totals.revenue) : '—'}
                                         </td>
                                         <WaveTwoCell value={totals.spend} />
@@ -292,8 +295,8 @@ export function SourcesTab({
                 </TooltipProvider>
             )}
             <p className="text-xs text-neutral-400">
-                Connected = leads with at least one connected call (per your telephony settings).
-                Interested = leads that entered an interested status in this range.
+                {t('footnote.connected')} {t('footnote.interested')}{' '}
+                {t('footnote.won')}
             </p>
         </ReportSection>
     );
@@ -304,19 +307,20 @@ export function SourcesTab({
  * Until then the backend sends null and we render a subtle em-dash + tooltip.
  */
 function WaveTwoCell({ value }: { value: SourcePerformanceRow['spend'] }) {
+    const { t } = useTranslation('audienceManagerSourcesTab');
     if (value != null) {
         return (
-            <td className="py-2.5 pr-3 text-right text-neutral-800">{value.toLocaleString()}</td>
+            <td className="py-3 pr-3 text-right text-neutral-800">{value.toLocaleString()}</td>
         );
     }
     return (
-        <td className="py-2.5 pr-3 text-right">
+        <td className="py-3 pr-3 text-right">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <span className="cursor-default text-neutral-300">—</span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                    Coming with spend tracking
+                    {t('waveTwoCell.comingSoon')}
                 </TooltipContent>
             </Tooltip>
         </td>

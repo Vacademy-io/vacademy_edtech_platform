@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Palette } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -12,17 +13,15 @@ import ThemeEditor from './ThemeEditor';
  * this card is only ever rendered inside the settings tab shell).
  */
 const AppearanceSettings = ({ isTab: _isTab = true }: { isTab?: boolean }) => {
+    const { t } = useTranslation('settingsAppearance');
     return (
         <Card className="shadow-none">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Palette className="size-5 text-primary-500" />
-                    Appearance
+                    {t('title')}
                 </CardTitle>
-                <CardDescription>
-                    Brand color, font, page background, and sidebar — applied across the learner app
-                    and admin dashboard.
-                </CardDescription>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Suspense fallback={<DashboardLoader />}>

@@ -10,6 +10,7 @@ import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import { QUESTION_TYPES } from '@/constants/dummy-data';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
 import { formatStructure } from '@/routes/assessment/question-papers/-utils/helper';
+import { useTranslation } from 'react-i18next';
 
 interface ImageDetail {
     imageId: string;
@@ -31,9 +32,10 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveSingleCorrectMainList');
     const { control, getValues, setValue } = form;
-    const answersType = 'Answer:';
-    const explanationsType = 'Explanation:';
+    const answersType = t('answer.label');
+    const explanationsType = t('explanation.label');
     const optionsType = '';
     const questionsType = '';
 
@@ -75,7 +77,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState')}</h1>
             </div>
         );
     }
@@ -92,13 +94,13 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('header.questionsSettings')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('header.questionTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -114,7 +116,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                 </Popover>
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                <span>Comprehension Text</span>
+                <span>{t('comprehensionText')}</span>
                 <FormField
                     control={control}
                     name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -134,7 +136,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <span>
-                    Question&nbsp;
+                    {t('question.label')}&nbsp;
                     {questionsType
                         ? formatStructure(questionsType, currentQuestionIndex + 1)
                         : currentQuestionIndex + 1}
@@ -172,7 +174,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                                 <div className="flex w-full items-center gap-4">
                                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white px-3">
                                         <span className="!p-0 text-sm">
-                                            {optionsType ? formatStructure(optionsType, letter) : `(${letter}.)`}
+                                            {optionsType ? formatStructure(optionsType, letter) : t('optionLabelFormat', { letter })}
                                         </span>
                                     </div>
                                     <FormField
@@ -219,7 +221,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                                         type="button"
                                         className="shrink-0 text-gray-400 hover:text-red-500"
                                         onClick={() => handleRemoveOption(optionIndex)}
-                                        title="Remove option"
+                                        title={t('removeOption')}
                                     >
                                         <Trash size={16} />
                                     </button>
@@ -229,7 +231,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                     })}
                 </div>
                 <Button type="button" variant="outline" size="sm" className="w-fit" onClick={handleAddOption}>
-                    <Plus size={16} className="mr-1" /> Add Option
+                    <Plus size={16} className="mr-1" /> {t('addOption')}
                 </Button>
             </div>
             <div className="mb-6 flex w-full flex-col !flex-nowrap items-start gap-1">

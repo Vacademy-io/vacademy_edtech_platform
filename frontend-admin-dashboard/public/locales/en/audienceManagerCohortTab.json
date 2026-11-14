@@ -1,0 +1,31 @@
+{
+    "section": {
+        "title": "Cohort analysis"
+    },
+    "emptyHint": "No acquisition cohorts in this range. Try a wider date range.",
+    "csv": {
+        "headers": {
+            "cohort": "Cohort",
+            "leads": "Leads",
+            "converted": "Converted",
+            "convPct": "Conv %",
+            "revenue": "Revenue",
+            "avgDealValue": "Avg deal value",
+            "revenuePerLead": "Revenue / lead",
+            "medianDaysToConvert": "Median days to convert"
+        }
+    },
+    "table": {
+        "headers": {
+            "cohort": "Cohort",
+            "leads": "Leads",
+            "converted": "Converted",
+            "convPct": "Conv %",
+            "revenue": "Revenue",
+            "avgDeal": "Avg deal",
+            "revPerLead": "Rev / lead",
+            "medianDays": "Median days"
+        }
+    },
+    "footnote": "Each cohort is the leads acquired in that month; revenue is the lifetime collected revenue from those that converted."
+}

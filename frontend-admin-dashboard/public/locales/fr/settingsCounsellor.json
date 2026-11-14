@@ -1,0 +1,36 @@
+{
+    "header": {
+        "title": "Paramètres d'allocation des conseillers",
+        "subtitle": "Configurez comment les conseillers sont assignés aux demandes"
+    },
+    "autoAssign": {
+        "label": "Assigner automatiquement les conseillers",
+        "hint": "Assigner automatiquement des conseillers aux nouvelles demandes"
+    },
+    "strategy": {
+        "label": "Stratégie d'assignation",
+        "placeholder": "Sélectionner une stratégie",
+        "options": {
+            "roundRobin": "Tour de rôle",
+            "leastAssigned": "Moins assigné",
+            "random": "Aléatoire"
+        },
+        "hint": "Comment les conseillers doivent être assignés depuis le pool"
+    },
+    "pool": {
+        "label": "Pool de conseillers",
+        "hint": "Ajoutez des conseillers qui seront assignés aux demandes"
+    },
+    "search": {
+        "label": "Rechercher des conseillers",
+        "placeholder": "Tapez pour rechercher des conseillers...",
+        "loading": "Recherche en cours...",
+        "alreadyAdded": "✓ Déjà ajouté",
+        "noneFound": "Aucun conseiller trouvé"
+    },
+    "selected": {
+        "label": "Conseillers sélectionnés ({{count}})",
+        "unknownName": "Inconnu",
+        "empty": "Aucun conseiller ajouté pour le moment. Recherchez et ajoutez des conseillers au pool."
+    }
+}

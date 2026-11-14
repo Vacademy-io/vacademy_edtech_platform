@@ -1,0 +1,423 @@
+{
+    "heading": "Content Library",
+    "header": {
+        "importExcel": "Import from Excel",
+        "title": "Question Library",
+        "description": "Every question your institute has, organised by subject, chapter and topic. File questions once and reuse them in any test.",
+        "importTags": "Import tags",
+        "importPaper": "Add a paper",
+        "newTopic": "New course"
+    },
+    "stats": {
+        "questions": "Questions",
+        "thisWeek": "added this week",
+        "nothingNew": "Nothing new this week",
+        "topics": "Topics",
+        "biggest": "Largest: {{name}} ({{count}})",
+        "noTopicsYet": "No topics yet",
+        "sorted": "Filed in topics",
+        "allSorted": "Every question is in a topic",
+        "difficultyMix": "Difficulty mix",
+        "noDifficulty": "No questions yet",
+        "unsortedLink_one": "{{count}} question not filed yet",
+        "unsortedLink_other": "{{count}} questions not filed yet"
+    },
+    "insights": {
+        "thinTopics": "Topics running low on questions",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions"
+    },
+    "difficulty": {
+        "EASY": "Easy",
+        "MEDIUM": "Medium",
+        "HARD": "Hard"
+    },
+    "types": {
+        "MCQS": "MCQ (single)",
+        "MCQM": "MCQ (multiple)",
+        "TRUE_FALSE": "True / False",
+        "NUMERIC": "Numeric",
+        "ONE_WORD": "One word",
+        "LONG_ANSWER": "Long answer",
+        "CODING": "Coding",
+        "CBE_RESPONSE": "Spreadsheet & written"
+    },
+    "source": {
+        "MANUAL": "Written by hand",
+        "UPLOAD": "Uploaded",
+        "AI": "AI generated",
+        "KNOWLEDGE_BASE": "From knowledge base"
+    },
+    "tree": {
+        "title": "Topics",
+        "addTopic": "Add",
+        "all": "All questions",
+        "unsorted": "Not in a topic",
+        "emptyTitle": "No topics yet",
+        "emptyHint": "Add a subject like “Physics”, then chapters and topics inside it.",
+        "addSubtopic": "Add sub-topic",
+        "rename": "Rename",
+        "move": "Move to…",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "delete": "Delete",
+        "actions": "Topic actions",
+        "expand": "Expand",
+        "collapse": "Collapse"
+    },
+    "scope": {
+        "all": "All questions",
+        "allHint": "Every live question of your institute",
+        "unsorted": "Not in a topic",
+        "unsortedHint": "Select questions and add them to a topic",
+        "addSubtopic": "Sub-topic",
+        "addPaperHere": "Add a paper here"
+    },
+    "filters": {
+        "allLevels": "All",
+        "clear": "Clear",
+        "search": "Search question text",
+        "searchButton": "Search",
+        "difficulty": "Difficulty",
+        "type": "Type",
+        "any": "Any"
+    },
+    "bulk": {
+        "setDifficulty": "Set difficulty",
+        "addTag": "Add tag",
+        "selectPage": "Select this page",
+        "addToTopic": "Add to topic",
+        "moveToTopic": "Move to topic",
+        "removeFromTopic": "Remove from this topic",
+        "clear": "Clear",
+        "selected_one": "{{count}} selected",
+        "selected_other": "{{count}} selected"
+    },
+    "list": {
+        "select": "Select question",
+        "untitled": "Untitled question",
+        "edit": "Edit question",
+        "addToTopic": "Add to topic",
+        "removeFromTopic": "Remove from this topic",
+        "noTopic": "Not in a topic",
+        "showAnswer": "Show answer",
+        "hideAnswer": "Hide answer",
+        "answer": "Answer:",
+        "explanation": "Explanation",
+        "total_one": "{{count}} question",
+        "total_other": "{{count}} questions",
+        "usedIn_one": "Used in {{count}} test",
+        "usedIn_other": "Used in {{count}} tests",
+        "moreTopics_one": "+{{count}} more",
+        "moreTopics_other": "+{{count}} more"
+    },
+    "empty": {
+        "all": "No questions yet",
+        "allHint": "Questions you upload, write or generate with AI appear here.",
+        "unsorted": "Every question is in a topic",
+        "topic": "No questions in this topic yet",
+        "topicHint": "Add a whole question paper here, or pick questions from “Not in a topic”.",
+        "filtered": "No questions match these filters",
+        "filteredHint": "Try another difficulty or type, or clear the search.",
+        "fromUnsorted": "Pick from “Not in a topic”"
+    },
+    "errors": {
+        "tree": "Could not load your topics.",
+        "questions": "Could not load questions."
+    },
+    "common": {
+        "close": "Close",
+        "cancel": "Cancel",
+        "retry": "Try again"
+    },
+    "topicForm": {
+        "createTitle": "New topic",
+        "renameTitle": "Rename topic",
+        "create": "Create",
+        "save": "Save",
+        "name": "Name",
+        "namePlaceholder": "e.g. Physics, Laws of Motion, Friction",
+        "topLevel": "This will be a top-level topic (for example a subject).",
+        "underParent": "Inside {{parent}}"
+    },
+    "moveTopic": {
+        "title": "Move “{{name}}”",
+        "move": "Move here",
+        "topLevel": "Top level",
+        "nowhere": "There is no other place this topic can go."
+    },
+    "deleteTopic": {
+        "title": "Delete “{{name}}”?",
+        "body": "The questions stay in your library. They are only taken out of this topic.",
+        "confirm": "Delete topic",
+        "withChildren_one": "Its {{count}} sub-topic is deleted too. The questions stay in your library.",
+        "withChildren_other": "Its {{count}} sub-topics are deleted too. The questions stay in your library."
+    },
+    "picker": {
+        "add": "Add",
+        "move": "Move",
+        "search": "Search topics",
+        "noTopics": "Create a topic first.",
+        "noMatch": "No topic matches.",
+        "addTitle_one": "Add {{count}} question to topics",
+        "addTitle_other": "Add {{count}} questions to topics",
+        "moveTitle_one": "Move {{count}} question to a topic",
+        "moveTitle_other": "Move {{count}} questions to a topic"
+    },
+    "importPaper": {
+        "title": "Add a question paper to a topic",
+        "topic": "Topic",
+        "chooseTopic": "Choose a topic",
+        "noTopics": "Create a topic first, then add papers to it.",
+        "paper": "Question paper",
+        "searchPapers": "Search papers",
+        "noPapers": "No question papers found.",
+        "loadFailed": "Could not load question papers.",
+        "confirm": "Add questions"
+    },
+    "importTags": {
+        "title": "Make topics from your tags",
+        "description": "Each tag becomes a top-level topic, and every question with that tag is filed under it. Running this again does not duplicate anything.",
+        "selectAll": "Select all",
+        "empty": "Your questions have no subject tags yet.",
+        "loadFailed": "Could not load your tags.",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "confirm_one": "Import {{count}} tag",
+        "confirm_other": "Import {{count}} tags"
+    },
+    "edit": {
+        "title": "Edit question",
+        "difficulty": "Difficulty",
+        "versionNotice_one": "This question is already used in {{count}} test. Saving creates a new version for the library; that test keeps the question its students saw.",
+        "versionNotice_other": "This question is already used in {{count}} tests. Saving creates a new version for the library; those tests keep the question their students saw.",
+        "savedAsVersion_one": "Saved as a new version. The {{count}} test that used it is unchanged.",
+        "savedAsVersion_other": "Saved as a new version. The {{count}} tests that used it are unchanged."
+    },
+    "comingSoon": {
+        "title": "No course is available to your institute yet",
+        "text": "Contact support to get the courses you teach added. Their ready-made questions and papers will then appear here.",
+        "pickTitle": "Pick a topic",
+        "pickText": "Open it from the Add Questions step of any test.",
+        "addTitle": "Add questions or a paper",
+        "addText": "Choose them one by one, or take a whole paper.",
+        "editTitle": "Edit in your test",
+        "editText": "Your changes stay in your test. The library stays as it is."
+    },
+    "readOnly": {
+        "description": "Ready-made questions and papers, topic-wise. Add them from the Add Questions step of any test. Your edits stay in your test.",
+        "allHint": "Every question available in the library",
+        "emptyTitle": "Nothing here yet",
+        "emptyHint": "New questions and papers will appear here as they are added."
+    },
+    "papers": {
+        "title": "Question papers",
+        "loadFailed": "Could not load question papers.",
+        "remove": "Remove paper from this topic"
+    },
+    "pick": {
+        "random": "Random pick",
+        "randomHint": "Set how many of each level. Questions are picked at random from the folder you selected.",
+        "pickAgain": "Pick again",
+        "tooMany": "Only the first {{count}} were selected.",
+        "available_one": "{{count}} available",
+        "available_other": "{{count}} available",
+        "pickNow_one": "Pick {{count}} question",
+        "pickNow_other": "Pick {{count}} questions",
+        "selectAll_one": "Select all {{count}}",
+        "selectAll_other": "Select all {{count}}",
+        "cardTitle": "Pick From Question Library",
+        "cardHint": "Ready-made questions and papers, topic-wise",
+        "dialogTitle": "Question Library — {{name}}",
+        "questions": "Questions",
+        "papers": "Whole papers",
+        "loadFailed": "Could not load the Question Library.",
+        "noQuestions": "No questions match",
+        "noPapers": "No papers here yet",
+        "emptyHint": "Try another topic or filter.",
+        "selectQuestions": "Select questions to add",
+        "selectPaper": "Select a paper to add",
+        "addPaper": "Add this paper",
+        "adding": "Adding…",
+        "addQuestions_one": "Add {{count}} question",
+        "addQuestions_other": "Add {{count}} questions",
+        "alreadyInSection_one": "{{count}} question is already in this section",
+        "alreadyInSection_other": "{{count}} questions are already in this section",
+        "someFailed_one": "{{count}} question could not be added",
+        "someFailed_other": "{{count}} questions could not be added"
+    },
+    "toasts": {
+        "difficultySet_one": "{{count}} question set to {{level}}",
+        "difficultySet_other": "{{count}} questions set to {{level}}",
+        "tagAdded_one": "Tag “{{name}}” added to {{count}} question",
+        "tagAdded_other": "Tag “{{name}}” added to {{count}} questions",
+        "tagRemoved": "Tag “{{name}}” removed",
+        "paperRemoved": "“{{name}}” taken off this topic",
+        "failed": "Something went wrong. Please try again.",
+        "topicCreated": "“{{name}}” created",
+        "topicRenamed": "Renamed to “{{name}}”",
+        "topicMoved": "“{{name}}” moved",
+        "topicDeleted": "“{{name}}” deleted",
+        "reordered": "Order updated",
+        "added_one": "{{count}} question added",
+        "added_other": "{{count}} questions added",
+        "moved_one": "{{count}} question moved",
+        "moved_other": "{{count}} questions moved",
+        "removed_one": "{{count}} question taken out of “{{name}}”",
+        "removed_other": "{{count}} questions taken out of “{{name}}”",
+        "paperAdded_one": "{{count}} new question filed under {{name}}",
+        "paperAdded_other": "{{count}} new questions filed under {{name}}",
+        "tagsImported_one": "{{topics}} new topics, {{count}} question filed",
+        "tagsImported_other": "{{topics}} new topics, {{count}} questions filed"
+    },
+    "tabs": {
+        "questions": "Questions"
+    },
+    "browse": {
+        "addQuestions": "Add questions",
+        "breadcrumb": "Where you are",
+        "allCourses": "All courses",
+        "courses": "Courses",
+        "insideTopic": "Inside {{name}}",
+        "allQuestions": "All questions",
+        "questionsIn": "Questions in {{name}}",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "topicCount_one": "{{count}} topic",
+        "topicCount_other": "{{count}} topics",
+        "institutes": "Hidden from",
+        "institutesWithCount_one": "Hidden from ({{count}})",
+        "institutesWithCount_other": "Hidden from ({{count}})",
+        "instituteCount_one": "Hidden from {{count}} institute",
+        "instituteCount_other": "Hidden from {{count}} institutes",
+        "noInstitutes": "Every institute sees this",
+        "unsortedHint_one": "{{count}} question to file",
+        "unsortedHint_other": "{{count}} questions to file",
+        "addCourse": "Add course",
+        "addTopic": "Add topic"
+    },
+    "tags": {
+        "kind": {
+            "CONCEPT": "Concept",
+            "PYQ": "Past paper",
+            "SOURCE": "Source"
+        },
+        "kindLabel": "Type of tag",
+        "kindHint": {
+            "CONCEPT": "What the question tests, e.g. Article 21 or Newton’s second law.",
+            "PYQ": "The exam and year it was asked in, e.g. UPSC 2023.",
+            "SOURCE": "Where it comes from, e.g. NCERT or Laxmikanth."
+        },
+        "nameLabel": "Tag",
+        "namePlaceholder": {
+            "CONCEPT": "e.g. Article 21",
+            "PYQ": "e.g. UPSC 2023",
+            "SOURCE": "e.g. NCERT"
+        },
+        "pickExisting": "Or pick one already in use",
+        "addTitle_one": "Tag {{count}} question",
+        "addTitle_other": "Tag {{count}} questions",
+        "add": "Add tag",
+        "removeOne": "Remove tag {{name}}"
+    },
+    "access": {
+        "title": "Institutes {{name}} is hidden from",
+        "hint": "Every institute sees the whole library unless a course or topic is hidden from it here. Paste the institute ID to hide this one, with everything inside it, from that institute.",
+        "idLabel": "Institute ID",
+        "idPlaceholder": "Paste the institute ID",
+        "give": "Hide",
+        "given": "{{topic}} is now hidden from {{name}}",
+        "removed": "{{name}} can see {{topic}} again",
+        "remove": "Show it to {{name}} again",
+        "empty": "Every institute sees this.",
+        "loadError": "Could not load the institutes."
+    },
+    "add": {
+        "title": "Add questions to {{name}}",
+        "savingInto": "Saved into {{path}}",
+        "back": "Back",
+        "startOver": "Start over",
+        "save_one": "Save {{count}} question",
+        "save_other": "Save {{count}} questions",
+        "saved_one": "{{count}} question saved to {{name}}",
+        "saved_other": "{{count}} questions saved to {{name}}",
+        "someFailed_one": "{{count}} question could not be saved",
+        "someFailed_other": "{{count}} questions could not be saved",
+        "remove": "Remove",
+        "reviewHint_one": "Check this question before saving. Fix the difficulty or remove it if it is not right.",
+        "reviewHint_other": "Check these {{count}} questions before saving. Fix the difficulty or remove any that are not right.",
+        "tagsForAll": "{{kind}} tags for all",
+        "upload": {
+            "title": "Upload a Word file",
+            "text": "A .docx with numbered questions, options, answers and explanations.",
+            "hint": "Choose a .docx file. You will see every question before anything is saved.",
+            "format1": "Questions start with (1.), (2.) …",
+            "format2": "Options start with (a.), (b.) …",
+            "format3": "Then Ans: and Exp: lines. Tags: is optional.",
+            "choose": "Choose Word file",
+            "reading": "Reading the file…",
+            "none": "No questions were found in this file. Check the format and try again.",
+            "failed": "The file could not be read."
+        },
+        "ai": {
+            "title": "Generate with AI",
+            "text": "Choose how many Easy, Medium and Hard questions. Review them before saving.",
+            "howMany": "How many questions of each level",
+            "max": "Up to {{count}} per level.",
+            "type": "Question type",
+            "language": "Language",
+            "languages": {
+                "english": "English",
+                "hindi": "Hindi"
+            },
+            "notes": "Notes or text to use (optional)",
+            "notesPlaceholder": "Paste notes, a passage or points to cover. Leave empty to use the topic name.",
+            "working": "Writing questions. This can take a minute…",
+            "generate_one": "Generate {{count}} question",
+            "generate_other": "Generate {{count}} questions",
+            "credits": "Uses AI credits of your institute.",
+            "none": "The AI did not return any questions. Try again or add notes.",
+            "failed": "The AI could not write these questions."
+        },
+        "write": {
+            "title": "Write one",
+            "text": "Type a question yourself in the editor.",
+            "type": "Question type"
+        }
+    },
+    "excel": {
+        "title": "Import questions from Excel",
+        "intro": "Add many questions at once. Each row is one question and says which course and topic it belongs to.",
+        "rule1": "Fill Course, then Subject, Chapter, Topic and Sub-topic as deep as you need. Missing topics are created.",
+        "rule2": "Type: MCQ single, MCQ multiple, True/False, Numeric, One word or Long answer.",
+        "rule3": "Answer: option letters for MCQ (A or A,C), True or False, a number, or the answer text.",
+        "rule4": "Difficulty is Easy, Medium or Hard. Tags are comma-separated.",
+        "template": "Download template",
+        "choose": "Choose Excel file",
+        "unreadable": "This file could not be read. Use the template as an .xlsx file.",
+        "chooseAnother": "Choose another file",
+        "import_one": "Import {{count}} question",
+        "import_other": "Import {{count}} questions",
+        "summary": "{{ready}} ready · {{problems}} rows with problems · {{topics}} topics",
+        "saving": "Saving {{done}} of {{total}}…",
+        "problemsTitle_one": "{{count}} row will be skipped",
+        "problemsTitle_other": "{{count}} rows will be skipped",
+        "rowProblem": "Row {{row}}: {{problem}}",
+        "moreProblems": "and {{count}} more",
+        "whereTheyGo": "Where they go",
+        "moreTopics": "and {{count}} more topics",
+        "newTopicsNote": "Topics that do not exist yet are created during the import.",
+        "done_one": "{{count}} question imported, {{topics}} new topics",
+        "done_other": "{{count}} questions imported, {{topics}} new topics",
+        "problem": {
+            "noCourse": "Course is empty",
+            "noQuestion": "Question is empty",
+            "badType": "Type is not one of the allowed types",
+            "fewOptions": "an MCQ needs at least two options",
+            "noAnswer": "Answer is empty",
+            "badAnswer": "Answer does not match the options",
+            "badNumber": "Answer must be a number",
+            "badDifficulty": "Difficulty must be Easy, Medium or Hard"
+        }
+    }
+}

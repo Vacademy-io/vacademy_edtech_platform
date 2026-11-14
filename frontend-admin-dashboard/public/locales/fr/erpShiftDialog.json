@@ -1,0 +1,48 @@
+{
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "toast": {
+        "updated": "Poste mis à jour",
+        "created": "Poste créé"
+    },
+    "errors": {
+        "save": "Impossible d'enregistrer le poste."
+    },
+    "dialog": {
+        "editHeading": "Modifier le poste",
+        "addHeading": "Ajouter un poste",
+        "saveChanges": "Enregistrer les modifications",
+        "createShift": "Créer le poste"
+    },
+    "fields": {
+        "name": "Nom",
+        "namePlaceholder": "Poste général",
+        "code": "Code",
+        "codePlaceholder": "GEN",
+        "codeDescription": "Majuscules, sans espaces — utilisé lors de l'affectation groupée des employés.",
+        "startTime": "Heure de début",
+        "endTime": "Heure de fin",
+        "breakMinutes": "Pause (minutes)",
+        "breakDescription": "Déduite des heures travaillées.",
+        "gracePeriodMinutes": "Délai de grâce (minutes)",
+        "gracePeriodDescription": "Le retard toléré avant qu'une arrivée ne soit comptée comme un retard.",
+        "minHoursFullDay": "Heures minimales pour une journée complète",
+        "minHoursHalfDay": "Heures minimales pour une demi-journée"
+    },
+    "switches": {
+        "nightShiftLabel": "Poste de nuit",
+        "nightShiftDescription": "Le poste traverse minuit — un départ après 00h00 appartient toujours au jour où il a commencé.",
+        "defaultShiftLabel": "Poste par défaut",
+        "defaultShiftDescription": "Les employés sans poste affecté sont considérés comme étant sur celui-ci."
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom au poste",
+        "codeMinLength": "Les codes comptent au moins 2 caractères",
+        "codeFormat": "Lettres majuscules, chiffres et tirets bas uniquement — pas d'espaces",
+        "startTimeRequired": "Une heure de début est requise",
+        "endTimeRequired": "Une heure de fin est requise",
+        "wholeMinutesOnly": "Minutes entières uniquement",
+        "hoursExampleFull": "Heures, p. ex. 8 ou 7,5",
+        "hoursExampleHalf": "Heures, p. ex. 4"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "unpublishSuccess": "Slide unpublished successfully!",
+    "errorUnpublishQuestion": "Error unpublishing question slide",
+    "errorUnpublishGeneric": "Error in unpublishing the slide",
+    "errorVideoDataMissing": "Video slide data is missing.",
+    "quizUnpublishSuccess": "Quiz unpublished successfully!",
+    "errorUnpublishQuiz": "Failed to unpublish quiz",
+    "errorAudioDataMissing": "Audio slide data is missing.",
+    "errorScormDataMissing": "SCORM slide data is missing.",
+    "scormUnpublishSuccess": "SCORM slide unpublished successfully!",
+    "errorUnpublishScorm": "Error in unpublishing the SCORM slide",
+    "errorAssessmentDataMissing": "Assessment slide data is missing.",
+    "assessmentUnpublishSuccess": "Assessment slide unpublished successfully!",
+    "errorUnpublishAssessment": "Error in unpublishing the assessment slide"
+}

@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "entireAssessment": "Entire Assessment"
+    },
+    "dialog": {
+        "title": "Revaluate All {{learnerPlural}}",
+        "attention": "Attention",
+        "confirmText": "Are you sure you want to revaluate for all {{learnerLower}}s?",
+        "confirmButton": "Yes"
+    },
+    "toasts": {
+        "revaluateSuccess": "Attempt for this assessment has been revaluated for all students. Participants need to check their email!"
+    }
+}

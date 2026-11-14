@@ -1,0 +1,19 @@
+{
+    "defaultAcceptMsg": "Formats pris en charge : MP3, WAV, M4A, OGG",
+    "dropHere": "Déposez le fichier ici",
+    "dragDrop": "Glissez-déposez un fichier ici",
+    "clickToBrowse": "ou cliquez pour parcourir",
+    "formatsAndMaxSize": "{{formats}} (Max {{maxSize}} Mo)",
+    "uploading": "Téléversement en cours... {{percent}} %",
+    "units": {
+        "bytes": "Octets",
+        "kb": "Ko",
+        "mb": "Mo",
+        "gb": "Go"
+    },
+    "errors": {
+        "fileTooLarge": "Le fichier est trop volumineux. La taille maximale est de {{maxSize}} Mo.",
+        "invalidFileType": "Type de fichier invalide. {{formats}}",
+        "uploadFailed": "Échec du téléversement du fichier. Veuillez réessayer."
+    }
+}

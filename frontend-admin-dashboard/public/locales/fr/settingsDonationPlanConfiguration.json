@@ -1,0 +1,22 @@
+{
+    "title": "Configuration du don",
+    "suggestedAmounts": {
+        "label": "Montants de don suggérés ({{currency}})",
+        "placeholder": "Entrez le montant",
+        "add": "Ajouter",
+        "hint": "Ajoutez des montants suggérés parmi lesquels les étudiants peuvent choisir",
+        "currentLabel": "Montants suggérés actuels :"
+    },
+    "minimumAmount": {
+        "label": "Montant minimum du don ({{currency}})",
+        "placeholder": "0 pour aucun minimum"
+    },
+    "allowCustomAmount": {
+        "label": "Autoriser les montants de don personnalisés"
+    },
+    "alert": {
+        "part1": "Les ",
+        "part2": " basés sur le don sont gratuits d'accès. Les codes promo ne sont pas applicables, car les ",
+        "part3": " peuvent choisir le montant de leur contribution."
+    }
+}

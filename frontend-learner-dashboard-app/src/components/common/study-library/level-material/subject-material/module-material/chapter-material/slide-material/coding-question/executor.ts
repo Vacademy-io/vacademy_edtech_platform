@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { LANGUAGE_REGISTRY } from "./language-registry";
 import { executeOnJudge0, judge0OutputToConsoleText } from "./judge0-client";
 import { CodeErrorType, LangId } from "./types";
@@ -78,7 +79,7 @@ function runJsInBrowser(code: string, stdin: string): RunResult {
     output: stdout || "(no output)",
     hasError,
     errorType: hasError ? "RUNTIME_JS" : undefined,
-    errorLabel: hasError ? "Runtime Error" : undefined,
+    errorLabel: hasError ? i18n.t("libraryCommonA:codeExecution.runtimeError") : undefined,
   };
 }
 
@@ -96,7 +97,7 @@ export async function runCode(
     return {
       stdout: "",
       stderr: "",
-      output: "No code to execute. Please write some code first.",
+      output: i18n.t("libraryCommonA:codeExecution.noCodeToExecute"),
       hasError: true,
     };
   }
@@ -120,11 +121,11 @@ export async function runCode(
     if (raced === "__TLE__") {
       return {
         stdout: "",
-        stderr: "Time Limit Exceeded",
-        output: "Time Limit Exceeded",
+        stderr: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
+        output: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
         hasError: true,
         errorType: "TLE",
-        errorLabel: "Time Limit Exceeded",
+        errorLabel: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
       };
     }
     return {
@@ -133,7 +134,7 @@ export async function runCode(
       output: raced.output,
       hasError: !!raced.hasError,
       errorType: raced.hasError ? "RUNTIME_JS" : undefined,
-      errorLabel: raced.hasError ? "Runtime Error" : undefined,
+      errorLabel: raced.hasError ? i18n.t("libraryCommonA:codeExecution.runtimeError") : undefined,
     };
   }
 
@@ -145,11 +146,11 @@ export async function runCode(
     if (raced === "__TLE__") {
       return {
         stdout: "",
-        stderr: "Time Limit Exceeded",
-        output: "Time Limit Exceeded",
+        stderr: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
+        output: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
         hasError: true,
         errorType: "TLE",
-        errorLabel: "Time Limit Exceeded",
+        errorLabel: i18n.t("libraryCommonA:codeExecution.timeLimitExceeded"),
       };
     }
     return raced;
@@ -171,16 +172,16 @@ export async function runCode(
     let errorLabel: string | undefined;
     if (j.statusId === 5) {
       errorType = "TLE";
-      errorLabel = "Time Limit Exceeded";
+      errorLabel = i18n.t("libraryCommonA:codeExecution.timeLimitExceeded");
     } else if (j.statusId === 6) {
       errorType = "COMPILE";
-      errorLabel = "Compilation Error";
+      errorLabel = i18n.t("libraryCommonA:codeExecution.compilationError");
     } else if (j.statusId >= 7 && j.statusId <= 12) {
       errorType = "RUNTIME";
-      errorLabel = j.statusDescription || "Runtime Error";
+      errorLabel = j.statusDescription || i18n.t("libraryCommonA:codeExecution.runtimeError");
     } else if (hasError) {
       errorType = "RUNTIME";
-      errorLabel = j.statusDescription || "Runtime Error";
+      errorLabel = j.statusDescription || i18n.t("libraryCommonA:codeExecution.runtimeError");
     }
     // Judge0 has no dedicated MLE status; infer when memory readout is at or
     // above the configured cap and we're not already in a TLE/Compile bucket.
@@ -192,7 +193,7 @@ export async function runCode(
       errorType !== "COMPILE"
     ) {
       errorType = "MLE";
-      errorLabel = "Memory Limit Exceeded";
+      errorLabel = i18n.t("libraryCommonA:codeExecution.memoryLimitExceeded");
     }
 
     return {
@@ -206,17 +207,16 @@ export async function runCode(
       errorLabel,
     };
   } catch (err) {
-    const msg =
-      "Judge0 error: " +
-      (err instanceof Error ? err.message : String(err)) +
-      "\n(ce.judge0.com is rate-limited; if you hit a 429 wait a bit and retry.)";
+    const msg = i18n.t("libraryCommonA:codeExecution.judge0ErrorHint", {
+      message: err instanceof Error ? err.message : String(err),
+    });
     return {
       stdout: "",
       stderr: msg,
       output: msg,
       hasError: true,
       errorType: "JUDGE0",
-      errorLabel: "Execution Service Error",
+      errorLabel: i18n.t("libraryCommonA:codeExecution.executionServiceError"),
     };
   }
 }
@@ -335,7 +335,7 @@ export async function runTestCase(
       stderr: "",
       error: err instanceof Error ? err.message : String(err),
       errorType: "OTHER",
-      errorLabel: "Unexpected Error",
+      errorLabel: i18n.t("libraryCommonA:codeExecution.unexpectedError"),
     };
   }
 }

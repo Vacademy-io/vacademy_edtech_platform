@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import { BASE_URL } from "@/constants/urls";
 
@@ -10,13 +11,13 @@ import { BASE_URL } from "@/constants/urls";
 
 const AVATAR_GRADIENTS = [
   "from-violet-500 to-purple-600",
-  "from-sky-500 to-blue-600",
-  "from-emerald-500 to-teal-600",
-  "from-amber-500 to-orange-600",
-  "from-rose-500 to-pink-600",
-  "from-cyan-500 to-blue-500",
+  "from-sky-500 to-info-600",
+  "from-success-500 to-teal-600",
+  "from-warning-500 to-orange-600",
+  "from-danger-500 to-pink-600",
+  "from-cyan-500 to-info-500",
   "from-fuchsia-500 to-purple-500",
-  "from-lime-500 to-green-600",
+  "from-lime-500 to-success-600",
 ];
 
 const AVATAR_EMOJIS = ["🎓", "📚", "🌟", "🎨", "🏆", "🎵", "🔬", "⚽"];
@@ -32,6 +33,7 @@ export function ChildSelectionScreen({
   parentName,
   onSelect,
 }: ChildSelectionScreenProps) {
+  const { t } = useTranslation("parent");
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -51,13 +53,13 @@ export function ChildSelectionScreen({
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="text-center mb-10 sm:mb-14 relative z-10"
+        className="text-center mb-10 sm:mb-14 relative z-10 space-y-stack"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mb-3">
-          Hello, {parentName}
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+          {t("admissionPortal.childSelect.hello", { name: parentName })}
         </h1>
         <p className="text-slate-600 font-medium text-sm sm:text-base">
-          Select a student to manage their admission journey
+          {t("admissionPortal.childSelect.subtitle")}
         </p>
       </motion.div>
 
@@ -80,7 +82,7 @@ export function ChildSelectionScreen({
         transition={{ delay: 0.8 }}
         className="mt-12 text-slate-400 text-xs sm:text-sm text-center relative z-10 font-medium"
       >
-        Student profiles are linked to your registered email. Contact the school office for assistance.
+        {t("admissionPortal.childSelect.footerHint")}
       </motion.p>
     </motion.div>
   );
@@ -120,7 +122,7 @@ function ChildProfileCard({
       whileHover={{ scale: 1.08, y: -4 }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onSelect(child)}
-      className="group flex flex-col items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-2xl p-3"
+      className="group flex flex-col items-center gap-stack focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-2xl p-3"
       id={`child-profile-${child.id}`}
     >
       {/* Avatar Container */}

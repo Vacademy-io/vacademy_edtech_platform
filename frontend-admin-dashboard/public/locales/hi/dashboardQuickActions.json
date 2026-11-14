@@ -1,0 +1,14 @@
+{
+    "actions": {
+        "addStudent": "छात्र जोड़ें",
+        "newBatch": "नया बैच",
+        "announcement": "घोषणा",
+        "payments": "भुगतान",
+        "reports": "रिपोर्ट",
+        "todaysClasses": "आज की कक्षाएं",
+        "myCourses": "मेरे पाठ्यक्रम",
+        "newCourse": "नया पाठ्यक्रम",
+        "assessments": "आकलन",
+        "evaluations": "मूल्यांकन"
+    }
+}

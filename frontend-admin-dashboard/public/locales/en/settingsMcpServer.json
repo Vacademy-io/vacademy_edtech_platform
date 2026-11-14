@@ -1,0 +1,105 @@
+{
+    "loading": "Loading settings…",
+    "header": {
+        "title": "MCP Server",
+        "description": "Let your team use their own AI apps — Claude, ChatGPT, Cursor — with your institute's Vacademy data. Each person signs in with their own Vacademy account, so they only ever see what they can already see in Vacademy."
+    },
+    "enable": {
+        "title": "Enable the MCP server",
+        "description": "Nothing is reachable until you turn this on.",
+        "label": "MCP server enabled",
+        "hint": "Off by default. Once it's on, your connection details appear below and your team can connect their AI apps."
+    },
+    "connect": {
+        "title": "Connect your AI app",
+        "description": "Share these with the people you allow below. They'll be asked to sign in to Vacademy and approve the connection.",
+        "serverUrlLabel": "Server URL",
+        "clientIdHint": "Created automatically for your institute and can't be removed. Only needed by apps that ask for a client ID.",
+        "clientIdLabel": "Your client ID",
+        "copy": "Copy",
+        "copied": "Copied",
+        "howToTitle": "How to connect",
+        "howToClaude": "Claude: Settings → Connectors → Add custom connector, then paste the server URL.",
+        "howToCursor": "Claude Code / Cursor: run claude mcp add --transport http vacademy <server URL>.",
+        "howToManual": "If an app asks for a client ID, paste your client ID above."
+    },
+    "clients": {
+        "title": "Client IDs for other apps",
+        "nameLabel": "App name",
+        "namePlaceholder": "e.g. Marketing team's assistant",
+        "redirectLabel": "Redirect URLs",
+        "redirectPlaceholder": "https://example.com/callback",
+        "redirectHint": "Comma-separated. Must be https, or http on localhost. The app's own documentation tells you what to use.",
+        "create": "Create client ID",
+        "creating": "Creating…",
+        "remove": "Remove",
+        "removed": "Client ID removed",
+        "created": "Client ID created",
+        "createFailed": "Could not create the client ID",
+        "removeFailed": "Could not remove the client ID",
+        "addCustom": "Add a client ID for another app",
+        "cancel": "Cancel"
+    },
+    "tools": {
+        "title": "What AI apps can do",
+        "description": "Choose, area by area, whether AI apps can only view or also make changes. Open a row to see exactly what it allows.",
+        "empty": "No tools are available on this server yet.",
+        "alwaysOn": "Always on",
+        "optIn": "Turned on separately",
+        "eachOnItsOwn": "Switch each of these on separately.",
+        "level": {
+            "off": "Off",
+            "view": "View",
+            "edit": "Edit"
+        },
+        "levelAria": "{{area}} access",
+        "risk": {
+            "drafts": "Drafts only",
+            "additive": "Adds only",
+            "not_live": "Not-live courses only",
+            "live_additive": "Adds to live data",
+            "live": "Changes live",
+            "outbound": "Calls or messages leads"
+        },
+        "preset": {
+            "viewOnly": "View only",
+            "everything": "Turn everything on"
+        },
+        "summaryLine": "{{on}} of {{total}} areas on · {{editing}} can make changes"
+    },
+    "roles": {
+        "title": "Who can connect",
+        "description": "Only these roles can connect an AI app. Everyone else is refused, even with a link.",
+        "learnerNote": "Learners and parents can never connect, whatever is selected here.",
+        "addPlaceholder": "Add a role…",
+        "remove": "Remove",
+        "empty": "No roles can connect yet. Add one below — Admins are allowed by default."
+    },
+    "perRole": {
+        "title": "Per-role access (advanced)",
+        "description": "Grant extra capabilities to specific roles, on top of the set above. Leave a role uncustomized to use the settings above.",
+        "customize": "Customize"
+    },
+    "connections": {
+        "title": "Active connections",
+        "description": "AI apps currently connected to your institute. Revoking one takes effect immediately.",
+        "empty": "No active connections.",
+        "revoke": "Revoke",
+        "revoked": "Connection revoked",
+        "revokeFailed": "Could not revoke the connection",
+        "lastUsed": "Last used",
+        "never": "Never used",
+        "connectedBy": "Connected by"
+    },
+    "footer": {
+        "save": "Save settings",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "settingsSaved": "MCP settings saved",
+        "saveFailed": "Could not save the settings"
+    },
+    "errors": {
+        "infoUnavailable": "Couldn't load the MCP server details. The server may not be enabled on this deployment yet, or ai-service may be unavailable. Tool options stay hidden until it loads — your saved settings are unaffected."
+    }
+}

@@ -33,11 +33,15 @@ export enum InputType {
     RADIO = 'radio',
     FILE = 'file',
 }
-export const sessionStatusLabels: Record<SessionStatus, string> = {
-    [SessionStatus.UPCOMING]: 'Upcoming',
-    [SessionStatus.PAST]: 'Past',
-    [SessionStatus.DRAFTS]: 'Drafts',
-    [SessionStatus.LIVE]: 'Live',
+// Maps each status to the i18n key suffix used under the consuming component's
+// `sessions.tabLabels` namespace (studyLibrarySessionsListPage) — kept here as
+// plain data (no hardcoded display strings) so the enum stays the single source
+// of truth for status ordering while translation lives in the locale JSON.
+export const sessionStatusTabLabelKeys: Record<SessionStatus, string> = {
+    [SessionStatus.UPCOMING]: 'upcoming',
+    [SessionStatus.PAST]: 'past',
+    [SessionStatus.DRAFTS]: 'draft',
+    [SessionStatus.LIVE]: 'live',
 };
 export enum SessionType {
     LIVE = 'live',

@@ -1,0 +1,70 @@
+{
+    "trigger": {
+        "label": "Export Reports (ZIP)",
+        "short": "Reports",
+        "tooltip": "Export a ZIP of report PDFs, one per student"
+    },
+    "dialog": {
+        "heading": "Export Reports (ZIP)"
+    },
+    "description": {
+        "bulk_one": "Generates a ZIP of report PDFs for the {{count}} selected submission.",
+        "bulk_other": "Generates a ZIP of report PDFs for the {{count}} selected submissions.",
+        "all": "Generates a ZIP of report PDFs for all submissions matching the current filter."
+    },
+    "regenerateLabel": "Regenerate reports even if one already exists for a student",
+    "startButton": "Start Export",
+    "starting": "Starting…",
+    "toasts": {
+        "alreadyRunning": "An export for this assessment is already running — showing its progress.",
+        "exportStarted_one": "Export started for {{count}} submission.",
+        "exportStarted_other": "Export started for {{count}} submissions.",
+        "startFailed": "Failed to start the export. Please try again.",
+        "resuming": "Resuming the export…",
+        "resumeFailed": "Failed to resume the export.",
+        "cancelled": "Export cancelled.",
+        "cancelFailed": "Failed to cancel the export.",
+        "downloadNotReady": "The download link is not ready yet. Please try again in a moment.",
+        "downloadFailed": "Failed to prepare the download."
+    },
+    "defaultFileName": "Assessment reports",
+    "progress": {
+        "summary": "{{completed}} of {{total}} completed",
+        "failedCount": "{{count}} failed",
+        "skippedCount": "{{count}} skipped"
+    },
+    "warnings": {
+        "contextDrift": "Class statistics were recalculated partway through this export — some reports may quote slightly different numbers than others in this ZIP.",
+        "staleItems_one": "{{count}} report was generated before the student's attempt was updated (e.g. re-evaluated). Regenerate the export to refresh them.",
+        "staleItems_other": "{{count}} reports were generated before the student's attempt was updated (e.g. re-evaluated). Regenerate the export to refresh them."
+    },
+    "failures": {
+        "count_one": "{{count}} failure",
+        "count_other": "{{count}} failures",
+        "detail_one": "{{reason}} ({{count}} retry)",
+        "detail_other": "{{reason}} ({{count}} retries)"
+    },
+    "downloadZip": "Download ZIP",
+    "continueButton": "Continue ({{count}} remaining)",
+    "downloadCompleted": "Download {{count}} completed",
+    "cancelButton": "Cancel",
+    "startNewExport": "Start a new export",
+    "zipContentsNote": {
+        "prefix": "After extracting the ZIP, open",
+        "suffix": "to view and open each student's report.",
+        "csvNote": "(index.csv holds the same list as spreadsheet data.)"
+    },
+    "recentExports": {
+        "title": "Recent exports",
+        "completedCount": "{{completed}}/{{total}} completed",
+        "view": "View"
+    },
+    "statusChips": {
+        "completed": "Completed",
+        "partial": "Partial",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "inProgress": "In progress",
+        "queued": "Queued"
+    }
+}

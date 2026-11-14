@@ -1,0 +1,107 @@
+{
+    "gateMeta": {
+        "creativeConcept": {
+            "title": "Creative direction",
+            "blurb": "The thesis, tone, and visual metaphor for the whole video."
+        },
+        "shotPlan": {
+            "title": "Shot plan",
+            "blurb": "The list of shots — types, order, pacing, and what each beat covers."
+        },
+        "styleframe": {
+            "title": "Design identity",
+            "blurb": "The visual signature for this video — fonts, motion, finishing."
+        },
+        "narration": {
+            "title": "Narration script",
+            "blurb": "The exact words spoken before audio is generated."
+        },
+        "visualCasting": {
+            "title": "Visual",
+            "blurb": "Which stock image or clip to use for this shot."
+        },
+        "shotLook": {
+            "title": "Shot look",
+            "blurb": "Which rendered look to use for this shot."
+        },
+        "contactSheet": {
+            "title": "Contact sheet",
+            "blurb": "Every shot as a real frame — approve or send shots back with notes."
+        },
+        "assetRequest": {
+            "title": "Make it real",
+            "blurb": "The AI asked for real assets — your screenshots, photos, and numbers."
+        },
+        "cast": {
+            "title": "Your cast",
+            "blurb": "The characters' portraits — approved before any scene is filmed."
+        },
+        "dailies": {
+            "title": "Dailies",
+            "blurb": "Watch each filmed scene — approve it or send it back for a re-take."
+        },
+        "voice": {
+            "title": "Voice",
+            "blurb": "The narration voice."
+        },
+        "music": {
+            "title": "Background music",
+            "blurb": "The background music track."
+        },
+        "avatar": {
+            "title": "Host",
+            "blurb": "The on-screen host / avatar."
+        }
+    },
+    "gatePrompt": {
+        "creativeConcept": "Here's the creative direction — approve or refine it.",
+        "shotPlan": "Here's the shot plan — approve it, edit any shot, or let me decide.",
+        "styleframe": "Approve the design identity or adjust the look.",
+        "narration": "Here's the narration script — edit it, approve it, or let me decide.",
+        "visualCasting": "Which visual should we use for this shot?",
+        "shotLook": "Which look should we use for this shot?",
+        "contactSheet": "All shots are built — approve the contact sheet or send shots back.",
+        "assetRequest": "I could make a few shots more real with things only you have.",
+        "cast": "Meet your cast — approve the portraits before I film the scenes.",
+        "dailies": "The scenes are filmed — watch the dailies and approve or send back.",
+        "voice": "Which voice should we use?",
+        "music": "Which background music fits?",
+        "avatar": "Which host should present?"
+    },
+    "ledgerSummary": {
+        "auto": "Let AI decide the {{label}}",
+        "autoAll": "Let AI handle all remaining {{label}} choices",
+        "select": "Approved the {{label}}",
+        "freeform": "Asked: “{{text}}”",
+        "editShotPlan": "Edited the shot plan",
+        "editStyleframe": "Adjusted the design identity",
+        "editNarration": "Edited the narration script",
+        "editContactSheet": "Sent {{count}} shot(s) back with notes",
+        "editAssetRequestProvided": "Provided {{count}} real asset(s)",
+        "editAssetRequestSkipped": "Skipped — AI creates everything",
+        "editCastUpdated": "Updated {{count}} portrait(s)",
+        "editCastApproved": "Approved the cast",
+        "editDailiesSent": "Sent {{count}} scene(s) back for a re-take",
+        "editDailiesApproved": "Approved the dailies",
+        "editDefault": "Picked the visuals",
+        "resolved": "Resolved the {{label}}"
+    },
+    "turnSummary": {
+        "acceptRecommended": "Approved the {{label}} as drafted",
+        "chooseOption": "Chose an option for {{label}}",
+        "freeform": "Asked: “{{text}}”",
+        "auto": "Let AI decide the {{label}}",
+        "autoAll": "Let AI handle all remaining {{label}} choices",
+        "editShotPlan": "Edited the shot plan ({{count}} shots)",
+        "editStyleframe": "Adjusted design identity",
+        "editNarration": "Edited the narration script",
+        "editCreativeConcept": "Edited the creative direction",
+        "editContactSheet": "Sent {{count}} shot(s) back with notes",
+        "editAssetRequestProvided": "Provided {{count}} real asset(s)",
+        "editAssetRequestSkipped": "Skipped the asset requests",
+        "editCast": "Updated {{count}} portrait(s) before filming",
+        "editDailies": "Sent {{count}} scene(s) back for a re-take",
+        "editDefault": "Picked visuals for {{count}} shot(s)",
+        "resolved": "Resolved {{label}}"
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "common": {
+        "accessRestricted": "Access Restricted"
+    },
+    "errors": {
+        "institute": {
+            "title": "Couldn't load institute details",
+            "hint": "Something went wrong fetching institute details. Please try again.",
+            "hintRestricted": "You don't have permission to view institute details. Contact your administrator."
+        },
+        "report": {
+            "title": "Couldn't load test records",
+            "hint": "Something went wrong fetching test records. Please try again.",
+            "hintRestricted": "You don't have permission to view test records. Contact your administrator."
+        }
+    },
+    "hero": {
+        "eyebrow": "TEST PERFORMANCE",
+        "avgScore": "{{score}} avg score",
+        "noAttempts": "No attempts yet",
+        "testsRecorded_one": "{{count}} test recorded",
+        "testsRecorded_other": "{{count}} tests recorded",
+        "testsAssignedHint": "Tests assigned to this learner will appear below."
+    },
+    "filters": {
+        "all": "All",
+        "completed": "Completed",
+        "pending": "Pending",
+        "live": "Live",
+        "ariaLabel": "Filter test attempts by status"
+    },
+    "empty": {
+        "title": "No tests yet",
+        "hint": "This learner hasn't taken any assessments yet."
+    },
+    "list": {
+        "subjectFallback": "N/A"
+    },
+    "status": {
+        "attempted": "Attempted",
+        "notAttempted": "Not Attempted",
+        "pending": "Pending"
+    },
+    "actions": {
+        "viewReport": "View Report",
+        "sendReminder": "Send Reminder"
+    }
+}

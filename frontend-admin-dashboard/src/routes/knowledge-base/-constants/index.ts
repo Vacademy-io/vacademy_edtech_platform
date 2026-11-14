@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { KbPurpose, SourceKind, SourceStatus } from '../-types';
 import type { StatusType } from '@/components/design-system/status-chips';
 
@@ -6,34 +7,36 @@ import type { StatusType } from '@/components/design-system/status-chips';
  * screen where a non-technical academic head decides what a "knowledge base" even
  * is, so each option names a real thing they already have on a shelf.
  */
-export const PURPOSE_OPTIONS: Array<{
+export const buildPurposeOptions = (
+    t: TFunction
+): Array<{
     value: KbPurpose;
     label: string;
     hint: string;
-}> = [
+}> => [
     {
         value: 'teaching',
-        label: 'Teaching material',
-        hint: 'Textbooks, notes and reference books for a class or subject — e.g. "Class 9 Science".',
+        label: t('purpose.teaching.label'),
+        hint: t('purpose.teaching.hint'),
     },
     {
         value: 'question_bank',
-        label: 'Question bank',
-        hint: 'Past papers and question collections — e.g. "JEE Advanced previous year questions".',
+        label: t('purpose.questionBank.label'),
+        hint: t('purpose.questionBank.hint'),
     },
     {
         value: 'general',
-        label: 'General reference',
-        hint: 'Anything else you want the AI to be able to look things up in.',
+        label: t('purpose.general.label'),
+        hint: t('purpose.general.hint'),
     },
 ];
 
-export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
-    PDF: 'Document',
-    URL: 'Web page',
-    YOUTUBE: 'YouTube video',
-    TEXT: 'Typed note',
-};
+export const buildSourceKindLabel = (t: TFunction): Record<SourceKind, string> => ({
+    PDF: t('sourceKind.pdf'),
+    URL: t('sourceKind.url'),
+    YOUTUBE: t('sourceKind.youtube'),
+    TEXT: t('sourceKind.text'),
+});
 
 /**
  * Status wording is deliberately plain and honest. "Partly readable" exists
@@ -41,49 +44,61 @@ export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
  * pages, and hiding that behind a green tick is how a teacher ends up with a
  * question paper built on garbled text.
  */
-export const SOURCE_STATUS_META: Record<
-    SourceStatus,
-    { label: string; tone: StatusType; hint: string }
-> = {
-    PENDING: { label: 'Queued', tone: 'INFO', hint: 'Waiting to start.' },
-    PROCESSING: { label: 'Reading', tone: 'INFO', hint: 'Being read and indexed right now.' },
-    READY: { label: 'Ready', tone: 'SUCCESS', hint: 'Fully readable and searchable.' },
-    PARTIAL: {
-        label: 'Partly readable',
-        tone: 'WARNING',
-        hint: 'Indexed, but some pages could not be read properly.',
+export const buildSourceStatusMeta = (
+    t: TFunction
+): Record<SourceStatus, { label: string; tone: StatusType; hint: string }> => ({
+    PENDING: { label: t('sourceStatus.pending.label'), tone: 'INFO', hint: t('sourceStatus.pending.hint') },
+    PROCESSING: {
+        label: t('sourceStatus.processing.label'),
+        tone: 'INFO',
+        hint: t('sourceStatus.processing.hint'),
     },
-    FAILED: { label: 'Failed', tone: 'DANGER', hint: 'Nothing could be indexed from this.' },
-};
+    READY: { label: t('sourceStatus.ready.label'), tone: 'SUCCESS', hint: t('sourceStatus.ready.hint') },
+    PARTIAL: {
+        label: t('sourceStatus.partial.label'),
+        tone: 'WARNING',
+        hint: t('sourceStatus.partial.hint'),
+    },
+    FAILED: { label: t('sourceStatus.failed.label'), tone: 'DANGER', hint: t('sourceStatus.failed.hint') },
+});
+
+/** Fallback labels shown while a source's stage is unknown or not yet set. */
+export const buildSourceStatusFallbackLabels = (
+    t: TFunction
+): { working: string; gettingStarted: string } => ({
+    working: t('sourceStatus.working'),
+    gettingStarted: t('sourceStatus.gettingStarted'),
+});
 
 /** Stage → what the user is actually waiting for. */
-export const STAGE_LABEL: Record<string, string> = {
-    parsing: 'Reading pages',
-    figures: 'Collecting diagrams and tables',
-    chunking: 'Organising the text',
-    embedding: 'Making it searchable',
-    summarizing: 'Summarising chapters',
-};
+export const buildStageLabel = (t: TFunction): Record<string, string> => ({
+    parsing: t('stage.parsing'),
+    figures: t('stage.figures'),
+    chunking: t('stage.chunking'),
+    embedding: t('stage.embedding'),
+    summarizing: t('stage.summarizing'),
+});
 
 /** Language hints offered when creating a knowledge base. */
-export const LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: 'en', label: 'English' },
-    { value: 'hi', label: 'Hindi' },
-    { value: 'mr', label: 'Marathi' },
-    { value: 'ta', label: 'Tamil' },
-    { value: 'te', label: 'Telugu' },
-    { value: 'kn', label: 'Kannada' },
-    { value: 'ml', label: 'Malayalam' },
-    { value: 'bn', label: 'Bengali' },
-    { value: 'gu', label: 'Gujarati' },
-    { value: 'pa', label: 'Punjabi' },
-    { value: 'ur', label: 'Urdu' },
+export const buildLanguageOptions = (t: TFunction): Array<{ value: string; label: string }> => [
+    { value: 'en', label: t('language.en') },
+    { value: 'hi', label: t('language.hi') },
+    { value: 'mr', label: t('language.mr') },
+    { value: 'ta', label: t('language.ta') },
+    { value: 'te', label: t('language.te') },
+    { value: 'kn', label: t('language.kn') },
+    { value: 'ml', label: t('language.ml') },
+    { value: 'bn', label: t('language.bn') },
+    { value: 'gu', label: t('language.gu') },
+    { value: 'pa', label: t('language.pa') },
+    { value: 'ur', label: t('language.ur') },
 ];
 
-export const LANGUAGE_LABEL: Record<string, string> = LANGUAGE_OPTIONS.reduce(
-    (acc, opt) => ({ ...acc, [opt.value]: opt.label }),
-    {} as Record<string, string>
-);
+export const buildLanguageLabel = (t: TFunction): Record<string, string> =>
+    buildLanguageOptions(t).reduce(
+        (acc, opt) => ({ ...acc, [opt.value]: opt.label }),
+        {} as Record<string, string>
+    );
 
 /** Matches MAX_PAGES_PER_SOURCE in ai_service/app/services/kb/parsing.py. */
 export const MAX_PAGES_PER_SOURCE = 1200;

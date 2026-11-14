@@ -33,7 +33,8 @@ STATUSES = ("DRAFT", "GENERATING", "READY", "SAVED", "FAILED")
 _LIST_COLUMNS = """
     id, knowledge_base_id, institute_id, artifact_type, title, status, progress,
     external_id, external_type, ai_task_id, items_planned, items_delivered,
-    credits_charged, error_message, created_by, created_at, updated_at
+    credits_charged, error_message, created_by, created_at, updated_at,
+    result_json -> 'published'
 """
 
 
@@ -47,10 +48,14 @@ def _row(r, *, with_payloads: bool = False) -> Dict[str, Any]:
         "created_by": r[14],
         "created_at": r[15].isoformat() if r[15] else None,
         "updated_at": r[16].isoformat() if r[16] else None,
+        # Shareable PDF links, keyed by variant ("question_paper", "with_answer_key").
+        # Small enough to ride the list: history shows "Copy link" without a
+        # second fetch.
+        "published": r[17] or {},
     }
     if with_payloads:
-        out["input"] = r[17] or {}
-        out["result"] = r[18]
+        out["input"] = r[18] or {}
+        out["result"] = r[19]
     return out
 
 
@@ -228,6 +233,43 @@ def get(db: Session, generation_id: str, institute_id: str) -> Optional[Dict[str
         {"id": generation_id, "institute_id": institute_id},
     ).fetchone()
     return _row(row, with_payloads=True) if row else None
+
+
+def record_published_link(
+    db: Session, generation_id: str, institute_id: str, variant: str, link: Dict[str, Any]
+) -> None:
+    """Remember where a variant of the paper was published.
+
+    Written into result_json.published.<variant> with jsonb_set so the
+    questions already stored there are untouched. Best effort like update():
+    the link was handed to the caller either way."""
+    try:
+        db.execute(
+            text(
+                """
+                UPDATE knowledge_base_generation
+                   SET result_json = jsonb_set(
+                           jsonb_set(
+                               COALESCE(result_json, '{}'::jsonb),
+                               '{published}',
+                               COALESCE(result_json -> 'published', '{}'::jsonb),
+                               true
+                           ),
+                           ARRAY['published', :variant],
+                           CAST(:link AS jsonb),
+                           true
+                       ),
+                       updated_at = CURRENT_TIMESTAMP
+                 WHERE id = :id AND institute_id = :institute_id
+                """
+            ),
+            {"id": generation_id, "institute_id": institute_id,
+             "variant": variant, "link": json.dumps(link)},
+        )
+        db.commit()
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not record published link on generation %s", generation_id)
+        db.rollback()
 
 
 def delete(db: Session, generation_id: str, institute_id: str) -> bool:

@@ -17,6 +17,8 @@ import { unwrapContentFromHTML } from "../-utils/templateLoader";
 import ReadOnlyQuillViewer from "@/components/quill/ReadOnlyQuillViewer";
 import { getPublicUrl } from "@/services/upload_file";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { formatDateTime } from "@/lib/formatters";
 
 interface ViewPlanningDialogProps {
   log: PlanningLog | null;
@@ -29,6 +31,7 @@ export default function ViewPlanningDialog({
   open,
   onOpenChange,
 }: ViewPlanningDialogProps) {
+  const { t } = useTranslation("planning");
   const [loadingFileId, setLoadingFileId] = useState<string | null>(null);
 
   if (!log) return null;
@@ -69,26 +72,26 @@ export default function ViewPlanningDialog({
             <div className="grid gap-3 rounded-lg border bg-muted/30 p-4">
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="size-4 text-muted-foreground" />
-                <span className="font-medium">Interval:</span>
+                <span className="font-medium">{t("viewDialog.interval")}</span>
                 <Badge variant="outline">
-                  {formatIntervalType(log.interval_type)}
+                  {formatIntervalType(log.interval_type, t)}
                 </Badge>
                 <span className="font-semibold">
-                  {formatIntervalTypeId(log.interval_type_id)}
+                  {formatIntervalTypeId(log.interval_type_id, t)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2 text-sm">
                 <User className="size-4 text-muted-foreground" />
-                <span className="font-medium">Created by:</span>
+                <span className="font-medium">{t("viewDialog.createdBy")}</span>
                 <span>{log.created_by}</span>
               </div>
 
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="size-4 text-muted-foreground" />
-                <span className="font-medium">Created at:</span>
+                <span className="font-medium">{t("viewDialog.createdAt")}</span>
                 <span>
-                  {new Date(log.created_at).toLocaleString("en-US", {
+                  {formatDateTime(log.created_at, {
                     month: "long",
                     day: "numeric",
                     year: "numeric",
@@ -102,7 +105,7 @@ export default function ViewPlanningDialog({
             {/* Description */}
             {log.description && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Description</h4>
+                <h4 className="text-sm font-semibold">{t("viewDialog.description")}</h4>
                 <p className="text-sm text-muted-foreground">
                   {log.description}
                 </p>
@@ -111,7 +114,7 @@ export default function ViewPlanningDialog({
 
             {/* Content */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Content</h4>
+              <h4 className="text-sm font-semibold">{t("viewDialog.content")}</h4>
               <ReadOnlyQuillViewer
                 value={unwrapContentFromHTML(log.content_html)}
                 minHeight={300}
@@ -122,7 +125,7 @@ export default function ViewPlanningDialog({
             {fileIds.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold">
-                  Attachments ({fileIds.length})
+                  {t("viewDialog.attachmentsCount", { count: fileIds.length })}
                 </h4>
                 <div className="space-y-2">
                   {fileIds.map((fileId, index) => (
@@ -134,7 +137,7 @@ export default function ViewPlanningDialog({
                         <FileText className="size-5 text-muted-foreground" />
                         <div>
                           <p className="text-sm font-medium">
-                            Attachment {index + 1}
+                            {t("attachments.item", { index: index + 1 })}
                           </p>
                         </div>
                       </div>
@@ -150,7 +153,7 @@ export default function ViewPlanningDialog({
                           ) : (
                             <ArrowSquareOut className="size-4" />
                           )}
-                          <span className="ms-2">View</span>
+                          <span className="ms-2">{t("common.view")}</span>
                         </Button>
                       </div>
                     </div>

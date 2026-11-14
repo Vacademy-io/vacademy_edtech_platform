@@ -3,9 +3,9 @@ import {
     useExportSettings,
 } from '@/components/common/export-offline/contexts/export-settings-context';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Settings, Trash2 } from 'lucide-react';
-import { ArrowSquareOut, Upload } from '@phosphor-icons/react';
+import { ArrowSquareOut, GearSix, Trash, Upload } from '@phosphor-icons/react';
 import { PaperSetQuestions } from './PaperSetQuestions';
 import { ExportHandlerQuestionPaper } from './ExportHandlerQuestionPaper';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -15,15 +15,21 @@ import { handleGetQuestionPaperById } from '../../-utils/question-paper-services
 import { convertQuestionsToExportSchema } from '../../-utils/helper';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const ExportQuestionPaper = ({
     questionPaperId,
+    title,
     triggerVariant = 'icon',
 }: {
     questionPaperId: string;
+    /** Paper title printed under the letterhead. */
+    title?: string;
     // 'icon' keeps the bare arrow icon; 'button' renders a labelled action for card rows.
     triggerVariant?: 'icon' | 'button';
 }) => {
+    const { t } = useTranslation('assessmentExportQuestionPaper');
     return (
         <Dialog>
             <DialogTrigger asChild={triggerVariant === 'button'}>
@@ -36,7 +42,7 @@ const ExportQuestionPaper = ({
                         className="h-8 gap-1.5"
                     >
                         <ArrowSquareOut size={16} />
-                        Export
+                        {t('trigger.label')}
                     </MyButton>
                 ) : (
                     <ArrowSquareOut />
@@ -44,14 +50,21 @@ const ExportQuestionPaper = ({
             </DialogTrigger>
             <DialogContent className="no-scrollbar !m-0 h-full !w-full !max-w-full !gap-0 overflow-y-auto !rounded-none !p-0">
                 <ExportSettingsProvider>
-                    <PreviewWithSettings questionPaperId={questionPaperId} />
+                    <PreviewWithSettings questionPaperId={questionPaperId} title={title} />
                 </ExportSettingsProvider>
             </DialogContent>
         </Dialog>
     );
 };
 
-function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
+function PreviewWithSettings({
+    questionPaperId,
+    title,
+}: {
+    questionPaperId: string;
+    title?: string;
+}) {
+    const { t } = useTranslation('assessmentExportQuestionPaper');
     const { data: questionsData, isLoading } = useSuspenseQuery(
         handleGetQuestionPaperById(questionPaperId)
     );
@@ -106,10 +119,22 @@ function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
                         onClick={() => setShowSettings(true)}
                         className="gap-2"
                     >
-                        <Settings className="size-4" />
-                        Export Settings
+                        <GearSix className="size-4" />
+                        {t('settingsButton')}
                     </Button>
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="question-paper-answer-key"
+                                checked={settings.exportSolutionKey}
+                                onCheckedChange={(checked) =>
+                                    updateSettings({ exportSolutionKey: checked })
+                                }
+                            />
+                            <Label htmlFor="question-paper-answer-key">
+                                {t('answerKeyToggle')}
+                            </Label>
+                        </div>
                         <input
                             type="file"
                             id="letterhead-upload"
@@ -121,7 +146,7 @@ function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
                             <div className="flex items-center gap-2">
                                 <DialogClose>
                                     <Button variant="outline" className="mr-2">
-                                        Close
+                                        {t('close')}
                                     </Button>
                                 </DialogClose>
                                 <Button
@@ -131,16 +156,16 @@ function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
                                     }
                                 >
                                     <Upload />
-                                    Letterhead
+                                    {t('letterhead.upload')}
                                 </Button>
                                 {settings.customLetterheadImage && (
                                     <Button
                                         variant="destructive"
                                         size="icon"
                                         onClick={handleDeleteLetterhead}
-                                        title="Delete Letterhead"
+                                        title={t('letterhead.delete')}
                                     >
-                                        <Trash2 className="size-4" />
+                                        <Trash className="size-4" />
                                     </Button>
                                 )}
                             </div>
@@ -148,6 +173,7 @@ function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
                         <ExportHandlerQuestionPaper
                             questionPaperId={questionPaperId}
                             settings={settings}
+                            title={title}
                         />
                     </div>
                 </div>
@@ -162,7 +188,11 @@ function PreviewWithSettings({ questionPaperId }: { questionPaperId: string }) {
             )}
 
             <div className="container mx-auto py-4">
-                <PaperSetQuestions questionPaperId={questionPaperId} settings={settings} />
+                <PaperSetQuestions
+                    questionPaperId={questionPaperId}
+                    settings={settings}
+                    title={title}
+                />
             </div>
         </div>
     );

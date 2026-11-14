@@ -1,0 +1,199 @@
+{
+    "title": {
+        "create": "Create Registration Link",
+        "edit": "Edit Registration Link"
+    },
+    "fields": {
+        "name": {
+            "label": "Name *",
+            "placeholder": "e.g. Partner School Onboarding"
+        },
+        "courses": {
+            "label": "{{label}} *",
+            "hint": "Every {{subOrg}} registered via this link gets exactly these batches.",
+            "loading": "Loading batches...",
+            "empty": "No batches found.",
+            "selectedCount_one": "{{count}} selected",
+            "selectedCount_other": "{{count}} selected"
+        },
+        "seatLimit": {
+            "label": "Seat limit",
+            "placeholder": "e.g. 10",
+            "hint": "Maximum members per spawned {{subOrg}}."
+        },
+        "validity": {
+            "label": "Validity (days)",
+            "placeholder": "e.g. 365",
+            "hint": "Access duration for each spawned {{subOrg}}."
+        }
+    },
+    "payment": {
+        "label": "Payment",
+        "typeLabelPrefix": "Type: ",
+        "optionLabelPrefix": "Payment option: ",
+        "vendorLabelPrefix": "Vendor: ",
+        "currencyLabelPrefix": "Currency: ",
+        "immutableNote": "Payment settings can't be changed after creation — create a new link instead.",
+        "typeSelect": {
+            "label": "Payment type",
+            "hint": "What each organization pays when registering via this link."
+        },
+        "option": {
+            "label": "Payment option *",
+            "hint": "The registering admin pays via this existing institute payment option. Price & currency come from the option's plan.",
+            "loading": "Loading payment options...",
+            "loadingShort": "Loading...",
+            "noneFound": "No active option found",
+            "placeholder": "Select a payment option",
+            "noActiveOfType": "No active {{type}} option — create one in Payment Settings."
+        },
+        "vendor": {
+            "label": "Payment vendor",
+            "noneFound": "No payment vendor found — configure a payment gateway in Settings first.",
+            "placeholder": "Select payment vendor"
+        }
+    },
+    "paymentTypeLabel": {
+        "free": "Free",
+        "oneTime": "One-Time",
+        "subscription": "Subscription"
+    },
+    "roles": {
+        "admin": {
+            "label": "Admin roles (auth service)",
+            "hint": "Roles assigned to the admin who registers via this link."
+        },
+        "team": {
+            "label": "Allowed team roles",
+            "hint": "Roles the {{subOrg}} admin can assign to their own team. Leave empty to allow any custom role."
+        },
+        "permissions": {
+            "label": "Admin permissions",
+            "hint": "What the {{subOrg}} admin can do. Leave empty to grant FULL access.",
+            "createCourse": "Create {{course}}"
+        },
+        "noneFound": "No roles found"
+    },
+    "customFields": {
+        "label": "Registration form fields",
+        "hint": "Extra questions the registrant answers. Order follows this list.",
+        "addField": "Add Field",
+        "empty": "No extra fields — the form only asks for organization and admin details.",
+        "namePlaceholder": "Field name",
+        "removeAria": "Remove field",
+        "optionsPlaceholder": "Options, comma separated (e.g. Small, Medium, Large)",
+        "mandatory": "Mandatory"
+    },
+    "wizard": {
+        "label": "Wizard content",
+        "hint": "Fine-tune what registrants see while filling the form.",
+        "orgNameHint": {
+            "label": "Organization name hint",
+            "placeholder": "e.g. If you have no registered organization, write your full name",
+            "hint": "Shown as helper text under the Organization Name field in the registration form. Leave empty for none."
+        },
+        "collectAddress": {
+            "label": "Collect full address",
+            "hint": "Adds Address Line 1/2, City, State and Pincode to the registration form and saves them on the new organization."
+        }
+    },
+    "tnc": {
+        "label": "Terms & Conditions",
+        "hint": "Require registrants to accept a T&C PDF and/or consent statements before completing.",
+        "existingFileLabel": "Existing T&C PDF",
+        "defaultFileLabel": "T&C PDF uploaded",
+        "removeFile": "Remove",
+        "acceptFormat": "Supported format: PDF (optional)",
+        "uploading": "Uploading PDF...",
+        "consent": {
+            "label": "Consent statements",
+            "hint": "Each statement becomes a required checkbox. Add inline links with [label](url) — e.g. We have read the [Code of Conduct](https://example.com/coc) and agree to abide by it.",
+            "itemPlaceholder": "e.g. By submitting, you agree to receive communication. See our [Privacy Policy](https://example.com/privacy).",
+            "addStatement": "Add statement"
+        }
+    },
+    "kyc": {
+        "label": "Identity Verification (DigiLocker)",
+        "hint": "Require identity verification via DigiLocker.",
+        "aadhaarOnly": "Aadhaar only",
+        "aadhaarPan": "Aadhaar + PAN",
+        "scopeHint": "The registering organization's admin must verify their identity through DigiLocker before completing registration.",
+        "instructions": {
+            "label": "DigiLocker instructions",
+            "placeholder": "e.g. Keep your Aadhaar-linked mobile handy. Facing issues? See our [DigiLocker guide](https://example.com/digilocker-help).",
+            "hint": "Shown on the identity-verification step. Leave empty for the default note (which already tells users to tick both Aadhaar & PAN when PAN is required). Supports [label](url) links."
+        }
+    },
+    "maxRegistrations": {
+        "label": "Max registrations",
+        "placeholder": "Unlimited",
+        "hint": "Maximum completed registrations through this link. Leave blank for unlimited."
+    },
+    "completion": {
+        "label": "After registration",
+        "hint": "What the registrant sees once their registration completes.",
+        "mode": {
+            "default": {
+                "title": "Default",
+                "desc": "Standard success screen with a \"Go to Admin Portal\" button."
+            },
+            "message": {
+                "title": "Custom message",
+                "desc": "Show your own success message, optionally with a button."
+            },
+            "redirect": {
+                "title": "Redirect to URL",
+                "desc": "Send the registrant straight to your own page."
+            }
+        },
+        "message": {
+            "label": "Completion message *",
+            "placeholder": "e.g. Thanks for registering! Our team will reach out within 24 hours. Meanwhile, read the [getting-started guide](https://example.com/start).",
+            "linksHint": "Supports [label](url) links.",
+            "buttonLabel": {
+                "label": "Button label",
+                "placeholder": "e.g. Open your portal"
+            },
+            "buttonUrl": {
+                "label": "Button URL",
+                "placeholder": "https://..."
+            },
+            "buttonHint": "Optional button — label and URL are required together, and the URL must start with https://."
+        },
+        "redirect": {
+            "label": "Redirect URL *",
+            "placeholder": "https://yourdomain.com/welcome",
+            "hint": "Registrants are redirected here automatically after completing. Must start with https://."
+        }
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save Changes"
+    },
+    "toast": {
+        "createSuccess": "Registration link created",
+        "createCode": "Registration code: {{code}}",
+        "createError": "Failed to create registration link",
+        "updateSuccess": "Registration link updated",
+        "updateError": "Failed to update registration link",
+        "pdfOnly": "Only PDF files are supported",
+        "pdfUploaded": "T&C PDF uploaded",
+        "uploadNoFileId": "Upload did not return a file ID",
+        "pdfUploadFailed": "Failed to upload T&C PDF",
+        "selectBatch": "Select at least one batch",
+        "tncRequired": "Add a T&C PDF or at least one consent statement, or disable the T&C step",
+        "dropdownOptionRequired": "Add at least one option for dropdown field \"{{field}}\"",
+        "completionMessageRequired": "Add a completion message or a button, or switch \"After registration\" back to Default",
+        "completionButtonPairRequired": "Completion button label and URL are required together",
+        "completionButtonUrlHttps": "Completion button URL must start with https://",
+        "redirectUrlRequired": "Enter the URL to redirect to after registration",
+        "redirectUrlHttps": "Redirect URL must start with https://"
+    },
+    "validation": {
+        "nameRequired": "Name is required",
+        "minOne": "Must be at least 1",
+        "minOneDay": "Must be at least 1 day",
+        "selectPaymentOption": "Select a payment option",
+        "vendorRequired": "A payment vendor is required for paid links"
+    }
+}

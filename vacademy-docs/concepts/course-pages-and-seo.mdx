@@ -1,0 +1,122 @@
+---
+title: "Course pages and SEO"
+description: "Hosted course URLs, seo metadata, schema.org structured data and sitemaps."
+---
+
+## Hosted course URLs
+
+Every course and every version has a `url` on the institute's hosted catalogue site, where enrolment, cart and checkout happen:
+
+```
+https://learning.brahmvarchas.org/store/7c12a9ec-22c3-4c55-ada1-2a93e107816f?enrollInviteId=5a975e3c-429f-4bfe-9143-43ffcf807748&packageSessionId=92e89046-5865-4cf7-bea6-ac1e8b7bd328&level=default
+```
+
+| Part | Example |
+|---|---|
+| `course_base_url` | `https://learning.brahmvarchas.org/store` |
+| Course route | `/7c12a9ec-22c3-4c55-ada1-2a93e107816f` |
+| Version selection | `?enrollInviteId=…&packageSessionId=…&level=default` |
+
+- `course_base_url` is in `GET /site` (see [Course page address](/keys-and-websites#course-page-address)).
+- The route is the course id, or the custom address the institute gave the course page.
+- The query selects the version (`enrollInviteId`, `packageSessionId`, `level`). **Link to `url` exactly as returned**; do not build it yourself or drop the query, or the visitor may land on a different version.
+
+When the institute has no course page address, `url` is `null`. Hide the link rather than guess one.
+
+## `seo`
+
+`GET /courses/{id}` returns ready-made page metadata:
+
+```json
+{
+  "title": "Vedic Parenting - eBook",
+  "description": "The forgotten mystery of the real meaning of parents!",
+  "image_url": "https://cdn.example.com/32aa2224-c7b1-46cf-b7ae-ebf1a37c5e34.png",
+  "canonical_url": "https://learning.brahmvarchas.org/store/7c12a9ec-22c3-4c55-ada1-2a93e107816f"
+}
+```
+
+- `description` is plain text, at most 160 characters.
+- `canonical_url` is the **hosted** page without its query. It is the right canonical only when you do not host your own course page. With `?language=hi`, every `seo` field describes the Hindi edition.
+
+## `structured_data`
+
+A schema.org [`Course`](https://schema.org/Course) object. Put it in a JSON-LD script tag as is:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "Vedic Parenting - eBook",
+  "description": "The forgotten mystery of the real meaning of parents!",
+  "image": "https://cdn.example.com/32aa2224-c7b1-46cf-b7ae-ebf1a37c5e34.png",
+  "url": "https://learning.brahmvarchas.org/store/7c12a9ec-22c3-4c55-ada1-2a93e107816f",
+  "inLanguage": "en",
+  "provider": {
+    "@type": "Organization",
+    "name": "Brahm Varchas Shiksha",
+    "sameAs": "https://learning.brahmvarchas.org/"
+  },
+  "offers": [
+    {
+      "@type": "Offer",
+      "price": 251.0,
+      "priceCurrency": "INR",
+      "category": "Paid",
+      "url": "https://learning.brahmvarchas.org/store/7c12a9ec-22c3-4c55-ada1-2a93e107816f?enrollInviteId=5a975e3c-429f-4bfe-9143-43ffcf807748&packageSessionId=92e89046-5865-4cf7-bea6-ac1e8b7bd328&level=default",
+      "availability": "https://schema.org/InStock"
+    }
+  ],
+  "hasCourseInstance": [{ "@type": "CourseInstance", "courseMode": "online" }]
+}
+```
+
+- `offers` is present only when the price is shown. `availability` maps `available` → `InStock`, `coming_soon` / `not_started` → `PreOrder`, `closed` → `Discontinued`.
+- `image`, `url` and `inLanguage` are left out when unknown.
+- `provider.sameAs` is the institute's website from its Vacademy profile, else the hosted site's home page.
+
+```tsx
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: JSON.stringify(course.structured_data).replace(/</g, '\\u003c') }}
+/>
+```
+
+The `replace` keeps a `</script>` inside any text field from ending the tag.
+
+## Two setups
+
+<Tabs>
+  <Tab title="Link to hosted pages">
+    Your site renders listings (home, course grid, stream pages, learning paths); every course links to its hosted `url`. You build no course page.
+
+    - Search engines index the course on the hosted site, which renders its own metadata.
+    - Your sitemap lists **your** pages only. `GET /sitemap` URLs are on the hosted site's host; a sitemap may not list another host's URLs.
+    - This is the Brahm Varchas setup: listings on `brahmvarchas.org`, course pages on `learning.brahmvarchas.org/store`.
+  </Tab>
+  <Tab title="Host your own course pages">
+    You render `/courses/{id}` from `GET /courses/{id}` and link to `url` for enrolment.
+
+    - Set the canonical to **your** page (`alternates.canonical` in `generateMetadata`), not `seo.canonical_url`, or search engines will index the hosted page instead of yours.
+    - Override `structured_data.url` with your page's URL; keep `offers[].url` (where the course is bought).
+    - Build your sitemap from `GET /sitemap` by mapping each `id` to your route; ignore its `url`.
+    - The hosted page still exists and has the same content. Expect search engines to pick one of the two; your canonical tells them which you prefer.
+  </Tab>
+</Tabs>
+
+## `GET /sitemap`
+
+```json
+{
+  "data": [
+    {
+      "url": "https://learning.brahmvarchas.org/store/1750f895-5219-4b51-903e-93d271694653",
+      "type": "course",
+      "id": "1750f895-5219-4b51-903e-93d271694653",
+      "lastmod": "2026-10-14T20:40:51.277Z"
+    }
+  ]
+}
+```
+
+Every published course, in catalogue order, at its canonical address (the same as the course's `seo.canonical_url`, without the version query). Courses without a page address are left out. `lastmod` is when the course's newest version was created, not when it was last edited.

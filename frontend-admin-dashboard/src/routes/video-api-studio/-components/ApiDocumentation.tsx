@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -6,24 +7,25 @@ import { Button } from '@/components/ui/button';
 import {
     Copy,
     Check,
-    Zap,
+    Lightning,
     Clock,
     BookOpen,
-    Code2,
+    Code,
     Radio,
-    RefreshCw,
+    ArrowsClockwise,
     FileText,
-    History,
-    ChevronDown,
-    ChevronUp,
+    ClockCounterClockwise,
+    CaretDown,
+    CaretUp,
     Info,
-    AlertCircle,
-    CheckCircle2,
-} from 'lucide-react';
+    WarningCircle,
+    CheckCircle,
+} from '@phosphor-icons/react';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 
 // ─── Copy button ──────────────────────────────────────────────────────────────
 function CopyButton({ text, className = '' }: { text: string; className?: string }) {
+    const { t } = useTranslation('videoApiStudioApiDocumentation');
     const [copied, setCopied] = useState(false);
     const copy = async () => {
         await navigator.clipboard.writeText(text);
@@ -36,7 +38,7 @@ function CopyButton({ text, className = '' }: { text: string; className?: string
             size="icon"
             className={`h-7 w-7 ${className}`}
             onClick={copy}
-            title="Copy"
+            title={t('common.copy')}
         >
             {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
         </Button>
@@ -89,7 +91,7 @@ function CodeBlock({ examples }: { examples: LangExample[] }) {
 // ─── Inline code ──────────────────────────────────────────────────────────────
 function IC({ children }: { children: React.ReactNode }) {
     return (
-        <code className="bg-muted text-foreground font-mono text-[11px] px-1.5 py-0.5 rounded border border-border">
+        <code className="bg-muted text-foreground font-mono text-2xs px-1.5 py-0.5 rounded border border-border">
             {children}
         </code>
     );
@@ -105,21 +107,26 @@ interface Param {
 }
 
 function ParamTable({ params }: { params: Param[] }) {
+    const { t } = useTranslation('videoApiStudioApiDocumentation');
     return (
         <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-xs">
                 <thead>
                     <tr className="bg-muted/50 border-b border-border">
-                        <th className="text-left px-3 py-2 font-semibold text-foreground">Field</th>
-                        <th className="text-left px-3 py-2 font-semibold text-foreground">Type</th>
                         <th className="text-left px-3 py-2 font-semibold text-foreground">
-                            Required
+                            {t('common.paramTable.field')}
                         </th>
                         <th className="text-left px-3 py-2 font-semibold text-foreground">
-                            Default
+                            {t('common.paramTable.type')}
+                        </th>
+                        <th className="text-start px-3 py-2 font-semibold text-foreground">
+                            {t('common.paramTable.required')}
+                        </th>
+                        <th className="text-start px-3 py-2 font-semibold text-foreground">
+                            {t('common.paramTable.default')}
                         </th>
                         <th className="text-left px-3 py-2 font-semibold text-foreground w-1/2">
-                            Description
+                            {t('common.paramTable.description')}
                         </th>
                     </tr>
                 </thead>
@@ -137,9 +144,13 @@ function ParamTable({ params }: { params: Param[] }) {
                             </td>
                             <td className="px-3 py-2">
                                 {p.required ? (
-                                    <span className="text-red-600 font-medium">Yes</span>
+                                    <span className="text-red-600 font-medium">
+                                        {t('common.paramTable.yes')}
+                                    </span>
                                 ) : (
-                                    <span className="text-muted-foreground">No</span>
+                                    <span className="text-muted-foreground">
+                                        {t('common.paramTable.no')}
+                                    </span>
                                 )}
                             </td>
                             <td className="px-3 py-2 font-mono text-muted-foreground">
@@ -175,9 +186,9 @@ function Section({
             >
                 <span className="text-sm font-semibold">{title}</span>
                 {open ? (
-                    <ChevronUp className="size-4 text-muted-foreground" />
+                    <CaretUp className="size-4 text-muted-foreground" />
                 ) : (
-                    <ChevronDown className="size-4 text-muted-foreground" />
+                    <CaretDown className="size-4 text-muted-foreground" />
                 )}
             </button>
             {open && <div className="p-4 space-y-4">{children}</div>}
@@ -204,10 +215,10 @@ function EventBadge({ type }: { type: 'progress' | 'completed' | 'info' | 'error
         error: 'bg-red-100 text-red-800',
     }[type];
     const Icon = {
-        progress: RefreshCw,
-        completed: CheckCircle2,
+        progress: ArrowsClockwise,
+        completed: CheckCircle,
         info: Info,
-        error: AlertCircle,
+        error: WarningCircle,
     }[type];
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold ${c}`}>
@@ -219,6 +230,7 @@ function EventBadge({ type }: { type: 'progress' | 'completed' | 'info' | 'error
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function ApiDocumentation() {
+    const { t } = useTranslation('videoApiStudioApiDocumentation');
     const baseUrl = AI_SERVICE_BASE_URL;
 
     // ── shared request params ──────────────────────────────────────────────────
@@ -227,88 +239,83 @@ export function ApiDocumentation() {
             name: 'prompt',
             type: 'string',
             required: true,
-            description: 'Natural language description of the content to generate.',
+            description: t('generateParams.prompt.description'),
         },
         {
             name: 'content_type',
             type: 'string',
             required: false,
             default: 'VIDEO',
-            description:
-                'Type of content. One of: VIDEO, SLIDES, QUIZ, STORYBOOK, FLASHCARDS, INTERACTIVE_GAME, PUZZLE_BOOK, SIMULATION, MAP_EXPLORATION, WORKSHEET, CODE_PLAYGROUND, TIMELINE, CONVERSATION.',
+            description: t('generateParams.contentType.description'),
         },
         {
             name: 'language',
             type: 'string',
             required: false,
             default: 'English (US)',
-            description:
-                'Language for narration & content. E.g. "English (India)", "Hindi", "Spanish".',
+            description: t('generateParams.language.description'),
         },
         {
             name: 'voice_gender',
             type: 'string',
             required: false,
             default: 'female',
-            description: '"female" or "male".',
+            description: t('generateParams.voiceGender.description'),
         },
         {
             name: 'tts_provider',
             type: 'string',
             required: false,
             default: 'standard',
-            description: '"standard" (Edge TTS, free) or "premium" (Google Cloud / Sarvam AI, 2x credits). Premium auto-routes: Indian languages → Sarvam, global → Google.',
+            description: t('generateParams.ttsProvider.description'),
         },
         {
             name: 'voice_id',
             type: 'string',
             required: false,
             default: 'null',
-            description: 'Specific voice for premium TTS. Sarvam voices: "shubh", "priya", etc. Google voices: "en-US-Journey-F", etc. Use GET /tts/voices to list available options.',
+            description: t('generateParams.voiceId.description'),
         },
         {
             name: 'captions_enabled',
             type: 'boolean',
             required: false,
             default: 'true',
-            description: 'Whether to embed word-level caption data in the output.',
+            description: t('generateParams.captionsEnabled.description'),
         },
         {
             name: 'html_quality',
             type: 'string',
             required: false,
             default: 'advanced',
-            description: '"classic" (faster, simpler layouts) or "advanced" (richer, more complex).',
+            description: t('generateParams.htmlQuality.description'),
         },
         {
             name: 'target_audience',
             type: 'string',
             required: false,
             default: 'General/Adult',
-            description:
-                'Age/level description used to calibrate complexity. E.g. "Class 5 (Ages 10-11)", "Undergraduate".',
+            description: t('generateParams.targetAudience.description'),
         },
         {
             name: 'target_duration',
             type: 'string',
             required: false,
             default: '2-3 minutes',
-            description:
-                'Approximate output length. Options: "30 seconds", "1 minute", "2-3 minutes", "5 minutes", "10 minutes".',
+            description: t('generateParams.targetDuration.description'),
         },
         {
             name: 'model',
             type: 'string',
             required: false,
             default: 'vsmart-v1',
-            description: 'LLM model ID to use. Leave blank for the recommended default.',
+            description: t('generateParams.model.description'),
         },
         {
             name: 'video_id',
             type: 'string',
             required: false,
-            description:
-                'Custom stable identifier for this generation. Auto-generated if omitted. Use the same ID to resume.',
+            description: t('generateParams.videoId.description'),
         },
     ];
 
@@ -725,30 +732,27 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <BookOpen className="size-5 text-violet-600" />
-                        Vacademy Content Generation API
+                        {t('overview.cardTitle')}
                     </CardTitle>
-                    <CardDescription>
-                        Generate AI-powered educational content — videos, quizzes, flashcards, games
-                        and more — via a single REST endpoint.
-                    </CardDescription>
+                    <CardDescription>{t('overview.cardDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {[
                             {
-                                icon: <Zap className="size-4 text-violet-600" />,
-                                title: 'SSE Streaming',
-                                desc: 'Get live progress as each stage completes.',
+                                icon: <Lightning className="size-4 text-violet-600" />,
+                                title: t('overview.features.sse.title'),
+                                desc: t('overview.features.sse.description'),
                             },
                             {
                                 icon: <Clock className="size-4 text-blue-600" />,
-                                title: 'Background Jobs',
-                                desc: 'Generation continues even if you close the connection.',
+                                title: t('overview.features.backgroundJobs.title'),
+                                desc: t('overview.features.backgroundJobs.description'),
                             },
                             {
-                                icon: <RefreshCw className="size-4 text-green-600" />,
-                                title: 'REST Polling',
-                                desc: 'Simple alternative — start then poll /urls/{id}.',
+                                icon: <ArrowsClockwise className="size-4 text-green-600" />,
+                                title: t('overview.features.restPolling.title'),
+                                desc: t('overview.features.restPolling.description'),
                             },
                         ].map((f) => (
                             <div
@@ -765,7 +769,7 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                     </div>
 
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Base URL</p>
+                        <p className="text-sm font-medium">{t('overview.baseUrlLabel')}</p>
                         <div className="flex items-center gap-2">
                             <code className="flex-1 bg-slate-900 text-slate-100 text-xs font-mono px-3 py-2 rounded-md border border-slate-700 overflow-x-auto">
                                 {baseUrl}/external/video/v1
@@ -778,7 +782,7 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                     </div>
 
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Authentication header</p>
+                        <p className="text-sm font-medium">{t('overview.authHeaderLabel')}</p>
                         <CodeBlock
                             examples={[
                                 {
@@ -788,94 +792,91 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                                 },
                             ]}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Every request must include this header. Generate keys from the API Keys
-                            tab above.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('overview.authHeaderNote')}</p>
                     </div>
                 </CardContent>
             </Card>
 
             {/* ── Content Types ─────────────────────────────────────────────── */}
-            <Section title="Supported Content Types" defaultOpen={false}>
+            <Section title={t('contentTypes.sectionTitle')} defaultOpen={false}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {[
                         {
                             type: 'VIDEO',
                             emoji: '📹',
-                            desc: 'Time-synced HTML slides with narration audio & captions.',
+                            desc: t('contentTypes.video.description'),
                             nav: 'time_driven',
                         },
                         {
                             type: 'SLIDES',
                             emoji: '🖼️',
-                            desc: 'HTML presentation deck with images, tables & diagrams.',
+                            desc: t('contentTypes.slides.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'QUIZ',
                             emoji: '❓',
-                            desc: 'Multiple-choice question set with explanations.',
+                            desc: t('contentTypes.quiz.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'STORYBOOK',
                             emoji: '📚',
-                            desc: 'Page-by-page illustrated narrative.',
+                            desc: t('contentTypes.storybook.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'FLASHCARDS',
                             emoji: '📇',
-                            desc: 'Flip-card deck for spaced-repetition learning.',
+                            desc: t('contentTypes.flashcards.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'INTERACTIVE_GAME',
                             emoji: '🎮',
-                            desc: 'Self-contained educational HTML game.',
+                            desc: t('contentTypes.interactiveGame.description'),
                             nav: 'self_contained',
                         },
                         {
                             type: 'PUZZLE_BOOK',
                             emoji: '🧩',
-                            desc: 'Crossword, word search or logic puzzles.',
+                            desc: t('contentTypes.puzzleBook.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'SIMULATION',
                             emoji: '🔬',
-                            desc: 'Interactive physics/science/economics sandbox.',
+                            desc: t('contentTypes.simulation.description'),
                             nav: 'self_contained',
                         },
                         {
                             type: 'MAP_EXPLORATION',
                             emoji: '🗺️',
-                            desc: 'Clickable SVG map with region facts.',
+                            desc: t('contentTypes.mapExploration.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'WORKSHEET',
                             emoji: '📝',
-                            desc: 'Printable or fillable homework worksheet.',
+                            desc: t('contentTypes.worksheet.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'CODE_PLAYGROUND',
                             emoji: '💻',
-                            desc: 'In-browser coding exercise with instructions.',
+                            desc: t('contentTypes.codePlayground.description'),
                             nav: 'self_contained',
                         },
                         {
                             type: 'TIMELINE',
                             emoji: '⏳',
-                            desc: 'Chronological event visualization.',
+                            desc: t('contentTypes.timeline.description'),
                             nav: 'user_driven',
                         },
                         {
                             type: 'CONVERSATION',
                             emoji: '💬',
-                            desc: 'Dialogue-based language learning exercise.',
+                            desc: t('contentTypes.conversation.description'),
                             nav: 'user_driven',
                         },
                     ].map((ct) => (
@@ -887,7 +888,7 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <IC>{ct.type}</IC>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                                    <span className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
                                         {ct.nav}
                                     </span>
                                 </div>
@@ -899,24 +900,30 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                     ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold">Navigation mode</span> —
-                    <IC>time_driven</IC>: auto-plays with audio &nbsp;|&nbsp;
-                    <IC>user_driven</IC>: user clicks through pages &nbsp;|&nbsp;
-                    <IC>self_contained</IC>: fully interactive HTML app
+                    <span className="font-semibold">{t('contentTypes.navigationModeLabel')}</span> —
+                    <IC>time_driven</IC>: {t('contentTypes.navAutoPlays')} &nbsp;|&nbsp;
+                    <IC>user_driven</IC>: {t('contentTypes.navUserClicks')} &nbsp;|&nbsp;
+                    <IC>self_contained</IC>: {t('contentTypes.navSelfContained')}
                 </p>
             </Section>
 
             {/* ── Generation Stages ────────────────────────────────────────────── */}
-            <Section title="Generation Stages" defaultOpen={false}>
+            <Section title={t('generationStages.sectionTitle')} defaultOpen={false}>
                 <div className="overflow-x-auto rounded-md border border-border">
                     <table className="w-full text-xs">
                         <thead>
                             <tr className="bg-muted/50 border-b border-border">
-                                <th className="text-left px-3 py-2 font-semibold">Stage</th>
-                                <th className="text-left px-3 py-2 font-semibold">Output file</th>
-                                <th className="text-left px-3 py-2 font-semibold">s3_urls key</th>
+                                <th className="text-start px-3 py-2 font-semibold">
+                                    {t('generationStages.tableHeaders.stage')}
+                                </th>
+                                <th className="text-start px-3 py-2 font-semibold">
+                                    {t('generationStages.tableHeaders.outputFile')}
+                                </th>
+                                <th className="text-start px-3 py-2 font-semibold">
+                                    {t('generationStages.tableHeaders.s3UrlsKey')}
+                                </th>
                                 <th className="text-left px-3 py-2 font-semibold w-1/2">
-                                    Description
+                                    {t('generationStages.tableHeaders.description')}
                                 </th>
                             </tr>
                         </thead>
@@ -926,31 +933,31 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                                     stage: 'SCRIPT',
                                     file: 'script.txt',
                                     key: 'script',
-                                    desc: 'LLM generates narration script & content plan.',
+                                    desc: t('generationStages.script.description'),
                                 },
                                 {
                                     stage: 'TTS',
                                     file: 'narration.mp3',
                                     key: 'audio',
-                                    desc: 'Text-to-speech converts script to audio.',
+                                    desc: t('generationStages.tts.description'),
                                 },
                                 {
                                     stage: 'WORDS',
                                     file: 'narration.words.json',
                                     key: 'words',
-                                    desc: 'Word-level timestamp alignment for captions.',
+                                    desc: t('generationStages.words.description'),
                                 },
                                 {
                                     stage: 'HTML',
                                     file: 'time_based_frame.json',
                                     key: 'timeline',
-                                    desc: '✅ Recommended stop point. HTML slides synced to audio timestamps.',
+                                    desc: t('generationStages.html.description'),
                                 },
                                 {
                                     stage: 'RENDER',
                                     file: 'output.mp4',
                                     key: 'video',
-                                    desc: 'Full video render (slow, only needed for download/export).',
+                                    desc: t('generationStages.render.description'),
                                 },
                             ].map((s, i) => (
                                 <tr
@@ -973,8 +980,9 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                     </table>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    The <IC>target_stage</IC> query parameter on <IC>POST /generate</IC> controls
-                    which stage to stop at. Default is <IC>HTML</IC>.
+                    <Trans i18nKey="videoApiStudioApiDocumentation:generationStages.footer">
+                        The <IC>target_stage</IC> query parameter on <IC>POST /generate</IC> controls which stage to stop at. Default is <IC>HTML</IC>.
+                    </Trans>
                 </p>
             </Section>
 
@@ -982,41 +990,49 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
             <Tabs defaultValue="generate" className="w-full">
                 <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/30 p-1">
                     {[
-                        { value: 'generate', label: 'Generate', icon: <Zap className="size-3" /> },
+                        {
+                            value: 'generate',
+                            label: t('tabs.generate'),
+                            icon: <Lightning className="size-3" />,
+                        },
                         {
                             value: 'polling',
-                            label: 'REST Polling',
-                            icon: <RefreshCw className="size-3" />,
+                            label: t('tabs.polling'),
+                            icon: <ArrowsClockwise className="size-3" />,
                         },
                         {
                             value: 'history',
-                            label: 'History',
-                            icon: <History className="size-3" />,
+                            label: t('tabs.history'),
+                            icon: <ClockCounterClockwise className="size-3" />,
                         },
                         {
                             value: 'status',
-                            label: 'Status',
+                            label: t('tabs.status'),
                             icon: <Info className="size-3" />,
                         },
-                        { value: 'urls', label: 'URLs', icon: <Code2 className="size-3" /> },
+                        {
+                            value: 'urls',
+                            label: t('tabs.urls'),
+                            icon: <Code className="size-3" />,
+                        },
                         {
                             value: 'frames',
-                            label: 'Frame Edit',
+                            label: t('tabs.frames'),
                             icon: <FileText className="size-3" />,
                         },
                         {
                             value: 'events',
-                            label: 'SSE Events',
+                            label: t('tabs.events'),
                             icon: <Radio className="size-3" />,
                         },
-                    ].map((t) => (
+                    ].map((tab) => (
                         <TabsTrigger
-                            key={t.value}
-                            value={t.value}
+                            key={tab.value}
+                            value={tab.value}
                             className="flex items-center gap-1.5 text-xs"
                         >
-                            {t.icon}
-                            {t.label}
+                            {tab.icon}
+                            {tab.label}
                         </TabsTrigger>
                     ))}
                 </TabsList>
@@ -1028,21 +1044,19 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                             <div className="flex items-center gap-2 mb-1">
                                 <MethodBadge method="POST" />
                                 <IC>/external/video/v1/generate</IC>
-                                <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                                    <Radio className="size-3" /> SSE Stream
+                                <Badge variant="outline" className="text-2xs flex items-center gap-1">
+                                    <Radio className="size-3" /> {t('generateTab.streamBadge')}
                                 </Badge>
                             </div>
-                            <CardTitle>Generate Content — SSE Streaming</CardTitle>
+                            <CardTitle>{t('generateTab.cardTitle')}</CardTitle>
                             <CardDescription>
-                                Starts a generation job and streams real-time progress via{' '}
-                                <strong>Server-Sent Events</strong>. The job runs as a background
-                                task on the server — closing the connection will NOT cancel
-                                generation. Use{' '}
-                                <IC>GET /urls/&#123;video_id&#125;</IC> to fetch the result later.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:generateTab.cardDescription">
+                                    Starts a generation job and streams real-time progress via <strong>Server-Sent Events</strong>. The job runs as a background task on the server — closing the connection will NOT cancel generation. Use <IC>GET /urls/&#123;video_id&#125;</IC> to fetch the result later.{/* design-lint-ignore: &#123;/&#125; are brace HTML entities, not hex colors */}
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
-                            <Section title="Query Parameters">
+                            <Section title={t('common.sectionTitles.queryParameters')}>
                                 <ParamTable
                                     params={[
                                         {
@@ -1050,26 +1064,26 @@ await fetch('${baseUrl}/external/video/v1/frame/update', {
                                             type: 'string',
                                             required: false,
                                             default: 'HTML',
-                                            description:
-                                                'Stop generation at this stage. Recommended: HTML (full content, no render). Options: SCRIPT · TTS · WORDS · HTML · RENDER.',
+                                            description: t('generateTab.targetStageDescription'),
                                         },
                                     ]}
                                 />
                             </Section>
 
-                            <Section title="Request Body Parameters">
+                            <Section title={t('common.sectionTitles.requestBodyParameters')}>
                                 <ParamTable params={generateParams} />
                             </Section>
 
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={sseExamples} />
                             </Section>
 
-                            <Section title="Response (SSE event stream)">
+                            <Section title={t('generateTab.responseTitle')}>
                                 <div className="space-y-2">
                                     <p className="text-xs text-muted-foreground">
-                                        Content-Type: <IC>text/event-stream</IC>. Each line is
-                                        prefixed with <IC>data: </IC> followed by a JSON object.
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:generateTab.responseNote">
+                                            Content-Type: <IC>text/event-stream</IC>. Each line is prefixed with <IC>data: </IC> followed by a JSON object.
+                                        </Trans>
                                     </p>
                                     <CodeBlock
                                         examples={[
@@ -1103,62 +1117,59 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                             <div className="flex items-center gap-2 mb-1">
                                 <MethodBadge method="POST" />
                                 <IC>/external/video/v1/generate</IC>
-                                <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                                    <RefreshCw className="size-3" /> REST Polling
+                                <Badge variant="outline" className="text-2xs flex items-center gap-1">
+                                    <ArrowsClockwise className="size-3" /> {t('pollingTab.badge')}
                                 </Badge>
                             </div>
-                            <CardTitle>Generate Content — REST Polling</CardTitle>
+                            <CardTitle>{t('pollingTab.cardTitle')}</CardTitle>
                             <CardDescription>
-                                Simpler alternative to SSE streaming. Start the generation (you can
-                                immediately close the HTTP connection — the server keeps running),
-                                then periodically call{' '}
-                                <IC>GET /urls/&#123;video_id&#125;</IC> until{' '}
-                                <IC>html_url</IC> is populated.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:pollingTab.cardDescription">
+                                    Simpler alternative to SSE streaming. Start the generation (you can immediately close the HTTP connection — the server keeps running), then periodically call <IC>GET /urls/&#123;video_id&#125;</IC> until <IC>html_url</IC> is populated.{/* design-lint-ignore: &#123;/&#125; are brace HTML entities, not hex colors */}
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 space-y-1 dark:border-blue-800/30 dark:bg-blue-900/10 dark:text-blue-300">
                                 <p className="font-semibold flex items-center gap-1.5">
-                                    <Info className="size-3.5" /> When to use polling vs SSE
+                                    <Info className="size-3.5" /> {t('pollingTab.whenToUseTitle')}
                                 </p>
                                 <ul className="list-disc list-inside space-y-0.5 pl-1">
                                     <li>
-                                        <strong>SSE</strong>: Best for UI dashboards that need live
-                                        progress bars (stage %, messages).
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:pollingTab.sseBullet">
+                                            <strong>SSE</strong>: Best for UI dashboards that need live progress bars (stage %, messages).
+                                        </Trans>
                                     </li>
                                     <li>
-                                        <strong>Polling</strong>: Best for backend scripts, cron
-                                        jobs, or when you don't need real-time updates.
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:pollingTab.pollingBullet">
+                                            <strong>Polling</strong>: Best for backend scripts, cron jobs, or when you don't need real-time updates.
+                                        </Trans>
                                     </li>
-                                    <li>
-                                        Both use the same endpoint — the difference is just whether
-                                        you read the response stream.
-                                    </li>
+                                    <li>{t('pollingTab.sameEndpointBullet')}</li>
                                 </ul>
                             </div>
 
-                            <Section title="Polling Flow">
+                            <Section title={t('pollingTab.flowTitle')}>
                                 <div className="flex flex-col gap-2 text-sm">
                                     {[
                                         {
                                             step: 1,
-                                            label: 'POST /generate',
-                                            desc: 'Start the job. Include a stable video_id you control.',
+                                            label: t('pollingTab.steps.1.label'),
+                                            desc: t('pollingTab.steps.1.description'),
                                         },
                                         {
                                             step: 2,
-                                            label: 'Close (or ignore) the SSE stream',
-                                            desc: 'Generation continues on the server regardless.',
+                                            label: t('pollingTab.steps.2.label'),
+                                            desc: t('pollingTab.steps.2.description'),
                                         },
                                         {
                                             step: 3,
-                                            label: 'Poll GET /urls/{video_id} every 10 s',
-                                            desc: 'Repeat until html_url is present.',
+                                            label: t('pollingTab.steps.3.label'),
+                                            desc: t('pollingTab.steps.3.description'),
                                         },
                                         {
                                             step: 4,
-                                            label: 'Use the returned URLs',
-                                            desc: 'Pass html_url + audio_url to your player.',
+                                            label: t('pollingTab.steps.4.label'),
+                                            desc: t('pollingTab.steps.4.description'),
                                         },
                                     ].map((s) => (
                                         <div key={s.step} className="flex gap-3">
@@ -1176,7 +1187,7 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                 </div>
                             </Section>
 
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={pollingExamples} />
                             </Section>
                         </CardContent>
@@ -1191,14 +1202,11 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                 <MethodBadge method="GET" />
                                 <IC>/external/video/v1/history</IC>
                             </div>
-                            <CardTitle>Get Generation History</CardTitle>
-                            <CardDescription>
-                                Returns the last N content generations for your institute, ordered
-                                newest-first. Maximum 50 per request.
-                            </CardDescription>
+                            <CardTitle>{t('historyTab.cardTitle')}</CardTitle>
+                            <CardDescription>{t('historyTab.cardDescription')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Section title="Query Parameters">
+                            <Section title={t('common.sectionTitles.queryParameters')}>
                                 <ParamTable
                                     params={[
                                         {
@@ -1206,16 +1214,15 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                             type: 'integer',
                                             required: false,
                                             default: '10',
-                                            description:
-                                                'Number of items to return. Capped at 50.',
+                                            description: t('historyTab.limitParamDescription'),
                                         },
                                     ]}
                                 />
                             </Section>
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={historyExamples} />
                             </Section>
-                            <Section title="Response">
+                            <Section title={t('common.sectionTitles.response')}>
                                 <CodeBlock
                                     examples={[
                                         {
@@ -1260,40 +1267,39 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                         <CardHeader>
                             <div className="flex items-center gap-2 mb-1">
                                 <MethodBadge method="GET" />
-                                <IC>/external/video/v1/status/&#123;video_id&#125;</IC>
+                                <IC>/external/video/v1/status/&#123;video_id&#125;</IC>{/* design-lint-ignore: &#123;/&#125; are brace HTML entities, not hex colors */}
                             </div>
-                            <CardTitle>Get Video Status</CardTitle>
-                            <CardDescription>
-                                Returns the full status record for a generation including all
-                                available S3 URLs. Use this to check which stages have completed.
-                            </CardDescription>
+                            <CardTitle>{t('statusTab.cardTitle')}</CardTitle>
+                            <CardDescription>{t('statusTab.cardDescription')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <p className="text-sm font-medium">
-                                    Status values (<IC>status</IC> field)
+                                    <Trans i18nKey="videoApiStudioApiDocumentation:statusTab.statusValuesLabel">
+                                        Status values (<IC>status</IC> field)
+                                    </Trans>
                                 </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                                     {[
                                         {
                                             val: 'PENDING',
                                             color: 'bg-gray-100 text-gray-700',
-                                            desc: 'Queued, not started',
+                                            desc: t('statusTab.values.pending.description'),
                                         },
                                         {
                                             val: 'IN_PROGRESS',
                                             color: 'bg-blue-100 text-blue-700',
-                                            desc: 'Actively generating',
+                                            desc: t('statusTab.values.inProgress.description'),
                                         },
                                         {
                                             val: 'COMPLETED',
                                             color: 'bg-green-100 text-green-700',
-                                            desc: 'All stages done',
+                                            desc: t('statusTab.values.completed.description'),
                                         },
                                         {
                                             val: 'FAILED',
                                             color: 'bg-red-100 text-red-700',
-                                            desc: 'Error occurred',
+                                            desc: t('statusTab.values.failed.description'),
                                         },
                                     ].map((s) => (
                                         <div key={s.val} className={`rounded p-2 ${s.color}`}>
@@ -1303,10 +1309,10 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                     ))}
                                 </div>
                             </div>
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={statusExamples} />
                             </Section>
-                            <Section title="Response">
+                            <Section title={t('common.sectionTitles.response')}>
                                 <CodeBlock
                                     examples={[
                                         {
@@ -1349,39 +1355,40 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                         <CardHeader>
                             <div className="flex items-center gap-2 mb-1">
                                 <MethodBadge method="GET" />
-                                <IC>/external/video/v1/urls/&#123;video_id&#125;</IC>
+                                <IC>/external/video/v1/urls/&#123;video_id&#125;</IC>{/* design-lint-ignore: &#123;/&#125; are brace HTML entities, not hex colors */}
                             </div>
-                            <CardTitle>Get Player URLs</CardTitle>
+                            <CardTitle>{t('urlsTab.cardTitle')}</CardTitle>
                             <CardDescription>
-                                Returns the specific URLs needed to embed the content in a player.
-                                This is the most efficient endpoint for polling — smaller response
-                                than <IC>/status</IC>.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:urlsTab.cardDescription">
+                                    Returns the specific URLs needed to embed the content in a player. This is the most efficient endpoint for polling — smaller response than <IC>/status</IC>.
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="rounded-lg border border-green-200 bg-green-50/50 p-3 text-xs text-green-800 dark:border-green-800/30 dark:bg-green-900/10 dark:text-green-300">
-                                <p className="font-semibold mb-1">
-                                    How to detect generation complete
-                                </p>
+                                <p className="font-semibold mb-1">{t('urlsTab.howToDetectTitle')}</p>
                                 <ul className="list-disc list-inside space-y-0.5">
                                     <li>
-                                        <strong>VIDEO</strong>: wait for{' '}
-                                        <IC>html_url != null AND audio_url != null</IC>
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:urlsTab.videoBullet">
+                                            <strong>VIDEO</strong>: wait for <IC>html_url != null AND audio_url != null</IC>
+                                        </Trans>
                                     </li>
                                     <li>
-                                        <strong>SLIDES / QUIZ / etc.</strong>: wait for{' '}
-                                        <IC>html_url != null</IC> (no audio required)
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:urlsTab.slidesBullet">
+                                            <strong>SLIDES / QUIZ / etc.</strong>: wait for <IC>html_url != null</IC> (no audio required)
+                                        </Trans>
                                     </li>
                                     <li>
-                                        <strong>Failed</strong>:{' '}
-                                        <IC>status === &quot;FAILED&quot;</IC>
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:urlsTab.failedBullet">
+                                            <strong>Failed</strong>: <IC>status === &quot;FAILED&quot;</IC>
+                                        </Trans>
                                     </li>
                                 </ul>
                             </div>
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={urlsExamples} />
                             </Section>
-                            <Section title="Response">
+                            <Section title={t('common.sectionTitles.response')}>
                                 <CodeBlock
                                     examples={[
                                         {
@@ -1404,36 +1411,32 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                     ]}
                                 />
                             </Section>
-                            <Section title="URL file descriptions">
+                            <Section title={t('urlsTab.urlFileDescriptionsTitle')}>
                                 <ParamTable
                                     params={[
                                         {
                                             name: 'html_url',
                                             type: 'string | null',
                                             required: false,
-                                            description:
-                                                'time_based_frame.json — array of {timestamp, html} objects. Feed to AIContentPlayer.',
+                                            description: t('urlsTab.params.htmlUrl.description'),
                                         },
                                         {
                                             name: 'audio_url',
                                             type: 'string | null',
                                             required: false,
-                                            description:
-                                                'narration.mp3 — AI-synthesised narration audio.',
+                                            description: t('urlsTab.params.audioUrl.description'),
                                         },
                                         {
                                             name: 'words_url',
                                             type: 'string | null',
                                             required: false,
-                                            description:
-                                                'narration.words.json — array of {word, start, end} for caption display.',
+                                            description: t('urlsTab.params.wordsUrl.description'),
                                         },
                                         {
                                             name: 'avatar_url',
                                             type: 'string | null',
                                             required: false,
-                                            description:
-                                                'avatar_video.mp4 — talking-head avatar video (if generate_avatar was true).',
+                                            description: t('urlsTab.params.avatarUrl.description'),
                                         },
                                     ]}
                                 />
@@ -1450,45 +1453,48 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                 <MethodBadge method="POST" />
                                 <IC>/external/video/v1/frame/regenerate</IC>
                             </div>
-                            <CardTitle>Regenerate a Frame</CardTitle>
+                            <CardTitle>{t('framesTab.regenerate.cardTitle')}</CardTitle>
                             <CardDescription>
-                                Ask the AI to rewrite the HTML of a specific slide/frame based on a
-                                prompt. Returns the new HTML for <strong>preview only</strong> — does
-                                not modify the timeline yet. Confirm by calling{' '}
-                                <IC>/frame/update</IC>.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:framesTab.regenerate.cardDescription">
+                                    Ask the AI to rewrite the HTML of a specific slide/frame based on a prompt. Returns the new HTML for <strong>preview only</strong> — does not modify the timeline yet. Confirm by calling <IC>/frame/update</IC>.
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Section title="Request Body">
+                            <Section title={t('common.sectionTitles.requestBody')}>
                                 <ParamTable
                                     params={[
                                         {
                                             name: 'video_id',
                                             type: 'string',
                                             required: true,
-                                            description: 'ID of the generated content.',
+                                            description: t(
+                                                'framesTab.regenerate.params.videoId.description'
+                                            ),
                                         },
                                         {
                                             name: 'timestamp',
                                             type: 'number',
                                             required: true,
-                                            description:
-                                                'Time in seconds of the frame to edit. The nearest frame will be selected.',
+                                            description: t(
+                                                'framesTab.regenerate.params.timestamp.description'
+                                            ),
                                         },
                                         {
                                             name: 'user_prompt',
                                             type: 'string',
                                             required: true,
-                                            description:
-                                                'Instruction for how to change the frame. E.g. "Change background to dark blue and font to yellow."',
+                                            description: t(
+                                                'framesTab.regenerate.params.userPrompt.description'
+                                            ),
                                         },
                                     ]}
                                 />
                             </Section>
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={frameRegenExamples} />
                             </Section>
-                            <Section title="Response">
+                            <Section title={t('common.sectionTitles.response')}>
                                 <CodeBlock
                                     examples={[
                                         {
@@ -1518,44 +1524,48 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                 <MethodBadge method="POST" />
                                 <IC>/external/video/v1/frame/update</IC>
                             </div>
-                            <CardTitle>Commit Frame Update</CardTitle>
+                            <CardTitle>{t('framesTab.update.cardTitle')}</CardTitle>
                             <CardDescription>
-                                Writes the confirmed HTML change into the stored timeline
-                                (time_based_frame.json). Call this after the user approves the
-                                preview from <IC>/frame/regenerate</IC>.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:framesTab.update.cardDescription">
+                                    Writes the confirmed HTML change into the stored timeline (time_based_frame.json). Call this after the user approves the preview from <IC>/frame/regenerate</IC>.
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Section title="Request Body">
+                            <Section title={t('common.sectionTitles.requestBody')}>
                                 <ParamTable
                                     params={[
                                         {
                                             name: 'video_id',
                                             type: 'string',
                                             required: true,
-                                            description: 'ID of the generated content.',
+                                            description: t(
+                                                'framesTab.update.params.videoId.description'
+                                            ),
                                         },
                                         {
                                             name: 'frame_index',
                                             type: 'integer',
                                             required: true,
-                                            description:
-                                                'Zero-based index of the frame to update. Use the value returned by /frame/regenerate.',
+                                            description: t(
+                                                'framesTab.update.params.frameIndex.description'
+                                            ),
                                         },
                                         {
                                             name: 'new_html',
                                             type: 'string',
                                             required: true,
-                                            description:
-                                                'Full HTML string to store. Typically the new_html from /frame/regenerate.',
+                                            description: t(
+                                                'framesTab.update.params.newHtml.description'
+                                            ),
                                         },
                                     ]}
                                 />
                             </Section>
-                            <Section title="Code Examples">
+                            <Section title={t('common.sectionTitles.codeExamples')}>
                                 <CodeBlock examples={frameUpdateExamples} />
                             </Section>
-                            <Section title="Response">
+                            <Section title={t('common.sectionTitles.response')}>
                                 <CodeBlock
                                     examples={[
                                         {
@@ -1586,21 +1596,23 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Radio className="size-4 text-blue-500" />
-                                SSE Event Reference
+                                {t('eventsTab.cardTitle')}
                             </CardTitle>
                             <CardDescription>
-                                Every event in the <IC>POST /generate</IC> SSE stream is a JSON
-                                object on a <IC>data: </IC> line. There are four event types.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:eventsTab.cardDescription">
+                                    Every event in the <IC>POST /generate</IC> SSE stream is a JSON object on a <IC>data: </IC> line. There are four event types.
+                                </Trans>
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             {/* progress */}
-                            <Section title="progress — stage update">
+                            <Section title={t('eventsTab.progress.sectionTitle')}>
                                 <div className="space-y-3">
                                     <EventBadge type="progress" />
                                     <p className="text-xs text-muted-foreground">
-                                        Emitted at the start and end of each stage. The{' '}
-                                        <IC>files</IC> field is populated as each stage completes.
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:eventsTab.progress.note">
+                                            Emitted at the start and end of each stage. The <IC>files</IC> field is populated as each stage completes.
+                                        </Trans>
                                     </p>
                                     <CodeBlock
                                         examples={[
@@ -1644,11 +1656,11 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                             </Section>
 
                             {/* completed */}
-                            <Section title="completed — generation finished">
+                            <Section title={t('eventsTab.completed.sectionTitle')}>
                                 <div className="space-y-3">
                                     <EventBadge type="completed" />
                                     <p className="text-xs text-muted-foreground">
-                                        Final event. All requested stages are done.
+                                        {t('eventsTab.completed.note')}
                                     </p>
                                     <CodeBlock
                                         examples={[
@@ -1679,12 +1691,11 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                             </Section>
 
                             {/* info */}
-                            <Section title="info — informational message">
+                            <Section title={t('eventsTab.info.sectionTitle')}>
                                 <div className="space-y-3">
                                     <EventBadge type="info" />
                                     <p className="text-xs text-muted-foreground">
-                                        Non-critical status messages (e.g. skipped stages on
-                                        resume).
+                                        {t('eventsTab.info.note')}
                                     </p>
                                     <CodeBlock
                                         examples={[
@@ -1707,12 +1718,13 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                             </Section>
 
                             {/* error */}
-                            <Section title="error — generation failed">
+                            <Section title={t('eventsTab.error.sectionTitle')}>
                                 <div className="space-y-3">
                                     <EventBadge type="error" />
                                     <p className="text-xs text-muted-foreground">
-                                        Sent when the pipeline fails. The <IC>stage</IC> field
-                                        indicates which stage failed.
+                                        <Trans i18nKey="videoApiStudioApiDocumentation:eventsTab.error.note">
+                                            Sent when the pipeline fails. The <IC>stage</IC> field indicates which stage failed.
+                                        </Trans>
                                     </p>
                                     <CodeBlock
                                         examples={[
@@ -1737,10 +1749,9 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
 
                             {/* heartbeat note */}
                             <div className="rounded-md border border-muted p-3 text-xs text-muted-foreground">
-                                <strong>Heartbeat</strong> — every 60 s of silence the server sends
-                                an SSE comment line (<IC>: heartbeat</IC>) to keep proxies alive.
-                                These are not <IC>data:</IC> events and should be ignored by your
-                                parser.
+                                <Trans i18nKey="videoApiStudioApiDocumentation:eventsTab.heartbeatNote">
+                                    <strong>Heartbeat</strong> — every 60 s of silence the server sends an SSE comment line (<IC>: heartbeat</IC>) to keep proxies alive. These are not <IC>data:</IC> events and should be ignored by your parser.
+                                </Trans>
                             </div>
                         </CardContent>
                     </Card>
@@ -1751,8 +1762,8 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <AlertCircle className="size-4 text-red-500" />
-                        HTTP Error Reference
+                        <WarningCircle className="size-4 text-red-500" />
+                        {t('errors.cardTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1760,10 +1771,14 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                         <table className="w-full text-xs">
                             <thead>
                                 <tr className="bg-muted/50 border-b border-border">
-                                    <th className="text-left px-3 py-2 font-semibold">Code</th>
-                                    <th className="text-left px-3 py-2 font-semibold">Meaning</th>
                                     <th className="text-left px-3 py-2 font-semibold">
-                                        Common cause
+                                        {t('errors.tableHeaders.code')}
+                                    </th>
+                                    <th className="text-start px-3 py-2 font-semibold">
+                                        {t('errors.tableHeaders.meaning')}
+                                    </th>
+                                    <th className="text-start px-3 py-2 font-semibold">
+                                        {t('errors.tableHeaders.cause')}
                                     </th>
                                 </tr>
                             </thead>
@@ -1771,28 +1786,28 @@ data: {"type":"completed","percentage":100,"video_id":"vid_...","files":{"script
                                 {[
                                     {
                                         code: '401',
-                                        meaning: 'Unauthorized',
-                                        cause: 'Missing or invalid X-Institute-Key header.',
+                                        meaning: t('errors.unauthorized.meaning'),
+                                        cause: t('errors.unauthorized.cause'),
                                     },
                                     {
                                         code: '403',
-                                        meaning: 'Forbidden',
-                                        cause: 'API key is revoked or belongs to another institute.',
+                                        meaning: t('errors.forbidden.meaning'),
+                                        cause: t('errors.forbidden.cause'),
                                     },
                                     {
                                         code: '404',
-                                        meaning: 'Not Found',
-                                        cause: 'video_id does not exist in the database.',
+                                        meaning: t('errors.notFound.meaning'),
+                                        cause: t('errors.notFound.cause'),
                                     },
                                     {
                                         code: '422',
-                                        meaning: 'Validation Error',
-                                        cause: 'Missing required field or invalid parameter value.',
+                                        meaning: t('errors.validationError.meaning'),
+                                        cause: t('errors.validationError.cause'),
                                     },
                                     {
                                         code: '500',
-                                        meaning: 'Internal Server Error',
-                                        cause: 'Pipeline failure. Check the SSE error event for details.',
+                                        meaning: t('errors.internalServerError.meaning'),
+                                        cause: t('errors.internalServerError.cause'),
                                     },
                                 ].map((e, i) => (
                                     <tr

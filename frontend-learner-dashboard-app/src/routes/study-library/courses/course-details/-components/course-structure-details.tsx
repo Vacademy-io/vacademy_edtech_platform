@@ -1,4 +1,3 @@
-import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { PullToRefreshWrapper } from "@/components/design-system/pull-to-refresh";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -83,50 +82,43 @@ import type { StudentCourseDetailsTabId } from "@/types/student-display-settings
 import { BatchChatPanel } from "@/components/chat/BatchChatPanel";
 import { CourseLeaderboard } from "./CourseLeaderboard";
 import { getFilePublicUrlQuery } from "@/services/file-url-cache";
-import { getLatestResume } from "@/services/resume-thread";
+import { getLatestResume, getResumeForCourse, useResumeScope } from "@/services/resume-thread";
 import { useTranslation } from "react-i18next";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { courseColourClass } from "@/components/design-system/fun/course-palette";
+import {
+  FunChapterHead,
+  FunLevelHead,
+  FunNoSlides,
+  FunOutlineTools,
+  FunRowsSkeleton,
+  FunSlideRow,
+} from "./fun/FunOutline";
+import type { FunCurrentSlide } from "./fun/FunPickUpCard";
+import {
+  chapterDoneCount,
+  pickCurrentSlideId,
+  slideKind,
+  slideRowState,
+} from "./fun/course-outline";
 
-export interface Chapter {
-  id: string;
-  chapter_name: string;
-  status: string;
-  description: string;
-  file_id: string | null;
-  chapter_order: number;
-  // Server-computed rollup from /modules-with-chapters. Always present in the
-  // payload; typed optional only because a few local placeholder objects in
-  // this file construct a Chapter without it.
-  percentage_completed?: number;
-  drip_condition_json?: string | null;
-  drip_condition?: string | null; // JSON string from API
-}
-export interface ChapterMetadata {
-  chapter: Chapter;
-  slides_count: {
-    video_count: number;
-    pdf_count: number;
-    doc_count: number;
-    unknown_count: number;
-  };
-  chapter_in_package_sessions: string[];
-}
-export interface Module {
-  id: string;
-  module_name: string;
-  status: string;
-  description: string;
-  thumbnail_id: string;
-}
-export interface ModuleWithChapters {
-  module: Module;
-  module_order: number | null;
-  // Server-computed module rollup from /modules-with-chapters. Null when the
-  // module has no learner-visible content at all, which is why the subject
-  // average skips it instead of scoring it 0.
-  percentage_completed?: number | null;
-  chapters: Chapter[];
-}
-export type SubjectModulesMap = { [subjectId: string]: ModuleWithChapters[] };
+// Course-structure data contract — shared with the other course-details view so
+// the two cannot drift on the server payload. Re-exported because existing call
+// sites import these types from this module.
+import type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+} from "@/types/course-structure";
+export type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+};
 
 /** Minimal subject shape from course-init; used when form-based subjects aren't ready yet */
 export type CourseInitSubject = {
@@ -165,6 +157,10 @@ const CONTENT_CARD_SHELL =
  * A locked item gets the padlock centred ON the artwork behind a scrim, not a
  * small glyph tucked under the title: on a card whose image is the whole
  * visual, that is the only place the lock actually reads as "this is shut".
+ *
+ * No crossOrigin on these <img>s: nothing reads their pixels, and a CORS
+ * request fails outright on a CDN copy cached without Access-Control-Allow-Origin
+ * — the card showed a broken image while the admin's plain <img> loaded fine.
  */
 const ContentCardThumb = ({
   url,
@@ -186,7 +182,6 @@ const ContentCardThumb = ({
           "size-full",
           fit === "contain" ? "object-contain" : "object-cover",
         )}
-        crossOrigin="anonymous"
         referrerPolicy="no-referrer"
         loading="eager"
       />
@@ -219,6 +214,8 @@ export const CourseStructureDetails = ({
   paymentType,
   dripConditionJson,
   courseInitSubjects,
+  onFunCurrentSlide,
+  funHideProgress = false,
 }: {
   selectedSession: string;
   selectedLevel: string;
@@ -246,6 +243,12 @@ export const CourseStructureDetails = ({
   dripConditionJson?: string | null;
   /** Subjects from course-init (first session/level); used to call modules-with-chapters when form data isn't ready */
   courseInitSubjects?: CourseInitSubject[] | null;
+  /** Fun skin: told which slide the outline marks as current, so the laptop
+   *  side card points at the same slide. Called with null when there is none. */
+  onFunCurrentSlide?: (current: FunCurrentSlide | null) => void;
+  /** Fun skin: the institute hides progress, so the outline's heads print no
+   *  percent, "Done" or "X of Y done" (courseDetails.hideProgressCard). */
+  funHideProgress?: boolean;
 }) => {
   const router = useRouter();
   const searchParams = router.state.location.search;
@@ -253,7 +256,6 @@ export const CourseStructureDetails = ({
     pathname: string,
     searchParamsObj: Record<string, string | undefined>,
   ) => router.navigate({ to: pathname, search: searchParamsObj });
-  const { setNavHeading } = useNavHeadingStore();
 
   const [studyLibraryData, setStudyLibraryData] = useState<SubjectType[]>([]);
   const [showContentPrefixes, setShowContentPrefixes] = useState<boolean>(true);
@@ -496,7 +498,7 @@ export const CourseStructureDetails = ({
       // Add course discussion tab if enabled
       if (shouldShowCourseDiscussion) {
         finalTabs.push({
-          label: "Course Discussion",
+          label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Discussion`,
           value: TabType.COURSE_DISCUSSION,
         });
       }
@@ -638,20 +640,14 @@ export const CourseStructureDetails = ({
     packageSessionId,
   );
   const { conditionFor: dripConditionFor, now: dripNow } = dripSchedule;
-  // Anchors plus the first-item strictness flag, spread into every
-  // LearnerProgressData below. strictFirstItem rides the same opt-in as the
-  // rest: institutes that have not turned this on keep today's behaviour.
+  // Day-1 anchors for day-wise rules, spread into every LearnerProgressData
+  // below.
   const dripAnchors = useMemo(
     () => ({
       enrollmentDate: dripSchedule.enrollmentDate,
       sessionStartDate: dripSchedule.sessionStartDate,
-      strictFirstItem: dripSchedule.applyConfiguredRules,
     }),
-    [
-      dripSchedule.enrollmentDate,
-      dripSchedule.sessionStartDate,
-      dripSchedule.applyConfiguredRules,
-    ],
+    [dripSchedule.enrollmentDate, dripSchedule.sessionStartDate],
   );
 
   // Drill-down state for Content Structure tab
@@ -1452,8 +1448,9 @@ export const CourseStructureDetails = ({
 
   // Resume thread: when the learner's latest resume point is in this course,
   // auto-expand the chain to "you are here" and mark that slide row.
+  const resumeScope = useResumeScope();
   const resumeEntry = useMemo(() => {
-    const latest = getLatestResume();
+    const latest = getLatestResume(resumeScope);
     if (
       !latest ||
       !searchParams.courseId ||
@@ -1462,11 +1459,23 @@ export const CourseStructureDetails = ({
       return null;
     }
     return latest;
-  }, [searchParams.courseId]);
+  }, [resumeScope, searchParams.courseId]);
   const resumeEntryRef = useRef(resumeEntry);
   useEffect(() => {
     resumeEntryRef.current = resumeEntry;
   }, [resumeEntry]);
+
+  // Fun skin: the outline draws its own rows (renderFunOutline below) from the
+  // same state, evaluations and handlers. Its "current" row is this device's
+  // resume point in the course, else the first unfinished slide that can open.
+  const isFun = useFunTheme();
+  const funResumeSlideId = useMemo(
+    () =>
+      isFun && searchParams.courseId
+        ? (getResumeForCourse(resumeScope, String(searchParams.courseId))?.slideId ?? null)
+        : null,
+    [isFun, resumeScope, searchParams.courseId],
+  );
 
   // Quiet "Continue" chip on the resume slide row
   const renderContinueChip = (slideId: string) => {
@@ -1569,11 +1578,500 @@ export const CourseStructureDetails = ({
       ),
     );
 
+  // Chapters in outline order, without the ones a drip rule hides: the Fun
+  // cards number them through the whole course. Each keeps the subject and
+  // module it sits in, so the current row's chain can be opened.
+  const funChapterOrder: string[] = [];
+  const funChapterChain = new Map<string, { subjectId: string; moduleId: string; chapterName: string }>();
+  if (isFun) {
+    for (const subject of (studyLibraryData ?? []) as SubjectType[]) {
+      for (const mod of subjectModulesMap[subject.id] ?? []) {
+        for (const ch of mod.chapters ?? []) {
+          if (shouldFilterItem(chapterEvaluations[ch.id])) continue;
+          funChapterOrder.push(ch.id);
+          funChapterChain.set(ch.id, {
+            subjectId: subject.id,
+            moduleId: mod.module.id,
+            chapterName: ch.chapter_name,
+          });
+        }
+      }
+    }
+  }
+  const funChapterNumber = new Map(funChapterOrder.map((id, i) => [id, i + 1]));
+  const funCurrentSlideId = isFun
+    ? pickCurrentSlideId({
+        chapterOrder: funChapterOrder,
+        slidesByChapter: slidesMap,
+        canOpen: (slide, chapterId) => {
+          const chapterEval = chapterEvaluations[chapterId];
+          const slideEval = slideEvaluations[slide.id];
+          return (
+            !shouldFilterItem(chapterEval) &&
+            !isItemLocked(chapterEval) &&
+            !shouldFilterItem(slideEval) &&
+            !isItemLocked(slideEval)
+          );
+        },
+        threshold: getSlideCompletionThreshold(),
+        resumeSlideId: funResumeSlideId,
+      })
+    : null;
+  // The current slide with its chain, once its chapter's slides are loaded.
+  const funCurrent = (() => {
+    if (!funCurrentSlideId) return null;
+    for (const chapterId of funChapterOrder) {
+      const slide = (slidesMap[chapterId] ?? []).find((item) => item.id === funCurrentSlideId);
+      const chain = funChapterChain.get(chapterId);
+      if (slide && chain) return { slide, chapterId, ...chain };
+    }
+    return null;
+  })();
+  // Every chapter has answered (loaded or failed): before that, the first
+  // unfinished slide could still move to an earlier chapter.
+  const funSlidesSettled =
+    funChapterOrder.length > 0 &&
+    funChapterOrder.every((id) => {
+      const status = slidesLoadingStatus[id];
+      return status === "loaded" || status === "error";
+    });
+
+  // Fun: the outline opens on the current row. The load opens the resume
+  // chapter, or the first one when this device has no resume point; when the
+  // current row sits somewhere else (no resume point, or the resume slide is
+  // done or locked), open its chain instead, once per batch, and only until
+  // the learner opens or closes a level themselves.
+  const funUserMovedRef = useRef<string | null>(null);
+  const funAutoOpenedRef = useRef<string | null>(null);
+  const funMarkMoved = () => {
+    funUserMovedRef.current = packageSessionId || "";
+  };
+  const funCurrentChapterId = funCurrent?.chapterId ?? null;
+  const funCurrentSubjectId = funCurrent?.subjectId ?? null;
+  const funCurrentModuleId = funCurrent?.moduleId ?? null;
+  useEffect(() => {
+    if (!isFun || !funSlidesSettled || !funCurrentChapterId || !funCurrentSubjectId || !funCurrentModuleId) return;
+    const key = packageSessionId || "";
+    if (funAutoOpenedRef.current === key || funUserMovedRef.current === key) return;
+    funAutoOpenedRef.current = key;
+    if (
+      openChapters.has(funCurrentChapterId) &&
+      openModules.has(funCurrentModuleId) &&
+      openSubjects.has(funCurrentSubjectId)
+    ) {
+      return;
+    }
+    setOpenSubjects(new Set<string>([funCurrentSubjectId]));
+    setOpenModules(new Set<string>([funCurrentModuleId]));
+    setOpenChapters(new Set<string>([funCurrentChapterId]));
+    // Open sets are read, not followed: this runs once per batch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFun, funSlidesSettled, funCurrentChapterId, funCurrentSubjectId, funCurrentModuleId, packageSessionId]);
+
+  // Tell the page which slide is current, so the laptop side card names the
+  // same slide as the outline. Opening goes through the outline's own handler.
+  const funNavigateRef = useRef<(subjectId: string, moduleId: string, chapterId: string, slideId: string) => void>(
+    () => {},
+  );
+  useEffect(() => {
+    funNavigateRef.current = (subjectId, moduleId, chapterId, slideId) => {
+      void handleSlideNavigation(subjectId, moduleId, chapterId, slideId);
+    };
+  });
+  const funCurrentClickable = isSlideClickable();
+  const funReport = funCurrent && funCurrentClickable
+    ? {
+        slideId: funCurrent.slide.id,
+        title: funCurrent.slide.title ?? "",
+        chapterName: funCurrent.chapterName ?? "",
+        typeLabel: getSlideTypeDisplay(funCurrent.slide) || "",
+        fromResume: funCurrent.slide.id === funResumeSlideId,
+        subjectId: funCurrent.subjectId,
+        moduleId: funCurrent.moduleId,
+        chapterId: funCurrent.chapterId,
+      }
+    : null;
+  const funReportKey = funReport ? JSON.stringify(funReport) : "";
+  useEffect(() => {
+    if (!onFunCurrentSlide) return;
+    if (!funReport) {
+      onFunCurrentSlide(null);
+      return;
+    }
+    const { subjectId, moduleId, chapterId, slideId } = funReport;
+    onFunCurrentSlide({
+      slideId: funReport.slideId,
+      title: funReport.title,
+      chapterName: funReport.chapterName,
+      typeLabel: funReport.typeLabel,
+      fromResume: funReport.fromResume,
+      open: () => funNavigateRef.current(subjectId, moduleId, chapterId, slideId),
+    });
+    // funReportKey carries every field the report is built from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onFunCurrentSlide, funReportKey]);
+  useEffect(() => {
+    if (!onFunCurrentSlide) return;
+    return () => onFunCurrentSlide(null);
+  }, [onFunCurrentSlide]);
+
+  // One Fun slide row. `slideLocks` mirrors each depth's existing rule: depth 5
+  // and the flat depth-2 list read slide locks; depths 3 and 4 never did.
+  const renderFunSlideRow = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    ch: Chapter,
+    slide: Slide,
+    sIdx: number,
+    locked: boolean,
+    unlockMessage?: string | null,
+  ) => (
+    <FunSlideRow
+      key={slide.id}
+      title={slide.title}
+      index={sIdx + 1}
+      state={slideRowState(slide.percentage_completed, getSlideCompletionThreshold())}
+      kind={slideKind(slide)}
+      current={slide.id === funCurrentSlideId}
+      locked={locked}
+      unlockMessage={unlockMessage}
+      clickable={isSlideClickable() && !locked}
+      onOpen={() => {
+        handleSlideNavigation(subject.id, mod.module.id, ch.id, slide.id);
+      }}
+      meta={
+        getSlideMetaText(slide) ||
+        (slideKind(slide) === "quiz" ? "" : getSlideTypeDisplay(slide)) ||
+        ""
+      }
+      trailing={
+        <DownloadNodeButton
+          nodeId={slide.id}
+          nodeType="SLIDE"
+          packageSessionId={packageSessionId}
+          compact
+        />
+      }
+    />
+  );
+
+  const renderFunChapter = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    ch: Chapter,
+    chIdx: number,
+    opts: { slideLocks: boolean; hideLockedDownload: boolean },
+  ) => {
+    const chapterEval = chapterEvaluations[ch.id];
+    if (chapterEval && shouldFilterItem(chapterEval)) return null;
+    const isChapterLocked = !!(chapterEval && isItemLocked(chapterEval));
+    const isChapterOpen = openChapters.has(ch.id);
+    const status = slidesLoadingStatus[ch.id] || "idle";
+    const filtered = filterSlides(slidesMap[ch.id] ?? []);
+    const visible = opts.slideLocks
+      ? filtered.filter((slide) => {
+          const slideEval = slideEvaluations[slide.id];
+          return !(slideEval && shouldFilterItem(slideEval));
+        })
+      : filtered;
+    return (
+      <Collapsible
+        key={ch.id}
+        className="fun-ch"
+        open={isChapterOpen}
+        onOpenChange={() => {
+          if (isChapterLocked) return;
+          funMarkMoved();
+          toggleChapter(ch.id);
+          getSlidesWithChapterId(ch.id);
+        }}
+      >
+        <CollapsibleTrigger disabled={isChapterLocked} className="fun-ch__head">
+          <FunChapterHead
+            index={funChapterNumber.get(ch.id) ?? chIdx + 1}
+            name={ch.chapter_name}
+            open={isChapterOpen}
+            locked={isChapterLocked}
+            unlockMessage={chapterEval?.unlockMessage}
+            doneCount={
+              slidesMap[ch.id] !== undefined
+                ? chapterDoneCount(
+                    opts.slideLocks
+                      ? (slidesMap[ch.id] ?? []).filter(
+                          (slide) => !shouldFilterItem(slideEvaluations[slide.id]),
+                        )
+                      : slidesMap[ch.id],
+                    getSlideCompletionThreshold(),
+                  )
+                : null
+            }
+            percent={calculateChapterProgress(ch.id)}
+            hideProgress={funHideProgress}
+            slideCount={
+              slidesMap[ch.id] !== undefined
+                ? (opts.slideLocks
+                    ? (slidesMap[ch.id] ?? []).filter(
+                        (slide) => !shouldFilterItem(slideEvaluations[slide.id]),
+                      )
+                    : (slidesMap[ch.id] ?? [])
+                  ).length
+                : null
+            }
+            trailing={
+              opts.hideLockedDownload && isChapterLocked ? null : (
+                <DownloadNodeButton
+                  nodeId={ch.id}
+                  nodeType="CHAPTER"
+                  packageSessionId={packageSessionId}
+                  compact
+                />
+              )
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="fun-ch__rows">
+            {status === "loading" ? (
+              <FunRowsSkeleton />
+            ) : status === "loaded" && visible.length === 0 ? (
+              <FunNoSlides />
+            ) : (
+              visible.map((slide, sIdx) => {
+                const slideEval = slideEvaluations[slide.id];
+                const slideLocked = opts.slideLocks && !!(slideEval && isItemLocked(slideEval));
+                return renderFunSlideRow(subject, mod, ch, slide, sIdx, slideLocked, slideEval?.unlockMessage);
+              })
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  const renderFunModule = (
+    subject: SubjectType,
+    mod: ModuleWithChapters,
+    index: number,
+    opts: { locks: boolean; nested: boolean },
+  ) => {
+    const moduleEval = opts.locks ? moduleEvaluations[mod.module.id] : undefined;
+    if (opts.locks && shouldFilterItem(moduleEval)) return null;
+    const isModuleLocked = opts.locks && isItemLocked(moduleEval);
+    const isModuleOpen = openModules.has(mod.module.id);
+    return (
+      <Collapsible
+        key={mod.module.id}
+        className={cn("fun-lv", opts.nested && "fun-lv--nested", isModuleLocked && "fun-lv--locked")}
+        open={isModuleOpen && !isModuleLocked}
+        onOpenChange={() => {
+          if (isModuleLocked) return;
+          funMarkMoved();
+          toggleModule(mod.module.id);
+        }}
+      >
+        <CollapsibleTrigger disabled={isModuleLocked} className="fun-lv__head">
+          <FunLevelHead
+            level="module"
+            index={index}
+            name={mod.module.module_name}
+            open={isModuleOpen && !isModuleLocked}
+            locked={isModuleLocked}
+            unlockMessage={moduleEval?.unlockMessage}
+            percent={calculateModuleProgress(mod)}
+            hideProgress={funHideProgress}
+            childCount={(mod.chapters ?? []).length}
+            childTerm="chapters"
+            trailing={
+              isModuleLocked ? null : (
+                <DownloadNodeButton
+                  nodeId={mod.module.id}
+                  nodeType="MODULE"
+                  packageSessionId={packageSessionId}
+                  compact
+                />
+              )
+            }
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="fun-lv__body">
+            {(mod.chapters ?? []).map((ch, chIdx) =>
+              renderFunChapter(subject, mod, ch, chIdx, {
+                slideLocks: opts.locks,
+                hideLockedDownload: opts.locks,
+              }),
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  // The Fun outline: the existing outline's depths, evaluations and handlers,
+  // drawn with the skin's cards and rows (styles/fun/course.css).
+  const renderFunOutline = () => (
+    <div className="fun-outline">
+      <FunOutlineTools
+        search={searchQuery}
+        onSearch={setSearchQuery}
+        onlyUnfinished={onlyIncomplete}
+        onOnlyUnfinished={setOnlyIncomplete}
+        showExpand={!(courseStructure === 2 && chapterLevelIsPlaceholder)}
+        allExpanded={!!isAllExpanded}
+        onToggleExpand={() => {
+          funMarkMoved();
+          if (isAllExpanded) collapseAll();
+          else expandAll();
+        }}
+        switchSlot={(props) => <Switch {...props} />}
+        download={
+          <DownloadNodeButton
+            nodeId={packageSessionId ?? ""}
+            nodeType="COURSE"
+            packageSessionId={packageSessionId}
+            compact
+          />
+        }
+      />
+      {isModulesLoading ? (
+        <FunRowsSkeleton rows={4} />
+      ) : courseStructure === 5 ? (
+        studyLibraryData?.map((subject: SubjectType, idx: number) => {
+          const subjectEval = subjectEvaluations[subject.id];
+          if (shouldFilterItem(subjectEval)) return null;
+          const isSubjectLocked = isItemLocked(subjectEval);
+          const isSubjectOpen = openSubjects.has(subject.id);
+          return (
+            <Collapsible
+              key={subject.id}
+              className={cn("fun-lv fun-lv--subject", isSubjectLocked && "fun-lv--locked")}
+              open={isSubjectOpen && !isSubjectLocked}
+              onOpenChange={() => {
+                if (isSubjectLocked) return;
+                funMarkMoved();
+                toggleSubject(subject.id);
+              }}
+            >
+              <CollapsibleTrigger disabled={isSubjectLocked} className="fun-lv__head">
+                <FunLevelHead
+                  level="subject"
+                  index={idx + 1}
+                  name={subject.subject_name}
+                  open={isSubjectOpen && !isSubjectLocked}
+                  locked={isSubjectLocked}
+                  unlockMessage={subjectEval?.unlockMessage}
+                  percent={calculateSubjectProgress(subject.id)}
+                  hideProgress={funHideProgress}
+                  childCount={(subjectModulesMap[subject.id] ?? []).length}
+                  childTerm="modules"
+                  trailing={
+                    isSubjectLocked ? null : (
+                      <DownloadNodeButton
+                        nodeId={subject.id}
+                        nodeType="SUBJECT"
+                        packageSessionId={packageSessionId}
+                        compact
+                      />
+                    )
+                  }
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="fun-lv__body">
+                  {(subjectModulesMap[subject.id] ?? []).map((mod, modIdx) =>
+                    renderFunModule(subject, mod, modIdx + 1, { locks: true, nested: true }),
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })
+      ) : courseStructure === 4 ? (
+        (() => {
+          const allModules: Array<{ subject: SubjectType; mod: ModuleWithChapters }> = [];
+          studyLibraryData?.forEach((subject: SubjectType) => {
+            (subjectModulesMap[subject.id] ?? []).forEach((mod) => allModules.push({ subject, mod }));
+          });
+          return allModules.map(({ subject, mod }, globalIdx) =>
+            renderFunModule(subject, mod, globalIdx + 1, { locks: false, nested: false }),
+          );
+        })()
+      ) : courseStructure === 3 || (courseStructure === 2 && !chapterLevelIsPlaceholder) ? (
+        (studyLibraryData ?? []).flatMap((subject: SubjectType) =>
+          (subjectModulesMap[subject.id] ?? []).flatMap((mod) =>
+            (mod.chapters ?? []).map((ch, chIdx) =>
+              renderFunChapter(subject, mod, ch, chIdx, { slideLocks: false, hideLockedDownload: false }),
+            ),
+          ),
+        )
+      ) : courseStructure === 2 && chapterLevelIsPlaceholder ? (
+        (() => {
+          const rows: Array<{
+            subject: SubjectType;
+            mod: ModuleWithChapters;
+            ch: Chapter;
+            slide: Slide;
+            chapterLocked: boolean;
+            chapterUnlockMessage?: string;
+          }> = [];
+          const chapterIds: string[] = [];
+          studyLibraryData?.forEach((subject: SubjectType) => {
+            (subjectModulesMap[subject.id] ?? []).forEach((mod) => {
+              (mod.chapters ?? []).forEach((ch) => {
+                const chapterEval = chapterEvaluations[ch.id];
+                if (chapterEval && shouldFilterItem(chapterEval)) return;
+                const chapterLocked = !!(chapterEval && isItemLocked(chapterEval));
+                chapterIds.push(ch.id);
+                filterSlides(slidesMap[ch.id] ?? []).forEach((slide) => {
+                  const slideEval = slideEvaluations[slide.id];
+                  if (slideEval && shouldFilterItem(slideEval)) return;
+                  rows.push({
+                    subject,
+                    mod,
+                    ch,
+                    slide,
+                    chapterLocked,
+                    ...(chapterEval?.unlockMessage && { chapterUnlockMessage: chapterEval.unlockMessage }),
+                  });
+                });
+              });
+            });
+          });
+          const stillLoading = chapterIds.some((id) => {
+            const status = slidesLoadingStatus[id] ?? "idle";
+            return status === "idle" || status === "loading";
+          });
+          if (rows.length === 0 && stillLoading) return <FunRowsSkeleton />;
+          if (rows.length === 0) return <FunNoSlides />;
+          return (
+            <div className="fun-ch fun-ch--flat">
+              <div className="fun-ch__rows">
+                {rows.map(({ subject, mod, ch, slide, chapterLocked, chapterUnlockMessage }, sIdx) => {
+                  const slideEval = slideEvaluations[slide.id];
+                  const locked = chapterLocked || !!(slideEval && isItemLocked(slideEval));
+                  return renderFunSlideRow(
+                    subject,
+                    mod,
+                    ch,
+                    slide,
+                    sIdx,
+                    locked,
+                    slideEval?.unlockMessage ?? chapterUnlockMessage,
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()
+      ) : null}
+    </div>
+  );
+
   const tabContent: Record<TabType, React.ReactNode> = {
     // All modes share ONE outline structure (owner decision 2026-06-11:
     // no mode-specific core views — play differs by color only). The
     // Duolingo path experiment lives unused in ./play/ChapterPathView.tsx.
-    [TabType.OUTLINE]: (
+    [TabType.OUTLINE]: isFun ? renderFunOutline() : (
       <div className="space-y-3">
         {/* Expand/Collapse Controls */}
         <div className="flex items-center justify-between border-b border-neutral-200 pb-2 gap-3 flex-wrap">
@@ -1725,7 +2223,6 @@ export const CourseStructureDetails = ({
                           src={thumbUrlById[`subject:${subject.id}`]}
                           alt={toTitleCase(subject.subject_name)}
                           className="w-6 h-6 rounded-sm object-cover border border-border"
-                          crossOrigin="anonymous"
                           referrerPolicy="no-referrer"
                           loading="eager"
                         />
@@ -1829,7 +2326,6 @@ export const CourseStructureDetails = ({
                                       }
                                       alt={mod.module.module_name}
                                       className="w-5 h-5 rounded-sm object-cover border border-border"
-                                      crossOrigin="anonymous"
                                       referrerPolicy="no-referrer"
                                       loading="eager"
                                     />
@@ -1943,7 +2439,6 @@ export const CourseStructureDetails = ({
                                                   ch.chapter_name,
                                                 )}
                                                 className="w-4 h-4 rounded-sm object-cover border border-border"
-                                                crossOrigin="anonymous"
                                                 referrerPolicy="no-referrer"
                                                 loading="eager"
                                               />
@@ -3074,8 +3569,8 @@ export const CourseStructureDetails = ({
                 key={i}
                 className="h-full rounded-lg border-neutral-200 bg-card p-2"
               >
-                <CardContent className="p-0 flex flex-col h-full">
-                  <Skeleton className="mb-2 aspect-video w-full rounded-lg" />
+                <CardContent className="p-0 flex flex-col h-full gap-2">
+                  <Skeleton className="aspect-video w-full rounded-lg" />
                   <div className="flex flex-1 flex-col gap-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/3" />
@@ -3411,7 +3906,7 @@ export const CourseStructureDetails = ({
                 return (
                   <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center">
                     <p className="text-neutral-500 italic">
-                      No content available in this chapter.
+                      No content available in this {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}.
                     </p>
                   </div>
                 );
@@ -3444,7 +3939,7 @@ export const CourseStructureDetails = ({
                           }
                         }}
                       >
-                        <CardContent className="p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
+                        <CardContent className="p-3 sm:p-card flex items-start gap-3 sm:gap-4">
                           <div className="flex-shrink-0 flex w-10 h-10 items-center justify-center rounded-lg bg-neutral-100/80 text-sm font-bold text-neutral-500 group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors">
                             {index + 1}
                           </div>
@@ -3510,8 +4005,8 @@ export const CourseStructureDetails = ({
       </div>
     ),
     [TabType.TEACHERS]: (
-      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">T</span>
           </div>
@@ -3526,8 +4021,8 @@ export const CourseStructureDetails = ({
       </div>
     ),
     [TabType.ASSESSMENT]: (
-      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
             <span className="text-white text-xs font-bold">A</span>
           </div>
@@ -3544,8 +4039,8 @@ export const CourseStructureDetails = ({
             <BatchChatPanel packageSessionId={packageSessionId} />
           </>
         ) : (
-          <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-            <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">D</span>
               </div>
@@ -3979,14 +4474,6 @@ export const CourseStructureDetails = ({
     getSlidesWithChapterId,
   ]);
 
-  useEffect(() => {
-    setNavHeading(
-      <div className="flex items-center gap-2">
-        <div>Course Details</div>
-      </div>,
-    );
-  }, [setNavHeading]);
-
   // Debug logging for render
 
   return (
@@ -4033,19 +4520,31 @@ export const CourseStructureDetails = ({
       )}
 
       <PullToRefreshWrapper onRefresh={refreshData}>
-        <div className="flex size-full flex-col gap-3 rounded-lg bg-card pt-0 pb-3 text-neutral-700">
+        <div
+          className={
+            isFun
+              ? cn("fun-structure", courseColourClass(String(searchParams.courseId ?? "")))
+              : "flex size-full flex-col gap-stack rounded-lg bg-card pt-0 pb-3 text-neutral-700"
+          }
+        >
           <Tabs
             value={activeStructureTab}
             onValueChange={handleTabChange}
             className="w-full"
           >
             {renderTabs.length > 1 && (
-              <TabsList className="h-auto border-b border-neutral-200/80 bg-transparent p-0 flex flex-row flex-wrap items-center justify-start gap-2 w-full">
+              <TabsList
+                className={
+                  isFun
+                    ? "fun-tabs"
+                    : "h-auto border-b border-neutral-200/80 bg-transparent p-0 flex flex-row flex-wrap items-center justify-start gap-2 w-full"
+                }
+              >
                 {renderTabs.map((tab: { label: string; value: string }) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className={cn(
+                    className={isFun ? "fun-tab" : cn(
                       `inline-flex items-center data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-3 whitespace-nowrap
                                     py-2 text-sm font-medium transition-all duration-200
                                     hover:bg-primary-50/60 focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1
@@ -4065,9 +4564,13 @@ export const CourseStructureDetails = ({
             <TabsContent
               key={activeStructureTab}
               value={activeStructureTab}
-              className={`${
-                renderTabs.length > 1 ? "mt-3" : ""
-              } rounded-lg bg-white border border-neutral-200/60 p-3 md:p-4`}
+              className={
+                isFun
+                  ? "fun-tab-panel"
+                  : `${
+                      renderTabs.length > 1 ? "mt-3" : ""
+                    } rounded-lg bg-white border border-neutral-200/60 p-3 md:p-4`
+              }
             >
               {tabContent[activeStructureTab as TabType]}
             </TabsContent>

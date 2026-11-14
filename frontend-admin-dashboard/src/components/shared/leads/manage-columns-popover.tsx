@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { LeadColumnToggle } from './use-lead-column-prefs';
@@ -35,6 +36,13 @@ interface ManageColumnsPopoverProps {
      * Omit to keep the plain checkbox list.
      */
     onReorder?: (orderedIds: string[]) => void;
+    /**
+     * Render the trigger as an icon-only button. For toolbars that are already at their
+     * width budget — the assessment submissions table sits behind a search box, four
+     * filters and three export actions on one row. Off by default, so every existing
+     * call site keeps the labelled button.
+     */
+    compact?: boolean;
 }
 
 /** Grip + visibility checkbox + label. Layout is shared by the plain and draggable rows. */
@@ -135,6 +143,7 @@ export function ManageColumnsPopover({
     onToggle,
     onReset,
     onReorder,
+    compact = false,
 }: ManageColumnsPopoverProps) {
     const anyHidden = columns.some((c) => hiddenColumns.has(c.id));
     // 8px of travel before a drag starts, so a click on the grip isn't swallowed.
@@ -176,12 +185,24 @@ export function ManageColumnsPopover({
 
     return (
         <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10">
-                    <Columns className="mr-1.5 size-4" />
-                    Manage Column
-                </Button>
-            </PopoverTrigger>
+            <Tooltip>
+                <PopoverTrigger asChild>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10"
+                            aria-label="Manage Column"
+                        >
+                            <Columns className="mr-1.5 size-4" />
+                            {compact ? 'Columns' : 'Manage Column'}
+                        </Button>
+                    </TooltipTrigger>
+                </PopoverTrigger>
+                <TooltipContent side="bottom">
+                    Choose which columns are shown, and drag to reorder them
+                </TooltipContent>
+            </Tooltip>
             <PopoverContent align="end" className={onReorder ? 'w-64' : 'w-52'}>
                 <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
