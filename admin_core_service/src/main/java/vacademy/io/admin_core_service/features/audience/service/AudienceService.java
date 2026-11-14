@@ -2076,8 +2076,13 @@ public class AudienceService {
             String requestManualCounsellorId, String requestManualCounsellorName,
             String leadFullName, String campaignName, String email, String phone) {
         if (StringUtils.hasText(requestManualCounsellorId)) {
+            Set<String> discardedLeadOwners = repeatLeadSettings != null && repeatLeadSettings.discardedToNewCounsellor()
+                    ? ownersOfDiscardedEarlierLead(savedResponse, leadUserId, instituteId, email, phone)
+                    : Set.of();
             autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId,
                     requestManualCounsellorId, requestManualCounsellorName, leadFullName, campaignName);
+            closeFollowUpsIfMovedToNewOwner(savedResponse, leadUserId, instituteId, discardedLeadOwners,
+                    requestManualCounsellorId);
             return;
         }
         if (repeatLeadSettings == null) {
@@ -2160,6 +2165,65 @@ public class AudienceService {
                     savedResponse.getId(), e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * For a repeat that names its own counsellor (a counsellor's manual add, a CSV owner
+     * column): the owners of the earlier lead when that lead is discarded (LOST), read
+     * before the new counsellor is assigned. Empty when the earlier lead is open, converted,
+     * unowned, or the lookup fails.
+     */
+    private Set<String> ownersOfDiscardedEarlierLead(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, String email, String phone) {
+        if (savedResponse == null || savedResponse.getId() == null) {
+            return Set.of();
+        }
+        try {
+            AudienceResponseRepository.PrimaryLeadRow primary = leadDeduplicationService.findPrimaryLead(
+                    instituteId, savedResponse.getAudienceId(), email, phone, savedResponse.getId()).orElse(null);
+            if (primary == null || !isLostLeadStatus(primary.getStatusKey())) {
+                return Set.of();
+            }
+            Set<String> owners = new HashSet<>();
+            if (StringUtils.hasText(primary.getCounsellorId())) {
+                owners.add(primary.getCounsellorId());
+            }
+            userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> p.getAssignedCounselorId())
+                    .filter(StringUtils::hasText)
+                    .ifPresent(owners::add);
+            return owners;
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: earlier owner lookup for the discarded lead failed: {}",
+                    savedResponse.getId(), e.getMessage());
+            return Set.of();
+        }
+    }
+
+    /**
+     * Closes the earlier owners' open follow-ups on a discarded lead once it really moved to
+     * {@code newOwner}, as {@link #assignNewCounsellorForDiscardedRepeat} does for a pool pick.
+     * Nothing is closed when the new owner is one of the earlier owners or the assignment
+     * did not take.
+     */
+    private void closeFollowUpsIfMovedToNewOwner(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, Set<String> earlierOwners, String newOwner) {
+        if (earlierOwners.isEmpty() || earlierOwners.contains(newOwner)) {
+            return;
+        }
+        try {
+            String ownerNow = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> p.getAssignedCounselorId())
+                    .orElse(null);
+            if (!newOwner.equals(ownerNow)) {
+                return;
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: could not confirm the new owner, follow-ups left open: {}",
+                    savedResponse.getId(), e.getMessage());
+            return;
+        }
+        closeEarlierOwnersFollowUps(savedResponse.getId(), instituteId, leadUserId, earlierOwners);
     }
 
     private void closeEarlierOwnersFollowUps(String repeatResponseId, String instituteId, String leadUserId,
