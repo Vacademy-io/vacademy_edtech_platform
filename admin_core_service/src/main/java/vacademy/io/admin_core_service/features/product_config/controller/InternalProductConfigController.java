@@ -19,6 +19,7 @@ public class InternalProductConfigController {
 
     private final PlatformProductService service;
     private final ProductAlertService alerts;
+    private final vacademy.io.admin_core_service.features.product_config.service.ProductDemoLeadService demoLeads;
     private final vacademy.io.admin_core_service.features.product_config.service.ProductPlanAccessService planAccess;
 
     @GetMapping("/{productKey}")
@@ -37,6 +38,8 @@ public class InternalProductConfigController {
     @org.springframework.web.bind.annotation.PostMapping("/{productKey}/signup-event")
     public AlertResultDTO signupEvent(@org.springframework.web.bind.annotation.PathVariable String productKey,
             @org.springframework.web.bind.annotation.RequestBody SignupEventDTO event) {
+        // An instant-demo sign-up is also a lead in our own CRM (best-effort, before the alerts).
+        demoLeads.capture(productKey, event);
         return alerts.signupCompleted(productKey, event);
     }
 }

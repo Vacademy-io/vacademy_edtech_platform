@@ -46,6 +46,7 @@ public class PlatformProductService {
     private static final Pattern TEMPLATE_NAME = Pattern.compile("^[a-z0-9_]{1,100}$");
     private static final Pattern LANGUAGE = Pattern.compile("^[a-z]{2}(_[A-Z]{2})?$");
     private static final int MAX_DEMO_CREDITS = 100_000;
+    private static final Pattern INSTITUTE_ID = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
     private static final int MAX_ALERT_RECIPIENTS = 20;
     private static final Pattern PATH = Pattern.compile("^/[A-Za-z0-9/_-]*$");
     private static final Pattern PRODUCT_KEY = Pattern.compile("^[A-Za-z0-9_-]{1,40}$");
@@ -90,6 +91,10 @@ public class PlatformProductService {
         row.put("demo_credits", body.getDemoCredits() != null ? body.getDemoCredits() : existing.getDemoCredits());
         row.put("demo_portal_credits", body.getDemoPortalCredits() != null
                 ? body.getDemoPortalCredits() : existing.getDemoPortalCredits());
+        row.put("demo_leads_institute_id", body.getDemoLeadsInstituteId() != null
+                ? emptyToNull(body.getDemoLeadsInstituteId()) : existing.getDemoLeadsInstituteId());
+        row.put("demo_leads_list_name", body.getDemoLeadsListName() != null
+                ? emptyToNull(body.getDemoLeadsListName()) : existing.getDemoLeadsListName());
         row.put("signup_alert_emails", body.getSignupAlertEmails() != null
                 ? emptyToNull(body.getSignupAlertEmails()) : existing.getSignupAlertEmails());
         row.put("signup_alert_whatsapp", body.getSignupAlertWhatsapp() != null
@@ -142,6 +147,11 @@ public class PlatformProductService {
         require(b.getDemoPortalCredits() == null
                         || (b.getDemoPortalCredits() >= 0 && b.getDemoPortalCredits() <= MAX_DEMO_CREDITS),
                 "Demo page credits must be between 0 and " + MAX_DEMO_CREDITS);
+        require(!StringUtils.hasText(b.getDemoLeadsInstituteId())
+                        || INSTITUTE_ID.matcher(b.getDemoLeadsInstituteId().trim()).matches(),
+                "Demo leads institute must be an institute id");
+        require(!StringUtils.hasText(b.getDemoLeadsListName()) || b.getDemoLeadsListName().trim().length() <= 255,
+                "Demo leads list name can be at most 255 characters");
         if (StringUtils.hasText(b.getSignupAlertEmails())) {
             String[] emails = b.getSignupAlertEmails().split(",");
             require(emails.length <= MAX_ALERT_RECIPIENTS, "At most " + MAX_ALERT_RECIPIENTS + " alert emails");

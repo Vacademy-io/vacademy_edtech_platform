@@ -38,6 +38,10 @@ public class ProductSettingsDTO {
     private Integer demoCredits;
     /** Credits the one-screen demo (name, email, phone, no code) opens with. None uses demoCredits. */
     private Integer demoPortalCredits;
+    /** Institute whose CRM gets every instant-demo sign-up as a lead (our own admin institute). Empty: no lead. */
+    private String demoLeadsInstituteId;
+    /** Name of that lead list, used when it is created. Empty: "Product <name> ( Instant - Demo )". */
+    private String demoLeadsListName;
     /** Comma-separated: who gets the new sign-up mail. */
     private String signupAlertEmails;
     /** Comma-separated, digits with the country code: who gets the new sign-up WhatsApp. */
