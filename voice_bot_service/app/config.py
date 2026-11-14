@@ -50,11 +50,13 @@ class Settings:
         default_factory=lambda: _env("SARVAM_KEY_STRATEGY", "failover").strip().lower())
     # How long a key rests after Sarvam refused it: "Rate limit exceeded" (the
     # limit counts opens over about a minute) vs "Credits exhausted" and any
-    # other refusal (a revoked key, no balance), which do not clear by themselves.
+    # other refusal (a revoked key, no balance). Both 60 s: a top-up takes
+    # effect within a minute, and a key still out of credit is simply refused
+    # again (one ~0.1 s refusal, then the call moves to the other key).
     sarvam_key_rate_limit_rest_secs: float = field(
         default_factory=lambda: float(_env("SARVAM_KEY_RATE_LIMIT_REST_SECS", "60")))
     sarvam_key_other_rest_secs: float = field(
-        default_factory=lambda: float(_env("SARVAM_KEY_OTHER_REST_SECS", "600")))
+        default_factory=lambda: float(_env("SARVAM_KEY_OTHER_REST_SECS", "60")))
     # STT model. saaras:v4 (chosen 2026-08-03) is a speech-to-text-TRANSLATE model:
     # it AUTO-DETECTS the spoken language and returns ENGLISH. saarika:v2.5, the
     # previous default, transcribes in the language actually spoken.

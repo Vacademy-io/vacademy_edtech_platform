@@ -86,6 +86,14 @@ def test_with_every_key_resting_a_call_still_opens_on_the_one_that_rests_least(k
     assert pool.pick(exclude={0}, skip_resting=True) is None
 
 
+def test_every_refusal_rests_a_key_for_a_minute_by_default(keys, monkeypatch):
+    monkeypatch.delenv("SARVAM_KEY_RATE_LIMIT_REST_SECS", raising=False)
+    monkeypatch.delenv("SARVAM_KEY_OTHER_REST_SECS", raising=False)
+    pool = keys()
+    assert pool.refused(0, "rate_limit") == 60
+    assert pool.refused(1, "credits") == 60
+
+
 def test_status_never_carries_the_key_text(keys):
     pool = keys(k1="sk_secret_one", k2="sk_secret_two")
     assert "sk_secret" not in repr(pool.status())
