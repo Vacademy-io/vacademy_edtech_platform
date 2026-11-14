@@ -233,17 +233,137 @@ async def test_a_rate_limited_key_moves_the_call_to_the_other_account_with_its_a
     assert pool.resting("sk_a") and not pool.resting("sk_b")
 
 
-async def test_when_both_accounts_refuse_the_error_reaches_the_waterfall(keys, fake_sdk):
+class _Fallback:
+    """decoupled_stt_io's stall hand-off target (the waterfall's Smallest)."""
+
+    def __init__(self):
+        self._io_task = object()
+        self.got = []
+
+    def _io_put(self, job):
+        self.got.append(job)
+
+
+def _audio(fb):
+    return [j[1] for j in fb.got if j[0] == "audio"]
+
+
+async def test_when_both_accounts_refuse_the_audio_goes_to_the_fallback_then_the_error(keys, fake_sdk):
     keys()
     _Vendor.refusals = {"sk_a": "received 1003 (unsupported data) Rate limit exceeded.",
                         "sk_b": "received 1003 (unsupported data) Credits exhausted."}
     stt = pv.sarvam_key_failover(_Vendor)(api_key="sk_a", key_index=0)
+    stt._io_handoff = fb = _Fallback()
+    await stt.start(None)
+    await _send(stt, b"a1")                 # key 1 refused: switch
+    await _send(stt, b"a2")                 # held
+    await _settle(stt)
+    await _send(stt, b"a3")                 # a2 + a3 go to key 2, which refuses too
+    assert len(stt.errors) == 1 and "Credits exhausted" in stt.errors[0]
+    assert stt.key_switches == 1
+    assert _audio(fb) == [b"a2", b"a3"]     # nothing the caller said is lost
+    await _send(stt, b"a4")                 # a chunk already dequeued: to the fallback too
+    assert len(stt.errors) == 1 and _audio(fb) == [b"a2", b"a3", b"a4"]
+    await stt.push_error("Error sending audio to Sarvam: received 1003 Credits exhausted.")
+    assert len(stt.errors) == 2             # after giving up, errors pass untouched
+
+
+async def test_a_key_that_never_connects_gives_up_within_the_timeout(keys, fake_sdk):
+    keys()
+    _Vendor.refusals = {"sk_a": "received 1003 (unsupported data) Rate limit exceeded."}
+
+    class _Hangs(_Vendor):
+        async def _connect(self):
+            if self._api_key == "sk_b":
+                await asyncio.sleep(30)
+            await super()._connect()
+
+    stt = pv.sarvam_key_failover(_Hangs, connect_timeout=0.05)(api_key="sk_a", key_index=0)
+    stt._io_handoff = fb = _Fallback()
+    await stt.start(None)
+    await _send(stt, b"a1")
+    await _send(stt, b"a2")
+    await stt.process_frame(VADUserStoppedSpeakingFrame(), DOWN)
+    await _settle(stt)
+    assert len(stt.errors) == 1 and "no connection" in stt.errors[0]
+    assert _audio(fb) == [b"a2"]
+    assert any(j[0] == "frame" and isinstance(j[1], VADUserStoppedSpeakingFrame) for j in fb.got)
+    assert stt._key_holding is False
+
+
+async def test_a_failed_connect_on_the_other_key_falls_back_once(keys, fake_sdk):
+    keys()
+    _Vendor.refusals = {"sk_a": "received 1003 (unsupported data) Rate limit exceeded."}
+
+    class _Fails(_Vendor):
+        async def _connect(self):
+            if self._api_key == "sk_b":
+                self._socket_client = None
+                await self.push_error("Failed to connect to Sarvam: HTTP 403")
+                return
+            await super()._connect()
+
+    stt = pv.sarvam_key_failover(_Fails)(api_key="sk_a", key_index=0)
+    stt._io_handoff = fb = _Fallback()
+    await stt.start(None)
+    await _send(stt, b"a1")
+    await _send(stt, b"a2")
+    await _settle(stt)
+    assert stt.errors == ["Failed to connect to Sarvam: HTTP 403"]
+    assert _audio(fb) == [b"a2"]
+
+
+async def test_audio_the_new_key_already_answered_is_not_handed_over_again(keys, fake_sdk):
+    from pipecat.frames.frames import TranscriptionFrame
+    keys()
+    _Vendor.refusals = {"sk_a": "received 1003 (unsupported data) Rate limit exceeded."}
+    stt = pv.sarvam_key_failover(_Vendor)(api_key="sk_a", key_index=0)
+    stt._io_handoff = fb = _Fallback()
+
+    async def _push(frame, direction=DOWN):
+        pass
+    _Vendor.push_frame = lambda self, f, d=DOWN: _push(f, d)
     await stt.start(None)
     await _send(stt, b"a1")
     await _settle(stt)
-    await _send(stt, b"a2")                 # key 2 refused too: no third try
-    assert len(stt.errors) == 1 and "Credits exhausted" in stt.errors[0]
-    assert stt.key_switches == 1
+    await _send(stt, b"a2")                                  # heard on key 2 ...
+    await stt.push_frame(TranscriptionFrame(text="haan", user_id="", timestamp=""))
+    await _send(stt, b"a3")                                  # ... then a later chunk
+    stt._socket_client.refuse = "received 1003 (unsupported data) Credits exhausted."
+    await _send(stt, b"a4")                                  # key 2 refused mid-call
+    assert _audio(fb) == [b"a3", b"a4"]                      # a2 was answered: not resent
+    del _Vendor.push_frame
+
+
+async def test_a_non_refusal_error_mid_switch_gives_up_cleanly(keys, fake_sdk):
+    keys()
+    _Vendor.refusals = {"sk_a": "received 1003 (unsupported data) Rate limit exceeded."}
+
+    class _Slow(_Vendor):
+        async def _connect(self):
+            if self._api_key == "sk_b":
+                await asyncio.sleep(0.2)
+            await super()._connect()
+
+    stt = pv.sarvam_key_failover(_Slow)(api_key="sk_a", key_index=0)
+    stt._io_handoff = fb = _Fallback()
+    await stt.start(None)
+    await _send(stt, b"a1")
+    await _send(stt, b"a2")
+    await stt.push_error("Failed to handle message: boom")   # while the switch is connecting
+    assert stt.errors == ["Failed to handle message: boom"]
+    assert _audio(fb) == [b"a2"] and stt._key_task is None and not stt._key_holding
+
+
+def test_a_typo_in_a_rest_setting_does_not_stop_the_bot(keys, monkeypatch):
+    monkeypatch.setenv("SARVAM_KEY_RATE_LIMIT_REST_SECS", "60s")
+    pool = keys()
+    assert pool.refused(0, "rate_limit") == 60.0
+
+
+def test_an_unknown_strategy_means_failover(keys):
+    pool = keys(strategy="alternate")
+    assert pool.strategy() == "failover" and [pool.pick(), pool.pick()] == [0, 0]
 
 
 async def test_a_resting_other_key_is_not_tried_mid_call(keys, fake_sdk):

@@ -16,6 +16,13 @@ def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
+def _float_env(name: str, default: float) -> float:
+    try:
+        return float(_env(name, str(default)))
+    except ValueError:
+        return default
+
+
 @dataclass(frozen=True)
 class Settings:
     # Public base URL of THIS service INCLUDING the ingress path prefix — used to
@@ -53,10 +60,11 @@ class Settings:
     # other refusal (a revoked key, no balance). Both 60 s: a top-up takes
     # effect within a minute, and a key still out of credit is simply refused
     # again (one ~0.1 s refusal, then the call moves to the other key).
+    # A typo here ("60s") falls back to 60 instead of stopping the bot.
     sarvam_key_rate_limit_rest_secs: float = field(
-        default_factory=lambda: float(_env("SARVAM_KEY_RATE_LIMIT_REST_SECS", "60")))
+        default_factory=lambda: _float_env("SARVAM_KEY_RATE_LIMIT_REST_SECS", 60.0))
     sarvam_key_other_rest_secs: float = field(
-        default_factory=lambda: float(_env("SARVAM_KEY_OTHER_REST_SECS", "60")))
+        default_factory=lambda: _float_env("SARVAM_KEY_OTHER_REST_SECS", 60.0))
     # STT model. saaras:v4 (chosen 2026-08-03) is a speech-to-text-TRANSLATE model:
     # it AUTO-DETECTS the spoken language and returns ENGLISH. saarika:v2.5, the
     # previous default, transcribes in the language actually spoken.
