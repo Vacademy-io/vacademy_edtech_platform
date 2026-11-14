@@ -29,6 +29,8 @@ public class ProductPlanAccessService {
     /** A free trial is for one teacher (the website says so). */
     static final int TRIAL_SEATS = 1;
     private static final String LEAD_TAG_TRIAL = "FREE_TRIAL";
+    /** auth-service's tag for a "Buy <plan>" account until its plan is live. */
+    private static final String LEAD_TAG_BUYING = "LEAD";
 
     private final JdbcTemplate jdbcTemplate;
     private final PlatformProductService productService;
@@ -102,6 +104,9 @@ public class ProductPlanAccessService {
                     .trialEndsAt(ends == null ? null : ends.toInstant().toString())
                     .trialExpired(ends != null && ends.toInstant().isBefore(now))
                     .build();
+        }
+        if (LEAD_TAG_BUYING.equalsIgnoreCase(institute.leadTag())) {
+            return out.status(ProductPlanAccessDTO.STATUS_PAYMENT_PENDING).seatLimit(TRIAL_SEATS).build();
         }
         // Paid by hand, or a plan we granted outside the product's list: we manage it, no limit here.
         return out.status(ProductPlanAccessDTO.STATUS_MANAGED).build();

@@ -67,4 +67,15 @@ class ProductPlanAccessServiceTest {
         assertEquals(ProductPlanAccessDTO.STATUS_MANAGED, a.getStatus());
         assertNull(a.getSeatLimit());
     }
+
+    @Test
+    void aBuyAccountWaitsForPaymentUntilItsPlanIsLive() {
+        ProductPlanAccessService.InstituteRow buying = new ProductPlanAccessService.InstituteRow("evalezy", "LEAD", null);
+        ProductPlanAccessDTO pending = ProductPlanAccessService.decide("evalezy", buying, null, PLANS, 12, null, NOW);
+        assertEquals(ProductPlanAccessDTO.STATUS_PAYMENT_PENDING, pending.getStatus());
+        assertEquals(1, pending.getSeatLimit());
+        ProductPlanAccessDTO paid = ProductPlanAccessService.decide("evalezy", buying,
+                new ProductPlanAccessService.LivePlan("evalezy_starter", null), PLANS, 12, null, NOW);
+        assertEquals(ProductPlanAccessDTO.STATUS_PLAN, paid.getStatus());
+    }
 }

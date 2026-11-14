@@ -65,6 +65,8 @@ public class UserInstituteService {
 
     /** Set by auth-service on an institute created from a product's one-screen demo. */
     static final String DEMO_PORTAL_TAG = "signup:demo_portal";
+    /** Set by auth-service on an institute created from a product website's "Buy <plan>". */
+    static final String BUY_TAG = "signup:buy";
 
     public static InstituteInfoDTO getInstituteDetails(Institute institute) {
         InstituteInfoDTO instituteInfoDTO = new InstituteInfoDTO();
@@ -153,7 +155,13 @@ public class UserInstituteService {
                 // The one-screen demo (auth-service tags it) opens with the product's demo-page amount.
                 boolean demoPortal = instituteDto.getTags() != null
                         && instituteDto.getTags().contains(DEMO_PORTAL_TAG);
-                Integer demoCredits = demoPortal
+                // "Buy <plan>" on a product website: the account pays first, so no free credits.
+                boolean buying = instituteDto.getTags() != null && instituteDto.getTags().contains(BUY_TAG)
+                        && savedInstitute.getProduct() != null
+                        && !"vacademy".equalsIgnoreCase(savedInstitute.getProduct())
+                        && platformProductService.find(savedInstitute.getProduct()).isPresent();
+                Integer demoCredits = buying ? Integer.valueOf(0)
+                        : demoPortal
                         ? platformProductService.demoPortalCreditsFor(savedInstitute.getProduct())
                         : platformProductService.demoCreditsFor(savedInstitute.getProduct());
                 if (demoCredits != null) {

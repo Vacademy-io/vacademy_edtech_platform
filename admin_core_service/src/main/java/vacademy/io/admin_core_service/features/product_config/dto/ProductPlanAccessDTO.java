@@ -21,11 +21,16 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ProductPlanAccessDTO {
-    /** TRIAL (free trial, no plan bought), PLAN (a product plan is live), MANAGED (set up by us), NONE (not a product workspace). */
+    /**
+     * TRIAL (free trial, no plan bought), PLAN (a product plan is live), PAYMENT_PENDING (signed up to
+     * buy, not paid yet), MANAGED (set up by us), NONE (not a product workspace).
+     */
     public static final String STATUS_TRIAL = "TRIAL";
     public static final String STATUS_PLAN = "PLAN";
     public static final String STATUS_MANAGED = "MANAGED";
     public static final String STATUS_NONE = "NONE";
+    /** Signed up through "Buy <plan>" and not paid yet: the app shows only the plan screen. */
+    public static final String STATUS_PAYMENT_PENDING = "PAYMENT_PENDING";
 
     private String product;
     private String status;
