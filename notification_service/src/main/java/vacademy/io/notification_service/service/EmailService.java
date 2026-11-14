@@ -1073,6 +1073,18 @@ public class EmailService {
     public SendOutcome sendAttachmentEmail(String to, String subject, String service, String body,
             Map<String, byte[]> attachments, String instituteId, String emailType,
             List<String> cc, String ccMode, EmailBillingClass requestedBillingClass) {
+        return sendAttachmentEmail(to, subject, service, body, attachments, instituteId, emailType, cc, ccMode,
+                requestedBillingClass, null, null);
+    }
+
+    /**
+     * Same, from {@code customFromEmail} when set (a product's own verified sender, e.g. its invoice
+     * mail); null keeps the institute's configured sender exactly as before.
+     */
+    public SendOutcome sendAttachmentEmail(String to, String subject, String service, String body,
+            Map<String, byte[]> attachments, String instituteId, String emailType,
+            List<String> cc, String ccMode, EmailBillingClass requestedBillingClass,
+            String customFromEmail, String customFromName) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -1111,7 +1123,14 @@ public class EmailService {
 
                     message.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
                     applyCopyRecipients(message, cc, ccMode);
-                    message.setFrom(new InternetAddress(fromToUse));
+                    if (StringUtils.hasText(customFromEmail)) {
+                        String name = resolveFromName(customFromEmail, customFromName, fromToUse);
+                        message.setFrom(StringUtils.hasText(name)
+                                ? new InternetAddress(customFromEmail.trim(), name)
+                                : new InternetAddress(customFromEmail.trim()));
+                    } else {
+                        message.setFrom(new InternetAddress(fromToUse));
+                    }
                     message.setSubject(emailSubject);
 
                     // Add SES configuration set header for event tracking
