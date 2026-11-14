@@ -79,6 +79,25 @@ public class AutoLeadListProvisioner {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Audience getOrCreate(String instituteId, String type, String sourceId, String title) {
+        return provision(instituteId, type, sourceId, listName(title, type),
+                OPEN_ASSESSMENT.equals(type)
+                        ? "Leads captured from this open assessment's registration form"
+                        : "Leads captured from this public live session's registration form");
+    }
+
+    /**
+     * Same as {@link #getOrCreate}, for a list whose exact name the caller decides (a product's
+     * instant-demo list, named on the health dashboard). The name is used only when creating.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Audience getOrCreateNamed(String instituteId, String type, String sourceId, String name,
+            String description) {
+        String trimmed = name == null ? type : name.trim();
+        if (trimmed.length() > MAX_NAME_LENGTH) trimmed = trimmed.substring(0, MAX_NAME_LENGTH).trim();
+        return provision(instituteId, type, sourceId, trimmed, description);
+    }
+
+    private Audience provision(String instituteId, String type, String sourceId, String name, String description) {
         Optional<Audience> existing = find(instituteId, type, sourceId);
         if (existing.isPresent()) return existing.get();
 
@@ -87,12 +106,10 @@ public class AutoLeadListProvisioner {
             Audience saved = audienceRepository.save(Audience.builder()
                     .id(UUID.randomUUID().toString())
                     .instituteId(instituteId)
-                    .campaignName(listName(title, type))
+                    .campaignName(name)
                     .campaignType(type)
                     .campaignObjective("LEAD_GENERATION")
-                    .description(OPEN_ASSESSMENT.equals(type)
-                            ? "Leads captured from this open assessment's registration form"
-                            : "Leads captured from this public live session's registration form")
+                    .description(description)
                     .status("ACTIVE")
                     .defaultInitialScore(20)
                     .settingJson(sourceJson(type, sourceId))

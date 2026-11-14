@@ -292,4 +292,41 @@ class AutoLeadListProvisionerTest {
 
         verify(links, never()).save(any());
     }
+
+    @Test
+    void everyInstantDemoSignUpLandsInTheOneProductList() {
+        // Stateful: the list saved on the first sign-up is what every later lookup finds.
+        java.util.List<Audience> stored = new java.util.ArrayList<>();
+        when(audiences.findByInstituteIdAndSettingJsonContainingOrderByCreatedAtAsc("crm", "evalezy"))
+                .thenAnswer(inv -> java.util.List.copyOf(stored));
+        when(audiences.save(any(Audience.class))).thenAnswer(inv -> {
+            Audience a = inv.getArgument(0);
+            stored.add(a);
+            return a;
+        });
+
+        Audience first = provisioner.getOrCreateNamed("crm", "Instant Demo", "evalezy",
+                "Product Evalezy ( Instant - Demo )", "d");
+        Audience second = provisioner.getOrCreateNamed("crm", "Instant Demo", "evalezy",
+                "Product Evalezy ( Instant - Demo )", "d");
+        // A different list name on the dashboard later does not make a second list either.
+        Audience third = provisioner.getOrCreateNamed("crm", "Instant Demo", "evalezy", "Another name", "d");
+
+        assertSame(first, second);
+        assertSame(first, third);
+        assertEquals("Product Evalezy ( Instant - Demo )", first.getCampaignName());
+        assertEquals("Instant Demo", first.getCampaignType());
+        verify(audiences, times(1)).save(any());
+        assertEquals(1, stored.size());
+    }
+
+    @Test
+    void aDeletedDemoListIsNotRecreated() {
+        Audience deleted = list("aud-9", "Instant Demo", "evalezy", "DELETED");
+        when(audiences.findByInstituteIdAndSettingJsonContainingOrderByCreatedAtAsc("inst-1", "evalezy"))
+                .thenReturn(List.of(deleted));
+
+        assertSame(deleted, provisioner.getOrCreateNamed("inst-1", "Instant Demo", "evalezy", "x", "d"));
+        verify(audiences, never()).save(any());
+    }
 }
