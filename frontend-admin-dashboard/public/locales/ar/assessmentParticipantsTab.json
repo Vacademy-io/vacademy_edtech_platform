@@ -29,5 +29,10 @@
         "minutesBeforeLive_other": "{{count}} دقيقة",
         "whenLive": "عند بدء التقييم مباشرة:",
         "whenReportsGenerated": "عند إنشاء تقارير التقييم:"
-    }
+    },
+    "externalParticipants": {
+        "count_one": "{{count}} مشارك (خارجي – تسجيل مفتوح)",
+        "count_other": "{{count}} مشاركين (خارجيون – تسجيل مفتوح)"
+    },
+    "empty": "لا يوجد مشاركون بعد. سيظهر هنا المتعلمون الذين يسجلون عبر رابط الانضمام أدناه."
 }
