@@ -291,6 +291,67 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
     @Query("SELECT ps FROM PackageSession ps WHERE ps.level.id IN :levelIds")
     List<PackageSession> findByLevelIds(@Param("levelIds") List<String> levelIds);
 
+    // --- Level and session delete, scoped to one institute -------------------------------
+    // level and session have no institute column and the rows DEFAULT and INVITED are shared
+    // by every institute, so ownership is read through package_institute.
+    // A course belongs to the institute that was linked to it FIRST: the institute needs a link
+    // and no other institute may hold an older one (created_at is set by the database and never
+    // updated). A link alone is not enough, because the course routes let staff of any institute
+    // link any course to their own institute; such a late link owns nothing here. Links created
+    // in the same transaction carry the same created_at and own the course together.
+
+    /** Batches (any status) on the given levels whose course belongs to the institute (see above). */
+    @Query(value = "SELECT ps.* FROM package_session ps " +
+            "WHERE ps.level_id IN (:levelIds) " +
+            "AND EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<PackageSession> findByLevelIdsAndInstituteId(@Param("levelIds") List<String> levelIds,
+            @Param("instituteId") String instituteId);
+
+    /** Batches (any status) on the given sessions whose course belongs to the institute (see above). */
+    @Query(value = "SELECT ps.* FROM package_session ps " +
+            "WHERE ps.session_id IN (:sessionIds) " +
+            "AND EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<PackageSession> findBySessionIdsAndInstituteId(@Param("sessionIds") List<String> sessionIds,
+            @Param("instituteId") String instituteId);
+
+    /**
+     * Of the given levels, those still used by a batch that is not DELETED and whose course does
+     * NOT belong to the institute (another institute still uses the level).
+     */
+    @Query(value = "SELECT DISTINCT ps.level_id FROM package_session ps " +
+            "WHERE ps.level_id IN (:levelIds) " +
+            "AND ps.status IS DISTINCT FROM 'DELETED' " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<String> findLevelIdsUsedOutsideInstitute(@Param("levelIds") List<String> levelIds,
+            @Param("instituteId") String instituteId);
+
+    /**
+     * Of the given sessions, those still used by a batch that is not DELETED and whose course does
+     * NOT belong to the institute (another institute still uses the session).
+     */
+    @Query(value = "SELECT DISTINCT ps.session_id FROM package_session ps " +
+            "WHERE ps.session_id IN (:sessionIds) " +
+            "AND ps.status IS DISTINCT FROM 'DELETED' " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute pi " +
+            "WHERE pi.package_id = ps.package_id AND pi.institute_id = :instituteId " +
+            "AND NOT EXISTS (SELECT 1 FROM package_institute older " +
+            "WHERE older.package_id = pi.package_id AND older.institute_id IS DISTINCT FROM :instituteId " +
+            "AND (older.created_at IS NULL OR pi.created_at IS NULL OR older.created_at < pi.created_at)))", nativeQuery = true)
+    List<String> findSessionIdsUsedOutsideInstitute(@Param("sessionIds") List<String> sessionIds,
+            @Param("instituteId") String instituteId);
+
     @Query("""
                 SELECT ps
                 FROM PackageSession ps
