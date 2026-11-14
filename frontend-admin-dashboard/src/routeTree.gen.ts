@@ -13,6 +13,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as LockedFeatureRouteImport } from "./routes/locked-feature"
 import { Route as ErrorPageRouteImport } from "./routes/error-page"
+import { Route as DemoRouteImport } from "./routes/demo"
 import { Route as ChatRouteImport } from "./routes/chat"
 import { Route as AgentChatRouteImport } from "./routes/agent-chat"
 import { Route as EvalezyRouteRouteImport } from "./routes/evalezy/route"
@@ -68,6 +69,7 @@ import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-bas
 import { Route as KnowledgeBaseKbIdRouteImport } from "./routes/knowledge-base/$kbId"
 import { Route as EvalezySettingsRouteImport } from "./routes/evalezy/settings"
 import { Route as EvalezyProfileRouteImport } from "./routes/evalezy/profile"
+import { Route as EvalezyPlanRouteImport } from "./routes/evalezy/plan"
 import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
 import { Route as EvalezyCreditsRouteImport } from "./routes/evalezy/credits"
 import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
@@ -302,6 +304,11 @@ const LockedFeatureRoute = LockedFeatureRouteImport.update({
 const ErrorPageRoute = ErrorPageRouteImport.update({
   id: "/error-page",
   path: "/error-page",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: "/demo",
+  path: "/demo",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatRoute = ChatRouteImport.update({
@@ -657,6 +664,11 @@ const EvalezySettingsRoute = EvalezySettingsRouteImport.update({
 const EvalezyProfileRoute = EvalezyProfileRouteImport.update({
   id: "/profile",
   path: "/profile",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyPlanRoute = EvalezyPlanRouteImport.update({
+  id: "/plan",
+  path: "/plan",
   getParentRoute: () => EvalezyRouteRoute,
 } as any)
 const EvalezyNewRoute = EvalezyNewRouteImport.update({
@@ -2272,6 +2284,7 @@ export interface FileRoutesByFullPath {
   "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -2283,6 +2296,7 @@ export interface FileRoutesByFullPath {
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
   "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
@@ -2532,6 +2546,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -2542,6 +2557,7 @@ export interface FileRoutesByTo {
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
   "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
@@ -2793,6 +2809,7 @@ export interface FileRoutesById {
   "/evalezy": typeof EvalezyRouteRouteWithChildren
   "/agent-chat": typeof AgentChatRoute
   "/chat": typeof ChatRoute
+  "/demo": typeof DemoRoute
   "/error-page": typeof ErrorPageRoute
   "/locked-feature": typeof LockedFeatureRoute
   "/explore-ai": typeof ExploreAiLazyRoute
@@ -2804,6 +2821,7 @@ export interface FileRoutesById {
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
   "/evalezy/new": typeof EvalezyNewRoute
+  "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
   "/evalezy/settings": typeof EvalezySettingsRoute
   "/knowledge-base/$kbId": typeof KnowledgeBaseKbIdRoute
@@ -3056,6 +3074,7 @@ export interface FileRouteTypes {
     | "/evalezy"
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -3067,6 +3086,7 @@ export interface FileRouteTypes {
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/plan"
     | "/evalezy/profile"
     | "/evalezy/settings"
     | "/knowledge-base/$kbId"
@@ -3316,6 +3336,7 @@ export interface FileRouteTypes {
   to:
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -3326,6 +3347,7 @@ export interface FileRouteTypes {
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/plan"
     | "/evalezy/profile"
     | "/evalezy/settings"
     | "/knowledge-base/$kbId"
@@ -3576,6 +3598,7 @@ export interface FileRouteTypes {
     | "/evalezy"
     | "/agent-chat"
     | "/chat"
+    | "/demo"
     | "/error-page"
     | "/locked-feature"
     | "/explore-ai"
@@ -3587,6 +3610,7 @@ export interface FileRouteTypes {
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
     | "/evalezy/new"
+    | "/evalezy/plan"
     | "/evalezy/profile"
     | "/evalezy/settings"
     | "/knowledge-base/$kbId"
@@ -3838,6 +3862,7 @@ export interface RootRouteChildren {
   EvalezyRouteRoute: typeof EvalezyRouteRouteWithChildren
   AgentChatRoute: typeof AgentChatRoute
   ChatRoute: typeof ChatRoute
+  DemoRoute: typeof DemoRoute
   ErrorPageRoute: typeof ErrorPageRoute
   LockedFeatureRoute: typeof LockedFeatureRoute
   ExploreAiLazyRoute: typeof ExploreAiLazyRoute
@@ -4131,6 +4156,13 @@ declare module "@tanstack/react-router" {
       path: "/error-page"
       fullPath: "/error-page"
       preLoaderRoute: typeof ErrorPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/demo": {
+      id: "/demo"
+      path: "/demo"
+      fullPath: "/demo"
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/chat": {
@@ -4516,6 +4548,13 @@ declare module "@tanstack/react-router" {
       path: "/profile"
       fullPath: "/evalezy/profile"
       preLoaderRoute: typeof EvalezyProfileRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/plan": {
+      id: "/evalezy/plan"
+      path: "/plan"
+      fullPath: "/evalezy/plan"
+      preLoaderRoute: typeof EvalezyPlanRouteImport
       parentRoute: typeof EvalezyRouteRoute
     }
     "/evalezy/new": {
@@ -5911,6 +5950,7 @@ interface EvalezyRouteRouteChildren {
   EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
   EvalezyCreditsRoute: typeof EvalezyCreditsRoute
   EvalezyNewRoute: typeof EvalezyNewRoute
+  EvalezyPlanRoute: typeof EvalezyPlanRoute
   EvalezyProfileRoute: typeof EvalezyProfileRoute
   EvalezySettingsRoute: typeof EvalezySettingsRoute
   EvalezyIndexRoute: typeof EvalezyIndexRoute
@@ -5920,6 +5960,7 @@ const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
   EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
   EvalezyCreditsRoute: EvalezyCreditsRoute,
   EvalezyNewRoute: EvalezyNewRoute,
+  EvalezyPlanRoute: EvalezyPlanRoute,
   EvalezyProfileRoute: EvalezyProfileRoute,
   EvalezySettingsRoute: EvalezySettingsRoute,
   EvalezyIndexRoute: EvalezyIndexRoute,
@@ -5944,6 +5985,7 @@ const rootRouteChildren: RootRouteChildren = {
   EvalezyRouteRoute: EvalezyRouteRouteWithChildren,
   AgentChatRoute: AgentChatRoute,
   ChatRoute: ChatRoute,
+  DemoRoute: DemoRoute,
   ErrorPageRoute: ErrorPageRoute,
   LockedFeatureRoute: LockedFeatureRoute,
   ExploreAiLazyRoute: ExploreAiLazyRoute,
