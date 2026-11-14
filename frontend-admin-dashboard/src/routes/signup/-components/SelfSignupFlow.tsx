@@ -41,7 +41,7 @@ const INSTITUTE_TYPES = ['school', 'coaching', 'college', 'university', 'company
 /** What each answer stores as the teacher count. */
 const TEACHER_BANDS = [1, 5, 15, 16];
 
-const enterApp = async (tokens: SignupTokens, appPath: string) => {
+export const enterApp = async (tokens: SignupTokens, appPath: string) => {
     await handleLoginFlow({
         loginMethod: 'signup',
         accessToken: tokens.accessToken,
@@ -353,7 +353,7 @@ const BuySteps = () => {
     );
 };
 
-const Shell = ({
+export const Shell = ({
     product,
     title,
     subtitle,

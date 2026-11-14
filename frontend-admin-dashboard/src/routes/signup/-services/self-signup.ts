@@ -29,6 +29,8 @@ export interface ProductOffer {
     trial_days: number;
     /** AI credits a new sign-up opens with; null = the platform's default. */
     demo_credits: number | null;
+    /** What the one-screen demo (/demo) opens with; falls back to demo_credits. */
+    demo_portal_credits?: number | null;
     /** Paid plans shown on the product website (key = the website's ?plan=). */
     plans?: { key: string; name: string }[] | null;
 }
@@ -87,6 +89,26 @@ export const completeSignup = async (
     details: SelfSignupDetails
 ): Promise<SignupTokens> => {
     const { data } = await axios.post<SignupTokens>(`${API}/signup`, { ...context, ...details });
+    return data;
+};
+
+export interface DemoDetails {
+    full_name: string;
+    email: string;
+    phone: string;
+}
+
+/** The one-screen demo: name, email and phone, no code. Signs the visitor straight in. */
+export const startDemo = async (
+    context: SignupContext,
+    details: DemoDetails
+): Promise<SignupTokens> => {
+    const { data } = await axios.post<SignupTokens>(`${API}/demo`, {
+        product: context.product,
+        source: context.source,
+        campaign: context.campaign,
+        ...details,
+    });
     return data;
 };
 
