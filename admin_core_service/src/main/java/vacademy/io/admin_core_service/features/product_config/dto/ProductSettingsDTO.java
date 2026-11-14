@@ -28,6 +28,8 @@ public class ProductSettingsDTO {
     private String contactEmail;
     private String themeColor;
     private String logoUrl;
+    /** Public https PNG/JPG shown at the top of the product's mails (OTP). SVG does not show in Gmail. */
+    private String emailLogoUrl;
     private String appPath;
     private String loginUrl;
     private Integer trialDays;

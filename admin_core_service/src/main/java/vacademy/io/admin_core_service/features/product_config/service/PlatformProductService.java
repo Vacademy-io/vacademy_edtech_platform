@@ -91,6 +91,8 @@ public class PlatformProductService {
         row.put("demo_credits", body.getDemoCredits() != null ? body.getDemoCredits() : existing.getDemoCredits());
         row.put("demo_portal_credits", body.getDemoPortalCredits() != null
                 ? body.getDemoPortalCredits() : existing.getDemoPortalCredits());
+        row.put("email_logo_url", body.getEmailLogoUrl() != null
+                ? emptyToNull(body.getEmailLogoUrl()) : existing.getEmailLogoUrl());
         row.put("demo_leads_institute_id", body.getDemoLeadsInstituteId() != null
                 ? emptyToNull(body.getDemoLeadsInstituteId()) : existing.getDemoLeadsInstituteId());
         row.put("demo_leads_list_name", body.getDemoLeadsListName() != null
@@ -147,6 +149,9 @@ public class PlatformProductService {
         require(b.getDemoPortalCredits() == null
                         || (b.getDemoPortalCredits() >= 0 && b.getDemoPortalCredits() <= MAX_DEMO_CREDITS),
                 "Demo page credits must be between 0 and " + MAX_DEMO_CREDITS);
+        require(!StringUtils.hasText(b.getEmailLogoUrl()) || (b.getEmailLogoUrl().trim().startsWith("https://")
+                        && !b.getEmailLogoUrl().trim().toLowerCase(Locale.ROOT).endsWith(".svg")),
+                "Email logo must be an https PNG or JPG link (SVG does not show in mail)");
         require(!StringUtils.hasText(b.getDemoLeadsInstituteId())
                         || INSTITUTE_ID.matcher(b.getDemoLeadsInstituteId().trim()).matches(),
                 "Demo leads institute must be an institute id");
