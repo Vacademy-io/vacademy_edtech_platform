@@ -84,6 +84,9 @@ public class PlatformInvoicePdfService {
     private PlatformPaymentConfigService configService;
     @Autowired(required = false)
     private BrandModeService brandModeService;
+    /** A product workspace's documents carry the product's name and mail logo. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.product_config.service.PlatformProductService productService;
 
     private final Map<String, Object[]> logoCache = new ConcurrentHashMap<>();
     private static final long LOGO_TTL_MILLIS = 60 * 60_000L;
@@ -118,14 +121,16 @@ public class PlatformInvoicePdfService {
         List<PlatformInvoiceLineItem> lines = lineItemRepository.findByPlatformInvoiceId(invoice.getId());
         PlatformPayment payment = payment(invoice.getPlatformPaymentId());
         BrandMode mode = brandFor(invoice.getBrandMode(), invoice.getBuyerInstituteId(), payment);
-        return toPdf(buildHtml(invoice, lines, payment, brandIdentity(mode)), invoice.getInvoiceNumber());
+        return toPdf(buildHtml(invoice, lines, payment, brandIdentity(mode, invoice.getBuyerInstituteId())),
+                invoice.getInvoiceNumber());
     }
 
     public byte[] renderCreditNotePdf(PlatformCreditNote note) {
         PlatformInvoice original = invoiceRepository.findById(note.getInvoiceId()).orElse(null);
         BrandMode mode = brandFor(note.getBrandMode(), note.getBuyerInstituteId(),
                 payment(note.getPlatformPaymentId()));
-        return toPdf(buildCreditNoteHtml(note, original, brandIdentity(mode)), note.getCreditNoteNumber());
+        return toPdf(buildCreditNoteHtml(note, original, brandIdentity(mode, note.getBuyerInstituteId())),
+                note.getCreditNoteNumber());
     }
 
     /** Download / attachment name; "/" in a v2 number is not allowed in a file name. */
@@ -167,6 +172,21 @@ public class PlatformInvoicePdfService {
         }
         BrandMode p = BrandMode.parse(paymentMode);
         return p != null ? p : BrandMode.NEUTRAL;
+    }
+
+    /**
+     * A product workspace (Evalezy) shows the product as the trade name, with its mail logo, next to
+     * the legal supplier; every other institute keeps {@link #brandIdentity(BrandMode)}.
+     */
+    BrandIdentity brandIdentity(BrandMode mode, String buyerInstituteId) {
+        if (productService != null) {
+            var product = productService.productOfInstitute(buyerInstituteId).orElse(null);
+            if (product != null) {
+                return new BrandIdentity(BrandMode.VACADEMY, product.getDisplayName().trim(),
+                        logoDataUri(product.getEmailLogoUrl()));
+            }
+        }
+        return brandIdentity(mode);
     }
 
     BrandIdentity brandIdentity(BrandMode mode) {

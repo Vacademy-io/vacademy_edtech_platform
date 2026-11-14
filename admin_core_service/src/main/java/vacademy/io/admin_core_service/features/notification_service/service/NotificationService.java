@@ -338,6 +338,44 @@ public class NotificationService {
      * Bridge: List<AttachmentNotificationDTO> → unified send with attachments.
      * Converts base64 attachments from old DTO format to new Recipient.attachments format.
      */
+    /**
+     * One email to each address from a given sender (a product's own verified address), with one
+     * attachment when {@code attachmentBase64} is set.
+     */
+    public UnifiedSendResponse sendEmailWithOptionalAttachmentViaUnified(List<String> to, String subject, String body,
+            String instituteId, String fromEmail, String fromName, String emailType, String source, String sourceId,
+            String attachmentName, String attachmentBase64) {
+        List<UnifiedSendRequest.Recipient> recipients = new java.util.ArrayList<>();
+        for (String email : to) {
+            List<UnifiedSendRequest.Attachment> attachments = new java.util.ArrayList<>();
+            if (attachmentBase64 != null && attachmentName != null) {
+                attachments.add(UnifiedSendRequest.Attachment.builder()
+                        .filename(attachmentName)
+                        .contentBase64(attachmentBase64)
+                        .build());
+            }
+            recipients.add(UnifiedSendRequest.Recipient.builder()
+                    .email(email)
+                    .variables(new java.util.HashMap<>())
+                    .attachments(attachments)
+                    .build());
+        }
+        return sendUnified(UnifiedSendRequest.builder()
+                .instituteId(instituteId != null ? instituteId : "")
+                .channel("EMAIL")
+                .recipients(recipients)
+                .options(UnifiedSendRequest.SendOptions.builder()
+                        .emailSubject(subject)
+                        .emailBody(body)
+                        .emailType(emailType)
+                        .source(source)
+                        .sourceId(sourceId)
+                        .fromEmail(fromEmail)
+                        .fromName(fromName)
+                        .build())
+                .build());
+    }
+
     public UnifiedSendResponse sendAttachmentEmailViaUnified(
             List<AttachmentNotificationDTO> dtos, String instituteId) {
 

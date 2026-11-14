@@ -323,6 +323,27 @@ public class PlatformProductService {
         }
     }
 
+    /**
+     * The settings of the product an institute belongs to, when that product has its own sender
+     * (Evalezy); empty for a Vacademy institute or when unknown.
+     */
+    public java.util.Optional<ProductSettingsDTO> productOfInstitute(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            String product = jdbcTemplate.query("SELECT product FROM institutes WHERE id = ?",
+                    (rs, n) -> rs.getString(1), instituteId).stream().findFirst().orElse(null);
+            if (!StringUtils.hasText(product) || "vacademy".equalsIgnoreCase(product.trim())) {
+                return java.util.Optional.empty();
+            }
+            return find(product.trim()).filter(p -> StringUtils.hasText(p.getFromEmail())
+                    && StringUtils.hasText(p.getDisplayName()));
+        } catch (Exception e) {
+            return java.util.Optional.empty();
+        }
+    }
+
     /** A product's settings, or empty when it has none (or they cannot be read). */
     public java.util.Optional<ProductSettingsDTO> find(String productKey) {
         if (!StringUtils.hasText(productKey)) {
