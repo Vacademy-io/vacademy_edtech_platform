@@ -36,6 +36,7 @@ class LearnerEnrollRequestControllerTest {
     @Mock private LearnerEnrollRequestService learnerEnrollRequestService;
     @Mock private OpenLearnerEnrollService openLearnerEnrollService;
     @Mock private AdditionalChargeValidator additionalChargeValidator;
+    @Mock private vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard publicEnrollRoleGuard;
     @InjectMocks private LearnerEnrollRequestController controller;
 
     private final LearnerEnrollRequestDTO request = new LearnerEnrollRequestDTO();

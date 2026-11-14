@@ -22,6 +22,7 @@ import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessi
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.manager.StudentRegistrationManager;
 import vacademy.io.admin_core_service.features.institute_learner.service.LearnerEnrollmentEntryService;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 import vacademy.io.admin_core_service.features.learner.service.LearnerCouponService;
 import vacademy.io.admin_core_service.features.learner_payment_option_operation.service.ComplexPaymentOptionOperation;
 import vacademy.io.admin_core_service.features.learner_payment_option_operation.service.OneTimePaymentOptionOperation;
@@ -506,8 +507,12 @@ public class ProductPageEnrollmentService {
         if (request.getUser().getRoles() == null || request.getUser().getRoles().isEmpty()) {
             request.getUser().setRoles(java.util.List.of("STUDENT"));
         }
+        List<String> askedRoles = request.getUser().getRoles();
         UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(
                 request.getUser(), request.getInstituteId(), false);
+        // The answer lists the account's roles in every institute, and this user is posted to
+        // auth-service again below: only what was asked for goes with it.
+        user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(), request.getInstituteId()));
         payReq.setEmail(user.getEmail());
 
         // ── Razorpay Phase 1: order creation ──────────────────────────────────
@@ -842,8 +847,11 @@ public class ProductPageEnrollmentService {
         if (request.getUserDetails().getRoles() == null || request.getUserDetails().getRoles().isEmpty()) {
             request.getUserDetails().setRoles(java.util.List.of("STUDENT"));
         }
+        List<String> askedRoles = request.getUserDetails().getRoles();
         UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(
                 request.getUserDetails(), request.getInstituteId(), false);
+        // As in enrollForProductPage: the roles the account holds elsewhere are not posted again.
+        user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(), request.getInstituteId()));
 
         studentRegistrationManager.createStudentFromRequest(
                 user, mapToStudentExtraDetails(request.getLearnerExtraDetails()));

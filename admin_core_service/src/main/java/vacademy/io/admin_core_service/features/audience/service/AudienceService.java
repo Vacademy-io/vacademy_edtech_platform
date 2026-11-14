@@ -2231,6 +2231,9 @@ public class AudienceService {
                         audienceId, e.getMessage());
             }
         }
+        // A lead form needs no login and its body is passed on to auth-service, which saves
+        // the role names it carries. A lead is a contact: no staff role is ever granted here.
+        vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(userDTO);
         return new ResolvedLeadUser(authService.createUserFromAuthService(userDTO, instituteId, false), false);
     }
 
@@ -3386,6 +3389,9 @@ public class AudienceService {
                     requestDTO.getChildUserDTO(),
                     requestDTO.getParentUserDTO());
 
+            // Same rule as resolveLeadUser: an enquiry form grants no staff role.
+            vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(requestDTO.getParentUserDTO());
+            vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(preparedChildDTO);
             List<UserDTO> userDTOs = List.of(requestDTO.getParentUserDTO(), preparedChildDTO);
             List<UserDTO> createdUsers = authService.createMultipleUsers(userDTOs, audience.getInstituteId(), false);
 

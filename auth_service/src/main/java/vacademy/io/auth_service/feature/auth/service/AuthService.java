@@ -467,6 +467,37 @@ public class AuthService {
         return roleRepository.findByNameIn(userRoles);
     }
 
+    /**
+     * What a public learner sign-up may be granted: STUDENT, plus TEACHER only when this
+     * institute lets learners create courses. Other names are dropped, not refused, so a
+     * learner app working from stale settings still signs the learner up. A failed or
+     * missing policy means STUDENT only. A null list stays null, an empty one stays empty.
+     */
+    private List<String> learnerRolesForPublicSignup(List<String> requested, String instituteId) {
+        boolean teacherAllowed = PublicSignupRoles.asksForTeacher(requested)
+                && learnersMayCreateCourses(instituteId);
+        List<String> granted = PublicSignupRoles.reduce(requested, teacherAllowed);
+        List<String> dropped = PublicSignupRoles.dropped(requested, granted);
+        if (!dropped.isEmpty()) {
+            log.warn("Public learner sign-up asked for roles it cannot grant; dropped {} for institute {}",
+                    dropped, instituteId);
+        }
+        return granted;
+    }
+
+    private boolean learnersMayCreateCourses(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) {
+            return false;
+        }
+        try {
+            InstituteSignupPolicy policy = institutePolicyService.fetchSignupPolicyCached(instituteId);
+            return policy != null && policy.isAllowLearnersToCreateCourses();
+        } catch (Exception e) {
+            log.warn("Signup policy lookup failed for institute {}: {}", instituteId, e.getMessage());
+            return false;
+        }
+    }
+
     public JwtResponseDto generateJwtTokenForUser(User user, RefreshToken refreshToken, List<UserRole> userRoles) {
         List<String> userPermissions = userPermissionRepository.findByUserId(user.getId()).stream()
                 .map(UserPermission::getPermissionId).toList();
@@ -672,6 +703,13 @@ public class AuthService {
     private User createUserForLearnerEnrollment(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,
                                                 String overrideLoginUrl, boolean selfSignup) {
         boolean callerChoseUsername = StringUtils.hasText(registerRequest.getUsername());
+        if (selfSignup) {
+            // The role list comes from a body anyone can write. Reduce it here, at the write,
+            // and on the DTO itself: registerLearner forwards the same object to admin-core.
+            // This only decides which role names may be saved; whether the account is new or
+            // already exists, and what is returned for it, is unchanged.
+            registerRequest.setRoles(learnerRolesForPublicSignup(registerRequest.getRoles(), instituteId));
+        }
         // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
         // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
         // so the account is created unfindable and the learner can never log in.

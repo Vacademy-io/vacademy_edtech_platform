@@ -1141,7 +1141,14 @@ public class UserPlanService {
             // admin disabled at the institute level.
             if (showSendCredentials && claimCredentialEmail(userDTO.getId(), instituteId)) {
                 String learnerPortalUrl = resolveLearnerPortalUrl(packageSessionIds, instituteId);
-                asyncEnrollmentEmailService.sendCredentialEmailForPaidEnrollment(userDTO, instituteId, learnerPortalUrl);
+                // This mail is sent through auth-service's get-or-create, which also saves the
+                // role names it is given. The looked-up user lists the account's roles in every
+                // institute; a paid enrolment makes a learner, so only STUDENT goes with it.
+                UserDTO mailUser = vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard
+                        .copyWithRoles(userDTO,
+                                vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard
+                                        .askedRolesOnly(null, userDTO.getRoles(), instituteId));
+                asyncEnrollmentEmailService.sendCredentialEmailForPaidEnrollment(mailUser, instituteId, learnerPortalUrl);
             } else if (!showSendCredentials) {
                 logger.info("Skipping credential email after payment: COURSE_SETTING.showSendCredentials=false " +
                         "for institute {}", instituteId);

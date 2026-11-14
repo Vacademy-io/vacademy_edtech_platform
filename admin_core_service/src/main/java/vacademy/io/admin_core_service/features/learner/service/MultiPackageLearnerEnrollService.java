@@ -122,7 +122,11 @@ public class MultiPackageLearnerEnrollService {
             if (users.isEmpty()) {
                 throw new VacademyException("User not found with ID: " + request.getUserId());
             }
-            request.setUser(users.get(0));
+            // The looked-up user lists the account's roles in every institute and is posted to
+            // auth-service for this institute further on: it enrols as a learner, nothing more.
+            UserDTO found = users.get(0);
+            request.setUser(PublicEnrollRoleGuard.copyWithRoles(found,
+                    PublicEnrollRoleGuard.askedRolesOnly(null, found.getRoles(), request.getInstituteId())));
         }
 
         if (request.getUser() == null) {
@@ -351,7 +355,10 @@ public class MultiPackageLearnerEnrollService {
         String mainPaymentLogId = mainResponse.getPaymentResponse().getOrderId();
         log.info("Main payment initiated. PaymentLogId/OrderId: {}. Total Amount: {}",
                 mainPaymentLogId, request.getPaymentInitiationRequest().getAmount());
-        UserDTO enrolledUser = mainResponse.getUser(); // Use the confirmed/created user ID for subsequent calls
+        // Use the confirmed/created user ID for subsequent calls. The response's user lists the
+        // account's roles in every institute, so the next lines get a copy that carries the
+        // first line's role list; the response itself is left as it is.
+        UserDTO enrolledUser = userForNextLines(mainResponse.getUser(), mainRequestDTO.getUser());
         // Every hold of the order is released / confirmed by the one gateway log.
         attachToOrder(holdsByPackageSessionId.get(mainItem.getPackageSessionId()), mainPaymentLogId);
 
@@ -758,6 +765,11 @@ public class MultiPackageLearnerEnrollService {
         paymentLogRepository.save(mainLog);
         log.info("Gateway log {} now records its own line {} of order total {}",
                 mainPaymentLogId, mainLineAmount, chargedTotal);
+    }
+
+    static UserDTO userForNextLines(UserDTO enrolledUser, UserDTO firstLineUser) {
+        return PublicEnrollRoleGuard.copyWithRoles(enrolledUser,
+                firstLineUser != null ? firstLineUser.getRoles() : null);
     }
 
     LearnerEnrollRequestDTO mapToLegacyDTO(MultiPackageLearnerEnrollRequestDTO request,

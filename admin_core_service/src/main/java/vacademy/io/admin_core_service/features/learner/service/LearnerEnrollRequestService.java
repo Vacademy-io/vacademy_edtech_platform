@@ -262,6 +262,10 @@ public class LearnerEnrollRequestService {
                         learnerEnrollRequestDTO.getInstituteId(), integrityInvite.getId(),
                         integrityInvite.getInstituteId());
                 learnerEnrollRequestDTO.setInstituteId(integrityInvite.getInstituteId());
+                // The public door allowed TEACHER on the strength of the request's institute;
+                // the role is written in the invite's, so that institute's setting decides.
+                PublicEnrollRoleGuard.dropTeacherUnlessInstituteAllows(learnerEnrollRequestDTO.getUser(),
+                        integrityInvite.getInstituteId(), instituteRepository);
             }
         }
 
@@ -374,8 +378,13 @@ public class LearnerEnrollRequestService {
                 learnerEnrollRequestDTO.getUser().setUsernameFieldValues(
                         CustomFieldValueDTO.toValueMap(enrollDTO.getCustomFieldValues()));
             }
+            List<String> askedRoles = learnerEnrollRequestDTO.getUser().getRoles();
             UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(learnerEnrollRequestDTO.getUser(),
                     learnerEnrollRequestDTO.getInstituteId(), sendCredentials, learndashBaseUrl);
+            // The answer lists the account's roles in every institute, and this user is posted
+            // to auth-service again further on: only what was asked for goes with it.
+            user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(),
+                    learnerEnrollRequestDTO.getInstituteId()));
             learnerEnrollRequestDTO.setUser(user);
             EnrollInvite enrollInvite = getValidatedEnrollInvite(enrollDTO.getEnrollInviteId());
             // Generate coupon code for new learner enrollment
