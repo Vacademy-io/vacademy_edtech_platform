@@ -1307,6 +1307,26 @@ public class AssessmentParticipantsManager {
      */
     private void createParticipantsReportAndSendEmail(List<StudentAttempt> attemptList, Assessment assessment,
             String instituteId) {
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, true);
+    }
+
+    /**
+     * The automatic release (AutoResultReleaseJob): the same report + email as the admin's
+     * Release Result, without the admin summary notification.
+     *
+     * @param publishWorkflow false when ASSESSMENT_RESULT_RELEASED was already fired for these
+     *                        attempts (the submit-time auto release fires it on submit)
+     */
+    public void releaseAutomatically(List<StudentAttempt> attemptList, Assessment assessment, String instituteId,
+            boolean publishWorkflow) {
+        if (attemptList == null || attemptList.isEmpty()) {
+            return;
+        }
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, publishWorkflow);
+    }
+
+    private void createParticipantsReportAndSendEmail(List<StudentAttempt> attemptList, Assessment assessment,
+            String instituteId, boolean publishWorkflow) {
         if (ApiCandidatePolicy.isApiExam(assessment)) {
             // Exams created through the partner API (spec 12): Release Result is the
             // state change only. API candidates have no login and no email, so no report
@@ -1316,7 +1336,7 @@ public class AssessmentParticipantsManager {
             return;
         }
         if (assessment.getEvaluationType().equals("MANUAL")) {
-            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId);
+            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId, publishWorkflow);
             return;
         }
 
@@ -1398,7 +1418,7 @@ public class AssessmentParticipantsManager {
                 reportMap.put(attempt, participantPdfReport);
                 if (reportMap.size() >= emailBatch) {
                     sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
-                    publishResultReleasedFor(reportMap);
+                    if (publishWorkflow) publishResultReleasedFor(reportMap);
                     reportMap.clear();
                 }
             } catch (Exception e) {
@@ -1409,7 +1429,7 @@ public class AssessmentParticipantsManager {
         });
         if (!reportMap.isEmpty()) {
             sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
-            publishResultReleasedFor(reportMap);
+            if (publishWorkflow) publishResultReleasedFor(reportMap);
         }
     }
 
@@ -1437,7 +1457,7 @@ public class AssessmentParticipantsManager {
     }
 
     private void handleParticipantsReportCreationForManualAssessment(List<StudentAttempt> attemptList,
-            Assessment assessment, String instituteId) {
+            Assessment assessment, String instituteId, boolean publishWorkflow) {
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
         attemptList.forEach(attempt -> {
             // The checked copy is what a manual-result learner receives. An attempt
@@ -1465,7 +1485,7 @@ public class AssessmentParticipantsManager {
             }
         });
         sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
-        publishResultReleasedFor(reportMap);
+        if (publishWorkflow) publishResultReleasedFor(reportMap);
     }
 
     /**
