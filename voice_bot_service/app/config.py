@@ -16,6 +16,13 @@ def _env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
+def _float_env(name: str, default: float) -> float:
+    try:
+        return float(_env(name, str(default)))
+    except ValueError:
+        return default
+
+
 @dataclass(frozen=True)
 class Settings:
     # Public base URL of THIS service INCLUDING the ingress path prefix — used to
@@ -36,6 +43,28 @@ class Settings:
 
     # Sarvam (STT + LLM + TTS) — see providers.py
     sarvam_api_key: str = field(default_factory=lambda: _env("SARVAM_API_KEY"))
+    # A second Sarvam ACCOUNT's key, used for STT only (SarvamKeyPool in
+    # providers.py). Sarvam limits each account, not each key, so a second key on
+    # the SAME account adds nothing. Its streaming STT starts refusing new sockets
+    # with close 1003 "Rate limit exceeded" once 3-4 have opened in a minute
+    # (2,815 connects, 2026-10-26 to 11-13), and "Credits exhausted" (also 1003)
+    # cost 218 calls on 11-08 to 11-11. Unset = one key, exactly as before.
+    sarvam_api_key_2: str = field(default_factory=lambda: _env("SARVAM_API_KEY_2"))
+    # failover: SARVAM_API_KEY for every call while it works; the second key only
+    # while the first is resting after a refusal (the default).
+    # roundrobin: alternate per call, which halves each account's opens a minute.
+    sarvam_key_strategy: str = field(
+        default_factory=lambda: _env("SARVAM_KEY_STRATEGY", "failover").strip().lower())
+    # How long a key rests after Sarvam refused it: "Rate limit exceeded" (the
+    # limit counts opens over about a minute) vs "Credits exhausted" and any
+    # other refusal (a revoked key, no balance). Both 60 s: a top-up takes
+    # effect within a minute, and a key still out of credit is simply refused
+    # again (one ~0.1 s refusal, then the call moves to the other key).
+    # A typo here ("60s") falls back to 60 instead of stopping the bot.
+    sarvam_key_rate_limit_rest_secs: float = field(
+        default_factory=lambda: _float_env("SARVAM_KEY_RATE_LIMIT_REST_SECS", 60.0))
+    sarvam_key_other_rest_secs: float = field(
+        default_factory=lambda: _float_env("SARVAM_KEY_OTHER_REST_SECS", 60.0))
     # STT model. saaras:v4 (chosen 2026-08-03) is a speech-to-text-TRANSLATE model:
     # it AUTO-DETECTS the spoken language and returns ENGLISH. saarika:v2.5, the
     # previous default, transcribes in the language actually spoken.

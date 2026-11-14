@@ -301,10 +301,23 @@ def build_stt(sample_rate: int, language: str | None = None, bias: str | None = 
     except Exception:
         logger.warning("build_stt: Settings rejected %r — model only", settings_kwargs)
         stt_settings = SarvamSTTService.Settings(model=stt_model)
-    _cls = final_after_flush(SarvamSTTService) if s.sarvam_final_on_flush else SarvamSTTService
+    # Which Sarvam account this call opens on (SarvamKeyPool). With one key:
+    # SARVAM_API_KEY and the plain class, exactly as before.
+    keys = sarvam_keys()
+    key_kwargs = {}
+    _cls = SarvamSTTService
+    api_key = s.sarvam_api_key
+    if len(keys) > 1:
+        idx = SARVAM_KEYS.pick()
+        api_key = keys[idx]
+        key_kwargs = {"key_index": idx}
+        _cls = sarvam_key_failover(_cls)
+        logger.info("stt: sarvam key %d of %d (%s)", idx + 1, len(keys), SARVAM_KEYS.strategy())
+    _cls = final_after_flush(_cls) if s.sarvam_final_on_flush else _cls
     _cls = decoupled_stt_io(_cls, s.stt_stall_secs)
     return _cls(
-        api_key=s.sarvam_api_key,
+        api_key=api_key,
+        **key_kwargs,
         # Capability-gated, same reason as the settings above: saaras:v2.5 (a
         # documented SARVAM_STT_MODEL rollback target) has supports_mode=False
         # and 1.4 raises "does not support mode parameter" — that would have
@@ -547,6 +560,422 @@ def decoupled_stt_io(cls, stall_secs: float, backlog_secs: float = 10.0):
     _DecoupledIO.__name__ = cls.__name__
     _DecoupledIO.__qualname__ = cls.__qualname__
     return _DecoupledIO
+
+
+# ── Sarvam STT across two accounts ─────────────────────────────────────────────
+#
+# Sarvam limits each ACCOUNT (every key on it shares one pool). Its streaming
+# STT refuses a new socket with close 1003 "Rate limit exceeded" once 3-4 have
+# opened in about a minute, whatever is still open (2,815 connects, 2026-10-26
+# to 11-13: 0-2 opens in the prior minute ~1% refused, 5+ 62-83%), and with
+# "Credits exhausted" when the balance runs out (218 calls, 11-08 to 11-11).
+# Both arrive ~0.1 s after the socket opens. Until now every refusal sent the
+# call to Smallest for good. With SARVAM_API_KEY_2 (a second account) the
+# refused key rests and the call reconnects on the other account first.
+#
+# NOT done by adding the second key as another service in the STT waterfall:
+# every service in pipecat's ServiceSwitcher receives StartFrame and opens its
+# socket at call start (Smallest connects on every call today), so the second
+# account would see every open too, and hit the same limit.
+
+def sarvam_keys(settings=None) -> list:
+    """The Sarvam keys STT may use, in order: SARVAM_API_KEY, then
+    SARVAM_API_KEY_2 (which may hold several, comma-separated). SARVAM_API_KEY
+    itself is never split: TTS and the LLM read it as one key. Quotes,
+    whitespace and duplicates are dropped."""
+    s = settings or get_settings()
+    out = []
+    raw = [s.sarvam_api_key or ""] + (s.sarvam_api_key_2 or "").split(",")
+    for k in raw:
+        k = k.strip().strip("\"'").strip()
+        if k and k not in out:
+            out.append(k)
+    return out
+
+
+def sarvam_refusal(message) -> Optional[str]:
+    """Sarvam's "not on this key" answers, or None for any other error:
+    'rate_limit' (clears within a minute), 'credits' (no balance) or 'refused'
+    (another 1003: quota, an invalid or revoked key). A stall, a network error
+    or a bad parameter is not a key problem, and another account would not help."""
+    m = str(message or "").lower()
+    if "rate limit" in m or "rate_limit" in m:
+        return "rate_limit"
+    if "credits exhausted" in m or "insufficient_quota" in m:
+        return "credits"
+    if re.search(r"\b1003\b", m) or "subscription key" in m:
+        return "refused"
+    return None
+
+
+class SarvamKeyPool:
+    """Which Sarvam key a new STT socket opens on. Single event loop, no locks.
+    Keys are remembered by value, so a changed .env starts clean.
+
+    A refused key RESTS (SARVAM_KEY_RATE_LIMIT_REST_SECS after "Rate limit
+    exceeded", SARVAM_KEY_OTHER_REST_SECS after anything else) and is picked
+    last while it rests. Strategy (SARVAM_KEY_STRATEGY): 'failover' (default)
+    = the first key for every call while it works; 'roundrobin' = alternate per
+    call, which halves each account's opens a minute."""
+
+    def __init__(self):
+        self._rest_until: dict = {}   # key -> monotonic time its rest ends
+        self._last: dict = {}         # key -> last refusal kind
+        self._rr = 0
+
+    def keys(self) -> list:
+        return sarvam_keys()
+
+    def strategy(self) -> str:
+        st = (get_settings().sarvam_key_strategy or "failover").strip().lower()
+        return st if st in ("failover", "roundrobin") else "failover"
+
+    def resting(self, key: str) -> bool:
+        return self._rest_until.get(key, 0.0) > time.monotonic()
+
+    def pick(self, exclude=(), skip_resting: bool = False) -> Optional[int]:
+        """Index of the key to use, or None. `exclude`: indexes this call has
+        already tried. skip_resting: None rather than a resting key (a call
+        mid-switch goes to the fallback vendor instead of a key that was just
+        refused). Otherwise, with every key resting, the one whose rest ends
+        first — a call must open on something."""
+        keys = self.keys()
+        n = len(keys)
+        cands = [i for i in range(n) if i not in exclude]
+        if skip_resting:
+            cands = [i for i in cands if not self.resting(keys[i])]
+        if not cands:
+            return None
+        rr = self._rr % n if n else 0
+        if self.strategy() == "roundrobin":
+            order = lambda i: (self.resting(keys[i]), self._rest_until.get(keys[i], 0.0)
+                               if self.resting(keys[i]) else 0.0, (i - rr) % n)
+        else:
+            order = lambda i: (self.resting(keys[i]), self._rest_until.get(keys[i], 0.0)
+                               if self.resting(keys[i]) else 0.0, i)
+        best = min(cands, key=order)
+        self._rr = (best + 1) % n
+        return best
+
+    def refused(self, index: int, kind: str) -> float:
+        """Rest key `index` after a refusal of `kind`; returns the rest in seconds."""
+        keys = self.keys()
+        if not 0 <= index < len(keys):
+            return 0.0
+        s = get_settings()
+        secs = (s.sarvam_key_rate_limit_rest_secs if kind == "rate_limit"
+                else s.sarvam_key_other_rest_secs)
+        self._rest_until[keys[index]] = time.monotonic() + max(0.0, secs)
+        self._last[keys[index]] = kind
+        return secs
+
+    def status(self) -> list:
+        """For /health: per key, seconds of rest left and the last refusal. No key text."""
+        now = time.monotonic()
+        return [{"key": i + 1,
+                 "restingSecs": max(0, round(self._rest_until.get(k, 0.0) - now)),
+                 "lastRefusal": self._last.get(k)}
+                for i, k in enumerate(self.keys())]
+
+
+SARVAM_KEYS = SarvamKeyPool()
+
+
+def sarvam_key_failover(cls, buffer_secs: float = 5.0, connect_timeout: float = 3.0):
+    """Subclass a Sarvam STT so a key refusal moves THIS call to the other
+    account instead of to the fallback vendor.
+
+    On the first refusal (sarvam_refusal) from the key in use: rest that key in
+    SARVAM_KEYS and, if another key is not resting and this call has not tried
+    it, swallow the error (the waterfall would otherwise switch to Smallest),
+    reconnect on that key, and hold the caller's audio meanwhile — up to
+    `buffer_secs`, the newest kept — then send it ahead of the live audio, plus
+    any VAD stop (the flush) that came in between. Each key at most once per call.
+
+    GIVING UP leaves the call exactly where it would have been without a second
+    key — on the fallback vendor — and loses no more of the caller's audio:
+    when the other key's connect fails or takes longer than `connect_timeout`
+    (Sarvam opens in 0.09 s median, 1.23 s worst of 1,020 on the box), when the
+    other key is refused too, or when any other error arrives mid-switch, the
+    audio held for the switch, the audio the other key took in its first
+    `buffer_secs` and has not yet answered with a final (a final clears it, so
+    nothing the bot already heard is heard twice), and any still queued go to
+    the fallback (decoupled_stt_io's
+    stall hand-off target) BEFORE the error is pushed, so they reach it ahead of
+    the live audio. Then the error goes on and the waterfall fails over as
+    before. Errors that are not refusals, outside a switch, pass untouched.
+
+    Sits directly on SarvamSTTService, inside final_after_flush and
+    decoupled_stt_io: decoupled_stt_io's I/O task calls run_stt and the VAD
+    flush in arrival order, so the hold and the replay keep that order."""
+    import collections
+    from pipecat.frames.frames import (ErrorFrame, InterimTranscriptionFrame, TranscriptionFrame,
+                                       VADUserStoppedSpeakingFrame)
+    from pipecat.processors.frame_processor import FrameDirection as _Dir
+
+    class _KeyFailover(cls):
+        def __init__(self, *a, key_index: int = 0, **kw):
+            super().__init__(*a, **kw)
+            self._key_index = key_index
+            self._keys_tried = {key_index}
+            self._key_swallow = False      # refusal seen: drop its repeats (one per audio chunk)
+            self._key_holding = False      # until the new socket is up: hold audio
+            self._key_held = collections.deque()
+            self._key_held_bytes = 0
+            self._key_capture = None       # errors from the switch's own connect
+            self._key_recent = collections.deque()  # audio sent on the new key, first buffer_secs
+            self._key_recent_bytes = 0
+            self._key_switched_at = 0.0
+            self._key_done = False         # gave up: every error passes untouched
+            self._key_task = None
+            self.key_switches = 0
+
+        @property
+        def key_index(self) -> int:
+            return self._key_index
+
+        def _cap_bytes(self) -> int:
+            return int(buffer_secs * (self.sample_rate or 8000) * 2)
+
+        async def push_error_frame(self, error):
+            if self._key_done:
+                await super().push_error_frame(error)
+                return
+            if self._key_capture is not None:          # the switch's connect: judged there
+                self._key_capture.append(error)
+                return
+            kind = sarvam_refusal(getattr(error, "error", ""))
+            if kind is None:
+                if self._key_holding or self._key_recent:
+                    await self._key_give_up([error], "error mid-switch")
+                    return
+                await super().push_error_frame(error)
+                return
+            if self._key_swallow:
+                return
+            rest = SARVAM_KEYS.refused(self._key_index, kind)
+            nxt = SARVAM_KEYS.pick(exclude=self._keys_tried, skip_resting=True)
+            n = len(SARVAM_KEYS.keys())
+            if nxt is not None:
+                self._key_swallow = True
+                self._key_holding = True
+                self._keys_tried.add(nxt)
+                logger.warning("stt: sarvam refused key %d of %d (%s) — resting it %.0fs, "
+                               "reconnecting this call on key %d", self._key_index + 1, n,
+                               kind, rest, nxt + 1)
+                self._key_task = self.create_task(self._key_switch(nxt), name="sarvam_key_switch")
+                return
+            logger.warning("stt: sarvam refused key %d of %d (%s) — resting it %.0fs; no other "
+                           "key to try, falling back", self._key_index + 1, n, kind, rest)
+            await self._key_give_up([error], "refused")
+
+        async def _key_give_up(self, errors, why: str):
+            """Hand the caller's audio to the fallback, then let the errors fail
+            the waterfall over. Runs once; afterwards errors pass untouched."""
+            self._key_done = True
+            self._key_swallow = False
+            self._key_holding = False
+            t, self._key_task = self._key_task, None
+            if t is not None and t is not asyncio.current_task():
+                await self.cancel_task(t)
+            jobs = list(self._key_recent) + list(self._key_held)
+            self._key_recent.clear(); self._key_recent_bytes = 0
+            self._key_held.clear(); self._key_held_bytes = 0
+            fb = getattr(self, "_io_handoff", None)
+            pending = getattr(self, "_io_jobs", None)
+            if fb is not None and getattr(fb, "_io_task", None) is not None:
+                if pending:
+                    jobs.extend(pending)
+                    pending.clear()
+                    self._io_bytes = 0
+                for j in jobs:
+                    fb._io_put(j)
+                self._io_redirect = fb          # anything queued later goes there too
+                secs = sum(len(j[1]) for j in jobs if j[0] == "audio") / 2.0 / float(
+                    self.sample_rate or 8000)
+                logger.warning("stt: sarvam key failover gave up (%s) — %.1fs of the caller's "
+                               "audio handed to %s", why, secs, type(fb).__name__)
+            elif jobs:
+                logger.warning("stt: sarvam key failover gave up (%s) — no fallback to hand "
+                               "%d held chunk(s) to", why, len(jobs))
+            for e in errors:
+                await super().push_error_frame(e)
+
+        async def _key_detach(self):
+            """Drop the refused socket WITHOUT waiting for its close: the sarvamai
+            SDK's legacy client can sit in the closing handshake for its 10 s
+            close_timeout when Sarvam closes and keeps the TCP open (call
+            3e327e8a), and the caller's audio is being held meanwhile."""
+            await self._cancel_keepalive_task()
+            if self._receive_task:
+                await self.cancel_task(self._receive_task)
+                self._receive_task = None
+            ctx, sock = self._websocket_context, self._socket_client
+            self._socket_client = None
+            self._websocket_context = None
+            if ctx is not None and sock is not None:
+                async def _close_old():
+                    try:
+                        await asyncio.wait_for(ctx.__aexit__(None, None, None), timeout=2.0)
+                    except BaseException:
+                        pass
+                    logger.debug("Disconnected from Sarvam WebSocket (refused key)")
+                self.create_task(_close_old(), name="sarvam_close_refused")
+
+        async def _key_switch(self, index: int):
+            errors = []
+            try:
+                await self._key_detach()
+                keys = SARVAM_KEYS.keys()
+                if not 0 <= index < len(keys):
+                    raise RuntimeError("sarvam key %d is gone from the settings" % (index + 1))
+                from sarvamai import AsyncSarvamAI
+                # Same endpoint as the client being replaced (the timing sim aims it
+                # at a local fake; production keeps Sarvam's default).
+                env = getattr(getattr(self._sarvam_client, "_client_wrapper", None),
+                              "_environment", None)
+                extra = {"environment": env} if env is not None else {}
+                self._api_key = keys[index]
+                self._sarvam_client = AsyncSarvamAI(api_subscription_key=keys[index],
+                                                    headers=self._sdk_headers, **extra)
+                self._key_index = index
+                self.key_switches += 1
+                # The old key's repeats are over (its socket is gone); errors the
+                # connect raises are captured and judged below.
+                self._key_swallow = False
+                self._key_capture = errors
+                # NOT asyncio.wait_for: the sarvamai SDK does not give up a hung
+                # handshake when cancelled — it waits out its own 10 s open
+                # timeout (measured against a server that never answers: gave up
+                # 8-10 s in). So the connect runs as its own task; at the
+                # deadline it is cancelled in the background and the call moves
+                # on without waiting for it.
+                conn = self.create_task(self._connect(), name="sarvam_key_connect")
+                try:
+                    done, _ = await asyncio.wait({conn}, timeout=connect_timeout)
+                except asyncio.CancelledError:
+                    conn.cancel()
+                    raise
+                finally:
+                    self._key_capture = None
+                if not done:
+                    conn.cancel()
+                    errors.append(ErrorFrame(
+                        error=f"Sarvam key {index + 1}: no connection in {connect_timeout:.1f}s"))
+                if self._socket_client is None and not errors:
+                    errors.append(ErrorFrame(error=f"Sarvam key {index + 1}: no socket after connect"))
+            except asyncio.CancelledError:
+                self._key_capture = None
+                raise
+            except Exception as e:
+                self._key_capture = None
+                errors.append(ErrorFrame(error=f"Sarvam key switch failed: {e}", exception=e))
+            if errors or self._socket_client is None:
+                if self._socket_client is None:
+                    await self._key_give_up(errors, "key %d did not connect" % (index + 1))
+                    return
+                # Connected, but the connect also reported something: pass it on.
+                for e in errors:
+                    await self.push_error_frame(e)
+            self._key_switched_at = time.monotonic()
+            self._key_holding = False
+            self._key_task = None
+
+        def _key_hold(self, job) -> None:
+            self._key_held.append(job)
+            if job[0] == "audio":
+                self._key_held_bytes += len(job[1])
+                while self._key_held_bytes > self._cap_bytes():
+                    old = next((j for j in self._key_held if j[0] == "audio"), None)
+                    if old is None:
+                        break
+                    self._key_held.remove(old)
+                    self._key_held_bytes -= len(old[1])
+
+        def _key_note_sent(self, audio: bytes) -> None:
+            """Keep what the new key takes in its first buffer_secs: if it is
+            refused too, that audio is handed to the fallback, not lost."""
+            if not self.key_switches or self._key_done or not self._key_switched_at:
+                return
+            if time.monotonic() - self._key_switched_at > buffer_secs:
+                if self._key_recent:
+                    self._key_recent.clear()
+                    self._key_recent_bytes = 0
+                return
+            self._key_recent.append(("audio", audio))
+            self._key_recent_bytes += len(audio)
+            while self._key_recent_bytes > self._cap_bytes() and self._key_recent:
+                self._key_recent_bytes -= len(self._key_recent.popleft()[1])
+
+        def _key_forward(self, audio: bytes) -> bool:
+            """After giving up, a chunk already taken off the queue goes where
+            the rest went (the fallback), not into the refused socket."""
+            fb = getattr(self, "_io_redirect", None) if self._key_done else None
+            if fb is None:
+                return False
+            fb._io_put(("audio", audio))
+            return True
+
+        async def run_stt(self, audio: bytes):
+            if self._key_holding:
+                self._key_hold(("audio", audio))
+                yield None
+                return
+            if self._key_forward(audio):
+                yield None
+                return
+            while self._key_held:
+                job = self._key_held.popleft()
+                if job[0] == "audio":
+                    self._key_held_bytes -= len(job[1])
+                    self._key_note_sent(job[1])
+                    async for f in super().run_stt(job[1]):
+                        yield f
+                elif getattr(self, "_socket_client", None) is not None:
+                    try:
+                        await self._socket_client.flush()
+                    except Exception as e:
+                        yield ErrorFrame(error=f"Error sending flush to Sarvam: {e}", exception=e)
+            if self._key_forward(audio):          # the replay above gave up
+                yield None
+                return
+            self._key_note_sent(audio)
+            async for f in super().run_stt(audio):
+                yield f
+
+        async def push_frame(self, frame, direction=_Dir.DOWNSTREAM):
+            # A final from the new key covers the audio before it: that audio
+            # must never be handed to the fallback too (the caller would be
+            # answered twice).
+            if (self._key_recent and isinstance(frame, TranscriptionFrame)
+                    and not isinstance(frame, InterimTranscriptionFrame)):
+                self._key_recent.clear()
+                self._key_recent_bytes = 0
+            await super().push_frame(frame, direction)
+
+        async def process_frame(self, frame, direction):
+            if self._key_holding and isinstance(frame, VADUserStoppedSpeakingFrame):
+                # Replayed after the audio before it: a flush to Sarvam, or the
+                # frame itself to the fallback if the switch gives up.
+                self._key_hold(("frame", frame, direction))
+            await super().process_frame(frame, direction)
+
+        async def _key_cancel(self):
+            t, self._key_task = self._key_task, None
+            if t is not None:
+                await self.cancel_task(t)
+
+        async def stop(self, frame):
+            await self._key_cancel()
+            await super().stop(frame)
+
+        async def cancel(self, frame):
+            await self._key_cancel()
+            await super().cancel(frame)
+
+    _KeyFailover.__name__ = cls.__name__
+    _KeyFailover.__qualname__ = cls.__qualname__
+    return _KeyFailover
 
 
 class _PersistentClientSession:
