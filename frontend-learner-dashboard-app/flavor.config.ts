@@ -308,4 +308,11 @@ export const flavorConfig: FlavorConfigs = {
     domain: "vacademy.io",
     subdomain: "learner-edum3ntor",
   },
+
+  // Mecademy Android app
+  "com.mecademy.app": {
+    appName: "Mecademy",
+    domain: "mecademy.in",
+    subdomain: "student",
+  },
 };
