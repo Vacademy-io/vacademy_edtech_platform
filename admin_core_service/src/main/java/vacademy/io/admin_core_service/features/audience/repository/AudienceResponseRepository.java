@@ -2576,8 +2576,10 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("last10") String last10);
 
         /**
-         * Owner of the most recent active, owned lead with this phone. Blank
-         * {@code audienceIdsCsv} = whole institute. At most one row.
+         * Owner of the most recent active, owned lead with this phone that is not LOST
+         * (Discarded): a discarded lead no longer belongs to the counsellor who discarded
+         * it, so another counsellor may add it again. Blank {@code audienceIdsCsv} = whole
+         * institute. At most one row.
          */
         @Query(value = """
                             SELECT ulp.assigned_counselor_id   AS "counsellorId",
@@ -2585,6 +2587,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                             AND (COALESCE(:audienceIdsCsv, '') = '' OR ar.audience_id = ANY(STRING_TO_ARRAY(:audienceIdsCsv, ',')))
                             AND ar.parent_mobile IS NOT NULL
@@ -2592,6 +2595,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             AND (ar.is_duplicate IS NULL OR ar.is_duplicate = false)
                             AND ar.audience_status = 'ACTIVE'
                             AND COALESCE(ulp.assigned_counselor_id, '') <> ''
+                            AND COALESCE(UPPER(COALESCE(ls.status_key, ulp.conversion_status)), '') <> 'LOST'
                             ORDER BY ar.created_at DESC
                             LIMIT 1
                         """, nativeQuery = true)
