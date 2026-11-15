@@ -205,7 +205,7 @@
         "error": "Impossible de charger vos évaluations.",
         "noMatch": "Aucune évaluation ne correspond à votre recherche.",
         "empty": "Aucune évaluation à corriger pour le moment",
-        "emptyHint": "Les évaluations corrigées à la main apparaissent ici une fois publiées.",
+        "emptyHint": "Créez votre première évaluation à partir du sujet. Nouveau ? Touchez ▶ en haut pour le tutoriel de 2 minutes.",
         "students_one": "{{count}} élève",
         "students_other": "{{count}} élèves"
     },

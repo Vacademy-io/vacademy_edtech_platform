@@ -205,7 +205,7 @@
         "error": "Couldn't load your assessments.",
         "noMatch": "No assessment matches your search.",
         "empty": "No assessments to check yet",
-        "emptyHint": "Assessments that are checked by hand show up here once they are published.",
+        "emptyHint": "Create your first test from the question paper. New here? Tap ▶ at the top for the 2-minute tutorial.",
         "students_one": "{{count}} student",
         "students_other": "{{count}} students"
     },
