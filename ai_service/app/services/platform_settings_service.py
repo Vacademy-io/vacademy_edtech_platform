@@ -1204,10 +1204,13 @@ def _coerce(spec: SettingSpec, value: Any) -> Any:
         raise ValueError(f"{spec.key} must be true or false")
 
     if spec.type == "enum":
+        # Case-insensitive, returning the option as declared: billing.storefront.mode's options
+        # are upper case, and lower-casing the input made SEGMENTS/ALL impossible to save.
         v = str(value).strip().lower()
-        if v not in spec.options:
+        match = next((o for o in spec.options if o.lower() == v), None)
+        if match is None:
             raise ValueError(f"{spec.key} must be one of {', '.join(spec.options)}")
-        return v
+        return match
 
     if spec.type in ("model", "string"):
         v = str(value).strip()
