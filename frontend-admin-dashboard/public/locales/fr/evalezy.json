@@ -10,6 +10,7 @@
         "starting": "Ouverture de votre démo…"
     },
     "plan": {
+        "noPlans": "Les forfaits ne peuvent pas encore être achetés en ligne pour ce compte. Contactez-nous et nous le configurerons.",
         "invoices": "Factures",
         "pendingTitle": "Paiement en attente",
         "pendingBody": "Votre compte est prêt. Payez votre forfait ci-dessous pour commencer à corriger des copies. Les crédits du forfait sont ajoutés dès le paiement.",
