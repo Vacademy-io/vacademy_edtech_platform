@@ -151,5 +151,15 @@
     "leadLookup": "Vérifier un prospect",
     "contactsDashboard": "Tableau de bord des contacts",
     "automationDashboard": "Tableau de bord des automatisations",
-    "engagementDashboard": "Tableau de bord de l’engagement"
+    "engagementDashboard": "Tableau de bord de l’engagement",
+    "commerceHome": "Accueil boutique",
+    "commerceOrders": "Commandes",
+    "commerceProducts": "Produits",
+    "commerceCollections": "Collections",
+    "commerceInventory": "Stock",
+    "commercePos": "Caisse (POS)",
+    "commerceCustomers": "Clients",
+    "commerceDiscounts": "Remises",
+    "commerceReports": "Rapports boutique",
+    "commerceSettings": "Paramètres boutique"
 }

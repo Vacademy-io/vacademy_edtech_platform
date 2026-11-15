@@ -151,5 +151,15 @@
     "leadLookup": "लीड जाँचें",
     "contactsDashboard": "कॉन्टैक्ट्स डैशबोर्ड",
     "automationDashboard": "ऑटोमेशन डैशबोर्ड",
-    "engagementDashboard": "एंगेजमेंट डैशबोर्ड"
+    "engagementDashboard": "एंगेजमेंट डैशबोर्ड",
+    "commerceHome": "दुकान होम",
+    "commerceOrders": "ऑर्डर",
+    "commerceProducts": "प्रोडक्ट",
+    "commerceCollections": "कलेक्शन",
+    "commerceInventory": "स्टॉक",
+    "commercePos": "बिलिंग काउंटर (POS)",
+    "commerceCustomers": "ग्राहक",
+    "commerceDiscounts": "छूट",
+    "commerceReports": "दुकान की रिपोर्ट",
+    "commerceSettings": "दुकान की सेटिंग्स"
 }

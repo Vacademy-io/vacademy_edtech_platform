@@ -34,6 +34,16 @@ import {
     UserCircle,
     SquaresFour,
     Stack,
+    Storefront,
+    Receipt,
+    Package,
+    FolderSimple,
+    Warehouse,
+    CashRegister,
+    UsersThree,
+    SealPercent,
+    ChartPieSlice,
+    Wrench,
 } from '@phosphor-icons/react';
 import i18next from 'i18next';
 import { StorageKey } from '@/constants/storage/storage';
@@ -981,6 +991,84 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 adminOnly: true,
             },
         ],
+    },
+    // ───────────────────────── COMMERCE ─────────────────────────
+    // The shop: one rail of its own so shop screens never sit among LMS items.
+    // Ids, routes and who sees what are defined once in
+    // lib/commerce/commerce-access.ts (COMMERCE_NAV); mySidebar drops every entry
+    // here unless the institute has the commerce feature AND the person is an
+    // institute ADMIN or holds a commerce role that sees it. Plain tabs on
+    // purpose, with no `adminOnly` sub-items: the gate is the commerce role, not
+    // the role's Display Settings.
+    {
+        icon: Storefront,
+        id: 'commerce-home',
+        title: sidebarT('sidebar:commerceHome'),
+        to: '/commerce',
+        category: 'COMMERCE',
+    },
+    {
+        icon: Receipt,
+        id: 'commerce-orders',
+        title: sidebarT('sidebar:commerceOrders'),
+        to: '/commerce/orders',
+        category: 'COMMERCE',
+    },
+    {
+        icon: Package,
+        id: 'commerce-products',
+        title: sidebarT('sidebar:commerceProducts'),
+        to: '/commerce/products',
+        category: 'COMMERCE',
+    },
+    {
+        icon: FolderSimple,
+        id: 'commerce-collections',
+        title: sidebarT('sidebar:commerceCollections'),
+        to: '/commerce/collections',
+        category: 'COMMERCE',
+    },
+    {
+        icon: Warehouse,
+        id: 'commerce-inventory',
+        title: sidebarT('sidebar:commerceInventory'),
+        to: '/commerce/inventory',
+        category: 'COMMERCE',
+    },
+    {
+        icon: CashRegister,
+        id: 'commerce-pos',
+        title: sidebarT('sidebar:commercePos'),
+        to: '/commerce/pos',
+        category: 'COMMERCE',
+    },
+    {
+        icon: UsersThree,
+        id: 'commerce-customers',
+        title: sidebarT('sidebar:commerceCustomers'),
+        to: '/commerce/customers',
+        category: 'COMMERCE',
+    },
+    {
+        icon: SealPercent,
+        id: 'commerce-discounts',
+        title: sidebarT('sidebar:commerceDiscounts'),
+        to: '/commerce/discounts',
+        category: 'COMMERCE',
+    },
+    {
+        icon: ChartPieSlice,
+        id: 'commerce-reports',
+        title: sidebarT('sidebar:commerceReports'),
+        to: '/commerce/reports',
+        category: 'COMMERCE',
+    },
+    {
+        icon: Wrench,
+        id: 'commerce-settings',
+        title: sidebarT('sidebar:commerceSettings'),
+        to: '/commerce/settings',
+        category: 'COMMERCE',
     },
     {
         icon: GearSix,

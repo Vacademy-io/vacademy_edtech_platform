@@ -76,7 +76,13 @@ export function categoriesWithItems(
 }
 
 /** The rail's built-in category order (category-rail.tsx), used as the last fallback. */
-export const RAIL_CATEGORY_ORDER: readonly SidebarCategory[] = ['CRM', 'LMS', 'AI', 'ERP'];
+export const RAIL_CATEGORY_ORDER: readonly SidebarCategory[] = [
+    'CRM',
+    'LMS',
+    'AI',
+    'ERP',
+    'COMMERCE',
+];
 
 export interface PickActiveCategoryArgs {
     /** Categories whose sidebar entries cover the current route, in priority order. */
@@ -133,7 +139,11 @@ export function pickActiveCategory({
     if (match) return match;
 
     if (sidebarCategories) {
-        const cats = sidebarCategories.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        // COMMERCE is a fallback only where it is available: with nothing else visible, an
+        // institute without the module keeps the earlier answer instead of an empty panel.
+        const cats = sidebarCategories
+            .filter((c) => c.id !== 'COMMERCE' || !!available?.has('COMMERCE'))
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         const fallback =
             cats.find((c) => c.default && usable(c.id)) ?? cats.find((c) => usable(c.id));
         if (fallback) return fallback.id as SidebarCategory;

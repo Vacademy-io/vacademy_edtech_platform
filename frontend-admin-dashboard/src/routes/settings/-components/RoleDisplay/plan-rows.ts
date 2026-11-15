@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import type { Entitlement } from '@/lib/capabilities/entitlement';
 import { useEntitlement } from '@/lib/capabilities/use-entitlement';
+import {
+    COMMERCE_SIDEBAR_CATEGORY,
+    type CommerceAccess,
+    commerceNavRule,
+} from '@/lib/commerce/commerce-access';
+import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { getSidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
 import type { SidebarItemsType } from '@/types/layout-container/layout-container-types';
 import type { StudentSideViewVisibilityKey } from '@/types/display-settings';
@@ -155,13 +161,42 @@ export function visibleSectionGroups(
         .filter((g) => g.sections.length > 0);
 }
 
+/**
+ * Commerce rows on top of the plan filter. Commerce is off until granted in
+ * EVERY mode (a LEGACY institute included), so the editors must not offer the
+ * Commerce category or its tabs to an institute without the module. Only the
+ * feature gate is applied here, not the viewer's own commerce role: an admin
+ * configures these rows for other roles.
+ */
+export function withCommerceRows(
+    base: PlanRowFilter,
+    commerce: Pick<CommerceAccess, 'moduleOn' | 'isNavFeatureOn'>
+): PlanRowFilter {
+    const tab = (tabId: string) => {
+        const rule = commerceNavRule(tabId);
+        return rule ? commerce.isNavFeatureOn(rule.id) : base.tab(tabId);
+    };
+    return {
+        ...base,
+        tab,
+        category: (categoryId, tabs) =>
+            categoryId === COMMERCE_SIDEBAR_CATEGORY
+                ? commerce.moduleOn && tabs.some((t) => !!commerceNavRule(t.id) && tab(t.id))
+                : base.category(categoryId, tabs),
+    };
+}
+
 export function usePlanRowFilter(): PlanRowFilter {
     const entitlement = useEntitlement();
+    const commerce = useCommerceAccess();
     return useMemo(
         () =>
-            entitlement.managed
-                ? createPlanRowFilter(entitlement, getSidebarItemsData())
-                : SHOW_ALL,
-        [entitlement]
+            withCommerceRows(
+                entitlement.managed
+                    ? createPlanRowFilter(entitlement, getSidebarItemsData())
+                    : SHOW_ALL,
+                commerce
+            ),
+        [entitlement, commerce]
     );
 }

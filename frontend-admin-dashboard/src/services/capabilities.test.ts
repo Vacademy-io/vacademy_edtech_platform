@@ -105,6 +105,7 @@ describe('resolveCan', () => {
             catalog_version: 1,
             modules: {},
             features: { 'crm.leads': true, 'crm.ai_calling': false },
+            opt_in_modules: [],
             display_settings_version: 'v1',
         },
     });
@@ -136,6 +137,72 @@ describe('resolveCan', () => {
     });
 });
 
+describe('resolveCan: opt-in modules fail closed (commerce)', () => {
+    const loaded = (
+        mode: 'LEGACY' | 'MANAGED',
+        features: Record<string, boolean>,
+        optIn: string[] = ['commerce']
+    ) => ({
+        instituteId: 'inst-1',
+        status: 'loaded' as const,
+        data: {
+            mode,
+            catalog_version: 1,
+            modules: {},
+            features,
+            opt_in_modules: optIn,
+            display_settings_version: 'v1',
+        },
+    });
+
+    it.each(['LEGACY', 'MANAGED'] as const)(
+        '%s: reads the features map; off and missing both mean off',
+        async (mode) => {
+            const { resolveCan } = await load();
+            const snapshot = loaded(mode, { 'commerce.pos': true, 'commerce.orders': false });
+            expect(resolveCan(snapshot, 'inst-1', 'commerce.pos')).toBe(true);
+            expect(resolveCan(snapshot, 'inst-1', 'commerce.orders')).toBe(false);
+            // Not in the map at all (an old backend, or a key added later).
+            expect(resolveCan(snapshot, 'inst-1', 'commerce.catalogue')).toBe(false);
+            expect(resolveCan(snapshot, 'inst-1', 'commerce.accounts')).toBe(false);
+        }
+    );
+
+    it('a LEGACY institute without the module does not get commerce', async () => {
+        const { resolveCan } = await load();
+        const snapshot = loaded('LEGACY', { 'crm.leads': false, 'commerce.pos': false });
+        expect(resolveCan(snapshot, 'inst-1', 'commerce.pos')).toBe(false);
+        // Ordinary features keep failing open in LEGACY.
+        expect(resolveCan(snapshot, 'inst-1', 'crm.leads')).toBe(true);
+    });
+
+    it('is closed before load, after an error and for another institute', async () => {
+        const { resolveCan } = await load();
+        const base = { instituteId: 'inst-1', data: null };
+        expect(resolveCan({ ...base, status: 'idle' }, 'inst-1', 'commerce.pos')).toBe(false);
+        expect(resolveCan({ ...base, status: 'loading' }, 'inst-1', 'commerce.pos')).toBe(false);
+        expect(resolveCan({ ...base, status: 'error' }, 'inst-1', 'commerce.pos')).toBe(false);
+        const on = loaded('MANAGED', { 'commerce.pos': true });
+        expect(resolveCan(on, 'inst-2', 'commerce.pos')).toBe(false);
+        expect(resolveCan(on, null, 'commerce.pos')).toBe(false);
+    });
+
+    it('commerce is opt-in even when the server omits opt_in_modules', async () => {
+        const { resolveCan, isOptInFeature } = await load();
+        const snapshot = loaded('LEGACY', {}, []);
+        expect(isOptInFeature('commerce.pos', snapshot.data)).toBe(true);
+        expect(resolveCan(snapshot, 'inst-1', 'commerce.pos')).toBe(false);
+    });
+
+    it('a module the server lists as opt-in is read strictly too', async () => {
+        const { resolveCan, isOptInFeature } = await load();
+        const snapshot = loaded('LEGACY', { 'future.thing': false }, ['commerce', 'future']);
+        expect(isOptInFeature('future.thing', snapshot.data)).toBe(true);
+        expect(resolveCan(snapshot, 'inst-1', 'future.thing')).toBe(false);
+        expect(isOptInFeature('crm.leads', snapshot.data)).toBe(false);
+    });
+});
+
 describe('normalizeCapabilitiesMe', () => {
     it('rejects a non-JSON body and treats an unknown mode as LEGACY', async () => {
         const { normalizeCapabilitiesMe } = await load();
@@ -144,6 +211,17 @@ describe('normalizeCapabilitiesMe', () => {
         expect(normalizeCapabilitiesMe(me({ display_settings_version: null }))).toMatchObject({
             display_settings_version: null,
         });
+    });
+
+    it('keeps opt_in_modules and defaults it to an empty list', async () => {
+        const { normalizeCapabilitiesMe } = await load();
+        expect(
+            normalizeCapabilitiesMe({ mode: 'LEGACY', opt_in_modules: ['commerce', 7, ''] })
+        ).toMatchObject({ opt_in_modules: ['commerce'] });
+        expect(normalizeCapabilitiesMe({ mode: 'LEGACY' })).toMatchObject({ opt_in_modules: [] });
+        expect(
+            normalizeCapabilitiesMe({ mode: 'LEGACY', opt_in_modules: 'commerce' })
+        ).toMatchObject({ opt_in_modules: [] });
     });
 });
 

@@ -19,7 +19,7 @@ import {
     GearSix,
     MagnifyingGlass,
     LockKey,
-    Heartbeat, Bank } from '@phosphor-icons/react';
+    Heartbeat, Bank, Storefront } from '@phosphor-icons/react';
 import { SidebarSearch } from './sidebar-search';
 import { cn } from '@/lib/utils';
 import { CATEGORY_COLORS } from './sidebar-colors';
@@ -68,6 +68,7 @@ const buildBaseCategories = (t: TFunction): CategoryConfig[] => [
     { id: 'LMS', label: t('categories.lms'), icon: GraduationCap },
     { id: 'AI', label: t('categories.ai'), icon: Sparkle },
     { id: 'ERP', label: t('categories.erp'), icon: Bank },
+    { id: 'COMMERCE', label: t('categories.commerce'), icon: Storefront },
 ];
 
 export const CategoryRail: React.FC<CategoryRailProps> = ({
@@ -116,8 +117,17 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
     const nonEmptyCategories = hideEmptyCategories
         ? categoriesWithItems(sidebarItems, instituteId)
         : null;
+    // Commerce is drawn only when the person has a commerce tab (module on and a
+    // role that sees one), in every mode: unlike the other categories it must
+    // never show up empty for an institute that does not have the module.
+    const hasCommerceItems = sidebarItems.some(
+        (item) =>
+            item.category === 'COMMERCE' &&
+            (!item.showForInstitute || item.showForInstitute === instituteId)
+    );
     const visibleCategories = sortedCategories.filter((cat) => {
         if (cat.id === 'RECENT') return true;
+        if (cat.id === 'COMMERCE' && !hasCommerceItems) return false;
         if (nonEmptyCategories && !nonEmptyCategories.has(cat.id as SidebarCategory)) {
             return false;
         }

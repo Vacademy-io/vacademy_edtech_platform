@@ -78,6 +78,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
             LMS: [],
             AI: [],
             ERP: [],
+            COMMERCE: [],
         };
 
         filterSearchableItems(sidebarItems, { instituteId, sidebarCategories }).forEach(
@@ -148,6 +149,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
         LMS: t('categoryLms'),
         AI: t('categoryAiTools'),
         ERP: t('categoryErp'),
+        COMMERCE: t('categoryCommerce'),
     };
 
     const renderItem = (item: SidebarItemsType) => {

@@ -1,5 +1,6 @@
 import type { OfflinePaymentDetails } from '@/services/offline-payment-modes';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { hideUnassignableCommerceRoles } from '@/lib/commerce/commerce-role-viewer';
 import {
     GRANT_USER_ACCESS,
     GET_ALL_FACULTY_V2,
@@ -275,11 +276,14 @@ export const getAllRoles = async () => {
         method: 'GET',
         url: `${ROLES_BASE}/${instituteId}/roles`,
     });
-    return Array.isArray(response.data)
-        ? response.data.filter(
-              (role: { name?: string }) => !LEGACY_ROLE_NAMES.includes(role?.name ?? '')
-          )
-        : response.data;
+    if (!Array.isArray(response.data)) return response.data;
+    const roles = response.data.filter(
+        (role: { name?: string }) => !LEGACY_ROLE_NAMES.includes(role?.name ?? '')
+    );
+    // The four commerce roles are platform rows, so every institute gets them
+    // back. Offer them only where a grant can succeed: to an institute ADMIN of
+    // an institute that has the commerce module.
+    return hideUnassignableCommerceRoles(roles);
 };
 
 export const createCustomRole = async (payload: CreateRoleDTO) => {

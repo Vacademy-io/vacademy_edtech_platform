@@ -153,5 +153,15 @@
     "leadLookup": "Check Lead",
     "contactsDashboard": "Contacts Dashboard",
     "automationDashboard": "Automation Dashboard",
-    "engagementDashboard": "Engagement Dashboard"
+    "engagementDashboard": "Engagement Dashboard",
+    "commerceHome": "Shop home",
+    "commerceOrders": "Orders",
+    "commerceProducts": "Products",
+    "commerceCollections": "Collections",
+    "commerceInventory": "Stock",
+    "commercePos": "POS",
+    "commerceCustomers": "Customers",
+    "commerceDiscounts": "Discounts",
+    "commerceReports": "Shop reports",
+    "commerceSettings": "Shop settings"
 }

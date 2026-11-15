@@ -3,7 +3,8 @@
         "crm": "CRM",
         "lms": "LMS",
         "ai": "IA",
-        "erp": "ERP"
+        "erp": "ERP",
+        "commerce": "Boutique"
     },
     "search": "Rechercher",
     "recent": "Récent",

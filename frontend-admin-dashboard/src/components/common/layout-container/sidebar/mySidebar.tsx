@@ -84,6 +84,8 @@ import {
     filterSidebarByEntitlement,
     pickActiveCategory,
 } from '@/lib/capabilities/nav-access';
+import { filterCommerceSidebar } from '@/lib/commerce/commerce-access';
+import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 // Sidebar sub-items under "Assessments and Tests" that deep-link into the
 // create-assessment wizard. Hidden together with the Create Assessment button.
 const ASSESSMENT_CREATE_SUB_ITEM_IDS = new Set([
@@ -218,6 +220,10 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // institute is MANAGED and the catalogue loaded (INSTITUTE_MODULES spec §9).
     const entitlement = useEntitlement();
     const setNavSnapshot = useNavSnapshotStore((s) => s.setSnapshot);
+    // Commerce is off until granted, in every mode, and its tabs follow the four
+    // commerce roles. Reads the /capabilities/me the entitlement already loaded:
+    // no extra request.
+    const commerceAccess = useCommerceAccess();
 
     useEffect(() => {
         setIsVoltSubdomain(
@@ -451,7 +457,17 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
         });
     })();
     // Then the institute's plan. In LEGACY this returns roleSidebarItems itself.
-    const entitledItems = filterSidebarByEntitlement(roleSidebarItems, entitlement);
+    // Then the commerce gates: no commerce tab without its feature and a role that
+    // sees it, and shop-only staff (a cashier) get nothing but the shop.
+    const entitledItems = filterCommerceSidebar(
+        filterSidebarByEntitlement(roleSidebarItems, entitlement),
+        commerceAccess
+    );
+    // Shop-only staff: the rail draws only categories with something to show,
+    // exactly as it does for a MANAGED plan, so a cashier sees one icon, not four
+    // empty ones.
+    const hideEmptyRailCategories =
+        entitlement.managed || (commerceAccess.moduleOn && commerceAccess.isCommerceOnlyStaff);
     // The LMS Dashboard holds the learning cards that the CRM Dashboard took off the
     // home page, so it exists only where the home page is the CRM Dashboard: people
     // who can see Leads (sub-org admins keep their own dashboard). Everyone else keeps
@@ -468,7 +484,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     );
     // MANAGED: the rail categories with anything left to show (the rail draws only
     // these). A string so the category sync below re-runs only when it changes.
-    const availableCategoriesKey = entitlement.managed
+    const availableCategoriesKey = hideEmptyRailCategories
         ? Array.from(categoriesWithItems(finalSidebarItems, data?.id)).sort().join(',')
         : null;
 
@@ -647,7 +663,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                                 roleDisplay={roleDisplay}
                                 sidebarItems={finalSidebarItems}
                                 instituteId={data?.id}
-                                hideEmptyCategories={entitlement.managed}
+                                hideEmptyCategories={hideEmptyRailCategories}
                             />
 
                             {/* Panel */}
@@ -693,7 +709,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                         roleDisplay={roleDisplay}
                         sidebarItems={finalSidebarItems}
                         instituteId={data?.id}
-                        hideEmptyCategories={entitlement.managed}
+                        hideEmptyCategories={hideEmptyRailCategories}
                     />
 
                     {/* Right: Panel (always mounted, animates width) */}

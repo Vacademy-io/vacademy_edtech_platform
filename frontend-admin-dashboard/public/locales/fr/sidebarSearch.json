@@ -7,5 +7,6 @@
     "noResultsFound": "Aucun résultat trouvé",
     "searchPlaceholder": "Rechercher des onglets, fonctionnalités...",
     "settingsDomainHeading": "Paramètres · {{domain}}",
-    "tryDifferentSearchTerm": "Essayez un autre terme de recherche"
+    "tryDifferentSearchTerm": "Essayez un autre terme de recherche",
+    "categoryCommerce": "Boutique"
 }
