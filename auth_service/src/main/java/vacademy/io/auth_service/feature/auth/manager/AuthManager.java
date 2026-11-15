@@ -133,6 +133,12 @@ public class AuthManager {
 
     /** @param ownProduct set by a self sign-up only: its welcome mail goes out under that product */
     public JwtResponseDto registerRootUser(RegisterRequest registerRequest, ProductConfigDTO ownProduct) {
+        return registerRootUser(registerRequest, ownProduct, true);
+    }
+
+    /** @param sendWelcome false: no login mail now (a product "Buy <plan>" sign-up gets it once paid) */
+    public JwtResponseDto registerRootUser(RegisterRequest registerRequest, ProductConfigDTO ownProduct,
+            boolean sendWelcome) {
         if (Objects.isNull(registerRequest))
             throw new VacademyException("Invalid Request");
 
@@ -197,7 +203,7 @@ public class AuthManager {
 
             userRoleSet.add(userRole);
         });
-        User newUser = authService.createUser(registerRequest, userRoleSet, ownProduct);
+        User newUser = authService.createUser(registerRequest, userRoleSet, ownProduct, sendWelcome);
         oAuth2VendorToUserDetailService.verifyEmail(registerRequest.getSubjectId(), registerRequest.getVendorId(),
                 registerRequest.getEmail());
         // Generate a refresh token

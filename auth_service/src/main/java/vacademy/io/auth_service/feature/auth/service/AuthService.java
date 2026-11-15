@@ -148,6 +148,16 @@ public class AuthService {
     /** @param ownProduct set by a self sign-up only: never read from a request body */
     @Transactional
     public User createUser(RegisterRequest registerRequest, Set<UserRole> roles, ProductConfigDTO ownProduct) {
+        return createUser(registerRequest, roles, ownProduct, true);
+    }
+
+    /**
+     * @param sendWelcome false for a product "Buy <plan>" sign-up: its login mail goes out once the
+     *                    plan is paid (admin-core asks for it then), not at sign-up
+     */
+    @Transactional
+    public User createUser(RegisterRequest registerRequest, Set<UserRole> roles, ProductConfigDTO ownProduct,
+            boolean sendWelcome) {
         boolean isAlreadyPresent = false;
         // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
         // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
@@ -180,6 +190,9 @@ public class AuthService {
         }
         user.setRoles(roles); // Now set the roles
         user = userRepository.save(user); // Save again with roles
+        if (!sendWelcome) {
+            return user;
+        }
         if (isAlreadyPresent) {
             sendKeepingCredentialsWelcomeMailToUser(user, registerRequest.getInstitute().getId(), roles);
         } else {

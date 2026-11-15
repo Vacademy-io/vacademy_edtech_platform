@@ -189,7 +189,8 @@ public class SelfSignupManager {
         register.setSubjectId(emptyToNull(proof.get("subject_id", String.class)));
         register.setVendorId(emptyToNull(proof.get("vendor_id", String.class)));
 
-        JwtResponseDto tokens = authManager.registerRootUser(register, product);
+        // A "Buy <plan>" account gets its login mail only once the plan is paid (admin-core asks then).
+        JwtResponseDto tokens = authManager.registerRootUser(register, product, buying == null);
 
         log.info("[self-signup] signup_completed product={} method={} institute={} trial_ends={} plan={} buy={} source={} campaign={}",
                 product.getProductKey(), method, institute.getId(), trialEnds, request.getPlan(), buying,

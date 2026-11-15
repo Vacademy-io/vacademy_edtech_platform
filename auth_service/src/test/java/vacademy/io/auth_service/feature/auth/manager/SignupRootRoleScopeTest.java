@@ -32,6 +32,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -72,7 +74,7 @@ class SignupRootRoleScopeTest {
         User created = new User();
         created.setId("u-new");
         created.setUsername("owner");
-        when(authService.createUser(any(RegisterRequest.class), any(), any())).thenReturn(created);
+        when(authService.createUser(any(RegisterRequest.class), any(), any(), anyBoolean())).thenReturn(created);
         when(refreshTokenService.createRefreshToken(any(), any())).thenReturn(new RefreshToken());
     }
 
@@ -91,7 +93,7 @@ class SignupRootRoleScopeTest {
     @SuppressWarnings("unchecked")
     private Set<UserRole> rolesWritten() {
         ArgumentCaptor<Set<UserRole>> captor = ArgumentCaptor.forClass(Set.class);
-        verify(authService).createUser(any(RegisterRequest.class), captor.capture(), any());
+        verify(authService).createUser(any(RegisterRequest.class), captor.capture(), any(), eq(true));
         return captor.getValue();
     }
 
@@ -132,7 +134,7 @@ class SignupRootRoleScopeTest {
             assertEquals(HttpStatus.CONFLICT, refused.getStatus());
         }
         verify(internalClientUtils, never()).makeHmacRequest(any(), any(), any(), any(), any());
-        verify(authService, never()).createUser(any(RegisterRequest.class), any(), any());
+        verify(authService, never()).createUser(any(RegisterRequest.class), any(), any(), anyBoolean());
         verify(refreshTokenService, never()).createRefreshToken(any(), any());
     }
 }

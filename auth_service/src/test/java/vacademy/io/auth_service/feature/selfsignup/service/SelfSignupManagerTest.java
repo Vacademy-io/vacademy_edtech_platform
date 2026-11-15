@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -62,6 +63,7 @@ class SelfSignupManagerTest {
         when(claims.get("vendor_id", String.class)).thenReturn("");
         when(tokenService.verify("good")).thenReturn(claims);
         when(authManager.registerRootUser(any(), any())).thenReturn(JwtResponseDto.builder().accessToken("a").refreshToken("r").build());
+        when(authManager.registerRootUser(any(), any(), anyBoolean())).thenReturn(JwtResponseDto.builder().accessToken("a").refreshToken("r").build());
     }
 
     private SelfSignupRequest valid() {
@@ -131,7 +133,7 @@ class SelfSignupManagerTest {
         SelfSignupRequest r = valid();
         manager.signup(r, "1.1.1.1");
         ArgumentCaptor<RegisterRequest> reg = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(reg.capture(), any());
+        verify(authManager).registerRootUser(reg.capture(), any(), eq(true));
         RegisterRequest sent = reg.getValue();
         assertEquals("teacher@school.in", sent.getEmail());
         assertEquals("ateacher", sent.getUserName());
@@ -169,7 +171,7 @@ class SelfSignupManagerTest {
             r.setPhone(bad);
             assertThrows(VacademyException.class, () -> manager.signup(r, "1.1.1.1"), String.valueOf(bad));
         }
-        verify(authManager, never()).registerRootUser(any(), any());
+        verify(authManager, never()).registerRootUser(any(), any(), anyBoolean());
     }
 
     @Test
@@ -178,7 +180,7 @@ class SelfSignupManagerTest {
         r.setInstituteName(" ");
         manager.signup(r, "1.1.1.1");
         ArgumentCaptor<RegisterRequest> reg = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(reg.capture(), any());
+        verify(authManager).registerRootUser(reg.capture(), any(), eq(true));
         assertEquals("A Teacher", reg.getValue().getInstitute().getInstituteName());
     }
 
@@ -190,7 +192,7 @@ class SelfSignupManagerTest {
 
         when(userRepository.findByUsername("ateacher")).thenReturn(Optional.of(new User()));
         assertThrows(VacademyException.class, () -> manager.signup(valid(), "1.1.1.1"));
-        verify(authManager, never()).registerRootUser(any(), any());
+        verify(authManager, never()).registerRootUser(any(), any(), anyBoolean());
     }
 
     @Test
@@ -205,7 +207,7 @@ class SelfSignupManagerTest {
         r.setPassword(null);
         manager.signup(r, "1.1.1.1");
         ArgumentCaptor<RegisterRequest> reg = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(reg.capture(), any());
+        verify(authManager).registerRootUser(reg.capture(), any(), eq(true));
         assertEquals("G Teacher", reg.getValue().getFullName());
         assertEquals("sub1", reg.getValue().getSubjectId());
         assertNotNull(reg.getValue().getPassword());
@@ -232,7 +234,7 @@ class SelfSignupManagerTest {
                 .productKey("evalezy").displayName("Evalezy").trialDays(10).selfSignupEnabled(true).build()));
         manager.signup(valid(), "1.1.1.1");
         ArgumentCaptor<RegisterRequest> reg = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(reg.capture(), any());
+        verify(authManager).registerRootUser(reg.capture(), any(), eq(true));
         assertEndsInDays(10, reg.getValue());
     }
 
@@ -313,7 +315,7 @@ class SelfSignupManagerTest {
         r.setBuy(" Starter ");
         manager.signup(r, "1.1.1.1");
         ArgumentCaptor<RegisterRequest> sent = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(sent.capture(), any());
+        verify(authManager).registerRootUser(sent.capture(), any(), eq(false));
         assertEquals("LEAD", sent.getValue().getInstitute().getLeadTag());
         assertNull(sent.getValue().getInstitute().getDemoExpiresAt());
         assertEquals(List.of(SelfSignupManager.BUY_TAG), sent.getValue().getInstitute().getTags());
@@ -324,7 +326,7 @@ class SelfSignupManagerTest {
     void aTrialSignUpIsUnchangedWithoutBuy() {
         manager.signup(valid(), "1.1.1.1");
         ArgumentCaptor<RegisterRequest> sent = ArgumentCaptor.forClass(RegisterRequest.class);
-        verify(authManager).registerRootUser(sent.capture(), any());
+        verify(authManager).registerRootUser(sent.capture(), any(), eq(true));
         assertEquals("FREE_TRIAL", sent.getValue().getInstitute().getLeadTag());
         assertEndsInDays(3, sent.getValue());
         assertNull(sent.getValue().getInstitute().getTags());
