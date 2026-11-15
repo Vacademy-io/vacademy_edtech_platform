@@ -347,5 +347,138 @@
         "scanned_other": "{{count}} copies added",
         "started_one": "Checking 1 copy. You can leave this page; we'll email you when it's done.",
         "started_other": "Checking {{count}} copies. You can leave this page; we'll email you when they're done."
+    },
+    "tutorials": {
+        "menu": "How to use (videos)",
+        "title": "How to use Evalezy",
+        "subtitle": "Short videos with voice and captions for every step.",
+        "startHere": "Start here",
+        "stepByStep": "Step by step",
+        "step": "Step {{number}}",
+        "stuck": "Stuck on a step?",
+        "faq": "See the answers to common questions",
+        "welcomeTitle": "Welcome to Evalezy!",
+        "welcomeBody": "Watch this {{time}} video to learn the whole flow: create a test, add the copies, let the AI check them and download the checked copies.",
+        "later": "I'll watch later",
+        "seeAll": "All tutorials",
+        "watch": "Watch",
+        "cardTitle": "New to Evalezy?",
+        "cardBody": "Watch the {{time}} tutorial, or one short video for each step.",
+        "hideCard": "Hide",
+        "full": {
+            "title": "How to use Evalezy, start to finish",
+            "summary": "The whole flow in one video"
+        },
+        "items": {
+            "full-tutorial": {
+                "title": "How to use Evalezy, start to finish",
+                "summary": "The whole flow in one video",
+                "steps": [
+                    "Sign up with your email and start the free trial.",
+                    "Tap New, type the test name and total marks, and add the question paper.",
+                    "The AI reads every question, its marks and the checking criteria. Edit anything.",
+                    "Scan the answer copies with your camera, or upload PDFs.",
+                    "Tap Check. The AI checks every copy and reads each student's name.",
+                    "Download all the checked copies as one ZIP.",
+                    "Set your pen, handwriting, comments and spelling check in Evaluation settings."
+                ]
+            },
+            "01-sign-up": {
+                "title": "Sign up and start your free trial",
+                "summary": "Your account in a minute, no card needed",
+                "steps": [
+                    "On evalezy.com, tap Start free trial (or open the Evalezy app).",
+                    "Enter your work email and tap Email me a code.",
+                    "Type the 6-digit code from your inbox and tap Verify email.",
+                    "Add your name, phone and a password, then your institute, its type, how many teachers, city and state.",
+                    "Tap Start trial. You land in the app with free AI credits (1 credit checks 1 page)."
+                ]
+            },
+            "03-create-test": {
+                "title": "Create a test from the question paper",
+                "summary": "Upload the paper once; the AI reads it",
+                "steps": [
+                    "On the home screen, tap New.",
+                    "Type the test name and the paper's total marks.",
+                    "Take photos of the paper, or tap Upload PDF or photos (page 1 first).",
+                    "Check the page order and tap Use this page. The credits for reading the paper are shown first.",
+                    "Tap Create & read the paper. The questions are ready in a few minutes."
+                ]
+            },
+            "04-marks-criteria": {
+                "title": "Edit marks and checking criteria",
+                "summary": "Tell the AI what to look for",
+                "steps": [
+                    "Open your test and tap Question paper.",
+                    "Each question shows its marks and its evaluation criteria.",
+                    "To change a question's marks, tap Edit marks, type the marks and Save.",
+                    "To change the criteria, tap Edit under Evaluation criteria.",
+                    "Add or edit a point: its name, what to look for, and its marks. Tap Save criteria."
+                ]
+            },
+            "05-upload-copies": {
+                "title": "Upload answer copies",
+                "summary": "PDFs or photos",
+                "steps": [
+                    "Open your test and scroll to Add copies.",
+                    "Tap Upload files. Each PDF is one copy; photos picked together make one copy.",
+                    "Remove a copy with the bin icon. Pages and credits are shown before you start.",
+                    "Open Checking settings and add the subject and class / board.",
+                    "Tap Check copies."
+                ]
+            },
+            "06-scan-camera": {
+                "title": "Scan copies with your phone camera",
+                "summary": "No scanner needed",
+                "steps": [
+                    "Open your test and tap Scan with camera.",
+                    "Hold the page flat, fill the frame and tap the round button.",
+                    "More pages in the same copy? Take another photo.",
+                    "Tap Next student, then scan the next copy.",
+                    "After the last copy, tap Done. Each copy is saved as a PDF."
+                ]
+            },
+            "07-check-results": {
+                "title": "Start the AI check and see the results",
+                "summary": "Every copy checked, with marks",
+                "steps": [
+                    "With your copies ready, tap Check copies.",
+                    "The AI reads the handwriting, checks every answer against your criteria and gives marks.",
+                    "Each student's name and roll number are read from the copy.",
+                    "Tap Open or AI report for a student, or AI class report for the whole class."
+                ]
+            },
+            "08-download-zip": {
+                "title": "Download the checked copies",
+                "summary": "All copies in one ZIP",
+                "steps": [
+                    "When the check is done, open the results of your test.",
+                    "Tap Download checked copies. The ZIP is saved to your phone or computer.",
+                    "Inside: one checked PDF per student, named by the student. Share or print them."
+                ]
+            },
+            "09-pen-handwriting": {
+                "title": "Change the pen colour and handwriting",
+                "summary": "Make the copy look like yours",
+                "steps": [
+                    "Tap the menu (⋮) and open Evaluation settings.",
+                    "Under Pen on the checked copy, pick the ink colour: red, blue, green, black or custom.",
+                    "Use How dark to make the ink lighter or darker.",
+                    "Pick a handwriting (Teacher, Natural, Scrawled, Quick, Cursive or Classic) and a size.",
+                    "Tap See how it will look for a real sample page, then Save settings."
+                ]
+            },
+            "10-checking-style": {
+                "title": "Comments, instructions and spelling check",
+                "summary": "Set how the AI checks",
+                "steps": [
+                    "Open Evaluation settings from the menu.",
+                    "Choose where comments go: inside the copy, or outside in a Teacher comments panel.",
+                    "Write your own instructions for the AI checker, e.g. follow the CBSE marking scheme.",
+                    "Turn on Highlight spelling and grammar errors: each mistake is underlined with its correction; no marks are cut.",
+                    "Choose how copies are matched to students, set camera / upload / email options, and tap Save settings."
+                ]
+            }
+        }
     }
 }

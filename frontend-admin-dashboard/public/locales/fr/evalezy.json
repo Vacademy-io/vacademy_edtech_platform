@@ -347,5 +347,69 @@
         "scanned_other": "{{count}} copies ajoutées",
         "started_one": "Correction d’1 copie en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin.",
         "started_other": "Correction de {{count}} copies en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin."
+    },
+    "tutorials": {
+        "menu": "Mode d'emploi (vidéos)",
+        "title": "Comment utiliser Evalezy",
+        "subtitle": "De courtes vidéos commentées et sous-titrées pour chaque étape.",
+        "startHere": "Commencez ici",
+        "stepByStep": "Étape par étape",
+        "step": "Étape {{number}}",
+        "stuck": "Bloqué à une étape ?",
+        "faq": "Voir les réponses aux questions fréquentes",
+        "welcomeTitle": "Bienvenue sur Evalezy !",
+        "welcomeBody": "Regardez cette vidéo de {{time}} pour tout comprendre : créer une évaluation, ajouter les copies, les faire corriger par l'IA et télécharger les copies corrigées.",
+        "later": "Plus tard",
+        "seeAll": "Tous les tutoriels",
+        "watch": "Regarder",
+        "cardTitle": "Nouveau sur Evalezy ?",
+        "cardBody": "Regardez le tutoriel de {{time}}, ou une courte vidéo par étape.",
+        "hideCard": "Masquer",
+        "full": {
+            "title": "Evalezy du début à la fin",
+            "summary": "Tout le parcours en une vidéo"
+        },
+        "items": {
+            "full-tutorial": {
+                "title": "Evalezy du début à la fin",
+                "summary": "Tout le parcours en une vidéo"
+            },
+            "01-sign-up": {
+                "title": "S'inscrire et démarrer l'essai gratuit",
+                "summary": "Votre compte en une minute, sans carte"
+            },
+            "03-create-test": {
+                "title": "Créer une évaluation depuis le sujet",
+                "summary": "Importez le sujet une fois ; l'IA le lit"
+            },
+            "04-marks-criteria": {
+                "title": "Modifier les points et les critères",
+                "summary": "Dites à l'IA ce qu'elle doit chercher"
+            },
+            "05-upload-copies": {
+                "title": "Importer les copies",
+                "summary": "PDF ou photos"
+            },
+            "06-scan-camera": {
+                "title": "Scanner les copies avec le téléphone",
+                "summary": "Pas besoin de scanner"
+            },
+            "07-check-results": {
+                "title": "Lancer la correction IA et voir les résultats",
+                "summary": "Chaque copie corrigée et notée"
+            },
+            "08-download-zip": {
+                "title": "Télécharger les copies corrigées",
+                "summary": "Toutes les copies dans un ZIP"
+            },
+            "09-pen-handwriting": {
+                "title": "Changer la couleur du stylo et l'écriture",
+                "summary": "Une copie qui vous ressemble"
+            },
+            "10-checking-style": {
+                "title": "Commentaires, consignes et orthographe",
+                "summary": "Réglez la façon dont l'IA corrige"
+            }
+        }
     }
 }
