@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import vacademy.io.assessment_service.features.assessment.service.aireport.AiReportDataService;
+import vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette;
 import vacademy.io.assessment_service.features.learner_assessment.dto.ReportBrandingDto;
 
 import java.text.SimpleDateFormat;
@@ -12,8 +14,20 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.TimeZone;
+
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.AMBER;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.AMBER_50;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.BAD;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.BAD_50;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.INK;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.LINE;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.MUTED;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.OK;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.OK_50;
+import static vacademy.io.assessment_service.features.assessment.service.aireport.ReportPalette.SOFT;
 
 /**
  * The ONE AI diagnostic report for a whole assessment — the document behind
@@ -25,8 +39,7 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li><b>Did the class get it?</b> — participation, distribution, averages.</li>
  *   <li><b>Where did the marks go?</b> — section, topic and question weakness,
- *       each with its own chart, ordered weakest-first so every table doubles
- *       as a reteaching queue.</li>
+ *       ordered weakest-first so every table doubles as a reteaching queue.</li>
  *   <li><b>What do I reteach to everyone?</b> — misconceptions shared across
  *       the cohort, and a prioritised class action plan.</li>
  *   <li><b>Who do I pull aside?</b> — named students under each weak topic,
@@ -36,41 +49,24 @@ import java.util.regex.Pattern;
  * <p>Deliberately ONE document per assessment, not one per student: the
  * cohort-level view is what makes a weak topic legible as a teaching gap
  * rather than an individual failure, and it costs one AI call instead of N.
- * The per-student detail lives inside it (§4) so a teacher can still act on
- * individuals from the same file.
+ *
+ * <p>It shares the look of the student AI report ({@code AiReportHtmlBuilderV2}): the
+ * institute's colour band and hero, white stat tiles, a tag + plain-language headline
+ * over each block, inline SVG charts and the same Mukta / Baloo 2 fonts, so a teacher
+ * holding both PDFs reads them as one set. The caller converts with
+ * {@code AiReportFonts}; without it the PDF falls back to the standard fonts.
  *
  * <p>This builder is pure rendering — it takes an already-aggregated
- * {@link Input} and returns HTML. Everything about how that aggregate is
- * computed, cached or charged lives outside it, so the layout can be
- * developed and reviewed without a database or an LLM.
- *
- * <p>Rendering constraints are iText html2pdf's, same as
- * {@link StudentReportHtmlV2Builder}: no JS, no flexbox/grid, no external
- * resources. Layout is tables and percentage-width divs; charts are PNG data
- * URIs from {@link AiReportChartGenerator}.
+ * {@link Input} and returns HTML. Rendering constraints are iText html2pdf's: no JS,
+ * no flexbox/grid, no rgba/var, no external resources except the logo.
  */
 @Slf4j
 @Component
 public class ClassAiReportHtmlBuilder {
 
-    // ---- palette shared with the v2 student report so both PDFs read as one suite ----
-    private static final String NAVY = "#1F3864";
-    private static final String INK = "#263238";
-    private static final String MUTED = "#546E7A";
-    private static final String FAINT = "#8A94A3";
-    private static final String BROWN = "#A98467";
-    private static final String GREEN = "#2E7D32";
-    private static final String GREEN_SOFT = "#E8F5E9";
-    private static final String RED = "#C62828";
-    private static final String RED_SOFT = "#FDECEA";
-    private static final String AMBER = "#F57F17";
-    private static final String AMBER_SOFT = "#FFF8E1";
-    private static final String BORDER = "#D9DEE7";
-    private static final String RULE = "#C9D2E0";
-    private static final String PANEL = "#F5F7FA";
-
-    private static final String LEGACY_DEFAULT_PRIMARY = "#FF6B35";
-    private static final Pattern SAFE_CSS_COLOR = Pattern.compile("^#[0-9a-fA-F]{3,8}$");
+    private static final int CONTENT_W = 722;
+    private static final String DEFAULT_BRAND = "#0F9A83";
+    private static final String DEFAULT_ACCENT = "#FFC531";
 
     /** Below this accuracy an area is a P1 "reteach to everyone" item. */
     private static final double WEAK_THRESHOLD = 40.0;
@@ -78,10 +74,12 @@ public class ClassAiReportHtmlBuilder {
     private static final double BORDERLINE_THRESHOLD = 70.0;
 
     private static final String[] BLOOM_KEYS = {"remember", "understand", "apply", "analyze", "evaluate", "create"};
-    private static final String[] BLOOM_NAMES = {"Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"};
-
-    private static final String[] PIE_COLORS = {
-            "#1F3864", "#C62828", "#F57F17", "#2E7D32", "#A98467", "#6C5CE7", "#00838F", "#AD1457"};
+    private static final String[] BLOOM_NAMES = {"Remember", "Understand", "Apply", "Analyse", "Evaluate", "Create"};
+    private static final String[] BLOOM_VERBS = {
+            "recalling facts", "explaining ideas", "applying methods", "analysing", "evaluating", "creating"};
+    private static final String[] BLOOM_NOTES = {
+            "recalling facts and names", "explaining ideas", "solving with methods and formulas",
+            "reading figures, data and set-ups", "judging and justifying", "designing something new"};
 
     /** Keeps one enormous cohort from producing a hundred-page PDF. */
     private static final int MAX_ROSTER_ROWS = 400;
@@ -90,12 +88,11 @@ public class ClassAiReportHtmlBuilder {
     private static final int MAX_MISCONCEPTIONS = 10;
     /** Names listed under a weak topic before it degrades to "+N more". */
     private static final int MAX_NAMES_PER_TOPIC = 12;
+    /** The AI narrative is shown whole on page 1 up to this length; longer ones move to the end. */
+    private static final int SUMMARY_MAX = 900;
 
     @Autowired
     private ReportBrandingHelper brandingHelper;
-
-    @Autowired
-    private AiReportChartGenerator chartGenerator;
 
     @Autowired
     private ReportLogoService reportLogoService;
@@ -242,6 +239,7 @@ public class ClassAiReportHtmlBuilder {
         private final TopicSource topicSource;
     }
 
+
     // ------------------------------------------------------------------ build
 
     public String build(Input in) {
@@ -249,189 +247,189 @@ public class ClassAiReportHtmlBuilder {
             in = Input.builder().build();
         }
         ReportBrandingDto branding = in.getBranding() != null ? in.getBranding() : ReportBrandingDto.builder().build();
-        String accent = resolveAccent(branding);
+        ReportPalette p = new ReportPalette(brandOf(branding), accentOf(branding));
 
         StringBuilder sb = new StringBuilder(96 * 1024);
-        sb.append("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">");
+        sb.append("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"/>");
         sb.append("<title>Assessment AI Diagnostic Report</title>");
-        appendCss(sb, accent);
+        sb.append("<style>").append(css(in, p)).append("</style>");
         sb.append("</head><body>");
-        appendWatermark(sb, branding, accent);
-        sb.append("<div class=\"wrap\">");
+        appendWatermark(sb, branding, p);
+        appendBand(sb, in, branding, p);
+        appendHero(sb, in, p);
 
-        appendLetterhead(sb, in, branding, accent);
-        appendVerdict(sb, in);
-        appendStatCards(sb, in, accent);
-        appendPaperOverview(sb, in, accent);
-        appendSectionAnalysis(sb, in, accent);
+        sb.append("<div class=\"body\">");
+        appendSummary(sb, in, p);
+        appendDistribution(sb, in, p);
+        appendSections(sb, in, p);
         appendMarksLost(sb, in);
-        appendTopicAnalysis(sb, in);
+        appendTopics(sb, in, p);
         appendHardestQuestions(sb, in);
-        appendBlooms(sb, in, accent);
-        appendMisconceptions(sb, in);
-        appendActionPlan(sb, in, accent);
+        appendBlooms(sb, in, p);
+        appendMisconceptions(sb, in, p);
+        appendActionPlan(sb, in, p);
         appendInterventionList(sb, in);
         appendWeakTopicStudents(sb, in);
         appendRoster(sb, in);
         appendNarrative(sb, in);
         appendFooter(sb, in, branding);
-
         sb.append("</div></body></html>");
         return sb.toString();
     }
 
-    // -------------------------------------------------------------------- css
-
-    private void appendCss(StringBuilder sb, String accent) {
-        sb.append("<style>");
-        sb.append("@page { size: A4; margin: 13mm 12mm; }");
-        sb.append("body { font-family: Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: ")
-                .append(INK).append("; font-size: 11.5px; line-height: 1.5; background: #ffffff; }");
-        sb.append(".wrap { max-width: 800px; margin: 0 auto; }");
-        sb.append(".h2 { font-size: 11px; font-weight: 700; color: ").append(NAVY)
-                .append("; letter-spacing: 1.5px; border-bottom: 1px solid ").append(RULE)
-                .append("; padding-bottom: 4px; margin: 18px 0 8px 0; }");
-        sb.append(".hint { font-size: 9.5px; color: ").append(FAINT).append("; margin: -4px 0 9px 0; }");
-        sb.append(".sect { page-break-inside: avoid; }");
-        sb.append(".cards { width: 100%; border-collapse: separate; border-spacing: 7px 0; margin: 12px 0 4px 0; }");
-        sb.append(".cards td { vertical-align: top; width: 25%; }");
-        sb.append(".stat { background-color: #ffffff; border: 1px solid ").append(BORDER)
-                .append("; border-radius: 6px; padding: 0 0 10px 0; text-align: center; }");
-        sb.append(".stat-accent { height: 4px; border-radius: 6px 6px 0 0; }");
-        sb.append(".stat-label { font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: ").append(FAINT)
-                .append("; margin: 9px 0 2px 0; }");
-        sb.append(".stat-value { font-size: 25px; font-weight: 800; color: ").append(INK).append("; }");
-        sb.append(".stat-sub { font-size: 9px; color: ").append(MUTED).append("; margin-top: 2px; }");
-        sb.append(".tbl { width: 100%; border-collapse: collapse; font-size: 11px; background-color: #ffffff; }");
-        sb.append(".tbl th { background-color: #EEF1F6; text-align: left; padding: 6px 8px; color: ").append(MUTED)
-                .append("; font-weight: 700; font-size: 9.5px; letter-spacing: 0.6px; border-bottom: 2px solid ")
-                .append(BORDER).append("; }");
-        sb.append(".tbl td { padding: 6px 8px; border-bottom: 1px solid #E7EBF1; vertical-align: top; }");
-        // Roster runs long, so it gets its own tighter metrics.
-        sb.append(".roster { font-size: 9.5px; }");
-        sb.append(".roster th { padding: 5px 6px; font-size: 8.5px; }");
-        sb.append(".roster td { padding: 4px 6px; }");
-        sb.append(".chart { text-align: center; margin: 4px 0 10px 0; }");
-        sb.append(".panel { background-color: ").append(PANEL).append("; border: 1px solid ").append(BORDER)
-                .append("; border-radius: 5px; padding: 10px 12px; margin-bottom: 8px; page-break-inside: avoid; }");
-        sb.append(".pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.4px; }");
-        sb.append(".banner { border-radius: 6px; padding: 11px 14px; margin: 12px 0 0 0; border-left: 4px solid ").append(accent).append("; }");
-        sb.append(".banner-title { font-size: 13px; font-weight: 800; }");
-        sb.append(".banner-body { font-size: 10.5px; color: ").append(MUTED).append("; margin-top: 2px; }");
-        sb.append(".kv { font-size: 10.5px; }");
-        sb.append(".kv td { padding: 3px 0; }");
-        sb.append(".kv .k { color: ").append(MUTED).append("; }");
-        sb.append(".kv .v { text-align: right; font-weight: 700; color: ").append(INK).append("; }");
-        sb.append(".md { font-size: 11px; color: ").append(INK).append("; }");
-        sb.append(".step { page-break-inside: avoid; margin-bottom: 9px; }");
-        sb.append(".num { width: 22px; height: 22px; border-radius: 11px; color: #ffffff; text-align: center; ")
-                .append("line-height: 22px; font-size: 11px; font-weight: 700; }");
-        sb.append(".names { font-size: 10px; color: ").append(INK).append("; line-height: 1.7; }");
-        sb.append(".wm { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }");
-        sb.append(".wm-text { position: absolute; top: 360pt; left: 100pt; font-size: 60px; font-weight: bold; white-space: nowrap; transform: rotate(-35deg); }");
-        sb.append(".foot { border-top: 1px solid ").append(RULE)
-                .append("; margin-top: 18px; padding-top: 7px; font-size: 9px; color: ").append(FAINT).append("; }");
-        sb.append("</style>");
-    }
-
-    // ------------------------------------------------------------ letterhead
+    // ------------------------------------------------------------ band + hero
 
     /**
-     * Honours the institute's {@code showWatermark} branding, same as the v2
-     * student report — an institute that watermarks one report expects the
-     * other to match.
+     * Honours the institute's {@code showWatermark} branding, same as the student
+     * report — an institute that watermarks one report expects the other to match.
      */
-    private void appendWatermark(StringBuilder sb, ReportBrandingDto branding, String accent) {
+    private void appendWatermark(StringBuilder sb, ReportBrandingDto branding, ReportPalette p) {
         if (!Boolean.TRUE.equals(branding.getShowWatermark())
                 || branding.getWatermarkText() == null || branding.getWatermarkText().isBlank()) {
             return;
         }
         double opacity = branding.getWatermarkOpacity() != null ? branding.getWatermarkOpacity() : 0.05;
-        sb.append("<div class=\"wm\"><div class=\"wm-text\" style=\"color: ").append(accent)
-                .append("; opacity: ").append(opacity).append(";\">")
+        sb.append("<div class=\"wm\"><div class=\"wm-text\" style=\"color:").append(p.brand)
+                .append(";opacity:").append(opacity).append(";\">")
                 .append(esc(branding.getWatermarkText()))
                 .append("</div></div>");
     }
 
-    private void appendLetterhead(StringBuilder sb, Input in, ReportBrandingDto branding, String accent) {
-        // Inlined (trimmed + downscaled) asset first; the raw presigned URL is
-        // the fallback, which is what every other report still uses.
-        String logoSrc = reportLogoService.resolveInlineLogo(branding.getLogoFileId());
-        boolean inlined = logoSrc != null;
-        if (logoSrc == null) {
-            logoSrc = brandingHelper.resolveLogoUrl(branding);
+    private void appendBand(StringBuilder sb, Input in, ReportBrandingDto branding, ReportPalette p) {
+        String inst = nvl(in.getInstituteName(), "");
+        String logoSrc = logoOf(branding);
+
+        String logo = null;
+        int cellW = 58;
+        if (logoSrc != null) {
+            // Fixed-size cell sized from the logo's own proportions, as in the student report.
+            Double a = AiReportDataService.aspect(logoSrc);
+            String src = logoSrc.startsWith("data:") ? logoSrc.replace("\"", "%22") : escAttr(logoSrc);
+            if (a != null) {
+                double aspect = Math.max(0.5, Math.min(5.0, a));
+                int h = 38, w = (int) Math.round(h * aspect);
+                cellW = w + 14;
+                logo = "<table class=\"logo-img\"><tr><td style=\"width:" + w + "px;height:" + h + "px;\"><img src=\""
+                        + src + "\" style=\"width:" + w + "px;height:" + h + "px;\"/></td></tr></table>";
+            } else {
+                // A presigned URL (SVG, oversized or unfetchable logo): its shape is unknown here, so
+                // cap both sides and let the image keep its own proportions, as the old report did.
+                cellW = 204;
+                logo = "<table class=\"logo-img\"><tr><td><img src=\"" + src
+                        + "\" style=\"max-height:38px;max-width:190px;\"/></td></tr></table>";
+            }
+        } else if (!inst.isBlank()) {
+            logo = "<div class=\"logo\"><span class=\"logo-t\">" + esc(initials(inst)) + "</span></div>";
         }
 
-        sb.append("<table style=\"width: 100%;\"><tr>");
-        if (logoSrc != null && Boolean.TRUE.equals(branding.getShowLogoInHeader())) {
-            // A trimmed logo has no padding of its own, so it can fill a larger
-            // box; an untrimmed fallback keeps the conservative 40px so its own
-            // whitespace does not push the mark into illegibility.
-            int box = inlined ? 52 : 40;
-            sb.append("<td style=\"width: ").append(box + 16).append("px; vertical-align: middle; padding-right: 12px;\">")
-                    .append("<div style=\"border: 1px solid ").append(BORDER)
-                    .append("; border-radius: 6px; padding: 5px; width: ").append(box)
-                    .append("px; text-align: center;\">")
-                    .append("<img src=\"").append(inlined ? logoSrc : escAttr(logoSrc))
-                    .append("\" style=\"max-height: ").append(box).append("px; max-width: ")
-                    .append(box).append("px;\" /></div></td>");
+        String assessment = nvl(in.getAssessmentName(), "Assessment");
+        sb.append("<table class=\"band\"><tr>");
+        if (logo != null) {
+            sb.append("<td class=\"band-logo\" style=\"width:").append(cellW + 36).append("px;\">").append(logo).append("</td>");
+        } else {
+            sb.append("<td class=\"band-logo\" style=\"width:36px;\"></td>");
         }
-        sb.append("<td style=\"vertical-align: middle;\">");
-        sb.append("<div style=\"font-size: 12px; font-weight: 700; letter-spacing: 1.4px; color: ").append(MUTED).append(";\">")
-                .append("ASSESSMENT AI DIAGNOSTIC REPORT</div>");
-        sb.append("<div style=\"font-size: 22px; font-weight: 800; color: ").append(accent).append("; margin-top: 2px;\">")
-                .append(esc(nvl(in.getAssessmentName(), "Assessment"))).append("</div>");
-        sb.append("</td>");
-        sb.append("<td style=\"vertical-align: middle; text-align: right; font-size: 10px; color: ")
-                .append(MUTED).append("; white-space: nowrap;\">");
-        if (in.getExamDate() != null) {
-            sb.append("<div>Test date: <b style=\"color: ").append(INK).append(";\">")
-                    .append(fmtDate(in.getExamDate())).append("</b></div>");
+        sb.append("<td>");
+        if (!inst.isBlank()) {
+            sb.append("<div class=\"band-i1\">").append(esc(inst)).append("</div>");
+            sb.append("<div class=\"band-i2\">").append(esc(assessment)).append("</div>");
+        } else {
+            sb.append("<div class=\"band-i1\">").append(esc(assessment)).append("</div>");
         }
+        sb.append("</td><td class=\"band-right\"><div class=\"band-r1\">Class AI report</div><div class=\"band-r2\">");
+        List<String> bits = new ArrayList<>();
+        if (in.getExamDate() != null) bits.add("Test " + fmtDate(in.getExamDate()));
         ClassOverview o = in.getOverview();
         if (o != null && o.getDurationMinutes() != null && o.getDurationMinutes() > 0) {
-            sb.append("<div>Duration: <b style=\"color: ").append(INK).append(";\">")
-                    .append(o.getDurationMinutes()).append(" min</b></div>");
+            bits.add(o.getDurationMinutes() + " min");
         }
-        if (in.getGeneratedAt() != null) {
-            sb.append("<div>Generated: <b style=\"color: ").append(INK).append(";\">")
-                    .append(fmtDate(in.getGeneratedAt())).append("</b></div>");
+        if (in.getBatchLabel() != null && !in.getBatchLabel().isBlank()) bits.add(in.getBatchLabel());
+        sb.append(esc(String.join(" · ", bits))).append("</div></td></tr></table>");
+    }
+
+    private void appendHero(StringBuilder sb, Input in, ReportPalette p) {
+        ClassOverview o = in.getOverview();
+        String[] verdict = verdict(in);
+
+        sb.append("<div class=\"hero\"><table class=\"hero-t\"><tr><td class=\"hero-l\">");
+        sb.append("<div class=\"kicker\">Class result</div>");
+        sb.append("<div class=\"h1\">").append(esc(verdict[0])).append("</div>");
+        if (!verdict[1].isEmpty()) {
+            sb.append("<div class=\"hero-p\">").append(esc(verdict[1])).append("</div>");
+        }
+        sb.append("</td><td class=\"hero-r\">");
+        Double avgPct = avgPct(o);
+        if (o != null && o.getAverageMarks() != null) {
+            sb.append("<div class=\"big\">").append(fmt(o.getAverageMarks()));
+            if (o.getTotalMarks() != null) {
+                sb.append("<span class=\"big-of\">/").append(fmt(o.getTotalMarks())).append("</span>");
+            }
+            sb.append("</div><div class=\"big-sub\">Class average</div>");
         }
         sb.append("</td></tr></table>");
 
-        sb.append("<div style=\"border-bottom: 3px solid ").append(accent).append("; margin: 8px 0 8px 0;\"></div>");
+        if (avgPct != null) {
+            sb.append("<table class=\"pct-top\"><tr><td>The average student scored <b>").append(fmt(avgPct))
+                    .append("%</b> of the paper</td><td style=\"text-align:right\">");
+            List<String> range = new ArrayList<>();
+            if (o.getHighestMarks() != null) range.add("Highest " + fmt(o.getHighestMarks()));
+            if (o.getMedianMarks() != null) range.add("Median " + fmt(o.getMedianMarks()));
+            if (o.getLowestMarks() != null) range.add("Lowest " + fmt(o.getLowestMarks()));
+            sb.append(esc(String.join(" · ", range))).append("</td></tr></table>");
+            sb.append("<div class=\"pct-track\"><div class=\"pct-fill\" style=\"width:")
+                    .append(Math.max(2, Math.min(100, Math.round(avgPct)))).append("%\"></div></div>");
+        }
 
-        List<String> meta = new ArrayList<>();
-        if (in.getInstituteName() != null && !in.getInstituteName().isBlank()) {
-            meta.add("<b style=\"color: " + INK + ";\">" + esc(in.getInstituteName()) + "</b>");
+        if (o != null) {
+            sb.append("<table class=\"tiles\"><tr>");
+            String attempted = o.getAttempted() != null ? String.valueOf(o.getAttempted()) : "-";
+            String attemptedSub = o.getTotalRegistered() != null
+                    ? "attempted · " + o.getTotalRegistered() + " registered" : "students attempted";
+            if (o.getNotAttempted() != null && o.getNotAttempted() > 0) {
+                attemptedSub += " · " + o.getNotAttempted() + " did not attempt";
+            }
+            sb.append(tile(attempted, attemptedSub, INK));
+            sb.append(tile(o.getHighestMarks() != null ? fmt(o.getHighestMarks()) : "-",
+                    "highest score" + (o.getLowestMarks() != null ? " · lowest " + fmt(o.getLowestMarks()) : ""), OK));
+            Double passRate = o.getPassedCount() != null && o.getAttempted() != null && o.getAttempted() > 0
+                    ? clampPct(o.getPassedCount() * 100.0 / o.getAttempted()) : null;
+            if (passRate != null) {
+                sb.append(tile(fmt(passRate) + "%",
+                        "passed" + (o.getPassMarks() != null ? " · pass mark " + fmt(o.getPassMarks()) : ""), bandColor(passRate)));
+            } else if (o.getAverageAccuracy() != null) {
+                sb.append(tile(fmt(o.getAverageAccuracy()) + "%", "average accuracy", bandColor(o.getAverageAccuracy())));
+            } else {
+                sb.append(tile(o.getMedianMarks() != null ? fmt(o.getMedianMarks()) : "-", "median score", INK));
+            }
+            if (o.getAverageDurationSeconds() != null && o.getAverageDurationSeconds() > 0) {
+                sb.append(tile(mmss(o.getAverageDurationSeconds()), "average time"
+                        + (o.getDurationMinutes() != null && o.getDurationMinutes() > 0 ? " · of " + o.getDurationMinutes() + " min" : ""), INK));
+            } else {
+                // Not the median again: the third tile already falls back to it.
+                sb.append(o.getTotalMarks() != null
+                        ? tile(fmt(o.getTotalMarks()), "marks in the paper", INK)
+                        : tile(o.getMedianMarks() != null ? fmt(o.getMedianMarks()) : "-", "median score", INK));
+            }
+            sb.append("</tr></table>");
         }
-        if (in.getBatchLabel() != null && !in.getBatchLabel().isBlank()) {
-            meta.add(esc(in.getBatchLabel()));
-        }
-        if (o != null && o.getAttempted() != null) {
-            meta.add(o.getAttempted() + " of "
-                    + (o.getTotalRegistered() != null ? o.getTotalRegistered() : o.getAttempted())
-                    + " students attempted");
-        }
-        if (!meta.isEmpty()) {
-            sb.append("<div style=\"font-size: 10.5px; color: ").append(MUTED).append(";\">")
-                    .append(String.join(" &nbsp;&middot;&nbsp; ", meta)).append("</div>");
-        }
+        sb.append("</div>");
     }
 
-    // --------------------------------------------------------------- verdict
+    private static String tile(String value, String label, String color) {
+        return "<td class=\"tile\"><div class=\"tile-v\" style=\"color:" + color + "\">" + esc(value)
+                + "</div><div class=\"tile-l\">" + esc(label) + "</div></td>";
+    }
 
     /**
-     * The one-line answer to "how did my class do, and is the problem the class
-     * or the paper?" — the first thing a teacher looks for, so it sits above
-     * every chart.
+     * The one-line answer to "how did my class do, and is the problem the class or the
+     * paper?" — {title, body}. It is the hero headline, so it sits above every chart.
      */
-    private void appendVerdict(StringBuilder sb, Input in) {
+    private static String[] verdict(Input in) {
         ClassOverview o = in.getOverview();
-        if (o == null || o.getAverageMarks() == null || o.getTotalMarks() == null || o.getTotalMarks() <= 0) {
-            return;
+        Double avgPct = avgPct(o);
+        if (avgPct == null) {
+            return new String[]{"How the class did", ""};
         }
-        double avgPct = clampPct(o.getAverageMarks() / o.getTotalMarks() * 100.0);
         int weakTopics = countWeak(in.getTopics());
         int weakSections = 0;
         if (in.getSections() != null) {
@@ -440,239 +438,255 @@ public class ClassAiReportHtmlBuilder {
             }
         }
 
-        String tone;
         String title;
         StringBuilder body = new StringBuilder();
         if (avgPct < 40) {
-            tone = RED;
             title = "The class did not get this paper";
-            body.append("Class average is ").append(fmt(avgPct))
-                    .append("%. At this level the gap is usually the teaching sequence or the paper's difficulty, not the students");
-            body.append(hasBreakdown(in)
-                    ? " — check the hardest-questions table before assuming otherwise."
-                    : ".");
+            body.append("At this level the gap is usually the teaching sequence or the paper's difficulty, not the students");
+            body.append(hasBreakdown(in) ? " — check the hardest areas below before assuming otherwise." : ".");
         } else if (avgPct < 70) {
-            tone = AMBER;
-            title = "Mixed — the loss is concentrated, not spread";
-            body.append("Class average is ").append(fmt(avgPct)).append("%.");
+            title = "Mixed — the loss is concentrated";
             if (hasBreakdown(in)) {
-                body.append(" Most of the shortfall sits in a few areas rather than across the paper;"
-                        + " the section and topic tables below show which.");
+                body.append("Most of the shortfall sits in a few areas rather than across the paper.");
             }
         } else {
-            tone = GREEN;
             title = "The class is on track";
-            body.append("Class average is ").append(fmt(avgPct))
-                    .append("%. What remains is a short list of recoverable areas and a handful of students who need pulling up.");
+            body.append("What remains is a short list of recoverable areas and a few students who need pulling up.");
         }
         if (weakTopics > 0) {
-            body.append(" ").append(weakTopics).append(weakTopics == 1 ? " topic is" : " topics are")
+            if (body.length() > 0) body.append(" ");
+            body.append(weakTopics).append(weakTopics == 1 ? " topic is" : " topics are")
                     .append(" below ").append((int) WEAK_THRESHOLD).append("% and flagged for reteaching");
             if (weakSections > 0) {
-                body.append(", across ").append(weakSections)
-                        .append(weakSections == 1 ? " section" : " sections");
+                body.append(", across ").append(weakSections).append(weakSections == 1 ? " section" : " sections");
             }
             body.append(".");
         }
         if (!hasBreakdown(in)) {
-            // A PDF/OMR paper carries no per-question record, so there is no
-            // section or topic table below to send the reader to. Saying so is
-            // the difference between an honest report and one that looks broken.
-            body.append(" This paper has no per-question record, so the breakdown below is limited to "
-                    + "totals and the participant roster.");
+            // A PDF/OMR paper carries no per-question record, so there is no section or
+            // topic breakdown to send the reader to. Saying so keeps the report honest.
+            if (body.length() > 0) body.append(" ");
+            body.append("This paper has no per-question record, so the report is limited to totals and the roster.");
         }
-
-        sb.append("<div class=\"banner\" style=\"background-color: ").append(softOf(tone))
-                .append("; border-left-color: ").append(tone).append(";\">");
-        sb.append("<div class=\"banner-title\" style=\"color: ").append(tone).append(";\">").append(title).append("</div>");
-        sb.append("<div class=\"banner-body\">").append(esc(body.toString())).append("</div>");
-        sb.append("</div>");
+        return new String[]{title, body.toString()};
     }
 
-    // ------------------------------------------------------------ stat cards
+    // ---------------------------------------------------------------- summary
 
-    private void appendStatCards(StringBuilder sb, Input in, String accent) {
-        ClassOverview o = in.getOverview();
-        if (o == null) return;
-
-        Double avgPct = o.getAverageMarks() != null && o.getTotalMarks() != null && o.getTotalMarks() > 0
-                ? clampPct(o.getAverageMarks() / o.getTotalMarks() * 100.0) : null;
-        Double passRate = o.getPassedCount() != null && o.getAttempted() != null && o.getAttempted() > 0
-                ? clampPct(o.getPassedCount() * 100.0 / o.getAttempted()) : null;
-
-        sb.append("<table class=\"cards\"><tr>");
-        appendStatCard(sb, accent, "ATTEMPTED",
-                o.getAttempted() != null ? String.valueOf(o.getAttempted()) : "-",
-                o.getTotalRegistered() != null ? "of " + o.getTotalRegistered() + " registered" : "");
-        appendStatCard(sb, avgPct != null ? bandColor(avgPct) : BROWN, "CLASS AVERAGE",
-                o.getAverageMarks() != null ? fmt(o.getAverageMarks()) : "-",
-                o.getTotalMarks() != null ? "out of " + fmt(o.getTotalMarks())
-                        + (avgPct != null ? " · " + fmt(avgPct) + "%" : "") : "");
-        appendStatCard(sb, GREEN, "HIGHEST",
-                o.getHighestMarks() != null ? fmt(o.getHighestMarks()) : "-",
-                o.getLowestMarks() != null ? "lowest " + fmt(o.getLowestMarks()) : "");
-        if (passRate != null) {
-            appendStatCard(sb, bandColor(passRate), "PASS RATE", fmt(passRate) + "%",
-                    o.getPassMarks() != null ? "pass mark " + fmt(o.getPassMarks()) : "");
-        } else {
-            appendStatCard(sb, BROWN, "MEDIAN",
-                    o.getMedianMarks() != null ? fmt(o.getMedianMarks()) : "-", "middle of the class");
-        }
-        sb.append("</tr></table>");
+    private void appendSummary(StringBuilder sb, Input in, ReportPalette p) {
+        String summary = plain(in.getNarrative(), SUMMARY_MAX);
+        if (summary.isEmpty()) return;
+        sb.append("<table class=\"note\"><tr><td class=\"note-q\"><div class=\"quote\">&#8220;</div></td><td>")
+                .append("<div class=\"note-l\">Summary</div><div class=\"note-t\">").append(esc(summary))
+                .append("</div></td></tr></table>");
     }
 
-    private void appendStatCard(StringBuilder sb, String accentColor, String label, String value, String sub) {
-        sb.append("<td><div class=\"stat\">");
-        sb.append("<div class=\"stat-accent\" style=\"background-color: ").append(accentColor).append(";\"></div>");
-        sb.append("<div class=\"stat-label\">").append(label).append("</div>");
-        sb.append("<div class=\"stat-value\"")
-                .append(value.length() > 8 ? " style=\"font-size: 17px; padding-top: 5px;\"" : "")
-                .append(">").append(value).append("</div>");
-        sb.append("<div class=\"stat-sub\">").append(sub.isEmpty() ? "&nbsp;" : sub).append("</div>");
-        sb.append("</div></td>");
-    }
+    // ----------------------------------------------------------- distribution
 
-    // -------------------------------------------------------- paper overview
-
-    private void appendPaperOverview(StringBuilder sb, Input in, String accent) {
-        ClassOverview o = in.getOverview();
+    private void appendDistribution(StringBuilder sb, Input in, ReportPalette p) {
         List<ScoreBand> bands = in.getDistribution();
-        if (o == null && (bands == null || bands.isEmpty())) return;
+        ClassOverview o = in.getOverview();
+        if (bands == null || bands.isEmpty()) return;
+        int students = bands.stream().mapToInt(ScoreBand::getStudentCount).sum();
+        if (students == 0) return;
 
-        sb.append("<div class=\"sect\"><div class=\"h2\">PAPER OVERVIEW</div>");
-        sb.append("<div class=\"hint\">How the marks fell across the cohort — a flat spread means the paper discriminated; a cliff at one end usually means it did not.</div>");
-        sb.append("<table style=\"width: 100%;\"><tr>");
-
-        sb.append("<td style=\"width: 56%; vertical-align: middle;\">");
-        if (bands != null && !bands.isEmpty()) {
-            Map<String, Double> counts = new LinkedHashMap<>();
-            for (ScoreBand b : bands) counts.put(b.getLabel(), (double) b.getStudentCount());
-            String chart = chartGenerator.generateCountBarChart("Students", counts, accent, 540, 250);
-            if (chart != null) {
-                sb.append("<div class=\"chart\"><img src=\"").append(chart).append("\" style=\"max-width: 400px;\" /></div>");
-            }
-        } else {
-            sb.append("&nbsp;");
-        }
-        sb.append("</td>");
-
-        sb.append("<td style=\"width: 44%; vertical-align: middle; padding-left: 10px;\">");
-        sb.append("<table class=\"kv\" style=\"width: 100%;\">");
-        if (o != null) {
-            if (o.getTotalRegistered() != null) kv(sb, "Registered", String.valueOf(o.getTotalRegistered()));
-            if (o.getAttempted() != null) kv(sb, "Attempted", String.valueOf(o.getAttempted()));
-            if (o.getNotAttempted() != null && o.getNotAttempted() > 0) {
-                kv(sb, "Did not attempt", String.valueOf(o.getNotAttempted()));
-            }
-            if (o.getTotalMarks() != null) kv(sb, "Paper total", fmt(o.getTotalMarks()));
-            if (o.getAverageMarks() != null) kv(sb, "Class average", fmt(o.getAverageMarks()));
-            if (o.getMedianMarks() != null) kv(sb, "Median", fmt(o.getMedianMarks()));
-            if (o.getHighestMarks() != null) kv(sb, "Highest", fmt(o.getHighestMarks()));
-            if (o.getLowestMarks() != null) kv(sb, "Lowest", fmt(o.getLowestMarks()));
-            if (o.getAverageAccuracy() != null) kv(sb, "Average accuracy", fmt(o.getAverageAccuracy()) + "%");
-            if (o.getPassMarks() != null && o.getPassedCount() != null) {
-                kv(sb, "Passed (" + fmt(o.getPassMarks()) + "+)", o.getPassedCount()
-                        + (o.getAttempted() != null ? " of " + o.getAttempted() : ""));
-            }
-            if (o.getAverageDurationSeconds() != null && o.getAverageDurationSeconds() > 0) {
-                kv(sb, "Average time taken", HtmlBuilderService.convertToReadableTime(o.getAverageDurationSeconds()));
-            }
-        }
-        sb.append("</table></td></tr></table></div>");
+        String head = o != null && o.getMedianMarks() != null
+                ? "Half the class scored " + fmt(o.getMedianMarks()) + " or less"
+                : "How the marks fell across the class";
+        String lede = "How many of the " + students + " students scored in each range."
+                + (o != null && o.getAverageMarks() != null ? " The dashed line is the class average." : "")
+                + " A flat spread means the paper separated strong from weak; a cliff at one end means it did not.";
+        sb.append(block("Where the class stands", head, lede,
+                distributionChart(bands, o != null ? o.getAverageMarks() : null, o != null ? o.getTotalMarks() : null, p, CONTENT_W)));
     }
 
-    private void kv(StringBuilder sb, String key, String value) {
-        sb.append("<tr><td class=\"k\">").append(esc(key)).append("</td><td class=\"v\">")
-                .append(esc(value)).append("</td></tr>");
+    private static String distributionChart(List<ScoreBand> bands, Double avg, Double total, ReportPalette p, int w) {
+        int n = bands.size();
+        int h = 246;
+        double x0 = 8, x1 = w - 8, band = (x1 - x0) / n, barW = band * 0.74, base = 196, maxBar = 136;
+        int top = 1;
+        for (ScoreBand b : bands) top = Math.max(top, b.getStudentCount());
+        StringBuilder s = new StringBuilder();
+        s.append(line(x0, base, x1, base, LINE, 1.5, null));
+        // The bands split [0, total] into equal widths, so the average maps straight onto the axis.
+        // Drawn first so the bars sit on top of it.
+        if (avg != null && total != null && total > 0) {
+            double xa = x0 + Math.max(0, Math.min(1, avg / total)) * (x1 - x0);
+            s.append(line(xa, 34, xa, base, INK, 1.5, "4 4"));
+            boolean left = xa > w - 170;
+            s.append(svgText(left ? xa - 6 : xa + 6, 30, "Class average " + fmt(avg), 12.5, false, INK, left ? "end" : "start"));
+        }
+        for (int i = 0; i < n; i++) {
+            ScoreBand b = bands.get(i);
+            int c = b.getStudentCount();
+            double bh = c == 0 ? 0 : Math.max(3, c * maxBar / (double) top);
+            double bx = x0 + i * band + (band - barW) / 2;
+            boolean peak = c == top && c > 0;
+            if (bh > 0) s.append(rect(bx, base - bh, barW, bh, 4, peak ? p.brand : p.brand100));
+            s.append(svgText(bx + barW / 2, base - bh - 6, String.valueOf(c), 12, peak, peak ? p.brandInk : MUTED, "middle"));
+            s.append(svgText(bx + barW / 2, base + 17, nvl(b.getLabel(), "").replace("-", "–"), n > 10 ? 10 : 11.5, false, MUTED, "middle"));
+        }
+        s.append(svgText(x0, h - 6, (total != null ? "Marks out of " + fmt(total) + " · " : "") + "students in each range",
+                12, false, MUTED, "start"));
+        return svg(w, h, s);
     }
 
-    // ------------------------------------------------------ section analysis
+    // --------------------------------------------------------------- sections
 
-    private void appendSectionAnalysis(StringBuilder sb, Input in, String accent) {
+    private void appendSections(StringBuilder sb, Input in, ReportPalette p) {
         List<SectionRow> sections = in.getSections();
         if (sections == null || sections.isEmpty()) return;
 
-        sb.append("<div class=\"sect\"><div class=\"h2\">SECTION-WISE CLASS PERFORMANCE</div>");
-        sb.append("<div class=\"hint\">Class average accuracy against the best score achieved in each section. A wide gap means the section was learnable but most of the class did not get there.</div>");
-
-        Map<String, Double> avg = new LinkedHashMap<>();
-        Map<String, Double> best = new LinkedHashMap<>();
+        long aboveHalf = sections.stream().filter(s -> sectionPct(s) >= 50).count();
+        SectionRow weakest = null;
         for (SectionRow s : sections) {
-            String label = shortLabel(nvl(s.getName(), "Section"), 16);
-            avg.put(label, round1(clampPct(s.getAverageAccuracy() != null ? s.getAverageAccuracy() : 0.0)));
-            double bestPct = s.getHighestMarks() != null && s.getTotalMarks() != null && s.getTotalMarks() > 0
-                    ? clampPct(s.getHighestMarks() / s.getTotalMarks() * 100.0) : 0.0;
-            best.put(label, round1(bestPct));
+            if (weakest == null || sectionPct(s) < sectionPct(weakest)) weakest = s;
         }
-        String chart = chartGenerator.generateComparisonBarChart("Accuracy %", avg, best,
-                "Class average", "Best in class", accent, 540, 260);
-        if (chart != null) {
-            sb.append("<div class=\"chart\"><img src=\"").append(chart).append("\" style=\"max-width: 500px;\" /></div>");
+        String head;
+        if (sections.size() == 1) {
+            head = "Class average " + fmt(sectionPct(sections.get(0))) + "% in " + nvl(sections.get(0).getName(), "the paper");
+        } else {
+            head = "Above half marks in " + aboveHalf + " of " + sections.size() + " sections";
+            if (weakest != null && sectionPct(weakest) < 50) {
+                head += " — " + nvl(weakest.getName(), "one section") + " is the weakest";
+            }
         }
-        sb.append("</div><div>");
 
-        sb.append("<table class=\"tbl\">");
-        sb.append("<tr><th>SECTION</th><th style=\"text-align: right;\">OUT OF</th>")
-                .append("<th style=\"text-align: right;\">CLASS AVG</th>")
-                .append("<th style=\"text-align: right;\">ACCURACY</th>")
-                .append("<th style=\"text-align: right;\">BEST</th>")
-                .append("<th style=\"text-align: right;\">LOWEST</th>")
-                .append("<th style=\"text-align: right;\">STRUGGLING</th>")
-                .append("<th>FOCUS</th></tr>");
-        for (SectionRow s : sections) {
-            double acc = s.getAverageAccuracy() != null ? s.getAverageAccuracy() : 0.0;
-            sb.append("<tr><td><b>").append(esc(nvl(s.getName(), "Section"))).append("</b></td>");
-            sb.append("<td style=\"text-align: right;\">").append(fmt(s.getTotalMarks())).append("</td>");
-            sb.append("<td style=\"text-align: right;\"><b>").append(fmt(s.getAverageMarks())).append("</b></td>");
-            sb.append("<td style=\"text-align: right; color: ").append(bandColor(acc)).append("; font-weight: 700;\">")
-                    .append(fmt(acc)).append("%</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(MUTED).append(";\">")
-                    .append(fmt(s.getHighestMarks())).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(MUTED).append(";\">")
-                    .append(fmt(s.getLowestMarks())).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ")
-                    .append(s.getStrugglingStudents() != null && s.getStrugglingStudents() > 0 ? RED : MUTED)
-                    .append(";\">").append(s.getStrugglingStudents() != null ? s.getStrugglingStudents() : 0)
-                    .append("</td>");
-            sb.append("<td>").append(priorityPill(acc)).append("</td></tr>");
+        StringBuilder body = new StringBuilder();
+        body.append("<div class=\"legend\">").append(key(p.brand, "Class average"))
+                .append("<span class=\"key\"><span class=\"tick\" style=\"background:").append(INK)
+                .append("\"></span> Best in class</span></div>");
+        body.append(sectionChart(sections, p, CONTENT_W));
+
+        body.append("<table class=\"tbl\" style=\"margin-top:10px;\">");
+        body.append("<tr><th>Section</th><th class=\"r\">Out of</th><th class=\"r\">Class avg</th>")
+                .append("<th class=\"r\">Accuracy</th><th class=\"r\">Best</th><th class=\"r\">Lowest</th>")
+                .append("<th class=\"r\">Struggling</th><th>Focus</th></tr>");
+        for (int i = 0; i < sections.size(); i++) {
+            SectionRow s = sections.get(i);
+            double acc = s.getAverageAccuracy() != null ? s.getAverageAccuracy() : sectionPct(s);
+            int struggling = s.getStrugglingStudents() != null ? s.getStrugglingStudents() : 0;
+            body.append("<tr><td><span class=\"dot\" style=\"background:").append(ReportPalette.section(i))
+                    .append("\"></span> <b>").append(esc(nvl(s.getName(), "Section"))).append("</b></td>");
+            body.append("<td class=\"r\">").append(fmt(s.getTotalMarks())).append("</td>");
+            body.append("<td class=\"r\"><b>").append(fmt(s.getAverageMarks())).append("</b></td>");
+            body.append("<td class=\"r\" style=\"color:").append(bandColor(acc)).append(";\"><b>")
+                    .append(fmt(acc)).append("%</b></td>");
+            body.append("<td class=\"r m\">").append(fmt(s.getHighestMarks())).append("</td>");
+            body.append("<td class=\"r m\">").append(fmt(s.getLowestMarks())).append("</td>");
+            body.append("<td class=\"r\" style=\"color:").append(struggling > 0 ? BAD : MUTED).append(";\">")
+                    .append(struggling).append("</td>");
+            body.append("<td>").append(priorityChip(acc)).append("</td></tr>");
         }
-        sb.append("</table></div>");
+        body.append("</table>");
+
+        sb.append(block("Marks by section", head,
+                "Each bar is the class average as a share of that section's marks. The dark tick is the best score in the class.",
+                body.toString()));
     }
 
-    // ---------------------------------------------------------- marks lost pie
+    private static String sectionChart(List<SectionRow> rows, ReportPalette p, int w) {
+        int rowH = 44, top = 8;
+        int h = top + rows.size() * rowH + 30;
+        double nameW = 176, rightW = 150, trackX = nameW, trackW = w - nameW - rightW;
+        java.util.function.DoubleUnaryOperator x = v -> trackX + Math.max(0, Math.min(100, v)) / 100.0 * trackW;
+
+        StringBuilder s = new StringBuilder();
+        double gridBottom = top + rows.size() * rowH;
+        s.append(line(x.applyAsDouble(0), top, x.applyAsDouble(0), gridBottom, LINE, 1.5, null));
+        s.append(line(x.applyAsDouble(50), top, x.applyAsDouble(50), gridBottom, LINE, 1, "3 4"));
+        s.append(line(x.applyAsDouble(100), top, x.applyAsDouble(100), gridBottom, LINE, 1, "3 4"));
+        s.append(svgText(x.applyAsDouble(0), gridBottom + 18, "0", 12, false, MUTED, "middle"));
+        s.append(svgText(x.applyAsDouble(50), gridBottom + 18, "Half marks", 12, false, MUTED, "middle"));
+        s.append(svgText(x.applyAsDouble(100), gridBottom + 18, "Full marks", 12, false, MUTED, "middle"));
+
+        for (int i = 0; i < rows.size(); i++) {
+            SectionRow r = rows.get(i);
+            double cy = top + i * rowH + 22;
+            double pc = sectionPct(r);
+            s.append(circle(6, cy, 5, ReportPalette.section(i)));
+            s.append(svgText(18, cy + 5, clip(nvl(r.getName(), "Section"), 21), 13.5, true, INK, "start"));
+            s.append(rect(trackX, cy - 8, trackW, 16, 8, SOFT));
+            double x0 = x.applyAsDouble(0), x1 = x.applyAsDouble(pc);
+            if (x1 - x0 > 0.5) s.append(rect(x0, cy - 8, Math.max(8, x1 - x0), 16, 8, p.brand));
+            if (r.getHighestMarks() != null && r.getTotalMarks() != null && r.getTotalMarks() > 0) {
+                double bx = x.applyAsDouble(r.getHighestMarks() / r.getTotalMarks() * 100.0);
+                s.append(rect(bx - 1.5, cy - 13, 3, 26, 0, INK));
+            }
+            double tx = trackX + trackW + 16;
+            s.append(svgText(tx, cy + 1, fmt(r.getAverageMarks()) + " / " + fmt(r.getTotalMarks()), 15, true, INK, "start"));
+            String sub = fmt(pc) + "%" + (r.getHighestMarks() != null ? " · best " + fmt(r.getHighestMarks()) : "");
+            s.append(svgText(tx, cy + 17, sub, 11.5, false, MUTED, "start"));
+        }
+        return svg(w, h, s);
+    }
+
+    /** The class average as a share of the section's marks; the stored accuracy when marks are missing. */
+    private static double sectionPct(SectionRow s) {
+        if (s.getAverageMarks() != null && s.getTotalMarks() != null && s.getTotalMarks() > 0) {
+            return clampPct(s.getAverageMarks() / s.getTotalMarks() * 100.0);
+        }
+        return clampPct(nz(s.getAverageAccuracy()));
+    }
+
+    // ------------------------------------------------------------- marks lost
 
     private void appendMarksLost(StringBuilder sb, Input in) {
         List<SectionRow> sections = in.getSections();
         if (sections == null || sections.size() < 2) return;
 
-        Map<String, Double> lost = new LinkedHashMap<>();
+        Map<Integer, Double> lost = new LinkedHashMap<>();
         double total = 0;
-        for (SectionRow s : sections) {
+        for (int i = 0; i < sections.size(); i++) {
+            SectionRow s = sections.get(i);
             if (s.getTotalMarks() == null) continue;
-            double gap = Math.max(0.0, s.getTotalMarks() - (s.getAverageMarks() != null ? s.getAverageMarks() : 0.0));
+            double gap = Math.max(0.0, s.getTotalMarks() - nz(s.getAverageMarks()));
             if (gap > 0) {
-                lost.put(shortLabel(nvl(s.getName(), "Section"), 20), round1(gap));
+                lost.put(i, gap);
                 total += gap;
             }
         }
         if (lost.size() < 2 || total <= 0) return;
 
-        String pie = chartGenerator.generatePieChart(lost, PIE_COLORS);
-        if (pie == null) return;
-        String worst = lost.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+        int worst = lost.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(0);
+        double worstShare = lost.get(worst) / total * 100.0;
 
-        sb.append("<div class=\"sect\"><div class=\"h2\">WHERE THE CLASS LOST MARKS</div>");
-        sb.append("<div class=\"hint\">Share of the ").append(fmt(total))
-                .append(" marks the average student did not score")
-                .append(worst != null ? " — the biggest single loss is in " + esc(worst) + "." : ".")
-                .append(" Revision time is best spent in proportion to this, not to accuracy alone: a large section at 60% costs more than a small one at 20%.</div>");
-        sb.append("<div class=\"chart\"><img src=\"").append(pie).append("\" style=\"max-width: 460px;\" /></div>");
-        sb.append("</div>");
+        StringBuilder bar = new StringBuilder();
+        double x = 0;
+        int w = CONTENT_W;
+        for (Map.Entry<Integer, Double> e : lost.entrySet()) {
+            double segW = e.getValue() / total * w;
+            bar.append(rect(x, 0, segW, 30, 0, ReportPalette.section(e.getKey())));
+            if (segW > 44) {
+                bar.append(svgText(x + segW / 2, 20, Math.round(e.getValue() / total * 100) + "%", 12.5, true, "#ffffff", "middle"));
+            }
+            x += segW;
+        }
+
+        StringBuilder body = new StringBuilder(svg(w, 30, bar));
+        body.append("<table class=\"lost\">");
+        for (Map.Entry<Integer, Double> e : lost.entrySet()) {
+            SectionRow s = sections.get(e.getKey());
+            body.append("<tr><td class=\"lost-n\"><span class=\"dot\" style=\"background:")
+                    .append(ReportPalette.section(e.getKey())).append("\"></span> ")
+                    .append(esc(nvl(s.getName(), "Section"))).append("</td><td class=\"lost-v\">")
+                    .append(fmt(round1(e.getValue()))).append(" marks lost · <b>")
+                    .append(Math.round(e.getValue() / total * 100)).append("%</b></td></tr>");
+        }
+        body.append("</table>");
+
+        String head = worstShare >= 40
+                ? "Most of the lost marks are in " + nvl(sections.get(worst).getName(), "one section")
+                : "Lost marks are spread across the sections";
+        sb.append(block("Where the class lost marks", head,
+                "Share of the " + fmt(round1(total)) + " marks the average student did not score. Spend revision time in "
+                        + "proportion to this, not to accuracy alone: a big section at 60% costs more than a small one at 20%.",
+                body.toString()));
     }
 
-    // -------------------------------------------------------- topic analysis
+    // ----------------------------------------------------------------- topics
 
-    private void appendTopicAnalysis(StringBuilder sb, Input in) {
+    private void appendTopics(StringBuilder sb, Input in, ReportPalette p) {
         List<TopicRow> topics = in.getTopics();
         if (topics == null || topics.isEmpty()) return;
 
@@ -683,51 +697,40 @@ public class ClassAiReportHtmlBuilder {
             ordered = ordered.subList(0, MAX_TOPIC_ROWS);
         }
 
-        sb.append("<div class=\"sect\"><div class=\"h2\">TOPIC-WISE CLASS WEAKNESS</div>");
-        sb.append("<div class=\"hint\">")
-                .append(in.getTopicSource() == TopicSource.TAGS
-                        ? "Topics taken from this paper's question tags"
-                        : "Topics inferred by the model from the question content")
-                .append(", weakest first. Red is below ")
-                .append((int) WEAK_THRESHOLD).append("% class accuracy, amber below ")
-                .append((int) BORDERLINE_THRESHOLD).append("%.</div>");
+        int weak = countWeak(topics);
+        long borderline = topics.stream()
+                .filter(t -> nz(t.getClassAccuracy()) >= WEAK_THRESHOLD && nz(t.getClassAccuracy()) < BORDERLINE_THRESHOLD).count();
+        String head = weak > 0
+                ? (weak == 1 ? "1 topic" : weak + " topics") + " below " + (int) WEAK_THRESHOLD + "% — reteach these first"
+                : borderline > 0 ? borderline + (borderline == 1 ? " topic needs" : " topics need") + " more practice"
+                : "Every topic is secure";
+        String lede = (in.getTopicSource() == TopicSource.TAGS
+                ? "Topics from this paper's question tags"
+                : "Topics inferred by the AI from the question content")
+                + ", weakest first. Red is below " + (int) WEAK_THRESHOLD + "% class accuracy, amber below "
+                + (int) BORDERLINE_THRESHOLD + "%.";
 
-        Map<String, Double> chartData = new LinkedHashMap<>();
+        String header = "<tr><th>Topic</th><th class=\"r\">Qs</th><th>Class accuracy</th>"
+                + "<th class=\"r\">Students weak</th><th>Level</th></tr>";
+        List<String> rows = new ArrayList<>();
         for (TopicRow t : ordered) {
-            if (t.getTopic() != null && !t.getTopic().isBlank()) {
-                chartData.put(shortLabel(t.getTopic(), 26), round1(clampPct(nz(t.getClassAccuracy()))));
-            }
+            double acc = clampPct(nz(t.getClassAccuracy()));
+            String color = bandColor(acc);
+            StringBuilder body = new StringBuilder();
+            body.append("<tr><td><div class=\"t-name\">").append(escContent(nvl(t.getTopic(), ""))).append("</div>")
+                    .append("<div class=\"t-do\">").append(esc(topicAction(acc))).append("</div></td>");
+            body.append("<td class=\"r\">").append(t.getQuestionCount() != null ? t.getQuestionCount() : 0).append("</td>");
+            body.append("<td><table class=\"barrow\"><tr><td><div class=\"bar\"><div class=\"bar-f\" style=\"width:")
+                    .append(Math.max(3, Math.round(acc))).append("%;background:").append(color)
+                    .append("\"></div></div></td><td class=\"bar-v\" style=\"color:").append(color).append("\">")
+                    .append(fmt(acc)).append("%</td></tr></table></td>");
+            int weakCount = t.getWeakStudentCount() != null ? t.getWeakStudentCount() : 0;
+            body.append("<td class=\"r\" style=\"color:").append(weakCount > 0 ? BAD : MUTED).append(";\">")
+                    .append(weakCount).append(t.getTotalStudents() != null ? " / " + t.getTotalStudents() : "").append("</td>");
+            body.append("<td class=\"nw\">").append(pips(t.getMasteryLabel(), p)).append("</td></tr>");
+            rows.add(body.toString());
         }
-        if (!chartData.isEmpty()) {
-            int height = Math.max(180, 34 * chartData.size() + 60);
-            String chart = chartGenerator.generateBandedHorizontalBarChart(chartData, height);
-            if (chart != null) {
-                sb.append("<div class=\"chart\"><img src=\"").append(chart).append("\" style=\"max-width: 500px;\" /></div>");
-            }
-        }
-        sb.append("</div><div>");
-
-        sb.append("<table class=\"tbl\">");
-        sb.append("<tr><th>TOPIC</th><th style=\"text-align: right;\">QS</th>")
-                .append("<th style=\"text-align: right;\">CLASS ACCURACY</th>")
-                .append("<th style=\"text-align: right;\">STUDENTS WEAK</th>")
-                .append("<th>LEVEL</th><th>WHAT TO DO</th></tr>");
-        for (TopicRow t : ordered) {
-            double acc = nz(t.getClassAccuracy());
-            String mastery = nvl(t.getMasteryLabel(), "-");
-            sb.append("<tr><td><b>").append(escContent(nvl(t.getTopic(), ""))).append("</b></td>");
-            sb.append("<td style=\"text-align: right;\">").append(t.getQuestionCount() != null ? t.getQuestionCount() : 0).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(bandColor(acc)).append("; font-weight: 700;\">")
-                    .append(fmt(acc)).append("%</td>");
-            sb.append("<td style=\"text-align: right; color: ")
-                    .append(t.getWeakStudentCount() != null && t.getWeakStudentCount() > 0 ? RED : MUTED).append(";\">")
-                    .append(t.getWeakStudentCount() != null ? t.getWeakStudentCount() : 0)
-                    .append(t.getTotalStudents() != null ? " / " + t.getTotalStudents() : "").append("</td>");
-            sb.append("<td>").append(pill(mastery, masteryColor(mastery))).append("</td>");
-            sb.append("<td style=\"color: ").append(MUTED).append("; font-size: 10px;\">")
-                    .append(esc(topicAction(acc))).append("</td></tr>");
-        }
-        sb.append("</table></div>");
+        sb.append(flowTable("Topic-wise weakness", head, lede, "tbl", new int[]{36, 6, 28, 12, 18}, header, rows, ""));
     }
 
     /** The class-level instruction attached to each topic row. */
@@ -737,7 +740,24 @@ public class ClassAiReportHtmlBuilder {
         return "Secure — spiral revision only";
     }
 
-    // ------------------------------------------------------ hardest questions
+    private static String pips(String level, ReportPalette p) {
+        String l = level == null ? "" : level.trim();
+        int n = switch (l.toLowerCase(Locale.ROOT)) {
+            case "expert" -> 4;
+            case "proficient" -> 3;
+            case "developing" -> 2;
+            case "beginner" -> 1;
+            default -> 0;
+        };
+        if (n == 0) return "<span class=\"m\">" + esc(l.isEmpty() ? "-" : l) + "</span>";
+        StringBuilder s = new StringBuilder();
+        for (int i = 1; i <= 4; i++) {
+            s.append("<span class=\"pip\" style=\"background:").append(i <= n ? p.brand : LINE).append("\"></span>");
+        }
+        return s.append(" <span class=\"pip-l\">").append(esc(l)).append("</span>").toString();
+    }
+
+    // ------------------------------------------------------- hardest questions
 
     private void appendHardestQuestions(StringBuilder sb, Input in) {
         List<QuestionRow> questions = in.getHardestQuestions();
@@ -747,106 +767,107 @@ public class ClassAiReportHtmlBuilder {
         ordered.sort((a, b) -> Double.compare(nz(a.getClassCorrectPercent()), nz(b.getClassCorrectPercent())));
         boolean truncated = ordered.size() > MAX_QUESTION_ROWS;
         if (truncated) ordered = ordered.subList(0, MAX_QUESTION_ROWS);
+        long gaps = ordered.stream().filter(q -> nz(q.getClassCorrectPercent()) < WEAK_THRESHOLD).count();
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">HARDEST QUESTIONS</div>");
-        sb.append("<div class=\"hint\">Questions ordered by how few of the class got them right. Below ")
-                .append((int) WEAK_THRESHOLD).append("% is a teaching gap, not a hard question — and the most-chosen wrong answer usually names the misconception.</div>");
-        sb.append("<table class=\"tbl\">");
-        sb.append("<tr><th style=\"text-align: right;\">Q</th><th>SECTION</th><th>TOPIC</th>")
-                .append("<th style=\"text-align: right;\">CLASS CORRECT</th>")
-                .append("<th style=\"text-align: right;\">SKIPPED</th>")
-                .append("<th>MOST-CHOSEN WRONG ANSWER</th><th>VERDICT</th></tr>");
+        String header = "<tr><th class=\"r\">Q</th><th>Section</th><th>Topic</th><th class=\"r\">Class correct</th>"
+                + "<th class=\"r\">Skipped</th><th>Most-chosen wrong answer</th><th>Verdict</th></tr>";
+        List<String> rows = new ArrayList<>();
         for (QuestionRow q : ordered) {
             double pct = nz(q.getClassCorrectPercent());
-            sb.append("<tr><td style=\"text-align: right;\"><b>").append(q.getNumber() != null ? q.getNumber() : "-").append("</b></td>");
-            sb.append("<td style=\"color: ").append(MUTED).append(";\">").append(esc(shortLabel(nvl(q.getSection(), "-"), 16))).append("</td>");
-            sb.append("<td style=\"color: ").append(MUTED).append(";\">").append(esc(shortLabel(nvl(q.getTopic(), "-"), 22))).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(bandColor(pct)).append("; font-weight: 700;\">")
-                    .append(fmt(pct)).append("%</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(MUTED).append(";\">")
-                    .append(q.getSkippedCount() != null ? q.getSkippedCount() : 0).append("</td>");
-            sb.append("<td style=\"font-size: 10px;\">");
+            StringBuilder body = new StringBuilder();
+            body.append("<tr><td class=\"r\"><b>").append(q.getNumber() != null ? q.getNumber() : "-").append("</b></td>");
+            body.append("<td class=\"m\">").append(esc(clip(nvl(q.getSection(), "-"), 16))).append("</td>");
+            body.append("<td class=\"m\">").append(esc(clip(nvl(q.getTopic(), "-"), 22))).append("</td>");
+            body.append("<td class=\"r\" style=\"color:").append(bandColor(pct)).append(";\"><b>").append(fmt(pct)).append("%</b></td>");
+            body.append("<td class=\"r m\">").append(q.getSkippedCount() != null ? q.getSkippedCount() : 0).append("</td>");
+            body.append("<td class=\"sm\">");
             if (q.getTopWrongAnswer() != null && !q.getTopWrongAnswer().isBlank()) {
-                sb.append("<span style=\"color: ").append(RED).append(";\">")
-                        .append(escContent(q.getTopWrongAnswer())).append("</span>");
+                body.append("<span style=\"color:").append(BAD).append(";\">").append(escContent(q.getTopWrongAnswer())).append("</span>");
                 if (q.getTopWrongPercent() != null) {
-                    sb.append(" <span style=\"color: ").append(FAINT).append(";\">(")
-                            .append(fmt(q.getTopWrongPercent())).append("%)</span>");
+                    body.append(" <span class=\"m\">(").append(fmt(q.getTopWrongPercent())).append("%)</span>");
                 }
             } else {
-                sb.append("<span style=\"color: ").append(FAINT).append(";\">-</span>");
+                body.append("<span class=\"m\">-</span>");
             }
-            sb.append("</td>");
-            sb.append("<td style=\"font-size: 10px;\">").append(questionVerdict(pct)).append("</td></tr>");
+            body.append("</td><td class=\"nw\">").append(questionVerdict(pct)).append("</td></tr>");
+            rows.add(body.toString());
         }
-        sb.append("</table>");
-        if (truncated) {
-            sb.append("<div class=\"hint\" style=\"margin-top: 6px;\">Showing the ")
-                    .append(MAX_QUESTION_ROWS).append(" hardest of ").append(questions.size())
-                    .append(" questions. The full question breakdown is in the Question Insights export.</div>");
-        }
-        sb.append("</div>");
+        String after = truncated
+                ? "<div class=\"cap\">Showing the " + MAX_QUESTION_ROWS + " hardest of " + questions.size()
+                + " questions. The full breakdown is in the Question Insights export.</div>"
+                : "";
+        String head = gaps > 0
+                ? gaps + (gaps == 1 ? " question" : " questions") + " most of the class got wrong"
+                : "No question was missed by most of the class";
+        sb.append(flowTable("Hardest questions", head,
+                "Ordered by how few got them right. Below " + (int) WEAK_THRESHOLD
+                        + "% is a teaching gap, not a hard question — the most-chosen wrong answer usually names the misconception.",
+                "tbl", new int[]{6, 15, 19, 11, 9, 24, 16}, header, rows, after));
     }
 
     private static String questionVerdict(double classCorrectPercent) {
-        if (classCorrectPercent < 25) {
-            return pill("Reteach to all", RED) + " <span style=\"color:" + MUTED + ";\">almost nobody got it</span>";
-        }
-        if (classCorrectPercent < WEAK_THRESHOLD) {
-            return pill("Teaching gap", RED) + " <span style=\"color:" + MUTED + ";\">most of the class missed it</span>";
-        }
-        if (classCorrectPercent < BORDERLINE_THRESHOLD) {
-            return pill("Revisit", AMBER) + " <span style=\"color:" + MUTED + ";\">split the class</span>";
-        }
-        return "<span style=\"color:" + MUTED + ";\">Well answered</span>";
+        if (classCorrectPercent < 25) return chip("Reteach to all", BAD) + "<div class=\"t-do\">almost nobody got it</div>";
+        if (classCorrectPercent < WEAK_THRESHOLD) return chip("Teaching gap", BAD) + "<div class=\"t-do\">most of the class missed it</div>";
+        if (classCorrectPercent < BORDERLINE_THRESHOLD) return chip("Revisit", AMBER) + "<div class=\"t-do\">split the class</div>";
+        return chip("Well answered", OK);
     }
 
-    // ---------------------------------------------------------------- blooms
+    // ----------------------------------------------------------------- blooms
 
-    private void appendBlooms(StringBuilder sb, Input in, String accent) {
+    private void appendBlooms(StringBuilder sb, Input in, ReportPalette p) {
         Map<String, int[]> blooms = in.getBlooms();
         if (blooms == null || blooms.isEmpty()) return;
 
-        Map<String, Double> accuracy = new LinkedHashMap<>();
-        Map<String, int[]> counts = new LinkedHashMap<>();
+        List<Integer> levels = new ArrayList<>();
         for (int i = 0; i < BLOOM_KEYS.length; i++) {
             int[] v = blooms.get(BLOOM_KEYS[i]);
-            if (v == null || v.length < 2 || v[1] <= 0) continue;
-            counts.put(BLOOM_NAMES[i], v);
-            accuracy.put(BLOOM_NAMES[i], round1(clampPct(v[0] * 100.0 / v[1])));
+            if (v != null && v.length >= 2 && v[1] > 0) levels.add(i);
         }
-        if (counts.isEmpty()) return;
+        if (levels.isEmpty()) return;
 
-        sb.append("<div class=\"sect\"><div class=\"h2\">COGNITIVE LEVEL PROFILE (BLOOM'S)</div>");
-        sb.append("<div class=\"hint\">Where the class sits between recall and reasoning. Strong Remember/Understand with weak Apply/Analyze is the classic sign that content is being learnt but not used.</div>");
-        String chart = chartGenerator.generateComparisonBarChart("Class accuracy %", accuracy, null,
-                "Class accuracy", null, accent, 540, 250);
-        if (chart != null) {
-            sb.append("<div class=\"chart\"><img src=\"").append(chart).append("\" style=\"max-width: 500px;\" /></div>");
+        Integer best = null, worst = null;
+        for (int i : levels) {
+            int[] v = blooms.get(BLOOM_KEYS[i]);
+            double acc = v[0] * 100.0 / v[1];
+            // One question is not a pattern: 3 to headline as a strength, 2 as a weakness.
+            if (v[1] >= 3 && (best == null || acc > bloomPct(blooms, best))) best = i;
+            if (v[1] >= 2 && (worst == null || acc < bloomPct(blooms, worst))) worst = i;
         }
-        sb.append("</div><div>");
-        sb.append("<table class=\"tbl\"><tr><th>LEVEL</th><th style=\"text-align: right;\">CORRECT</th>")
-                .append("<th style=\"text-align: right;\">ASKED</th><th style=\"text-align: right;\">CLASS ACCURACY</th>")
-                .append("<th>READING</th></tr>");
-        for (Map.Entry<String, int[]> e : counts.entrySet()) {
-            int correct = e.getValue()[0];
-            int total = e.getValue()[1];
-            double acc = correct * 100.0 / total;
-            sb.append("<tr><td><b>").append(esc(e.getKey())).append("</b></td>");
-            sb.append("<td style=\"text-align: right;\">").append(correct).append("</td>");
-            sb.append("<td style=\"text-align: right;\">").append(total).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(bandColor(acc)).append("; font-weight: 700;\">")
-                    .append(fmt(acc)).append("%</td>");
-            sb.append("<td style=\"color: ").append(MUTED).append("; font-size: 10px;\">")
-                    .append(esc(bloomReading(e.getKey(), acc))).append("</td></tr>");
+        String head = best != null && worst != null && !best.equals(worst)
+                && bloomPct(blooms, best) - bloomPct(blooms, worst) >= 20
+                ? "Strong at " + BLOOM_VERBS[best] + ", weaker at " + BLOOM_VERBS[worst]
+                : "Thinking skills across the class";
+
+        StringBuilder body = new StringBuilder("<table class=\"tbl\">");
+        body.append("<tr><th>Level</th><th style=\"width:190px;\">Class accuracy</th><th class=\"r\">Correct</th>")
+                .append("<th>Reading</th></tr>");
+        for (int i : levels) {
+            int[] v = blooms.get(BLOOM_KEYS[i]);
+            double acc = clampPct(v[0] * 100.0 / v[1]);
+            String color = bandColor(acc);
+            body.append("<tr><td><div class=\"t-name\">").append(BLOOM_NAMES[i]).append("</div><div class=\"t-do\">")
+                    .append(BLOOM_NOTES[i]).append("</div></td>");
+            body.append("<td><table class=\"barrow\"><tr><td><div class=\"bar\"><div class=\"bar-f\" style=\"width:")
+                    .append(Math.max(3, Math.round(acc))).append("%;background:").append(color)
+                    .append("\"></div></div></td><td class=\"bar-v\" style=\"color:").append(color).append("\">")
+                    .append(fmt(acc)).append("%</td></tr></table></td>");
+            body.append("<td class=\"r\">").append(v[0]).append(" / ").append(v[1]).append("</td>");
+            body.append("<td class=\"sm m\">").append(esc(bloomReading(BLOOM_NAMES[i], acc))).append("</td></tr>");
         }
-        sb.append("</table>");
+        body.append("</table>");
         if (in.getBloomsReading() != null && !in.getBloomsReading().isBlank()) {
-            sb.append("<div class=\"panel\" style=\"margin-top: 8px;\"><span style=\"font-weight: 700; color: ")
-                    .append(NAVY).append(";\">What this means for teaching: </span><span style=\"font-size: 10.5px; color: ")
-                    .append(MUTED).append(";\">").append(esc(in.getBloomsReading())).append("</span></div>");
+            body.append("<div class=\"callout\" style=\"background:").append(p.brand50).append(";\"><b style=\"color:")
+                    .append(p.brandInk).append(";\">What this means for teaching: </b>")
+                    .append(esc(in.getBloomsReading())).append("</div>");
         }
-        sb.append("</div>");
+        sb.append(block("Bloom's taxonomy", head,
+                "Strong Remember/Understand with weak Apply/Analyse is the classic sign that content is learnt but not used.",
+                body.toString()));
+    }
+
+    private static double bloomPct(Map<String, int[]> blooms, int index) {
+        int[] v = blooms.get(BLOOM_KEYS[index]);
+        return v[0] * 100.0 / v[1];
     }
 
     private static String bloomReading(String level, double accuracy) {
@@ -855,94 +876,98 @@ public class ClassAiReportHtmlBuilder {
         return switch (level) {
             case "Remember", "Understand" -> "Content did not land — reteach the material itself";
             case "Apply" -> "Theory known, not usable — drill worked examples in class";
-            case "Analyze", "Evaluate" -> "Reasoning not developed — scaffold with guided questions";
+            case "Analyse", "Evaluate" -> "Reasoning not developed — scaffold with guided questions";
             default -> "Open-ended tasks are beyond the class for now";
         };
     }
 
-    // -------------------------------------------------------- misconceptions
+    // --------------------------------------------------------- misconceptions
 
-    private void appendMisconceptions(StringBuilder sb, Input in) {
+    private void appendMisconceptions(StringBuilder sb, Input in, ReportPalette p) {
         List<Misconception> items = in.getMisconceptions();
         if (items == null || items.isEmpty()) return;
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">SHARED MISCONCEPTIONS</div>");
-        sb.append("<div class=\"hint\">Wrong answers many students gave for the same reason. These are worth one class explanation each — they are the highest-yield thing on this report.</div>");
-        int shown = 0;
+        List<String> cards = new ArrayList<>();
         for (Misconception m : items) {
-            if (shown++ >= MAX_MISCONCEPTIONS) break;
-            sb.append("<div class=\"panel\">");
-            sb.append("<table style=\"width: 100%; margin-bottom: 5px;\"><tr>");
-            sb.append("<td style=\"font-size: 11px; font-weight: 700; color: ").append(NAVY).append(";\">")
+            if (cards.size() >= MAX_MISCONCEPTIONS) break;
+            StringBuilder c = new StringBuilder();
+            c.append("<table class=\"fix\"><tr><td colspan=\"2\" class=\"fix-h\"><table class=\"fix-ht\"><tr><td>")
                     .append(escContent(nvl(m.getQuestionSummary(), ""))).append("</td>");
             if (m.getAffectedStudents() != null) {
-                sb.append("<td style=\"width: 110px; text-align: right;\">")
-                        .append(pill(m.getAffectedStudents() + " students", RED)).append("</td>");
+                c.append("<td class=\"fix-n\"><span class=\"fix-c\">").append(m.getAffectedStudents())
+                        .append(m.getAffectedStudents() == 1 ? " student" : " students").append("</span></td>");
             }
-            sb.append("</tr></table>");
-            sb.append("<table style=\"width: 100%; font-size: 10px; margin-bottom: 6px;\"><tr>");
-            sb.append("<td style=\"width: 50%; color: ").append(RED).append(";\"><b>They answered:</b> ")
+            c.append("</tr></table></td></tr>");
+            c.append("<tr><td class=\"fix-you\"><div class=\"lbl\" style=\"color:").append(BAD).append("\">They answered</div>")
                     .append(escContent(nvl(m.getWrongAnswer(), "-"))).append("</td>");
-            sb.append("<td style=\"width: 50%; color: ").append(GREEN).append(";\"><b>Correct:</b> ")
-                    .append(escContent(nvl(m.getCorrectAnswer(), "-"))).append("</td></tr></table>");
-            if (m.getMisconception() != null && !m.getMisconception().isBlank()) {
-                sb.append("<div style=\"font-size: 10.5px; background-color: ").append(AMBER_SOFT)
-                        .append("; border-left: 3px solid ").append(AMBER)
-                        .append("; padding: 6px 9px; margin-bottom: 5px;\"><b style=\"color: ").append(AMBER)
-                        .append(";\">Why the class went wrong: </b>").append(esc(m.getMisconception())).append("</div>");
+            c.append("<td class=\"fix-right\"><div class=\"lbl\" style=\"color:").append(OK).append("\">Right answer</div>")
+                    .append(escContent(nvl(m.getCorrectAnswer(), "-"))).append("</td></tr>");
+            boolean why = m.getMisconception() != null && !m.getMisconception().isBlank();
+            boolean fix = m.getRemediation() != null && !m.getRemediation().isBlank();
+            if (why || fix) {
+                c.append("<tr><td colspan=\"2\" class=\"fix-w\">");
+                if (why) c.append("<b>Why the class went wrong:</b> ").append(esc(m.getMisconception()));
+                if (fix) {
+                    c.append("<div class=\"fix-try\" style=\"color:").append(p.brandInk).append("\"><b>Reteach with:</b> ")
+                            .append(esc(m.getRemediation())).append("</div>");
+                }
+                c.append("</td></tr>");
             }
-            if (m.getRemediation() != null && !m.getRemediation().isBlank()) {
-                sb.append("<div style=\"font-size: 10.5px; background-color: ").append(GREEN_SOFT)
-                        .append("; border-left: 3px solid ").append(GREEN)
-                        .append("; padding: 6px 9px;\"><b style=\"color: ").append(GREEN)
-                        .append(";\">Reteach with: </b>").append(esc(m.getRemediation())).append("</div>");
-            }
-            sb.append("</div>");
+            c.append("</table>");
+            cards.add(c.toString());
         }
-        sb.append("</div>");
+        int count = cards.size();
+        sb.append(flowItems("Shared misconceptions",
+                count == 1 ? "1 wrong idea shared across the class" : count + " wrong ideas shared across the class",
+                "Wrong answers many students gave for the same reason. One class explanation each — the highest-yield items on this report.",
+                cards, ""));
     }
 
     // ------------------------------------------------------------ action plan
 
-    private void appendActionPlan(StringBuilder sb, Input in, String accent) {
+    private void appendActionPlan(StringBuilder sb, Input in, ReportPalette p) {
         List<ActionStep> steps = in.getActionPlan();
         String areas = in.getAreasOfImprovement();
         boolean hasSteps = steps != null && !steps.isEmpty();
         if (!hasSteps && (areas == null || areas.isBlank())) return;
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">WHAT TO RETEACH — CLASS ACTION PLAN</div>");
-        sb.append("<div class=\"hint\">Ordered by how many marks it would recover across the cohort. Work down this list, not down the syllabus.</div>");
+        // One table per step, so a page can break between steps but never inside one.
+        List<String> items = new ArrayList<>();
         if (hasSteps) {
+            int n = 0;
             for (ActionStep step : steps) {
-                int priority = step.getPriority() != null ? step.getPriority() : 0;
-                sb.append("<div class=\"step\"><table style=\"width: 100%;\"><tr>");
-                sb.append("<td style=\"width: 30px; vertical-align: top;\"><div class=\"num\" style=\"background-color: ")
-                        .append(priority == 1 ? RED : priority == 2 ? AMBER : accent).append(";\">")
-                        .append(priority > 0 ? priority : "&middot;").append("</div></td>");
-                sb.append("<td style=\"vertical-align: top; padding-left: 6px;\">");
-                sb.append("<table style=\"width: 100%;\"><tr>");
-                sb.append("<td style=\"font-size: 11.5px; font-weight: 700; color: ").append(INK).append(";\">")
-                        .append(esc(nvl(step.getTopic(), ""))).append("</td>");
-                if (step.getAffectedStudents() != null) {
-                    sb.append("<td style=\"width: 120px; text-align: right; font-size: 9.5px; color: ").append(RED).append(";\">")
-                            .append(step.getAffectedStudents()).append(" students affected</td>");
-                }
-                sb.append("</tr></table>");
-                sb.append("<div style=\"font-size: 10.5px; color: ").append(MUTED).append("; margin-top: 3px;\">")
-                        .append(esc(nvl(step.getSuggestion(), ""))).append("</div>");
+                n++;
+                int priority = step.getPriority() != null && step.getPriority() > 0 ? step.getPriority() : n;
+                String color = priority == 1 ? BAD : priority == 2 ? AMBER : p.brand;
+                StringBuilder c = new StringBuilder("<table class=\"plan\"><tr>");
+                c.append("<td class=\"plan-box\"><div class=\"num\" style=\"background:").append(color).append(";\">")
+                        .append(priority).append("</div></td>");
+                c.append("<td class=\"plan-t\"><div class=\"plan-h\">").append(esc(nvl(step.getTopic(), ""))).append("</div>")
+                        .append("<div class=\"plan-s\">").append(esc(nvl(step.getSuggestion(), ""))).append("</div></td>");
+                c.append("<td class=\"plan-time\">");
                 if (step.getEstimatedTime() != null && !step.getEstimatedTime().isBlank()) {
-                    sb.append("<div style=\"font-size: 9.5px; font-weight: 700; color: ").append(accent)
-                            .append("; margin-top: 3px;\">Est. ").append(esc(step.getEstimatedTime())).append("</div>");
+                    c.append("<div class=\"plan-est\" style=\"color:").append(p.brandInk).append(";\">")
+                            .append(esc(step.getEstimatedTime())).append("</div>");
                 }
-                sb.append("</td></tr></table></div>");
+                if (step.getAffectedStudents() != null) {
+                    c.append("<div class=\"plan-a\">").append(step.getAffectedStudents())
+                            .append(step.getAffectedStudents() == 1 ? " student" : " students").append(" affected</div>");
+                }
+                c.append("</td></tr></table>");
+                items.add(c.toString());
             }
         }
+        String after = "";
         if (areas != null && !areas.isBlank()) {
-            sb.append("<div style=\"font-size: 10px; font-weight: 700; color: ").append(MUTED)
-                    .append("; letter-spacing: 0.8px; margin: 10px 0 4px 0;\">ALSO WORTH ADDRESSING</div>");
-            sb.append("<div class=\"md\">").append(mdToHtml(areas)).append("</div>");
+            after = "<div class=\"sub-h\">Also worth addressing</div><div class=\"md\">" + mdToHtml(areas) + "</div>";
         }
-        sb.append("</div>");
+        int count = items.size();
+        String head = count > 0
+                ? (count == 1 ? "1 thing to reteach" : count + " things to reteach, in this order")
+                : "What to reteach";
+        sb.append(flowItems("Class action plan", head,
+                "Ordered by how many marks it would recover across the class. Work down this list, not down the syllabus.",
+                items, after));
     }
 
     // ------------------------------------------------------ intervention list
@@ -963,43 +988,38 @@ public class ClassAiReportHtmlBuilder {
         if (atRisk.isEmpty() && absent.isEmpty()) return;
         atRisk.sort((a, b) -> Double.compare(nz(a.getPercentage()), nz(b.getPercentage())));
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">STUDENTS NEEDING INTERVENTION</div>");
-        sb.append("<div class=\"hint\">Below ").append((int) WEAK_THRESHOLD)
-                .append("% overall — these are the students a class-wide reteach will not reach on its own.</div>");
-
-        if (!atRisk.isEmpty()) {
-            sb.append("<table class=\"tbl\">");
-            sb.append("<tr><th>STUDENT</th><th style=\"text-align: right;\">SCORE</th>")
-                    .append("<th style=\"text-align: right;\">RANK</th><th>WEAKEST AREAS</th></tr>");
-            for (StudentRow s : atRisk) {
-                sb.append("<tr><td><b>").append(esc(nvl(s.getName(), "-"))).append("</b>");
-                if (s.getUsername() != null && !s.getUsername().isBlank()) {
-                    sb.append("<div style=\"font-size: 9px; color: ").append(FAINT).append(";\">")
-                            .append(esc(s.getUsername())).append("</div>");
-                }
-                sb.append("</td>");
-                sb.append("<td style=\"text-align: right; color: ").append(RED).append("; font-weight: 700;\">")
-                        .append(fmt(s.getMarks())).append(s.getPercentage() != null ? " (" + fmt(s.getPercentage()) + "%)" : "")
-                        .append("</td>");
-                sb.append("<td style=\"text-align: right; color: ").append(MUTED).append(";\">")
-                        .append(s.getRank() != null ? s.getRank() : "-").append("</td>");
-                sb.append("<td style=\"font-size: 10px; color: ").append(MUTED).append(";\">")
-                        .append(esc(joinOrDash(s.getWeakTopics(), s.getWeakSections()))).append("</td></tr>");
+        String header = "<tr><th>Student</th><th class=\"r\">Score</th><th class=\"r\">Rank</th><th>Weakest areas</th></tr>";
+        List<String> rows = new ArrayList<>();
+        for (StudentRow s : atRisk) {
+            StringBuilder r = new StringBuilder();
+            r.append("<tr><td><b>").append(esc(nvl(s.getName(), "-"))).append("</b>");
+            if (s.getUsername() != null && !s.getUsername().isBlank()) {
+                r.append("<div class=\"t-do\">").append(esc(s.getUsername())).append("</div>");
             }
-            sb.append("</table>");
+            r.append("</td><td class=\"r\" style=\"color:").append(BAD).append(";\"><b>").append(fmt(s.getMarks()))
+                    .append("</b>").append(s.getPercentage() != null ? " <span class=\"m\">(" + fmt(s.getPercentage()) + "%)</span>" : "")
+                    .append("</td>");
+            r.append("<td class=\"r m\">").append(s.getRank() != null ? s.getRank() : "-").append("</td>");
+            r.append("<td class=\"sm m\">").append(esc(joinOrDash(s.getWeakTopics(), s.getWeakSections()))).append("</td></tr>");
+            rows.add(r.toString());
         }
-
+        String absentPanel = "";
         if (!absent.isEmpty()) {
-            sb.append("<div class=\"panel\" style=\"margin-top: 10px;\">");
-            sb.append("<div style=\"font-size: 10px; font-weight: 700; color: ").append(NAVY)
-                    .append("; letter-spacing: 0.8px; margin-bottom: 4px;\">DID NOT ATTEMPT (")
-                    .append(absent.size()).append(")</div>");
             List<String> names = new ArrayList<>();
             for (StudentRow s : absent) names.add(nvl(s.getName(), "-"));
-            sb.append("<div class=\"names\" style=\"color: ").append(MUTED).append(";\">")
-                    .append(esc(String.join(" · ", names))).append("</div></div>");
+            absentPanel = "<div class=\"panel\"><div class=\"sub-h\" style=\"margin-top:0;\">Did not attempt ("
+                    + absent.size() + ")</div><div class=\"names m\">" + esc(String.join(" · ", names)) + "</div></div>";
         }
-        sb.append("</div>");
+        String head = !atRisk.isEmpty()
+                ? (atRisk.size() == 1 ? "1 student" : atRisk.size() + " students") + " below " + (int) WEAK_THRESHOLD + "% overall"
+                : absent.size() + (absent.size() == 1 ? " student" : " students") + " did not attempt";
+        String lede = "These are the students a class-wide reteach will not reach on its own.";
+        if (rows.isEmpty()) {
+            sb.append(flowItems("Students needing intervention", head, lede, List.of(absentPanel), ""));
+        } else {
+            sb.append(flowTable("Students needing intervention", head, lede, "tbl", new int[]{34, 16, 10, 40},
+                    header, rows, absentPanel));
+        }
     }
 
     // ---------------------------------------------------- who is weak where
@@ -1008,31 +1028,28 @@ public class ClassAiReportHtmlBuilder {
         Map<String, List<String>> byTopic = in.getWeakTopicStudents();
         if (byTopic == null || byTopic.isEmpty()) return;
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">WHO IS WEAK, TOPIC BY TOPIC</div>");
-        sb.append("<div class=\"hint\">The named students behind each weak topic — for pairing, groupwork, or targeted homework.</div>");
+        List<String> panels = new ArrayList<>();
         for (Map.Entry<String, List<String>> e : byTopic.entrySet()) {
             List<String> students = e.getValue();
             if (students == null || students.isEmpty()) continue;
-            sb.append("<div class=\"panel\">");
-            sb.append("<table style=\"width: 100%; margin-bottom: 4px;\"><tr>");
-            sb.append("<td style=\"font-size: 11px; font-weight: 700; color: ").append(NAVY).append(";\">")
-                    .append(esc(e.getKey())).append("</td>");
-            sb.append("<td style=\"width: 90px; text-align: right;\">")
-                    .append(pill(students.size() + " students", students.size() > 10 ? RED : AMBER))
+            StringBuilder c = new StringBuilder();
+            c.append("<div class=\"panel\"><table class=\"panel-h\"><tr><td class=\"t-name\">").append(esc(e.getKey()))
+                    .append("</td><td class=\"r\">").append(chip(students.size() + " students", students.size() > 10 ? BAD : AMBER))
                     .append("</td></tr></table>");
-            List<String> shown = students.size() > MAX_NAMES_PER_TOPIC
-                    ? students.subList(0, MAX_NAMES_PER_TOPIC) : students;
-            sb.append("<div class=\"names\">").append(esc(String.join(" · ", shown)));
+            List<String> shown = students.size() > MAX_NAMES_PER_TOPIC ? students.subList(0, MAX_NAMES_PER_TOPIC) : students;
+            c.append("<div class=\"names\">").append(esc(String.join(" · ", shown)));
             if (students.size() > shown.size()) {
-                sb.append(" <span style=\"color: ").append(FAINT).append(";\">+")
-                        .append(students.size() - shown.size()).append(" more</span>");
+                c.append(" <span class=\"m\">+").append(students.size() - shown.size()).append(" more</span>");
             }
-            sb.append("</div></div>");
+            c.append("</div></div>");
+            panels.add(c.toString());
         }
-        sb.append("</div>");
+        if (panels.isEmpty()) return;
+        sb.append(flowItems("Who is weak, topic by topic", "Named students behind each weak topic",
+                "For pairing, group work or targeted homework.", panels, ""));
     }
 
-    // ---------------------------------------------------------------- roster
+    // ----------------------------------------------------------------- roster
 
     private void appendRoster(StringBuilder sb, Input in) {
         List<StudentRow> roster = in.getRoster();
@@ -1051,92 +1068,344 @@ public class ClassAiReportHtmlBuilder {
             ordered = ordered.subList(0, MAX_ROSTER_ROWS);
         }
 
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">PARTICIPANT ROSTER — WEAK AREAS PER STUDENT</div>");
-        sb.append("<div class=\"hint\">Every participant, best first, with the sections and topics each one is weak in.</div>");
-        sb.append("<table class=\"tbl roster\">");
-        sb.append("<tr><th style=\"text-align: right;\">#</th><th>STUDENT</th>")
-                .append("<th style=\"text-align: right;\">SCORE</th>")
-                .append("<th style=\"text-align: right;\">%</th>")
-                .append("<th>BAND</th><th>WEAK SECTIONS</th><th>WEAK TOPICS</th></tr>");
+        String header = "<tr><th class=\"r\">#</th><th>Student</th><th class=\"r\">Score</th><th class=\"r\">%</th>"
+                + "<th>Band</th><th>Weak sections</th><th>Weak topics</th></tr>";
+        List<String> rows = new ArrayList<>();
         for (StudentRow s : ordered) {
             if (!s.isAttempted()) {
-                sb.append("<tr><td style=\"text-align: right; color: ").append(FAINT).append(";\">-</td>");
-                sb.append("<td><b>").append(esc(nvl(s.getName(), "-"))).append("</b></td>");
-                sb.append("<td colspan=\"5\" style=\"color: ").append(FAINT).append("; font-style: italic;\">Did not attempt</td></tr>");
+                rows.add("<tr><td class=\"r m\">-</td><td><b>" + esc(nvl(s.getName(), "-")) + "</b></td>"
+                        + "<td colspan=\"5\" class=\"m\"><i>Did not attempt</i></td></tr>");
                 continue;
             }
             double pct = nz(s.getPercentage());
-            sb.append("<tr><td style=\"text-align: right; color: ").append(MUTED).append(";\">")
-                    .append(s.getRank() != null ? s.getRank() : "-").append("</td>");
-            sb.append("<td><b>").append(esc(nvl(s.getName(), "-"))).append("</b>");
+            StringBuilder r = new StringBuilder();
+            r.append("<tr><td class=\"r m\">").append(s.getRank() != null ? s.getRank() : "-").append("</td>");
+            r.append("<td><b>").append(esc(nvl(s.getName(), "-"))).append("</b>");
             if (s.getUsername() != null && !s.getUsername().isBlank()) {
-                sb.append(" <span style=\"color: ").append(FAINT).append("; font-size: 8.5px;\">")
-                        .append(esc(s.getUsername())).append("</span>");
+                r.append(" <span class=\"m\" style=\"font-size:9px;\">").append(esc(s.getUsername())).append("</span>");
             }
-            sb.append("</td>");
-            sb.append("<td style=\"text-align: right;\">").append(fmt(s.getMarks())).append("</td>");
-            sb.append("<td style=\"text-align: right; color: ").append(bandColor(pct)).append("; font-weight: 700;\">")
-                    .append(fmt(pct)).append("</td>");
-            sb.append("<td>").append(bandPill(pct)).append("</td>");
-            sb.append("<td style=\"color: ").append(MUTED).append(";\">")
-                    .append(esc(joinOrDash(s.getWeakSections(), null))).append("</td>");
-            sb.append("<td style=\"color: ").append(MUTED).append(";\">")
-                    .append(esc(joinOrDash(s.getWeakTopics(), null))).append("</td></tr>");
+            r.append("</td><td class=\"r\">").append(fmt(s.getMarks())).append("</td>");
+            r.append("<td class=\"r\" style=\"color:").append(bandColor(pct)).append(";\"><b>").append(fmt(pct)).append("</b></td>");
+            r.append("<td>").append(bandChip(pct)).append("</td>");
+            r.append("<td class=\"m\">").append(esc(joinOrDash(s.getWeakSections(), null))).append("</td>");
+            r.append("<td class=\"m\">").append(esc(joinOrDash(s.getWeakTopics(), null))).append("</td></tr>");
+            rows.add(r.toString());
         }
-        sb.append("</table>");
-        if (truncated) {
-            sb.append("<div class=\"hint\" style=\"margin-top: 6px;\">Showing ").append(MAX_ROSTER_ROWS)
-                    .append(" of ").append(roster.size())
-                    .append(" participants. Export the results CSV for the complete list.</div>");
-        }
-        sb.append("</div>");
+        String after = truncated
+                ? "<div class=\"cap\">Showing " + MAX_ROSTER_ROWS + " of " + roster.size()
+                + " participants. Export the results CSV for the complete list.</div>"
+                : "";
+        sb.append(flowTable("Participant roster", "Every participant, best first",
+                "With the sections and topics each one is weak in.", "tbl roster", new int[]{5, 25, 9, 8, 13, 20, 20},
+                header, rows, after));
     }
 
-    // ------------------------------------------------------------- narrative
+    // -------------------------------------------------------------- narrative
 
+    /** The full, formatted AI reading, when the page-1 summary could not show it as written. */
     private void appendNarrative(StringBuilder sb, Input in) {
         String narrative = in.getNarrative();
         if (narrative == null || narrative.isBlank()) return;
-        sb.append("<div style=\"page-break-inside: auto;\"><div class=\"h2\">OVERALL READING OF THIS PAPER</div>");
-        sb.append("<div class=\"md\">").append(mdToHtml(narrative)).append("</div></div>");
+        // Shown whole when it was cut on page 1, or when it has headings / lists / bold that
+        // the one-paragraph summary flattens.
+        boolean cut = plain(narrative, Integer.MAX_VALUE).length() > SUMMARY_MAX;
+        boolean structured = narrative.matches("(?s).*(^|\\n|\\\\n)\\s*(#{1,6}\\s|[-•*]\\s|\\d+\\.\\s).*")
+                || narrative.contains("**");
+        if (!cut && !structured) return;
+        sb.append(blockFlow("Overall reading", "The full reading of this paper", null,
+                "<div class=\"md\">" + mdToHtml(narrative) + "</div>"));
     }
 
-    // ---------------------------------------------------------------- footer
+    // ----------------------------------------------------------------- footer
 
     private void appendFooter(StringBuilder sb, Input in, ReportBrandingDto branding) {
         String custom = brandingHelper.buildFooterHtml(branding, nvl(in.getAssessmentName(), ""));
         if (custom != null && !custom.isEmpty()) {
             sb.append(custom);
         }
-        sb.append("<div class=\"foot\"><table style=\"width: 100%;\"><tr><td>");
+        sb.append("<table class=\"foot\"><tr><td>");
         if (in.isAiUnavailable()) {
-            sb.append("Generated from assessment data only — AI analysis was not available, so topic inference, "
+            sb.append(in.getGeneratedAt() != null ? "Generated on " + fmtDateTime(in.getGeneratedAt()) + " from" : "Generated from")
+                    .append(" assessment data only — AI analysis was not available, so topic inference, "
                     + "misconceptions and the action plan are absent from this copy.");
         } else {
             sb.append("AI-assisted analysis")
                     .append(in.getGeneratedAt() != null ? " generated on " + fmtDateTime(in.getGeneratedAt()) : "")
                     .append(". One analysis per assessment — review before acting on it or sharing it.");
         }
-        sb.append("</td><td style=\"text-align: right;\">");
+        sb.append("</td><td class=\"r\" style=\"width:140px;\">");
         ClassOverview o = in.getOverview();
         if (o != null && o.getAttempted() != null) {
-            sb.append("Based on ").append(o.getAttempted()).append(" attempts");
+            sb.append("Based on ").append(o.getAttempted()).append(o.getAttempted() == 1 ? " attempt" : " attempts");
         }
-        sb.append("</td></tr></table></div>");
+        sb.append("</td></tr></table>");
+    }
+
+    // ------------------------------------------------------- building blocks
+
+    /** A block that must not split across pages (chart + short table). */
+    private static String block(String tag, String head, String lede, String body) {
+        return "<div class=\"block\">" + titled(tag, head, lede, body) + "</div>";
+    }
+
+    /** A block that may run over pages (long text); only its heading is kept together. */
+    private static String blockFlow(String tag, String head, String lede, String body) {
+        return "<div class=\"block-flow\"><div class=\"keep\">" + titledHead(tag, head, lede) + "</div>" + body + "</div>";
+    }
+
+    /**
+     * A list of cards that may run over pages. The heading is kept on the same page as the
+     * first card (iText ignores page-break-after:avoid, so a heading alone at the foot of a
+     * page cannot be prevented any other way); every card stays whole.
+     */
+    private static String flowItems(String tag, String head, String lede, List<String> items, String after) {
+        StringBuilder s = new StringBuilder("<div class=\"block-flow\"><div class=\"keep\">").append(titledHead(tag, head, lede));
+        if (!items.isEmpty()) s.append(items.get(0));
+        s.append("</div>");
+        for (int i = 1; i < items.size(); i++) s.append(items.get(i));
+        return s.append(after).append("</div>").toString();
+    }
+
+    /**
+     * A long table that may run over pages, with its heading kept beside the header row
+     * and first rows. The rows are split into two tables with the same fixed column widths
+     * ({@code widths} in percent), so they line up as one.
+     */
+    private static String flowTable(String tag, String head, String lede, String cls, int[] widths,
+                                    String header, List<String> rows, String after) {
+        StringBuilder cols = new StringBuilder("<colgroup>");
+        for (int w : widths) cols.append("<col style=\"width:").append(w).append("%\"/>");
+        cols.append("</colgroup>");
+        int keep = Math.min(rows.size(), 3);
+        StringBuilder s = new StringBuilder("<div class=\"block-flow\"><div class=\"keep\">").append(titledHead(tag, head, lede));
+        s.append("<table class=\"").append(cls).append(" fixed\">").append(cols).append(header);
+        for (int i = 0; i < keep; i++) s.append(rows.get(i));
+        s.append("</table></div>");
+        if (rows.size() > keep) {
+            s.append("<table class=\"").append(cls).append(" fixed\">").append(cols);
+            for (int i = keep; i < rows.size(); i++) s.append(rows.get(i));
+            s.append("</table>");
+        }
+        return s.append(after).append("</div>").toString();
+    }
+
+    private static String titled(String tag, String head, String lede, String body) {
+        return titledHead(tag, head, lede) + body;
+    }
+
+    private static String titledHead(String tag, String head, String lede) {
+        return "<div class=\"tag\">" + esc(tag) + "</div><div class=\"h3\">" + esc(head) + "</div>"
+                + (lede == null ? "" : "<div class=\"lede\">" + esc(lede) + "</div>");
+    }
+
+    private static String key(String color, String label) {
+        return "<span class=\"key\"><span class=\"sw\" style=\"background:" + color + "\"></span> " + esc(label) + "</span>";
+    }
+
+    private static String chip(String label, String color) {
+        return "<span class=\"chip\" style=\"background:" + softOf(color) + ";color:" + color + ";\">" + esc(label) + "</span>";
+    }
+
+    private static String priorityChip(double accuracy) {
+        if (accuracy < WEAK_THRESHOLD) return chip("P1 · Reteach", BAD);
+        if (accuracy < BORDERLINE_THRESHOLD) return chip("P2 · Practise", AMBER);
+        return chip("On track", OK);
+    }
+
+    private static String bandChip(double percentage) {
+        if (percentage < WEAK_THRESHOLD) return chip("At risk", BAD);
+        if (percentage < BORDERLINE_THRESHOLD) return chip("Developing", AMBER);
+        if (percentage < 85) return chip("Secure", OK);
+        return chip("Excelling", OK);
+    }
+
+    private static String softOf(String color) {
+        if (BAD.equals(color)) return BAD_50;
+        if (AMBER.equals(color)) return AMBER_50;
+        if (OK.equals(color)) return OK_50;
+        return SOFT;
+    }
+
+    private static String bandColor(double accuracyPercent) {
+        if (accuracyPercent < WEAK_THRESHOLD) return BAD;
+        if (accuracyPercent < BORDERLINE_THRESHOLD) return AMBER;
+        return OK;
+    }
+
+    // -------------------------------------------------------------------- css
+
+    /** iText subset: no flex/grid/rgba/var. Mirrors the student report's classes where they overlap. */
+    private static String css(Input in, ReportPalette p) {
+        String footLeft = cssString(nvl(in.getInstituteName(), "").isBlank()
+                ? "Class AI report · " + nvl(in.getAssessmentName(), "Assessment")
+                : in.getInstituteName() + " · Class AI report");
+        return "@page{size:A4;margin:28px 0 30px 0;"
+                + "@bottom-left{content:\"" + footLeft + "\";font-family:Mukta;font-size:9px;color:" + MUTED + ";padding-left:36px;vertical-align:top;}"
+                + "@bottom-right{content:\"Page \" counter(page) \" of \" counter(pages);font-family:Mukta;font-size:9px;color:" + MUTED + ";padding-right:36px;vertical-align:top;}}"
+                + "@page :first{margin-top:0;}"
+                + "body{margin:0;font-family:Mukta,sans-serif;font-size:12.5px;line-height:1.45;color:" + INK + ";}"
+                + "table{border-collapse:collapse;}"
+                + ".wm{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;}"
+                + ".wm-text{position:absolute;top:360pt;left:100pt;font-size:60px;font-weight:bold;white-space:nowrap;transform:rotate(-35deg);}"
+                + ".band{width:100%;background:" + p.brand + ";color:" + p.onBrand + ";}"
+                + ".band td{padding:12px 0;vertical-align:middle;}"
+                + ".band-logo{padding-left:36px !important;padding-right:0 !important;}"
+                + ".logo-img{background:#ffffff;border-radius:9px;border-collapse:separate;}"
+                + ".logo-img td{padding:5px 7px !important;line-height:0;}"
+                + ".logo{width:40px;height:40px;background:#ffffff;border-radius:10px;text-align:center;line-height:40px;}"
+                + ".logo-t{font-family:'Baloo 2';font-weight:800;font-size:16px;color:" + p.brandInk + ";}"
+                + ".band-i1{font-family:'Baloo 2';font-weight:700;font-size:15px;line-height:1.1;}"
+                + ".band-i2{font-size:11.5px;line-height:1.3;}"
+                + ".band-right{text-align:right;padding-right:36px !important;}"
+                + ".band-r1{font-family:'Baloo 2';font-weight:700;font-size:15px;line-height:1.1;}"
+                + ".band-r2{font-size:11.5px;line-height:1.3;}"
+                + ".hero{background:" + p.brand + ";color:" + p.onBrand + ";padding:2px 36px 22px 36px;border-top:1px solid " + p.brandDeep + ";}"
+                + ".hero-t{width:100%;}"
+                + ".hero-l{vertical-align:bottom;padding-right:20px;}"
+                + ".hero-r{vertical-align:bottom;text-align:right;width:230px;}"
+                + ".kicker{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;font-weight:bold;margin-top:12px;}"
+                + ".h1{font-family:'Baloo 2';font-weight:800;font-size:32px;line-height:1.05;margin:4px 0 8px 0;}"
+                + ".hero-p{font-size:13.5px;line-height:1.4;}"
+                + ".big{font-family:'Baloo 2';font-weight:800;font-size:80px;line-height:0.95;}"
+                + ".big-of{font-size:28px;font-weight:700;}"
+                + ".big-sub{font-family:'Baloo 2';font-weight:700;font-size:16px;line-height:1.2;}"
+                + ".pct-top{width:100%;margin-top:16px;font-size:12.5px;}"
+                + ".pct-top b{font-family:'Baloo 2';font-weight:800;font-size:16px;}"
+                + ".pct-track{height:14px;background:" + p.brandDeep + ";border-radius:7px;margin-top:4px;}"
+                + ".pct-fill{height:14px;background:" + p.accent + ";border-radius:7px;}"
+                + ".tiles{width:100%;border-collapse:separate;border-spacing:8px 0;margin:16px -8px 0 -8px;table-layout:fixed;}"
+                + ".tile{background:#ffffff;border-radius:12px;padding:9px 12px;vertical-align:top;}"
+                + ".tile-v{font-family:'Baloo 2';font-weight:800;font-size:26px;line-height:1.05;}"
+                + ".tile-l{font-size:11.5px;color:" + MUTED + ";line-height:1.3;}"
+                + ".body{padding:20px 36px 0 36px;}"
+                + ".block{margin-bottom:24px;page-break-inside:avoid;}"
+                + ".block-flow{margin-bottom:24px;}"
+                + ".keep{page-break-inside:avoid;page-break-after:avoid;}"
+                + ".tag{display:inline-block;font-weight:bold;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:" + p.brandInk
+                + ";background:" + p.brand50 + ";padding:4px 8px;border-radius:5px;}"
+                + ".h3{font-family:'Baloo 2';font-weight:800;font-size:20px;line-height:1.15;margin:6px 0 2px 0;color:" + INK + ";}"
+                + ".lede{color:" + MUTED + ";font-size:12px;margin:0 0 8px 0;}"
+                + ".cap{color:" + MUTED + ";font-size:11px;line-height:1.4;margin-top:6px;}"
+                + ".legend{font-size:11.5px;color:" + MUTED + ";margin:2px 0 6px 0;}"
+                + ".key{margin-right:14px;}"
+                + ".sw{display:inline-block;width:10px;height:10px;border-radius:3px;}"
+                + ".tick{display:inline-block;width:3px;height:11px;}"
+                + ".dot{display:inline-block;width:9px;height:9px;border-radius:5px;}"
+                + ".note{width:100%;background:" + p.brand50 + ";border-radius:14px;margin-bottom:24px;}"
+                + ".note td{padding:14px 16px 14px 0;vertical-align:top;}"
+                + ".note-q{width:56px;padding-left:16px !important;}"
+                + ".quote{width:40px;height:40px;border-radius:20px;background:" + p.brand + ";color:" + p.onBrand
+                + ";text-align:center;font-family:'Baloo 2';font-weight:800;font-size:30px;line-height:48px;}"
+                + ".note-l{font-weight:bold;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:" + p.brandInk + ";}"
+                + ".note-t{font-size:13px;line-height:1.5;margin-top:3px;}"
+                + ".tbl{width:100%;font-size:11.5px;}"
+                + ".fixed{table-layout:fixed;}"
+                + ".tbl th{background:" + SOFT + ";text-align:left;padding:7px 8px;color:" + MUTED
+                + ";font-weight:bold;font-size:9.5px;letter-spacing:0.8px;text-transform:uppercase;border-bottom:1.5px solid " + LINE + ";}"
+                + ".tbl td{padding:7px 8px;border-bottom:1px solid " + LINE + ";vertical-align:middle;}"
+                + ".roster{font-size:10.5px;}"
+                + ".roster th{padding:6px 6px;font-size:8.5px;}"
+                + ".roster td{padding:5px 6px;}"
+                + ".r{text-align:right;}"
+                + ".m{color:" + MUTED + ";}"
+                + ".sm{font-size:10.5px;}"
+                + ".nw{white-space:nowrap;}"
+                + ".t-name{font-weight:bold;font-size:12px;line-height:1.3;}"
+                + ".t-do{font-size:10.5px;color:" + MUTED + ";line-height:1.3;}"
+                + ".barrow{width:100%;}"
+                + ".barrow td{padding:0 !important;border:none !important;vertical-align:middle;}"
+                + ".bar{height:10px;background:" + SOFT + ";border-radius:5px;}"
+                + ".bar-f{height:10px;border-radius:5px;}"
+                + ".bar-v{width:48px;text-align:right;font-weight:bold;font-size:11.5px;}"
+                + ".pip{display:inline-block;width:10px;height:5px;border-radius:2px;margin-left:2px;}"
+                + ".pip-l{font-size:10.5px;color:" + MUTED + ";}"
+                + ".chip{display:inline-block;padding:2px 8px;border-radius:9px;font-size:9.5px;font-weight:bold;letter-spacing:0.3px;white-space:nowrap;}"
+                + ".lost{width:100%;margin-top:8px;}"
+                + ".lost td{padding:4px 0;font-size:12px;}"
+                + ".lost-n{font-weight:bold;}"
+                + ".lost-v{text-align:right;color:" + MUTED + ";}"
+                + ".lost-v b{color:" + INK + ";}"
+                + ".callout{border-radius:10px;padding:10px 14px;margin-top:10px;font-size:12px;line-height:1.45;}"
+                + ".fix{width:100%;margin-bottom:12px;border:1.5px solid " + LINE + ";page-break-inside:avoid;}"
+                + ".fix-h{background:" + INK + ";color:#ffffff;padding:9px 14px;}"
+                + ".fix-ht{width:100%;}"
+                + ".fix-ht td{font-family:'Baloo 2';font-weight:700;font-size:14px;line-height:1.25;vertical-align:middle;}"
+                + ".fix-n{text-align:right;width:110px;}"
+                + ".fix-c{font-family:Mukta;font-weight:bold;font-size:10.5px;background:" + BAD + ";color:#ffffff;padding:3px 9px;border-radius:9px;}"
+                + ".fix-you{background:" + BAD_50 + ";padding:9px 14px;width:50%;vertical-align:top;font-size:12px;}"
+                + ".fix-right{background:" + OK_50 + ";padding:9px 14px;width:50%;vertical-align:top;font-size:12px;}"
+                + ".lbl{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;}"
+                + ".fix-w{padding:9px 14px 11px 14px;font-size:12px;line-height:1.45;}"
+                + ".fix-try{margin-top:4px;}"
+                + ".plan{width:100%;border-collapse:separate;border-spacing:0;margin-bottom:8px;page-break-inside:avoid;}"
+                + ".plan td{background:" + SOFT + ";vertical-align:top;padding:11px 0;}"
+                + ".plan-box{width:46px;padding-left:14px !important;border-radius:12px 0 0 12px;}"
+                + ".num{width:24px;height:24px;border-radius:12px;color:#ffffff;text-align:center;line-height:25px;"
+                + "font-family:'Baloo 2';font-weight:800;font-size:13px;}"
+                + ".plan-h{font-family:'Baloo 2';font-weight:700;font-size:14.5px;line-height:1.25;}"
+                + ".plan-s{font-size:12px;color:" + MUTED + ";line-height:1.4;}"
+                + ".plan-time{width:150px;text-align:right;padding-right:14px !important;border-radius:0 12px 12px 0;}"
+                + ".plan-est{font-weight:bold;font-size:11px;line-height:1.3;}"
+                + ".plan-a{font-size:10.5px;color:" + BAD + ";margin-top:5px;}"
+                + ".pill{display:inline-block;background:" + p.brand + ";color:" + p.onBrand + ";font-weight:bold;font-size:10.5px;padding:4px 9px;border-radius:10px;}"
+                + ".sub-h{font-weight:bold;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:" + MUTED + ";margin:12px 0 4px 0;}"
+                + ".md{font-size:12px;line-height:1.5;}"
+                + ".panel{background:" + SOFT + ";border-radius:10px;padding:10px 14px;margin-top:8px;page-break-inside:avoid;}"
+                + ".panel-h{width:100%;margin-bottom:4px;}"
+                + ".names{font-size:11px;line-height:1.7;}"
+                + ".foot{width:100%;border-top:1px solid " + LINE + ";margin-top:8px;font-size:9.5px;color:" + MUTED + ";}"
+                + ".foot td{padding-top:7px;vertical-align:top;}";
+    }
+
+    // ------------------------------------------------------------------- svg
+
+    private static String svg(int w, int h, CharSequence body) {
+        return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + w + "\" height=\"" + h + "\" viewBox=\"0 0 " + w + " " + h
+                + "\">" + body + "</svg>";
+    }
+
+    private static String rect(double x, double y, double w, double h, double rx, String fill) {
+        double r = Math.min(rx, Math.min(w, h) / 2);
+        return "<rect x=\"" + f(x) + "\" y=\"" + f(y) + "\" width=\"" + f(w) + "\" height=\"" + f(h) + "\""
+                + (r > 0 ? " rx=\"" + f(r) + "\"" : "") + " fill=\"" + fill + "\"/>";
+    }
+
+    private static String line(double x1, double y1, double x2, double y2, String stroke, double width, String dash) {
+        return "<line x1=\"" + f(x1) + "\" y1=\"" + f(y1) + "\" x2=\"" + f(x2) + "\" y2=\"" + f(y2) + "\" stroke=\"" + stroke
+                + "\" stroke-width=\"" + f(width) + "\"" + (dash != null ? " stroke-dasharray=\"" + dash + "\"" : "") + "/>";
+    }
+
+    private static String circle(double cx, double cy, double r, String fill) {
+        return "<circle cx=\"" + f(cx) + "\" cy=\"" + f(cy) + "\" r=\"" + f(r) + "\" fill=\"" + fill + "\"/>";
+    }
+
+    private static String svgText(double x, double y, String t, double size, boolean bold, String fill, String anchor) {
+        return "<text x=\"" + f(x) + "\" y=\"" + f(y) + "\" font-family=\"Mukta\" font-size=\"" + f(size)
+                + "\" font-weight=\"" + (bold ? "bold" : "normal") + "\" fill=\"" + fill + "\" text-anchor=\"" + anchor + "\">"
+                + escPlain(t) + "</text>";
+    }
+
+    private static String f(double v) {
+        if (Math.abs(v - Math.rint(v)) < 0.005) return String.valueOf((long) Math.rint(v));
+        return String.format(Locale.ROOT, "%.1f", v);
     }
 
     // --------------------------------------------------------- small helpers
 
     /**
      * Whether this report actually contains a per-question breakdown. False for
-     * PDF/OMR papers, where question-level data was never captured — the
-     * majority of high-participation papers in prod.
+     * PDF/OMR papers, where question-level data was never captured.
      */
     private static boolean hasBreakdown(Input in) {
         boolean topics = in.getTopics() != null && !in.getTopics().isEmpty();
         boolean questions = in.getHardestQuestions() != null && !in.getHardestQuestions().isEmpty();
         boolean multiSection = in.getSections() != null && in.getSections().size() > 1;
         return topics || questions || multiSection;
+    }
+
+    private static Double avgPct(ClassOverview o) {
+        if (o == null || o.getAverageMarks() == null || o.getTotalMarks() == null || o.getTotalMarks() <= 0) return null;
+        return clampPct(o.getAverageMarks() / o.getTotalMarks() * 100.0);
     }
 
     private static int countWeak(List<TopicRow> topics) {
@@ -1154,56 +1423,40 @@ public class ClassAiReportHtmlBuilder {
         return String.join(", ", use);
     }
 
-    private static String priorityPill(double accuracy) {
-        if (accuracy < WEAK_THRESHOLD) return pill("P1 · Reteach", RED);
-        if (accuracy < BORDERLINE_THRESHOLD) return pill("P2 · Practise", AMBER);
-        return pill("On track", GREEN);
+    /** Same colour rule as the student report: the institute's primary, else the platform teal. */
+    private static String brandOf(ReportBrandingDto branding) {
+        String v = branding.getPrimaryColor();
+        return v != null && v.trim().matches("#[0-9a-fA-F]{6}") ? v.trim() : DEFAULT_BRAND;
     }
 
-    private static String bandPill(double percentage) {
-        if (percentage < WEAK_THRESHOLD) return pill("At risk", RED);
-        if (percentage < BORDERLINE_THRESHOLD) return pill("Developing", AMBER);
-        if (percentage < 85) return pill("Secure", GREEN);
-        return pill("Excelling", NAVY);
+    /** The institute's secondary colour; the stock purple default counts as "not chosen". */
+    private static String accentOf(ReportBrandingDto branding) {
+        String v = branding.getSecondaryColor();
+        if (v == null || "#6C5CE7".equalsIgnoreCase(v.trim()) || !v.trim().matches("#[0-9a-fA-F]{6}")) return DEFAULT_ACCENT;
+        return v.trim();
     }
 
-    private static String pill(String label, String color) {
-        return "<span class=\"pill\" style=\"background-color: " + softOf(color) + "; color: " + color + ";\">"
-                + esc(label) + "</span>";
-    }
-
-    private static String softOf(String color) {
-        if (RED.equals(color)) return RED_SOFT;
-        if (AMBER.equals(color)) return AMBER_SOFT;
-        if (GREEN.equals(color)) return GREEN_SOFT;
-        return "#EEF1F6";
-    }
-
-    private static String bandColor(double accuracyPercent) {
-        if (accuracyPercent < WEAK_THRESHOLD) return RED;
-        if (accuracyPercent < BORDERLINE_THRESHOLD) return AMBER;
-        return GREEN;
-    }
-
-    private static String masteryColor(String mastery) {
-        if (mastery == null) return MUTED;
-        return switch (mastery.trim().toLowerCase()) {
-            case "expert" -> GREEN;
-            case "proficient" -> NAVY;
-            case "developing" -> AMBER;
-            case "beginner" -> RED;
-            default -> MUTED;
-        };
-    }
-
-    private static String resolveAccent(ReportBrandingDto branding) {
-        String configured = branding.getPrimaryColor() != null ? branding.getPrimaryColor().trim() : null;
-        if (configured == null || configured.isEmpty()
-                || LEGACY_DEFAULT_PRIMARY.equalsIgnoreCase(configured)
-                || !SAFE_CSS_COLOR.matcher(configured).matches()) {
-            return NAVY;
+    /** Inlined (trimmed + downscaled) logo first; the presigned URL is the fallback. */
+    private String logoOf(ReportBrandingDto branding) {
+        if (!Boolean.TRUE.equals(branding.getShowLogoInHeader())) return null;
+        try {
+            String inline = branding.getLogoFileId() != null ? reportLogoService.resolveInlineLogo(branding.getLogoFileId()) : null;
+            if (inline != null) return inline;
+            String url = brandingHelper.resolveLogoUrl(branding);
+            return url != null && !url.isBlank() ? url : null;
+        } catch (Exception e) {
+            log.debug("Class AI report: logo unavailable: {}", e.getMessage());
+            return null;
         }
-        return configured;
+    }
+
+    private static String initials(String inst) {
+        StringBuilder b = new StringBuilder();
+        for (String w : inst.trim().split("\\s+")) {
+            if (!w.isEmpty() && Character.isLetterOrDigit(w.charAt(0))) b.append(Character.toUpperCase(w.charAt(0)));
+            if (b.length() == 2) break;
+        }
+        return b.toString();
     }
 
     private static double nz(Double value) {
@@ -1223,36 +1476,56 @@ public class ClassAiReportHtmlBuilder {
         if (value == Math.floor(value) && !Double.isInfinite(value)) {
             return String.valueOf((long) value.doubleValue());
         }
-        return String.format("%.1f", value);
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private static String fmt(double value) {
         return fmt(Double.valueOf(value));
     }
 
+    private static String mmss(long seconds) {
+        return (seconds / 60) + ":" + String.format(Locale.ROOT, "%02d", seconds % 60);
+    }
+
     private static String fmtDate(Date date) {
-        return date != null ? new SimpleDateFormat("dd MMM yyyy").format(date) : "-";
+        SimpleDateFormat f = new SimpleDateFormat("d MMM yyyy", Locale.ENGLISH);
+        f.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+        return f.format(date);
     }
 
     private static String fmtDateTime(Date date) {
-        return date != null ? new SimpleDateFormat("dd MMM yyyy, HH:mm").format(date) : "-";
+        SimpleDateFormat f = new SimpleDateFormat("d MMM yyyy, HH:mm", Locale.ENGLISH);
+        f.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
+        return f.format(date);
     }
 
     private static String nvl(String value, String fallback) {
         return value != null && !value.isBlank() ? value : fallback;
     }
 
-    private static String shortLabel(String value, int max) {
-        if (value == null) return "";
-        String trimmed = value.trim();
-        return trimmed.length() <= max ? trimmed : trimmed.substring(0, Math.max(1, max - 1)) + "…";
+    private static String clip(String s, int max) {
+        if (s == null) return "";
+        String t = s.trim();
+        return t.length() <= max ? t : t.substring(0, Math.max(1, max - 1)).trim() + "…";
+    }
+
+    /** Markdown-ish AI text to one plain paragraph, cut at a sentence near {@code max}. */
+    private static String plain(String md, int max) {
+        if (md == null || md.isBlank()) return "";
+        String t = md.replaceAll("(?m)^#{1,6}\\s*", "")
+                .replaceAll("\\*\\*(.+?)\\*\\*", "$1").replaceAll("(?<![\\w*])\\*(?!\\s)(.+?)\\*", "$1")
+                .replaceAll("(?m)^\\s*(?:[-•*]|\\d+\\.)\\s+", "")
+                .replace("\\n", " ").replaceAll("\\s+", " ").trim();
+        if (t.length() <= max) return t;
+        int cut = t.lastIndexOf(". ", max);
+        return cut > max / 2 ? t.substring(0, cut + 1) : t.substring(0, max).trim() + "…";
     }
 
     private static String mdToHtml(String md) {
         if (md == null || md.isEmpty()) return "";
         String t = esc(md);
-        t = t.replaceAll("(?m)^### (.+)$", "<div style=\"font-size:11.5px; font-weight:700; margin:8px 0 3px;\">$1</div>");
-        t = t.replaceAll("(?m)^## (.+)$", "<div style=\"font-size:12px; font-weight:700; margin:10px 0 4px;\">$1</div>");
+        t = t.replaceAll("(?m)^### (.+)$", "<div style=\"font-size:12.5px;font-weight:bold;margin:8px 0 3px;\">$1</div>");
+        t = t.replaceAll("(?m)^## (.+)$", "<div style=\"font-size:13px;font-weight:bold;margin:10px 0 4px;\">$1</div>");
         t = t.replaceAll("\\*\\*(.+?)\\*\\*", "<b>$1</b>");
         t = t.replaceAll("(?m)^(\\d+)\\.\\s+(.+)$", "<div style=\"margin:3px 0 3px 14px;\"><b>$1.</b> $2</div>");
         t = t.replaceAll("(?m)^[-•]\\s+(.+)$", "<div style=\"margin:3px 0 3px 14px;\">• $1</div>");
@@ -1262,14 +1535,9 @@ public class ClassAiReportHtmlBuilder {
     }
 
     /**
-     * Escapes text that originated in question or option content.
-     *
-     * <p>Such text arrives already carrying HTML entities — option bodies are
-     * authored in a rich-text editor, so "angle of incidence &gt; angle of
-     * refraction" is stored with a literal {@code &gt;}. Running plain
-     * {@link #esc} over it escapes the ampersand a second time and the reader
-     * sees the raw entity. Decoding first, then escaping once, renders the
-     * character the author meant.
+     * Escapes text that originated in question or option content, which arrives already
+     * carrying HTML entities (rich-text editor). Decoding first, then escaping once, renders
+     * the character the author meant instead of a raw {@code &gt;}.
      */
     private static String escContent(String text) {
         if (text == null) return "";
@@ -1282,13 +1550,55 @@ public class ClassAiReportHtmlBuilder {
         return esc(decoded);
     }
 
+    /**
+     * HTML-escapes text and wraps symbols the body fonts lack (Greek, arrows, maths) in
+     * Noto Sans Math, as the student report does — otherwise iText switches the rest of
+     * the run to whichever font has the symbol (Ω, →, ≤ are common in AI text).
+     */
     private static String esc(String text) {
-        if (text == null) return "";
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+        if (text == null || text.isEmpty()) return "";
+        StringBuilder out = new StringBuilder(text.length() + 16);
+        boolean inSym = false;
+        for (int i = 0; i < text.length(); ) {
+            int cp = text.codePointAt(i);
+            i += Character.charCount(cp);
+            boolean sym = isSymbol(cp);
+            if (sym && !inSym) { out.append("<span style=\"font-family:'Noto Sans Math'\">"); inSym = true; }
+            if (!sym && inSym) { out.append("</span>"); inSym = false; }
+            switch (cp) {
+                case '&' -> out.append("&amp;");
+                case '<' -> out.append("&lt;");
+                case '>' -> out.append("&gt;");
+                case '"' -> out.append("&quot;");
+                default -> out.appendCodePoint(cp);
+            }
+        }
+        if (inSym) out.append("</span>");
+        return out.toString();
+    }
+
+    private static boolean isSymbol(int cp) {
+        return (cp >= 0x0370 && cp <= 0x03FF)
+                || (cp >= 0x2032 && cp <= 0x2037)
+                || (cp >= 0x2100 && cp <= 0x214F)
+                || (cp >= 0x2190 && cp <= 0x22FF)
+                || (cp >= 0x25A0 && cp <= 0x25FF)
+                || (cp >= 0x27C0 && cp <= 0x27FF)
+                || (cp >= 0x2900 && cp <= 0x2AFF);
+    }
+
+    /** Escaping for SVG text nodes, where a styled span is not allowed. */
+    private static String escPlain(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 
     private static String escAttr(String url) {
         if (url == null) return "";
         return url.trim().replace("&amp;", "&").replace("&", "&amp;").replace("\"", "&quot;");
+    }
+
+    private static String cssString(String s) {
+        return s.replace("\\", "").replace("\"", "'").replace("\n", " ").replace("<", "").replace(">", "");
     }
 }

@@ -202,6 +202,9 @@ public class AdminExportManager {
     vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService aiReportPdfService;
 
     @Autowired
+    vacademy.io.assessment_service.features.assessment.service.aireport.AiReportFonts aiReportFonts;
+
+    @Autowired
     ClassAiReportGenerationService classAiReportGenerationService;
 
     /**
@@ -1353,7 +1356,7 @@ public class AdminExportManager {
         facts.put("class_average", ctx.getOverview() != null ? ctx.getOverview().getAverageMarks() : null);
         facts.put("highest", ctx.getHighestMarks());
         facts.put("lowest", ctx.getLowestMarks());
-        facts.put("score_bands", buildScoreBands(leaderboard, totalMarks).stream()
+        facts.put("score_bands", buildScoreBands(leaderboard, totalMarks, 5).stream()
                 .map(b -> Map.of("range", b.getLabel(), "learners", b.getStudentCount())).toList());
         facts.put("sections", buildSectionRows(assessmentId, instituteId, ctx).stream()
                 .map(sec -> Map.of("name", nvlStr(sec.getName()),
@@ -1413,13 +1416,23 @@ public class AdminExportManager {
             log.warn("Could not read the stored narrative for {}: {}", assessmentId, e.getMessage());
         }
 
+        String instituteName = null;
+        try {
+            instituteName = adminCoreServiceClient.getInstituteName(instituteId);
+        } catch (Exception e) {
+            log.debug("Class AI report: institute name unavailable for {}: {}", instituteId, e.getMessage());
+        }
+
         return classAiReportHtmlBuilder.build(ClassAiReportHtmlBuilder.Input.builder()
                 .assessmentName(ctx.getAssessmentName() != null ? ctx.getAssessmentName() : assessment.getName())
+                .instituteName(instituteName)
                 .examDate(assessment.getBoundStartTime())
                 .generatedAt(new Date())
                 .branding(ctx.getBranding())
                 .overview(buildClassOverview(ctx, leaderboard, totalMarks, assessment))
-                .distribution(buildScoreBands(leaderboard, totalMarks))
+                // Ten bands for the chart, as in the student report's "Where you stand"; the
+                // model's facts keep their five.
+                .distribution(buildScoreBands(leaderboard, totalMarks, chartBands(totalMarks)))
                 .sections(buildSectionRows(assessmentId, instituteId, ctx))
                 .topics(buildTopicRows(insights))
                 .blooms(insights.getBlooms())
@@ -1442,9 +1455,12 @@ public class AdminExportManager {
         return v == null ? 0 : v;
     }
 
+    /** The class AI report PDF, in the student AI report's fonts (Mukta / Baloo 2). */
     private byte[] renderPdf(String html) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        HtmlConverter.convertToPdf(html, out, new ConverterProperties());
+        ConverterProperties props = new ConverterProperties();
+        props.setFontProvider(aiReportFonts.newProvider());
+        HtmlConverter.convertToPdf(html, out, props);
         return out.toByteArray();
     }
 
@@ -1480,12 +1496,17 @@ public class AdminExportManager {
     }
 
     /** Five equal mark bands — enough shape to read the distribution, few enough to label. */
+    /** Up to ten bands, but never narrower than one mark, so a paper out of 4 is not labelled "2-2" twice. */
+    private static int chartBands(Double totalMarks) {
+        if (totalMarks == null || totalMarks <= 0) return 10;
+        return (int) Math.max(1, Math.min(10, Math.floor(totalMarks)));
+    }
+
     private List<ClassAiReportHtmlBuilder.ScoreBand> buildScoreBands(List<LeaderBoardDto> leaderboard,
-                                                                     Double totalMarks) {
+                                                                     Double totalMarks, int bands) {
         if (leaderboard.isEmpty() || totalMarks == null || totalMarks <= 0) {
             return List.of();
         }
-        int bands = 5;
         int[] counts = new int[bands];
         for (LeaderBoardDto row : leaderboard) {
             double m = row.getAchievedMarks() != null ? row.getAchievedMarks() : 0;
