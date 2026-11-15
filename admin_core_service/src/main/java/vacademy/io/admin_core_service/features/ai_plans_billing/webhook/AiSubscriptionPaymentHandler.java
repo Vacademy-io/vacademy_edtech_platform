@@ -91,6 +91,9 @@ public class AiSubscriptionPaymentHandler implements SubscriptionPaymentHandler 
     private final PlatformInvoiceRepository invoiceRepository;
     private final AiPlansBillingMailer mailer;
     private final TransactionTemplate tx;
+    /** Optional so tests need not wire it. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.product_config.service.ProductPaidWelcomeService productPaidWelcome;
 
     public AiSubscriptionPaymentHandler(
             AiPlansInternalClient client,
@@ -278,6 +281,10 @@ public class AiSubscriptionPaymentHandler implements SubscriptionPaymentHandler 
         PlatformPayment p = paymentRepository.findById(platformPaymentId).orElse(null);
         if (p == null || p.getDisposition() != null && p.getDisposition() != PlatformPaymentDisposition.NORMAL) {
             return null;
+        }
+        // A product "Buy <plan>" account gets its login mail now that the plan is paid (sent once).
+        if (productPaidWelcome != null) {
+            productPaidWelcome.onPlanPaidAsync(p.getInstituteId());
         }
         PlatformInvoice invoice = invoiceService.generateInvoice(platformPaymentId);
         if (invoice != null && claimInvoiceEmail(platformPaymentId)) {
