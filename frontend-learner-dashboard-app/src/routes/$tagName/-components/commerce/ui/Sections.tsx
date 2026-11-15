@@ -9,11 +9,12 @@ import type { Category } from '../api/types';
 import { findCategory } from '../edge/commerce-edge';
 import { withinDates } from '../logic/dates';
 import { ratioClass } from '../logic/media';
-import { ErrorState } from './primitives';
+import { BARE_SECTIONS, CONTENT_SECTIONS } from './ContentSections';
+import { ErrorState, useCommerceThemeVars, usePresetClass } from './primitives';
 import { ProductRail } from './ProductCard';
 import { ReassuranceRows } from './Product';
 import { menuCategories, useCategoryTree, usePageProduct, useProductRail } from './queries';
-import { ShopLink, useCommerceSite } from './site';
+import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
 type Props = Record<string, unknown>;
 
@@ -54,9 +55,16 @@ const useTiles = (slugs: string[], max: number, minInStock: number): { tiles: Ca
     return { tiles, loading: isLoading };
 };
 
-const Tiles: React.FC<{ tiles: Category[]; loading: boolean; count: number; rail?: boolean }> = ({ tiles, loading, count, rail }) => {
+const Tiles: React.FC<{ tiles: Category[]; loading: boolean; count: number; rail?: boolean; compact?: boolean }> = ({
+    tiles,
+    loading,
+    count,
+    rail,
+    compact,
+}) => {
     // A rail swipes sideways on a phone (one row before the first product); a grid stays a grid.
-    const className = cn('cmx-tiles', rail && 'cmx-tiles--rail');
+    // Compact tiles are small square chips, one row on a desktop, so products follow sooner.
+    const className = cn('cmx-tiles', rail && 'cmx-tiles--rail', compact && 'cmx-tiles--compact');
     if (loading) {
         return (
             <ul className={className} aria-hidden="true">
@@ -85,7 +93,7 @@ const Tiles: React.FC<{ tiles: Category[]; loading: boolean; count: number; rail
     );
 };
 
-/** commerceCategoryRail: props { title, collectionIds | auto, max: 8, minInStock: 4 }. */
+/** commerceCategoryRail: props { title, collectionIds | auto, max: 8, minInStock: 4, size: "compact" }. */
 const CategoryRail: React.FC<{ props: Props }> = ({ props }) => {
     const { config, siteT } = useCommerceSite();
     const max = num(props.max, 8, 1, 12);
@@ -94,7 +102,7 @@ const CategoryRail: React.FC<{ props: Props }> = ({ props }) => {
     return (
         <>
             <SectionHead title={siteT(str(props.title))} />
-            <Tiles tiles={tiles} loading={loading} count={max} rail />
+            <Tiles tiles={tiles} loading={loading} count={max} rail compact={str(props.size) === 'compact'} />
         </>
     );
 };
@@ -169,15 +177,19 @@ const TrustStrip: React.FC = () => {
     return <ReassuranceRows items={config.reassurance.slice(0, 4)} variant="strip" />;
 };
 
-/** commerceOccasionBanner: props { title, text, image, collectionId, cta, startDate, endDate }. */
+/**
+ * commerceOccasionBanner: props { eyebrow, title, text, image, collectionId, cta, startDate,
+ * endDate, whatsappLabel, whatsappMessage }. Shown only between its dates.
+ */
 const OccasionBanner: React.FC<{ props: Props }> = ({ props }) => {
-    const { siteT, t } = useCommerceSite();
+    const { siteT, t, config } = useCommerceSite();
     // A bare end date keeps the banner up until the end of that day, in the shopper's own time.
     if (!withinDates(Date.now(), str(props.startDate), str(props.endDate))) return null;
     const collection = str(props.collectionId);
     const title = siteT(str(props.title));
     if (!title || !collection) return null;
     const image = str(props.image);
+    const wa = str(props.whatsappLabel) ? whatsappLink(config.whatsappNumber, siteT(str(props.whatsappMessage))) : '';
     return (
         <div className="cmx-banner">
             {image && (
@@ -186,11 +198,17 @@ const OccasionBanner: React.FC<{ props: Props }> = ({ props }) => {
                 </div>
             )}
             <div className="cmx-banner__body">
+                {str(props.eyebrow) && <span className="cmx-eyebrow">{siteT(str(props.eyebrow))}</span>}
                 <h2 className="cmx-h2">{title}</h2>
                 {str(props.text) && <p className="cmx-body">{siteT(str(props.text))}</p>}
                 <ShopLink to={`c/${collection}`} className="cmx-btn cmx-btn--primary self-start">
                     {siteT(str(props.cta)) || t('rail.viewAll')}
                 </ShopLink>
+                {wa && (
+                    <a href={wa} target="_blank" rel="noopener noreferrer" className="cmx-link cmx-tap inline-flex items-center self-start">
+                        {siteT(str(props.whatsappLabel))}
+                    </a>
+                )}
             </div>
         </div>
     );
@@ -202,17 +220,39 @@ const SECTIONS: Record<string, React.FC<{ props: Props }>> = {
     commerceProductRail: ProductRailSection,
     commerceTrustStrip: TrustStrip,
     commerceOccasionBanner: OccasionBanner,
+    ...CONTENT_SECTIONS,
 };
 
-export const COMMERCE_SECTION_TYPES = Object.keys(SECTIONS);
+export const COMMERCE_SECTION_TYPES = [...Object.keys(SECTIONS), ...Object.keys(BARE_SECTIONS)];
+
+/** "#partner" style anchor of a section: lowercase letters, digits and hyphens only. */
+const sectionAnchor = (value: unknown): string | undefined => {
+    const id = str(value).toLowerCase();
+    return /^[a-z][a-z0-9-]{0,60}$/.test(id) ? id : undefined;
+};
 
 /** One commerce section of an authored page; an unknown type renders nothing. */
 export const CommerceSectionView: React.FC<{ type: string; props: Props }> = ({ type, props }) => {
     const { config, locale } = useCommerceSite();
+    const preset = usePresetClass();
+    const themeVars = useCommerceThemeVars();
+    const Bare = BARE_SECTIONS[type];
     const Section = SECTIONS[type];
-    if (!Section || !config.enabled) return null;
+    if ((!Section && !Bare) || !config.enabled) return null;
+    if (Bare) {
+        return (
+            <div className={cn('cmx', preset)} lang={locale} style={themeVars}>
+                <Bare props={props} />
+            </div>
+        );
+    }
     return (
-        <section className={cn('cmx cmx-section', ratioClass(config.theme.imageRatio), props.band === true && 'cmx-band')} lang={locale}>
+        <section
+            id={sectionAnchor(props.anchor)}
+            className={cn('cmx cmx-section', preset, ratioClass(config.theme.imageRatio), props.band === true && 'cmx-band')}
+            lang={locale}
+            style={themeVars}
+        >
             <div className="cmx-shell">
                 <Section props={props} />
             </div>

@@ -49,7 +49,9 @@ export type CommerceEvent =
           paymentType: 'prepaid' | 'cod';
       }
     | { name: 'login' }
-    | { name: 'commerce_checkout_error'; code: string };
+    | { name: 'commerce_checkout_error'; code: string }
+    /** A tap on a WhatsApp, call, email or directions link of a content block. */
+    | { name: 'contact'; method: 'whatsapp' | 'call' | 'email' | 'directions'; placement: string };
 
 export interface BuiltEvent {
     ga: { name: string; params: Record<string, unknown> };
@@ -187,6 +189,11 @@ export const buildCommerceEvent = (event: CommerceEvent): BuiltEvent => {
             return { ga: { name: 'login', params: { method: 'whatsapp_otp' } } };
         case 'commerce_checkout_error':
             return { ga: { name: 'commerce_checkout_error', params: { code: (event.code || 'unknown').slice(0, 40) } } };
+        case 'contact':
+            return {
+                ga: { name: 'commerce_contact', params: { method: event.method, placement: (event.placement || '').slice(0, 40) } },
+                meta: { name: 'Contact', params: { content_category: event.method } },
+            };
     }
 };
 

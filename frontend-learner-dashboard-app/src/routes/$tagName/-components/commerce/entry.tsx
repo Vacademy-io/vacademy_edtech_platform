@@ -19,7 +19,8 @@ import { CollectionTemplate, SearchTemplate } from './ui/Listing';
 import { ProductTemplate } from './ui/Product';
 import { ScanLanding } from './ui/Scan';
 import { CommerceSectionView } from './ui/Sections';
-import { useCommerceThemeVars } from './ui/primitives';
+import { useCommerceThemeVars, usePresetClass } from './ui/primitives';
+import { AnnouncementBar, WhatsAppButton } from './ui/ContentSections';
 import { CommercePageProvider, CommerceSiteProvider, useCommerceSite } from './ui/site';
 import { useCommerceFonts, useOnline, useShopScroll } from './ui/hooks';
 import type { MessageKey } from './i18n';
@@ -69,6 +70,7 @@ const pageIdOf = (route: CommerceRoute, q: string): string =>
 const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking: TrackingSettings | null }> = ({ route, siteHeader, tracking }) => {
     const { config, locale, t } = useCommerceSite();
     const themeVars = useCommerceThemeVars();
+    const preset = usePresetClass();
     const online = useOnline();
     useCommerceFonts();
     // The site's own GA4 / GTM / Meta Pixel (globalSettings.tracking), which the authored pages
@@ -79,7 +81,8 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
     // A tapped page opens at the top with focus on its content; Back returns to where the shopper was.
     useShopScroll(pageIdOf(route, route.kind === 'search' ? q : ''), mainRef);
     return (
-        <div className={`cmx cmx-page ${ratioClass(config.theme.imageRatio)}`} lang={locale} style={themeVars}>
+        <div className={`cmx cmx-page ${ratioClass(config.theme.imageRatio)}${preset ? ` ${preset}` : ''}`} lang={locale} style={themeVars}>
+            {config.announcement && !isBuying(route) && <AnnouncementBar props={{ ...config.announcement }} />}
             {!siteHeader && (
                 // A site without a header of its own still gets search, language and cart.
                 <div className="cmx-topbar">
@@ -115,6 +118,9 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
                     </>
                 )}
             </main>
+            {/* Help stays one tap away while browsing. Checkout keeps its own inline help, and a product
+                page has its own Ask on WhatsApp button and a sticky buy bar where this would sit. */}
+            {config.floatingWhatsApp && !isBuying(route) && route.kind !== 'cart' && route.kind !== 'product' && <WhatsAppButton props={{}} />}
         </div>
     );
 };

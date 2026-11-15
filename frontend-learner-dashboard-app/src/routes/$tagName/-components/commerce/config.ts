@@ -9,6 +9,27 @@
 
 export type CommerceImageRatio = '1:1' | '4:5' | '3:4';
 
+/**
+ * Named looks a shop can wear (theme/commerce.css: .cmx-preset-<name>). A preset sets the shop's
+ * colour tokens and default fonts; the site's own palette still drives everything outside the shop.
+ */
+export const COMMERCE_THEME_PRESETS = ['heritage'] as const;
+export type CommerceThemePreset = (typeof COMMERCE_THEME_PRESETS)[number];
+
+/** Default display and text fonts of each preset, used when the site names none. */
+const PRESET_FONTS: Record<CommerceThemePreset, { display: string; text: string }> = {
+    heritage: { display: 'Laila', text: 'Mukta' },
+};
+
+/** A strip above the shop pages (an offer, a delivery note), shown only between its dates. */
+export interface CommerceAnnouncement {
+    text: string;
+    /** Site-relative address it links to ("policies/shipping"); "" for plain text. */
+    route: string;
+    startDate: string;
+    endDate: string;
+}
+
 export interface CommerceReassuranceItem {
     icon: string;
     label: string;
@@ -41,7 +62,13 @@ export interface CommerceConfig {
         imageRatio: CommerceImageRatio;
         displayFont: string;
         textFont: string;
+        /** "" = the site's own palette. */
+        preset: CommerceThemePreset | '';
     };
+    /** Strip above the shop's fixed pages; authored pages place a commerceAnnouncementBar instead. */
+    announcement: CommerceAnnouncement | null;
+    /** A floating WhatsApp button on the shop's fixed pages (never on checkout). */
+    floatingWhatsApp: boolean;
     /** Per template, sections switched off ({ product: { pincode: false } }). */
     templates: Record<string, CommerceTemplateSwitches>;
     /** The checkout pages exist for this site (a later package turns it on). */
@@ -84,7 +111,9 @@ const disabled = (): CommerceConfig => ({
     popularSearches: [],
     minInStock: 0,
     media: { leadTag: '', tagLabels: {} },
-    theme: { imageRatio: '4:5', displayFont: '', textFont: '' },
+    theme: { imageRatio: '4:5', displayFont: '', textFont: '', preset: '' },
+    announcement: null,
+    floatingWhatsApp: false,
     templates: {},
     checkout: false,
     redirects: false,
@@ -121,6 +150,10 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
             templates[name] = out;
         }
     }
+    const presetName = text(theme.preset, 20).toLowerCase();
+    const preset = (COMMERCE_THEME_PRESETS as readonly string[]).includes(presetName) ? (presetName as CommerceThemePreset) : '';
+    const announcement = isRecord(raw.announcement) ? raw.announcement : null;
+    const announcementText = announcement ? text(announcement.text, 200) : '';
     const pageSize = Number(raw.pageSize);
     const minInStock = Number(raw.minInStock);
     return {
@@ -153,9 +186,20 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
         media: { leadTag: text(media.leadTag, 40).toUpperCase(), tagLabels },
         theme: {
             imageRatio: RATIOS.includes(ratio) ? ratio : '4:5',
-            displayFont: text(fonts.display, 60),
-            textFont: text(fonts.text, 60),
+            displayFont: text(fonts.display, 60) || (preset ? PRESET_FONTS[preset].display : ''),
+            textFont: text(fonts.text, 60) || (preset ? PRESET_FONTS[preset].text : ''),
+            preset,
         },
+        announcement:
+            announcement && announcementText
+                ? {
+                      text: announcementText,
+                      route: text(announcement.route, 120),
+                      startDate: text(announcement.startDate, 30),
+                      endDate: text(announcement.endDate, 30),
+                  }
+                : null,
+        floatingWhatsApp: raw.floatingWhatsApp === true,
         templates,
         checkout: raw.checkout === true,
         redirects: raw.redirects === true,

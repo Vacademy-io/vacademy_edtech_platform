@@ -52,7 +52,7 @@ describe('parseCommerceConfig', () => {
         expect(config.popularSearches).toEqual(['saree']);
         expect(config.minInStock).toBe(4);
         expect(config.media).toEqual({ leadTag: 'REAL', tagLabels: { RENDER: 'Styled render' } });
-        expect(config.theme).toEqual({ imageRatio: '4:5', displayFont: 'Laila', textFont: 'Mukta' });
+        expect(config.theme).toEqual({ imageRatio: '4:5', displayFont: 'Laila', textFont: 'Mukta', preset: '' });
         expect(config.templates).toEqual({ product: { pincode: false } });
         expect(config.reassurance).toHaveLength(1);
         expect(config.pageSize).toBe(24);
@@ -97,5 +97,40 @@ describe('resolveCommerceLocale', () => {
         expect(out.locale).toBe('en');
         expect(out.locales).toEqual(['en', 'hi']);
         expect(resolveCommerceLocale({ config: { locales: ['hi', 'en'], baseLocale: 'en' } }).baseLocale).toBe('en');
+    });
+});
+
+describe('theme preset, announcement and floating WhatsApp', () => {
+    const KEY_OK = `vak_pub_${'ab'.repeat(24)}`;
+    const shop = (extra: Record<string, unknown>) => parseCommerceConfig({ commerce: { enabled: true, publishableKey: KEY_OK, ...extra } });
+
+    it('takes a known preset and its default fonts, keeping fonts the site names', () => {
+        expect(shop({ theme: { preset: 'Heritage' } }).theme).toMatchObject({ preset: 'heritage', displayFont: 'Laila', textFont: 'Mukta' });
+        expect(shop({ theme: { preset: 'heritage', fonts: { display: 'Tiro Devanagari Hindi' } } }).theme).toMatchObject({
+            displayFont: 'Tiro Devanagari Hindi',
+            textFont: 'Mukta',
+        });
+    });
+
+    it('ignores an unknown preset and adds no fonts', () => {
+        expect(shop({ theme: { preset: 'neon' } }).theme).toMatchObject({ preset: '', displayFont: '', textFont: '' });
+        expect(shop({}).theme.preset).toBe('');
+    });
+
+    it('reads the announcement only when it has text', () => {
+        expect(shop({ announcement: { text: ' Free delivery above ₹999 ', route: 'policies', endDate: '2026-12-31' } }).announcement).toEqual({
+            text: 'Free delivery above ₹999',
+            route: 'policies',
+            startDate: '',
+            endDate: '2026-12-31',
+        });
+        expect(shop({ announcement: { route: 'policies' } }).announcement).toBeNull();
+        expect(shop({ announcement: 'text' }).announcement).toBeNull();
+    });
+
+    it('shows the floating WhatsApp button only when switched on', () => {
+        expect(shop({ floatingWhatsApp: true }).floatingWhatsApp).toBe(true);
+        expect(shop({ floatingWhatsApp: 'yes' }).floatingWhatsApp).toBe(false);
+        expect(parseCommerceConfig({}).floatingWhatsApp).toBe(false);
     });
 });

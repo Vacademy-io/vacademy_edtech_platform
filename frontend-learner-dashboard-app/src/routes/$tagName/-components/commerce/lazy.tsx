@@ -23,13 +23,15 @@ interface SiteProps {
 export const isCommerceSectionType = (type: unknown): type is string =>
     typeof type === 'string' && /^commerce[A-Z]/.test(type);
 
+const FALLBACK_HEIGHT: Record<string, string> = { commerceTrustStrip: 'min-h-24', commerceAnnouncementBar: 'min-h-9', commerceWhatsAppButton: '' };
+
 /** A `commerce*` section of an authored page. Renders nothing on a site without a shop. */
 export const CommerceSectionSlot: React.FC<SiteProps & { type: string; props: Record<string, unknown> }> = (props) => {
     if (!isCommerceEnabled(props.globalSettings)) return null;
     return (
         // The section's place is held while the shop's code loads, so the page below does not
-        // jump: a strip is short, a rail or a grid of tiles is a card tall.
-        <Suspense fallback={<div className={props.type === 'commerceTrustStrip' ? 'min-h-24' : 'min-h-72'} aria-hidden="true" />}>
+        // jump: a strip is short, a rail or a grid of tiles is a card tall, a floating button none.
+        <Suspense fallback={<div className={FALLBACK_HEIGHT[props.type] ?? 'min-h-72'} aria-hidden="true" />}>
             <LazyCommerceSection {...props} />
         </Suspense>
     );

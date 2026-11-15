@@ -5,6 +5,8 @@ import { retainSiteLanguage } from "../-utils/catalogue-route-search";
 import { CourseDetailsPage } from "./-components/CourseDetailsPage";
 import { CourseSubPage } from "../-components/CourseSubPage";
 import { RootMountedSegment } from "../-components/RootMountedSegment";
+import { CommerceRouteGate } from "../-components/commerce/route-gate";
+import { parseCommerceRoute } from "../-components/commerce/routes";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -93,6 +95,36 @@ function RouteComponent() {
     !RouteMatcher.isReservedRootPage(resolvedTagName, resolvedCourseId)
   ) {
     return <Navigate to={`/${resolvedCourseId}` as never} search={true} replace />;
+  }
+
+  // Root-mounted shop: "/p/<slug>", "/c/<slug>" and "/q/<code>" reach THIS route (it outranks
+  // $pageSlug), so the shop's gate runs here too. Any other address, and a site without a shop,
+  // takes the usual path below.
+  const shopRootTag = getCachedRootCatalogueTag();
+  if (shopRootTag && !RouteMatcher.isRootMounted(resolvedTagName) && parseCommerceRoute([resolvedTagName, resolvedCourseId])) {
+    if (domainRouting.isLoading || !domainRouting.instituteId) return <DashboardLoader />;
+    return (
+      <CommerceRouteGate
+        instituteId={domainRouting.instituteId}
+        siteName={domainRouting.instituteName}
+        tagName={shopRootTag}
+        segments={[resolvedTagName, resolvedCourseId]}
+        fallback={
+          <RootMountedSegment
+            rootTag={shopRootTag}
+            segment={resolvedTagName}
+            instituteId={domainRouting.instituteId}
+            instituteThemeCode={domainRouting.instituteThemeCode}
+            fallback={
+              <CatalogueTagContext.Provider value={resolvedTagName}>
+                <CourseSubPage tagName={resolvedTagName} page={resolvedCourseId} instituteId={domainRouting.instituteId} instituteThemeCode={domainRouting.instituteThemeCode} />
+              </CatalogueTagContext.Provider>
+            }
+            pageOnly
+          />
+        }
+      />
+    );
   }
 
   // Check if courseId looks like a course ID (numeric or UUID)

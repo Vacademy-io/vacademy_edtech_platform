@@ -43,6 +43,12 @@ export const useCommerceThemeVars = (): React.CSSProperties | undefined => {
     }, [displayFont, textFont]);
 };
 
+/** The class of the shop's theme preset ("cmx-preset-heritage"), for every root the shop draws. */
+export const usePresetClass = (): string | undefined => {
+    const { config } = useCommerceSite();
+    return config.theme.preset ? `cmx-preset-${config.theme.preset}` : undefined;
+};
+
 /* ── layer ────────────────────────────────────────────────────────── */
 
 export interface LayerProps {
@@ -80,17 +86,18 @@ export const Layer: React.FC<LayerProps> = ({
 }) => {
     const { t, locale } = useCommerceSite();
     const themeVars = useCommerceThemeVars();
+    const preset = usePresetClass();
     // Resolved while rendering, so the first paint of a drawer is already inside the theme
     // wrapper (an effect would paint once under <body>, without the site's palette).
     const container = open ? themeRootOf() : null;
     return (
         <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
             <Dialog.Portal container={container ?? undefined}>
-                <Dialog.Overlay className="cmx cmx-scrim" />
+                <Dialog.Overlay className={cn('cmx cmx-scrim', preset)} />
                 <Dialog.Content
                     lang={locale}
                     aria-describedby={undefined}
-                    className={cn('cmx cmx-layer', `cmx-layer--${side}`, dark && 'cmx-layer--dark', className)}
+                    className={cn('cmx cmx-layer', preset, `cmx-layer--${side}`, dark && 'cmx-layer--dark', className)}
                     style={themeVars}
                     onOpenAutoFocus={(event) => {
                         if (initialFocus?.current) {
