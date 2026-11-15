@@ -91,6 +91,8 @@ public class CommercePaymentConfirmService {
     public static final String NOTE_DUPLICATE_PAYMENT = "DUPLICATE_PAYMENT";
     /** An authorisation older than this no longer counts as a payment in progress. */
     public static final Duration AUTHORISED_WINDOW = Duration.ofMinutes(30);
+    /** After the storefront's confirmation the gateway is asked about the payment this soon. */
+    public static final Duration FETCH_AFTER_CLIENT_CONFIRM = Duration.ofSeconds(30);
 
     private final CommerceGatewayOrderRepository gatewayOrders;
     private final CommercePaymentGuard guard;
@@ -308,6 +310,15 @@ public class CommercePaymentConfirmService {
         }
         gatewayOrders.moveUnlessPaid(gatewayOrder.getId(), CommerceGatewayOrder.STATUS_AUTHORIZED,
                 gatewayPaymentId.trim(), new Date());
+        // The captured webhook should follow within seconds; if it does not, the fetch job asks
+        // the gateway itself soon (CommercePaymentFetchJob).
+        try {
+            gatewayOrders.fetchSoon(gatewayOrder.getId(), new Date(System.currentTimeMillis()
+                    + FETCH_AFTER_CLIENT_CONFIRM.toMillis()));
+        } catch (RuntimeException e) {
+            log.warn("Could not schedule the payment fetch of order {}: {}", gatewayOrder.getCommerceOrderId(),
+                    e.getClass().getSimpleName());
+        }
         ensureConfirmed(gatewayOrder.getCommerceOrderId());
         return new Result(Outcome.HANDLED, gatewayOrder.getCommerceOrderId(), null, 0);
     }

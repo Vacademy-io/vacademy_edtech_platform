@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
+import vacademy.io.admin_core_service.features.commerce.storefront.service.CommerceStorefrontSettings;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,6 +23,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 
 /**
  * Phone OTP for the shop (the {@code /otp/*} routes). The code is made
@@ -34,9 +36,10 @@ import java.util.Optional;
  *   <li><b>Send limits</b>, counted in the database for all pods: one code a minute and
  *       {@value #SENDS_PER_PHONE_10_MIN} in ten minutes and {@value #SENDS_PER_PHONE_DAY} a day
  *       per phone; {@value #SENDS_PER_IP_10_MIN} in ten minutes per network address (the address
- *       the request really came from, never one the caller names);
- *       {@value #SENDS_PER_INSTITUTE_HOUR} an hour per institute (every send is a paid
- *       WhatsApp message).</li>
+ *       the request really came from, never one the caller names); and per institute an hour
+ *       the cap of {@code COMMERCE_SETTING.otp.instituteHourlyCap} (default
+ *       {@value #SENDS_PER_INSTITUTE_HOUR}; every send is a paid WhatsApp message), with a
+ *       warning once an hour when 80 % of it is used.</li>
  *   <li><b>Wrong-guess limit:</b> {@value #MAX_ATTEMPTS} tries per code, then the code is
  *       locked and a new one is needed; and {@value #VERIFIES_PER_IP_10_MIN} tries in ten
  *       minutes per network address.</li>
@@ -106,6 +109,8 @@ public class CommerceOtpService {
     private final CommerceOtpTransport transport;
     private final CommerceOtpChallengeRepository challenges;
     private final CommerceRateLimiter limiter;
+    /** The hourly send cap of an institute (its setting); never throws. */
+    private final ToIntFunction<String> instituteHourlyCap;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
     private final ObjectMapper json = new ObjectMapper();
@@ -114,16 +119,24 @@ public class CommerceOtpService {
 
     @Autowired
     public CommerceOtpService(CommerceOtpTransport transport, CommerceOtpChallengeRepository challenges,
-                              CommerceRateLimiter limiter,
+                              CommerceRateLimiter limiter, CommerceStorefrontSettings storefrontSettings,
                               @Value("${commerce.otp.secret:${commerce.order-token.secret:}}") String secret) {
-        this(transport, challenges, limiter, Clock.systemUTC(), secret);
+        this(transport, challenges, limiter, instituteId -> storefrontSettings.read(instituteId).otpInstituteHourlyCap(),
+                Clock.systemUTC(), secret);
     }
 
     CommerceOtpService(CommerceOtpTransport transport, CommerceOtpChallengeRepository challenges,
                        CommerceRateLimiter limiter, Clock clock, String secret) {
+        this(transport, challenges, limiter, instituteId -> SENDS_PER_INSTITUTE_HOUR, clock, secret);
+    }
+
+    CommerceOtpService(CommerceOtpTransport transport, CommerceOtpChallengeRepository challenges,
+                       CommerceRateLimiter limiter, ToIntFunction<String> instituteHourlyCap, Clock clock,
+                       String secret) {
         this.transport = transport;
         this.challenges = challenges;
         this.limiter = limiter;
+        this.instituteHourlyCap = instituteHourlyCap;
         this.clock = clock;
         this.codeKey = secret == null ? new byte[0] : secret.trim().getBytes(StandardCharsets.UTF_8);
     }
@@ -180,17 +193,7 @@ public class CommerceOtpService {
             limit(instituteId, SCOPE_SEND_NAMED, namedIp.trim(), TEN_MINUTES, SENDS_PER_IP_10_MIN, now,
                     "Too many codes were asked for from this network. Try again later.");
         }
-        try {
-            limit(instituteId, SCOPE_SEND_INSTITUTE, CommerceRateLimiter.ALL, HOUR, SENDS_PER_INSTITUTE_HOUR, now,
-                    "Codes cannot be sent right now. Try again later.");
-        } catch (CommerceOtpException e) {
-            if (CommerceOtpException.RATE_LIMITED.equals(e.getCode())) {
-                // Every send is a paid message and, while the cap is full, no buyer gets a code.
-                log.error("COMMERCE_ALERT otp_institute_cap_reached institute={} cap_per_hour={}", instituteId,
-                        SENDS_PER_INSTITUTE_HOUR);
-            }
-            throw e;
-        }
+        requireUnderInstituteCap(instituteId, now);
 
         String code = newCode();
         transport.send(instituteId, normalised, code);
@@ -349,6 +352,41 @@ public class CommerceOtpService {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * The hourly cap of the institute. The count is exact (one database row for all pods), so
+     * the 80 % warning is logged by the one send that reaches it: once per hour window.
+     */
+    private void requireUnderInstituteCap(String instituteId, long now) {
+        int cap = SENDS_PER_INSTITUTE_HOUR;
+        try {
+            cap = instituteHourlyCap.applyAsInt(instituteId);
+        } catch (RuntimeException e) {
+            log.warn("Could not read the OTP cap of institute {}; {} applies", instituteId, SENDS_PER_INSTITUTE_HOUR);
+        }
+        int hits;
+        try {
+            hits = limiter.hits(instituteId, SCOPE_SEND_INSTITUTE, CommerceRateLimiter.ALL, HOUR);
+        } catch (RuntimeException e) {
+            log.error("COMMERCE_ALERT commerce rate limiter failed for scope {}: {}", SCOPE_SEND_INSTITUTE,
+                    e.getMessage());
+            throw new CommerceOtpException(CommerceOtpException.UNAVAILABLE, "Codes cannot be sent right now.");
+        }
+        int warnAt = Math.max(1, (cap * 8 + 9) / 10);
+        if (hits == warnAt && hits <= cap) {
+            log.warn("COMMERCE_ALERT otp_institute_cap_80 institute={} sent={} cap_per_hour={}", instituteId, hits,
+                    cap);
+        }
+        if (hits > cap) {
+            // Every send is a paid message and, while the cap is full, no buyer gets a code.
+            if (hits == cap + 1) {
+                log.error("COMMERCE_ALERT otp_institute_cap_reached institute={} cap_per_hour={}", instituteId, cap);
+            }
+            throw new CommerceOtpException(CommerceOtpException.RATE_LIMITED,
+                    "Codes cannot be sent right now. Try again later.",
+                    CommerceRateLimiter.secondsToNextWindow(HOUR, now));
+        }
+    }
+
     private void limit(String instituteId, String scope, String subject, Duration window, int limit, long now,
                        String message) {
         boolean allowed;
@@ -398,7 +436,7 @@ public class CommerceOtpService {
     }
 
     /** The hash is salted with the institute, so one phone has unrelated hashes in two shops. */
-    static String phoneHash(String instituteId, String normalisedPhone) {
+    public static String phoneHash(String instituteId, String normalisedPhone) {
         return CommerceRateLimiter.hash(instituteId + "|" + normalisedPhone);
     }
 

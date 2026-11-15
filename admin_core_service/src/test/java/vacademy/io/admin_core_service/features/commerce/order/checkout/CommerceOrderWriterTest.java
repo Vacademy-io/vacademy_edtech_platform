@@ -448,9 +448,15 @@ class CommerceOrderWriterTest {
     private CommerceOrderWriter.NewOrder newOrder(CartPriceSnapshot snapshot, boolean phoneVerified,
                                                  boolean marketingConsent,
                                                  CommerceCustomerService.AddressInput remember) {
+        return newOrder(snapshot, phoneVerified, phoneVerified, marketingConsent, remember);
+    }
+
+    private CommerceOrderWriter.NewOrder newOrder(CartPriceSnapshot snapshot, boolean phoneVerified, boolean holder,
+                                                 boolean marketingConsent,
+                                                 CommerceCustomerService.AddressInput remember) {
         return new CommerceOrderWriter.NewOrder(INSTITUTE, "ORD-000007", "req-12345678", "hash", USER,
                 "919876543210", "Asha", "asha@example.com", Map.of("pincode", "226001", "state_code", "09"), null,
-                remember, marketingConsent, null, null, null, snapshot, 15, phoneVerified);
+                remember, marketingConsent, null, null, null, snapshot, 15, phoneVerified, holder);
     }
 
     private CartPriceSnapshot snapshot(boolean withCoupon) {
@@ -607,21 +613,21 @@ class CommerceOrderWriterTest {
     // ------------------------------------------------------------------ a typed phone proves nothing (M3)
 
     private static CommerceCustomerService.AddressInput address() {
-        return new CommerceCustomerService.AddressInput("Home", "Mallory", "919876543210", "1 Attacker Lane", null,
+        return new CommerceCustomerService.AddressInput("Home", "Other Buyer", "919876543210", "1 Other Lane", null,
                 null, "Lucknow", "09", "226001", true);
     }
 
     @Test
     void withoutAProvedPhoneTheCustomerOfThatPhoneIsNotWrittenTo_noAccountNoConsentNoAddress() {
         stubSaves();
-        CommerceCustomer victim = new CommerceCustomer();
-        victim.setId("cust-victim");
-        victim.setUserId("victim-user");
-        when(customerService.findOrCreateUnverified(INSTITUTE, "919876543210")).thenReturn(victim);
+        CommerceCustomer owner = new CommerceCustomer();
+        owner.setId("cust-owner");
+        owner.setUserId("owner-user");
+        when(customerService.findOrCreateUnverified(INSTITUTE, "919876543210")).thenReturn(owner);
 
         CommerceOrderWriter.Written written = writer.write(newOrder(snapshot(false), false, true, address()));
 
-        // The order is written for the account of the e-mail, and nothing of the victim changes.
+        // The order is written for the account of the e-mail, and nothing of the phone owner changes.
         assertEquals(USER, written.order().getUserId());
         verify(customerService).findOrCreateUnverified(INSTITUTE, "919876543210");
         verify(customerService, never()).upsert(any(), any(), any(), any(), any());
@@ -639,5 +645,47 @@ class CommerceOrderWriterTest {
         verify(customerService).recordConsent(any(CommerceCustomer.class), eq("CHECKOUT"));
         verify(customerService).remember(eq(INSTITUTE), eq("cust-1"), any());
         verify(customerService, never()).findOrCreateUnverified(any(), any());
+    }
+
+    // ------------------------------------------------------------------ P2
+
+    @Test
+    void theCustomerRowKeepsOnlyAHoldersAccount_anEmailAccountBesideAProvedPhoneIsNotWritten() {
+        stubSaves();
+        CommerceCustomer customer = new CommerceCustomer();
+        customer.setId("cust-1");
+        when(customerService.upsert(INSTITUTE, null, "919876543210", "Asha", "asha@example.com")).thenReturn(customer);
+
+        CommerceOrderWriter.Written written = writer.write(newOrder(snapshot(false), true, false, false, null));
+
+        // The order is the e-mail account's; the phone's row gets no account from it.
+        assertEquals(USER, written.order().getUserId());
+        verify(customerService).upsert(INSTITUTE, null, "919876543210", "Asha", "asha@example.com");
+        verify(customerService, never()).upsert(INSTITUTE, USER, "919876543210", "Asha", "asha@example.com");
+    }
+
+    @Test
+    void theOrderRecordsWhetherThePhoneWasProved() {
+        stubSaves();
+        CommerceCustomer owner = new CommerceCustomer();
+        owner.setId("cust-1");
+        when(customerService.findOrCreateUnverified(INSTITUTE, "919876543210")).thenReturn(owner);
+
+        assertEquals(Boolean.TRUE, writer.write(newOrder(snapshot(false), true, true, false, null)).order()
+                .getPhoneVerified());
+        assertEquals(Boolean.FALSE, writer.write(newOrder(snapshot(false), false, false, false, null)).order()
+                .getPhoneVerified());
+    }
+
+    @Test
+    void theStockIsHeldThreeMinutesLongerThanTheOrderSoTheFinalFetchRunsFirst() {
+        stubSaves();
+
+        CommerceOrderWriter.Written written = writer.write(newOrder(snapshot(false)));
+
+        verify(stockHoldService).hold(eq(INSTITUTE), any(), eq(StockHoldKind.PURCHASE),
+                eq(15 + CommerceOrderWriter.FINAL_FETCH_GRACE_MINUTES));
+        long orderMinutes = (written.order().getHoldExpiresAt().getTime() - System.currentTimeMillis()) / 60_000L;
+        assertTrue(orderMinutes >= 14 && orderMinutes <= 15, "the order's own time stays the shop's hold time");
     }
 }

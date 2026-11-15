@@ -8,13 +8,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiException;
 import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.admin_core_service.features.commerce.storefront.controller.StorefrontFeatureGate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -34,6 +38,7 @@ class PublicCommerceOtpControllerTest {
     private StorefrontFeatureGate gate;
     private CommerceOtpService otp;
     private CommerceBotCheck botCheck;
+    private CommerceShopperSessions sessions;
     private PublicCommerceOtpController controller;
     private MockHttpServletRequest http;
 
@@ -44,7 +49,8 @@ class PublicCommerceOtpControllerTest {
         otp = mock(CommerceOtpService.class);
         botCheck = mock(CommerceBotCheck.class);
         when(botCheck.verify(any(), any(), any())).thenReturn(true);
-        controller = new PublicCommerceOtpController(auth, gate, otp, botCheck);
+        sessions = mock(CommerceShopperSessions.class);
+        controller = new PublicCommerceOtpController(auth, gate, otp, botCheck, sessions);
         http = new MockHttpServletRequest();
         http.addHeader("Origin", "https://shop.example");
         http.addHeader("CF-Connecting-IP", "203.0.113.7");
@@ -85,6 +91,43 @@ class PublicCommerceOtpControllerTest {
 
         assertEquals("v1.payload.signature", answer.getBody().get("verified_phone_token"));
         assertEquals(900, answer.getBody().get("expires_in"));
+    }
+
+    @Test
+    void accountIsAPurposeAndOnlyCheckoutAndAccountCodesGetASession() {
+        when(sessions.isConfigured()).thenReturn(true);
+        when(sessions.issueForPhone("inst-1", "919876543210")).thenReturn(new CommerceShopperSessions.Issued(
+                "s1.p.s", Instant.parse("2026-11-22T10:00:00Z"), "919876543210"));
+        when(otp.verifyOtp(eq("inst-1"), eq("9876543210"), eq("123456"), anyString(), eq("203.0.113.7")))
+                .thenReturn("v1.p.s");
+
+        for (String purpose : List.of("ACCOUNT", "CHECKOUT")) {
+            Map<String, Object> answer = controller.verify(http, body("9876543210", purpose, "123456")).getBody();
+            assertEquals("v1.p.s", answer.get("verified_phone_token"));
+            assertEquals("s1.p.s", answer.get("shopper_session_token"));
+            assertEquals("2026-11-22T10:00:00Z", answer.get("shopper_session_expires_at"));
+            assertEquals(604800L, answer.get("shopper_session_expires_in"));
+            assertEquals("••••••3210", answer.get("phone_masked"));
+        }
+        for (String purpose : List.of("TRACK_ORDER", "COD")) {
+            Map<String, Object> answer = controller.verify(http, body("9876543210", purpose, "123456")).getBody();
+            assertTrue(answer.containsKey("verified_phone_token"));
+            assertFalse(answer.containsKey("shopper_session_token"), purpose);
+            assertFalse(answer.containsKey("phone_masked"), purpose);
+        }
+        verify(sessions, org.mockito.Mockito.times(2)).issueForPhone("inst-1", "919876543210");
+    }
+
+    @Test
+    void withoutASessionSecretTheCodeStillVerifiesAndNoSessionIsIssued() {
+        when(sessions.isConfigured()).thenReturn(false);
+        when(otp.verifyOtp("inst-1", "9876543210", "123456", "ACCOUNT", "203.0.113.7")).thenReturn("v1.p.s");
+
+        Map<String, Object> answer = controller.verify(http, body("9876543210", "ACCOUNT", "123456")).getBody();
+
+        assertEquals("v1.p.s", answer.get("verified_phone_token"));
+        assertFalse(answer.containsKey("shopper_session_token"));
+        verify(sessions, org.mockito.Mockito.never()).issueForPhone(anyString(), anyString());
     }
 
     @Test

@@ -89,6 +89,25 @@ public class CommerceCustomerService {
         customerRepository.save(customer);
     }
 
+    /**
+     * The buyer's own choice from the account page: true records consent with time and source,
+     * false withdraws it (and keeps when it was withdrawn).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void setConsent(CommerceCustomer customer, boolean consent, String source) {
+        if (consent) {
+            recordConsent(customer, source);
+            return;
+        }
+        if (!Boolean.TRUE.equals(customer.getMarketingConsent()) && customer.getConsentAt() != null) {
+            return;
+        }
+        customer.setMarketingConsent(false);
+        customer.setConsentAt(new Date());
+        customer.setConsentSource(source);
+        customerRepository.save(customer);
+    }
+
     @Transactional
     public List<CommerceCustomerAddress> addresses(String instituteId, String customerId) {
         return addressRepository.findByInstituteIdAndCustomerIdAndStatusOrderByIsDefaultDescCreatedAtDesc(

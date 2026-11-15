@@ -428,6 +428,31 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
         }
     }
 
+    /**
+     * {@code GET /v1/orders/:id/payments}: every payment made on one Razorpay order, as maps
+     * (id, order_id, status, amount, currency, created_at, ...). Used by the shop's lost-webhook
+     * fetch. The exception message never carries a credential.
+     */
+    public List<Map<String, Object>> fetchOrderPayments(String razorpayOrderId,
+                                                        Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayOrderId)) {
+            throw new VacademyException("Cannot fetch Razorpay order payments: missing order id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            List<Payment> payments = razorpayClient.orders.fetchPayments(razorpayOrderId);
+            List<Map<String, Object>> out = new java.util.ArrayList<>();
+            if (payments != null) {
+                for (Payment payment : payments) {
+                    out.add(jsonToMap(payment.toJson()));
+                }
+            }
+            return out;
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching the payments of Razorpay order " + razorpayOrderId);
+        }
+    }
+
     private RazorpayClient createRazorpayClient(Map<String, Object> paymentGatewaySpecificData)
             throws RazorpayException {
         String keyId = extractApiKey(paymentGatewaySpecificData);

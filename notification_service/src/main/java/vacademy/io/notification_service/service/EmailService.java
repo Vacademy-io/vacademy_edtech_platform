@@ -145,6 +145,12 @@ public class EmailService {
      * @return true if the email should be blocked, false otherwise
      */
     private boolean isEmailBlocked(String email) {
+        // A reserved .invalid address has no mailbox (an account known only by phone). Its
+        // address is not logged: one count line per skipped recipient.
+        if (EmailDomainBlocklistUtil.isReservedUndeliverable(email)) {
+            logger.info("Email blocked - 1 recipient under the reserved .invalid domain skipped");
+            return true;
+        }
         // Check domain blocklist first (faster, static check)
         if (EmailDomainBlocklistUtil.isEmailDomainBlocked(email)) {
             logger.info("Email blocked - domain is in blocklist: {}", email);

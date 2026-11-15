@@ -305,6 +305,23 @@ class CommercePaymentConfirmServiceTest {
         verify(gatewayOrders).moveUnlessPaid(eq("row-1"), eq("AUTHORIZED"), eq("pay_1"), any());
         // An order the webhook has paid already is confirmed if its confirm step had failed.
         verify(orders).ensurePaidOrderConfirmed("order-1");
+        // And the gateway is asked about it 30 seconds later, in case the webhook is lost.
+        org.mockito.ArgumentCaptor<java.util.Date> at = org.mockito.ArgumentCaptor.forClass(java.util.Date.class);
+        verify(gatewayOrders).fetchSoon(eq("row-1"), at.capture());
+        long inSeconds = (at.getValue().getTime() - System.currentTimeMillis()) / 1000L;
+        assertTrue(inSeconds >= 25 && inSeconds <= 30, "fetch in about 30 s, was " + inSeconds);
+    }
+
+    @Test
+    void aRefusedClientConfirmationSchedulesNoFetch() {
+        when(gatewayOrders.findByVendorAndGatewayOrderId("RAZORPAY", "order_rzp1")).thenReturn(Optional.of(row));
+        when(gatewayMappings.findInstitutePaymentGatewaySpecifData("RAZORPAY", "inst-1")).thenReturn(Map.of());
+        when(razorpay.verifyClientPaymentConfirmation(any(), any()))
+                .thenThrow(new VacademyException("Razorpay payment signature verification failed"));
+
+        service.confirmClientPayment("inst-1", "order_rzp1", "pay_1", "forged");
+
+        verify(gatewayOrders, never()).fetchSoon(anyString(), any());
     }
 
     @Test

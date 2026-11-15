@@ -235,6 +235,88 @@ public class CommercePaymentGuard {
         return due;
     }
 
+    /** A gateway order the lost-webhook fetch looks at, with the facts of its order. */
+    public record DueFetch(String gatewayRowId, String instituteId, String gatewayOrderId, String commerceOrderId,
+                           String orderStatus, int fetchCount, Date nextFetchAt, Date finalFetchedAt,
+                           Date holdExpiresAt, Date cancelledAt, Date createdAt, int fetchErrors) {
+
+        /** As before the error count existed: no errors in a row. */
+        public DueFetch(String gatewayRowId, String instituteId, String gatewayOrderId, String commerceOrderId,
+                        String orderStatus, int fetchCount, Date nextFetchAt, Date finalFetchedAt,
+                        Date holdExpiresAt, Date cancelledAt, Date createdAt) {
+            this(gatewayRowId, instituteId, gatewayOrderId, commerceOrderId, orderStatus, fetchCount, nextFetchAt,
+                    finalFetchedAt, holdExpiresAt, cancelledAt, createdAt, 0);
+        }
+    }
+
+    /**
+     * Razorpay gateway orders of the last {@code since} that no payment has paid and the order
+     * code has not settled, whose fetch is due (see {@code CommercePaymentFetchJob}): open
+     * orders by their schedule or near the end of their hold time, and orders cancelled for
+     * want of payment by the late schedule. At most {@code perInstitute} per institute and
+     * {@code limit} in all. Final fetches (an open order near the end of its hold) come first,
+     * so a busy institute never pushes one past its grace; then the most overdue.
+     */
+    @Transactional
+    public List<DueFetch> dueFetches(Date now, Date since, Date finalFrom, Date openFirstBefore, Date lateFirstBefore,
+                                     int maxLateFetches, int perInstitute, int limit) {
+        List<DueFetch> due = new ArrayList<>();
+        for (Object row : entityManager.createNativeQuery("""
+                        SELECT * FROM (
+                          SELECT g.id, g.institute_id, g.gateway_order_id, o.id AS order_id, o.status,
+                                 g.fetch_count, g.next_fetch_at, g.final_fetched_at, o.hold_expires_at,
+                                 o.cancelled_at, g.created_at, g.fetch_errors,
+                                 CASE WHEN o.status = 'PENDING_PAYMENT' AND o.hold_expires_at IS NOT NULL
+                                           AND o.hold_expires_at <= :finalFrom AND g.final_fetched_at IS NULL
+                                      THEN 0 ELSE 1 END AS final_rank,
+                                 ROW_NUMBER() OVER (PARTITION BY g.institute_id
+                                                    ORDER BY CASE WHEN o.status = 'PENDING_PAYMENT'
+                                                                   AND o.hold_expires_at IS NOT NULL
+                                                                   AND o.hold_expires_at <= :finalFrom
+                                                                   AND g.final_fetched_at IS NULL
+                                                              THEN 0 ELSE 1 END,
+                                                             COALESCE(g.next_fetch_at, g.created_at), g.id) AS n
+                          FROM commerce_gateway_order g
+                          JOIN commerce_order o ON o.id = g.commerce_order_id
+                          WHERE g.vendor = 'RAZORPAY' AND g.settled_at IS NULL AND g.paying = false
+                            AND g.status <> 'PAID' AND g.created_at >= :since
+                            AND (
+                              (o.status = 'PENDING_PAYMENT' AND (
+                                   (o.hold_expires_at IS NOT NULL AND o.hold_expires_at <= :finalFrom
+                                    AND g.final_fetched_at IS NULL)
+                                OR g.next_fetch_at <= :now
+                                OR (g.next_fetch_at IS NULL AND g.fetch_count = 0
+                                    AND g.created_at <= :openFirstBefore)))
+                              OR (o.status = 'CANCELLED' AND o.payment_status <> 'PAID'
+                                  AND o.cancel_reason IN ('PAYMENT_EXPIRED', 'SHOPPER_RELEASED') AND (
+                                   g.next_fetch_at <= :now
+                                OR (g.next_fetch_at IS NULL AND g.final_fetched_at IS NULL
+                                    AND COALESCE(o.cancelled_at, o.updated_at) <= :lateFirstBefore
+                                    AND g.fetch_count < :maxLate
+                                    AND (g.last_fetched_at IS NULL
+                                         OR g.last_fetched_at < COALESCE(o.cancelled_at, o.updated_at)))))
+                            )
+                        ) due
+                        WHERE due.n <= :perInstitute
+                        ORDER BY due.final_rank, COALESCE(due.next_fetch_at, due.created_at), due.id
+                        """)
+                .setParameter("now", now)
+                .setParameter("since", since)
+                .setParameter("finalFrom", finalFrom)
+                .setParameter("openFirstBefore", openFirstBefore)
+                .setParameter("lateFirstBefore", lateFirstBefore)
+                .setParameter("maxLate", maxLateFetches)
+                .setParameter("perInstitute", perInstitute)
+                .setMaxResults(limit)
+                .getResultList()) {
+            Object[] r = (Object[]) row;
+            due.add(new DueFetch(text(r[0]), text(r[1]), text(r[2]), text(r[3]), text(r[4]),
+                    r[5] == null ? 0 : ((Number) r[5]).intValue(), date(r[6]), date(r[7]), date(r[8]), date(r[9]),
+                    date(r[10]), r[11] == null ? 0 : ((Number) r[11]).intValue()));
+        }
+        return due;
+    }
+
     private static String firstString(List<?> rows) {
         return rows.isEmpty() ? null : text(rows.get(0));
     }

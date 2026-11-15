@@ -99,12 +99,23 @@ public final class CheckoutDtos {
         private String cancelReason;
         private String placedAt;
         private String holdExpiresAt;
+        /** True while unpaid and no payment on it is in progress: "Pay now" may be offered. */
         private boolean paymentRetryable;
+        /**
+         * True while a payment on the order is authorised and not yet captured: the page shows
+         * "confirming your payment" and offers no payment step.
+         */
+        private boolean paymentProcessing;
         private String currency;
         private List<OrderLineView> lines;
         private Totals totals;
         private Recipient recipient;
         private List<TimelineEntry> timeline;
+        /**
+         * True on a track-order answer for an order whose phone was not proved when it was
+         * placed: state and timeline only, no order id, items, totals or recipient.
+         */
+        private boolean masked;
     }
 
     @Data
@@ -173,7 +184,10 @@ public final class CheckoutDtos {
         private String at;
     }
 
-    /** A row of the buyer's order list. */
+    /**
+     * A row of the buyer's order list. A {@code masked} row is an order someone placed with this
+     * phone without proving it: only its number, status and date are shown.
+     */
     @Data
     @Builder
     @NoArgsConstructor
@@ -188,10 +202,32 @@ public final class CheckoutDtos {
         private String placedAt;
         private String currency;
         private BigDecimal total;
-        private int itemCount;
+        private Integer itemCount;
         private String firstItemName;
         /** Opens the order page of this order. */
         private String orderAccessToken;
+        private boolean masked;
+    }
+
+    /** The buyer's account ({@code GET /me}). */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Account {
+        private String name;
+        /**
+         * The phone the caller proved (session or phone token), in the stored spelling (91 and
+         * ten digits), so checkout can fill it in without the device keeping it.
+         */
+        private String phone;
+        private String phoneMasked;
+        /** Null when the shop has no e-mail for this phone. */
+        private String emailMasked;
+        private boolean marketingConsent;
+        /** ISO-8601 instant; null when the call was made with a phone token, not a session. */
+        private String sessionExpiresAt;
     }
 
     @Data

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import vacademy.io.admin_core_service.features.commerce.customer.entity.CommerceCustomer;
 
+import java.util.Date;
 import java.util.Optional;
 
 public interface CommerceCustomerRepository extends JpaRepository<CommerceCustomer, String> {
@@ -42,4 +43,35 @@ public interface CommerceCustomerRepository extends JpaRepository<CommerceCustom
             """, nativeQuery = true)
     int upsert(@Param("id") String id, @Param("instituteId") String instituteId, @Param("userId") String userId,
                @Param("phone") String phone, @Param("name") String name, @Param("email") String email);
+
+    /** What a shopper session is checked against, read fresh from the table. */
+    interface SessionRow {
+        String getId();
+
+        String getPhone();
+
+        Integer getSessionEpoch();
+
+        Date getAnonymisedAt();
+    }
+
+    @Query(value = """
+            SELECT c.id AS id, c.phone AS phone, c.session_epoch AS sessionEpoch, c.anonymised_at AS anonymisedAt
+            FROM commerce_customer c WHERE c.id = :id AND c.institute_id = :instituteId
+            """, nativeQuery = true)
+    Optional<SessionRow> findSessionRow(@Param("id") String id, @Param("instituteId") String instituteId);
+
+    @Query(value = """
+            SELECT c.id AS id, c.phone AS phone, c.session_epoch AS sessionEpoch, c.anonymised_at AS anonymisedAt
+            FROM commerce_customer c WHERE c.institute_id = :instituteId AND c.phone = :phone
+            """, nativeQuery = true)
+    Optional<SessionRow> findSessionRowByPhone(@Param("instituteId") String instituteId, @Param("phone") String phone);
+
+    /** Ends every shopper session of this customer: one atomic increment. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_customer SET session_epoch = session_epoch + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND institute_id = :instituteId
+            """, nativeQuery = true)
+    int bumpSessionEpoch(@Param("id") String id, @Param("instituteId") String instituteId);
 }

@@ -127,6 +127,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -166,6 +167,8 @@ class CommerceCheckoutDatabaseProofIT {
         registry.add("commerce.turnstile.required", () -> "false");
         // Twenty checkouts run at once below; the default pool of the proof (8) is for one thread.
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "40");
+        // The lost-webhook fetch is driven by the proof itself, one run at a time.
+        registry.add("commerce.payment-fetch.cron", () -> "-");
     }
 
     static {
@@ -208,6 +211,10 @@ class CommerceCheckoutDatabaseProofIT {
     private StockHoldService stockHoldService;
     @Autowired
     private CommercePaidOrderReconcileJob reconcileJob;
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentFetchJob fetchJob;
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions shopperSessions;
     @Autowired
     private SiteRedirectResolver redirectResolver;
     @Autowired
@@ -347,6 +354,8 @@ class CommerceCheckoutDatabaseProofIT {
             lastOtpCode.set(call.getArgument(2));
             return null;
         }).when(otpTransport).send(anyString(), anyString(), anyString());
+        // The lost-webhook fetch never reaches Razorpay: no payment, unless a test says otherwise.
+        doReturn(List.of()).when(razorpay).fetchOrderPayments(any(), any());
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("clientId", inst);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
@@ -759,7 +768,8 @@ class CommerceCheckoutDatabaseProofIT {
                 .clientRequestId("proof-" + run + "-second")
                 .lines(List.of(CartPriceRequest.Line.builder().variantId(onePiece).quantity(1).build()))
                 .expectedTotal(new BigDecimal("840.00"))
-                .customer(CheckoutRequest.Customer.builder().name("Second Buyer").phone("9876500003").build())
+                .customer(CheckoutRequest.Customer.builder().name("Second Buyer").phone("9876500003")
+                        .email("second-" + run + "@example.invalid").build())
                 .shippingAddress(CheckoutRequest.Address.builder().line1("2 Proof Road").pincode("226001").build())
                 .build();
         CheckoutException e = assertThrows(CheckoutException.class, () -> checkoutService.placeOrder(inst, request, null));
@@ -2085,5 +2095,259 @@ class CommerceCheckoutDatabaseProofIT {
         for (String orderId : placed) {
             paymentService.onHoldExpired(orderId);
         }
+    }
+
+    // ------------------------------------------------------------------ P2: payment fetch, accounts
+
+    /** What Razorpay answers to "the payments of this order", without the network. */
+    private void gatewayReports(String gatewayOrderId, List<Map<String, Object>> payments) {
+        doReturn(payments).when(razorpay).fetchOrderPayments(org.mockito.ArgumentMatchers.eq(gatewayOrderId), any());
+    }
+
+    private static Map<String, Object> rzpPayment(String id, String gatewayOrderId, String status, long amountMinor) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("id", id);
+        p.put("order_id", gatewayOrderId);
+        p.put("status", status);
+        p.put("amount", amountMinor);
+        p.put("currency", "INR");
+        p.put("created_at", System.currentTimeMillis() / 1000L - 30);
+        return p;
+    }
+
+    /**
+     * Takes every other gateway row of this shop out of the fetch window, so a run of the job
+     * looks only at the orders of the test (earlier tests leave unpaid orders behind).
+     */
+    private void onlyTheseAreFetched(String... orderIds) {
+        db.update("UPDATE commerce_gateway_order SET next_fetch_at = now() + interval '1 day', "
+                + "final_fetched_at = COALESCE(final_fetched_at, now()) WHERE institute_id = ? "
+                + "AND NOT (commerce_order_id = ANY (?))", inst, orderIds);
+    }
+
+    /** Puts the gateway row of an order in the fetch window now (the clock is moved, not the code). */
+    private void dueNow(String orderId) {
+        db.update("UPDATE commerce_gateway_order SET next_fetch_at = now() - interval '1 second' "
+                + "WHERE commerce_order_id = ?", orderId);
+    }
+
+    private long paidLogs(String orderId) {
+        return count("SELECT count(*) FROM payment_log pl JOIN commerce_order o ON o.payment_group_id = "
+                + "pl.payment_group_id WHERE o.id = ? AND pl.payment_status = 'PAID'", orderId);
+    }
+
+    @Test
+    @Order(30)
+    void p2_v687IsAppliedAfterV686() {
+        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '687'"));
+        assertTrue(count("SELECT installed_rank FROM flyway_schema_history WHERE version = '687'")
+                > count("SELECT installed_rank FROM flyway_schema_history WHERE version = '686'"));
+        for (String column : List.of("commerce_customer.session_epoch", "commerce_order.phone_verified",
+                "commerce_gateway_order.fetch_count", "commerce_gateway_order.next_fetch_at",
+                "commerce_gateway_order.last_fetched_at", "commerce_gateway_order.final_fetched_at")) {
+            String[] parts = column.split("\\.");
+            assertEquals(1, count("SELECT count(*) FROM information_schema.columns WHERE table_name = ? "
+                    + "AND column_name = ?", parts[0], parts[1]), column);
+        }
+        assertEquals(1, count("SELECT count(*) FROM pg_indexes WHERE indexname = 'idx_commerce_gateway_order_fetch'"));
+        note("");
+        note("== P2: V687 applied after V686; six columns and the fetch index exist");
+    }
+
+    @Test
+    @Order(31)
+    void p2_lostWebhook_oneFetchConfirmsThePaidOrder_aSecondRunAndALateWebhookChangeNothing() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        String gatewayOrderId = placed.getPayment().getGatewayOrderId();
+        long amount = placed.getPayment().getAmountMinor();
+        String paymentId = "pay_fetch_" + run;
+        gatewayReports(gatewayOrderId, List.of(rzpPayment(paymentId, gatewayOrderId, "captured", amount)));
+        // Not due yet: placed a moment ago, nothing scheduled.
+        onlyTheseAreFetched(orderId);
+        fetchJob.runOnce(new java.util.Date());
+        assertEquals("PENDING_PAYMENT", status(orderId));
+
+        dueNow(orderId);
+        onlyTheseAreFetched(orderId);
+        Map<?, Integer> first = fetchJob.runOnce(new java.util.Date());
+
+        assertEquals(Integer.valueOf(1), first.get(vacademy.io.admin_core_service.features.commerce.order.payment
+                .CommercePaymentFetchService.Outcome.CONFIRMED));
+        assertEquals("CONFIRMED", status(orderId));
+        long logs = paidLogs(orderId);
+        assertTrue(logs >= 1);
+        assertEquals(0, count("SELECT count(*) FROM user_plan up JOIN commerce_order_line l ON l.user_plan_id = up.id "
+                + "WHERE l.order_id = ? AND up.status <> 'ACTIVE'", orderId), "every plan of the order is active");
+        Map<String, Object> row = gatewayRow(orderId);
+        assertNotNull(row.get("settled_at"), "the gateway row is settled");
+        assertEquals(Boolean.TRUE, row.get("paying"));
+        assertEquals(1, ((Number) row.get("fetch_count")).intValue());
+        long history = count("SELECT count(*) FROM commerce_order_status_history WHERE order_id = ?", orderId);
+
+        // A second run and then the webhook that was lost: nothing more happens.
+        dueNow(orderId);
+        fetchJob.runOnce(new java.util.Date());
+        String payload = event("payment.captured", gatewayOrderId, paymentId, amount, orderId);
+        assertEquals(200, postWebhook(payload, hmacHex(WEBHOOK_SECRET, payload)).statusCode());
+        assertEquals(logs, paidLogs(orderId));
+        assertEquals(history, count("SELECT count(*) FROM commerce_order_status_history WHERE order_id = ?", orderId));
+        assertEquals(1, ((Number) gatewayRow(orderId).get("fetch_count")).intValue(), "a settled row is not fetched");
+        note("== P2 lost webhook: one fetch run confirmed order " + orderId + " (" + logs + " PAID log(s), row "
+                + "settled); a second run and the late webhook changed nothing");
+    }
+
+    @Test
+    @Order(32)
+    void p2_finalFetch_confirmsBeforeTheHoldJob_andWithoutAPaymentTheHoldJobExpiresTheOrderAfterTheGrace() {
+        // The stock is held three minutes longer than the order.
+        CheckoutDtos.Placed paid = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        long holdGap = count("SELECT CAST(EXTRACT(EPOCH FROM (h.expires_at - o.hold_expires_at)) AS BIGINT) "
+                + "FROM stock_hold h JOIN payment_log pl ON pl.id = h.payment_log_id "
+                + "JOIN commerce_order o ON o.payment_group_id = pl.payment_group_id WHERE o.id = ? LIMIT 1",
+                paid.getOrderId());
+        assertTrue(holdGap >= 170 && holdGap <= 190, "stock held ~3 min past the order's time, was " + holdGap + " s");
+
+        // Its time is 30 s away: the final fetch is due although nothing was scheduled.
+        db.update("UPDATE commerce_order SET hold_expires_at = now() + interval '30 seconds' WHERE id = ?",
+                paid.getOrderId());
+        gatewayReports(paid.getPayment().getGatewayOrderId(), List.of(rzpPayment("pay_final_" + run,
+                paid.getPayment().getGatewayOrderId(), "captured", paid.getPayment().getAmountMinor())));
+        onlyTheseAreFetched(paid.getOrderId());
+        fetchJob.runOnce(new java.util.Date());
+        assertEquals("CONFIRMED", status(paid.getOrderId()));
+        assertNotNull(gatewayRow(paid.getOrderId()).get("final_fetched_at"));
+        // The hold job comes later and leaves the confirmed order alone.
+        stockHoldService.releaseExpired();
+        assertEquals("CONFIRMED", status(paid.getOrderId()));
+
+        // No payment: the final fetch finds none, the order waits for the hold job, which expires it.
+        CheckoutDtos.Placed unpaid = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        db.update("UPDATE commerce_order SET hold_expires_at = now() - interval '10 seconds' WHERE id = ?",
+                unpaid.getOrderId());
+        gatewayReports(unpaid.getPayment().getGatewayOrderId(), List.of());
+        onlyTheseAreFetched(unpaid.getOrderId());
+        fetchJob.runOnce(new java.util.Date());
+        assertEquals("PENDING_PAYMENT", status(unpaid.getOrderId()));
+        Map<String, Object> row = gatewayRow(unpaid.getOrderId());
+        assertNotNull(row.get("final_fetched_at"));
+        assertNotNull(row.get("next_fetch_at"), "the late schedule starts");
+        stockHoldService.releaseExpired();
+        assertEquals("PENDING_PAYMENT", status(unpaid.getOrderId()), "the stock is still held during the grace");
+        db.update("UPDATE stock_hold SET expires_at = now() - interval '1 second' WHERE payment_log_id = ?",
+                unpaid.getHold().getPaymentLogId());
+        stockHoldService.releaseExpired();
+        assertEquals("CANCELLED", status(unpaid.getOrderId()));
+        assertEquals("PAYMENT_EXPIRED", text("SELECT cancel_reason FROM commerce_order WHERE id = ?",
+                unpaid.getOrderId()));
+        note("== P2 final fetch: order confirmed by the final fetch before the hold job; unpaid order expired by the "
+                + "hold job only after the grace (stock held " + holdGap + " s past the order's time)");
+    }
+
+    @Test
+    @Order(33)
+    void p2_aLateCaptureFoundByTheFetchOnACancelledOrderTakesTheLatePaymentPath() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        assertTrue(paymentService.onHoldExpired(orderId));
+        assertEquals("CANCELLED", status(orderId));
+        gatewayReports(placed.getPayment().getGatewayOrderId(), List.of(rzpPayment("pay_late_" + run,
+                placed.getPayment().getGatewayOrderId(), "captured", placed.getPayment().getAmountMinor())));
+        // Released before any fetch: due 15 minutes after the cancel.
+        db.update("UPDATE commerce_order SET cancelled_at = now() - interval '16 minutes', "
+                + "updated_at = now() - interval '16 minutes' WHERE id = ?", orderId);
+
+        onlyTheseAreFetched(orderId);
+        fetchJob.runOnce(new java.util.Date());
+
+        assertEquals("CONFIRMED", status(orderId));
+        assertEquals(1, count("SELECT count(*) FROM commerce_order_status_history WHERE order_id = ? "
+                + "AND from_status = 'CANCELLED' AND to_status = 'CONFIRMED' AND note = 'LATE_PAYMENT'", orderId));
+        note("== P2 late capture found by the fetch: cancelled order " + orderId + " confirmed as LATE_PAYMENT");
+    }
+
+    @Test
+    @Order(34)
+    void p2_twoFirstOrdersOfOnePhoneAtOnce_oneCustomerRow_bothOrdersInTheAccount() {
+        String phone = nextPhone();
+        String token = phoneToken(phone, "CHECKOUT", "203.0.113.90");
+        List<Object> results = atOnce(List.of(() -> {
+            CheckoutRequest r = request(phone, Map.of(bulk, 1));
+            r.setPhoneToken(token);
+            r.getCustomer().setEmail(null);
+            return checkoutService.placeOrder(inst, r, null);
+        }, () -> {
+            CheckoutRequest r = request(phone, Map.of(bulk, 1));
+            r.setPhoneToken(token);
+            r.getCustomer().setEmail(null);
+            return checkoutService.placeOrder(inst, r, null);
+        }));
+        for (Object result : results) {
+            assertTrue(result instanceof CheckoutDtos.Placed, String.valueOf(result));
+        }
+        assertEquals(1, count("SELECT count(*) FROM commerce_customer WHERE institute_id = ? AND phone = ?", inst,
+                stored(phone)));
+        assertEquals(2, count("SELECT count(*) FROM commerce_order o JOIN commerce_customer c ON c.id = o.customer_id "
+                + "WHERE c.institute_id = ? AND c.phone = ? AND o.phone_verified", inst, stored(phone)));
+
+        vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions.Issued session =
+                shopperSessions.issueForPhone(inst, stored(phone));
+        CheckoutDtos.OrderPage page = queryService.myOrders(inst, session.token(), null, 0, 20);
+        assertEquals(2, page.getOrders().size());
+        assertTrue(page.getOrders().stream().noneMatch(CheckoutDtos.OrderSummary::isMasked));
+        note("== P2 two first orders of one phone at once: one customer row, both orders in the account");
+        for (Object result : results) {
+            paymentService.onHoldExpired(((CheckoutDtos.Placed) result).getOrderId());
+        }
+    }
+
+    @Test
+    @Order(35)
+    void p2_twoLogoutsAtOnceRaiseTheEpochTwice_andTheOldSessionIsRefused() {
+        String phone = stored(nextPhone());
+        vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions.Issued session =
+                shopperSessions.issueForPhone(inst, phone);
+        assertNotNull(queryService.me(inst, session.token(), null));
+        String customerId = text("SELECT id FROM commerce_customer WHERE institute_id = ? AND phone = ?", inst, phone);
+
+        List<Object> results = atOnce(List.of(
+                () -> { shopperSessions.endAll(inst, customerId); return "ok"; },
+                () -> { shopperSessions.endAll(inst, customerId); return "ok"; }));
+        assertEquals(List.of("ok", "ok"), results);
+        assertEquals(2, count("SELECT session_epoch FROM commerce_customer WHERE id = ?", customerId));
+        CheckoutException e = assertThrows(CheckoutException.class, () -> queryService.me(inst, session.token(), null));
+        assertEquals(CheckoutException.SESSION_INVALID, e.getCode());
+        note("== P2 two logouts at once: epoch 0 -> 2, the old session is refused");
+    }
+
+    @Test
+    @Order(36)
+    void p2_aPhoneOnlyBuyerGetsAHolderAccount_noMobileIsSentAndATypedEmailNeverPicksTheAccount() {
+        reset(authService);
+        List<UserDTO> asked = java.util.Collections.synchronizedList(new ArrayList<>());
+        when(authService.createUserFromAuthServiceForLearnerEnrollment(any(UserDTO.class), anyString(), anyBoolean()))
+                .thenAnswer(call -> {
+                    UserDTO user = call.getArgument(0);
+                    asked.add(user);
+                    UserDTO created = new UserDTO();
+                    created.setId("holder-" + run + "-" + users.incrementAndGet());
+                    return created;
+                });
+        String phone = nextPhone();
+        CheckoutRequest r = request(phone, Map.of(bulk, 1));
+        r.setPhoneToken(phoneToken(phone, "CHECKOUT", "203.0.113.91"));
+        r.getCustomer().setEmail("someone-else-" + run + "@example.invalid");
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, r, null);
+
+        assertEquals(1, asked.size());
+        assertNull(asked.get(0).getMobileNumber(), "no phone is sent to the account service");
+        assertTrue(asked.get(0).getEmail().matches("^b-[0-9a-f]{24}@buyer\\.invalid$"), asked.get(0).getEmail());
+        String holder = text("SELECT user_id FROM commerce_order WHERE id = ?", placed.getOrderId());
+        assertEquals(holder, text("SELECT user_id FROM commerce_customer WHERE institute_id = ? AND phone = ?", inst,
+                stored(phone)));
+        assertEquals("someone-else-" + run + "@example.invalid",
+                text("SELECT customer_email FROM commerce_order WHERE id = ?", placed.getOrderId()));
+        note("== P2 phone-only buyer: holder account " + holder + " (placeholder address, no mobile sent)");
+        paymentService.onHoldExpired(placed.getOrderId());
     }
 }

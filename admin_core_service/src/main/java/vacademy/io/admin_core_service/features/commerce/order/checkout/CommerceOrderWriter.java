@@ -80,6 +80,12 @@ public class CommerceOrderWriter {
     public static final String PAYMENT_UNPAID = "UNPAID";
     public static final String PAYMENT_PAID = "PAID";
     static final String ORDER_COUNTER_SCOPE = "ORD";
+    /**
+     * The stock of a shop order is held this much longer than the order's own hold time: the
+     * lost-webhook fetch asks the gateway once more in that gap, before the hold-expiry job
+     * releases the stock and so expires the order.
+     */
+    public static final int FINAL_FETCH_GRACE_MINUTES = 3;
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2);
 
     private final CommerceOrderRepository orderRepository;
@@ -104,7 +110,20 @@ public class CommerceOrderWriter {
                            Map<String, Object> shippingAddress, Map<String, Object> billingAddress,
                            CommerceCustomerService.AddressInput addressToRemember, boolean marketingConsent,
                            String buyerGstin, String customerNote, String giftNote,
-                           CartPriceSnapshot snapshot, int holdMinutes, boolean phoneVerified) {
+                           CartPriceSnapshot snapshot, int holdMinutes, boolean phoneVerified,
+                           boolean buyerIsHolder) {
+
+        /** Without the buyer kind: the user is not the phone's holder. */
+        public NewOrder(String instituteId, String orderNumber, String clientRequestId, String requestHash,
+                        String userId, String phone, String name, String email,
+                        Map<String, Object> shippingAddress, Map<String, Object> billingAddress,
+                        CommerceCustomerService.AddressInput addressToRemember, boolean marketingConsent,
+                        String buyerGstin, String customerNote, String giftNote,
+                        CartPriceSnapshot snapshot, int holdMinutes, boolean phoneVerified) {
+            this(instituteId, orderNumber, clientRequestId, requestHash, userId, phone, name, email, shippingAddress,
+                    billingAddress, addressToRemember, marketingConsent, buyerGstin, customerNote, giftNote, snapshot,
+                    holdMinutes, phoneVerified, false);
+        }
     }
 
     /** The saved order and, once only, the raw token that releases its holds. */
@@ -126,9 +145,12 @@ public class CommerceOrderWriter {
         // consent and address book. Anyone else gets the row of the phone as it is (made with
         // the phone alone when the shop has not seen it), and the order is the only thing that
         // carries what they typed.
+        // The customer row keeps only the phone's holder account: an account picked by an
+        // e-mail (even beside a proved phone) is the order's buyer, never the phone's.
         CommerceCustomer customer;
         if (n.phoneVerified()) {
-            customer = customerService.upsert(n.instituteId(), n.userId(), n.phone(), n.name(), n.email());
+            customer = customerService.upsert(n.instituteId(), n.buyerIsHolder() ? n.userId() : null, n.phone(),
+                    n.name(), n.email());
             if (n.marketingConsent()) {
                 customerService.recordConsent(customer, "CHECKOUT");
             }
@@ -152,6 +174,7 @@ public class CommerceOrderWriter {
         order.setCustomerName(n.name());
         order.setCustomerPhone(n.phone());
         order.setCustomerEmail(n.email());
+        order.setPhoneVerified(n.phoneVerified());
         order.setShippingAddressJson(json(n.shippingAddress()));
         order.setBillingAddressJson(json(n.billingAddress() == null ? n.shippingAddress() : n.billingAddress()));
         order.setBuyerGstin(n.buyerGstin());
@@ -190,7 +213,8 @@ public class CommerceOrderWriter {
         redeemOnce(coupon);
 
         List<CommerceOrderLine> lines = lineRepository.saveAll(buildLines(order, snapshot));
-        MoneyRows money = writeMoneyRows(order, lines, n.holdMinutes());
+        // The stock is held a little longer than the order (see FINAL_FETCH_GRACE_MINUTES).
+        MoneyRows money = writeMoneyRows(order, lines, n.holdMinutes() + FINAL_FETCH_GRACE_MINUTES);
         lines = lineRepository.saveAll(lines);
         order.setPrimaryPaymentLogId(money.primaryPaymentLogId());
         order = orderRepository.save(order);

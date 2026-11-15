@@ -8,6 +8,7 @@ import org.mockito.InOrder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.PlatformTransactionManager;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
@@ -24,6 +25,8 @@ import vacademy.io.admin_core_service.features.commerce.order.service.CommerceOr
 import vacademy.io.admin_core_service.features.commerce.otp.CommerceBotCheck;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.model.StorefrontSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.service.CommerceStorefrontSettings;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxResult;
 
 import java.math.BigDecimal;
@@ -81,6 +84,9 @@ class CommerceCheckoutServiceTest {
     private CommerceOrderPaymentService orderPaymentService;
     private CommerceRateLimiter rateLimiter;
     private VerifiedPhones verifiedPhones;
+    private CommerceShopperSessions sessions;
+    private CommerceStorefrontSettings storefrontSettings;
+    private BuyerIdentity mode = BuyerIdentity.EITHER;
     private CommerceCheckoutService service;
 
     /** The orders "in the database", by client_request_id. */
@@ -110,17 +116,25 @@ class CommerceCheckoutServiceTest {
         // The stock of an order that waits for its payment is held, unless a test says otherwise.
         when(orderPaymentService.ensurePayable(anyString())).thenAnswer(call ->
                 "PENDING_PAYMENT".equals(byId(call.getArgument(0)).getStatus()));
+        sessions = mock(CommerceShopperSessions.class);
+        storefrontSettings = mock(CommerceStorefrontSettings.class);
+        when(storefrontSettings.read(INSTITUTE)).thenAnswer(call -> {
+            StorefrontSettings d = StorefrontSettings.defaults();
+            return new StorefrontSettings(d.baseLocale(), d.lowStockThreshold(), d.leadMediaTag(), d.priceBands(),
+                    d.dispatchPromise(), d.cod(), d.pricingRulesJson(), d.maxOrderQuantity(), d.mediaTags(), mode,
+                    d.otpInstituteHourlyCap());
+        });
         service = new CommerceCheckoutService(orderService, writer, buyerResolver, counterService, stockSettings,
                 orderRepository, lineRepository, legacyRepository, gateway, accessTokens, botCheck,
-                paymentConfirmService, orderPaymentService, rateLimiter, verifiedPhones, new ObjectMapper(),
-                mock(PlatformTransactionManager.class));
+                paymentConfirmService, orderPaymentService, rateLimiter, verifiedPhones, sessions, storefrontSettings,
+                new ObjectMapper(), mock(PlatformTransactionManager.class));
 
         view = CartPriceDtos.CartPrice.builder().currency("INR").unavailable(List.of()).build();
         when(orderService.priceCart(eq(INSTITUTE), any(CartPriceRequest.class))).thenAnswer(call ->
                 new CommerceOrderService.CartPrice(snapshot(), view));
         when(botCheck.verify(eq(INSTITUTE), any(), any())).thenReturn(true);
-        when(buyerResolver.resolveUserId(eq(INSTITUTE), eq(PHONE), anyString(), any(), anyBoolean()))
-                .thenReturn("user-1");
+        when(buyerResolver.resolve(eq(INSTITUTE), any(), eq(PHONE), anyString(), any(), anyBoolean()))
+                .thenAnswer(call -> new CommerceBuyerResolver.Buyer("user-1", call.getArgument(5)));
         when(counterService.nextNumber(INSTITUTE, "ORD")).thenReturn("ORD-000007");
         when(stockSettings.holdMinutes(INSTITUTE)).thenReturn(15);
 
@@ -237,7 +251,8 @@ class CommerceCheckoutServiceTest {
                 legacyRepository);
         inOrder.verify(botCheck).verify(INSTITUTE, null, "10.0.0.1");
         inOrder.verify(orderService).priceCart(eq(INSTITUTE), any());
-        inOrder.verify(buyerResolver).resolveUserId(INSTITUTE, PHONE, "Asha", "asha@example.com", false);
+        inOrder.verify(buyerResolver).resolve(INSTITUTE, BuyerIdentity.EITHER, PHONE, "Asha", "asha@example.com",
+                false);
         inOrder.verify(counterService).nextNumber(INSTITUTE, "ORD");
         inOrder.verify(writer).write(any());
         inOrder.verify(gateway).createOrder(eq(INSTITUTE), eq("order-1"), eq(105000L), eq("INR"), eq("order-1"),
@@ -303,7 +318,7 @@ class CommerceCheckoutServiceTest {
         assertEquals(1, stored.size());
         verify(writer, times(1)).write(any());
         verify(gateway, times(1)).createOrder(any(), any(), anyLong(), any(), any(), any());
-        verify(buyerResolver, times(1)).resolveUserId(any(), any(), any(), any(), anyBoolean());
+        verify(buyerResolver, times(1)).resolve(any(), any(), any(), any(), any(), anyBoolean());
         verify(counterService, times(1)).nextNumber(any(), any());
         // A replay creates nothing, so it is not asked for a bot-check token again.
         verify(botCheck, times(1)).verify(any(), any(), any());
@@ -516,8 +531,8 @@ class CommerceCheckoutServiceTest {
         CommerceCheckoutService off = new CommerceCheckoutService(orderService, writer, buyerResolver,
                 counterService, mock(CommerceStockSettings.class), orderRepository, lineRepository,
                 legacyRepository, gateway, new CommerceOrderAccessTokens("", Clock.systemUTC()), botCheck,
-                paymentConfirmService, orderPaymentService, rateLimiter, verifiedPhones, new ObjectMapper(),
-                mock(PlatformTransactionManager.class));
+                paymentConfirmService, orderPaymentService, rateLimiter, verifiedPhones, sessions, storefrontSettings,
+                new ObjectMapper(), mock(PlatformTransactionManager.class));
         CheckoutException e = refused(() -> off.placeOrder(INSTITUTE, request("req-12345678"), null));
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, e.getStatus());
         verifyNoInteractions(orderService, writer, gateway);
@@ -573,6 +588,11 @@ class CommerceCheckoutServiceTest {
         CheckoutRequest badEmail = request("req-12345678");
         badEmail.getCustomer().setEmail("not-an-email");
         refused(() -> service.validate(badEmail));
+
+        // A placeholder address of the shop is not for typing in.
+        CheckoutRequest reservedEmail = request("req-12345678");
+        reservedEmail.getCustomer().setEmail("b-0123456789abcdef01234567@buyer.invalid");
+        refused(() -> service.validate(reservedEmail));
 
         CheckoutRequest badPin = request("req-12345678");
         badPin.getShippingAddress().setPincode("0226001");
@@ -848,8 +868,100 @@ class CommerceCheckoutServiceTest {
         assertFalse(written.getAllValues().get(0).phoneVerified());
         assertFalse(written.getAllValues().get(1).phoneVerified());
         assertTrue(written.getAllValues().get(2).phoneVerified());
-        verify(buyerResolver, times(2)).resolveUserId(INSTITUTE, PHONE, "Asha", "asha@example.com", false);
-        verify(buyerResolver, times(1)).resolveUserId(INSTITUTE, PHONE, "Asha", "asha@example.com", true);
+        verify(buyerResolver, times(2)).resolve(INSTITUTE, BuyerIdentity.EITHER, PHONE, "Asha", "asha@example.com",
+                false);
+        verify(buyerResolver, times(1)).resolve(INSTITUTE, BuyerIdentity.EITHER, PHONE, "Asha", "asha@example.com",
+                true);
+        // The buyer of a proved phone is its holder; the writer is told so.
+        assertFalse(written.getAllValues().get(0).buyerIsHolder());
+        assertTrue(written.getAllValues().get(2).buyerIsHolder());
+    }
+
+    // ------------------------------------------------------------------ buyer identity (P2)
+
+    private CheckoutRequest withoutEmail(String requestId) {
+        CheckoutRequest r = request(requestId);
+        r.getCustomer().setEmail(null);
+        return r;
+    }
+
+    @Test
+    void phoneOtpModeWithoutProofIsRefused403BeforeTheBotCheckForEveryKindOfBadToken() {
+        mode = BuyerIdentity.PHONE_OTP;
+        when(verifiedPhones.phoneOf(INSTITUTE, "other-phone", "CHECKOUT")).thenReturn("919000000000");
+        // Expired, forged, other institute or TRACK_ORDER purpose: the adapter answers null for CHECKOUT.
+        for (String token : new String[] {null, "other-phone", "expired", "forged", "other-institute",
+                "track-order-token"}) {
+            CheckoutRequest r = request("req-" + (token == null ? "none0000" : token));
+            r.setPhoneToken(token);
+            CheckoutException e = refused(() -> service.placeOrder(INSTITUTE, r, "10.0.0.1"));
+            assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+            assertEquals(CheckoutException.PHONE_VERIFICATION_REQUIRED, e.getCode());
+            assertEquals("phone_token", e.getDetails().get("param"));
+            assertEquals("mode", e.getDetails().get("reason"));
+        }
+        verifyNoInteractions(botCheck, writer, buyerResolver, orderService);
+    }
+
+    @Test
+    void phoneOtpModeWithAProvedPhonePlacesTheOrderEvenWithoutAnEmail() {
+        mode = BuyerIdentity.PHONE_OTP;
+        when(verifiedPhones.phoneOf(INSTITUTE, "token-of-this-phone", "CHECKOUT")).thenReturn(PHONE);
+        CheckoutRequest r = withoutEmail("req-12345690");
+        r.setPhoneToken("token-of-this-phone");
+
+        assertNotNull(service.placeOrder(INSTITUTE, r, null).getOrderId());
+        verify(buyerResolver).resolve(INSTITUTE, BuyerIdentity.PHONE_OTP, PHONE, "Asha", null, true);
+    }
+
+    @Test
+    void aSessionOfTheSamePhoneProvesItForAPrepaidOrder_anotherPhonesSessionDoesNot() {
+        mode = BuyerIdentity.PHONE_OTP;
+        when(sessions.verify(INSTITUTE, "s1.this")).thenReturn(new CommerceShopperSessions.Session(INSTITUTE, "cust-1",
+                PHONE, java.time.Instant.now().plusSeconds(3600)));
+        when(sessions.verify(INSTITUTE, "s1.other")).thenReturn(new CommerceShopperSessions.Session(INSTITUTE,
+                "cust-2", "919000000000", java.time.Instant.now().plusSeconds(3600)));
+
+        CheckoutException e = refused(() -> service.placeOrder(INSTITUTE, withoutEmail("req-12345691"), null, false,
+                "s1.other"));
+        assertEquals(CheckoutException.PHONE_VERIFICATION_REQUIRED, e.getCode());
+        // A bad session is "not proved", never an error of its own.
+        when(sessions.verify(INSTITUTE, "s1.bad")).thenThrow(new IllegalStateException("db"));
+        assertEquals(CheckoutException.PHONE_VERIFICATION_REQUIRED,
+                refused(() -> service.placeOrder(INSTITUTE, withoutEmail("req-12345692"), null, false, "s1.bad"))
+                        .getCode());
+
+        assertNotNull(service.placeOrder(INSTITUTE, withoutEmail("req-12345693"), null, false, "s1.this").getOrderId());
+        verify(buyerResolver).resolve(INSTITUTE, BuyerIdentity.PHONE_OTP, PHONE, "Asha", null, true);
+    }
+
+    @Test
+    void eitherWithoutProofOrEmailAsksForTheEmailAndOffersTheOtp_emailModeDoesNotOfferIt() {
+        CheckoutException either = refused(() -> service.placeOrder(INSTITUTE, withoutEmail("req-12345694"), null));
+        assertEquals(HttpStatus.BAD_REQUEST, either.getStatus());
+        assertEquals(CheckoutException.EMAIL_REQUIRED, either.getCode());
+        assertEquals("customer.email", either.getDetails().get("param"));
+        assertEquals(Boolean.TRUE, either.getDetails().get("otp_allowed"));
+
+        mode = BuyerIdentity.EMAIL;
+        when(verifiedPhones.phoneOf(INSTITUTE, "token-of-this-phone", "CHECKOUT")).thenReturn(PHONE);
+        CheckoutRequest proved = withoutEmail("req-12345695");
+        proved.setPhoneToken("token-of-this-phone");
+        CheckoutException email = refused(() -> service.placeOrder(INSTITUTE, proved, null));
+        assertEquals(CheckoutException.EMAIL_REQUIRED, email.getCode());
+        assertEquals(Boolean.FALSE, email.getDetails().get("otp_allowed"));
+        verifyNoInteractions(botCheck, writer, buyerResolver);
+    }
+
+    @Test
+    void codIsNotPlacedOnlineYet() {
+        CheckoutRequest cod = request("req-12345696");
+        cod.setPaymentMethod("COD");
+        CheckoutException e = refused(() -> service.placeOrder(INSTITUTE, cod, null));
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
+        assertEquals(CheckoutException.PAYMENT_METHOD_NOT_AVAILABLE, e.getCode());
+        assertEquals("COD_NOT_AVAILABLE", e.getDetails().get("reason"));
+        assertFalse(CommerceCheckoutConfig.COD_ONLINE);
     }
 
     @Test

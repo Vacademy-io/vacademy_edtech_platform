@@ -11,6 +11,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.customer.entity.CommerceCustomer;
 import vacademy.io.admin_core_service.features.commerce.customer.entity.CommerceCustomerAddress;
 import vacademy.io.admin_core_service.features.commerce.customer.service.CommerceCustomerService;
@@ -22,6 +23,7 @@ import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrd
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderStatusHistory;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderTender;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CommerceOrderStatus;
+import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentConfirmService;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderLineRepository;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderStatusHistoryRepository;
@@ -44,6 +46,11 @@ import java.util.Map;
  * <p>Who may read what: an order number is never enough. A buyer
  * route answers "not found" for an order of another phone or another institute exactly as for
  * an order that does not exist.
+ *
+ * <p>The buyer's own routes ({@code /me/*}) take a shopper session ({@code X-Commerce-Session})
+ * when one is sent; a bad session is 401 {@code session_invalid} with no fallback. Without one
+ * they take a verified-phone token of purpose CHECKOUT or ACCOUNT (401 {@code token_invalid}).
+ * An order placed with the phone by someone who did not prove it is listed as a masked row.
  */
 @Slf4j
 @Service
@@ -58,6 +65,8 @@ public class CommerceOrderQueryService {
     private final CommerceCustomerService customerService;
     private final CommerceOrderAccessTokens accessTokens;
     private final VerifiedPhones verifiedPhones;
+    private final CommerceShopperSessions sessions;
+    private final CommercePaymentConfirmService paymentConfirmService;
     private final ObjectMapper objectMapper;
     /** Not read-only, so it reads the primary: the thank-you page opens right after the commit. */
     private final TransactionTemplate primary;
@@ -70,6 +79,8 @@ public class CommerceOrderQueryService {
                                      CommerceCustomerService customerService,
                                      CommerceOrderAccessTokens accessTokens,
                                      VerifiedPhones verifiedPhones,
+                                     CommerceShopperSessions sessions,
+                                     CommercePaymentConfirmService paymentConfirmService,
                                      ObjectMapper objectMapper,
                                      PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
@@ -79,6 +90,8 @@ public class CommerceOrderQueryService {
         this.customerService = customerService;
         this.accessTokens = accessTokens;
         this.verifiedPhones = verifiedPhones;
+        this.sessions = sessions;
+        this.paymentConfirmService = paymentConfirmService;
         this.objectMapper = objectMapper;
         this.primary = new TransactionTemplate(transactionManager);
         this.readOnly = new TransactionTemplate(transactionManager);
@@ -98,7 +111,11 @@ public class CommerceOrderQueryService {
                 .map(this::buyerView).orElseThrow(CommerceOrderQueryService::notFound));
     }
 
-    /** Track by order number: only for the phone on the order, proved by an OTP. */
+    /**
+     * Track by order number: only for the phone on the order, proved by an OTP. An order whose
+     * phone was not proved when it was placed answers its state only (as its masked row in the
+     * account): no items, totals or recipient. Its full view needs the order's own link.
+     */
     public CheckoutDtos.OrderView track(String instituteId, String orderNumber, String phoneToken) {
         String phone = requirePhone(instituteId, phoneToken, VerifiedPhones.PURPOSE_TRACK_ORDER);
         String number = orderNumber == null ? "" : orderNumber.trim();
@@ -107,12 +124,22 @@ public class CommerceOrderQueryService {
         }
         return primary.execute(status -> orderRepository.findByInstituteIdAndOrderNumber(instituteId, number)
                 .filter(order -> phone.equals(order.getCustomerPhone()))
-                .map(this::buyerView).orElseThrow(CommerceOrderQueryService::notFound));
+                .map(order -> Boolean.TRUE.equals(order.getPhoneVerified()) ? buyerView(order) : stateOnlyView(order))
+                .orElseThrow(CommerceOrderQueryService::notFound));
     }
 
-    /** The orders of the phone a verified-phone token proves, newest first. */
+    /** As {@link #myOrders(String, String, String, int, int)} with a phone token only. */
     public CheckoutDtos.OrderPage myOrders(String instituteId, String phoneToken, int page, int pageSize) {
-        String phone = requirePhone(instituteId, phoneToken);
+        return myOrders(instituteId, null, phoneToken, page, pageSize);
+    }
+
+    /**
+     * The orders of the buyer's phone, newest first. An order whose phone was not proved when it
+     * was placed is a masked row: number, status and date only, and no link.
+     */
+    public CheckoutDtos.OrderPage myOrders(String instituteId, String sessionToken, String phoneToken, int page,
+                                           int pageSize) {
+        String phone = requireBuyer(instituteId, sessionToken, phoneToken).phone();
         int size = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
         int index = Math.max(page, 0);
         return primary.execute(status -> {
@@ -133,6 +160,15 @@ public class CommerceOrderQueryService {
             }
             List<CheckoutDtos.OrderSummary> rows = new ArrayList<>();
             for (CommerceOrder order : found.getContent()) {
+                if (!Boolean.TRUE.equals(order.getPhoneVerified())) {
+                    rows.add(CheckoutDtos.OrderSummary.builder()
+                            .orderNumber(order.getOrderNumber())
+                            .status(order.getStatus())
+                            .placedAt(instant(order.getCreatedAt()))
+                            .masked(true)
+                            .build());
+                    continue;
+                }
                 List<CommerceOrderLine> items = linesByOrder.getOrDefault(order.getId(), List.of());
                 rows.add(CheckoutDtos.OrderSummary.builder()
                         .orderId(order.getId())
@@ -153,7 +189,11 @@ public class CommerceOrderQueryService {
     }
 
     public List<CheckoutDtos.AddressView> myAddresses(String instituteId, String phoneToken) {
-        String phone = requirePhone(instituteId, phoneToken);
+        return myAddresses(instituteId, null, phoneToken);
+    }
+
+    public List<CheckoutDtos.AddressView> myAddresses(String instituteId, String sessionToken, String phoneToken) {
+        String phone = requireBuyer(instituteId, sessionToken, phoneToken).phone();
         return primary.execute(status -> {
             CommerceCustomer customer = customerService.findByPhone(instituteId, phone).orElse(null);
             if (customer == null) {
@@ -164,7 +204,12 @@ public class CommerceOrderQueryService {
     }
 
     public CheckoutDtos.AddressView addMyAddress(String instituteId, String phoneToken, CheckoutRequest.Address body) {
-        String phone = requirePhone(instituteId, phoneToken);
+        return addMyAddress(instituteId, null, phoneToken, body);
+    }
+
+    public CheckoutDtos.AddressView addMyAddress(String instituteId, String sessionToken, String phoneToken,
+                                                 CheckoutRequest.Address body) {
+        String phone = requireBuyer(instituteId, sessionToken, phoneToken).phone();
         CommerceCustomerService.AddressInput input = addressInput(body, phone);
         return primary.execute(status -> {
             // A buyer may keep addresses before a first order: the customer row is made here.
@@ -175,7 +220,12 @@ public class CommerceOrderQueryService {
 
     public CheckoutDtos.AddressView updateMyAddress(String instituteId, String phoneToken, String addressId,
                                                     CheckoutRequest.Address body) {
-        String phone = requirePhone(instituteId, phoneToken);
+        return updateMyAddress(instituteId, null, phoneToken, addressId, body);
+    }
+
+    public CheckoutDtos.AddressView updateMyAddress(String instituteId, String sessionToken, String phoneToken,
+                                                    String addressId, CheckoutRequest.Address body) {
+        String phone = requireBuyer(instituteId, sessionToken, phoneToken).phone();
         CommerceCustomerService.AddressInput input = addressInput(body, phone);
         return primary.execute(status -> {
             CommerceCustomer customer = customerService.findByPhone(instituteId, phone)
@@ -185,7 +235,11 @@ public class CommerceOrderQueryService {
     }
 
     public void deleteMyAddress(String instituteId, String phoneToken, String addressId) {
-        String phone = requirePhone(instituteId, phoneToken);
+        deleteMyAddress(instituteId, null, phoneToken, addressId);
+    }
+
+    public void deleteMyAddress(String instituteId, String sessionToken, String phoneToken, String addressId) {
+        String phone = requireBuyer(instituteId, sessionToken, phoneToken).phone();
         primary.executeWithoutResult(status -> {
             CommerceCustomer customer = customerService.findByPhone(instituteId, phone)
                     .orElseThrow(CommerceOrderQueryService::notFound);
@@ -193,9 +247,94 @@ public class CommerceOrderQueryService {
         });
     }
 
-    /** The buyer's own routes take a token of purpose CHECKOUT ("to see own orders"). */
-    private String requirePhone(String instituteId, String phoneToken) {
-        return requirePhone(instituteId, phoneToken, VerifiedPhones.PURPOSE_CHECKOUT);
+    /**
+     * {@code GET /me}: the buyer's name, phone (the one the caller proved, so checkout can fill
+     * it in without the device keeping it), masked e-mail, and marketing consent.
+     */
+    public CheckoutDtos.Account me(String instituteId, String sessionToken, String phoneToken) {
+        BuyerProof buyer = requireBuyer(instituteId, sessionToken, phoneToken);
+        return primary.execute(status -> account(instituteId, buyer,
+                customerService.findByPhone(instituteId, buyer.phone()).orElse(null)));
+    }
+
+    /** {@code PUT /me/consent}: the buyer's own marketing choice, recorded with time and source. */
+    public CheckoutDtos.Account setConsent(String instituteId, String sessionToken, String phoneToken,
+                                           Boolean consent) {
+        if (consent == null) {
+            throw CheckoutException.invalid("marketing_consent is true or false.");
+        }
+        BuyerProof buyer = requireBuyer(instituteId, sessionToken, phoneToken);
+        return primary.execute(status -> {
+            CommerceCustomer customer = customerService.findOrCreateUnverified(instituteId, buyer.phone());
+            customerService.setConsent(customer, consent, "ACCOUNT");
+            return account(instituteId, buyer, customer);
+        });
+    }
+
+    /** {@code POST /me/logout}: every session of the buyer's phone in this shop ends. */
+    public void logoutEverywhere(String instituteId, String sessionToken, String phoneToken) {
+        BuyerProof buyer = requireBuyer(instituteId, sessionToken, phoneToken);
+        String customerId = buyer.session() != null ? buyer.session().customerId()
+                : primary.execute(status -> customerService.findByPhone(instituteId, buyer.phone())
+                .map(CommerceCustomer::getId).orElse(null));
+        if (customerId != null) {
+            sessions.endAll(instituteId, customerId);
+        }
+    }
+
+    private CheckoutDtos.Account account(String instituteId, BuyerProof buyer, CommerceCustomer customer) {
+        return CheckoutDtos.Account.builder()
+                .name(customer == null ? null : customer.getName())
+                .phone(buyer.phone())
+                .phoneMasked(CommercePhones.mask(buyer.phone()))
+                .emailMasked(customer == null ? null : maskEmail(customer.getEmail()))
+                .marketingConsent(customer != null && Boolean.TRUE.equals(customer.getMarketingConsent()))
+                .sessionExpiresAt(buyer.session() == null ? null : buyer.session().expiresAt().toString())
+                .build();
+    }
+
+    /** {@code a•••@example.com}: the first letter and the domain. */
+    static String maskEmail(String email) {
+        if (!StringUtils.hasText(email) || CommerceBuyerResolver.isHolderEmail(email)) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        if (at < 1) {
+            return null;
+        }
+        return email.charAt(0) + "•••" + email.substring(at);
+    }
+
+    /** Who a {@code /me} call is for: the phone, and the session when one was used. */
+    public record BuyerProof(String phone, CommerceShopperSessions.Session session) {
+    }
+
+    /**
+     * A shopper session when its header is sent (no fallback when it is bad), else a
+     * verified-phone token of purpose CHECKOUT or ACCOUNT.
+     */
+    public BuyerProof requireBuyer(String instituteId, String sessionToken, String phoneToken) {
+        if (StringUtils.hasText(sessionToken)) {
+            if (!sessions.isConfigured()) {
+                throw new CheckoutException(HttpStatus.SERVICE_UNAVAILABLE, CheckoutException.NOT_CONFIGURED,
+                        "Accounts are not available for this shop yet.");
+            }
+            CommerceShopperSessions.Session session = sessions.verify(instituteId, sessionToken);
+            if (session == null) {
+                throw new CheckoutException(HttpStatus.UNAUTHORIZED, CheckoutException.SESSION_INVALID,
+                        "Your session has ended. Verify your phone number to continue.");
+            }
+            return new BuyerProof(session.phone(), session);
+        }
+        String phone = verifiedPhones.phoneOf(instituteId, phoneToken, VerifiedPhones.PURPOSE_CHECKOUT);
+        if (phone == null) {
+            phone = verifiedPhones.phoneOf(instituteId, phoneToken, VerifiedPhones.PURPOSE_ACCOUNT);
+        }
+        if (phone == null) {
+            throw new CheckoutException(HttpStatus.UNAUTHORIZED, CheckoutException.TOKEN_INVALID,
+                    "Verify your phone number to continue.");
+        }
+        return new BuyerProof(phone, null);
     }
 
     private String requirePhone(String instituteId, String phoneToken, String purpose) {
@@ -258,6 +397,7 @@ public class CommerceOrderQueryService {
         }
         JsonNode address = tree(order.getShippingAddressJson());
         boolean pending = CommerceOrderStatus.of(order.getStatus()) == CommerceOrderStatus.PENDING_PAYMENT;
+        boolean processing = pending && paymentConfirmService.paymentInProgress(order.getId());
         return CheckoutDtos.OrderView.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -267,7 +407,8 @@ public class CommerceOrderQueryService {
                 .cancelReason(order.getCancelReason())
                 .placedAt(instant(order.getCreatedAt()))
                 .holdExpiresAt(pending ? instant(order.getHoldExpiresAt()) : null)
-                .paymentRetryable(pending)
+                .paymentRetryable(pending && !processing)
+                .paymentProcessing(processing)
                 .currency(order.getCurrency())
                 .lines(lines)
                 .totals(totals(order))
@@ -279,6 +420,28 @@ public class CommerceOrderQueryService {
                         .pincode(text(address, "pincode"))
                         .build())
                 .timeline(timeline)
+                .build();
+    }
+
+    /** Number, state and timeline of an order, and nothing about what was bought or for whom. */
+    private CheckoutDtos.OrderView stateOnlyView(CommerceOrder order) {
+        List<CheckoutDtos.TimelineEntry> timeline = new ArrayList<>();
+        for (CommerceOrderStatusHistory row : historyRepository.findByOrderIdOrderByCreatedAtAscIdAsc(order.getId())) {
+            timeline.add(CheckoutDtos.TimelineEntry.builder().status(row.getToStatus())
+                    .at(instant(row.getCreatedAt())).build());
+        }
+        boolean pending = CommerceOrderStatus.of(order.getStatus()) == CommerceOrderStatus.PENDING_PAYMENT;
+        boolean processing = pending && paymentConfirmService.paymentInProgress(order.getId());
+        return CheckoutDtos.OrderView.builder()
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus())
+                .paymentStatus(order.getPaymentStatus())
+                .cancelReason(order.getCancelReason())
+                .placedAt(instant(order.getCreatedAt()))
+                .holdExpiresAt(pending ? instant(order.getHoldExpiresAt()) : null)
+                .paymentProcessing(processing)
+                .timeline(timeline)
+                .masked(true)
                 .build();
     }
 

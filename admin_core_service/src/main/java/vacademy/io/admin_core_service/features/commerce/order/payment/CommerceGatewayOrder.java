@@ -75,6 +75,22 @@ public class CommerceGatewayOrder {
     @Column(name = "paying", nullable = false)
     private Boolean paying = false;
 
+    // The lost-webhook fetch (V687). Written only by the repository's fetch updates.
+    @Column(name = "fetch_count", nullable = false, insertable = false, updatable = false)
+    private Integer fetchCount = 0;
+
+    @Column(name = "next_fetch_at", insertable = false, updatable = false)
+    private Date nextFetchAt;
+
+    @Column(name = "last_fetched_at", insertable = false, updatable = false)
+    private Date lastFetchedAt;
+
+    @Column(name = "final_fetched_at", insertable = false, updatable = false)
+    private Date finalFetchedAt;
+
+    @Column(name = "fetch_errors", nullable = false, insertable = false, updatable = false)
+    private Integer fetchErrors = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Date createdAt;

@@ -179,4 +179,8 @@ public class CommerceOrder extends CommerceCatalogueEntity {
 
     @Column(name = "cancelled_at")
     private Date cancelledAt;
+
+    /** True when the buyer proved the phone of the order (OTP or shopper session) (V687). */
+    @Column(name = "phone_verified", nullable = false)
+    private Boolean phoneVerified = false;
 }

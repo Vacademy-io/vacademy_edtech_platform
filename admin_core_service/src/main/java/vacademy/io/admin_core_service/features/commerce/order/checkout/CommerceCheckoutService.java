@@ -10,6 +10,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.customer.service.CommerceCustomerService;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
@@ -29,6 +30,7 @@ import vacademy.io.admin_core_service.features.commerce.otp.CommerceBotCheck;
 import vacademy.io.admin_core_service.features.commerce.otp.CommerceRateLimiter;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.service.CommerceStorefrontSettings;
 import vacademy.io.admin_core_service.features.commerce.tax.service.GstinValidator;
 
 import java.math.BigDecimal;
@@ -58,10 +60,11 @@ import java.util.regex.Pattern;
  *   <li>the limits per network address (database, all pods) and the bot check (remote; with
  *       no bot check set up at all checkout answers 503), then the open unpaid orders per
  *       phone and per e-mail;</li>
- *   <li>resolve the buyer (remote) and take the order number (its own short transaction). A
- *       phone typed at checkout is not proof of who the shopper is: without a verified-phone
- *       token the buyer is the account of the e-mail, and the customer row of that phone is
- *       neither read for an identity nor changed;</li>
+ *   <li>resolve the buyer (remote) by the shop's {@link BuyerIdentity} and take the order
+ *       number (its own short transaction). A phone typed at checkout is not proof of who the
+ *       shopper is: only a verified-phone token or a shopper session of that phone proves it.
+ *       Without proof the buyer is the account of the e-mail, and the customer row of that
+ *       phone is neither read for an identity nor changed;</li>
  *   <li><b>one transaction</b>: order, lines, holds, plans, logs, tender, history
  *       ({@link CommerceOrderWriter});</li>
  *   <li>after the commit: the gateway order (remote), then one short transaction that stores
@@ -80,6 +83,11 @@ public class CommerceCheckoutService {
     public static final int MAX_OPEN_UNPAID_ORDERS_VERIFIED = 10;
     /** A gateway call that has not answered after this long no longer blocks a retry. */
     static final long GATEWAY_CLAIM_MILLIS = 120_000L;
+    /**
+     * A valid shopper session of the same phone proves the phone for a prepaid order (it was
+     * itself issued by an OTP and can be revoked). False: every order needs a fresh OTP token.
+     */
+    static final boolean SESSION_PROVES_PHONE = true;
 
     /**
      * Limits per network address, counted in the database for all pods.
@@ -116,6 +124,8 @@ public class CommerceCheckoutService {
     private final CommerceOrderPaymentService orderPaymentService;
     private final CommerceRateLimiter rateLimiter;
     private final VerifiedPhones verifiedPhones;
+    private final CommerceShopperSessions shopperSessions;
+    private final CommerceStorefrontSettings storefrontSettings;
     private final ObjectMapper objectMapper;
     /** Not read-only: a read-only transaction would read the replica. */
     private final TransactionTemplate primary;
@@ -135,6 +145,8 @@ public class CommerceCheckoutService {
                                    CommerceOrderPaymentService orderPaymentService,
                                    CommerceRateLimiter rateLimiter,
                                    VerifiedPhones verifiedPhones,
+                                   CommerceShopperSessions shopperSessions,
+                                   CommerceStorefrontSettings storefrontSettings,
                                    ObjectMapper objectMapper,
                                    PlatformTransactionManager transactionManager) {
         this.orderService = orderService;
@@ -152,6 +164,8 @@ public class CommerceCheckoutService {
         this.orderPaymentService = orderPaymentService;
         this.rateLimiter = rateLimiter;
         this.verifiedPhones = verifiedPhones;
+        this.shopperSessions = shopperSessions;
+        this.storefrontSettings = storefrontSettings;
         this.objectMapper = objectMapper;
         this.primary = new TransactionTemplate(transactionManager);
     }
@@ -172,14 +186,22 @@ public class CommerceCheckoutService {
         return placeOrder(instituteId, request, clientIp, false);
     }
 
+    /** As {@link #placeOrder(String, CheckoutRequest, String, boolean, String)} without a session. */
+    public CheckoutDtos.Placed placeOrder(String instituteId, CheckoutRequest request, String clientIp,
+                                          boolean serverSide) {
+        return placeOrder(instituteId, request, clientIp, serverSide, null);
+    }
+
     /**
      * @param clientIp   the network address the request came from, for the limits and the bot
      *                   check; may be null
      * @param serverSide true when the call came from a server (no Origin header), which places
      *                   orders for many shoppers from one address
+     * @param sessionToken the {@code X-Commerce-Session} header, or null; a valid session of the
+     *                   same phone proves the phone of a prepaid order
      */
     public CheckoutDtos.Placed placeOrder(String instituteId, CheckoutRequest request, String clientIp,
-                                          boolean serverSide) {
+                                          boolean serverSide, String sessionToken) {
         if (!accessTokens.isConfigured()) {
             throw new CheckoutException(HttpStatus.SERVICE_UNAVAILABLE, CheckoutException.NOT_CONFIGURED,
                     "Checkout is not available for this shop yet.");
@@ -193,6 +215,14 @@ public class CommerceCheckoutService {
         if (earlier != null) {
             return replay(earlier, hash);
         }
+
+        // The phone is proved only by an OTP sent to it for this shop: the token of one for
+        // checkout, or a shopper session of the same phone. Everything that touches the
+        // customer of that phone, and the buyer of the order, depends on this. Asked before the
+        // bot check, so that a refusal by the shop's mode does not spend the shopper's token.
+        boolean phoneVerified = phoneProved(instituteId, clean, sessionToken);
+        BuyerIdentity mode = buyerIdentity(instituteId);
+        CommerceBuyerResolver.requireAllowed(mode, phoneVerified, clean.email());
 
         // No bot check set up at all is not "off": without it one script can hold the stock of
         // the whole shop in unpaid orders. The deployment or the institute must say so.
@@ -215,10 +245,6 @@ public class CommerceCheckoutService {
         }
 
         CartPriceSnapshot snapshot = price(instituteId, clean);
-        // The phone is proved only by the token of an OTP sent to it, for this shop and for
-        // checkout. Everything that touches the customer of that phone depends on this.
-        boolean phoneVerified = clean.phoneToken() != null && clean.phone().equals(
-                verifiedPhones.phoneOf(instituteId, clean.phoneToken(), VerifiedPhones.PURPOSE_CHECKOUT));
         requireUnderOpenOrderCap(instituteId, clean, phoneVerified);
         // The state the tax was computed for is the state of the address the order keeps: the
         // pincode decides, and a state typed beside it is only used when the pincode names none.
@@ -230,8 +256,9 @@ public class CommerceCheckoutService {
                         typed.line2(), typed.landmark(), typed.city(), state, typed.pincode(), typed.makeDefault());
 
         // Remote, then the counter in its own short transaction: nothing is locked meanwhile.
-        String userId = buyerResolver.resolveUserId(instituteId, clean.phone(), clean.name(), clean.email(),
-                phoneVerified);
+        CommerceBuyerResolver.Buyer buyer = buyerResolver.resolve(instituteId, mode, clean.phone(), clean.name(),
+                clean.email(), phoneVerified);
+        String userId = buyer.userId();
         // Counted last, just before the order is written: what one address may hold in unpaid
         // orders during one hold time.
         requireUnderAddressLimit(instituteId, SCOPE_ORDER, clientIp, ORDER_WINDOW,
@@ -243,7 +270,7 @@ public class CommerceCheckoutService {
                 clean.clientRequestId(), hash, userId, clean.phone(), clean.name(), clean.email(),
                 clean.shippingAddress(), clean.billingAddress(), remember,
                 clean.marketingConsent(), clean.buyerGstin(), clean.customerNote(), clean.giftNote(), snapshot,
-                holdMinutes, phoneVerified);
+                holdMinutes, phoneVerified, buyer.holder());
         CommerceOrderWriter.Written written;
         try {
             written = primary.execute(status -> writer.write(newOrder));
@@ -277,6 +304,39 @@ public class CommerceCheckoutService {
                 .expiresAt(order.getHoldExpiresAt().toInstant().toString())
                 .build();
         return placed(order, payment, hold, false, false);
+    }
+
+    /**
+     * True when the shopper proved {@code clean.phone()} for this shop: a CHECKOUT token of an
+     * OTP for that phone, or (prepaid) a shopper session whose customer has that phone. A token
+     * of another phone, institute or purpose, an expired or a forged one is "not proved".
+     */
+    boolean phoneProved(String instituteId, Clean clean, String sessionToken) {
+        if (clean.phoneToken() != null && clean.phone().equals(
+                verifiedPhones.phoneOf(instituteId, clean.phoneToken(), VerifiedPhones.PURPOSE_CHECKOUT))) {
+            return true;
+        }
+        if (!SESSION_PROVES_PHONE || !StringUtils.hasText(sessionToken)) {
+            return false;
+        }
+        try {
+            CommerceShopperSessions.Session session = shopperSessions.verify(instituteId, sessionToken);
+            return session != null && clean.phone().equals(session.phone());
+        } catch (RuntimeException e) {
+            log.warn("Shopper session not checked at checkout: {}", e.getClass().getSimpleName());
+            return false;
+        }
+    }
+
+    private BuyerIdentity buyerIdentity(String instituteId) {
+        try {
+            BuyerIdentity mode = storefrontSettings.read(instituteId).buyerIdentity();
+            return mode == null ? BuyerIdentity.DEFAULT : mode;
+        } catch (RuntimeException e) {
+            log.warn("Could not read the buyer identity of institute {}; {} applies", instituteId,
+                    BuyerIdentity.DEFAULT);
+            return BuyerIdentity.DEFAULT;
+        }
     }
 
     private CheckoutDtos.Placed replay(CommerceOrder earlier, String hash) {
@@ -655,7 +715,9 @@ public class CommerceCheckoutService {
         String email = trim(customer.getEmail());
         if (email != null) {
             email = email.toLowerCase(Locale.ROOT);
-            if (email.length() > 320 || !EMAIL.matcher(email).matches()) {
+            // The shop's own placeholder addresses are not for typing in.
+            if (email.length() > 320 || !EMAIL.matcher(email).matches()
+                    || CommerceBuyerResolver.isHolderEmail(email)) {
                 throw CheckoutException.invalid("customer.email is not a valid e-mail address.");
             }
         }
@@ -703,8 +765,11 @@ public class CommerceCheckoutService {
             return CartPriceRequest.PREPAID;
         }
         if (CartPriceRequest.COD.equalsIgnoreCase(method)) {
+            // CommerceCheckoutConfig.COD_ONLINE is false until COD placement is built.
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("reason", "COD_NOT_AVAILABLE");
             throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.PAYMENT_METHOD_NOT_AVAILABLE,
-                    "Cash on delivery is not available yet.");
+                    "Cash on delivery is not available yet.", details);
         }
         throw CheckoutException.invalid("payment_method is PREPAID or COD.");
     }

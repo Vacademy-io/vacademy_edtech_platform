@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiEnvelope;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiException;
 import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
+import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.admin_core_service.features.commerce.storefront.controller.StorefrontFeatureGate;
 
@@ -24,7 +27,8 @@ import java.util.Map;
  * Public OTP routes of the shop:
  * <pre>
  * POST /open/commerce/v1/otp/request  { phone, purpose }        → { sent, expires_in, resend_after }
- * POST /open/commerce/v1/otp/verify   { phone, code, purpose }  → { verified_phone_token, expires_in }
+ * POST /open/commerce/v1/otp/verify   { phone, code, purpose }  → { verified_phone_token, expires_in,
+ *                                                                 shopper_session_token, ... }
  * </pre>
  * Like the cart routes they sit behind the publishable Catalogue API key: the institute is the
  * key's, browser calls are locked to the institute's verified websites, and the family has
@@ -35,7 +39,13 @@ import java.util.Map;
  *
  * <p>The answers never say whether a phone number is known to the shop. The token of
  * {@code /verify} is not a login: it only proves the phone, for the purpose it was asked for.
+ *
+ * <p>For the purposes CHECKOUT and ACCOUNT {@code /verify} also answers a seven-day shopper
+ * session ({@link CommerceShopperSessions}) when its secret is set: the shop's own account
+ * routes and a prepaid checkout accept it in place of a new code. A phone the shop has not
+ * seen gets its customer row (phone only) for that.
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin-core-service/open/commerce/v1/otp")
 @RequiredArgsConstructor
@@ -51,6 +61,7 @@ public class PublicCommerceOtpController implements CatalogApiEnvelope {
     private final StorefrontFeatureGate featureGate;
     private final CommerceOtpService otpService;
     private final CommerceBotCheck botCheck;
+    private final CommerceShopperSessions sessions;
 
     @Data
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -102,10 +113,38 @@ public class PublicCommerceOtpController implements CatalogApiEnvelope {
             Map<String, Object> answer = new LinkedHashMap<>();
             answer.put("verified_phone_token", token);
             answer.put("expires_in", CommerceOtpService.TOKEN_MINUTES * 60);
+            addSession(answer, p.instituteId(), request);
             return ResponseEntity.ok().header("Cache-Control", "no-store").body(answer);
         } catch (CommerceOtpException e) {
             throw toApi(e);
         }
+    }
+
+    /**
+     * The shopper session of a CHECKOUT or ACCOUNT code, after the code was accepted. A failure
+     * here never takes back the verified-phone token: the answer then has no session.
+     */
+    private void addSession(Map<String, Object> answer, String instituteId, OtpRequest request) {
+        CommerceOtpPurpose purpose = CommerceOtpPurpose.of(request.getPurpose());
+        if ((purpose != CommerceOtpPurpose.CHECKOUT && purpose != CommerceOtpPurpose.ACCOUNT)
+                || !sessions.isConfigured()) {
+            return;
+        }
+        String phone = CommercePhones.normalise(request.getPhone());
+        CommerceShopperSessions.Issued issued;
+        try {
+            issued = sessions.issueForPhone(instituteId, phone);
+        } catch (RuntimeException e) {
+            log.warn("Shopper session not issued for institute {}: {}", instituteId, e.getClass().getSimpleName());
+            return;
+        }
+        if (issued == null) {
+            return;
+        }
+        answer.put("shopper_session_token", issued.token());
+        answer.put("shopper_session_expires_at", issued.expiresAt().toString());
+        answer.put("shopper_session_expires_in", CommerceShopperSessions.LIFETIME.toSeconds());
+        answer.put("phone_masked", CommercePhones.mask(issued.phone()));
     }
 
     private static OtpRequest checked(HttpServletRequest http, OtpRequest body) {

@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.order.payment;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,5 +32,24 @@ public interface CommercePaymentGateway {
 
     /** What the storefront needs to open the gateway's checkout. {@code keyId} is the public key. */
     record GatewayOrder(String vendor, String gatewayOrderId, String keyId, long amountMinor, String currency) {
+    }
+
+    /**
+     * The payments the gateway knows on one of its orders, for a webhook that never arrived.
+     * A remote call: never inside a transaction (the implementation refuses).
+     *
+     * @throws CommercePaymentGatewayException {@code NOT_CONFIGURED} when the institute has no
+     *                                         gateway account, {@code UNAVAILABLE} when the
+     *                                         gateway did not answer; the message names no
+     *                                         credential
+     */
+    List<GatewayPayment> fetchPayments(String instituteId, String gatewayOrderId);
+
+    /**
+     * One payment as the gateway reports it. {@code status} is the gateway's word, lower case
+     * ({@code created}, {@code authorized}, {@code captured}, {@code failed}, {@code refunded}).
+     */
+    record GatewayPayment(String id, String orderId, String status, long amountMinor, String currency,
+                          Instant createdAt) {
     }
 }

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.commerce.storefront.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import vacademy.io.admin_core_service.features.commerce.order.checkout.BuyerIdentity;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,7 +26,9 @@ import java.util.Set;
  *   "priceBands": [1000, 2500, 5000],
  *   "dispatchPromise": { "hi": "...", "en": "Ships in 2 working days" },
  *   "cod": { "enabled": true, "maxOrderValue": 5000, "staffConfirmThreshold": 3000,
- *            "blockedPincodes": ["190001"] },
+ *            "blockedPincodes": ["190001"], "maxOpenOrdersPerPhone": 2, "maxRefusals": 2 },
+ *   "buyerIdentity": "EITHER",
+ *   "otp": { "instituteHourlyCap": 300 },
  *   "offers": { ... as on a product page ... },
  *   "basketPricing": { ... as on a product page ... } }
  * </pre>
@@ -40,11 +43,16 @@ import java.util.Set;
  * <p>{@code maxOrderQuantity} is the largest quantity of one variant in a cart, in units (25
  * metres for cloth sold by length). A cart line above it is refused with a reason of its own
  * whatever the stock is, so that trying quantities cannot be used to read the stock count.
+ *
+ * <p>{@code buyerIdentity} ({@link BuyerIdentity}) says who the buyer of a shop order is; missing
+ * or unknown is {@code EITHER}. {@code otp.instituteHourlyCap} is how many OTP messages the shop
+ * may send in one hour (10 to 2000; missing or out of range is 300).
  */
 public record StorefrontSettings(String baseLocale, int lowStockThreshold, String leadMediaTag,
                                  List<BigDecimal> priceBands, Map<String, String> dispatchPromise,
                                  Cod cod, String pricingRulesJson, int maxOrderQuantity,
-                                 List<String> mediaTags) {
+                                 List<String> mediaTags, BuyerIdentity buyerIdentity,
+                                 int otpInstituteHourlyCap) {
 
     public static final String DEFAULT_BASE_LOCALE = "en";
     public static final int DEFAULT_LOW_STOCK_THRESHOLD = 3;
@@ -57,16 +65,38 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
     private static final int MAX_MEDIA_TAGS = 20;
     private static final int MAX_LOW_STOCK_THRESHOLD = 100;
     private static final int MAX_BLOCKED_PINCODES = 20_000;
+    public static final int DEFAULT_OTP_INSTITUTE_HOURLY_CAP = 300;
+    public static final int MIN_OTP_INSTITUTE_HOURLY_CAP = 10;
+    public static final int MAX_OTP_INSTITUTE_HOURLY_CAP = 2000;
+    public static final int DEFAULT_COD_MAX_OPEN_ORDERS_PER_PHONE = 2;
+    public static final int MAX_COD_MAX_OPEN_ORDERS_PER_PHONE = 20;
+    public static final int DEFAULT_COD_MAX_REFUSALS = 2;
+    public static final int MAX_COD_MAX_REFUSALS = 20;
+
+    /** The settings without the checkout keys: buyer identity and OTP cap take their defaults. */
+    public StorefrontSettings(String baseLocale, int lowStockThreshold, String leadMediaTag,
+                              List<BigDecimal> priceBands, Map<String, String> dispatchPromise, Cod cod,
+                              String pricingRulesJson, int maxOrderQuantity, List<String> mediaTags) {
+        this(baseLocale, lowStockThreshold, leadMediaTag, priceBands, dispatchPromise, cod, pricingRulesJson,
+                maxOrderQuantity, mediaTags, BuyerIdentity.DEFAULT, DEFAULT_OTP_INSTITUTE_HOURLY_CAP);
+    }
 
     /** Cash on delivery: off unless the seller switched it on. */
     public record Cod(boolean enabled, BigDecimal maxOrderValue, BigDecimal staffConfirmThreshold,
-                      Set<String> blockedPincodes) {
+                      Set<String> blockedPincodes, int maxOpenOrdersPerPhone, int maxRefusals) {
+
+        /** Without the two per-phone limits: they take their defaults. */
+        public Cod(boolean enabled, BigDecimal maxOrderValue, BigDecimal staffConfirmThreshold,
+                   Set<String> blockedPincodes) {
+            this(enabled, maxOrderValue, staffConfirmThreshold, blockedPincodes, DEFAULT_COD_MAX_OPEN_ORDERS_PER_PHONE,
+                    DEFAULT_COD_MAX_REFUSALS);
+        }
     }
 
     public static StorefrontSettings defaults() {
         return new StorefrontSettings(DEFAULT_BASE_LOCALE, DEFAULT_LOW_STOCK_THRESHOLD, null, List.of(), Map.of(),
                 new Cod(false, DEFAULT_COD_MAX_ORDER_VALUE, DEFAULT_COD_STAFF_CONFIRM_THRESHOLD, Set.of()), null,
-                DEFAULT_MAX_ORDER_QUANTITY, List.of());
+                DEFAULT_MAX_ORDER_QUANTITY, List.of(), BuyerIdentity.DEFAULT, DEFAULT_OTP_INSTITUTE_HOURLY_CAP);
     }
 
     /** The same settings with the base language of the shop's site. */
@@ -75,7 +105,8 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
             return this;
         }
         return new StorefrontSettings(locale.trim().toLowerCase(Locale.ROOT), lowStockThreshold, leadMediaTag,
-                priceBands, dispatchPromise, cod, pricingRulesJson, maxOrderQuantity, mediaTags);
+                priceBands, dispatchPromise, cod, pricingRulesJson, maxOrderQuantity, mediaTags, buyerIdentity,
+                otpInstituteHourlyCap);
     }
 
     /**
@@ -154,7 +185,10 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
         }
         // Only a real JSON true switches COD on; "yes", 1 or a broken value leave it off.
         Cod cod = new Cod(codNode.path("enabled").isBoolean() && codNode.path("enabled").asBoolean(),
-                max, confirm, Set.copyOf(blocked));
+                max, confirm, Set.copyOf(blocked),
+                bounded(number(codNode.path("maxOpenOrdersPerPhone")), 1, MAX_COD_MAX_OPEN_ORDERS_PER_PHONE,
+                        DEFAULT_COD_MAX_OPEN_ORDERS_PER_PHONE),
+                bounded(number(codNode.path("maxRefusals")), 0, MAX_COD_MAX_REFUSALS, DEFAULT_COD_MAX_REFUSALS));
 
         String rules = null;
         if (root.path("offers").isObject() || root.path("basketPricing").isObject()) {
@@ -184,8 +218,22 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
                 }
             }
         }
+        BuyerIdentity buyerIdentity = BuyerIdentity.parse(text(root.path("buyerIdentity")));
+        int otpCap = bounded(number(root.path("otp").path("instituteHourlyCap")), MIN_OTP_INSTITUTE_HOURLY_CAP,
+                MAX_OTP_INSTITUTE_HOURLY_CAP, DEFAULT_OTP_INSTITUTE_HOURLY_CAP);
         return new StorefrontSettings(baseLocale, threshold, text(root.path("leadMediaTag")), List.copyOf(bands),
-                Map.copyOf(promise), cod, rules, maxQuantity, List.copyOf(tags));
+                Map.copyOf(promise), cod, rules, maxQuantity, List.copyOf(tags), buyerIdentity, otpCap);
+    }
+
+    /** A whole number within [min, max]; anything else (a fraction too) is the fallback. */
+    private static int bounded(BigDecimal value, int min, int max, int fallback) {
+        if (value == null || value.stripTrailingZeros().scale() > 0) {
+            return fallback;
+        }
+        if (value.compareTo(BigDecimal.valueOf(min)) < 0 || value.compareTo(BigDecimal.valueOf(max)) > 0) {
+            return fallback;
+        }
+        return value.intValue();
     }
 
     private static BigDecimal positive(BigDecimal value, BigDecimal fallback) {

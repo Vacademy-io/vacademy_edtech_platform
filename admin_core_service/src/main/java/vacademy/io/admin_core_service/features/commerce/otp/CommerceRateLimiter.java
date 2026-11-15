@@ -53,13 +53,28 @@ public class CommerceRateLimiter {
     }
 
     boolean allow(String instituteId, String scope, String subject, Duration window, int limit, long nowMillis) {
+        return hits(instituteId, scope, subject, window, nowMillis) <= limit;
+    }
+
+    /**
+     * Counts one hit and returns the count of its window after it, for a caller that acts on
+     * more than "over or not" (an early warning before a limit). Same rules as {@link #allow}.
+     *
+     * @return the hits of the window, this one included; {@code Integer.MAX_VALUE} when the
+     *         database answered nothing (counted as over every limit)
+     */
+    public int hits(String instituteId, String scope, String subject, Duration window) {
+        return hits(instituteId, scope, subject, window, System.currentTimeMillis());
+    }
+
+    int hits(String instituteId, String scope, String subject, Duration window, long nowMillis) {
         long length = Math.max(1000L, window.toMillis());
         Date windowStart = new Date(nowMillis - (nowMillis % length));
         String key = subject == null || subject.isBlank() ? ALL : subject.trim();
         String subjectKey = key.length() > 128 ? hash(key) : key;
         Integer hits = ownTransaction.execute(status -> repository.hit(UUID.randomUUID().toString(), instituteId,
                 scope, subjectKey, windowStart));
-        return hits != null && hits <= limit;
+        return hits == null ? Integer.MAX_VALUE : hits;
     }
 
     /** Seconds until the window that holds {@code nowMillis} ends; at least 1. */

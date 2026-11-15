@@ -32,6 +32,13 @@ public class CheckoutException extends RuntimeException {
     public static final String BOT_CHECK_FAILED = "bot_check_failed";
     public static final String RATE_LIMITED = "rate_limited";
     public static final String PAYMENT_NOT_CONFIRMED = "payment_not_confirmed";
+    /**
+     * The shop (or cash on delivery) needs a phone proved by OTP; {@code details.reason} is
+     * {@code mode} or {@code cod} and {@code details.param} names the field.
+     */
+    public static final String PHONE_VERIFICATION_REQUIRED = "phone_verification_required";
+    /** A shopper session that is not (or no longer) valid. */
+    public static final String SESSION_INVALID = "session_invalid";
 
     private final HttpStatus status;
     private final String code;

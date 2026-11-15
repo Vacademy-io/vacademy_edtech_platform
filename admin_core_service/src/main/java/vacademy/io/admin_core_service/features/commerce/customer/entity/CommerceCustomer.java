@@ -53,4 +53,12 @@ public class CommerceCustomer extends CommerceCatalogueEntity {
 
     @Column(name = "anonymised_at")
     private Date anonymisedAt;
+
+    /**
+     * Shopper sessions carry the epoch they were issued at; raising it (sign out everywhere)
+     * ends every session of this phone in this shop (V687). Written only by
+     * {@code CommerceCustomerRepository.bumpSessionEpoch}, never by a save of this entity.
+     */
+    @Column(name = "session_epoch", nullable = false, insertable = false, updatable = false)
+    private Integer sessionEpoch = 0;
 }

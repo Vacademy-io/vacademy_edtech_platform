@@ -17,9 +17,14 @@ import vacademy.io.common.payment.dto.PaymentResponseDTO;
 import vacademy.io.common.payment.enums.PaymentGateway;
 import vacademy.io.common.payment.enums.PaymentType;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Razorpay for commerce orders.
@@ -37,6 +42,10 @@ import java.util.TreeMap;
  *
  * <p>No credential is logged or put into an exception; the key id returned to the storefront
  * is the public one.
+ *
+ * <p>{@link #fetchPayments} reads the payments of one Razorpay order for the lost-webhook
+ * fetch. The credentials of an institute are kept for {@value #CREDENTIAL_CACHE_MILLIS} ms,
+ * about one run of the fetch job, so a run with many orders of one shop reads them once.
  */
 @Slf4j
 @Component
@@ -48,10 +57,78 @@ public class RazorpayCommercePaymentGateway implements CommercePaymentGateway {
     /** A Razorpay note value holds at most 256 characters. */
     static final int MAX_NOTE_LENGTH = 250;
     static final String VENDOR = PaymentGateway.RAZORPAY.name();
+    static final long CREDENTIAL_CACHE_MILLIS = 50_000L;
 
     private final InstitutePaymentGatewayMappingService institutePaymentGatewayMappingService;
     private final PaymentServiceFactory paymentServiceFactory;
     private final CommerceGatewayOrderRepository gatewayOrders;
+    private final RazorpayPaymentManager razorpayPaymentManager;
+
+    private record CachedCredentials(Map<String, Object> data, long readAtMillis) {
+    }
+
+    private final Map<String, CachedCredentials> credentialCache = new ConcurrentHashMap<>();
+
+    @Override
+    public List<GatewayPayment> fetchPayments(String instituteId, String gatewayOrderId) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("The gateway is asked about payments with no transaction open");
+        }
+        if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(gatewayOrderId)) {
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.INVALID_REQUEST,
+                    "Institute and gateway order are needed to fetch payments");
+        }
+        Map<String, Object> gatewayData = credentials(instituteId);
+        List<Map<String, Object>> raw;
+        try {
+            raw = razorpayPaymentManager.fetchOrderPayments(gatewayOrderId, gatewayData);
+        } catch (RuntimeException e) {
+            log.warn("Razorpay payments of gateway order {} (institute {}) could not be read: {}", gatewayOrderId,
+                    instituteId, withoutCredentials(e.getMessage(), gatewayData));
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.UNAVAILABLE,
+                    "The payment gateway did not answer");
+        }
+        List<GatewayPayment> payments = new ArrayList<>();
+        if (raw != null) {
+            for (Map<String, Object> p : raw) {
+                if (p == null) {
+                    continue;
+                }
+                Long amount = number(p.get("amount"));
+                Long created = number(p.get("created_at"));
+                String status = text(p.get("status"));
+                payments.add(new GatewayPayment(text(p.get("id")), text(p.get("order_id")),
+                        status == null ? null : status.toLowerCase(Locale.ROOT), amount == null ? -1L : amount,
+                        text(p.get("currency")), created == null ? null : Instant.ofEpochSecond(created)));
+            }
+        }
+        return payments;
+    }
+
+    /** The institute's Razorpay credentials, read at most once per {@link #CREDENTIAL_CACHE_MILLIS}. */
+    private Map<String, Object> credentials(String instituteId) {
+        long now = System.currentTimeMillis();
+        CachedCredentials cached = credentialCache.get(instituteId);
+        if (cached != null && now - cached.readAtMillis() < CREDENTIAL_CACHE_MILLIS) {
+            return cached.data();
+        }
+        Map<String, Object> gatewayData;
+        try {
+            gatewayData = institutePaymentGatewayMappingService.findInstitutePaymentGatewaySpecifData(VENDOR,
+                    instituteId);
+        } catch (RuntimeException e) {
+            credentialCache.remove(instituteId);
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.NOT_CONFIGURED,
+                    "Razorpay is not set up for this institute");
+        }
+        if (gatewayData == null || gatewayData.isEmpty()) {
+            credentialCache.remove(instituteId);
+            throw new CommercePaymentGatewayException(CommercePaymentGatewayException.NOT_CONFIGURED,
+                    "Razorpay is not set up for this institute");
+        }
+        credentialCache.put(instituteId, new CachedCredentials(gatewayData, now));
+        return gatewayData;
+    }
 
     @Override
     public GatewayOrder createOrder(String instituteId, String commerceOrderId, long amountMinor, String currency,

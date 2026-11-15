@@ -9,6 +9,8 @@ public interface VerifiedPhones {
     /** The purposes of {@code CommerceOtpPurpose} this package reads tokens for. */
     String PURPOSE_TRACK_ORDER = "TRACK_ORDER";
     String PURPOSE_CHECKOUT = "CHECKOUT";
+    String PURPOSE_ACCOUNT = "ACCOUNT";
+    String PURPOSE_COD = "COD";
 
     /**
      * The phone a token proves, when the token was issued for this institute and this purpose,

@@ -208,7 +208,7 @@ class CommerceOtpServiceTest {
         verify(limiter).allow(INSTITUTE, "otp-send-phone", hash, Duration.ofMinutes(10), 3);
         verify(limiter).allow(INSTITUTE, "otp-send-phone-day", hash, Duration.ofDays(1), 8);
         verify(limiter).allow(INSTITUTE, "otp-send-ip", "203.0.113.7", Duration.ofMinutes(10), 10);
-        verify(limiter).allow(INSTITUTE, "otp-send-institute", "*", Duration.ofHours(1), 300);
+        verify(limiter).hits(INSTITUTE, "otp-send-institute", "*", Duration.ofHours(1));
     }
 
     @Test
@@ -235,11 +235,55 @@ class CommerceOtpServiceTest {
 
     @Test
     void anInstituteOverItsLimitGetsNoCode() {
-        when(limiter.allow(eq(INSTITUTE), eq("otp-send-institute"), anyString(), any(), anyInt())).thenReturn(false);
+        when(limiter.hits(eq(INSTITUTE), eq("otp-send-institute"), anyString(), any())).thenReturn(301);
 
         assertEquals(CommerceOtpException.RATE_LIMITED, code(assertThrows(CommerceOtpException.class,
                 () -> service.requestOtp(INSTITUTE, PHONE, "COD", null))));
         verify(transport, never()).send(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void theInstituteCapIsTheShopsSetting() {
+        CommerceOtpService capped = new CommerceOtpService(transport, challenges, limiter, institute -> 50, clock,
+                "unit-test-only-not-a-secret");
+        when(limiter.hits(eq(INSTITUTE), eq("otp-send-institute"), anyString(), any())).thenReturn(50, 51);
+
+        capped.requestOtp(INSTITUTE, PHONE, "COD", null);
+        clock.advance(Duration.ofMinutes(2));
+        assertEquals(CommerceOtpException.RATE_LIMITED, code(assertThrows(CommerceOtpException.class,
+                () -> capped.requestOtp(INSTITUTE, PHONE, "COD", null))));
+        verify(transport, times(1)).send(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void aSettingThatCannotBeReadFallsBackTo300() {
+        CommerceOtpService broken = new CommerceOtpService(transport, challenges, limiter, institute -> {
+            throw new IllegalStateException("settings down");
+        }, clock, "unit-test-only-not-a-secret");
+        when(limiter.hits(eq(INSTITUTE), eq("otp-send-institute"), anyString(), any())).thenReturn(300, 301);
+
+        broken.requestOtp(INSTITUTE, PHONE, "COD", null);
+        clock.advance(Duration.ofMinutes(2));
+        assertThrows(CommerceOtpException.class, () -> broken.requestOtp(INSTITUTE, PHONE, "COD", null));
+    }
+
+    @Test
+    void anInstituteLimiterThatCannotCountSendsNothing() {
+        when(limiter.hits(eq(INSTITUTE), eq("otp-send-institute"), anyString(), any()))
+                .thenThrow(new IllegalStateException("database down"));
+
+        assertEquals(CommerceOtpException.UNAVAILABLE, code(assertThrows(CommerceOtpException.class,
+                () -> service.requestOtp(INSTITUTE, PHONE, "COD", null))));
+        verify(transport, never()).send(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void accountIsAPurposeOfItsOwn() {
+        String token = service.requestOtp(INSTITUTE, PHONE, "account", "203.0.113.7") == null ? null
+                : service.verifyOtp(INSTITUTE, PHONE, sentCode, "ACCOUNT", "203.0.113.7");
+
+        assertEquals(NORMALISED, service.verifyToken(INSTITUTE, token, "ACCOUNT"));
+        assertThrows(CommerceOtpException.class, () -> service.verifyToken(INSTITUTE, token, "CHECKOUT"));
     }
 
     @Test

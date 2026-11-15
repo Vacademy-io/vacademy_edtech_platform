@@ -52,6 +52,49 @@ public interface CommerceGatewayOrderRepository extends JpaRepository<CommerceGa
             + "WHERE g.commerceOrderId = :commerceOrderId AND g.settledAt IS NULL")
     int settle(@Param("commerceOrderId") String commerceOrderId, @Param("now") Date now);
 
+    /**
+     * One fetch of this row got an answer: the count, when, the next time (null: no more, except
+     * the final fetch) and, when it was the final fetch, its time. The error run starts again.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_gateway_order
+            SET fetch_count = fetch_count + 1, fetch_errors = 0, last_fetched_at = :now,
+                next_fetch_at = CAST(:next AS TIMESTAMP),
+                final_fetched_at = COALESCE(CAST(:finalAt AS TIMESTAMP), final_fetched_at),
+                updated_at = :now
+            WHERE id = :id
+            """, nativeQuery = true)
+    int recordFetch(@Param("id") String id, @Param("now") Date now, @Param("next") Date next,
+                    @Param("finalAt") Date finalAt);
+
+    /**
+     * One fetch of this row failed (gateway or confirm step): one more error in the run and the
+     * next try. The fetch count and the final time are left alone, so the schedules are kept.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_gateway_order
+            SET fetch_errors = fetch_errors + 1, last_fetched_at = :now,
+                next_fetch_at = CAST(:next AS TIMESTAMP), updated_at = :now
+            WHERE id = :id
+            """, nativeQuery = true)
+    int recordFetchError(@Param("id") String id, @Param("now") Date now, @Param("next") Date next);
+
+    /**
+     * Asks the fetch job to look at this gateway order at {@code at} at the latest (after the
+     * storefront said a payment went through). An earlier time already set is kept.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_gateway_order SET next_fetch_at = :at
+            WHERE id = :id AND settled_at IS NULL AND (next_fetch_at IS NULL OR next_fetch_at > :at)
+            """, nativeQuery = true)
+    int fetchSoon(@Param("id") String id, @Param("at") Date at);
+
     /** A payment was authorised on this order after {@code since} and is not captured or failed yet. */
     @Query("SELECT COUNT(g) FROM CommerceGatewayOrder g WHERE g.commerceOrderId = :commerceOrderId "
             + "AND g.status = 'AUTHORIZED' AND g.statusAt >= :since")

@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePa
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
 import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceFactory;
 import vacademy.io.admin_core_service.features.payments.manager.PaymentServiceStrategy;
+import vacademy.io.admin_core_service.features.payments.manager.RazorpayPaymentManager;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
 import vacademy.io.common.payment.dto.PaymentResponseDTO;
@@ -40,6 +41,7 @@ class RazorpayCommercePaymentGatewayTest {
     private InstitutePaymentGatewayMappingService gatewayMappings;
     private PaymentServiceStrategy razorpay;
     private CommerceGatewayOrderRepository gatewayOrders;
+    private RazorpayPaymentManager razorpayManager;
     private RazorpayCommercePaymentGateway gateway;
     private Map<String, Object> credentials;
 
@@ -50,7 +52,8 @@ class RazorpayCommercePaymentGatewayTest {
         gatewayOrders = mock(CommerceGatewayOrderRepository.class);
         PaymentServiceFactory factory = mock(PaymentServiceFactory.class);
         when(factory.getStrategy(PaymentGateway.RAZORPAY)).thenReturn(razorpay);
-        gateway = new RazorpayCommercePaymentGateway(gatewayMappings, factory, gatewayOrders);
+        razorpayManager = mock(RazorpayPaymentManager.class);
+        gateway = new RazorpayCommercePaymentGateway(gatewayMappings, factory, gatewayOrders, razorpayManager);
 
         credentials = new HashMap<>();
         credentials.put("apiKey", "rzp_test_key");
@@ -217,5 +220,77 @@ class RazorpayCommercePaymentGatewayTest {
         String note = RazorpayCommercePaymentGateway.describe("order-1", Map.of("long", "y".repeat(400)));
         assertEquals(RazorpayCommercePaymentGateway.MAX_NOTE_LENGTH, note.length());
         assertTrue(note.startsWith("commerce_order_id=order-1; long="));
+    }
+
+    // ------------------------------------------------------------------ fetchPayments
+
+    private static Map<String, Object> payment(String id, String orderId, String status, long amount, long created) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("id", id);
+        p.put("order_id", orderId);
+        p.put("status", status);
+        p.put("amount", amount);
+        p.put("currency", "INR");
+        p.put("created_at", created);
+        return p;
+    }
+
+    @Test
+    void fetchPaymentsMapsWhatTheGatewayReports() {
+        when(razorpayManager.fetchOrderPayments("order_gw_1", credentials)).thenReturn(List.of(
+                payment("pay_1", "order_gw_1", "CAPTURED", 105000L, 1_800_000_000L),
+                payment("pay_2", "order_gw_1", "failed", 105000L, 1_799_999_000L)));
+
+        List<CommercePaymentGateway.GatewayPayment> payments = gateway.fetchPayments("inst-1", "order_gw_1");
+
+        assertEquals(2, payments.size());
+        CommercePaymentGateway.GatewayPayment first = payments.get(0);
+        assertEquals("pay_1", first.id());
+        assertEquals("order_gw_1", first.orderId());
+        assertEquals("captured", first.status());
+        assertEquals(105000L, first.amountMinor());
+        assertEquals("INR", first.currency());
+        assertEquals(java.time.Instant.ofEpochSecond(1_800_000_000L), first.createdAt());
+        assertEquals("failed", payments.get(1).status());
+    }
+
+    @Test
+    void fetchPaymentsReadsTheCredentialsOncePerRun() {
+        when(razorpayManager.fetchOrderPayments(any(), same(credentials))).thenReturn(List.of());
+
+        gateway.fetchPayments("inst-1", "order_gw_1");
+        gateway.fetchPayments("inst-1", "order_gw_2");
+
+        verify(gatewayMappings, org.mockito.Mockito.times(1)).findInstitutePaymentGatewaySpecifData("RAZORPAY", "inst-1");
+    }
+
+    @Test
+    void fetchPaymentsOfAnInstituteWithoutRazorpayIsATypedRefusal() {
+        when(gatewayMappings.findInstitutePaymentGatewaySpecifData("RAZORPAY", "inst-2"))
+                .thenThrow(new VacademyException("no mapping"));
+
+        CommercePaymentGatewayException e = assertThrows(CommercePaymentGatewayException.class,
+                () -> gateway.fetchPayments("inst-2", "order_gw_1"));
+        assertEquals(CommercePaymentGatewayException.NOT_CONFIGURED, e.getCode());
+        verifyNoInteractions(razorpayManager);
+    }
+
+    @Test
+    void aFailingFetchCarriesNoCredential() {
+        when(razorpayManager.fetchOrderPayments(any(), any()))
+                .thenThrow(new VacademyException("bad auth for " + SECRET));
+
+        CommercePaymentGatewayException e = assertThrows(CommercePaymentGatewayException.class,
+                () -> gateway.fetchPayments("inst-1", "order_gw_1"));
+        assertEquals(CommercePaymentGatewayException.UNAVAILABLE, e.getCode());
+        assertFalse(e.getMessage().contains(SECRET));
+        assertTrue(e.getCause() == null, "the client library's message is not carried on");
+    }
+
+    @Test
+    void fetchPaymentsRefusesToRunInsideATransaction() {
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        assertThrows(IllegalStateException.class, () -> gateway.fetchPayments("inst-1", "order_gw_1"));
+        verifyNoInteractions(razorpayManager);
     }
 }

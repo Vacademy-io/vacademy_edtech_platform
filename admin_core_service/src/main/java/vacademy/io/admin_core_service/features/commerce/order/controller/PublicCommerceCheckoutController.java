@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
+import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceCheckoutConfig;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiEnvelope;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiException;
 import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
@@ -36,12 +38,16 @@ import java.util.function.Supplier;
 /**
  * Public checkout and order routes of the shop:
  * <pre>
+ * GET    /open/commerce/v1/checkout/config                   buyer identity, OTP, bot check, methods
  * POST   /open/commerce/v1/checkout                          place a prepaid order
  * POST   /open/commerce/v1/checkout/{orderId}/retry-payment  the payment step again (order token)
  * POST   /open/commerce/v1/checkout/{orderId}/confirm-payment  gateway order, payment id, signature
- * GET    /open/commerce/v1/orders/view?token=                the order page (order token)
+ * GET    /open/commerce/v1/orders/view                       the order page (order token header)
  * POST   /open/commerce/v1/orders/track                      order number + verified-phone token
- * GET    /open/commerce/v1/me/orders                         the buyer's orders (verified-phone token)
+ * GET    /open/commerce/v1/me                                the buyer's account
+ * POST   /open/commerce/v1/me/logout                         end every session of the buyer's phone
+ * PUT    /open/commerce/v1/me/consent                        the buyer's marketing choice
+ * GET    /open/commerce/v1/me/orders                         the buyer's orders
  * GET    /open/commerce/v1/me/addresses                      the buyer's address book
  * POST   /open/commerce/v1/me/addresses
  * PUT    /open/commerce/v1/me/addresses/{id}
@@ -52,8 +58,10 @@ import java.util.function.Supplier;
  * own per visitor and per key, and the institute needs the {@code commerce.orders} feature.
  * Bodies are read here with a size cap, never by the framework. Nothing is cached.
  *
- * <p>The buyer's own routes ({@code /me}) take the verified-phone token of the OTP step in the
- * {@code X-Commerce-Phone-Token} header. It is not a platform login.
+ * <p>The buyer's own routes ({@code /me}) take the shopper session in the
+ * {@code X-Commerce-Session} header, or the verified-phone token of the OTP step in the
+ * {@code X-Commerce-Phone-Token} header. Neither is a platform login. The order token is read
+ * from the {@code X-Commerce-Order-Token} header only, never from the address.
  */
 @RestController
 @RequestMapping("/admin-core-service/open/commerce/v1")
@@ -76,12 +84,26 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
 
     static final String PHONE_TOKEN_HEADER = "X-Commerce-Phone-Token";
     static final String ORDER_TOKEN_HEADER = "X-Commerce-Order-Token";
+    static final String SESSION_HEADER = CommerceShopperSessions.HEADER;
 
     private final CatalogApiAuth auth;
     private final StorefrontFeatureGate featureGate;
     private final CommerceCheckoutService checkoutService;
     private final CommerceOrderQueryService queryService;
+    private final CommerceCheckoutConfig checkoutConfig;
     private final ObjectMapper objectMapper;
+
+    @GetMapping("/checkout/config")
+    public ResponseEntity<Map<String, Object>> checkoutConfig(HttpServletRequest http) {
+        var p = enter(http, "order", ORDER_READ_PER_KEY, ORDER_READ_PER_VISITOR);
+        try {
+            // Public values only; the browser may keep them for a minute.
+            return ResponseEntity.ok().header("Cache-Control", "private, max-age=60")
+                    .body(checkoutConfig.config(p.instituteId()));
+        } catch (CheckoutException e) {
+            throw new CatalogApiException(e.getStatus(), e.getCode(), e.getMessage(), e.getDetails(), null);
+        }
+    }
 
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutDtos.Placed> checkout(HttpServletRequest http) {
@@ -92,7 +114,8 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
         String network = CatalogApiAuth.networkClientIp(http);
         String clientIp = network != null ? network : http.getRemoteAddr();
         boolean serverSide = http.getHeader("Origin") == null;
-        return answer(() -> checkoutService.placeOrder(p.instituteId(), body, clientIp, serverSide));
+        String session = http.getHeader(SESSION_HEADER);
+        return answer(() -> checkoutService.placeOrder(p.instituteId(), body, clientIp, serverSide, session));
     }
 
     @PostMapping("/checkout/{orderId}/retry-payment")
@@ -122,10 +145,10 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
     }
 
     @GetMapping("/orders/view")
-    public ResponseEntity<CheckoutDtos.OrderView> view(HttpServletRequest http,
-                                                       @RequestParam(value = "token", required = false) String token) {
+    public ResponseEntity<CheckoutDtos.OrderView> view(HttpServletRequest http) {
         var p = enter(http, "order", ORDER_READ_PER_KEY, ORDER_READ_PER_VISITOR);
-        String orderToken = token != null && !token.isBlank() ? token : http.getHeader(ORDER_TOKEN_HEADER);
+        // The header only: a token in the address ends up in logs and in the Referer.
+        String orderToken = http.getHeader(ORDER_TOKEN_HEADER);
         return answer(() -> queryService.viewByToken(p.instituteId(), orderToken));
     }
 
@@ -140,27 +163,58 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
         return answer(() -> queryService.track(p.instituteId(), orderNumber, phoneToken));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<CheckoutDtos.Account> me(HttpServletRequest http) {
+        var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
+        return answer(() -> queryService.me(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER)));
+    }
+
+    @PostMapping("/me/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest http) {
+        var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
+        try {
+            queryService.logoutEverywhere(p.instituteId(), http.getHeader(SESSION_HEADER),
+                    http.getHeader(PHONE_TOKEN_HEADER));
+        } catch (CheckoutException e) {
+            throw new CatalogApiException(e.getStatus(), e.getCode(), e.getMessage(), e.getDetails(), null);
+        }
+        return ResponseEntity.noContent().header("Cache-Control", "no-store").build();
+    }
+
+    @PutMapping("/me/consent")
+    public ResponseEntity<CheckoutDtos.Account> consent(HttpServletRequest http) {
+        var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
+        Map<?, ?> body = read(http, Map.class, MAX_SMALL_BODY_BYTES);
+        Object sent = body == null ? null : body.get("marketing_consent");
+        Boolean consent = sent instanceof Boolean b ? b : null;
+        return answer(() -> queryService.setConsent(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER), consent));
+    }
+
     @GetMapping("/me/orders")
     public ResponseEntity<CheckoutDtos.OrderPage> myOrders(
             HttpServletRequest http,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "page_size", defaultValue = "20") int pageSize) {
         var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
-        return answer(() -> queryService.myOrders(p.instituteId(), http.getHeader(PHONE_TOKEN_HEADER), page,
-                pageSize));
+        return answer(() -> queryService.myOrders(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER), page, pageSize));
     }
 
     @GetMapping("/me/addresses")
     public ResponseEntity<List<CheckoutDtos.AddressView>> myAddresses(HttpServletRequest http) {
         var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
-        return answer(() -> queryService.myAddresses(p.instituteId(), http.getHeader(PHONE_TOKEN_HEADER)));
+        return answer(() -> queryService.myAddresses(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER)));
     }
 
     @PostMapping("/me/addresses")
     public ResponseEntity<CheckoutDtos.AddressView> addAddress(HttpServletRequest http) {
         var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
         CheckoutRequest.Address body = read(http, CheckoutRequest.Address.class, MAX_SMALL_BODY_BYTES);
-        return answer(() -> queryService.addMyAddress(p.instituteId(), http.getHeader(PHONE_TOKEN_HEADER), body));
+        return answer(() -> queryService.addMyAddress(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER), body));
     }
 
     @PutMapping("/me/addresses/{id}")
@@ -168,15 +222,16 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
                                                                   @PathVariable("id") String id) {
         var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
         CheckoutRequest.Address body = read(http, CheckoutRequest.Address.class, MAX_SMALL_BODY_BYTES);
-        return answer(() -> queryService.updateMyAddress(p.instituteId(), http.getHeader(PHONE_TOKEN_HEADER), id,
-                body));
+        return answer(() -> queryService.updateMyAddress(p.instituteId(), http.getHeader(SESSION_HEADER),
+                http.getHeader(PHONE_TOKEN_HEADER), id, body));
     }
 
     @DeleteMapping("/me/addresses/{id}")
     public ResponseEntity<Void> deleteAddress(HttpServletRequest http, @PathVariable("id") String id) {
         var p = enter(http, "account", ACCOUNT_PER_KEY, ACCOUNT_PER_VISITOR);
         return answer(() -> {
-            queryService.deleteMyAddress(p.instituteId(), http.getHeader(PHONE_TOKEN_HEADER), id);
+            queryService.deleteMyAddress(p.instituteId(), http.getHeader(SESSION_HEADER),
+                    http.getHeader(PHONE_TOKEN_HEADER), id);
             return null;
         });
     }

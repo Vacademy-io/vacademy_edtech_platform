@@ -9,8 +9,10 @@ public enum CommerceOtpPurpose {
     TRACK_ORDER,
     /** Before an online COD order is created (WP-31). */
     COD,
-    /** Past the cap of active holds per phone or IP, and to see own orders. */
-    CHECKOUT;
+    /** Before or during checkout (proves the buyer's phone), and to see own orders. */
+    CHECKOUT,
+    /** The shop's account page: own orders, addresses and consent. */
+    ACCOUNT;
 
     /** The purpose of a name sent by a client, or null. Case is ignored. */
     public static CommerceOtpPurpose of(String name) {

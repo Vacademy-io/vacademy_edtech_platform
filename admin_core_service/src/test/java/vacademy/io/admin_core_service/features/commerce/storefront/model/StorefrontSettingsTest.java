@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.commerce.storefront.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import vacademy.io.admin_core_service.features.commerce.order.checkout.BuyerIdentity;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -91,5 +92,41 @@ class StorefrontSettingsTest {
         assertEquals(List.of("REAL", "RENDER"),
                 parse("{\"leadMediaTag\": \"real\", \"mediaTags\": [\"render\", \"REAL\", 7, \"\"]}").offeredMediaTags());
         assertEquals(List.of("REAL"), parse("{\"leadMediaTag\": \"REAL\"}").offeredMediaTags());
+    }
+
+    // ------------------------------------------------------------------ checkout keys (P2)
+
+    @Test
+    void buyerIdentityIsEitherUnlessAKnownModeIsSet_caseIgnored() throws Exception {
+        assertEquals(BuyerIdentity.EITHER, parse("{}").buyerIdentity());
+        assertEquals(BuyerIdentity.EITHER, StorefrontSettings.parse(null).buyerIdentity());
+        assertEquals(BuyerIdentity.EITHER, parse("{\"buyerIdentity\": \"PHONE\"}").buyerIdentity());
+        assertEquals(BuyerIdentity.EITHER, parse("{\"buyerIdentity\": 3}").buyerIdentity());
+        assertEquals(BuyerIdentity.PHONE_OTP, parse("{\"buyerIdentity\": \"phone_otp\"}").buyerIdentity());
+        assertEquals(BuyerIdentity.EMAIL, parse("{\"buyerIdentity\": \" Email \"}").buyerIdentity());
+    }
+
+    @Test
+    void theOtpCapIsBoundedTo10Through2000_elseThe300Default() throws Exception {
+        assertEquals(300, parse("{}").otpInstituteHourlyCap());
+        assertEquals(10, parse("{\"otp\": {\"instituteHourlyCap\": 10}}").otpInstituteHourlyCap());
+        assertEquals(2000, parse("{\"otp\": {\"instituteHourlyCap\": \"2000\"}}").otpInstituteHourlyCap());
+        assertEquals(300, parse("{\"otp\": {\"instituteHourlyCap\": 9}}").otpInstituteHourlyCap());
+        assertEquals(300, parse("{\"otp\": {\"instituteHourlyCap\": 2001}}").otpInstituteHourlyCap());
+        assertEquals(300, parse("{\"otp\": {\"instituteHourlyCap\": 50.5}}").otpInstituteHourlyCap());
+        assertEquals(300, parse("{\"otp\": {\"instituteHourlyCap\": \"lots\"}}").otpInstituteHourlyCap());
+    }
+
+    @Test
+    void theNewCodLimitsHaveDefaultsAndBounds() throws Exception {
+        StorefrontSettings.Cod defaults = parse("{}").cod();
+        assertEquals(2, defaults.maxOpenOrdersPerPhone());
+        assertEquals(2, defaults.maxRefusals());
+        StorefrontSettings.Cod set = parse("{\"cod\": {\"maxOpenOrdersPerPhone\": 5, \"maxRefusals\": 0}}").cod();
+        assertEquals(5, set.maxOpenOrdersPerPhone());
+        assertEquals(0, set.maxRefusals());
+        StorefrontSettings.Cod out = parse("{\"cod\": {\"maxOpenOrdersPerPhone\": 0, \"maxRefusals\": 21}}").cod();
+        assertEquals(2, out.maxOpenOrdersPerPhone());
+        assertEquals(2, out.maxRefusals());
     }
 }
