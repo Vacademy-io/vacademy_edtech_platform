@@ -5,6 +5,7 @@ import { RouteMatcher } from "./-services/route-matcher";
 import { CatalogueTagContext } from "./-components/CatalogueTagContext";
 import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { RootMountedSegment } from "./-components/RootMountedSegment";
+import { CommerceRouteGate } from "./-components/commerce/route-gate";
 import { PageAliasRedirect, looksLikeCourseIdSegment } from "./-utils/catalogue-page-routes";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import RootNotFoundComponent from "@/components/core/default-not-found";
@@ -162,21 +163,32 @@ function RouteComponent() {
     }
     // "/<old-route>" of a renamed root page (page.aliases) forwards to the
     // page; every other segment is classified exactly as before.
+    // A shop's fixed routes ("/search", "/cart") come before the page, course
+    // and second-catalogue readings. The gate renders its fallback at once for
+    // every other segment and for a site without a shop.
     return (
-      <PageAliasRedirect
+      <CommerceRouteGate
         instituteId={domainRouting.instituteId}
+        siteName={domainRouting.instituteName}
         tagName={rootTag}
-        slug={resolvedTagName}
-        enabled={!looksLikeCourseIdSegment(resolvedTagName)}
-      >
-        <RootMountedSegment
-          rootTag={rootTag}
-          segment={resolvedTagName}
-          instituteId={domainRouting.instituteId}
-          instituteThemeCode={domainRouting.instituteThemeCode}
-          fallback={classic}
-        />
-      </PageAliasRedirect>
+        segments={[resolvedTagName]}
+        fallback={
+          <PageAliasRedirect
+            instituteId={domainRouting.instituteId}
+            tagName={rootTag}
+            slug={resolvedTagName}
+            enabled={!looksLikeCourseIdSegment(resolvedTagName)}
+          >
+            <RootMountedSegment
+              rootTag={rootTag}
+              segment={resolvedTagName}
+              instituteId={domainRouting.instituteId}
+              instituteThemeCode={domainRouting.instituteThemeCode}
+              fallback={classic}
+            />
+          </PageAliasRedirect>
+        }
+      />
     );
   }
 

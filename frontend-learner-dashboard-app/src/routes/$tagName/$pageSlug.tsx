@@ -8,6 +8,7 @@ import { CatalogueTagContext } from "./-components/CatalogueTagContext";
 import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { CourseCataloguePage } from "./-components/CourseCataloguePage";
 import { RootMountedSegment } from "./-components/RootMountedSegment";
+import { CommerceRouteGate } from "./-components/commerce/route-gate";
 import { PageAliasRedirect } from "./-utils/catalogue-page-routes";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
@@ -100,17 +101,36 @@ function RouteComponent() {
   // catalogue has no such page is the segment another catalogue's tag.
   const rootTag = getCachedRootCatalogueTag();
   if (rootTag && !RouteMatcher.isRootMounted(resolvedTagName)) {
+    // "/p/<slug>", "/c/<slug>", "/q/<code>" of a shop on the root catalogue come
+    // first; the gate falls through at once for every other address.
     return (
-      <RootMountedSegment
-        rootTag={rootTag}
-        segment={resolvedTagName}
+      <CommerceRouteGate
         instituteId={domainRouting.instituteId}
-        instituteThemeCode={domainRouting.instituteThemeCode}
-        fallback={classic}
-        pageOnly
+        siteName={domainRouting.instituteName}
+        tagName={rootTag}
+        segments={[resolvedTagName, resolvedPageSlug]}
+        fallback={
+          <RootMountedSegment
+            rootTag={rootTag}
+            segment={resolvedTagName}
+            instituteId={domainRouting.instituteId}
+            instituteThemeCode={domainRouting.instituteThemeCode}
+            fallback={classic}
+            pageOnly
+          />
+        }
       />
     );
   }
 
-  return classic;
+  // "/<tag>/search" and "/<tag>/cart" of a shop on a tagged site.
+  return (
+    <CommerceRouteGate
+      instituteId={domainRouting.instituteId}
+      siteName={domainRouting.instituteName}
+      tagName={resolvedTagName}
+      segments={[resolvedPageSlug]}
+      fallback={classic}
+    />
+  );
 }

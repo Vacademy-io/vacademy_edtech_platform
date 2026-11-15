@@ -11,6 +11,7 @@ import { RouteMatcher } from "./-services/route-matcher";
 import { CatalogueTagContext } from "./-components/CatalogueTagContext";
 import { retainSiteLanguage } from "./-utils/catalogue-route-search";
 import { CourseCataloguePage } from "./-components/CourseCataloguePage";
+import { CommerceRouteGate } from "./-components/commerce/route-gate";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import RootNotFoundComponent from "@/components/core/default-not-found";
@@ -54,14 +55,24 @@ function RouteComponent() {
     );
   }
 
+  // "/<tag>/p/<slug>", "/<tag>/c/<slug>", "/<tag>/q/<code>" of a shop on a
+  // tagged site; every other address renders the page as before.
   return (
-    <CatalogueTagContext.Provider value={tagName}>
-      <CourseCataloguePage
-        tagName={tagName}
-        instituteId={domainRouting.instituteId}
-        instituteThemeCode={domainRouting.instituteThemeCode}
-        pageSlug={pageSlug}
-      />
-    </CatalogueTagContext.Provider>
+    <CommerceRouteGate
+      instituteId={domainRouting.instituteId}
+      siteName={domainRouting.instituteName}
+      tagName={tagName}
+      segments={[pageSlug, postSlug]}
+      fallback={
+        <CatalogueTagContext.Provider value={tagName}>
+          <CourseCataloguePage
+            tagName={tagName}
+            instituteId={domainRouting.instituteId}
+            instituteThemeCode={domainRouting.instituteThemeCode}
+            pageSlug={pageSlug}
+          />
+        </CatalogueTagContext.Provider>
+      }
+    />
   );
 }

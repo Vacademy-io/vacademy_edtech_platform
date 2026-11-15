@@ -35,6 +35,8 @@ import { MegaMenuNavItem } from "../header/MegaMenuNavItem";
 import { MobileMegaMenu } from "../header/MobileMegaMenu";
 import { HeaderSearch } from "../header/HeaderSearch";
 import { HeaderLanguageSwitcher } from "../header/HeaderLanguageSwitcher";
+import { CommerceHeaderSlot } from "../commerce/lazy";
+import { isCommerceEnabled } from "../commerce/config";
 import { DesktopNavDropdown, MobileNavDropdown } from "./header/NavDropdown";
 import { dropdownHasActive } from "./header/nav-dropdown";
 import {
@@ -215,7 +217,11 @@ export const HeaderComponent: React.FC<HeaderProps & {
     const showSearchButton = showSearch === true;
     const showSwitcher = showLanguageSwitcher === true && siteLocale.enabled && siteLocale.locales.length > 1;
     const showSiteCart = isSiteCartEnabled(resolvedGlobalSettings?.siteCart);
-    const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart;
+    // A site with a shop (globalSettings.commerce): its search, language switch
+    // and cart button join the bar and replace the book-store icons. False on
+    // every other site, which renders exactly as before.
+    const showCommerce = isCommerceEnabled(resolvedGlobalSettings);
+    const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart || showCommerce;
     // Opt-in looks of the design (site-chrome-types.ts); all off when absent.
     const chrome = resolveHeaderChrome({
       barSize,
@@ -841,7 +847,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
               {isCourseCatalogeTypeEnabled && (
                 <div className="flex items-center gap-1">
                   {/* Search Icon — replaced by the site search when the author turns that on */}
-                  {!hideSearch && !showSearchButton && (
+                  {!hideSearch && !showSearchButton && !showCommerce && (
                   <button
                     onClick={() => {
                       const newToggleState = !togle;
@@ -862,7 +868,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   )}
 
                   {/* Cart Icon — the book-store cart; a site cart (below) replaces it. */}
-                  {!hideCart && !showSiteCart && (
+                  {!hideCart && !showSiteCart && !showCommerce && (
                   <button
                     onClick={() => {
                       navigate({ to: `${RouteMatcher.basePath(effectiveTagName)}/cart` });
@@ -912,6 +918,17 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       : undefined
                   }
                   hideWhenEmpty={chrome.cartWhenNotEmpty || undefined}
+                />
+              )}
+
+              {showCommerce && resolvedInstituteId && (
+                <CommerceHeaderSlot
+                  instituteId={resolvedInstituteId}
+                  tagName={effectiveTagName}
+                  globalSettings={resolvedGlobalSettings}
+                  // The site's own switch, when the header shows it, is the one switch.
+                  showLanguage={!showSwitcher}
+                  className="flex-shrink-0 text-catalogue-text-secondary"
                 />
               )}
 

@@ -20,6 +20,7 @@ import {
 import { SectionDecorations, hasDecorations } from "../-utils/catalogue-decorations";
 import { blockTypeLabel } from "../-utils/preview-bridge";
 import { CatalogueLink } from "./CatalogueLink";
+import { CommerceSectionSlot, isCommerceSectionType } from "./commerce/lazy";
 import PhoneInput from "react-phone-input-2";
 // Same stylesheet every other phone field in the app imports. Mixing this with
 // react-phone-input-2's other skins in one bundle stacks the flag on top of the
@@ -276,6 +277,21 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
     // it to the block when it has no colour of its own (mirror of the shell
     // canvas adopting props.backgroundColor in ComponentStyleWrapper).
     const props = withStyleBackground(type, localizedProps, component.style);
+
+    // Shop sections ("commerceProductRail"…) live in the commerce chunk, loaded
+    // only on a site with a shop; on any other site the type renders nothing.
+    if (isCommerceSectionType(type)) {
+      return (
+        <CommerceSectionSlot
+          key={id}
+          type={type}
+          props={props || {}}
+          instituteId={instituteId}
+          tagName={tagName}
+          globalSettings={globalSettings}
+        />
+      );
+    }
 
     switch (type) {
       case "header":
