@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -23,11 +24,18 @@ import vacademy.io.admin_core_service.features.stock_hold.enums.StockHoldStatus;
 import vacademy.io.admin_core_service.features.stock_hold.repository.StockHoldRepository;
 import vacademy.io.admin_core_service.features.stock_hold.repository.StockHoldRepository.StockHoldRow;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
+import vacademy.io.admin_core_service.features.stock_hold.repository.StockHoldRepository.HeldTokenRow;
 import vacademy.io.common.exceptions.ConflictException;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.logging.SentryLogger;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -98,8 +106,21 @@ public class StockHoldService {
     private final PackageSessionRepository packageSessionRepository;
     private final PlatformTransactionManager transactionManager;
 
+    /** {@code stock_hold.release_reason} values written here. */
+    public static final String REASON_EXPIRED = "EXPIRED";
+    public static final String REASON_SHOPPER = "SHOPPER";
+
+    private static final SecureRandom TOKEN_RANDOM = new SecureRandom();
+
     @PersistenceContext
     private EntityManager entityManager;
+
+    /**
+     * Commerce listeners; none in the context means nothing extra happens. A field, not a
+     * constructor argument, so the constructor other code and tests use stays as it is.
+     */
+    @Autowired(required = false)
+    private List<StockHoldCommerceHook> commerceHooks;
 
     /**
      * Takes {@code quantity} from {@code available_slots} for each stock-tracked package session,
@@ -113,6 +134,24 @@ public class StockHoldService {
     @Transactional
     public List<StockHold> hold(String instituteId, Map<String, Integer> quantityByPackageSessionId,
                                 StockHoldKind kind) {
+        return hold(instituteId, quantityByPackageSessionId, kind, HOLD_MINUTES);
+    }
+
+    /**
+     * {@link #hold(String, Map, StockHoldKind)} with the hold length given by the caller
+     * (Commerce reads it from the institute setting; the default elsewhere is
+     * {@link #HOLD_MINUTES}).
+     *
+     * <p>Every row of one call shares one random release token. Only its SHA-256 is stored; the
+     * token itself is on the returned objects ({@link StockHold#getReleaseToken()}) for the
+     * checkout to hand to the storefront, which must present it to release the hold.
+     */
+    @Transactional
+    public List<StockHold> hold(String instituteId, Map<String, Integer> quantityByPackageSessionId,
+                                StockHoldKind kind, int holdMinutes) {
+        if (holdMinutes < 1 || holdMinutes > 24 * 60) {
+            throw new InvalidRequestException("A hold lasts between 1 minute and 24 hours");
+        }
         List<StockHold> holds = new ArrayList<>();
         if (quantityByPackageSessionId == null || quantityByPackageSessionId.isEmpty()) {
             return holds;
@@ -150,7 +189,9 @@ public class StockHoldService {
         }
 
         Map<String, StockInfoProjection> stock = stockInfo(sorted.keySet());
-        Date expiresAt = new Date(System.currentTimeMillis() + HOLD_MINUTES * 60_000L);
+        Date expiresAt = new Date(System.currentTimeMillis() + holdMinutes * 60_000L);
+        String releaseToken = newReleaseToken();
+        String releaseTokenHash = sha256Hex(releaseToken);
         String kindName = (kind != null ? kind : StockHoldKind.PURCHASE).name();
 
         for (Map.Entry<String, Integer> entry : sorted.entrySet()) {
@@ -169,8 +210,11 @@ public class StockHoldService {
                 int left = now.getAvailableSlots() != null ? Math.max(now.getAvailableSlots(), 0) : 0;
                 throw new ConflictException("Only " + left + " left of " + displayName(now));
             }
-            holds.add(newRow(packageSessionId, instituteId, null, null, kindName, quantity, HELD,
-                    expiresAt, false));
+            StockHold row = newRow(packageSessionId, instituteId, null, null, kindName, quantity, HELD,
+                    expiresAt, false);
+            row.setReleaseTokenHash(releaseTokenHash);
+            row.setReleaseToken(releaseToken);
+            holds.add(row);
         }
         if (holds.isEmpty()) {
             return holds;
@@ -180,6 +224,7 @@ public class StockHoldService {
         // Detached on purpose: attach() links the rows with UPDATEs and mirrors the values onto
         // these objects, which must never be flushed back over a status another transaction set.
         saved.forEach(entityManager::detach);
+        saved.forEach(row -> row.setReleaseToken(releaseToken)); // not a column: survive a merged copy
         log.info("Held stock for {} package session(s) of institute {} until {}",
                 saved.size(), instituteId, expiresAt);
         return saved;
@@ -323,14 +368,18 @@ public class StockHoldService {
             List<StockHoldRow> rows = new ArrayList<>(stockHoldRepository.findExpiredUnpaidHeldRows(
                     new Date(), PageRequest.of(0, EXPIRY_BATCH_SIZE)));
             rows.sort(BY_SESSION);
+            List<StockHoldRow> freed = new ArrayList<>();
             for (StockHoldRow row : rows) {
                 if (releaseIfUnpaid(row)) {
                     released++;
+                    stockHoldRepository.setReleaseReason(row.getId(), REASON_EXPIRED);
+                    freed.add(row);
                 }
             }
             if (released > 0) {
                 log.info("Released {} expired stock hold(s)", released);
             }
+            notifyReleased(freed, REASON_EXPIRED);
         } catch (Exception e) {
             log.error("Releasing expired stock holds failed", e);
             SentryLogger.logError(e, "Expired stock hold release failed");
@@ -359,6 +408,12 @@ public class StockHoldService {
         }
         List<String> assigned = new ArrayList<>(assignedPackageSessionIds);
         afterCommit("Rent pick release failed", tags("userId", userId, "instituteId", instituteId), () -> {
+            // Every shop variant sits on the shared DEFAULT level, so an assigned variant says
+            // nothing about which level the admin picked from: leave variants out on both sides.
+            assigned.removeAll(commerceVariantIds(assigned));
+            if (assigned.isEmpty()) {
+                return;
+            }
             Set<String> assignedLevelIds = stockInfo(assigned).values().stream()
                     .map(StockInfoProjection::getLevelId)
                     .filter(StringUtils::hasText)
@@ -373,12 +428,15 @@ public class StockHoldService {
             if (picks.isEmpty()) {
                 return;
             }
-            Map<String, StockInfoProjection> pickStock = stockInfo(picks.stream()
-                    .map(StockHoldRow::getPackageSessionId).collect(Collectors.toSet()));
+            Set<String> pickSessionIds = picks.stream()
+                    .map(StockHoldRow::getPackageSessionId).collect(Collectors.toSet());
+            Map<String, StockInfoProjection> pickStock = stockInfo(pickSessionIds);
+            Set<String> variantPicks = commerceVariantIds(pickSessionIds);
             int released = 0;
             for (StockHoldRow pick : picks) {
                 StockInfoProjection info = pickStock.get(pick.getPackageSessionId());
-                if (info == null || !assignedLevelIds.contains(info.getLevelId())) {
+                if (info == null || !assignedLevelIds.contains(info.getLevelId())
+                        || variantPicks.contains(pick.getPackageSessionId())) {
                     continue;
                 }
                 if (stockHoldRepository.restoreUnclaimed(pick.getId()) == 1) {
@@ -480,6 +538,237 @@ public class StockHoldService {
                 }
             }
         });
+    }
+
+    // ── Commerce ───────────────────────────────────────────────────────────
+
+    /**
+     * Public release with the token {@link #hold} issued. Releases the order's HELD rows whose
+     * stored hash matches the token (compared in constant time) and whose payment log is not
+     * PAID. A SOLD row is never touched, and nothing is released while a payment attempt on the
+     * order is in progress.
+     *
+     * @throws ForbiddenException (403) when the order has held rows and the token fits none
+     */
+    @Transactional
+    public int releaseForOrderWithToken(String orderPaymentLogId, String releaseToken) {
+        if (!StringUtils.hasText(orderPaymentLogId) || !StringUtils.hasText(releaseToken)) {
+            throw new ForbiddenException("A release token is required");
+        }
+        List<HeldTokenRow> held = new ArrayList<>(stockHoldRepository.findHeldTokenRowsByPaymentLogId(orderPaymentLogId));
+        if (held.isEmpty()) {
+            return 0; // nothing held: the same answer for an unknown order, a paid one, an expired one
+        }
+        byte[] presented = sha256Hex(releaseToken.trim()).getBytes(StandardCharsets.US_ASCII);
+        held.removeIf(row -> row.getReleaseTokenHash() == null || !MessageDigest.isEqual(
+                presented, row.getReleaseTokenHash().getBytes(StandardCharsets.US_ASCII)));
+        if (held.isEmpty()) {
+            throw new ForbiddenException("The release token is not valid for this order");
+        }
+        if (paymentInProgress(orderPaymentLogId)) {
+            log.info("Not releasing holds of payment log {}: a payment attempt is in progress", orderPaymentLogId);
+            return 0;
+        }
+        held.sort(Comparator.comparing(HeldTokenRow::getPackageSessionId).thenComparing(HeldTokenRow::getId));
+        List<String> releasedIds = new ArrayList<>();
+        for (HeldTokenRow row : held) {
+            if (stockHoldRepository.releaseIfUnpaid(row.getId()) == 1) {
+                giveBack(row.getPackageSessionId(), row.getQuantity() != null && row.getQuantity() > 0 ? row.getQuantity() : 1);
+                stockHoldRepository.setReleaseReason(row.getId(), REASON_SHOPPER);
+                releasedIds.add(row.getId());
+            }
+        }
+        if (!releasedIds.isEmpty()) {
+            log.info("Released {} stock hold(s) by token for payment log {}", releasedIds.size(), orderPaymentLogId);
+            notifyReleasedByIds(releasedIds, REASON_SHOPPER);
+        }
+        return releasedIds.size();
+    }
+
+    /**
+     * The release form from before the token (payment log id only), kept for one deploy cycle
+     * so storefront pages already open keep working. It never releases a shop variant's hold:
+     * a commerce order has needed the token from its first day.
+     */
+    @Transactional
+    public int releaseForOrderLegacyForm(String orderPaymentLogId) {
+        if (!StringUtils.hasText(orderPaymentLogId)) {
+            return 0;
+        }
+        int released = 0;
+        try {
+            List<StockHoldRow> rows = sorted(stockHoldRepository.findHeldRowsByPaymentLogId(orderPaymentLogId));
+            if (rows.isEmpty()) {
+                return 0;
+            }
+            Set<String> variants = commerceVariantIds(rows.stream()
+                    .map(StockHoldRow::getPackageSessionId).collect(Collectors.toSet()));
+            for (StockHoldRow row : rows) {
+                if (variants.contains(row.getPackageSessionId())) {
+                    log.warn("Refused a release without token for hold {} of a shop product", row.getId());
+                    continue;
+                }
+                if (releaseIfUnpaid(row)) {
+                    released++;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Could not release stock holds for payment log {}", orderPaymentLogId, e);
+            SentryLogger.logError(e, "Stock hold release failed", tags("paymentLogId", orderPaymentLogId));
+        }
+        return released;
+    }
+
+    /**
+     * HELD to SOLD in the caller's transaction, for orders that are confirmed with no gateway
+     * step (COD, staff-created): once SOLD, neither the expiry job nor the public release can
+     * free the stock.
+     *
+     * @throws ConflictException (409) when a row is no longer HELD; the caller's transaction
+     *         must roll back, because the order would be confirmed without its stock
+     */
+    @Transactional
+    public void markSoldNow(Collection<StockHold> holds) {
+        if (holds == null || holds.isEmpty()) {
+            return;
+        }
+        List<String> ids = holds.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(StockHold::getPackageSessionId, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(StockHold::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(StockHold::getId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        for (String id : ids) {
+            if (stockHoldRepository.markSold(id, HELD, false) != 1) {
+                throw new ConflictException("The reserved stock was released before the order was confirmed");
+            }
+        }
+        for (StockHold hold : holds) {
+            if (hold != null && !entityManager.contains(hold)) {
+                hold.setStatus(SOLD);
+            }
+        }
+    }
+
+    /**
+     * Records stock that the caller has already taken (a counter sale, after the ledger took
+     * {@code available_slots}) as a SOLD row. No stock moves here.
+     */
+    @Transactional
+    public StockHold recordSold(String instituteId, String packageSessionId, String userId, String userPlanId,
+                                String orderPaymentLogId, int quantity, String fulfilmentLocationId) {
+        if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(packageSessionId) || quantity < 1) {
+            throw new InvalidRequestException("A sold stock row needs an institute, an item and a quantity of at least 1");
+        }
+        StockHold row = newRow(packageSessionId, instituteId, userId, userPlanId, PURCHASE, quantity, SOLD, null, false);
+        row.setPaymentLogId(orderPaymentLogId);
+        row.setFulfilmentLocationId(fulfilmentLocationId);
+        StockHold saved = stockHoldRepository.saveAndFlush(row);
+        entityManager.detach(saved);
+        return saved;
+    }
+
+    /**
+     * Closes the plan's SOLD rows as RESTORED without giving any stock back, in the caller's
+     * transaction. For everything after the goods left or were never there: shipment followed
+     * by RTO or a return (sellable stock comes back only through a RETURN movement), and an
+     * oversold line. {@link #restoreForPlan} must not be used there: it gives stock back.
+     *
+     * @param packageSessionIdOrNull limit to one item, or null for the whole plan
+     * @param reason                 stored in {@code release_reason}, at most 32 characters
+     * @return rows closed
+     */
+    @Transactional
+    public int closeWithoutGiveBack(String userPlanId, String packageSessionIdOrNull, String reason) {
+        if (!StringUtils.hasText(userPlanId)) {
+            return 0;
+        }
+        if (reason != null && reason.length() > 32) {
+            throw new InvalidRequestException("reason is longer than 32 characters");
+        }
+        int closed = 0;
+        for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
+            if (!userPlanId.equals(row.getUserPlanId()) || !SOLD.equals(row.getStatus())) {
+                continue;
+            }
+            if (packageSessionIdOrNull != null && !packageSessionIdOrNull.equals(row.getPackageSessionId())) {
+                continue;
+            }
+            closed += stockHoldRepository.closeSold(row.getId(), reason);
+        }
+        return closed;
+    }
+
+    private boolean paymentInProgress(String orderPaymentLogId) {
+        if (commerceHooks == null) {
+            return false;
+        }
+        for (StockHoldCommerceHook hook : commerceHooks) {
+            if (hook.paymentInProgress(orderPaymentLogId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void notifyReleasedByIds(List<String> holdIds, String reason) {
+        if (commerceHooks == null || commerceHooks.isEmpty() || holdIds.isEmpty()) {
+            return;
+        }
+        List<StockHoldRow> rows = new ArrayList<>();
+        for (String id : holdIds) {
+            stockHoldRepository.findRowById(id).ifPresent(rows::add);
+        }
+        notifyReleased(rows, reason);
+    }
+
+    /** Tells the commerce hooks after the release has committed; never throws. */
+    private void notifyReleased(List<StockHoldRow> released, String reason) {
+        if (commerceHooks == null || commerceHooks.isEmpty() || released == null || released.isEmpty()) {
+            return;
+        }
+        List<StockHoldRow> rows = new ArrayList<>(released);
+        afterCommit("Commerce hold-release hook failed", tags("reason", reason), () -> {
+            for (StockHoldRow row : rows) {
+                for (StockHoldCommerceHook hook : commerceHooks) {
+                    try {
+                        hook.onHoldReleased(row, reason);
+                    } catch (Exception e) {
+                        log.error("Commerce hold-release hook failed for hold {}", row.getId(), e);
+                        SentryLogger.logError(e, "Commerce hold-release hook failed", tags("stockHoldId", row.getId()));
+                    }
+                }
+            }
+        });
+    }
+
+    private Set<String> commerceVariantIds(Collection<String> packageSessionIds) {
+        if (packageSessionIds == null || packageSessionIds.isEmpty()) {
+            return Set.of();
+        }
+        List<String> found = packageSessionRepository.findCommerceVariantSessionIds(new HashSet<>(packageSessionIds));
+        return found == null ? Set.of() : new HashSet<>(found);
+    }
+
+    private static String newReleaseToken() {
+        byte[] bytes = new byte[32];
+        TOKEN_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    static String sha256Hex(String value) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     /** Sum of HELD quantity on a package session, for Manage Inventory's "held" count. */
@@ -691,9 +980,33 @@ public class StockHoldService {
     }
 
     private void giveBack(String packageSessionId, int quantity) {
+        quantity -= payCommerceDeficit(packageSessionId, quantity);
+        if (quantity <= 0) {
+            return;
+        }
         if (packageSessionRepository.giveBackAvailableSlots(packageSessionId, quantity) == 0) {
             log.info("No stock to give back on package session {} (unlimited now, or deleted)", packageSessionId);
         }
+    }
+
+    /**
+     * Commerce: when promised units of a shop variant were damaged or
+     * moved away, available_slots stopped at 0 and the rest is kept as the variant's sellable
+     * deficit. A released hold pays that off first; only what is left goes back on sale.
+     * For anything that is not a shop variant the lock query finds no row and this returns 0.
+     *
+     * @return how many of {@code quantity} went to the deficit
+     */
+    private int payCommerceDeficit(String packageSessionId, int quantity) {
+        if (quantity <= 0 || packageSessionRepository.lockCommerceStockCounters(packageSessionId).isEmpty()) {
+            return 0;
+        }
+        Integer deficit = packageSessionRepository.commerceSellableDeficit(packageSessionId);
+        int pay = Math.min(deficit == null ? 0 : Math.max(deficit, 0), quantity);
+        if (pay > 0) {
+            packageSessionRepository.commerceAddSellableDeficit(packageSessionId, -pay);
+        }
+        return pay;
     }
 
     private void reportOversold(String packageSessionId, int quantity, UserPlan userPlan, String holdId) {

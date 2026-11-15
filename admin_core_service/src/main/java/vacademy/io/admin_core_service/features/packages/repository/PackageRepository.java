@@ -40,14 +40,16 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             "JOIN package_session ps ON s.id = ps.session_id " +
             "JOIN package p ON ps.package_id = p.id " +
             "JOIN package_institute pi ON p.id = pi.package_id " +
-            "WHERE pi.institute_id = :instituteId AND ps.status IN (:statusList)", nativeQuery = true)
+            "WHERE pi.institute_id = :instituteId AND ps.status IN (:statusList)" +
+            " AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)", nativeQuery = true)
     List<SessionProjection> findDistinctSessionsByInstituteIdAndStatusIn(@Param("instituteId") String instituteId,
             @Param("statusList") List<String> statusList);
 
     @Query(value = "SELECT DISTINCT l.* FROM level l " +
             "JOIN package_session ps ON l.id = ps.level_id " +
             "JOIN package_institute pi ON ps.package_id = pi.package_id " +
-            "WHERE pi.institute_id = :instituteId AND l.status IN (:statusList) AND ps.status IN (:statusList)", nativeQuery = true)
+            "WHERE pi.institute_id = :instituteId AND l.status IN (:statusList) AND ps.status IN (:statusList)" +
+            " AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = ps.package_id)", nativeQuery = true)
     List<LevelProjection> findDistinctLevelsByInstituteIdAndStatusIn(@Param("instituteId") String instituteId,
             @Param("statusList") List<String> statusList);
 
@@ -57,7 +59,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             "JOIN package_session ps ON p.id = ps.package_id " +
             "WHERE pi.institute_id = :instituteId " +
             "AND p.status IN (:packageStatusList) " +
-            "AND ps.status IN (:packageSessionStatusList)", nativeQuery = true)
+            "AND ps.status IN (:packageSessionStatusList)" +
+            " AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)", nativeQuery = true)
     List<PackageEntity> findDistinctPackagesByInstituteIdAndStatuses(
             @Param("instituteId") String instituteId,
             @Param("packageStatusList") List<String> packageStatusList,
@@ -149,7 +152,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             "JOIN package_session ps ON p.id = ps.package_id " +
             "WHERE pi.institute_id = :instituteId " +
             "AND p.status != 'DELETED' " +
-            "AND ps.status != 'DELETED'", nativeQuery = true)
+            "AND ps.status != 'DELETED'" +
+            " AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)", nativeQuery = true)
     Long countDistinctPackagesByInstituteId(@Param("instituteId") String instituteId);
 
     @Query(value = "SELECT COUNT(DISTINCT ps.level_id) FROM package_session ps " +
@@ -270,7 +274,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             "               WHERE TRIM(lower(s_tag)) = ANY(CAST(:tags AS TEXT[])) )) " +
             ") " +
             // Search by name filter
-            "AND (:#{#searchByName == null || #searchByName.trim().isEmpty()} = true OR p.package_name ILIKE CONCAT('%', :searchByName, '%')) ", countQuery = "SELECT COUNT(DISTINCT p.id) FROM package p "
+            "AND (:#{#searchByName == null || #searchByName.trim().isEmpty()} = true OR p.package_name ILIKE CONCAT('%', :searchByName, '%')) " +
+            "AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id) ", countQuery = "SELECT COUNT(DISTINCT p.id) FROM package p "
                     +
                     "JOIN package_institute pi ON p.id = pi.package_id " +
                     "LEFT JOIN package_session ps_level_filter ON p.id = ps_level_filter.package_id AND ps_level_filter.status != 'DELETED' "
@@ -287,7 +292,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     "      (EXISTS (SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) s_tag " +
                     "               WHERE TRIM(lower(s_tag)) = ANY(CAST(:tags AS TEXT[])) )) " +
                     ") " +
-                    "AND (:#{#searchByName == null || #searchByName.trim().isEmpty()} = true OR p.package_name ILIKE CONCAT('%', :searchByName, '%')) ", nativeQuery = true)
+                    "AND (:#{#searchByName == null || #searchByName.trim().isEmpty()} = true OR p.package_name ILIKE CONCAT('%', :searchByName, '%')) " +
+                    "AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id) ", nativeQuery = true)
     Page<PackageEntity> findPackagesByCriteria(
             @Param("instituteId") String instituteId,
             @Param("statuses") List<String> statuses,
@@ -405,7 +411,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
@@ -462,7 +468,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
                                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                         AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
@@ -618,7 +624,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             WHERE
                 (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
@@ -664,7 +670,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             WHERE
                                 (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                         AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
@@ -798,7 +804,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
@@ -837,7 +843,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
@@ -995,7 +1001,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             WHERE
                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                 AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
@@ -1060,7 +1066,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                         WHERE
                             (:instituteId IS NULL OR pi.institute_id = :instituteId)
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                             AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                             AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
@@ -1338,7 +1344,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                     AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ps.id IN (:packageSessionIds))
@@ -1395,7 +1401,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                         AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                         AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                         AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                         AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                         AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ps.id IN (:packageSessionIds))
@@ -1553,7 +1559,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (
@@ -1607,7 +1613,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (
@@ -1674,7 +1680,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 (:isPublishedOnly = false OR p.is_course_published_to_catalaouge = true)
                 AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
@@ -1762,7 +1768,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 (:isPublishedOnly = false OR p.is_course_published_to_catalaouge = true)
                 AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
@@ -1960,7 +1966,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                    AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
@@ -2016,7 +2022,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             (:instituteId IS NULL OR pi.institute_id = :instituteId)
                             AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                             AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                             AND (
@@ -2281,7 +2287,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             WHERE
               (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
               AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                    AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
               AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
               AND (
@@ -2320,7 +2326,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     WHERE
                       (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                       AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                            AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                            AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                             AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                       AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                       AND (
@@ -2459,7 +2465,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                 AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
@@ -2504,7 +2510,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                             AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                    AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                             AND (
@@ -2651,7 +2657,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 p.is_course_published_to_catalaouge = true
                 AND (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                 AND (
@@ -2686,7 +2692,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 p.is_course_published_to_catalaouge = true
                                 AND (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
                                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                    AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:excludeChargePackages = false OR p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT'))
                                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                                 AND (
@@ -3181,7 +3187,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
@@ -3234,7 +3240,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                    AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                    AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
@@ -3440,7 +3446,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
@@ -3495,7 +3501,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
-                        AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
+                        AND ((:#{#packageTypes == null || #packageTypes.isEmpty()} = true AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id)) OR p.package_type IN (:packageTypes))
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)

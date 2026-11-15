@@ -118,6 +118,13 @@ public class RazorpayWebHookService {
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
 
     /**
+     * Commerce payments (WP-12): decides from rows whether an event pays a shop order. Not
+     * present in tests that build this class by hand; every use is null-safe.
+     */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommerceWebhookBranch commerceWebhookBranch;
+
+    /**
      * Processes Razorpay webhook events
      */
     public ResponseEntity<String> processWebHook(String payload, String signature) {
@@ -274,6 +281,25 @@ public class RazorpayWebHookService {
             updateWebhookStatus(webhookId, WebHookStatus.PROCESSED,
                     "Event does not contain payment entity, skipped.");
             return ResponseEntity.ok("Webhook acknowledged, no action taken.");
+        }
+
+        // Commerce branch, before anything reads the notes. A payment made on a gateway order
+        // of a shop order is dealt with here and none of the logic below runs for it: no
+        // Razorpay-hosted invoice, no saved payment method, no legacy post-payment logic. For
+        // every other payment this is one statement of key reads that finds nothing.
+        if (commerceWebhookBranch != null) {
+            var commerce = commerceWebhookBranch.handle(eventType, paymentEntity, instituteId);
+            if (commerce.commerce()) {
+                webHookService.updateWebHook(webhookId, payload, commerce.commerceOrderId(), eventType);
+                if (commerce.refused()) {
+                    // 200: the same event delivered again would be refused again.
+                    updateWebhookStatus(webhookId, WebHookStatus.FAILED,
+                            "Commerce payment refused: " + commerce.reason());
+                    return ResponseEntity.ok("Webhook acknowledged, payment refused.");
+                }
+                updateWebhookStatus(webhookId, WebHookStatus.PROCESSED, null);
+                return ResponseEntity.ok("Webhook processed successfully");
+            }
         }
 
         // Step 7: Extract orderId from payment notes
@@ -587,6 +613,16 @@ public class RazorpayWebHookService {
                     if (notesNode != null && notesNode.has("instituteId")) {
                         return notesNode.get("instituteId").asText();
                     }
+                }
+            }
+
+            // Commerce: a payment on a shop order whose checkout passed no notes. The institute
+            // is read from the gateway order row; the signature is then verified with that
+            // institute's secret as usual. Only reached when the notes name no institute.
+            if (commerceWebhookBranch != null && paymentEntity != null) {
+                String commerceInstituteId = commerceWebhookBranch.instituteOfGatewayOrder(paymentEntity);
+                if (commerceInstituteId != null) {
+                    return commerceInstituteId;
                 }
             }
 

@@ -47,6 +47,42 @@ public class InvoiceLineItem {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // ---------------------------------------------------------------- commerce (V682)
+    // Tax is stored per line on a commerce document. All null on every other invoice line.
+
+    @Column(name = "hsn_code", length = 16)
+    private String hsnCode;
+
+    @Column(name = "unit", length = 32)
+    private String unit;
+
+    @Column(name = "tax_rate", precision = 6, scale = 3)
+    private BigDecimal taxRate;
+
+    @Column(name = "taxable_value", precision = 12, scale = 2)
+    private BigDecimal taxableValue;
+
+    @Column(name = "cgst", precision = 12, scale = 2)
+    private BigDecimal cgst;
+
+    @Column(name = "sgst", precision = 12, scale = 2)
+    private BigDecimal sgst;
+
+    @Column(name = "igst", precision = 12, scale = 2)
+    private BigDecimal igst;
+
+    @Column(name = "cess", precision = 12, scale = 2)
+    private BigDecimal cess;
+
+    @Column(name = "discount", precision = 12, scale = 2)
+    private BigDecimal discount;
+
+    @Column(name = "package_session_id", length = 255)
+    private String packageSessionId;
+
+    @Column(name = "piece_id", length = 36)
+    private String pieceId;
 }
 
 

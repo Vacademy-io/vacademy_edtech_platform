@@ -50,6 +50,8 @@ class CancelUserPlanInvitedRowTest {
         ReflectionTestUtils.setField(service, "studentSessionRepository", studentSessionRepository);
         ReflectionTestUtils.setField(service, "packageSessionRepository", packageSessionRepository);
         ReflectionTestUtils.setField(service, "feeBillCancellationService", mock(FeeBillCancellationService.class));
+        ReflectionTestUtils.setField(service, "commercePlans",
+                mock(vacademy.io.admin_core_service.features.commerce.common.CommercePlans.class));
 
         UserPlan plan = new UserPlan();
         plan.setId("plan-1");

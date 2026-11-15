@@ -32,9 +32,14 @@ public class AssessmentFolderAccessGuard {
         }
     }
 
+    /** Shop staff (Commerce) are not course staff: these names never count towards "is staff". */
+    private static final Set<String> COMMERCE_ROLE_NAMES = Set.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
     /** Institute staff only: listing for admins, creating, editing, deleting and moving. */
     public void requireStaff(CustomUserDetails user, String clientId, String instituteId) {
-        Set<String> authorities = authoritiesOf(user);
+        Set<String> authorities = new java.util.HashSet<>(authoritiesOf(user));
+        authorities.removeAll(COMMERCE_ROLE_NAMES);
         requireActiveInstitute(clientId, instituteId);
         boolean learner = authorities.stream().anyMatch(LEARNER_ROLE_NAMES::contains);
         if (authorities.isEmpty()

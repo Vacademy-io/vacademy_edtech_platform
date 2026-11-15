@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.user_subscription.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -43,7 +44,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                               WHERE m.user_id = up.user_id
                                 AND m.institute_id = ei.institute_id
                                 AND m.status = 'ACTIVE')
-            """, nativeQuery = true)
+              AND""" + CommercePlans.NOT_COMMERCE_PLAN, nativeQuery = true)
     List<UserPlan> findPaidActivePlansWithoutEnrollment();
 
     /**
@@ -158,7 +159,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                         WHERE up.userId IN :userIds
                           AND ei.instituteId = :instituteId
                           AND up.status IN :statuses
-                        """)
+                          AND""" + CommercePlans.NOT_COMMERCE_PLAN_JPQL)
         List<UserPlan> findAllByUserIdInAndInstituteIdAndStatusIn(
                         @Param("userIds") List<String> userIds,
                         @Param("instituteId") String instituteId,
@@ -185,6 +186,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                             JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
                             LEFT JOIN package_session_learner_invitation_to_payment_option ps_link ON ps_link.enroll_invite_id = ei.id AND ps_link.status = 'ACTIVE' AND ps_link.payment_option_id = up.payment_option_id
                             WHERE ei.institute_id = :instituteId
+                            AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
 
                             -- Explicit CAST to TIMESTAMP is still good practice for dynamic null checks
                             AND (CAST(:startDate AS TIMESTAMP) IS NULL OR up.end_date >= CAST(:startDate AS TIMESTAMP))
@@ -210,6 +212,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                             JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
                             LEFT JOIN package_session_learner_invitation_to_payment_option ps_link ON ps_link.enroll_invite_id = ei.id AND ps_link.status = 'ACTIVE' AND ps_link.payment_option_id = up.payment_option_id
                             WHERE ei.institute_id = :instituteId
+                            AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
                             AND (CAST(:startDate AS TIMESTAMP) IS NULL OR up.end_date >= CAST(:startDate AS TIMESTAMP))
                             AND (CAST(:endDate AS TIMESTAMP) IS NULL OR up.end_date <= CAST(:endDate AS TIMESTAMP))
                             AND (
@@ -262,7 +265,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                 JOIN FETCH up.enrollInvite ei
                 WHERE up.status IN :statuses
                   AND ei.instituteId IN :instituteIds
-                """)
+                  AND""" + CommercePlans.NOT_COMMERCE_PLAN_JPQL)
         List<UserPlan> findAllByStatusInAndInstituteIdIn(
                         @Param("statuses") List<String> statuses,
                         @Param("instituteIds") List<String> instituteIds);
@@ -693,6 +696,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                    WHERE ei.institute_id = :instituteId
                      AND up.created_at >= :startDate
                      AND up.created_at <= :endDate
+                     AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
                      AND (:noPackageSessions = true OR EXISTS (
                            SELECT 1
                              FROM package_session_learner_invitation_to_payment_option psli
@@ -888,6 +892,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                        LIMIT 1
                     ) inv ON true
                    WHERE pl.payment_status = 'PAID'
+                     AND""" + CommercePlans.NOT_COMMERCE_LOG_PL + """
                      AND """ + PaymentLogRepository.PAID_AT + """
                        >= :startDate
                      AND """ + PaymentLogRepository.PAID_AT + """
@@ -910,6 +915,10 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                     LEFT JOIN payment_option ipo ON ipo.id = iu.payment_option_id
                    WHERE iei.institute_id = :instituteId
                      AND iu.status = 'ACTIVE'
+                     AND NOT EXISTS (SELECT 1
+                           FROM package_session_learner_invitation_to_payment_option cm_link
+                           JOIN commerce_variant cm_cv ON cm_cv.package_session_id = cm_link.package_session_id
+                          WHERE cm_link.enroll_invite_id = iu.enroll_invite_id)
                 )
                 SELECT (SELECT COALESCE(amt, 0) FROM paid) AS collected,
                        (SELECT COALESCE(SUM(overdue), 0) FROM live) AS due,

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.user_subscription.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -76,7 +77,7 @@ public interface PaymentDashboardRepository extends JpaRepository<UserPlan, Stri
                        LIMIT 1
                     ) inv ON true
                    WHERE pl.payment_status = 'PAID'
-                     AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                     AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + "AND" + CommercePlans.NOT_COMMERCE_LOG_PL + """
                      AND """ + PaymentLogRepository.PAID_AT + """
                        >= :startDate
                      AND """ + PaymentLogRepository.PAID_AT + """

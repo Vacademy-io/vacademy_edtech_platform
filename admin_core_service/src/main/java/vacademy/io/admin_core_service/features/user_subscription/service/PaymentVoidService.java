@@ -207,7 +207,20 @@ public class PaymentVoidService {
         return sum;
     }
 
+    /**
+     * Commerce (WP-04). COD and counter payments of a shop order are recorded as MANUAL or
+     * OFFLINE, which is exactly what this service voids. Voiding one would unwind a GST
+     * document and leave the order, its tenders and its stock untouched, so it is refused; a
+     * shop payment is reversed in Commerce (cancel, return, refund). Field-injected and
+     * null-safe so tests that build this service by hand are unaffected.
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    private vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentGuard commerceDocumentGuard;
+
     private void assertVoidable(PaymentLog paymentLog) {
+        if (commerceDocumentGuard != null) {
+            commerceDocumentGuard.refuseCommerceLog(paymentLog, "void this payment");
+        }
         String vendor = paymentLog.getVendor() != null ? paymentLog.getVendor().trim().toUpperCase() : "";
         if (!VOIDABLE_VENDORS.contains(vendor)) {
             throw new VacademyException("Only offline or manually recorded payments can be voided. "

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.course.service;
 
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.course.dto.AddCourseDTO;
 import vacademy.io.admin_core_service.features.course.dto.AddFacultyToCourseDTO;
@@ -63,6 +64,7 @@ public class CourseService {
     private final DefaultEnrollInviteService defaultEnrollInviteService;
     private final vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService workflowTriggerService;
     private final PackagePageContentService packagePageContentService;
+    private final CommerceLegacyGuard commerceLegacyGuard;
 
     @Transactional
     public String addCourse(AddCourseDTO addCourseDTO, CustomUserDetails user, String instituteId) {
@@ -438,6 +440,7 @@ public class CourseService {
 
     public String deleteCourses(List<String> courseIds, CustomUserDetails userDetails) {
         List<PackageEntity> courses = packageRepository.findAllById(courseIds);
+        courses.forEach(course -> commerceLegacyGuard.refuseProduct(course, "delete it as a course"));
         courses.forEach(course -> course.setStatus(PackageStatusEnum.DELETED.name()));
         packageRepository.saveAll(courses);
 

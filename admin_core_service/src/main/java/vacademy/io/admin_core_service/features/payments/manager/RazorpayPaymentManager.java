@@ -170,7 +170,10 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             for (byte b : hash) {
                 hex.append(String.format("%02x", b));
             }
-            if (!hex.toString().equals(rr.getRazorpaySignature())) {
+            // Compared in constant time: the time taken must not tell how much of a guess is right.
+            String presented = rr.getRazorpaySignature() == null ? "" : rr.getRazorpaySignature();
+            if (!java.security.MessageDigest.isEqual(hex.toString().getBytes(StandardCharsets.UTF_8),
+                    presented.getBytes(StandardCharsets.UTF_8))) {
                 throw new VacademyException("Razorpay payment signature verification failed");
             }
             return rr.getRazorpayOrderId();
@@ -432,14 +435,32 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
         return new RazorpayClient(keyId, keySecret);
     }
 
+    /**
+     * The description of a gateway order made for a shop order starts with this (Commerce
+     * writes it, see RazorpayCommercePaymentGateway). Only such an order asks for automatic
+     * capture below; every other order is created exactly as before.
+     */
+    public static final String COMMERCE_ORDER_DESCRIPTION_PREFIX = "commerce_order_id=";
+
     private Order createRazorpayOrder(RazorpayClient razorpayClient,
             PaymentInitiationRequestDTO request,
             long amountInPaise) throws RazorpayException {
+        return razorpayClient.orders.create(orderRequestOf(request, amountInPaise));
+    }
 
+    /** The body of the plain order create. Package-visible for the test. */
+    static JSONObject orderRequestOf(PaymentInitiationRequestDTO request, long amountInPaise) {
         JSONObject orderRequest = new JSONObject();
         orderRequest.put("amount", amountInPaise);
         orderRequest.put("currency", request.getCurrency().toUpperCase());
         orderRequest.put("receipt", request.getOrderId());
+        if (request.getDescription() != null
+                && request.getDescription().startsWith(COMMERCE_ORDER_DESCRIPTION_PREFIX)) {
+            // A shop order is confirmed by the captured event alone. On an account set to
+            // manual capture an authorised payment would otherwise never be captured, and the
+            // buyer would get the money back after the order had lapsed.
+            orderRequest.put("payment_capture", 1);
+        }
 
         JSONObject notes = new JSONObject();
         notes.put("orderId", request.getOrderId());
@@ -464,7 +485,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
 
         orderRequest.put("notes", notes);
 
-        return razorpayClient.orders.create(orderRequest);
+        return orderRequest;
     }
 
     private PaymentResponseDTO buildPaymentResponseFromOrder(Order order, PaymentInitiationRequestDTO request,

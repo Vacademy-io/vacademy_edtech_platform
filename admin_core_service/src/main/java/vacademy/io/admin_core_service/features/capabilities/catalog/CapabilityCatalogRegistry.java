@@ -163,6 +163,14 @@ public class CapabilityCatalogRegistry {
                 }
                 boolean core = coreNode != null && coreNode.asBoolean(false);
                 anyCore |= core;
+                JsonNode optInNode = m.get("opt_in");
+                if (optInNode != null && !optInNode.isBoolean()) {
+                    errors.add(where + ": opt_in must be a boolean when present");
+                }
+                boolean optIn = optInNode != null && optInNode.asBoolean(false);
+                if (core && optIn) {
+                    errors.add(where + ": a core module cannot be opt_in");
+                }
 
                 List<CapabilityCatalog.Feature> features = new ArrayList<>();
                 JsonNode featuresNode = m.get("features");
@@ -183,7 +191,7 @@ public class CapabilityCatalogRegistry {
                     }
                 }
                 modules.add(new CapabilityCatalog.Module(key, label, text(m, "description"), text(m, "rail"),
-                        core, Collections.unmodifiableList(features)));
+                        core, optIn, Collections.unmodifiableList(features)));
             }
         }
         for (String fk : featureKeys) {

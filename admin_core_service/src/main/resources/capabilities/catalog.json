@@ -1052,6 +1052,117 @@
       ]
     },
     {
+      "key": "commerce",
+      "label": "Commerce",
+      "description": "Online store, order desk, stock by location, point of sale and tax reports.",
+      "rail": "COMMERCE",
+      "core": false,
+      "opt_in": true,
+      "features": [
+        {
+          "key": "commerce.catalogue",
+          "label": "Products",
+          "description": "Products, variants, attributes, collections and media.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "commerce-products",
+              "commerce-collections",
+              "commerce-discounts"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/products",
+              "/commerce/collections",
+              "/commerce/discounts"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "commerce.orders",
+          "label": "Orders",
+          "description": "Online orders, order desk, shipments, returns and refunds.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "commerce-orders",
+              "commerce-customers"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/orders",
+              "/commerce/customers"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "commerce.stock",
+          "label": "Stock",
+          "description": "Locations, stock levels, receipts, transfers, counts and labels.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "commerce-inventory"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/inventory",
+              "/commerce/settings/locations"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "commerce.pos",
+          "label": "Point of sale",
+          "description": "Tills, POS sessions, counter sales and day close.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "commerce-pos"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/pos"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "commerce.tax_reports",
+          "label": "Tax and reports",
+          "description": "Tax classes, invoices, GST reports, day book and sales reports.",
+          "default_on": true,
+          "governs": {
+            "nav": [],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/settings/business",
+              "/commerce/settings/tax-classes"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
       "key": "erp",
       "label": "ERP (HR & Payroll)",
       "description": "People, leave, attendance, payroll, compliance and accounts.",

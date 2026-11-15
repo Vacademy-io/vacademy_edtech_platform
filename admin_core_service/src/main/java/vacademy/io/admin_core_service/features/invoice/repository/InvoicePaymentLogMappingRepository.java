@@ -71,5 +71,24 @@ public interface InvoicePaymentLogMappingRepository extends JpaRepository<Invoic
     List<InvoiceIssueOnPaymentLog> findLiveInvoicesSharingPaymentLogs(
             @Param("instituteId") String instituteId,
             @Param("invoiceIds") Collection<String> invoiceIds);
+
+    // ---------------------------------------------------------------- commerce (WP-04)
+    // A commerce document is an invoice with a document type; no other invoice has one, so
+    // these find nothing for a course payment.
+
+    /** Whether the payment log is covered by a commerce GST document. */
+    @Query("SELECT COUNT(m) > 0 FROM InvoicePaymentLogMapping m "
+            + "WHERE m.paymentLog.id = :paymentLogId AND m.invoice.documentType IS NOT NULL")
+    boolean existsCommerceDocumentByPaymentLogId(@Param("paymentLogId") String paymentLogId);
+
+    /** The commerce documents that cover any of the payment logs, newest first. */
+    @Query("SELECT DISTINCT i FROM InvoicePaymentLogMapping m JOIN m.invoice i "
+            + "WHERE m.paymentLog.id IN :paymentLogIds AND i.documentType IS NOT NULL "
+            + "ORDER BY i.createdAt DESC")
+    List<Invoice> findCommerceDocumentsByPaymentLogIds(@Param("paymentLogIds") Collection<String> paymentLogIds);
+
+    /** Payment log ids behind one invoice, without loading the logs. */
+    @Query("SELECT m.paymentLog.id FROM InvoicePaymentLogMapping m WHERE m.invoice.id = :invoiceId")
+    List<String> findPaymentLogIdsByInvoiceId(@Param("invoiceId") String invoiceId);
 }
 

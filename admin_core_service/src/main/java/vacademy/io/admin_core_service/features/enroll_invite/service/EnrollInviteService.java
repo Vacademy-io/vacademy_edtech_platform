@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.enroll_invite.service;
 
 import vacademy.io.admin_core_service.features.shortlink.service.ShortUrlManagementService;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,28 @@ public class EnrollInviteService {
 
     @Autowired
     private EnrollInviteRepository repository;
+    @Autowired
+    private CommerceLegacyGuard commerceLegacyGuard;
+
+    private static final String COMMERCE_INVITE_ACTION = "change this invite here";
+
+    /**
+     * A variant's invite, link row and payment option belong to the Commerce catalogue. A legacy
+     * invite must never point at a variant either: the shop reads its price through that link.
+     */
+    private void refuseVariantMappings(List<PackageSessionToPaymentOptionDTO> mappingDTOs) {
+        List<String> sessionIds = new ArrayList<>();
+        List<String> linkIds = new ArrayList<>();
+        for (PackageSessionToPaymentOptionDTO dto : mappingDTOs) {
+            if (dto == null) {
+                continue;
+            }
+            sessionIds.add(dto.getPackageSessionId());
+            linkIds.add(dto.getId());
+        }
+        commerceLegacyGuard.refuseVariantSessions(sessionIds, "sell it through an invite");
+        commerceLegacyGuard.refuseVariantLinks(linkIds, COMMERCE_INVITE_ACTION);
+    }
     @Autowired
     private PaymentOptionService paymentOptionService;
     @Autowired
@@ -119,6 +142,7 @@ public class EnrollInviteService {
         if (CollectionUtils.isEmpty(mappingDTOs)) {
             throw new VacademyException("Package session to payment options cannot be empty.");
         }
+        refuseVariantMappings(mappingDTOs);
 
         EnrollInvite enrollInviteToSave = new EnrollInvite(enrollInviteDTO);
         String actorId = actor != null ? actor.getUserId() : null;
@@ -202,6 +226,8 @@ public class EnrollInviteService {
         }
 
         EnrollInvite enrollInviteToSave = findById(enrollInviteDTO.getId());
+        commerceLegacyGuard.refuseCommerceInvites(List.of(enrollInviteToSave.getId()), COMMERCE_INVITE_ACTION);
+        refuseVariantMappings(mappingDTOs);
         updateEnrollInvite(enrollInviteDTO, enrollInviteToSave);
         if (actor != null) {
             enrollInviteToSave.setUpdatedByUserId(actor.getUserId());
@@ -545,6 +571,8 @@ public class EnrollInviteService {
 
     public String updateDefaultEnrollInviteConfig(String enrollInviteId, String packageSessionId,
             CustomUserDetails actor) {
+        commerceLegacyGuard.refuseVariantSession(packageSessionId, COMMERCE_INVITE_ACTION);
+        commerceLegacyGuard.refuseCommerceInvites(Collections.singletonList(enrollInviteId), COMMERCE_INVITE_ACTION);
         removeDefaultTag(packageSessionId);
         addDefaultTag(enrollInviteId, actor);
         return enrollInviteId;
@@ -552,6 +580,7 @@ public class EnrollInviteService {
 
     @Transactional
     public String deleteEnrollInvites(List<String> enrollInviteIds) {
+        commerceLegacyGuard.refuseCommerceInvites(enrollInviteIds, "delete this invite here");
         List<EnrollInvite> enrollInvites = repository.findAllById(enrollInviteIds);
         for (EnrollInvite enrollInvite : enrollInvites) {
             enrollInvite.setStatus(StatusEnum.DELETED.name());
@@ -789,6 +818,7 @@ public class EnrollInviteService {
 
         // Step 1: Delete old payment options
         List<String> oldPaymentOptionIds = extractOldPaymentOptionIds(updatePaymentOptionRequests);
+        refuseVariantPaymentOptionUpdate(updatePaymentOptionRequests, oldPaymentOptionIds);
         deleteOldPaymentOptions(oldPaymentOptionIds);
 
         // Step 2: Process new payment options for each enroll invite
@@ -800,6 +830,27 @@ public class EnrollInviteService {
     }
 
     // ------------------- PRIVATE METHODS ------------------- //
+
+    /** Before any write: neither the invites, the replaced link rows nor the new sessions may be a variant's. */
+    private void refuseVariantPaymentOptionUpdate(
+            List<UpdateEnrollInvitePackageSessionPaymentOptionDTO> requests, List<String> oldLinkIds) {
+        List<String> inviteIds = new ArrayList<>();
+        List<String> sessionIds = new ArrayList<>();
+        for (UpdateEnrollInvitePackageSessionPaymentOptionDTO request : requests) {
+            inviteIds.add(request.getEnrollInviteId());
+            if (request.getUpdatePaymentOptions() == null) {
+                continue;
+            }
+            request.getUpdatePaymentOptions().forEach(updateOption -> {
+                if (updateOption.getNewPackageSessionPaymentOption() != null) {
+                    sessionIds.add(updateOption.getNewPackageSessionPaymentOption().getPackageSessionId());
+                }
+            });
+        }
+        commerceLegacyGuard.refuseCommerceInvites(inviteIds, COMMERCE_INVITE_ACTION);
+        commerceLegacyGuard.refuseVariantLinks(oldLinkIds, COMMERCE_INVITE_ACTION);
+        commerceLegacyGuard.refuseVariantSessions(sessionIds, "sell it through an invite");
+    }
 
     /**
      * Extracts old payment option IDs that need to be deleted.

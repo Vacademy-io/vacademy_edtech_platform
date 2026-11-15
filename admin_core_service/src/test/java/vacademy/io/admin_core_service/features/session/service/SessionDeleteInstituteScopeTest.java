@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.springframework.http.HttpStatus;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import vacademy.io.admin_core_service.features.enroll_invite.service.DefaultEnrollInviteService;
 import vacademy.io.admin_core_service.features.faculty.service.FacultyService;
 import vacademy.io.admin_core_service.features.group.service.GroupService;
@@ -55,7 +56,8 @@ class SessionDeleteInstituteScopeTest {
     private final SessionService service = new SessionService(sessionRepository, packageSessionRepository,
             mock(LevelService.class), mock(PackageRepository.class), mock(SubjectService.class),
             learnerInvitationService, mock(GroupService.class), mock(DefaultEnrollInviteService.class),
-            mock(FacultyService.class), mock(PackageSessionService.class));
+            mock(FacultyService.class), mock(PackageSessionService.class),
+            mock(CommerceLegacyGuard.class));
 
     /** Root flag set on every principal: it must never decide anything here. */
     private static CustomUserDetails principal(String... authorities) {
@@ -155,6 +157,31 @@ class SessionDeleteInstituteScopeTest {
         assertThrows(ForbiddenException.class, () -> service.deleteSessions(List.of(OWN), INSTITUTE, null));
         assertNothingWritten();
         verify(packageSessionRepository, never()).findBySessionIdsAndInstituteId(anyList(), anyString());
+    }
+
+    @Test
+    @DisplayName("shop staff are not staff here: only commerce roles, alone or next to learner roles, is refused with 403")
+    void commerceOnlyRefused() {
+        instituteBatches(List.of(OWN), batch("ps-1", OWN));
+        for (String[] roles : List.of(new String[]{"COMMERCE_STORE_MANAGER"}, new String[]{"COMMERCE_WAREHOUSE_STAFF"},
+                new String[]{"COMMERCE_POS_CASHIER"}, new String[]{"COMMERCE_ACCOUNTANT"},
+                new String[]{" commerce_store_manager "}, new String[]{"STUDENT", "COMMERCE_POS_CASHIER"},
+                new String[]{"COMMERCE_STORE_MANAGER", "COMMERCE_ACCOUNTANT", "PARENT"})) {
+            assertThrows(ForbiddenException.class, () -> service.deleteSessions(List.of(OWN), INSTITUTE, principal(roles)));
+        }
+        assertNothingWritten();
+        verify(packageSessionRepository, never()).findBySessionIdsAndInstituteId(anyList(), anyString());
+    }
+
+    @Test
+    @DisplayName("a commerce role takes nothing away: [COMMERCE_STORE_MANAGER, TEACHER] and [ADMIN, COMMERCE_ACCOUNTANT] pass")
+    void commerceRoleNextToStaffRolePasses() {
+        for (String[] roles : List.of(new String[]{"COMMERCE_STORE_MANAGER", "TEACHER"},
+                new String[]{"ADMIN", "COMMERCE_ACCOUNTANT"}, new String[]{"STUDENT", "COMMERCE_POS_CASHIER", "MENTOR"})) {
+            instituteBatches(List.of(OWN), batch("ps-1", OWN));
+            sessionRow(OWN);
+            assertEquals("Session deleted successfully.", service.deleteSessions(List.of(OWN), INSTITUTE, principal(roles)));
+        }
     }
 
     @Test

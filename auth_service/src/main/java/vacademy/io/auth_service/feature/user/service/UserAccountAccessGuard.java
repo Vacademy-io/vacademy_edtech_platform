@@ -2,6 +2,7 @@ package vacademy.io.auth_service.feature.user.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
 import vacademy.io.auth_service.feature.user.repository.UserInstituteRoleRepository;
 import vacademy.io.auth_service.feature.user.repository.UserInstituteRoleRepository.InstituteRoleRow;
 import vacademy.io.auth_service.feature.user.repository.UserInstituteRoleRepository.UserRoleRow;
@@ -30,17 +31,21 @@ import java.util.stream.Collectors;
  *
  * <p>Always allowed: the user themselves, and a platform super-admin
  * ({@link SuperAdminAuthUtil}). Otherwise the decision is made from both users' user_role
- * rows in the DB, never from the token's root flag or authorities (learners and invited staff
- * are root users, and the token's authorities belong to whatever clientId the caller sent).
+ * rows in the DB, never from the token's root flag or authorities.
  *
  * <p>Vocabulary, per institute:
  * <ul>
  *   <li>caller is ADMIN: holds an ACTIVE/INVITED "ADMIN" (or legacy "Admin") row there;</li>
  *   <li>caller is staff: ADMIN, or holds ACTIVE/INVITED rows there none of which is a learner
  *       role (STUDENT/PARENT/GUARDIAN). A self-signed-up learner given [STUDENT, TEACHER] is
- *       therefore not staff — same rule as admin_core's {@code InstituteAccessValidator};</li>
+ *       therefore not staff — same rule as admin_core's {@code InstituteAccessValidator}.
+ *       A caller whose only rows there are commerce roles (shop staff) is not staff either:
+ *       a cashier does not invite users, add roles or read learner logins;</li>
  *   <li>target belongs: has a role row there that is not DELETED;</li>
- *   <li>target is ADMIN / staff: holds an ADMIN / non-learner row there that is not DELETED.</li>
+ *   <li>target is ADMIN / staff: holds an ADMIN / non-learner row there that is not DELETED;</li>
+ *   <li>target is shop staff: holds a commerce role row there that is not DELETED. Their
+ *       invitation, role rows and access are changed by an ADMIN only, because each of those
+ *       routes can take a commerce role away.</li>
  * </ul>
  *
  * <p>A login (username + password, or the email / mobile number used for OTP login) may be
@@ -164,6 +169,9 @@ public class UserAccountAccessGuard {
         if (target.admin.contains(instituteId) && !callerRoles.isAdmin(instituteId)) {
             throw forbidden("Only an admin of this institute can update an admin's invitation");
         }
+        if (target.commerce.contains(instituteId) && !callerRoles.isAdmin(instituteId)) {
+            throw forbidden("Only an admin of this institute can update a commerce staff member's invitation");
+        }
         if (!mayChangeLoginIdentity(callerRoles, target, instituteId) && emailChanges.getAsBoolean()) {
             throw forbidden("Only an admin of every institute this user belongs to can change their email");
         }
@@ -229,6 +237,9 @@ public class UserAccountAccessGuard {
             if (target.admin.contains(instituteId) && !callerRoles.isAdmin(instituteId)) {
                 throw forbidden("Only an admin of this institute can update an admin");
             }
+            if (target.commerce.contains(instituteId) && !callerRoles.isAdmin(instituteId)) {
+                throw forbidden("Only an admin of this institute can update a commerce staff member");
+            }
             if (!mayChangeLoginIdentity(callerRoles, target, instituteId) && loginIdentityChanges.getAsBoolean()) {
                 throw forbidden("Only an admin of every institute this user belongs to can change their email or mobile number");
             }
@@ -283,8 +294,15 @@ public class UserAccountAccessGuard {
             return;
         }
         for (String target : new LinkedHashSet<>(userIds)) {
-            if (target != null && targetMemberships(rows(target)).admin.contains(instituteId)) {
+            if (target == null) {
+                continue;
+            }
+            Memberships targetRoles = targetMemberships(rows(target));
+            if (targetRoles.admin.contains(instituteId)) {
                 throw forbidden("Only an admin of this institute can change an admin's access");
+            }
+            if (targetRoles.commerce.contains(instituteId)) {
+                throw forbidden("Only an admin of this institute can change a commerce staff member's access");
             }
         }
     }
@@ -389,6 +407,9 @@ public class UserAccountAccessGuard {
             if (!LEARNER_ROLES.contains(row.getRoleName().toUpperCase(Locale.ROOT))) {
                 m.staff.add(institute);
             }
+            if (AuthConstants.isCommerceRole(row.getRoleName())) {
+                m.commerce.add(institute);
+            }
         }
         return m;
     }
@@ -406,12 +427,13 @@ public class UserAccountAccessGuard {
         return new VacademyException(HttpStatus.FORBIDDEN, message);
     }
 
-    /** Caller side: access-granting role names per institute. Target side: the three sets. */
+    /** Caller side: access-granting role names per institute. Target side: the four sets. */
     private static final class Memberships {
         final Map<String, Set<String>> callerRoleNames = new HashMap<>();
         final Set<String> belongs = new HashSet<>();
         final Set<String> admin = new HashSet<>();
         final Set<String> staff = new HashSet<>();
+        final Set<String> commerce = new HashSet<>();
 
         boolean isAdmin(String instituteId) {
             Set<String> names = callerRoleNames.get(instituteId);
@@ -424,7 +446,8 @@ public class UserAccountAccessGuard {
             }
             Set<String> names = callerRoleNames.get(instituteId);
             return names != null && !names.isEmpty()
-                    && names.stream().noneMatch(n -> LEARNER_ROLES.contains(n.toUpperCase(Locale.ROOT)));
+                    && names.stream().noneMatch(n -> LEARNER_ROLES.contains(n.toUpperCase(Locale.ROOT)))
+                    && !names.stream().allMatch(AuthConstants::isCommerceRole);
         }
     }
 }

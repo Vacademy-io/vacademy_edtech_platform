@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -118,10 +119,12 @@ public class LeadMergeDao {
     static final String HAS_PLAN_SQL = """
             SELECT EXISTS (SELECT 1 FROM user_plan up
                            JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
-                           WHERE ei.institute_id = ? AND up.user_id = ?)
+                           WHERE ei.institute_id = ? AND up.user_id = ?
+                             AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
+            )
             """;
 
-    /** Any user plan bought through one of this institute's invites, whatever its status. */
+    /** Any user plan bought through one of this institute's invites, whatever its status. Shop order lines do not count. */
     public boolean hasPlan(String instituteId, String userId) {
         return Boolean.TRUE.equals(jdbc.queryForObject(HAS_PLAN_SQL, Boolean.class, instituteId, userId));
     }

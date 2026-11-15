@@ -63,6 +63,25 @@ public class StockHold {
     @Column(name = "expires_at")
     private Date expiresAt;
 
+    /** SHA-256 (hex) of the token the public release call must present. Never the token. */
+    @Column(name = "release_token_hash", length = 64)
+    private String releaseTokenHash;
+
+    /** Commerce: the stock location this hold will be fulfilled from. */
+    @Column(name = "fulfilment_location_id", length = 36)
+    private String fulfilmentLocationId;
+
+    /** Why a hold ended: EXPIRED, SHOPPER, or the reason a commerce flow gave. */
+    @Column(name = "release_reason", length = 32)
+    private String releaseReason;
+
+    /**
+     * The raw release token, present only on the objects {@code StockHoldService.hold} returns
+     * so the checkout can hand it to the storefront. It is not stored.
+     */
+    @Transient
+    private String releaseToken;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Date createdAt;

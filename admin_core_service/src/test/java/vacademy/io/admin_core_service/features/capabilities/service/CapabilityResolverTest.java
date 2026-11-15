@@ -121,7 +121,11 @@ class CapabilityResolverTest {
     }
 
     private static Fixture fixture(String mode, InstituteModuleEntitlement... rows) {
-        CapabilityCatalogRegistry registry = new CapabilityCatalogRegistry(CATALOG.raw(), null);
+        return fixture(CATALOG, mode, rows);
+    }
+
+    private static Fixture fixture(CapabilityCatalog catalog, String mode, InstituteModuleEntitlement... rows) {
+        CapabilityCatalogRegistry registry = new CapabilityCatalogRegistry(catalog.raw(), null);
         InstituteModulePolicyRepository policies = mock(InstituteModulePolicyRepository.class);
         InstituteModuleEntitlementRepository entitlements = mock(InstituteModuleEntitlementRepository.class);
         when(policies.findById("i1")).thenReturn(mode == null ? Optional.empty()
@@ -154,6 +158,59 @@ class CapabilityResolverTest {
         assertTrue(f.resolver().isFeatureEnabled("i1", "crm.leads"));
         assertFalse(f.resolver().isFeatureEnabled("i1", "lms.courses"));
         assertTrue(f.resolver().isFeatureEnabled("i1", "core.dashboard"));
+    }
+
+    // ── Opt-in modules (commerce) and the strict check ───────────────────────
+
+    private static final CapabilityCatalog OPT_IN_CATALOG = CapabilityCatalogRegistryTest.fixtureWithOptIn();
+
+    @Test
+    void legacyDoesNotSwitchOnAnOptInModule() {
+        CapabilityResolver.Snapshot s = fixture(OPT_IN_CATALOG, null).resolver().snapshot("i1");
+        assertEquals("LEGACY", s.mode());
+        assertTrue(s.effective().modules().get("crm"));
+        assertTrue(s.effective().features().get("lms.mentorship"));
+        assertFalse(s.effective().modules().get("shop"));
+        assertFalse(s.effective().features().get("shop.items"));
+        assertFalse(s.effective().features().get("shop.till"));
+    }
+
+    @Test
+    void legacyWithTheModuleRowGetsTheOptInModule() {
+        Fixture f = fixture(OPT_IN_CATALOG, "LEGACY", row("shop", true, null), row("shop.till", false, null));
+        CapabilityResolver.Resolved effective = f.resolver().snapshot("i1").effective();
+        assertTrue(effective.modules().get("shop"));
+        assertTrue(effective.features().get("shop.items"));
+        assertFalse(effective.features().get("shop.till"));
+        assertTrue(f.resolver().isFeatureEnabled("i1", "shop.items"));
+        assertFalse(f.resolver().isFeatureEnabled("i1", "shop.till"));
+    }
+
+    @Test
+    void isFeatureGrantedIsStrictForLegacyInstitutes() {
+        Fixture noRows = fixture(OPT_IN_CATALOG, null);
+        assertFalse(noRows.resolver().isFeatureGranted("i1", "shop.items"));
+        // Strict for every key: LEGACY switches crm on, but it was never granted by a row.
+        assertTrue(noRows.resolver().isFeatureEnabled("i1", "crm.leads"));
+        assertFalse(noRows.resolver().isFeatureGranted("i1", "crm.leads"));
+
+        Fixture granted = fixture(OPT_IN_CATALOG, "LEGACY", row("shop", true, null));
+        assertTrue(granted.resolver().isFeatureGranted("i1", "shop.items"));
+    }
+
+    @Test
+    void isFeatureGrantedFollowsRowsExpiryAndUnknownKeys() {
+        assertTrue(fixture(OPT_IN_CATALOG, "MANAGED", row("shop", true, null))
+                .resolver().isFeatureGranted("i1", "shop.items"));
+        assertFalse(fixture(OPT_IN_CATALOG, "MANAGED", row("shop", false, null))
+                .resolver().isFeatureGranted("i1", "shop.items"));
+        assertFalse(fixture(OPT_IN_CATALOG, "MANAGED", row("shop", true, NOW.minusSeconds(1)))
+                .resolver().isFeatureGranted("i1", "shop.items"));
+        Fixture f = fixture(OPT_IN_CATALOG, "MANAGED", row("shop", true, null));
+        assertFalse(f.resolver().isFeatureGranted("i1", "no.such"));
+        assertFalse(f.resolver().isFeatureGranted("i1", null));
+        assertFalse(f.resolver().isFeatureGranted(null, "shop.items"));
+        assertFalse(f.resolver().isFeatureGranted(" ", "shop.items"));
     }
 
     @Test

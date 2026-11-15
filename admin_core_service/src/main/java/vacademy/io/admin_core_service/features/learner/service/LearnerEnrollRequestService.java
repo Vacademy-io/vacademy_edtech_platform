@@ -97,6 +97,13 @@ public class LearnerEnrollRequestService {
     private EnrollInviteService enrollInviteService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
+
+    /** Commerce payments (WP-12). Not present in tests that build this class by hand; null-safe. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentHooks commercePaymentHooks;
+
+    @Autowired
     private RegionalPriceResolver regionalPriceResolver;
 
 
@@ -240,6 +247,14 @@ public class LearnerEnrollRequestService {
     public LearnerEnrollResponseDTO recordLearnerRequest(LearnerEnrollRequestDTO learnerEnrollRequestDTO,
             Map<String, Object> extraData) {
         LearnerPackageSessionsEnrollDTO enrollDTO = learnerEnrollRequestDTO.getLearnerPackageSessionEnroll();
+
+        // A shop variant has an ACTIVE invite and a package session, but it is not a course:
+        // nobody enrols in it. Commerce writes its own plans and never comes through here, so
+        // every caller is refused before a user, a plan or an enrolment row is written.
+        if (StringUtils.hasText(enrollDTO.getEnrollInviteId())) {
+            commerceLegacyGuard.refuseCommerceInvites(List.of(enrollDTO.getEnrollInviteId()), "enrol through this link");
+        }
+        commerceLegacyGuard.refuseVariantSessions(enrollDTO.getPackageSessionIds(), "enrol in it");
 
         // ── Institute integrity guard (root-cause fix) ────────────────────────────
         // The enroll invite is the single source of truth for which institute this
@@ -1063,6 +1078,17 @@ public class LearnerEnrollRequestService {
                         .orElseThrow(() -> new VacademyException(
                                 "Payment received but the originating enrollment was not found for " + vendor
                                         + " order " + gatewayOrderRef));
+
+        // Commerce: a payment of a shop order is confirmed only by the shop's own routes, which
+        // tie it to the order by the gateway-order row; it gets no answer here. A course log has
+        // no payment group, or a group that is no commerce order: no query, or one key read,
+        // and nothing changes.
+        if (commercePaymentHooks != null && StringUtils.hasText(paymentLog.getPaymentGroupId())
+                && commercePaymentHooks.isCommerceLog(paymentLog)) {
+            log.warn("{} payment confirmation refused: order {} is a shop order", vendor, gatewayOrderRef);
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "This payment belongs to a shop order and is confirmed by the shop.");
+        }
 
         log.info("{} payment confirmation: verified order {} -> paymentLog={}, userPlan={}",
                 vendor, gatewayOrderRef, paymentLog.getId(), paymentLog.getUserPlan().getId());

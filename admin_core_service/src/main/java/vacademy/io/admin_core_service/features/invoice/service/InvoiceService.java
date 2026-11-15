@@ -124,6 +124,25 @@ public class InvoiceService {
     @Lazy
     private InvoiceService self;
 
+    // Commerce (WP-04). A shop order gets its GST document from CommerceInvoiceService, with a
+    // number from commerce_document_series; nothing in this class issues, redraws or groups one.
+    // For a course payment the guard answers false and every path below runs as before.
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentGuard commerceDocumentGuard;
+
+    /** True when the payment belongs to a shop order (decided by the commerce rows, never by the package type). */
+    private boolean isCommercePaymentLog(PaymentLog paymentLog) {
+        // Null only in unit tests that build this service by hand.
+        return commerceDocumentGuard != null && commerceDocumentGuard.isCommerceLog(paymentLog);
+    }
+
+    /** The commerce document that covers the log, or null when none has been issued yet. */
+    private Invoice findCommerceDocumentForLog(PaymentLog paymentLog) {
+        List<Invoice> documents = invoicePaymentLogMappingRepository
+                .findCommerceDocumentsByPaymentLogIds(List.of(paymentLog.getId()));
+        return documents.isEmpty() ? null : documents.get(0);
+    }
+
     @Autowired
     private AuthService authService;
 
@@ -495,6 +514,11 @@ public class InvoiceService {
         if (invoiceId == null || invoiceId.isBlank()) return null;
         Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
         if (invoice == null) return null;
+        // Commerce (WP-04): a shop document is not served here; its PDF comes from /commerce/v1
+        // only. Every other invoice has no document type and takes the path below.
+        if (invoice.getDocumentType() != null) {
+            return null;
+        }
         if (StringUtils.hasText(invoice.getPdfFileId())) {
             String url = mediaService.getFilePublicUrlById(invoice.getPdfFileId());
             if (StringUtils.hasText(url)) return url;
@@ -673,6 +697,15 @@ public class InvoiceService {
     @Transactional
     public InvoiceGenerationResult generateInvoiceWithResult(UserPlan userPlan, PaymentLog paymentLog,
             String instituteId, boolean sendEmail) {
+        // Commerce (WP-04): an online prepaid order has no invoice at PAID time (it comes at
+        // PACKED), so the existsByPaymentLogId guard below would not stop a course-series invoice.
+        // Return the commerce document, or none; always a result object, because
+        // generateInvoice() dereferences it.
+        if (isCommercePaymentLog(paymentLog)) {
+            log.info("Payment log {} belongs to a shop order; its document comes from Commerce. "
+                    + "Skipping invoice generation.", paymentLog.getId());
+            return new InvoiceGenerationResult(findCommerceDocumentForLog(paymentLog), null, true);
+        }
         try {
             log.info("Starting invoice generation for userPlanId: {}, paymentLogId: {}, instituteId: {}",
                     userPlan.getId(), paymentLog.getId(), instituteId);
@@ -4049,7 +4082,9 @@ public class InvoiceService {
         for (String id : paymentLogIds) {
             PaymentLog pl = paymentLogRepository.findById(id).orElse(null);
             if (pl == null || pl.getUserPlan() == null || !"PAID".equals(pl.getPaymentStatus())
-                    || invoicePaymentLogMappingRepository.existsByPaymentLogId(pl.getId())) {
+                    || invoicePaymentLogMappingRepository.existsByPaymentLogId(pl.getId())
+                    // Commerce (WP-04): shop payments are never part of a course receipt.
+                    || isCommercePaymentLog(pl)) {
                 continue;
             }
             logs.add(pl);
@@ -4472,6 +4507,11 @@ public class InvoiceService {
     public InvoiceDTO getInvoiceById(String invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));
+        // Commerce (WP-04): a shop document is answered like an id that does not exist here;
+        // it is read through /commerce/v1.
+        if (invoice.getDocumentType() != null) {
+            throw new VacademyException("Invoice not found: " + invoiceId);
+        }
         return mapToDTO(invoice);
     }
 
@@ -4906,6 +4946,11 @@ public class InvoiceService {
                 throw new VacademyException("Payment log has no associated user plan");
             }
 
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            if (isCommercePaymentLog(paymentLog)) {
+                throw new VacademyException("This payment belongs to a shop order; its invoice is issued in Commerce");
+            }
+
             if (paymentLog.getPaymentStatus() == null || !paymentLog.getPaymentStatus().equals("PAID")) {
                 throw new VacademyException("Payment log status must be PAID. Current status: " +
                         paymentLog.getPaymentStatus());
@@ -4966,6 +5011,14 @@ public class InvoiceService {
             if (eligibleLogs.isEmpty()) {
                 return "No eligible payment logs found (must be PAID and not already invoiced) for order ID: "
                         + orderId;
+            }
+
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            for (PaymentLog eligibleLog : eligibleLogs) {
+                if (isCommercePaymentLog(eligibleLog)) {
+                    throw new VacademyException(
+                            "This order is a shop order; its invoice is issued in Commerce");
+                }
             }
 
             log.info("Found {} eligible payment logs for multi-package invoice", eligibleLogs.size());
@@ -5044,6 +5097,11 @@ public class InvoiceService {
 
             if (paymentLog.getUserPlan() == null) {
                 throw new VacademyException("Payment log has no associated user plan");
+            }
+
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            if (isCommercePaymentLog(paymentLog)) {
+                throw new VacademyException("This payment belongs to a shop order; its invoice is issued in Commerce");
             }
 
             if (paymentLog.getPaymentStatus() == null || !paymentLog.getPaymentStatus().equals("PAID")) {

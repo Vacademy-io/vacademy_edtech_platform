@@ -106,4 +106,13 @@ class EvaluationAccessValidatorStaffTest {
         assertThrows(ForbiddenException.class, () -> validator.requireActiveInstitute("inst-1", null));
         assertThrows(ForbiddenException.class, () -> validator.requireActiveInstitute("inst-1", " "));
     }
+
+    @Test
+    void shopOnlyStaffAreNotCourseStaff() {
+        assertThrows(ForbiddenException.class,
+                () -> validator.requireStaffRole(principal(false, "COMMERCE_POS_CASHIER")));
+        assertThrows(ForbiddenException.class,
+                () -> validator.requireStaffRole(principal(false, "COMMERCE_STORE_MANAGER", "commerce_accountant")));
+        assertDoesNotThrow(() -> validator.requireStaffRole(principal(false, "TEACHER", "COMMERCE_POS_CASHIER")));
+    }
 }

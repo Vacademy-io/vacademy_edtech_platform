@@ -73,6 +73,9 @@ public class UserPlanService {
     private UserPlanRepository userPlanRepository;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
+
+    @Autowired
     private PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
 
     @Autowired
@@ -547,7 +550,10 @@ public class UserPlanService {
         if (!cpoPlan
                 && UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(saved.getStatus())
                 && paymentPlan != null && paymentPlan.getActualPrice() > 0
-                && enrollInvite != null && enrollInvite.getInstituteId() != null) {
+                && enrollInvite != null && enrollInvite.getInstituteId() != null
+                // Shop orders stay out of the learner fee ledger: the accrual runs in its own
+                // transaction and nothing reverses it for an abandoned order.
+                && !commercePlans.isCommerceInvite(enrollInvite)) {
             // Regional lock: accrue in the currency and list price the learner was quoted.
             // Unlocked (every plan unless regional pricing is on): the plan's own price, as before.
             boolean regionallyPriced = RegionalPriceLock.isLocked(saved);
@@ -673,7 +679,8 @@ public class UserPlanService {
      *       order was queued behind the first order's charge, which never ends;</li>
      *   <li>a repeat purchase of a lifetime item (neither plan has an end date) where the course
      *       allows buying again ({@code COURSE_SETTING.data.commerce.allowRepeatPurchase}): the
-     *       queued plan waited forever, paid but never active, and its stock never moved.</li>
+     *       queued plan waited forever, paid but never active, and its stock never moved;</li>
+     *   <li>shop products (package type PRODUCT): a plan is an order line, not a period.</li>
      * </ul>
      * Used by both createUserPlan and applyOperationsOnFirstPayment so they agree. The policy
      * calls never throw; on any doubt they answer false, which keeps today's stacking.
@@ -682,6 +689,10 @@ public class UserPlanService {
             UserPlan existingPlan) {
         if (enrollInvite == null || existingPlan == null) {
             return true;
+        }
+        if (commercePlans.isCommerceInvite(enrollInvite)) {
+            // A shop product is bought again as often as the buyer likes; every order line is its own plan.
+            return false;
         }
         if (repeatPurchasePolicyService.isChargeItem(enrollInvite)) {
             logger.info("Not stacking on plan {}: invite {} is a charge item (shipping / deposit)",
@@ -801,6 +812,10 @@ public class UserPlanService {
      */
     public void ensureEnrollmentExists(UserPlan userPlan) {
         try {
+            if (commercePlans.isCommercePlan(userPlan)) {
+                // A shop order line has no enrolment row by design.
+                return;
+            }
             EnrollInvite enrollInvite = userPlan.getEnrollInvite();
             if (enrollInvite == null) {
                 return;
@@ -833,8 +848,51 @@ public class UserPlanService {
         }
     }
 
+    /**
+     * Activation of a shop order line: the plan becomes ACTIVE and its stock hold settles.
+     * Nothing else happens — no enrolment row, no stacking, no credentials mail, no enrolment
+     * workflow or notification. Idempotent: an ACTIVE plan is left alone.
+     */
+    public void activateCommercePlan(UserPlan userPlan) {
+        String status = userPlan.getStatus();
+        if (UserPlanStatusEnum.ACTIVE.name().equals(status)) {
+            return;
+        }
+        if (!UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(status)
+                && !UserPlanStatusEnum.PAYMENT_FAILED.name().equals(status)
+                && !UserPlanStatusEnum.CANCELED.name().equals(status)) {
+            logger.warn("Commerce UserPlan {} is {} — not activated on payment", userPlan.getId(), status);
+            return;
+        }
+        userPlan.setStatus(UserPlanStatusEnum.ACTIVE.name());
+        userPlanRepository.save(userPlan);
+        // null: only the plan's own checkout hold settles; no session takes stock a second time.
+        stockHoldService.onPlanActivated(userPlan, null);
+        logger.info("Commerce UserPlan {} activated", userPlan.getId());
+    }
+
+    /**
+     * A payment attempt on a shop order line failed: the plan goes from PENDING_FOR_PAYMENT to
+     * PAYMENT_FAILED and nothing else happens (no abandoned-cart entry, no mail, no workflow).
+     * The stock hold stays; a later capture activates the plan through
+     * {@link #activateCommercePlan}. Any other status is left alone.
+     */
+    public void markCommercePlanPaymentFailed(UserPlan userPlan) {
+        if (!UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(userPlan.getStatus())) {
+            return;
+        }
+        userPlan.setStatus(UserPlanStatusEnum.PAYMENT_FAILED.name());
+        userPlanRepository.save(userPlan);
+        logger.info("Commerce UserPlan {} marked PAYMENT_FAILED", userPlan.getId());
+    }
+
     public void applyOperationsOnFirstPayment(UserPlan userPlan) {
         logger.info("Applying operations on first payment for UserPlan ID={}", userPlan.getId());
+
+        if (commercePlans.isCommercePlan(userPlan)) {
+            activateCommercePlan(userPlan);
+            return;
+        }
 
         if (UserPlanStatusEnum.ACTIVE.name().equals(userPlan.getStatus())) {
             // Already ACTIVE does NOT mean already enrolled. Nitika Maheshwari's annual plan
@@ -1581,6 +1639,7 @@ public class UserPlanService {
         if (CollectionUtils.isEmpty(userPlans)) {
             throw new IllegalArgumentException("No user plans found for provided ids.");
         }
+        userPlans.forEach(plan -> commercePlans.refuseCommercePlan(plan, "change the plan status"));
 
         userPlans.forEach(plan -> plan.setStatus(normalizedStatus));
         userPlanRepository.saveAll(userPlans);
@@ -1611,8 +1670,10 @@ public class UserPlanService {
     public UserPlanDTO adminChangePlan(String userPlanId, String instituteId,
             vacademy.io.admin_core_service.features.plan_change.dto.PlanChangeRequestDTO request,
             vacademy.io.common.auth.model.CustomUserDetails adminDetails) {
+        UserPlan plan = findById(userPlanId);
+        commercePlans.refuseCommercePlan(plan, "change the plan");
         UserPlan updated = planChangeService.adminApplyChange(
-                findById(userPlanId), instituteId, request, adminDetails);
+                plan, instituteId, request, adminDetails);
         return mapToDTO(updated);
     }
 
@@ -1692,6 +1753,8 @@ public class UserPlanService {
 
         UserPlan userPlan = userPlanRepository.findById(userPlanId)
                 .orElseThrow(() -> new RuntimeException("UserPlan not found with ID: " + userPlanId));
+        // The stock give-back below is wrong once goods have shipped; Commerce cancels its own lines.
+        commercePlans.refuseCommercePlan(userPlan, "cancel the plan");
 
         userPlan.setStatus(force ? UserPlanStatusEnum.TERMINATED.name() : UserPlanStatusEnum.CANCELED.name());
         // Cancelling has to stop autopay too. Leaving auto_renewal_enabled = true meant a

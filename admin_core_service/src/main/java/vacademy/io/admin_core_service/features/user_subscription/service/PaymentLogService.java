@@ -119,6 +119,16 @@ public class PaymentLogService {
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
+
+    /**
+     * Commerce payments (WP-12). Not present in tests that build this class by hand, so every
+     * use goes through {@link #isCommerceOrderLog}, which is null-safe.
+     */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentHooks commercePaymentHooks;
+
     // Institute default currency for payments recorded without one.
     @Autowired
     private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService paymentSettingService;
@@ -260,6 +270,14 @@ public class PaymentLogService {
             return new RuntimeException("Payment log not found with ID: " + paymentLogId);
         });
 
+        // Commerce: the log of a shop order turns PAID only through markCommerceLogsPaid, after
+        // the gateway order and the amount were compared with the order; this path refuses it
+        // and writes nothing. No query for a log without a payment group.
+        if (PaymentStatusEnum.PAID.name().equals(paymentStatus) && isCommerceOrderLog(paymentLog)) {
+            commercePaymentHooks.refuseUnverified(paymentLogId, paymentStatus, null);
+            return;
+        }
+
         paymentLog.setStatus(status);
         if (StringUtils.hasText(paymentStatus)) {
             paymentLog.setPaymentStatus(paymentStatus);
@@ -379,6 +397,11 @@ public class PaymentLogService {
             return;
         }
         try {
+            // Inside the try: this read is best-effort like the write below.
+            if (commercePlans.isCommercePlan(paymentLog.getUserPlan())) {
+                // Shop orders stay out of the learner fee ledger; no debit was accrued for them either.
+                return;
+            }
             userAccountLedgerService.recordCreditPayment(
                     paymentLog.getUserId(), instituteId,
                     java.math.BigDecimal.valueOf(paymentLog.getPaymentAmount()),
@@ -481,6 +504,13 @@ public class PaymentLogService {
     }
 
     private void handlePostPaymentLogicForSyncPayment(PaymentLog paymentLog, String instituteId) {
+        if (isCommerceOrderLog(paymentLog)
+                || (paymentLog.getUserPlan() != null && commercePlans.isCommercePlan(paymentLog.getUserPlan()))) {
+            // Shop order line: activation only. No enrolment clean-up, fee-ledger credit or
+            // course invoice; Commerce issues its own documents.
+            handleCommercePaid(paymentLog);
+            return;
+        }
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
         if (paymentLog.getUserPlan() == null) {
@@ -709,6 +739,16 @@ public class PaymentLogService {
             }
         }
 
+        // Commerce: the logs of a shop order change status only through the commerce branch of
+        // the webhook, which compares the gateway order and the amount with the order
+        // (markCommerceLogsPaid / markCommerceLogsFailed); this path refuses them and writes
+        // nothing. A course log has no payment group, or a group that is no commerce order: no
+        // query, or one key read.
+        if (commercePaymentHooks != null && commercePaymentHooks.anyCommerceLog(paymentLogs)) {
+            commercePaymentHooks.refuseUnverified(orderId, paymentStatus, instituteId);
+            return;
+        }
+
         // --- Multi-Package Logic: Check for child logs if it's a parent transaction
         // ---
         List<PaymentLog> allLogsToUpdate = new ArrayList<>(paymentLogs);
@@ -842,6 +882,14 @@ public class PaymentLogService {
      * Handles both PAID and FAILED statuses for ABANDONED_CART entry management.
      */
     private void handlePostPaymentLogic(PaymentLog paymentLog, String paymentStatus, String instituteId) {
+        // Commerce: a shop order line gets activation (or the failed mark) and nothing else: no
+        // live-activity row, abandoned-cart clean-up, fee-ledger credit, enrolment, course
+        // invoice, PAYMENT_SUCCESS workflow or confirmation mail.
+        if (isCommerceOrderLog(paymentLog)) {
+            handleCommerceStatus(paymentLog, paymentStatus);
+            return;
+        }
+
         // Live activity feed, recorded here rather than at the webhook layer.
         //
         // This method runs ONCE per genuine status transition: updatePaymentLogsByOrderId
@@ -2380,6 +2428,14 @@ public class PaymentLogService {
                 .orElseThrow(() -> new VacademyException(
                         "Payment log not found with ID: " + dto.getPaymentLogId()));
 
+        // Commerce: the courier and tracking number of a shop order are written only by the
+        // commerce shipment code; they are never set from here. A course or book-store payment
+        // has no commerce row and is updated as before.
+        if (paymentLog.getUserPlan() != null && commercePlans.isCommercePlan(paymentLog.getUserPlan())) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "This payment belongs to a shop order; its tracking is managed in Commerce.");
+        }
+
         String previousTrackingId = paymentLog.getTrackingId();
 
         // Set tracking fields (nullable — tracking info may not be available yet)
@@ -2472,6 +2528,156 @@ public class PaymentLogService {
                     paymentLogId, e.getMessage());
             return null;
         }
+    }
+
+    // ── Commerce (shop orders), WP-12 ────────────────────────────────────────
+
+    /** True when the log is a line of a commerce order. No query for a log without a group. */
+    private boolean isCommerceOrderLog(PaymentLog paymentLog) {
+        return commercePaymentHooks != null && paymentLog != null
+                && StringUtils.hasText(paymentLog.getPaymentGroupId())
+                && commercePaymentHooks.isCommerceLog(paymentLog);
+    }
+
+    private void handleCommerceStatus(PaymentLog paymentLog, String paymentStatus) {
+        if (PaymentStatusEnum.PAID.name().equals(paymentStatus)) {
+            handleCommercePaid(paymentLog);
+        } else if (PaymentStatusEnum.FAILED.name().equals(paymentStatus) && paymentLog.getUserPlan() != null) {
+            // The order stays open and its stock held: a later capture on the same gateway
+            // order still pays it.
+            userPlanService.markCommercePlanPaymentFailed(paymentLog.getUserPlan());
+        }
+    }
+
+    /** Plan activation in this transaction, then one call to the order code after commit. */
+    private void handleCommercePaid(PaymentLog paymentLog) {
+        if (paymentLog.getUserPlan() != null) {
+            userPlanService.activateCommercePlan(paymentLog.getUserPlan());
+        }
+        if (isCommerceOrderLog(paymentLog)) {
+            commercePaymentHooks.afterPaidCommitted(paymentLog.getId());
+        }
+    }
+
+    /**
+     * Claims exactly the given logs of a commerce order PAID (the same conditional UPDATE the
+     * webhook uses, so a replay or the sibling event claims nothing). Logs are updated in the
+     * order of their ids, so two deliveries for one order cannot deadlock. A log that is not a
+     * line of a commerce order is left alone.
+     *
+     * <p>Nothing else happens here, on purpose. The plans are activated and the stock settled
+     * by the order code ({@code CommerceOrderService.ensurePaidOrderConfirmed}), which the
+     * caller runs after this transaction has returned its connection. Work registered to run
+     * after this commit would open a second connection while this one is still held, and a
+     * burst of payments would then wait on the pool with every thread holding one.
+     *
+     * <p>The caller has already tied the payment to the order (gateway order and amount, or a
+     * recorded COD remittance); this method checks nothing about the money.
+     *
+     * @return the ids this call claimed; empty on a replay
+     */
+    @Transactional
+    public List<String> markCommerceLogsPaid(Collection<String> logIds) {
+        List<String> claimed = new ArrayList<>();
+        for (PaymentLog paymentLog : commerceLogsInIdOrder(logIds)) {
+            int updated = paymentLogRepository.markPaidIfNotAlready(paymentLog.getId(),
+                    PaymentStatusEnum.PAID.name(), PaymentLogStatusEnum.SUCCESS.name());
+            if (updated == 0) {
+                continue;
+            }
+            paymentLog.setPaymentStatus(PaymentStatusEnum.PAID.name());
+            paymentLog.setStatus(PaymentLogStatusEnum.SUCCESS.name());
+            claimed.add(paymentLog.getId());
+        }
+        return claimed;
+    }
+
+    /**
+     * Marks the given logs of a commerce order FAILED unless they are PAID, and their plans
+     * PAYMENT_FAILED. The order is not cancelled and its holds are not released.
+     *
+     * @return the ids this call changed
+     */
+    @Transactional
+    public List<String> markCommerceLogsFailed(Collection<String> logIds) {
+        List<String> changed = new ArrayList<>();
+        for (PaymentLog paymentLog : commerceLogsInIdOrder(logIds)) {
+            int updated = paymentLogRepository.updatePaymentStatusIfNotPaid(paymentLog.getId(),
+                    PaymentStatusEnum.FAILED.name(), PaymentStatusEnum.PAID.name());
+            if (updated == 0) {
+                continue;
+            }
+            paymentLog.setPaymentStatus(PaymentStatusEnum.FAILED.name());
+            if (paymentLog.getUserPlan() != null) {
+                userPlanService.markCommercePlanPaymentFailed(paymentLog.getUserPlan());
+            }
+            changed.add(paymentLog.getId());
+        }
+        return changed;
+    }
+
+    private List<PaymentLog> commerceLogsInIdOrder(Collection<String> logIds) {
+        List<PaymentLog> logs = new ArrayList<>();
+        if (logIds == null || logIds.isEmpty() || commercePaymentHooks == null) {
+            return logs;
+        }
+        Set<String> ids = new java.util.TreeSet<>();
+        for (String id : logIds) {
+            if (StringUtils.hasText(id)) {
+                ids.add(id);
+            }
+        }
+        Map<String, Boolean> commerceGroups = new HashMap<>();
+        for (PaymentLog paymentLog : paymentLogRepository.findAllById(ids)) {
+            String group = paymentLog.getPaymentGroupId();
+            boolean commerce = StringUtils.hasText(group) && commerceGroups.computeIfAbsent(group,
+                    g -> commercePaymentHooks.isCommerceLog(paymentLog));
+            if (!commerce) {
+                log.error("COMMERCE_ALERT payment log {} is not a line of a commerce order; left unchanged",
+                        paymentLog.getId());
+                continue;
+            }
+            logs.add(paymentLog);
+        }
+        logs.sort(java.util.Comparator.comparing(PaymentLog::getId));
+        return logs;
+    }
+
+    /**
+     * Writes {@code payment_group_id} on the logs of a commerce order, whatever their number:
+     * an order of one line is a group too, because the order is found by its group
+     * ({@link #assignPaymentGroup} leaves fewer than two rows alone). A log that already
+     * belongs to another group keeps it.
+     *
+     * @return the rows that now carry {@code groupId}
+     */
+    @Transactional
+    public int assignCommercePaymentGroup(String groupId, Collection<String> logIds) {
+        if (!StringUtils.hasText(groupId) || logIds == null || logIds.isEmpty()) {
+            return 0;
+        }
+        Set<String> ids = new java.util.LinkedHashSet<>();
+        for (String id : logIds) {
+            if (StringUtils.hasText(id)) {
+                ids.add(id);
+            }
+        }
+        int grouped = 0;
+        for (PaymentLog pl : paymentLogRepository.findAllById(ids)) {
+            if (groupId.equals(pl.getPaymentGroupId())) {
+                grouped++;
+                continue;
+            }
+            if (StringUtils.hasText(pl.getPaymentGroupId())) {
+                log.warn("Payment log {} already belongs to payment group {}; not moving it to {}",
+                        pl.getId(), pl.getPaymentGroupId(), groupId);
+                continue;
+            }
+            pl.setPaymentGroupId(groupId);
+            paymentLogRepository.save(pl);
+            grouped++;
+        }
+        return grouped;
     }
 
     /**

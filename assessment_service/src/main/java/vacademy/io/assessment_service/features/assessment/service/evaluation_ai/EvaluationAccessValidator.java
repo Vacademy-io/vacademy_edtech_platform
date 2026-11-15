@@ -106,15 +106,18 @@ public class EvaluationAccessValidator {
         }
     }
 
+    /** Shop staff (Commerce) are not course staff: these names never count towards "is staff". */
+    private static final Set<String> COMMERCE_ROLE_NAMES = Set.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
     /**
      * Assert the caller is institute staff, for AI-evaluation mutations (trigger,
      * stop, review override, rubric writes, copy intake). Membership alone lets a
      * STUDENT of the institute through. Call after the membership/ownership check;
      * authorities are already scoped to the request's institute.
      *
-     * <p>Mirrors admin_core {@code InstituteAccessValidator.requireStaffAccess}, minus
-     * its root-user bypass (learners can be root users, and this validator has never
-     * honoured it). The authority set mixes role names with permission names, so:
+     * <p>Mirrors admin_core {@code InstituteAccessValidator.requireStaffAccess}; the root
+     * flag is not consulted. The authority set mixes role names with permission names, so:
      * a learner role (STUDENT/PARENT/GUARDIAN) without ADMIN or EVALUATOR is refused
      * even when it also carries TEACHER, which self-signup grants learners when
      * {@code allowLearnersToCreateCourses} is on. Any other non-empty set is staff:
@@ -132,6 +135,7 @@ public class EvaluationAccessValidator {
                 }
             }
         }
+        authorities.removeAll(COMMERCE_ROLE_NAMES);
         boolean learner = authorities.stream().anyMatch(LEARNER_ROLE_NAMES::contains);
         if (authorities.isEmpty()
                 || (learner && !authorities.contains("ADMIN") && !authorities.contains("EVALUATOR"))) {

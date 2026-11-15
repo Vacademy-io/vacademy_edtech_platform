@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -42,7 +43,8 @@ public class AdmissionCourseDao {
         return "(EXISTS (SELECT 1 FROM user_plan up"
                 + " JOIN enroll_invite ei ON ei.id = up.enroll_invite_id AND ei.institute_id = :instituteId"
                 + " WHERE up.user_id = " + person
-                + " AND up.status NOT IN " + ENDED_PLAN + ")"
+                + " AND up.status NOT IN " + ENDED_PLAN
+                + " AND" + CommercePlans.NOT_COMMERCE_PLAN + ")"
                 + " OR EXISTS (SELECT 1 FROM student_session_institute_group_mapping s"
                 + " JOIN package_session ps ON ps.id = s.package_session_id"
                 + " JOIN package p ON p.id = ps.package_id"

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.capabilities.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.capabilities.catalog.CapabilityCatalog;
 import vacademy.io.admin_core_service.features.capabilities.catalog.CapabilityCatalogRegistry;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
@@ -34,7 +35,11 @@ public class CapabilityQueryService {
         return out;
     }
 
-    /** {mode, catalog_version, modules, features, display_settings_version}: effective state. */
+    /**
+     * {mode, catalog_version, modules, features, opt_in_modules, display_settings_version}:
+     * effective state. Modules listed in opt_in_modules (commerce) are reported from their
+     * rows in every mode, so a LEGACY institute sees them off until they are granted.
+     */
     public Map<String, Object> me(String instituteId) {
         Institute institute = instituteRepository.findById(instituteId)
                 .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Institute not found."));
@@ -45,6 +50,8 @@ public class CapabilityQueryService {
         out.put("catalog_version", registry.version());
         out.put("modules", effective.modules());
         out.put("features", effective.features());
+        out.put("opt_in_modules", registry.modules().stream()
+                .filter(CapabilityCatalog.Module::optIn).map(CapabilityCatalog.Module::key).toList());
         out.put("display_settings_version", DisplaySettingsFormat.displaySettingsVersion(
                 InstituteSettingWriter.settingNodes(institute.getSetting())));
         return out;

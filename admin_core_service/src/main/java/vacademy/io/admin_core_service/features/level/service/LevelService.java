@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import vacademy.io.admin_core_service.features.group.service.GroupService;
 import vacademy.io.admin_core_service.features.learner_invitation.enums.LearnerInvitationSourceTypeEnum;
 import vacademy.io.admin_core_service.features.learner_invitation.services.LearnerInvitationService;
@@ -49,6 +51,7 @@ public class LevelService {
     private final PackageSessionRepository packageSessionRepository;
     private final LearnerInvitationService learnerInvitationService;
     private final GroupService groupService;
+    private final CommerceLegacyGuard commerceLegacyGuard;
 
     public Level createOrAddLevel(String id, boolean newLevel, String levelName, Integer durationInDays, String thumbnailFileId,String instituteId) {
         Level level = null;
@@ -92,6 +95,7 @@ public class LevelService {
         if (optionalPackageEntity.isEmpty()) {
             throw new VacademyException("Package not found");
         }
+        commerceLegacyGuard.refuseProduct(optionalPackageEntity.get(), "add a level");
         Optional<Session> optionalSession = sessionRepository.findById(sessionId);
         if (optionalSession.isEmpty()) {
             throw new VacademyException("Session not found");
@@ -182,7 +186,8 @@ public class LevelService {
 
     /**
      * Who may delete levels or sessions: a caller that sent the clientId header and holds, in that
-     * institute, at least one role other than the learner ones. The authorities on the principal
+     * institute, at least one role other than the learner ones and the commerce (shop staff) ones.
+     * The authorities on the principal
      * are loaded for the clientId institute only, so a role (or the root flag) the caller has in
      * another institute counts for nothing here. Returns the trimmed institute id.
      */
@@ -201,7 +206,9 @@ public class LevelService {
                 if (authority == null || !StringUtils.hasText(authority.getAuthority())) {
                     continue;
                 }
-                if (!LEARNER_ROLE_NAMES.contains(authority.getAuthority().trim().toUpperCase())) {
+                // A commerce role is shop staff: it is checked on /commerce/v1 and opens nothing here.
+                if (!LEARNER_ROLE_NAMES.contains(authority.getAuthority().trim().toUpperCase())
+                        && !InstituteAccessValidator.isCommerceRoleName(authority.getAuthority())) {
                     staffRole = true;
                     break;
                 }
@@ -268,6 +275,8 @@ public class LevelService {
 
 
     public void addOrUpdateLevel(AddLevelWithSessionDTO addLevelWithSessionDTO,Session session,PackageEntity packageEntity,String instituteId,CustomUserDetails user){
+        // Every variant of a product sits on level and session DEFAULT; the finder below expects one row.
+        commerceLegacyGuard.refuseProduct(packageEntity, "edit levels");
         Level level = createOrAddLevel(addLevelWithSessionDTO.getId(), addLevelWithSessionDTO.getNewLevel(), addLevelWithSessionDTO.getLevelName(), addLevelWithSessionDTO.getDurationInDays(), addLevelWithSessionDTO.getThumbnailFileId(),instituteId);
         if (addLevelWithSessionDTO.isNewPackageSession()) {
             // Idempotency guard: the (package, session, level) triple must be unique.

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import vacademy.io.admin_core_service.features.course.dto.AddFacultyToCourseDTO;
 import vacademy.io.admin_core_service.features.enroll_invite.service.DefaultEnrollInviteService;
 import vacademy.io.admin_core_service.features.faculty.service.FacultyService;
@@ -57,6 +58,7 @@ public class SessionService {
     private final DefaultEnrollInviteService defaultEnrollInviteService;
     private final FacultyService facultyService;
     private final PackageSessionService packageSessionService;
+    private final CommerceLegacyGuard commerceLegacyGuard;
 
     public Session createOrGetSession(AddSessionDTO sessionDTO) {
         Session session = null;
@@ -130,6 +132,8 @@ public class SessionService {
 
     @Transactional
     public String editSession(EditSessionDTO editSessionDTO, String sessionId, CustomUserDetails user) {
+        refuseVariantStatusChange(editSessionDTO.getCommaSeparatedHiddenPackageSessionIds());
+        refuseVariantStatusChange(editSessionDTO.getCommaSeparatedVisiblePackageSessionIds());
         Session session = getSessionById(sessionId);
         updateSessionFields(session, editSessionDTO);
         sessionRepository.save(session);
@@ -145,6 +149,13 @@ public class SessionService {
         }
         if (editSessionDTO.getStatus() != null && !editSessionDTO.getStatus().trim().isEmpty()) {
             session.setStatus(editSessionDTO.getStatus());
+        }
+    }
+
+    /** A variant's legacy status follows its Commerce status; the batch hide and show lists must not move it. */
+    private void refuseVariantStatusChange(String commaSeparatedIds) {
+        if (commaSeparatedIds != null && !commaSeparatedIds.trim().isEmpty()) {
+            commerceLegacyGuard.refuseVariantSessions(List.of(commaSeparatedIds.split(",")), "hide or show it as a batch");
         }
     }
 
@@ -238,6 +249,7 @@ public class SessionService {
 
         PackageEntity packageEntity = packageRepository.findById(levelDTO.getPackageId())
                 .orElseThrow(() -> new VacademyException("Package not found"));
+        commerceLegacyGuard.refuseProduct(packageEntity, "add a session");
         Group group = groupService.addGroup(levelDTO.getGroup());
         PackageSession packageSession = new PackageSession();
         packageSession.setSession(session);

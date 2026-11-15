@@ -105,6 +105,7 @@ public class AdminManualRenewalService {
     private final StudentSessionRepository studentSessionRepository;
     private final PaymentSettingService paymentSettingService;
     private final PaymentDateDefaults paymentDateDefaults;
+    private final vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
 
     @Transactional(readOnly = true)
     public ManualRenewalPreviewDTO preview(String userPlanId, String instituteId) {
@@ -136,6 +137,7 @@ public class AdminManualRenewalService {
             throw new VacademyException("Add a remark explaining this renewal");
         }
         UserPlan plan = loadForInstitute(userPlanId, instituteId);
+        commercePlans.refuseCommercePlan(plan, "renew the plan");
         String reason = notRenewableReason(plan);
         if (reason != null) {
             throw new VacademyException(reason);
@@ -310,6 +312,7 @@ public class AdminManualRenewalService {
             throw new VacademyException("Add a remark explaining why the end date is changing");
         }
         UserPlan plan = loadForInstitute(userPlanId, instituteId);
+        commercePlans.refuseCommercePlan(plan, "change the end date");
         if (!UserPlanStatusEnum.ACTIVE.name().equalsIgnoreCase(plan.getStatus())) {
             throw new VacademyException("Only an active membership's end date can be changed. "
                     + "Use Renew manually to bring a lapsed membership back.");

@@ -61,6 +61,7 @@ public class PaymentPlanMarkdownService {
     private final PackageSessionLearnerInvitationToPaymentOptionRepository psLinkRepository;
     private final PaymentPlanRepository paymentPlanRepository;
     private final InstituteRepository instituteRepository;
+    private final vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
 
     @Transactional
     public MarkdownResponseDTO applyMarkdown(ApplyMarkdownRequestDTO request, CustomUserDetails user) {
@@ -174,6 +175,8 @@ public class PaymentPlanMarkdownService {
             Function<PaymentPlan, Double> newActualPriceFn) {
 
         Set<String> uniqueIds = new LinkedHashSet<>(rawPackageSessionIds);
+        // A shop price changes only in Commerce, where the change is audited.
+        commerceLegacyGuard.refuseVariantSessions(uniqueIds, "mark its price down here");
 
         List<PackageSessionLearnerInvitationToPaymentOption> psLinks =
                 psLinkRepository.findActiveByPackageSessionIdsAndInstituteId(

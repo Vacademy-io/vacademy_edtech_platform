@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vacademy.io.auth_service.feature.admin_core_service.dto.InstituteSignupPolicy;
+import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
 import vacademy.io.auth_service.feature.admin_core_service.service.InstitutePolicyService;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
 import vacademy.io.auth_service.feature.auth.dto.RegisterRequest;
@@ -463,8 +464,20 @@ public class AuthService {
         return wanted + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
+    /**
+     * Roles for the create-user paths. A commerce role is never granted here: it is dropped at
+     * the write. Shop staff are added from the Teams screen only.
+     */
     private List<Role> getAllUserRoles(List<String> userRoles) {
-        return roleRepository.findByNameIn(userRoles);
+        return roleRepository.findByNameIn(withoutCommerceRoles(userRoles));
+    }
+
+    static List<String> withoutCommerceRoles(List<String> roleNames) {
+        if (roleNames == null || roleNames.stream().noneMatch(AuthConstants::isCommerceRole)) {
+            return roleNames;
+        }
+        log.warn("Dropped commerce role(s) from a create-user request: they are granted from the team screen only");
+        return roleNames.stream().filter(name -> !AuthConstants.isCommerceRole(name)).toList();
     }
 
     /**

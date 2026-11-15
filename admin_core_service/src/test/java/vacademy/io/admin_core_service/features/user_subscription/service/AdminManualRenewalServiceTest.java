@@ -72,6 +72,7 @@ class AdminManualRenewalServiceTest {
     private PackageSessionRepository packageSessions;
     private StudentSessionRepository studentSessions;
     private AdminManualRenewalService service;
+    private vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
     private UserPlan plan;
     private StudentSessionInstituteGroupMapping lapsed;
     private CustomUserDetails admin;
@@ -93,10 +94,11 @@ class AdminManualRenewalServiceTest {
         studentSessions = mock(StudentSessionRepository.class);
         PaymentDateDefaults paymentDates = mock(PaymentDateDefaults.class);
         when(paymentDates.today(any())).thenReturn(new java.util.Date());
+        commercePlans = mock(vacademy.io.admin_core_service.features.commerce.common.CommercePlans.class);
         service = new AdminManualRenewalService(planRepo, mappingRepo, paymentLogService, paymentLogRepo,
                 offline, ledger, access, timeline, invoices, auth, invitations, packageSessions, studentSessions,
                 new PaymentSettingService(mock(InstituteRepository.class), new ObjectMapper()),
-                paymentDates);
+                paymentDates, commercePlans);
 
         EnrollInvite invite = new EnrollInvite();
         invite.setInstituteId(INST);
@@ -455,6 +457,23 @@ class AdminManualRenewalServiceTest {
         when(mappingRepo.findByUserPlanIdAndStatus("up-1", "ACTIVE")).thenReturn(List.of(active));
         when(mappingRepo.findByUserPlanIdAndStatus("up-1", "INACTIVE")).thenReturn(List.of());
         return active;
+    }
+
+    @Test
+    @DisplayName("refused: a shop order line is neither renewed nor given an end date")
+    void refusesACommercePlan() {
+        doThrow(new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, "shop order line"))
+                .when(commercePlans).refuseCommercePlan(eq(plan), anyString());
+        String statusBefore = plan.getStatus();
+        Date endBefore = plan.getEndDate();
+
+        assertThrows(VacademyException.class, () -> service.renew("up-1", INST, req(431), admin));
+        assertThrows(VacademyException.class, () -> service.changeEndDate("up-1", INST,
+                endDateReq(new Date(System.currentTimeMillis() + 30 * DAY)), admin));
+
+        assertEquals(statusBefore, plan.getStatus());
+        assertEquals(endBefore, plan.getEndDate());
+        verify(planRepo, never()).save(any());
     }
 
     private static ChangePlanEndDateRequestDTO endDateReq(Date newEnd) {

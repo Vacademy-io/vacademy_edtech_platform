@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.auth_service.feature.user.dto.ModifyUserRolesDTO;
 import vacademy.io.auth_service.feature.user.dto.UserRoleFilterDTO;
 import vacademy.io.auth_service.feature.user.repository.UserInstituteRoleRepository;
+import vacademy.io.auth_service.feature.user.service.AdminRoleGrantGuard;
 import vacademy.io.auth_service.feature.user.service.RoleService;
 import vacademy.io.common.auth.dto.UserWithRolesDTO;
 import vacademy.io.common.auth.enums.UserRoleStatus;
@@ -78,12 +79,15 @@ public class RoleInternalController {
                                                                  @RequestParam String userId,
                                                                  @RequestParam String status,
                                                                  @RequestBody List<String> roles) {
+        AdminRoleGrantGuard.refuseCommerceRolesWithoutCaller(roles);
         int n = roleService.updateRoleStatusForRoles(instituteId, userId, roles, status);
         return ResponseEntity.ok(Map.of("updated", n));
     }
 
     @PostMapping("/add-user-roles")
     public ResponseEntity<String> addUserRolesInternal(@RequestBody ModifyUserRolesDTO addRolesToUserDTO) {
+        AdminRoleGrantGuard.refuseCommerceRolesWithoutCaller(
+                addRolesToUserDTO == null ? null : addRolesToUserDTO.getRoles());
         String response = roleService.addRolesToUser(
                 addRolesToUserDTO,
                 Optional.of(UserRoleStatus.ACTIVE.name()),
