@@ -43,6 +43,8 @@ class CommercePaymentFetchServiceTest {
     private static final String INSTITUTE = "inst-1";
     private static final String GW = "order_gw_1";
     private static final Date NOW = Date.from(Instant.parse("2026-11-15T10:00:00Z"));
+    /** What the claim writes as the next fetch, should the run never write its result. */
+    private static final Date CLAIM = new Date(NOW.getTime() + 3 * 60_000L);
 
     private CommercePaymentGateway gateway;
     private CommercePaymentConfirmService confirmService;
@@ -65,6 +67,8 @@ class CommercePaymentFetchServiceTest {
         row.setAmountMinor(105000L);
         row.setCurrency("INR");
         when(gatewayOrders.findById("gw-row-1")).thenReturn(Optional.of(row));
+        when(gatewayOrders.claimFetch(eq("gw-row-1"), eq(NOW), eq(CLAIM),
+                eq(new Date(NOW.getTime() - 3 * 60_000L)))).thenReturn(1);
         logs = new ListAppender<>();
         logs.start();
         ((Logger) LoggerFactory.getLogger(CommercePaymentFetchService.class)).addAppender(logs);
@@ -109,7 +113,8 @@ class CommercePaymentFetchServiceTest {
         verify(confirmService).confirmPaid(row, INSTITUTE, 105000L, "INR", "pay_1", "fetch");
         assertEquals(1, count("COMMERCE_ALERT lost_webhook_recovered institute=inst-1 order=order-1 "
                 + "gateway_order=order_gw_1 payment=pay_1"));
-        verify(gatewayOrders).recordFetch(eq("gw-row-1"), eq(NOW), eq(new Date(NOW.getTime() + 120_000L)), isNull());
+        verify(gatewayOrders).recordFetch(eq("gw-row-1"), eq(NOW), eq(new Date(NOW.getTime() + 120_000L)), isNull(),
+                eq(CLAIM));
     }
 
     @Test
@@ -182,13 +187,13 @@ class CommercePaymentFetchServiceTest {
     void aGatewayErrorIsAskedAgainInAMinute_andTheFinalFetchIsNotMarkedDone() {
         when(gateway.fetchPayments(INSTITUTE, GW)).thenThrow(new CommercePaymentGatewayException(
                 CommercePaymentGatewayException.UNAVAILABLE, "The payment gateway did not answer"));
-        CommercePaymentGuard.DueFetch nearEnd = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() + 30_000L), null,
+        CommercePaymentGuard.DueFetch inGrace = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() - 40_000L), null,
                 null);
 
-        assertEquals(Outcome.ERROR, service.fetch(nearEnd, Kind.FINAL, NOW));
+        assertEquals(Outcome.ERROR, service.fetch(inGrace, Kind.FINAL, NOW));
 
-        verify(gatewayOrders).recordFetchError("gw-row-1", NOW, new Date(NOW.getTime() + 60_000L));
-        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any());
+        verify(gatewayOrders).recordFetchError("gw-row-1", NOW, new Date(NOW.getTime() + 60_000L), CLAIM);
+        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any(), any());
         verifyNoInteractions(confirmService);
         assertEquals(1, count("COMMERCE_FETCH gateway_error institute=inst-1 gateway_order=order_gw_1 "
                 + "kind=GATEWAY_UNAVAILABLE errors_in_a_row=1"));
@@ -204,7 +209,7 @@ class CommercePaymentFetchServiceTest {
 
         assertEquals(Outcome.ERROR, service.fetch(failing, Kind.OPEN, NOW));
 
-        verify(gatewayOrders).recordFetchError("gw-row-1", NOW, new Date(NOW.getTime() + 8 * 60_000L));
+        verify(gatewayOrders).recordFetchError("gw-row-1", NOW, new Date(NOW.getTime() + 8 * 60_000L), CLAIM);
         long[] minutes = {1, 2, 4, 8, 16, 32, 60, 60, 60};
         for (int before = 0; before < minutes.length; before++) {
             assertEquals(new Date(NOW.getTime() + minutes[before] * 60_000L),
@@ -230,14 +235,94 @@ class CommercePaymentFetchServiceTest {
     }
 
     @Test
-    void aSuccessfulFinalFetchIsMarkedAndStartsTheLateSchedule() {
+    void aFinalFetchTwoMinutesPastTheHoldTimeEndsTheFinalStageAndStartsTheLateSchedule() {
         when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of());
-        CommercePaymentGuard.DueFetch nearEnd = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() + 30_000L), null,
+        CommercePaymentGuard.DueFetch pastGrace = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() - 120_000L), null,
                 null);
 
-        service.fetch(nearEnd, Kind.FINAL, NOW);
+        assertEquals(Outcome.NO_PAYMENT, service.fetch(pastGrace, Kind.FINAL, NOW));
 
-        verify(gatewayOrders).recordFetch("gw-row-1", NOW, new Date(NOW.getTime() + 15 * 60_000L), NOW);
+        verify(gatewayOrders).recordFetch("gw-row-1", NOW, new Date(NOW.getTime() + 15 * 60_000L), NOW, CLAIM);
+    }
+
+    @Test
+    void inTheGraceAFinalFetchWithoutACaptureIsNotMarkedDone_andIsAskedAgainNextMinute() {
+        CommercePaymentGuard.DueFetch inGrace = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() - 40_000L), null,
+                null);
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of());
+        assertEquals(Outcome.NO_PAYMENT, service.fetch(inGrace, Kind.FINAL, NOW));
+
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of(payment("pay_1", GW, "authorized", 105000L, 5)));
+        when(confirmService.markAuthorized(row, INSTITUTE, "pay_1", "fetch")).thenReturn(handled(0, null));
+        assertEquals(Outcome.AUTHORIZED, service.fetch(inGrace, Kind.FINAL, NOW));
+
+        verify(gatewayOrders, org.mockito.Mockito.times(2)).recordFetch("gw-row-1", NOW,
+                new Date(NOW.getTime() + 60_000L), null, CLAIM);
+        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), eq(NOW), any());
+    }
+
+    @Test
+    void aCaptureFoundInTheGraceEndsTheFinalStage() {
+        CommercePaymentGuard.DueFetch inGrace = due("PENDING_PAYMENT", 3, new Date(NOW.getTime() - 40_000L), null,
+                null);
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of(payment("pay_1", GW, "captured", 105000L, 20)));
+        when(confirmService.confirmPaid(row, INSTITUTE, 105000L, "INR", "pay_1", "fetch")).thenReturn(handled(2, null));
+
+        assertEquals(Outcome.CONFIRMED, service.fetch(inGrace, Kind.FINAL, NOW));
+
+        verify(gatewayOrders).recordFetch("gw-row-1", NOW, new Date(NOW.getTime() + 15 * 60_000L), NOW, CLAIM);
+    }
+
+    @Test
+    void theFinalStageEndsOnASettledOrRefusedPaymentOrTwoMinutesPastTheHoldTime() {
+        Date hold = new Date(NOW.getTime() - 60_000L);
+        assertTrue(CommercePaymentFetchService.finalStageOver(Outcome.CONFIRMED, hold, NOW));
+        assertTrue(CommercePaymentFetchService.finalStageOver(Outcome.REPLAY, hold, NOW));
+        assertTrue(CommercePaymentFetchService.finalStageOver(Outcome.REFUSED, hold, NOW));
+        assertFalse(CommercePaymentFetchService.finalStageOver(Outcome.NO_PAYMENT, hold, NOW));
+        assertFalse(CommercePaymentFetchService.finalStageOver(Outcome.AUTHORIZED, hold, NOW));
+        assertFalse(CommercePaymentFetchService.finalStageOver(Outcome.FAILED_ONLY, hold, NOW));
+        assertTrue(CommercePaymentFetchService.finalStageOver(Outcome.NO_PAYMENT,
+                new Date(NOW.getTime() - 120_000L), NOW));
+    }
+
+    @Test
+    void aCapturedPaymentThatWasPartlyRefundedIsNotConfirmed() {
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of(new GatewayPayment("pay_1", GW, "captured",
+                105000L, "INR", NOW.toInstant(), 5000L, "partial")));
+
+        assertEquals(Outcome.REFUSED, service.fetch(due("CANCELLED", 1, null, NOW, NOW), Kind.LATE, NOW));
+
+        verifyNoInteractions(confirmService);
+        assertEquals(1, count("COMMERCE_ALERT payment fetch found a captured payment that was partly refunded "
+                + "institute=inst-1 order=order-1 gateway_order=order_gw_1 payment=pay_1 refunded=5000"));
+        assertEquals(0, count("lost_webhook_recovered"));
+
+        // A refund status alone is enough.
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of(new GatewayPayment("pay_1", GW, "captured",
+                105000L, "INR", NOW.toInstant(), 0L, "partial")));
+        assertEquals(Outcome.REFUSED, service.fetch(open(0), Kind.OPEN, NOW));
+        verifyNoInteractions(confirmService);
+    }
+
+    @Test
+    void aRowAnotherRunHasIsLeftAlone() {
+        when(gatewayOrders.claimFetch(anyString(), any(), any(), any())).thenReturn(0);
+
+        assertEquals(Outcome.BUSY, service.fetch(open(0), Kind.OPEN, NOW));
+
+        verifyNoInteractions(gateway, confirmService);
+        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any(), any());
+        verify(gatewayOrders, never()).recordFetchError(anyString(), any(), any(), any());
+    }
+
+    @Test
+    void aClaimThatCannotBeWrittenAsksNothing() {
+        when(gatewayOrders.claimFetch(anyString(), any(), any(), any())).thenThrow(new IllegalStateException("db"));
+
+        assertEquals(Outcome.ERROR, service.fetch(open(0), Kind.OPEN, NOW));
+
+        verifyNoInteractions(gateway, confirmService);
     }
 
     @Test
@@ -264,13 +349,14 @@ class CommercePaymentFetchServiceTest {
     // ------------------------------------------------------------------ schedule
 
     @Test
-    void theOpenScheduleIs2_3_5_5_10MinutesThenOnlyTheFinalFetch() {
-        long[] minutes = {2, 3, 5, 5, 10};
+    void theOpenScheduleIs2_3_5_5_10MinutesThenEvery30WhileTheOrderIsOpen() {
+        long[] minutes = {2, 3, 5, 5, 10, 30, 30, 30};
         for (int count = 0; count < minutes.length; count++) {
             assertEquals(new Date(NOW.getTime() + minutes[count] * 60_000L),
                     CommercePaymentFetchService.nextAfterSuccess(Kind.OPEN, count, NOW, null));
         }
-        assertNull(CommercePaymentFetchService.nextAfterSuccess(Kind.OPEN, 5, NOW, null));
+        assertEquals(new Date(NOW.getTime() + 30 * 60_000L),
+                CommercePaymentFetchService.nextAfterSuccess(Kind.OPEN, 47, NOW, null), "a 24 h hold");
     }
 
     @Test
@@ -289,17 +375,20 @@ class CommercePaymentFetchServiceTest {
     }
 
     @Test
-    void theFinalFetchWinsOverTheOpenOne() {
-        Duration lead = Duration.ofSeconds(60);
+    void theFinalFetchStartsAfterTheHoldTime_andWinsOverTheOpenOne() {
+        Duration after = Duration.ofSeconds(30);
         assertEquals(Kind.FINAL, CommercePaymentFetchService.kindOf(
-                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() + 59_000L), null, null), NOW, lead));
+                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() - 31_000L), null, null), NOW, after));
         assertEquals(Kind.OPEN, CommercePaymentFetchService.kindOf(
-                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() + 61_000L), null, null), NOW, lead));
+                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() - 29_000L), null, null), NOW, after));
         assertEquals(Kind.OPEN, CommercePaymentFetchService.kindOf(
-                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() + 10_000L), NOW, null), NOW, lead),
-                "once the final fetch succeeded it is not repeated");
-        assertEquals(Kind.LATE, CommercePaymentFetchService.kindOf(due("CANCELLED", 2, null, NOW, NOW), NOW, lead));
-        assertTrue(lead.toSeconds() == CommercePaymentFetchJob.FINAL_LEAD.toSeconds());
-        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any());
+                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() + 30_000L), null, null), NOW, after),
+                "before the hold time no final fetch");
+        assertEquals(Kind.OPEN, CommercePaymentFetchService.kindOf(
+                due("PENDING_PAYMENT", 2, new Date(NOW.getTime() - 300_000L), NOW, null), NOW, after),
+                "once the final stage is over it is not repeated");
+        assertEquals(Kind.LATE, CommercePaymentFetchService.kindOf(due("CANCELLED", 2, null, NOW, NOW), NOW, after));
+        assertEquals(after, CommercePaymentFetchJob.FINAL_AFTER_HOLD);
+        verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any(), any());
     }
 }

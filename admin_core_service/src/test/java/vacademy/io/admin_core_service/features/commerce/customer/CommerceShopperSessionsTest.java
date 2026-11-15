@@ -161,6 +161,29 @@ class CommerceShopperSessionsTest {
     }
 
     @Test
+    void thePhoneBindingIsKeyed_notAPlainHashOfThePhone() throws Exception {
+        String token = sessions.issueForPhone(INSTITUTE, PHONE).token();
+        String h = phoneBinding(token);
+
+        assertEquals(16, h.length());
+        String plain = vacademy.io.admin_core_service.features.commerce.otp.CommerceOtpService
+                .phoneHash(INSTITUTE, PHONE);
+        assertFalse(plain.startsWith(h), "the binding depends on the session key");
+
+        CommerceShopperSessions other = new CommerceShopperSessions(repository,
+                new TransactionTemplate(mock(PlatformTransactionManager.class)), clock, "another-secret");
+        String otherH = phoneBinding(other.issueForPhone(INSTITUTE, PHONE).token());
+        assertFalse(h.equals(otherH), "another key gives another binding for the same phone");
+        assertEquals(h, phoneBinding(sessions.issueForPhone(INSTITUTE, PHONE).token()),
+                "one key gives one binding per phone");
+    }
+
+    private static String phoneBinding(String token) throws Exception {
+        String payload = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
+        return new com.fasterxml.jackson.databind.ObjectMapper().readTree(payload).path("h").asText();
+    }
+
+    @Test
     void aPhoneTheShopKnowsKeepsItsRow_andAnUnknownOneGetsARowWithThePhoneOnly() {
         sessions.issueForPhone(INSTITUTE, PHONE);
         sessions.issueForPhone(INSTITUTE, PHONE);

@@ -216,6 +216,8 @@ class CommerceCheckoutDatabaseProofIT {
     @Autowired
     private vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions shopperSessions;
     @Autowired
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommerceGatewayOrderRepository gatewayRows;
+    @Autowired
     private SiteRedirectResolver redirectResolver;
     @Autowired
     private BulkCourseService bulkCourseService;
@@ -2131,6 +2133,21 @@ class CommerceCheckoutDatabaseProofIT {
                 + "WHERE commerce_order_id = ?", orderId);
     }
 
+    /**
+     * A time this far from now, as the application writes it (the proof's JVM and its database
+     * session may not share a time zone, so the fetch proofs never mix {@code now()} with it).
+     */
+    private static java.sql.Timestamp fromNow(java.time.Duration offset) {
+        return new java.sql.Timestamp(System.currentTimeMillis() + offset.toMillis());
+    }
+
+    /** Milliseconds from now to a time column of the gateway row of an order (negative: past). */
+    private long millisUntil(String orderId, String column) {
+        Object value = gatewayRow(orderId).get(column);
+        assertNotNull(value, column);
+        return ((java.util.Date) value).getTime() - System.currentTimeMillis();
+    }
+
     private long paidLogs(String orderId) {
         return count("SELECT count(*) FROM payment_log pl JOIN commerce_order o ON o.payment_group_id = "
                 + "pl.payment_group_id WHERE o.id = ? AND pl.payment_status = 'PAID'", orderId);
@@ -2144,14 +2161,15 @@ class CommerceCheckoutDatabaseProofIT {
                 > count("SELECT installed_rank FROM flyway_schema_history WHERE version = '686'"));
         for (String column : List.of("commerce_customer.session_epoch", "commerce_order.phone_verified",
                 "commerce_gateway_order.fetch_count", "commerce_gateway_order.next_fetch_at",
-                "commerce_gateway_order.last_fetched_at", "commerce_gateway_order.final_fetched_at")) {
+                "commerce_gateway_order.last_fetched_at", "commerce_gateway_order.final_fetched_at",
+                "commerce_gateway_order.fetch_errors", "commerce_gateway_order.fetch_started_at")) {
             String[] parts = column.split("\\.");
             assertEquals(1, count("SELECT count(*) FROM information_schema.columns WHERE table_name = ? "
                     + "AND column_name = ?", parts[0], parts[1]), column);
         }
         assertEquals(1, count("SELECT count(*) FROM pg_indexes WHERE indexname = 'idx_commerce_gateway_order_fetch'"));
         note("");
-        note("== P2: V687 applied after V686; six columns and the fetch index exist");
+        note("== P2: V687 applied after V686; eight columns and the fetch index exist");
     }
 
     @Test
@@ -2199,39 +2217,63 @@ class CommerceCheckoutDatabaseProofIT {
 
     @Test
     @Order(32)
-    void p2_finalFetch_confirmsBeforeTheHoldJob_andWithoutAPaymentTheHoldJobExpiresTheOrderAfterTheGrace() {
+    void p2_finalFetch_runsInTheGrace_seesACaptureMadeAfterTheHoldTime_andWithoutOneTheHoldJobExpiresTheOrder() {
         // The stock is held three minutes longer than the order.
         CheckoutDtos.Placed paid = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String paidId = paid.getOrderId();
+        String paidGw = paid.getPayment().getGatewayOrderId();
         long holdGap = count("SELECT CAST(EXTRACT(EPOCH FROM (h.expires_at - o.hold_expires_at)) AS BIGINT) "
                 + "FROM stock_hold h JOIN payment_log pl ON pl.id = h.payment_log_id "
-                + "JOIN commerce_order o ON o.payment_group_id = pl.payment_group_id WHERE o.id = ? LIMIT 1",
-                paid.getOrderId());
+                + "JOIN commerce_order o ON o.payment_group_id = pl.payment_group_id WHERE o.id = ? LIMIT 1", paidId);
         assertTrue(holdGap >= 170 && holdGap <= 190, "stock held ~3 min past the order's time, was " + holdGap + " s");
 
-        // Its time is 30 s away: the final fetch is due although nothing was scheduled.
-        db.update("UPDATE commerce_order SET hold_expires_at = now() + interval '30 seconds' WHERE id = ?",
-                paid.getOrderId());
-        gatewayReports(paid.getPayment().getGatewayOrderId(), List.of(rzpPayment("pay_final_" + run,
-                paid.getPayment().getGatewayOrderId(), "captured", paid.getPayment().getAmountMinor())));
-        onlyTheseAreFetched(paid.getOrderId());
+        // Its time is 30 s away: no final fetch yet (a payment may still be started).
+        db.update("UPDATE commerce_order SET hold_expires_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofSeconds(30)), paidId);
+        gatewayReports(paidGw, List.of());
+        onlyTheseAreFetched(paidId);
         fetchJob.runOnce(new java.util.Date());
-        assertEquals("CONFIRMED", status(paid.getOrderId()));
-        assertNotNull(gatewayRow(paid.getOrderId()).get("final_fetched_at"));
+        assertNull(gatewayRow(paidId).get("last_fetched_at"), "no final fetch before the hold time");
+
+        // 40 s past its time, in the grace: the final fetch finds nothing yet, and goes on.
+        db.update("UPDATE commerce_order SET hold_expires_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofSeconds(-40)), paidId);
+        fetchJob.runOnce(new java.util.Date());
+        Map<String, Object> inGrace = gatewayRow(paidId);
+        assertNotNull(inGrace.get("last_fetched_at"));
+        assertNull(inGrace.get("final_fetched_at"), "a fetch that found no capture in the grace does not end it");
+        assertNull(inGrace.get("fetch_started_at"), "the row is free again");
+        assertEquals("PENDING_PAYMENT", status(paidId));
+
+        // The payment started just before the hold time is captured now, and its webhook is lost.
+        gatewayReports(paidGw, List.of(rzpPayment("pay_final_" + run, paidGw, "captured",
+                paid.getPayment().getAmountMinor())));
+        fetchJob.runOnce(new java.util.Date());
+        assertEquals("CONFIRMED", status(paidId));
+        assertNotNull(gatewayRow(paidId).get("final_fetched_at"));
         // The hold job comes later and leaves the confirmed order alone.
         stockHoldService.releaseExpired();
-        assertEquals("CONFIRMED", status(paid.getOrderId()));
+        assertEquals("CONFIRMED", status(paidId));
 
-        // No payment: the final fetch finds none, the order waits for the hold job, which expires it.
+        // No payment: the final fetches find none, the order waits for the hold job, which expires it.
         CheckoutDtos.Placed unpaid = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
-        db.update("UPDATE commerce_order SET hold_expires_at = now() - interval '10 seconds' WHERE id = ?",
-                unpaid.getOrderId());
+        db.update("UPDATE commerce_order SET hold_expires_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofSeconds(-40)), unpaid.getOrderId());
         gatewayReports(unpaid.getPayment().getGatewayOrderId(), List.of());
         onlyTheseAreFetched(unpaid.getOrderId());
         fetchJob.runOnce(new java.util.Date());
         assertEquals("PENDING_PAYMENT", status(unpaid.getOrderId()));
+        assertNull(gatewayRow(unpaid.getOrderId()).get("final_fetched_at"));
+        long retryIn = millisUntil(unpaid.getOrderId(), "next_fetch_at");
+        assertTrue(retryIn > 0 && retryIn <= 120_000L, "asked again next minute, in " + retryIn + " ms");
+        // Two minutes past its time the final stage ends and the late schedule starts.
+        db.update("UPDATE commerce_order SET hold_expires_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofSeconds(-130)), unpaid.getOrderId());
+        fetchJob.runOnce(new java.util.Date());
         Map<String, Object> row = gatewayRow(unpaid.getOrderId());
         assertNotNull(row.get("final_fetched_at"));
-        assertNotNull(row.get("next_fetch_at"), "the late schedule starts");
+        assertTrue(millisUntil(unpaid.getOrderId(), "next_fetch_at") > 10 * 60_000L, "the late schedule starts");
+        assertEquals(2, ((Number) row.get("fetch_count")).intValue());
         stockHoldService.releaseExpired();
         assertEquals("PENDING_PAYMENT", status(unpaid.getOrderId()), "the stock is still held during the grace");
         db.update("UPDATE stock_hold SET expires_at = now() - interval '1 second' WHERE payment_log_id = ?",
@@ -2240,8 +2282,9 @@ class CommerceCheckoutDatabaseProofIT {
         assertEquals("CANCELLED", status(unpaid.getOrderId()));
         assertEquals("PAYMENT_EXPIRED", text("SELECT cancel_reason FROM commerce_order WHERE id = ?",
                 unpaid.getOrderId()));
-        note("== P2 final fetch: order confirmed by the final fetch before the hold job; unpaid order expired by the "
-                + "hold job only after the grace (stock held " + holdGap + " s past the order's time)");
+        note("== P2 final fetch: none before the hold time; in the grace a capture made after the hold time was "
+                + "found and confirmed; an unpaid order was asked again until 2 min past its time, then expired by "
+                + "the hold job only after the grace (stock held " + holdGap + " s past the order's time)");
     }
 
     @Test
@@ -2349,5 +2392,134 @@ class CommerceCheckoutDatabaseProofIT {
                 text("SELECT customer_email FROM commerce_order WHERE id = ?", placed.getOrderId()));
         note("== P2 phone-only buyer: holder account " + holder + " (placeholder address, no mobile sent)");
         paymentService.onHoldExpired(placed.getOrderId());
+    }
+
+    @Test
+    @Order(37)
+    void p2_aLateFetchDoesNotConfirmAPartlyRefundedCapture() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        String gw = placed.getPayment().getGatewayOrderId();
+        assertTrue(paymentService.onHoldExpired(orderId));
+        Map<String, Object> partly = rzpPayment("pay_partref_" + run, gw, "captured",
+                placed.getPayment().getAmountMinor());
+        partly.put("amount_refunded", 5000L);
+        partly.put("refund_status", "partial");
+        gatewayReports(gw, List.of(partly));
+        db.update("UPDATE commerce_order SET cancelled_at = ?, updated_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofMinutes(-16)), fromNow(java.time.Duration.ofMinutes(-16)), orderId);
+        onlyTheseAreFetched(orderId);
+
+        Map<?, Integer> counts = fetchJob.runOnce(new java.util.Date());
+
+        assertEquals(Integer.valueOf(1), counts.get(vacademy.io.admin_core_service.features.commerce.order.payment
+                .CommercePaymentFetchService.Outcome.REFUSED));
+        assertEquals("CANCELLED", status(orderId));
+        assertEquals(0, paidLogs(orderId));
+        assertNull(gatewayRow(orderId).get("settled_at"));
+        note("== P2 late fetch: a captured payment with part of it refunded was refused, order " + orderId
+                + " stays cancelled");
+    }
+
+    @Test
+    @Order(38)
+    void p2_aRowAnotherRunIsFetchingIsLeftAlone_andAFetchThatDiedFreesItAfterTheLease() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        String gw = placed.getPayment().getGatewayOrderId();
+        String rowId = text("SELECT id FROM commerce_gateway_order WHERE commerce_order_id = ?", orderId);
+
+        // One claim wins; a second one at the same time is refused; the result frees the row.
+        java.util.Date now = new java.util.Date();
+        java.util.Date claimNext = new java.util.Date(now.getTime() + 180_000L);
+        java.util.Date stale = new java.util.Date(now.getTime() - 180_000L);
+        List<Object> claims = atOnce(List.of(() -> gatewayRows.claimFetch(rowId, now, claimNext, stale),
+                () -> gatewayRows.claimFetch(rowId, now, claimNext, stale)));
+        assertEquals(1, claims.stream().mapToInt(c -> (Integer) c).sum(), "claims: " + claims);
+        gatewayRows.recordFetch(rowId, now, null, null, claimNext);
+        assertNull(gatewayRow(orderId).get("fetch_started_at"));
+        db.update("UPDATE commerce_gateway_order SET fetch_count = 0 WHERE id = ?", rowId);
+
+        // Another pod's run is asking the gateway about it right now: this run leaves it alone.
+        gatewayReports(gw, List.of(rzpPayment("pay_lease_" + run, gw, "captured", placed.getPayment().getAmountMinor())));
+        dueNow(orderId);
+        onlyTheseAreFetched(orderId);
+        db.update("UPDATE commerce_gateway_order SET fetch_started_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofSeconds(-20)), rowId);
+        Map<?, Integer> busy = fetchJob.runOnce(new java.util.Date());
+        assertTrue(busy.isEmpty(), "nothing fetched: " + busy);
+        assertEquals("PENDING_PAYMENT", status(orderId));
+        assertEquals(0, ((Number) gatewayRow(orderId).get("fetch_count")).intValue());
+
+        // That run died 4 minutes ago: the row is fetched again.
+        db.update("UPDATE commerce_gateway_order SET fetch_started_at = ? WHERE id = ?",
+                fromNow(java.time.Duration.ofMinutes(-4)), rowId);
+        Map<?, Integer> again = fetchJob.runOnce(new java.util.Date());
+        assertEquals(Integer.valueOf(1), again.get(vacademy.io.admin_core_service.features.commerce.order.payment
+                .CommercePaymentFetchService.Outcome.CONFIRMED));
+        assertEquals("CONFIRMED", status(orderId));
+        assertNull(gatewayRow(orderId).get("fetch_started_at"));
+        note("== P2 fetch lease: of two claims at once one won; a row taken 20 s ago was left alone, one taken "
+                + "4 min ago was fetched and confirmed");
+    }
+
+    @Test
+    @Order(39)
+    void p2_aFetchSoonAskedWhileAFetchRunsIsKept() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        String gw = placed.getPayment().getGatewayOrderId();
+        String rowId = text("SELECT id FROM commerce_gateway_order WHERE commerce_order_id = ?", orderId);
+        // Four open fetches done: the next one after this fetch would be 10 minutes away.
+        db.update("UPDATE commerce_gateway_order SET fetch_count = 4 WHERE id = ?", rowId);
+        dueNow(orderId);
+        onlyTheseAreFetched(orderId);
+        // While the gateway is being asked, the storefront says the payment went through.
+        org.mockito.Mockito.doAnswer(call -> {
+            gatewayRows.fetchSoon(rowId, new java.util.Date(System.currentTimeMillis() + 30_000L));
+            return List.of();
+        }).when(razorpay).fetchOrderPayments(org.mockito.ArgumentMatchers.eq(gw), any());
+
+        fetchJob.runOnce(new java.util.Date());
+
+        assertEquals(5, ((Number) gatewayRow(orderId).get("fetch_count")).intValue());
+        long soon = millisUntil(orderId, "next_fetch_at");
+        assertTrue(soon <= 60_000L, "the earlier time asked meanwhile is kept, next fetch in " + soon + " ms");
+
+        // Without anything asked meanwhile the schedule is written as usual (now every 30 minutes).
+        dueNow(orderId);
+        gatewayReports(gw, List.of());
+        fetchJob.runOnce(new java.util.Date());
+        long slow = millisUntil(orderId, "next_fetch_at");
+        assertTrue(slow > 29 * 60_000L && slow <= 30 * 60_000L,
+                "an open order is still asked about every 30 minutes, next in " + slow + " ms");
+        note("== P2 fetch-soon during a fetch: kept (next fetch within a minute, not the 10-minute step); then the "
+                + "slow open schedule (30 min)");
+        paymentService.onHoldExpired(orderId);
+    }
+
+    @Test
+    @Order(40)
+    void p2_theLastLateFetchOfALongHoldIsStillInTheWindow() {
+        CheckoutDtos.Placed placed = checkoutService.placeOrder(inst, request(nextPhone(), Map.of(bulk, 1)), null);
+        String orderId = placed.getOrderId();
+        String gw = placed.getPayment().getGatewayOrderId();
+        assertTrue(paymentService.onHoldExpired(orderId));
+        gatewayReports(gw, List.of(rzpPayment("pay_longhold_" + run, gw, "captured",
+                placed.getPayment().getAmountMinor())));
+        // A 24 h hold: made 56 h ago, cancelled 31 h 10 min ago; the last late fetch is due now.
+        db.update("UPDATE commerce_gateway_order SET created_at = ?, fetch_count = 4, final_fetched_at = ?, "
+                + "next_fetch_at = ? WHERE commerce_order_id = ?", fromNow(java.time.Duration.ofHours(-56)),
+                fromNow(java.time.Duration.ofHours(-32)), fromNow(java.time.Duration.ofSeconds(-1)), orderId);
+        java.sql.Timestamp cancelled = fromNow(java.time.Duration.ofHours(-31).minusMinutes(10));
+        db.update("UPDATE commerce_order SET cancelled_at = ?, updated_at = ? WHERE id = ?", cancelled, cancelled,
+                orderId);
+        onlyTheseAreFetched(orderId);
+
+        fetchJob.runOnce(new java.util.Date());
+
+        assertEquals("CONFIRMED", status(orderId));
+        note("== P2 long hold: the late fetch 56 h after the gateway order was made still ran and confirmed "
+                + orderId);
     }
 }

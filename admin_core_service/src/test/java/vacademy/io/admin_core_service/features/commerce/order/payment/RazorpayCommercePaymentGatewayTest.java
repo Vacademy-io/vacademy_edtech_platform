@@ -252,6 +252,27 @@ class RazorpayCommercePaymentGatewayTest {
         assertEquals("INR", first.currency());
         assertEquals(java.time.Instant.ofEpochSecond(1_800_000_000L), first.createdAt());
         assertEquals("failed", payments.get(1).status());
+        assertEquals(0L, first.amountRefundedMinor());
+        assertEquals(null, first.refundStatus());
+        assertEquals(false, first.anyRefunded());
+    }
+
+    @Test
+    void fetchPaymentsCarriesAPartialRefund() {
+        Map<String, Object> partly = payment("pay_1", "order_gw_1", "captured", 105000L, 1_800_000_000L);
+        partly.put("amount_refunded", 5000L);
+        partly.put("refund_status", "partial");
+        Map<String, Object> none = payment("pay_2", "order_gw_1", "captured", 105000L, 1_800_000_000L);
+        none.put("amount_refunded", 0);
+        none.put("refund_status", null);
+        when(razorpayManager.fetchOrderPayments("order_gw_1", credentials)).thenReturn(List.of(partly, none));
+
+        List<CommercePaymentGateway.GatewayPayment> payments = gateway.fetchPayments("inst-1", "order_gw_1");
+
+        assertEquals(5000L, payments.get(0).amountRefundedMinor());
+        assertEquals("partial", payments.get(0).refundStatus());
+        assertEquals(true, payments.get(0).anyRefunded());
+        assertEquals(false, payments.get(1).anyRefunded());
     }
 
     @Test

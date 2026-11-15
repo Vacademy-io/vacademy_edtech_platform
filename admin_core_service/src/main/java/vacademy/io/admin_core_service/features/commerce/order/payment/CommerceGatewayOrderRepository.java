@@ -53,35 +53,66 @@ public interface CommerceGatewayOrderRepository extends JpaRepository<CommerceGa
     int settle(@Param("commerceOrderId") String commerceOrderId, @Param("now") Date now);
 
     /**
+     * Takes this row for one fetch: marks it as being fetched since {@code now} and moves its
+     * next fetch to {@code claimNext} (the retry should this run never write a result). False
+     * (0) when the row was settled or paid meanwhile, or another run took it after
+     * {@code staleBefore}: the caller then leaves it alone.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_gateway_order
+            SET fetch_started_at = :now, next_fetch_at = :claimNext
+            WHERE id = :id AND settled_at IS NULL AND paying = false AND status <> 'PAID'
+              AND (fetch_started_at IS NULL OR fetch_started_at < :staleBefore)
+            """, nativeQuery = true)
+    int claimFetch(@Param("id") String id, @Param("now") Date now, @Param("claimNext") Date claimNext,
+                   @Param("staleBefore") Date staleBefore);
+
+    /**
      * One fetch of this row got an answer: the count, when, the next time (null: no more, except
-     * the final fetch) and, when it was the final fetch, its time. The error run starts again.
+     * the final fetch) and, when the final stage is over, its time. The error run starts again
+     * and the row is free for the next run. A next time that {@link #fetchSoon} set while the
+     * fetch was running (earlier than {@code claimNext}, which {@link #claimFetch} wrote) is
+     * kept when it is the earlier one.
      */
     @Transactional
     @Modifying
     @Query(value = """
             UPDATE commerce_gateway_order
             SET fetch_count = fetch_count + 1, fetch_errors = 0, last_fetched_at = :now,
-                next_fetch_at = CAST(:next AS TIMESTAMP),
+                next_fetch_at = CASE
+                    WHEN next_fetch_at IS NOT NULL AND next_fetch_at < CAST(:claimNext AS TIMESTAMP)
+                    THEN LEAST(next_fetch_at, COALESCE(CAST(:next AS TIMESTAMP), next_fetch_at))
+                    ELSE CAST(:next AS TIMESTAMP) END,
                 final_fetched_at = COALESCE(CAST(:finalAt AS TIMESTAMP), final_fetched_at),
+                fetch_started_at = NULL,
                 updated_at = :now
             WHERE id = :id
             """, nativeQuery = true)
     int recordFetch(@Param("id") String id, @Param("now") Date now, @Param("next") Date next,
-                    @Param("finalAt") Date finalAt);
+                    @Param("finalAt") Date finalAt, @Param("claimNext") Date claimNext);
 
     /**
      * One fetch of this row failed (gateway or confirm step): one more error in the run and the
-     * next try. The fetch count and the final time are left alone, so the schedules are kept.
+     * next try (or an earlier one {@link #fetchSoon} set meanwhile). The fetch count and the
+     * final time are left alone, so the schedules are kept; the row is free for the next run.
      */
     @Transactional
     @Modifying
     @Query(value = """
             UPDATE commerce_gateway_order
             SET fetch_errors = fetch_errors + 1, last_fetched_at = :now,
-                next_fetch_at = CAST(:next AS TIMESTAMP), updated_at = :now
+                next_fetch_at = CASE
+                    WHEN next_fetch_at IS NOT NULL AND next_fetch_at < CAST(:claimNext AS TIMESTAMP)
+                    THEN LEAST(next_fetch_at, CAST(:next AS TIMESTAMP))
+                    ELSE CAST(:next AS TIMESTAMP) END,
+                fetch_started_at = NULL,
+                updated_at = :now
             WHERE id = :id
             """, nativeQuery = true)
-    int recordFetchError(@Param("id") String id, @Param("now") Date now, @Param("next") Date next);
+    int recordFetchError(@Param("id") String id, @Param("now") Date now, @Param("next") Date next,
+                         @Param("claimNext") Date claimNext);
 
     /**
      * Asks the fetch job to look at this gateway order at {@code at} at the latest (after the

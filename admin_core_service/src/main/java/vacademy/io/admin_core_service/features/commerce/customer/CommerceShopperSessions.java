@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.commerce.customer.repository.CommerceCustomerRepository;
-import vacademy.io.admin_core_service.features.commerce.otp.CommerceOtpService;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -29,8 +28,9 @@ import java.util.UUID;
  * without a new WhatsApp code every visit, and stands in for an OTP on a prepaid checkout.
  *
  * <p>Form: {@code s1.<b64url(json{i,c,h,e,x,n})>.<b64url(HMAC-SHA256(key, "s1." + payload))>}:
- * institute, customer, the first 16 hex of the institute-salted phone hash, the session epoch
- * of the customer at issue, the expiry (epoch seconds) and 8 random bytes. The key is
+ * institute, customer, the first 16 hex of HMAC-SHA256(key, {@code "phone|" + institute + "|"
+ * + phone}) (keyed, so the payload names no phone to anyone without the key), the session
+ * epoch of the customer at issue, the expiry (epoch seconds) and 8 random bytes. The key is
  * SHA-256({@code "commerce-shopper-session:"} + secret), so no order token, phone token or
  * any other token of the platform verifies as a session, nor a session as one of them.
  *
@@ -53,6 +53,8 @@ public class CommerceShopperSessions {
     private static final String VERSION = "s1";
     private static final String PURPOSE = "commerce-shopper-session:";
     private static final int HASH_PREFIX = 16;
+    /** Domain of the phone binding, apart from the token signature that uses the same key. */
+    private static final String PHONE_BINDING = "phone|";
 
     /** A new session: the token and when it ends. */
     public record Issued(String token, Instant expiresAt, String phone) {
@@ -200,8 +202,14 @@ public class CommerceShopperSessions {
         return row.getSessionEpoch() == null ? 0L : row.getSessionEpoch();
     }
 
-    private static String hashPrefix(String instituteId, String phone) {
-        return CommerceOtpService.phoneHash(instituteId, phone).substring(0, HASH_PREFIX);
+    /** The phone binding of a token: keyed, so it cannot be matched against phone numbers without the key. */
+    private String hashPrefix(String instituteId, String phone) {
+        byte[] mac = hmac(PHONE_BINDING + instituteId + "|" + phone);
+        StringBuilder hex = new StringBuilder(HASH_PREFIX);
+        for (int i = 0; hex.length() < HASH_PREFIX; i++) {
+            hex.append(Character.forDigit((mac[i] >> 4) & 0xF, 16)).append(Character.forDigit(mac[i] & 0xF, 16));
+        }
+        return hex.toString();
     }
 
     private byte[] hmac(String text) {

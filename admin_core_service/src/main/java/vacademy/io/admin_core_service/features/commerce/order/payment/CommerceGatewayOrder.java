@@ -91,6 +91,9 @@ public class CommerceGatewayOrder {
     @Column(name = "fetch_errors", nullable = false, insertable = false, updatable = false)
     private Integer fetchErrors = 0;
 
+    @Column(name = "fetch_started_at", insertable = false, updatable = false)
+    private Date fetchStartedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Date createdAt;

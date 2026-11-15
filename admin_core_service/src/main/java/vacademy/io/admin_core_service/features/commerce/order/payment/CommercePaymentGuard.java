@@ -252,10 +252,11 @@ public class CommercePaymentGuard {
     /**
      * Razorpay gateway orders of the last {@code since} that no payment has paid and the order
      * code has not settled, whose fetch is due (see {@code CommercePaymentFetchJob}): open
-     * orders by their schedule or near the end of their hold time, and orders cancelled for
+     * orders by their schedule or just past their hold time, and orders cancelled for
      * want of payment by the late schedule. At most {@code perInstitute} per institute and
-     * {@code limit} in all. Final fetches (an open order near the end of its hold) come first,
-     * so a busy institute never pushes one past its grace; then the most overdue.
+     * {@code limit} in all. Final fetches (an open order just past its hold time) come first,
+     * so a busy institute never pushes one past its grace; then the most overdue. A row another
+     * run is fetching right now (taken less than {@code FETCH_LEASE} ago) is left out.
      */
     @Transactional
     public List<DueFetch> dueFetches(Date now, Date since, Date finalFrom, Date openFirstBefore, Date lateFirstBefore,
@@ -280,6 +281,7 @@ public class CommercePaymentGuard {
                           JOIN commerce_order o ON o.id = g.commerce_order_id
                           WHERE g.vendor = 'RAZORPAY' AND g.settled_at IS NULL AND g.paying = false
                             AND g.status <> 'PAID' AND g.created_at >= :since
+                            AND (g.fetch_started_at IS NULL OR g.fetch_started_at < :leaseStale)
                             AND (
                               (o.status = 'PENDING_PAYMENT' AND (
                                    (o.hold_expires_at IS NOT NULL AND o.hold_expires_at <= :finalFrom
@@ -305,6 +307,8 @@ public class CommercePaymentGuard {
                 .setParameter("finalFrom", finalFrom)
                 .setParameter("openFirstBefore", openFirstBefore)
                 .setParameter("lateFirstBefore", lateFirstBefore)
+                .setParameter("leaseStale", new Date(now.getTime()
+                        - CommercePaymentFetchService.FETCH_LEASE.toMillis()))
                 .setParameter("maxLate", maxLateFetches)
                 .setParameter("perInstitute", perInstitute)
                 .setMaxResults(limit)

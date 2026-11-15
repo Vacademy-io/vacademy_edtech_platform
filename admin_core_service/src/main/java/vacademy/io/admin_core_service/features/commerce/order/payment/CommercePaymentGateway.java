@@ -48,8 +48,21 @@ public interface CommercePaymentGateway {
     /**
      * One payment as the gateway reports it. {@code status} is the gateway's word, lower case
      * ({@code created}, {@code authorized}, {@code captured}, {@code failed}, {@code refunded}).
+     * A partly refunded payment keeps {@code captured}; {@code amountRefundedMinor} (0 when none)
+     * and {@code refundStatus} (null when none) say so.
      */
     record GatewayPayment(String id, String orderId, String status, long amountMinor, String currency,
-                          Instant createdAt) {
+                          Instant createdAt, long amountRefundedMinor, String refundStatus) {
+
+        /** A payment with nothing refunded. */
+        public GatewayPayment(String id, String orderId, String status, long amountMinor, String currency,
+                              Instant createdAt) {
+            this(id, orderId, status, amountMinor, currency, createdAt, 0L, null);
+        }
+
+        /** True when any part of the payment was given back. */
+        public boolean anyRefunded() {
+            return amountRefundedMinor > 0 || (refundStatus != null && !refundStatus.isBlank());
+        }
     }
 }

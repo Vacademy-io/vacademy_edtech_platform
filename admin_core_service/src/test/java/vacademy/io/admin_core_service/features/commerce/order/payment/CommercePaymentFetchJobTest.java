@@ -50,25 +50,63 @@ class CommercePaymentFetchJobTest {
         job.runOnce(NOW);
 
         verify(guard).dueFetches(NOW,
-                new Date(NOW.getTime() - Duration.ofHours(48).toMillis()),
-                new Date(NOW.getTime() + 60_000L),
+                new Date(NOW.getTime() - Duration.ofHours(72).toMillis()),
+                new Date(NOW.getTime() - 30_000L),
                 new Date(NOW.getTime() - Duration.ofMinutes(2).toMillis()),
                 new Date(NOW.getTime() - Duration.ofMinutes(15).toMillis()),
                 9, 25, 100);
     }
 
     @Test
-    void eachRowGetsItsKind_finalWinsNearTheEndOfTheHold() {
+    void eachRowGetsItsKind_finalWinsInTheGraceAfterTheHoldTime() {
         CommercePaymentGuard.DueFetch open = row("a", "inst-1", new Date(NOW.getTime() + 600_000L));
         CommercePaymentGuard.DueFetch nearEnd = row("b", "inst-1", new Date(NOW.getTime() + 30_000L));
+        CommercePaymentGuard.DueFetch inGrace = row("c", "inst-1", new Date(NOW.getTime() - 40_000L));
         when(guard.dueFetches(any(), any(), any(), any(), any(), anyInt(), anyInt(), anyInt()))
-                .thenReturn(List.of(open, nearEnd));
+                .thenReturn(List.of(open, nearEnd, inGrace));
         when(fetchService.fetch(any(), any(), any())).thenReturn(Outcome.NO_PAYMENT);
 
         job.runOnce(NOW);
 
         verify(fetchService).fetch(open, Kind.OPEN, NOW);
-        verify(fetchService).fetch(nearEnd, Kind.FINAL, NOW);
+        verify(fetchService).fetch(nearEnd, Kind.OPEN, NOW);
+        verify(fetchService).fetch(inGrace, Kind.FINAL, NOW);
+    }
+
+    @Test
+    void aRunStartsNoRowAfterItsBudget_wellInsideTheLock() throws Exception {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+        job = new CommercePaymentFetchJob(guard, fetchService, clock::get);
+        List<CommercePaymentGuard.DueFetch> rows = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            rows.add(row("slow-" + i, "inst-1", new Date(NOW.getTime() + 600_000L)));
+        }
+        when(guard.dueFetches(any(), any(), any(), any(), any(), anyInt(), anyInt(), anyInt())).thenReturn(rows);
+        // Each gateway call takes 15 s: rows start at 0, 15 and 30 s; at 45 s the run stops.
+        when(fetchService.fetch(any(), any(), any())).thenAnswer(call -> {
+            clock.addAndGet(15_000L);
+            return Outcome.NO_PAYMENT;
+        });
+
+        Map<Outcome, Integer> counts = job.runOnce(NOW);
+
+        verify(fetchService, times(3)).fetch(any(), any(), any());
+        assertEquals(3, counts.get(Outcome.NO_PAYMENT));
+        net.javacrumbs.shedlock.spring.annotation.SchedulerLock lock = CommercePaymentFetchJob.class
+                .getMethod("run").getAnnotation(net.javacrumbs.shedlock.spring.annotation.SchedulerLock.class);
+        assertEquals(true, CommercePaymentFetchJob.RUN_BUDGET.plusSeconds(10)
+                        .compareTo(Duration.parse(lock.lockAtMostFor())) < 0,
+                "the budget leaves room below the lock's lockAtMostFor");
+    }
+
+    @Test
+    void aRowAnotherRunHasIsCountedAsBusy() {
+        CommercePaymentGuard.DueFetch taken = row("taken", "inst-1", new Date(NOW.getTime() + 600_000L));
+        when(guard.dueFetches(any(), any(), any(), any(), any(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(List.of(taken));
+        when(fetchService.fetch(any(), any(), any())).thenReturn(Outcome.BUSY);
+
+        assertEquals(1, job.runOnce(NOW).get(Outcome.BUSY));
     }
 
     @Test

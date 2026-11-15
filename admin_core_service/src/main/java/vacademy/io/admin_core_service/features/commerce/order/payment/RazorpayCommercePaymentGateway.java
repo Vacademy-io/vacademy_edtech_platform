@@ -97,9 +97,16 @@ public class RazorpayCommercePaymentGateway implements CommercePaymentGateway {
                 Long amount = number(p.get("amount"));
                 Long created = number(p.get("created_at"));
                 String status = text(p.get("status"));
+                // Razorpay keeps "captured" after a partial refund; these two fields tell.
+                Long refunded = number(p.get("amount_refunded"));
+                String refundStatus = text(p.get("refund_status"));
+                if (refundStatus != null && "null".equalsIgnoreCase(refundStatus)) {
+                    refundStatus = null;
+                }
                 payments.add(new GatewayPayment(text(p.get("id")), text(p.get("order_id")),
                         status == null ? null : status.toLowerCase(Locale.ROOT), amount == null ? -1L : amount,
-                        text(p.get("currency")), created == null ? null : Instant.ofEpochSecond(created)));
+                        text(p.get("currency")), created == null ? null : Instant.ofEpochSecond(created),
+                        refunded == null ? 0L : refunded, refundStatus));
             }
         }
         return payments;

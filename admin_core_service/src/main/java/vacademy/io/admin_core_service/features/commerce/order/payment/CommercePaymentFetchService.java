@@ -21,9 +21,12 @@ import java.util.Optional;
  * {@link CommercePaymentConfirmService#markAuthorized}; created and failed payments write
  * nothing. Source {@code "fetch"}.
  *
- * <p>The gateway call is made with no transaction open (the service refuses to run in one);
- * the schedule of the row is then written in one short transaction of its own. A webhook that
- * arrives after a fetch is a replay, and two fetches of one order (two pods) meet at the claim.
+ * <p>The gateway call is made with no transaction open (the service refuses to run in one).
+ * Before it the row is taken for this run ({@link CommerceGatewayOrderRepository#claimFetch}),
+ * so a run that overlaps (another pod, after the job lock lapsed) leaves it alone; the schedule
+ * of the row is then written in one short transaction of its own, which frees it. A webhook
+ * that arrives after a fetch is a replay, and a fetch and a webhook of one order meet at the
+ * PAID claim.
  *
  * <p>Nothing about the gateway account is logged: a gateway error is logged by its kind only.
  */
@@ -36,6 +39,17 @@ public class CommercePaymentFetchService {
     /** The schedule after an open order's fetch, by how many fetches the row had before it. */
     static final Duration[] OPEN_BACKOFF = {Duration.ofMinutes(2), Duration.ofMinutes(3), Duration.ofMinutes(5),
             Duration.ofMinutes(5), Duration.ofMinutes(10)};
+    /** After {@link #OPEN_BACKOFF}: an open order (a long hold) is still asked about this often. */
+    static final Duration OPEN_SLOW = Duration.ofMinutes(30);
+    /**
+     * The final stage: from the job's lag after the hold time, a fetch that found no capture is
+     * repeated every {@link #FINAL_RETRY} until this long after the hold time, so a payment
+     * captured in the grace (the stock is held 3 minutes past the order) is still seen.
+     */
+    static final Duration FINAL_WINDOW = Duration.ofMinutes(2);
+    static final Duration FINAL_RETRY = Duration.ofMinutes(1);
+    /** A row taken for a fetch is left alone by other runs this long (a run that died frees it then). */
+    public static final Duration FETCH_LEASE = Duration.ofMinutes(3);
     /** After the final fetch: the late schedule starts here. */
     static final Duration AFTER_FINAL = Duration.ofMinutes(15);
     /** After the first error in a row: try again in a minute. */
@@ -46,8 +60,11 @@ public class CommercePaymentFetchService {
     /** Which rule made a row due. */
     public enum Kind { OPEN, FINAL, LATE }
 
-    /** What one fetch found; the {@code result} of the log line. */
-    public enum Outcome { CONFIRMED, REPLAY, AUTHORIZED, NO_PAYMENT, FAILED_ONLY, REFUSED, ERROR }
+    /**
+     * What one fetch found; the {@code result} of the log line. BUSY: another run had the row,
+     * or it was paid or settled meanwhile; nothing was asked or written.
+     */
+    public enum Outcome { CONFIRMED, REPLAY, AUTHORIZED, NO_PAYMENT, FAILED_ONLY, REFUSED, ERROR, BUSY }
 
     private final CommercePaymentGateway gateway;
     private final CommercePaymentConfirmService confirmService;
@@ -60,21 +77,24 @@ public class CommercePaymentFetchService {
         this.gatewayOrders = gatewayOrders;
     }
 
-    /** The rule that made {@code row} due at {@code now}; FINAL wins over OPEN. */
-    public static Kind kindOf(CommercePaymentGuard.DueFetch row, Date now, Duration finalLead) {
+    /**
+     * The rule that made {@code row} due at {@code now}; FINAL (the hold time passed at least
+     * {@code finalAfterHold} ago, final stage not over) wins over OPEN.
+     */
+    public static Kind kindOf(CommercePaymentGuard.DueFetch row, Date now, Duration finalAfterHold) {
         if (!"PENDING_PAYMENT".equals(row.orderStatus())) {
             return Kind.LATE;
         }
         if (row.finalFetchedAt() == null && row.holdExpiresAt() != null
-                && !row.holdExpiresAt().after(new Date(now.getTime() + finalLead.toMillis()))) {
+                && !row.holdExpiresAt().after(new Date(now.getTime() - finalAfterHold.toMillis()))) {
             return Kind.FINAL;
         }
         return Kind.OPEN;
     }
 
     /**
-     * The next fetch after a successful one; null when only the final fetch (open order) or
-     * nothing (late) is left.
+     * The next fetch after a successful one; null when nothing (late) is left. An open order is
+     * asked about on {@link #OPEN_BACKOFF}, then every {@link #OPEN_SLOW} while it stays open.
      *
      * <p>Late: one hour, six hours and a day apart, by the time since the order was cancelled:
      * the first late fetch comes about 15 minutes after the cancel, the next ones at about
@@ -86,8 +106,8 @@ public class CommercePaymentFetchService {
             case FINAL:
                 return new Date(t + AFTER_FINAL.toMillis());
             case OPEN:
-                return fetchCountBefore >= 0 && fetchCountBefore < OPEN_BACKOFF.length
-                        ? new Date(t + OPEN_BACKOFF[fetchCountBefore].toMillis()) : null;
+                return new Date(t + (fetchCountBefore >= 0 && fetchCountBefore < OPEN_BACKOFF.length
+                        ? OPEN_BACKOFF[fetchCountBefore] : OPEN_SLOW).toMillis());
             default:
                 long since = cancelledAt == null ? Long.MAX_VALUE : t - cancelledAt.getTime();
                 if (since < Duration.ofHours(1).toMillis()) {
@@ -117,12 +137,37 @@ public class CommercePaymentFetchService {
     }
 
     /**
+     * True when the final stage of an open order is over after this fetch: something was
+     * settled or refused, or the grace has gone on {@link #FINAL_WINDOW} past the hold time.
+     * No capture (nothing, authorised only, failed) before then keeps it going.
+     */
+    static boolean finalStageOver(Outcome outcome, Date holdExpiresAt, Date now) {
+        if (outcome == Outcome.CONFIRMED || outcome == Outcome.REPLAY || outcome == Outcome.REFUSED) {
+            return true;
+        }
+        return holdExpiresAt == null || !now.before(new Date(holdExpiresAt.getTime() + FINAL_WINDOW.toMillis()));
+    }
+
+    /**
      * One fetch of one row. Never throws for a gateway or confirm failure: the outcome says
      * ERROR and the row is asked again later (see {@link #nextAfterError}).
      */
     public Outcome fetch(CommercePaymentGuard.DueFetch row, Kind kind, Date now) {
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalStateException("The payment fetch calls the gateway and must not run in a transaction");
+        }
+        Date claimNext = new Date(now.getTime() + FETCH_LEASE.toMillis());
+        try {
+            if (gatewayOrders.claimFetch(row.gatewayRowId(), now, claimNext,
+                    new Date(now.getTime() - FETCH_LEASE.toMillis())) == 0) {
+                logResult(row, Outcome.BUSY, kind);
+                return Outcome.BUSY;
+            }
+        } catch (RuntimeException e) {
+            log.error("COMMERCE_ALERT payment fetch could not take gateway order {}: {}", row.gatewayOrderId(),
+                    e.getClass().getSimpleName());
+            logResult(row, Outcome.ERROR, kind);
+            return Outcome.ERROR;
         }
         List<CommercePaymentGateway.GatewayPayment> payments;
         try {
@@ -132,7 +177,7 @@ public class CommercePaymentFetchService {
                     : e.getClass().getSimpleName();
             log.warn("COMMERCE_FETCH gateway_error institute={} gateway_order={} kind={} errors_in_a_row={}",
                     row.instituteId(), row.gatewayOrderId(), kindOfError, row.fetchErrors() + 1);
-            recordError(row, now, nextAfterError(kind, row.fetchErrors(), now));
+            recordError(row, now, nextAfterError(kind, row.fetchErrors(), now), claimNext);
             logResult(row, Outcome.ERROR, kind);
             return Outcome.ERROR;
         }
@@ -144,12 +189,17 @@ public class CommercePaymentFetchService {
             // The confirm step failed (the database, most likely); the next run tries again.
             log.error("COMMERCE_ALERT payment fetch could not settle order {} ({}): {}", row.commerceOrderId(),
                     row.gatewayOrderId(), e.getClass().getSimpleName());
-            recordError(row, now, nextAfterError(kind, row.fetchErrors(), now));
+            recordError(row, now, nextAfterError(kind, row.fetchErrors(), now), claimNext);
             logResult(row, Outcome.ERROR, kind);
             return Outcome.ERROR;
         }
-        record(row, now, nextAfterSuccess(kind, row.fetchCount(), now, row.cancelledAt()),
-                kind == Kind.FINAL ? now : null);
+        if (kind == Kind.FINAL && !finalStageOver(outcome, row.holdExpiresAt(), now)) {
+            // Still in the grace: ask again next minute, the final stage goes on.
+            record(row, now, new Date(now.getTime() + FINAL_RETRY.toMillis()), null, claimNext);
+        } else {
+            record(row, now, nextAfterSuccess(kind, row.fetchCount(), now, row.cancelledAt()),
+                    kind == Kind.FINAL ? now : null, claimNext);
+        }
         logResult(row, outcome, kind);
         return outcome;
     }
@@ -186,6 +236,16 @@ public class CommercePaymentFetchService {
                     log.error("COMMERCE_ALERT payment fetch found a captured payment without amount or currency "
                             + "institute={} order={} gateway_order={} payment={}", row.instituteId(),
                             row.commerceOrderId(), row.gatewayOrderId(), p.id());
+                    refused = true;
+                    continue;
+                }
+                // Part of it was given back (by hand, in the gateway): the order is not paid in
+                // full, so nothing is confirmed; the shop decides.
+                if (p.anyRefunded()) {
+                    log.error("COMMERCE_ALERT payment fetch found a captured payment that was partly refunded "
+                                    + "institute={} order={} gateway_order={} payment={} refunded={}",
+                            row.instituteId(), row.commerceOrderId(), row.gatewayOrderId(), p.id(),
+                            p.amountRefundedMinor());
                     refused = true;
                     continue;
                 }
@@ -228,18 +288,18 @@ public class CommercePaymentFetchService {
         return anyFailed ? Outcome.FAILED_ONLY : Outcome.NO_PAYMENT;
     }
 
-    private void recordError(CommercePaymentGuard.DueFetch row, Date now, Date next) {
+    private void recordError(CommercePaymentGuard.DueFetch row, Date now, Date next, Date claimNext) {
         try {
-            gatewayOrders.recordFetchError(row.gatewayRowId(), now, next);
+            gatewayOrders.recordFetchError(row.gatewayRowId(), now, next, claimNext);
         } catch (RuntimeException e) {
             log.error("COMMERCE_ALERT payment fetch schedule of gateway order {} not saved: {}",
                     row.gatewayOrderId(), e.getClass().getSimpleName());
         }
     }
 
-    private void record(CommercePaymentGuard.DueFetch row, Date now, Date next, Date finalAt) {
+    private void record(CommercePaymentGuard.DueFetch row, Date now, Date next, Date finalAt, Date claimNext) {
         try {
-            gatewayOrders.recordFetch(row.gatewayRowId(), now, next, finalAt);
+            gatewayOrders.recordFetch(row.gatewayRowId(), now, next, finalAt, claimNext);
         } catch (RuntimeException e) {
             log.error("COMMERCE_ALERT payment fetch schedule of gateway order {} not saved: {}",
                     row.gatewayOrderId(), e.getClass().getSimpleName());

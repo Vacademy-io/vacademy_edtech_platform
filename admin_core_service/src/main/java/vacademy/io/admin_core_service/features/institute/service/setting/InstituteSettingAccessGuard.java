@@ -27,7 +27,8 @@ import java.util.function.Predicate;
  *       save it through {@code PUT /v1/telephony/voice-config}, which keeps the stored billing
  *       block. A generic save replaces the whole blob, so an institute could zero its own rates.
  *       AI_VIDEO_POLICY holds the platform's per-institute AI video limits; an institute must not
- *       raise its own.</li>
+ *       raise its own. COMMERCE_SETTING is written by staff only through the commerce routes,
+ *       which need the shop's own role.</li>
  *   <li>{@link #ADMIN_ONLY_KEYS} and the {@code CUSTOM_ROLE_DISPLAY_SETTINGS*} family: institute
  *       ADMIN ({@link InstituteAccessValidator#requireInstituteAdmin}). These decide what each
  *       role can see or do: ROLE_DISPLAY_SETTINGS (custom roles' display blobs live inside it,
@@ -61,7 +62,11 @@ public class InstituteSettingAccessGuard {
             "VOICE_CALLING_SETTING",
             // LMS AI video limits (enabled, qualities, minutes, monthly credit cap, concurrency),
             // written by ai_service PUT /super-admin/v1/institutes/{id}/ai-video-policy.
-            "AI_VIDEO_POLICY");
+            "AI_VIDEO_POLICY",
+            // Shop settings (buyer identity, OTP cap, cash on delivery, holds). Staff write them
+            // only through the commerce routes (PUT /commerce/v1/checkout-settings), which check
+            // the store-manager role and keep the keys they do not own.
+            "COMMERCE_SETTING");
 
     /** Keys only an institute ADMIN may write. Compared upper-cased. */
     static final Set<String> ADMIN_ONLY_KEYS = Set.of(
