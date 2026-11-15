@@ -230,4 +230,26 @@ class AiPlansBillingPostgresTest {
         assertFalse(access("ALL").isOpen(inst), "a sub-org child never buys (the parent does)");
         jdbc.update("DELETE FROM ai_platform_settings WHERE setting_key = 'billing.storefront.mode'");
     }
+
+    @Test
+    void aProductsSignUpsAreInItsSegmentWithoutARow() {
+        String product = "pgt" + UUID.randomUUID().toString().substring(0, 6);
+        String productInst = "pgp-" + UUID.randomUUID().toString().substring(0, 8);
+        String platformInst = "pgv-" + UUID.randomUUID().toString().substring(0, 8);
+        jdbc.update("INSERT INTO institutes (id, name, product) VALUES (?, 'PG product institute', ?)", productInst,
+                " " + product.toUpperCase() + " ");
+        jdbc.update("INSERT INTO institutes (id, name, product) VALUES (?, 'PG platform institute', 'vacademy')",
+                platformInst);
+        jdbc.update("INSERT INTO ai_storefront_audience (rule, segment_key, created_by) VALUES ('INCLUDE', ?, 't')",
+                "product_" + product);
+
+        assertTrue(access("SEGMENTS").isOpen(productInst), "the product's segment, from institutes.product");
+        assertFalse(access("ALLOWLIST").isOpen(productInst), "segments count only in SEGMENTS mode");
+        assertFalse(access("SEGMENTS").isOpen(platformInst), "another product's institute stays closed");
+
+        jdbc.update("INSERT INTO ai_storefront_audience (rule, segment_key, created_by) VALUES ('EXCLUDE', ?, 't')",
+                "product_" + product);
+        assertFalse(access("ALL").isOpen(productInst), "an EXCLUDE on the product segment wins");
+        jdbc.update("DELETE FROM ai_platform_settings WHERE setting_key = 'billing.storefront.mode'");
+    }
 }

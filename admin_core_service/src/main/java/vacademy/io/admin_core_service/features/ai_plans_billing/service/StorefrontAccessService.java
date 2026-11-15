@@ -31,12 +31,20 @@ public class StorefrontAccessService {
             + "AND COALESCE(UPPER(status), 'ACTIVE') NOT IN ('DELETED', 'INACTIVE')";
     static final String SELECT_SWITCH =
             "SELECT storefront_enabled FROM ai_storefront_institute WHERE institute_id = ?";
+    /**
+     * The institute's segments: the ones set by hand (ai_institute_segment) plus its product's,
+     * "product_<key>" (same rule as ai_service institute_segments), so a product's sign-ups are in
+     * its segment without anyone maintaining rows. One parameter: the institute id, twice.
+     */
+    static final String INSTITUTE_SEGMENTS = "SELECT s.segment_key FROM ai_institute_segment s WHERE s.institute_id = ? "
+            + "UNION SELECT LEFT('product_' || regexp_replace(lower(trim(i.product)), '[^a-z0-9_-]', '', 'g'), 48) "
+            + "FROM institutes i WHERE i.id = ? AND COALESCE(trim(i.product), '') <> ''";
     static final String SELECT_AUDIENCE = "SELECT a.rule FROM ai_storefront_audience a "
             + "WHERE a.is_active AND a.plan_id IS NULL AND (a.institute_id = ? "
-            + "OR (? AND a.segment_key IN (SELECT s.segment_key FROM ai_institute_segment s WHERE s.institute_id = ?)))";
+            + "OR (? AND a.segment_key IN (" + INSTITUTE_SEGMENTS + ")))";
     static final String SELECT_EXCLUDES = "SELECT COUNT(*) FROM ai_storefront_audience a "
             + "WHERE a.is_active AND a.plan_id IS NULL AND UPPER(a.rule) = 'EXCLUDE' AND (a.institute_id = ? "
-            + "OR a.segment_key IN (SELECT s.segment_key FROM ai_institute_segment s WHERE s.institute_id = ?))";
+            + "OR a.segment_key IN (" + INSTITUTE_SEGMENTS + "))";
 
     private final AiPlansBillingSettings settings;
     private final JdbcTemplate jdbc;
@@ -61,7 +69,7 @@ public class StorefrontAccessService {
             if (Boolean.FALSE.equals(enabled)) {
                 return false;
             }
-            Long excluded = jdbc.queryForObject(SELECT_EXCLUDES, Long.class, instituteId, instituteId);
+            Long excluded = jdbc.queryForObject(SELECT_EXCLUDES, Long.class, instituteId, instituteId, instituteId);
             if (excluded != null && excluded > 0) {
                 return false;
             }
@@ -69,7 +77,7 @@ public class StorefrontAccessService {
                 return true;
             }
             boolean segments = mode == StorefrontMode.SEGMENTS;
-            List<String> rules = jdbc.queryForList(SELECT_AUDIENCE, String.class, instituteId, segments, instituteId);
+            List<String> rules = jdbc.queryForList(SELECT_AUDIENCE, String.class, instituteId, segments, instituteId, instituteId);
             return rules.stream().anyMatch(r -> r == null || "INCLUDE".equalsIgnoreCase(r.trim()));
         } catch (Exception e) {
             log.warn("[ai-plans-billing] storefront check failed for {} ({}); closed", instituteId, e.getMessage());
