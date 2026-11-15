@@ -23,6 +23,7 @@ import { fetchEligibleOrgUsers } from '@/routes/manage-institute/teams/-services
 import { inviteTeamMember } from '@/routes/manage-institute/teams/-services/team-member-services';
 import { signupErrorMessage } from '@/routes/signup/-services/self-signup';
 import { PlanBillingDocuments } from '@/components/common/ai-credits/PlanBillingDocuments';
+import { useBillingDocumentsQuery } from '@/services/ai-plans/storefront';
 import {
     canAddTeachers,
     PLAN_ACCESS_QUERY_KEY,
@@ -95,9 +96,7 @@ function PlanPage() {
             <PlanCards access={access.data} />
             {/* GST invoices of the plan (and credit notes); none in the iPhone app. */}
             {!isIOS() && instituteId && access.data.status !== 'NONE' && (
-                <div className="rounded-lg border border-neutral-200 bg-white p-4">
-                    <PlanBillingDocuments instituteId={instituteId} />
-                </div>
+                <InvoicesSection instituteId={instituteId} />
             )}
         </div>
     );
@@ -174,12 +173,35 @@ const CurrentPlanCard = ({ access }: { access: PlanAccess }) => {
     );
 };
 
+/**
+ * The plan's invoices, shown only once the list loads: the list is refused while online plans are
+ * closed for the workspace, and there can be no plan invoice then anyway.
+ */
+const InvoicesSection = ({ instituteId }: { instituteId: string }) => {
+    const docs = useBillingDocumentsQuery(instituteId);
+    if (!docs.data) return null;
+    return (
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+            <PlanBillingDocuments instituteId={instituteId} />
+        </div>
+    );
+};
+
 const PlanCards = ({ access }: { access: PlanAccess }) => {
     const { t } = useTranslation('evalezy');
     const navigate = useNavigate();
     const isOwner = useIsOwner();
     const plans = access.plans ?? [];
-    if (plans.length === 0 || access.status === 'MANAGED') return null;
+    if (access.status === 'MANAGED') return null;
+    if (plans.length === 0) {
+        // No plans set for the product yet: say so instead of a page with nothing to buy.
+        return (
+            <p className="flex items-start gap-1 rounded-md bg-warning-50 p-3 text-body text-warning-700">
+                <Warning size={16} className="mt-0.5 shrink-0" weight="fill" />
+                {t('plan.noPlans')}
+            </p>
+        );
+    }
     const currentIndex = plans.findIndex((p) => p.key === access.plan_key);
     const period =
         access.plan_validity_months === 12 || access.plan_validity_months == null

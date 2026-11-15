@@ -10,6 +10,7 @@
         "starting": "Opening your demo…"
     },
     "plan": {
+        "noPlans": "Plans can't be bought online for this account yet. Contact us and we'll set it up.",
         "invoices": "Invoices",
         "pendingTitle": "Payment pending",
         "pendingBody": "Your account is ready. Pay for your plan below to start checking copies. The plan's credits are added as soon as you pay.",
