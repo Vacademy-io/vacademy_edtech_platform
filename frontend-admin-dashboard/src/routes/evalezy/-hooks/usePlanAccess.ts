@@ -52,7 +52,13 @@ export const usePlanAccess = () => {
 };
 
 /** Paths a "Buy <plan>" account may open before it pays: the plan, its checkout, and the profile. */
-export const PAYMENT_PENDING_PATHS = ['/evalezy/plan', '/evalezy/credits', '/evalezy/profile'];
+export const PAYMENT_PENDING_PATHS = [
+    '/evalezy/plan',
+    '/evalezy/credits',
+    '/evalezy/profile',
+    // The tutorials: a buyer can learn the app before paying.
+    '/evalezy/help',
+];
 
 export const isPaymentPending = (access: PlanAccess | undefined) =>
     access?.status === 'PAYMENT_PENDING';
