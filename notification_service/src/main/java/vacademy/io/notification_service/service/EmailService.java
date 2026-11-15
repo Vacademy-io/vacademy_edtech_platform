@@ -1171,7 +1171,7 @@ public class EmailService {
                     saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "ATTACHMENT_EMAIL_SERVICE", messageId, null, fromToUse, instituteId);
                     emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
-                } catch (MessagingException e) {
+                } catch (MessagingException | java.io.UnsupportedEncodingException e) {
                     logger.error("Error while preparing or sending the email", e);
                     SentryLogger.SentryEventBuilder.error(e)
                             .withMessage("Failed to send email with attachments")
