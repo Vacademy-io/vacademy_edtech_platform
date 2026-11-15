@@ -273,6 +273,9 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
 // the institute name and T&C/Privacy links (the redirect is client-side, so
 // index.tsx's bootstrap never re-runs to refetch it).
 const LOGOUT_PRESERVE_KEYS = [
+    // Evalezy tutorials (routes/evalezy/-lib/tutorials.ts): offered once after sign-up, card closed.
+    'evalezy-welcome-tutorial',
+    'evalezy-tutorial-card-hidden',
     'theme-code',
     'theme-custom-color',
     'vite-ui-theme',

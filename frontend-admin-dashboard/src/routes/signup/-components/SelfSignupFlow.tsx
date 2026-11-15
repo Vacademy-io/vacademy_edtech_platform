@@ -18,6 +18,7 @@ import { INDIAN_GST_STATES } from '@/services/ai-credits/credit-pack-services';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { cn } from '@/lib/utils';
 import { clearPlanBuyIntent, isPaidPlanKey, rememberPlanBuyIntent } from '@/lib/plan-buy-intent';
+import { markWelcomeTutorial } from '@/routes/evalezy/-lib/tutorials';
 import {
     completeSignup,
     consumeGoogleReturn,
@@ -41,12 +42,18 @@ const INSTITUTE_TYPES = ['school', 'coaching', 'college', 'university', 'company
 /** What each answer stores as the teacher count. */
 const TEACHER_BANDS = [1, 5, 15, 16];
 
-export const enterApp = async (tokens: SignupTokens, appPath: string) => {
+export const enterApp = async (
+    tokens: SignupTokens,
+    appPath: string,
+    { newAccount = false }: { newAccount?: boolean } = {}
+) => {
     await handleLoginFlow({
         loginMethod: 'signup',
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
     });
+    // A new account (trial, demo or buy) is offered the 2-minute tutorial on its first screen.
+    if (newAccount) markWelcomeTutorial();
     window.location.href = appPath;
 };
 
@@ -458,7 +465,7 @@ const DetailsForm = ({
                 teachers: Number(values.teachers),
                 ...(buyPlan ? { buy: buyPlan } : {}),
             }),
-        onSuccess: (tokens) => enterApp(tokens, product.app_path),
+        onSuccess: (tokens) => enterApp(tokens, product.app_path, { newAccount: true }),
         onError: (error) => onError(signupErrorMessage(error) ?? t('signup.createFailed')),
     });
 
