@@ -69,6 +69,8 @@ from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
 from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
+
+from .audio_models import make_smart_turn, make_vad
 from pipecat.turns.user_stop.turn_analyzer_user_turn_stop_strategy import (
     TurnAnalyzerUserTurnStopStrategy,
 )
@@ -6973,7 +6975,9 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
     # Telephony VAD tuning carries over from the 0.0.95 fixes: min_volume 0.35
     # (pipecat's 0.6 default made the VAD stone-deaf to phone-leg callers on live
     # call 8e1e00ad — the single worst finding of the migration's test calls).
-    vad = SileroVADAnalyzer(params=VADParams(
+    # make_vad / make_smart_turn: the same pipecat analyzers on ONE model session
+    # per process instead of a fresh one per call (app/audio_models.py).
+    vad = make_vad(params=VADParams(
         stop_secs=settings.vad_stop_secs,
         start_secs=settings.vad_start_secs,
         confidence=settings.vad_confidence,
@@ -7008,7 +7012,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
         ],
         stop=[
             TurnAnalyzerUserTurnStopStrategy(
-                turn_analyzer=(smart_turn := LocalSmartTurnAnalyzerV3(
+                turn_analyzer=(smart_turn := make_smart_turn(
                     params=SmartTurnParams(stop_secs=settings.smart_turn_stop_secs)))),
         ],
     )
