@@ -69,5 +69,10 @@ public enum SettingKeyEnums {
     // enforced by ai_service (app/mcp/access.py), which owns the MCP server.
     // Deliberately opt-in: absence of the key means the server is off, and
     // learner roles are stripped from allowed_roles server-side regardless.
-    MCP_SERVER_SETTING
+    MCP_SERVER_SETTING,
+    // Public "Try the AI call" exhibition demo on the demo institute (telleo.ai/try-ai-call):
+    // {"enabled", "agentId", "dialNumber", "displayNumber", "ttlMinutes", "languages"}.
+    // Read by AiDemoCallService; absence of the key means the demo is off and inbound calls
+    // behave exactly as before.
+    AI_DEMO_CALL_SETTING
 }

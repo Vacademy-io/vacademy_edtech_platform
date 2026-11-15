@@ -76,6 +76,8 @@ public class VoiceBotInternalController {
     @Autowired private vacademy.io.admin_core_service.features.telephony.persistence.repository
             .AiAgentTestCallRepository testCallRepo;
 
+    @Autowired private vacademy.io.admin_core_service.features.telephony.demo.AiDemoCallService aiDemoCallService;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     /** The public-API call behind this call-log row, or null for every other call. */
@@ -132,6 +134,12 @@ public class VoiceBotInternalController {
 
         String instituteName = instituteRepository.findById(instituteId)
                 .map(i -> i.getInstituteName()).orElse("our institute");
+        // "Try the AI call" demo (V679): an inbound call from a number that just filled the
+        // public demo page is answered by the demo agent, in the language the visitor picked,
+        // as the admission counsellor of the organisation they typed. Empty for every other
+        // call, and never throws.
+        var demo = aiDemoCallService.bindInbound(row).orElse(null);
+        String effectiveAgentId = demo != null && demo.agentId() != null ? demo.agentId() : agentId;
         // A call placed through the public AI calling API: the client sent the contact's
         // name and template variables with the request. Its user id is a pseudo id that
         // exists nowhere, so the auth-service lookups below would only find nothing.
@@ -140,7 +148,8 @@ public class VoiceBotInternalController {
         // a pseudo id too.
         boolean agentTest = vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
                 .AGENT_TEST.name().equals(row.getSubjectType());
-        String leadName = apiCall != null ? apiCall.getContactName()
+        String leadName = demo != null ? demo.request().getVisitorName()
+                : apiCall != null ? apiCall.getContactName()
                 : agentTest ? testCallName(row)
                 : row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
                 ? null
@@ -148,7 +157,7 @@ public class VoiceBotInternalController {
         // Gender for how the bot addresses the lead (honorific + Hindi second-person):
         // the stored record gender wins; else a conservative name guess (null when
         // unknown, so the bot uses gender-neutral address instead of defaulting to "sir").
-        String leadGender = (apiCall != null || agentTest || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
+        String leadGender = (demo != null || apiCall != null || agentTest || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
                 ? vacademy.io.admin_core_service.features.telephony.core.NameGender.of(leadName)
                 : userMobileResolver.findGender(row.getUserId())
                         .orElseGet(() -> vacademy.io.admin_core_service.features.telephony.core
@@ -158,14 +167,22 @@ public class VoiceBotInternalController {
 
         // Registry agent first (agentId = ai_agent.id, minted by the settings
         // bridge as the VACADEMY_AI campaignId); built-in template as fallback.
-        var registryAgent = agentId == null ? java.util.Optional.<vacademy.io.admin_core_service
+        var registryAgent = effectiveAgentId == null ? java.util.Optional.<vacademy.io.admin_core_service
                 .features.telephony.persistence.entity.AiAgent>empty()
-                : aiAgentService.find(agentId, instituteId)
+                : aiAgentService.find(effectiveAgentId, instituteId)
                         .filter(a -> Boolean.TRUE.equals(a.getEnabled()));
         Map<String, Object> agent = registryAgent
                 .map(a -> registryAgentMap(a, instituteName, settings))
-                .orElseGet(() -> defaultAgent(agentId, instituteName, settings));
-        if (apiCall != null || agentTest) {
+                .orElseGet(() -> defaultAgent(effectiveAgentId, instituteName, settings));
+        if (demo != null) {
+            // The visitor's language decides STT, script rule, voice and the first line.
+            var lang = demo.language();
+            agent.put("language", lang.getCode());
+            if (lang.getTtsModel() != null) agent.put("tts_model", lang.getTtsModel());
+            if (lang.getVoice() != null) agent.put("voice", lang.getVoice());
+            if (lang.getOpeningLine() != null) agent.put("openingLine", lang.getOpeningLine());
+        }
+        if (apiCall != null || agentTest || demo != null) {
             // The contact belongs to the client's CRM, not ours: there is no lead to send a
             // WhatsApp/email to or to book against, so the agent must not offer either.
             // A test call has no lead either.
@@ -203,7 +220,9 @@ public class VoiceBotInternalController {
         // reference what it already knows instead of re-asking. Empty for unknown callers.
         // For an API call, the client's variables play this part: they fill the agent's
         // {{placeholders}} and are listed to the model as what it already knows.
-        Map<String, String> leadFields = apiCall != null
+        Map<String, String> leadFields = demo != null
+                ? demo.leadFields()
+                : apiCall != null
                 ? apiVariablesForBot(apiCall.getVariables())
                 : row.getResponseId() == null
                 ? Map.of() : audienceService.getLeadCustomFields(row.getResponseId());
