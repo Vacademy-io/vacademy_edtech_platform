@@ -32,12 +32,29 @@ export type CommerceEvent =
     | { name: 'remove_from_cart'; item: EventItem; currency?: string | null }
     | { name: 'view_cart'; items: EventItem[]; value?: number | null; currency?: string | null }
     | { name: 'search'; term: string }
-    | { name: 'view_search_results'; term: string; results: number };
+    | { name: 'view_search_results'; term: string; results: number }
+    | { name: 'begin_checkout'; items: EventItem[]; value?: number | null; currency?: string | null; coupon?: string | null }
+    | { name: 'add_shipping_info'; items: EventItem[]; value?: number | null; currency?: string | null }
+    | { name: 'add_payment_info'; items: EventItem[]; value?: number | null; currency?: string | null; paymentType: 'prepaid' | 'cod' }
+    | {
+          name: 'purchase';
+          /** The order NUMBER (what the shopper sees), never the order id. */
+          transactionId: string;
+          items: EventItem[];
+          value?: number | null;
+          tax?: number | null;
+          shipping?: number | null;
+          coupon?: string | null;
+          currency?: string | null;
+          paymentType: 'prepaid' | 'cod';
+      }
+    | { name: 'login' }
+    | { name: 'commerce_checkout_error'; code: string };
 
 export interface BuiltEvent {
     ga: { name: string; params: Record<string, unknown> };
     /** The Meta standard event this maps to, when there is one. */
-    meta?: { name: string; params: Record<string, unknown> };
+    meta?: { name: string; params: Record<string, unknown>; eventId?: string };
 }
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -127,6 +144,49 @@ export const buildCommerceEvent = (event: CommerceEvent): BuiltEvent => {
         case 'view_search_results':
             // results_count 0 is the "zero-result query" the seller reads to learn what is missing.
             return { ga: { name: 'view_search_results', params: { search_term: event.term, results_count: event.results, zero_results: event.results === 0 } } };
+        case 'begin_checkout': {
+            const sums = money(event.items, event.currency, event.value);
+            const coupon = event.coupon ? { coupon: event.coupon } : {};
+            return {
+                ga: { name: 'begin_checkout', params: { ...sums, ...coupon, items: event.items.map(gaItem) } },
+                meta: { name: 'InitiateCheckout', params: { content_ids: event.items.map((i) => i.id), content_type: 'product', num_items: event.items.length, ...sums } },
+            };
+        }
+        case 'add_shipping_info':
+            return {
+                ga: { name: 'add_shipping_info', params: { ...money(event.items, event.currency, event.value), shipping_tier: 'standard', items: event.items.map(gaItem) } },
+            };
+        case 'add_payment_info': {
+            const sums = money(event.items, event.currency, event.value);
+            return {
+                ga: { name: 'add_payment_info', params: { ...sums, payment_type: event.paymentType, items: event.items.map(gaItem) } },
+                meta: { name: 'AddPaymentInfo', params: { content_ids: event.items.map((i) => i.id), content_type: 'product', ...sums } },
+            };
+        }
+        case 'purchase': {
+            const sums = money(event.items, event.currency, event.value);
+            const extra = {
+                ...(typeof event.tax === 'number' ? { tax: round2(event.tax) } : {}),
+                ...(typeof event.shipping === 'number' ? { shipping: round2(event.shipping) } : {}),
+                ...(event.coupon ? { coupon: event.coupon } : {}),
+            };
+            return {
+                ga: {
+                    name: 'purchase',
+                    params: { transaction_id: event.transactionId, ...sums, ...extra, payment_type: event.paymentType, items: event.items.map(gaItem) },
+                },
+                // The same id lets Meta drop a duplicate sent by the server later.
+                meta: {
+                    name: 'Purchase',
+                    params: { content_ids: event.items.map((i) => i.id), content_type: 'product', num_items: event.items.length, ...sums },
+                    eventId: event.transactionId,
+                },
+            };
+        }
+        case 'login':
+            return { ga: { name: 'login', params: { method: 'whatsapp_otp' } } };
+        case 'commerce_checkout_error':
+            return { ga: { name: 'commerce_checkout_error', params: { code: (event.code || 'unknown').slice(0, 40) } } };
     }
 };
 
@@ -163,9 +223,92 @@ export const sendCommerceEvent = (
             win.dataLayer.push({ ecommerce: null });
             win.dataLayer.push({ event: `commerce_${built.ga.name}`, ecommerce: built.ga.params });
         }
-        if (built.meta) win.fbq?.('track', built.meta.name, built.meta.params);
+        if (built.meta) {
+            if (built.meta.eventId) win.fbq?.('track', built.meta.name, built.meta.params, { eventID: built.meta.eventId });
+            else win.fbq?.('track', built.meta.name, built.meta.params);
+        }
         return built;
     } catch {
         return null;
     }
+};
+
+/* ── once-only events of the buying pages ─────────────────────────── */
+
+interface SmallStorage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+}
+
+const PURCHASED_KEY = 'cmx.purchased.v1';
+const BEGUN_KEY = 'cmx.begin.v1';
+
+const readList = (storage: SmallStorage | null | undefined, key: string): string[] => {
+    try {
+        const parsed = JSON.parse(storage?.getItem(key) || '[]') as unknown;
+        return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+    } catch {
+        return [];
+    }
+};
+
+/** Adds `value` to a short list in storage; false when it was already there. */
+const firstTime = (storage: SmallStorage | null | undefined, key: string, value: string, keep: number): boolean => {
+    const list = readList(storage, key);
+    if (list.includes(value)) return false;
+    try {
+        storage?.setItem(key, JSON.stringify([...list, value].slice(-keep)));
+    } catch {
+        // Without storage the event may repeat on a reload; that is the lesser harm.
+    }
+    return true;
+};
+
+const local = (): SmallStorage | null => {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+        return typeof localStorage === 'undefined' ? null : localStorage;
+    } catch {
+        return null;
+    }
+};
+
+const session = (): SmallStorage | null => {
+    try {
+        if (typeof window !== 'undefined' && window.sessionStorage) return window.sessionStorage;
+        return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * `purchase` once per order number of a shop on this device (a reload of the order page sends
+ * nothing). Order numbers restart per shop, so the list is kept per institute (`scope`).
+ */
+export const sendPurchaseOnce = (
+    event: Extract<CommerceEvent, { name: 'purchase' }>,
+    scope: string,
+    storage: SmallStorage | null | undefined = local(),
+    win?: Parameters<typeof sendCommerceEvent>[1]
+): BuiltEvent | null => {
+    if (!event.transactionId) return null;
+    const target = win === undefined ? (typeof window === 'undefined' ? undefined : (window as unknown as Parameters<typeof sendCommerceEvent>[1])) : win;
+    // Nothing is remembered from an editor preview, so the real visit still counts.
+    if (!target || isBuilderPreview(target)) return null;
+    if (!firstTime(storage, `${PURCHASED_KEY}.${scope}`, event.transactionId, 50)) return null;
+    return sendCommerceEvent(event, target);
+};
+
+/** `begin_checkout` once per cart (its hash) per browser session. */
+export const sendBeginCheckoutOnce = (
+    hash: string,
+    event: Extract<CommerceEvent, { name: 'begin_checkout' }>,
+    storage: SmallStorage | null | undefined = session(),
+    win?: Parameters<typeof sendCommerceEvent>[1]
+): BuiltEvent | null => {
+    const target = win === undefined ? (typeof window === 'undefined' ? undefined : (window as unknown as Parameters<typeof sendCommerceEvent>[1])) : win;
+    if (!target || isBuilderPreview(target)) return null;
+    if (!firstTime(storage, BEGUN_KEY, hash, 20)) return null;
+    return sendCommerceEvent(event, target);
 };

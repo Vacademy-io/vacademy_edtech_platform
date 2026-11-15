@@ -151,7 +151,8 @@ const CartLineRow: React.FC<{
     );
 };
 
-const CartTotals: React.FC<{ price: CartPrice }> = ({ price }) => {
+/** The server's totals of a priced cart (cart drawer, cart page, checkout). */
+export const CartTotals: React.FC<{ price: CartPrice }> = ({ price }) => {
     const { t } = useCommerceSite();
     const totals = price.totals;
     const shipping = price.shipping;
@@ -185,6 +186,12 @@ const CartTotals: React.FC<{ price: CartPrice }> = ({ price }) => {
                 <dt>{t('cart.delivery')}</dt>
                 <dd>{shipping?.free || !totals.shipping ? t('cart.free') : money(totals.shipping)}</dd>
             </div>
+            {typeof totals.cod_charge === 'number' && totals.cod_charge > 0 && (
+                <div>
+                    <dt>{t('checkout.codCharge')}</dt>
+                    <dd>{money(totals.cod_charge)}</dd>
+                </div>
+            )}
             <div className="cmx-totals__total">
                 <dt>{t('cart.total')}</dt>
                 <dd>{money(totals.total)}</dd>

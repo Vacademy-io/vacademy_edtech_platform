@@ -30,7 +30,19 @@ export type CommerceRoute =
     | { kind: 'collection'; slug: string }
     | { kind: 'search' }
     | { kind: 'cart' }
-    | { kind: 'scan'; code: string };
+    | { kind: 'scan'; code: string }
+    | { kind: 'checkout' }
+    | { kind: 'order' }
+    | { kind: 'track' }
+    | { kind: 'account' };
+
+/** The buying routes: one segment each, no record in the path (tokens travel elsewhere). */
+const BUYING: Record<string, CommerceRoute> = {
+    checkout: { kind: 'checkout' },
+    order: { kind: 'order' },
+    'track-order': { kind: 'track' },
+    account: { kind: 'account' },
+};
 
 const decode = (segment: string): string => {
     try {
@@ -47,8 +59,8 @@ const SCAN_CODE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 /**
  * Which shop route the segments name; null for everything else (an authored page, a course,
- * another catalogue). "shop" is an authored page and the buying routes (checkout, order,
- * track-order, account) belong to a later package, so none of them is answered here.
+ * another catalogue). "shop" is an authored page. The buying routes (checkout, order,
+ * track-order, account) are one segment each: "account/orders" is not one of them.
  */
 export const parseCommerceRoute = (segments: readonly string[]): CommerceRoute | null => {
     const parts = segments.filter((s) => s !== '');
@@ -56,7 +68,7 @@ export const parseCommerceRoute = (segments: readonly string[]): CommerceRoute |
     if (parts.length === 1) {
         if (first === 'search') return { kind: 'search' };
         if (first === 'cart') return { kind: 'cart' };
-        return null;
+        return Object.prototype.hasOwnProperty.call(BUYING, first) ? BUYING[first]! : null;
     }
     if (parts.length !== 2) return null;
     const second = decode(parts[1] || '');
@@ -84,6 +96,14 @@ export const commerceRouteTo = (route: CommerceRoute): string => {
             return 'cart';
         case 'scan':
             return `q/${encodeURIComponent(route.code)}`;
+        case 'checkout':
+            return 'checkout';
+        case 'order':
+            return 'order';
+        case 'track':
+            return 'track-order';
+        case 'account':
+            return 'account';
     }
 };
 

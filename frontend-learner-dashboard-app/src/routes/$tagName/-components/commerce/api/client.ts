@@ -5,6 +5,10 @@
  *   POST /admin-core-service/open/commerce/v1/cart/price
  *   GET  /admin-core-service/open/commerce/v1/pincode/{pin}
  *   GET  /admin-core-service/open/commerce/v1/q/{code}          (named by the design, not built yet)
+ *   The buying routes of /open/commerce/v1 (checkout, otp, orders, me) and the stock-hold release.
+ *
+ * Tokens (session, verified phone, order access) travel in headers or JSON bodies only, never in
+ * a URL, and the learner's own token is never sent: these are not learner calls.
  *
  * Plain fetch, no axios instance: these calls carry the site's publishable key and never the
  * learner's token or refresh cycle. The catalogue reads answer with Cache-Control max-age=60;
@@ -14,16 +18,33 @@
  * No price, total, tax or stock number is computed here: the server prices every line.
  */
 import type {
+    AddressView,
     CartPrice,
     CartPriceRequest,
     CategoryTree,
+    CheckoutAddress,
+    CheckoutConfig,
+    CheckoutRequestBody,
+    OrderPage,
+    OrderView,
+    OtpPurpose,
+    OtpSent,
+    OtpVerified,
     PincodeInfo,
+    Placed,
     ProductDetail,
     ProductList,
     ProductListParams,
     ScanTarget,
+    ShopperAuth,
+    ShopperMe,
     Suggestions,
 } from './types';
+
+/** Header names of the buying routes (contract P2 §4). */
+export const SESSION_HEADER = 'X-Commerce-Session';
+export const PHONE_TOKEN_HEADER = 'X-Commerce-Phone-Token';
+export const ORDER_TOKEN_HEADER = 'X-Commerce-Order-Token';
 
 export const COMMERCE_STALE_MS = 60_000;
 
@@ -49,7 +70,9 @@ export class CommerceApiError extends Error {
         public readonly code: string,
         message: string,
         /** Seconds, from Retry-After, when the API sent one. */
-        public readonly retryAfter: number | null = null
+        public readonly retryAfter: number | null = null,
+        /** The envelope's `details` object (`otp_allowed`, `reason`, `price`...), when sent. */
+        public readonly details: Record<string, unknown> | null = null
     ) {
         super(message || code || kind);
         this.name = 'CommerceApiError';
@@ -81,12 +104,17 @@ export const errorFromBody = (status: number, body: unknown, retryAfterHeader?: 
     const code = typeof envelope?.code === 'string' ? envelope.code : '';
     const message = typeof envelope?.message === 'string' ? envelope.message : '';
     const seconds = Number(retryAfterHeader);
+    const details =
+        envelope && envelope.details && typeof envelope.details === 'object' && !Array.isArray(envelope.details)
+            ? (envelope.details as Record<string, unknown>)
+            : null;
     return new CommerceApiError(
         errorKindOf(status, code),
         status,
         code,
         message,
-        Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 600) : null
+        Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 600) : null,
+        details
     );
 };
 
@@ -128,14 +156,46 @@ export interface CommerceClient {
     priceCart(body: CartPriceRequest, signal?: AbortSignal): Promise<CartPrice>;
     getPincode(pin: string, signal?: AbortSignal): Promise<PincodeInfo>;
     resolveScan(code: string, signal?: AbortSignal): Promise<ScanTarget>;
+
+    /* buying */
+    getCheckoutConfig(signal?: AbortSignal): Promise<CheckoutConfig>;
+    requestOtp(body: { phone: string; purpose: OtpPurpose; challenge_token?: string | null }): Promise<OtpSent>;
+    verifyOtp(body: { phone: string; code: string; purpose: OtpPurpose }): Promise<OtpVerified>;
+    /** `session` is sent as X-Commerce-Session (proof of the phone for a prepaid order). */
+    placeOrder(body: CheckoutRequestBody, opts?: { session?: string | null }): Promise<Placed>;
+    confirmPayment(
+        orderId: string,
+        body: { gateway_order_id: string; gateway_payment_id: string; signature: string }
+    ): Promise<Placed>;
+    retryPayment(orderId: string, orderToken: string): Promise<Placed>;
+    releaseHold(body: { payment_log_id: string; release_token: string }): Promise<{ released: number }>;
+    viewOrder(orderToken: string, signal?: AbortSignal): Promise<OrderView>;
+    trackOrder(body: { order_number: string; phone_token: string }): Promise<OrderView>;
+    getMe(auth: ShopperAuth, signal?: AbortSignal): Promise<ShopperMe>;
+    myOrders(auth: ShopperAuth, page: number, pageSize?: number, signal?: AbortSignal): Promise<OrderPage>;
+    myAddresses(auth: ShopperAuth, signal?: AbortSignal): Promise<AddressView[]>;
+    addAddress(auth: ShopperAuth, address: CheckoutAddress): Promise<AddressView>;
+    updateAddress(auth: ShopperAuth, id: string, address: CheckoutAddress): Promise<AddressView>;
+    deleteAddress(auth: ShopperAuth, id: string): Promise<void>;
+    setConsent(auth: ShopperAuth, marketingConsent: boolean): Promise<ShopperMe>;
+    /** Ends every session of this phone in this shop. */
+    logout(auth: ShopperAuth): Promise<void>;
 }
+
+/** The header that proves the shopper on a /me call: the session wins when there is one. */
+export const shopperAuthHeaders = (auth: ShopperAuth): Record<string, string> =>
+    'session' in auth ? { [SESSION_HEADER]: auth.session } : { [PHONE_TOKEN_HEADER]: auth.phoneToken };
 
 export const createCommerceClient = (options: CommerceClientOptions): CommerceClient => {
     const doFetch = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
     const catalog = `${options.baseUrl}/admin-core-service/open/catalog/v1`;
     const commerce = `${options.baseUrl}/admin-core-service/open/commerce/v1`;
 
-    const call = async <T>(url: string, init: RequestInit): Promise<T> => {
+    const call = async <T>(
+        url: string,
+        init: RequestInit,
+        extra: { headers?: Record<string, string>; empty?: boolean; noKey?: boolean } = {}
+    ): Promise<T> => {
         let res: Response;
         try {
             res = await doFetch(url, {
@@ -143,8 +203,9 @@ export const createCommerceClient = (options: CommerceClientOptions): CommerceCl
                 credentials: 'omit',
                 headers: {
                     accept: 'application/json',
-                    'X-API-Key': options.publishableKey,
+                    ...(extra.noKey ? {} : { 'X-API-Key': options.publishableKey }),
                     ...(init.body ? { 'content-type': 'application/json' } : {}),
+                    ...(extra.headers || {}),
                 },
             });
         } catch (cause) {
@@ -158,6 +219,8 @@ export const createCommerceClient = (options: CommerceClientOptions): CommerceCl
             // Not JSON (a proxy page): the status decides.
         }
         if (!res.ok) throw errorFromBody(res.status, body, res.headers.get('retry-after'));
+        // 204 (logout, delete): nothing to read.
+        if (extra.empty) return undefined as T;
         if (body === null || typeof body !== 'object') {
             throw new CommerceApiError('server', res.status, '', 'empty response');
         }
@@ -165,6 +228,19 @@ export const createCommerceClient = (options: CommerceClientOptions): CommerceCl
     };
 
     const get = <T>(url: string, signal?: AbortSignal) => call<T>(url, { method: 'GET', signal });
+    /** A buying call: never cached, a JSON body when given, and the extra headers. */
+    const send = <T>(
+        method: string,
+        url: string,
+        body?: unknown,
+        extra: { headers?: Record<string, string>; empty?: boolean; noKey?: boolean; signal?: AbortSignal } = {}
+    ) =>
+        call<T>(
+            url,
+            { method, cache: 'no-store', signal: extra.signal, ...(body === undefined ? {} : { body: JSON.stringify(body) }) },
+            extra
+        );
+    const me = `${commerce}/me`;
 
     return {
         locale: options.locale,
@@ -196,5 +272,39 @@ export const createCommerceClient = (options: CommerceClientOptions): CommerceCl
         getPincode: (pin, signal) =>
             get(`${commerce}/pincode/${encodeURIComponent(pin)}?locale=${encodeURIComponent(options.locale)}`, signal),
         resolveScan: (code, signal) => get(`${commerce}/q/${encodeURIComponent(code)}`, signal),
+
+        // The answer is kept by the browser for 60 s (Cache-Control from the server).
+        getCheckoutConfig: (signal) => get(`${commerce}/checkout/config`, signal),
+        requestOtp: (body) => send('POST', `${commerce}/otp/request`, body),
+        verifyOtp: (body) => send('POST', `${commerce}/otp/verify`, body),
+        placeOrder: (body, opts) =>
+            send('POST', `${commerce}/checkout`, { ...body, lines: body.lines.slice(0, MAX_CART_LINES), locale: options.locale }, {
+                headers: opts?.session ? { [SESSION_HEADER]: opts.session } : undefined,
+            }),
+        confirmPayment: (orderId, body) => send('POST', `${commerce}/checkout/${encodeURIComponent(orderId)}/confirm-payment`, body),
+        retryPayment: (orderId, orderToken) =>
+            send('POST', `${commerce}/checkout/${encodeURIComponent(orderId)}/retry-payment`, {}, {
+                headers: { [ORDER_TOKEN_HEADER]: orderToken },
+            }),
+        // Not a shop route: the stock-hold service takes no key.
+        releaseHold: (body) => send('POST', `${options.baseUrl}/admin-core-service/open/v1/stock-hold/release`, body, { noKey: true }),
+        viewOrder: (orderToken, signal) =>
+            send('GET', `${commerce}/orders/view`, undefined, { headers: { [ORDER_TOKEN_HEADER]: orderToken }, signal }),
+        trackOrder: (body) => send('POST', `${commerce}/orders/track`, body),
+        getMe: (auth, signal) => send('GET', me, undefined, { headers: shopperAuthHeaders(auth), signal }),
+        myOrders: (auth, page, pageSize = 20, signal) =>
+            send('GET', `${me}/orders?page=${Math.max(0, Math.floor(page))}&page_size=${pageSize}`, undefined, {
+                headers: shopperAuthHeaders(auth),
+                signal,
+            }),
+        myAddresses: (auth, signal) => send('GET', `${me}/addresses`, undefined, { headers: shopperAuthHeaders(auth), signal }),
+        addAddress: (auth, address) => send('POST', `${me}/addresses`, address, { headers: shopperAuthHeaders(auth) }),
+        updateAddress: (auth, id, address) =>
+            send('PUT', `${me}/addresses/${encodeURIComponent(id)}`, address, { headers: shopperAuthHeaders(auth) }),
+        deleteAddress: (auth, id) =>
+            send('DELETE', `${me}/addresses/${encodeURIComponent(id)}`, undefined, { headers: shopperAuthHeaders(auth), empty: true }),
+        setConsent: (auth, marketingConsent) =>
+            send('PUT', `${me}/consent`, { marketing_consent: marketingConsent }, { headers: shopperAuthHeaders(auth) }),
+        logout: (auth) => send('POST', `${me}/logout`, {}, { headers: shopperAuthHeaders(auth), empty: true }),
     };
 };

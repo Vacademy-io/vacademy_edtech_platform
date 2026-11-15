@@ -230,7 +230,9 @@ export interface CategoryTree {
 
 export interface CartPriceRequestLine {
     line_ref: string;
-    variant_id: string;
+    /** The variant id; or send `sku` instead (a reorder knows only the SKU). */
+    variant_id?: string;
+    sku?: string;
     /** Base units. */
     quantity: number;
     /** What the cart last showed for one base unit; the server never trusts it. */
@@ -394,3 +396,211 @@ export interface ProductListParams {
     pageSize?: number;
     facets?: boolean;
 }
+
+/* ── buying: checkout, orders, shopper account (contract P2 §5) ───── */
+
+export type BuyerIdentity = 'PHONE_OTP' | 'EMAIL' | 'EITHER';
+export type PaymentMethod = 'PREPAID' | 'COD';
+export type OtpPurpose = 'CHECKOUT' | 'ACCOUNT' | 'TRACK_ORDER' | 'COD';
+
+/** GET /checkout/config: what the buying pages need to know about the shop. No secret in it. */
+export interface CheckoutConfig {
+    buyer_identity: BuyerIdentity | string | null;
+    otp: { channel: string | null; code_length: number | null; resend_after: number | null } | null;
+    bot_check: { required: boolean; site_key: string | null } | null;
+    payment_methods: string[] | null;
+    cod: {
+        enabled: boolean;
+        online: boolean;
+        max_order_value: number | null;
+        staff_confirm_threshold: number | null;
+    } | null;
+    hold_minutes: number | null;
+    session_days: number | null;
+    currency: string | null;
+}
+
+export interface OtpSent {
+    sent: boolean;
+    expires_in: number;
+    resend_after: number;
+}
+
+export interface OtpVerified {
+    verified_phone_token: string;
+    expires_in: number;
+    /** Only for CHECKOUT and ACCOUNT, and only when the shop can issue sessions. */
+    shopper_session_token?: string | null;
+    shopper_session_expires_at?: string | null;
+    shopper_session_expires_in?: number | null;
+    phone_masked?: string | null;
+}
+
+export interface CheckoutAddress {
+    label?: string | null;
+    name: string;
+    phone: string;
+    line1: string;
+    line2?: string | null;
+    landmark?: string | null;
+    city: string;
+    state_code: string;
+    pincode: string;
+    is_default?: boolean | null;
+}
+
+/** POST /checkout. The server prices the cart again; `expected_total` only reports a change. */
+export interface CheckoutRequestBody {
+    client_request_id: string;
+    lines: CartPriceRequestLine[];
+    coupon_code?: string | null;
+    payment_method: PaymentMethod;
+    expected_total: number | null;
+    locale?: string;
+    customer: { name: string; phone: string; email?: string | null };
+    shipping_address: CheckoutAddress;
+    billing_address?: CheckoutAddress | null;
+    buyer_gstin?: string | null;
+    customer_note?: string | null;
+    gift_note?: string | null;
+    marketing_consent?: boolean | null;
+    save_address?: boolean | null;
+    challenge_token?: string | null;
+    phone_token?: string | null;
+}
+
+export interface PlacedPayment {
+    vendor: string;
+    gateway_order_id: string;
+    key_id: string;
+    amount_minor: number;
+    currency: string;
+}
+
+export interface PlacedHold {
+    payment_log_id: string;
+    release_token: string;
+    expires_at: string;
+}
+
+/** The answer to a placed order, a payment retry and a client payment confirmation. */
+export interface Placed {
+    order_id: string;
+    order_number: string;
+    status: string;
+    payment_status?: string | null;
+    currency?: string | null;
+    total?: number | null;
+    payment?: PlacedPayment | null;
+    payment_retryable?: boolean;
+    payment_processing?: boolean;
+    hold?: PlacedHold | null;
+    order_access_token?: string | null;
+    order_access_token_expires_at?: string | null;
+    replayed?: boolean;
+}
+
+export interface OrderLineView {
+    line_ref?: string | null;
+    name?: string | null;
+    variant_label?: string | null;
+    sku?: string | null;
+    quantity: number;
+    qty_scale?: number | null;
+    unit?: string | null;
+    unit_price?: number | null;
+    compare_at_price?: number | null;
+    discount?: number | null;
+    line_total?: number | null;
+    qty_cancelled?: number | null;
+    qty_shipped?: number | null;
+}
+
+export interface OrderTotals {
+    subtotal?: number | null;
+    discount?: number | null;
+    shipping?: number | null;
+    cod_charge?: number | null;
+    tax?: number | null;
+    round_off?: number | null;
+    total?: number | null;
+    amount_paid?: number | null;
+}
+
+export interface OrderRecipient {
+    name?: string | null;
+    phone_masked?: string | null;
+    city?: string | null;
+    state_code?: string | null;
+    pincode?: string | null;
+}
+
+/** One order as its buyer sees it (GET /orders/view, POST /orders/track). */
+export interface OrderView {
+    order_id: string;
+    order_number: string;
+    status: string;
+    payment_status?: string | null;
+    payment_method?: string | null;
+    cancel_reason?: string | null;
+    placed_at?: string | null;
+    hold_expires_at?: string | null;
+    payment_retryable?: boolean;
+    payment_processing?: boolean;
+    currency?: string | null;
+    lines?: OrderLineView[] | null;
+    totals?: OrderTotals | null;
+    recipient?: OrderRecipient | null;
+    timeline?: Array<{ status: string; at?: string | null }> | null;
+    /** Track order only: the phone was not proved when the order was placed, so state and timeline only. */
+    masked?: boolean;
+}
+
+/** A row of the buyer's order list. A masked row carries only number, status and date. */
+export interface OrderSummary {
+    order_id?: string | null;
+    order_number: string;
+    status: string;
+    payment_status?: string | null;
+    placed_at?: string | null;
+    currency?: string | null;
+    total?: number | null;
+    item_count?: number | null;
+    first_item_name?: string | null;
+    order_access_token?: string | null;
+    masked?: boolean;
+}
+
+export interface OrderPage {
+    orders: OrderSummary[];
+    page: number;
+    page_size: number;
+    total: number;
+}
+
+export interface AddressView {
+    id: string;
+    label?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    line1?: string | null;
+    line2?: string | null;
+    landmark?: string | null;
+    city?: string | null;
+    state_code?: string | null;
+    pincode?: string | null;
+    is_default?: boolean | null;
+}
+
+export interface ShopperMe {
+    name: string | null;
+    /** The proved phone ("91" and ten digits). Kept in memory only, never in storage. */
+    phone?: string | null;
+    phone_masked: string | null;
+    email_masked: string | null;
+    marketing_consent: boolean;
+    session_expires_at: string | null;
+}
+
+/** How a /me call proves the shopper: the 7-day session, or a fresh verified-phone token. */
+export type ShopperAuth = { session: string } | { phoneToken: string };

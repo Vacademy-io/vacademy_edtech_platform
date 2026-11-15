@@ -47,6 +47,8 @@ interface CartStore {
     remove(variantId: string): void;
     setPincode(pincode: string | null): void;
     applyPrice(price: CartPrice): void;
+    /** Empties the cart (after a paid or a cash-on-delivery order). */
+    clear(): void;
     openDrawer(): void;
     closeDrawer(): void;
 }
@@ -100,6 +102,7 @@ export const useCommerceCart = create<CartStore>((set, get) => {
             commit(removeLine(get().cart, variantId), get().lastAdded === variantId ? { lastAdded: null } : {}),
         setPincode: (pincode) => commit(setPincode(get().cart, pincode)),
         applyPrice: (price) => commit(applyPrice(get().cart, price)),
+        clear: () => commit({ ...EMPTY_CART, pincode: get().cart.pincode }, { lastAdded: null }),
         openDrawer: () => set({ drawerOpen: true }),
         closeDrawer: () => set({ drawerOpen: false, lastAdded: null }),
     };

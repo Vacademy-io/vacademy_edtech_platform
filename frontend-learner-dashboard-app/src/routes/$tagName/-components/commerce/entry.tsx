@@ -3,7 +3,7 @@
  * files, JsonRenderer and the site header reach it through React.lazy (lazy.tsx), so a course
  * site never downloads it.
  */
-import React, { useRef } from 'react';
+import React, { Suspense, lazy, useRef } from 'react';
 import { useLocation } from '@tanstack/react-router';
 import './theme/commerce.css';
 import { useCatalogueTracking, type TrackingSettings } from '../../-utils/catalogue-tracking';
@@ -22,6 +22,26 @@ import { CommerceSectionView } from './ui/Sections';
 import { useCommerceThemeVars } from './ui/primitives';
 import { CommercePageProvider, CommerceSiteProvider, useCommerceSite } from './ui/site';
 import { useCommerceFonts, useOnline, useShopScroll } from './ui/hooks';
+import type { MessageKey } from './i18n';
+
+const BuyPages = lazy(() => import('./ui/buy-pages'));
+
+const BUYING_TITLES: Record<string, MessageKey> = {
+    checkout: 'checkout.title',
+    order: 'order.pageTitle',
+    track: 'track.title',
+    account: 'account.title',
+};
+
+const isBuying = (route: CommerceRoute): route is Extract<CommerceRoute, { kind: 'checkout' | 'order' | 'track' | 'account' }> =>
+    route.kind === 'checkout' || route.kind === 'order' || route.kind === 'track' || route.kind === 'account';
+
+const BuyingFallback: React.FC = () => (
+    <div className="cmx-shell cmx-section" aria-busy="true">
+        <div className="cmx-skel mb-4 h-8 w-40" aria-hidden="true" />
+        <div className="cmx-skel cmx-skel--field w-full" aria-hidden="true" />
+    </div>
+);
 
 interface SiteProps {
     instituteId: string;
@@ -73,7 +93,8 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
                     {t('offline.banner')}
                 </p>
             )}
-            <CategoryBar current={route.kind === 'collection' ? route.slug : null} />
+            {/* Checkout keeps the shopper on the form: no category menu to wander off through. */}
+            {route.kind !== 'checkout' && <CategoryBar current={route.kind === 'collection' ? route.slug : null} />}
             <main id="catalogue-main" tabIndex={-1} ref={mainRef} className="outline-none">
                 {route.kind === 'product' && <ProductTemplate key={route.slug} slug={route.slug} sections={sectionsOf(config, 'product')} />}
                 {route.kind === 'collection' && <CollectionTemplate key={route.slug} slug={route.slug} sections={sectionsOf(config, 'collection')} />}
@@ -85,6 +106,14 @@ const RouteBody: React.FC<{ route: CommerceRoute; siteHeader: boolean; tracking:
                     </>
                 )}
                 {route.kind === 'scan' && <ScanLanding code={route.code} />}
+                {isBuying(route) && (
+                    <>
+                        <ShopHead title={t(BUYING_TITLES[route.kind]!)} noindex />
+                        <Suspense fallback={<BuyingFallback />}>
+                            <BuyPages kind={route.kind} />
+                        </Suspense>
+                    </>
+                )}
             </main>
         </div>
     );
