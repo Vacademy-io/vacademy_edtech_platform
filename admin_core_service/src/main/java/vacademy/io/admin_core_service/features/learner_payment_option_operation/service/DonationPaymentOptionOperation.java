@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -152,7 +153,7 @@ public class DonationPaymentOptionOperation implements PaymentOptionOperationStr
                                 : Map.of());
             } else {
                 paymentResponseDTO = paymentService.handlePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,

@@ -189,8 +189,46 @@ public class AuthService {
         return user;
     }
 
+    /**
+     * Create-or-get of an account that already exists: fills only the profile fields the
+     * account does not have yet, and never replaces what it has.
+     *
+     * <p>The sign-in identifiers of an existing account (e-mail, mobile number) and its
+     * guardian link ({@code linkedParentId}) are not set here: an existing account's
+     * sign-in identifiers are only set by flows that verify them or by staff editing the
+     * learner. A new account still takes the typed e-mail and mobile number.
+     */
+    static void fillProfileOfExistingAccount(User user, UserDTO request) {
+        if (StringUtils.hasText(request.getFullName()) && !StringUtils.hasText(user.getFullName()))
+            user.setFullName(request.getFullName());
+        if (StringUtils.hasText(request.getAddressLine()) && !StringUtils.hasText(user.getAddressLine()))
+            user.setAddressLine(request.getAddressLine());
+        if (StringUtils.hasText(request.getCity()) && !StringUtils.hasText(user.getCity()))
+            user.setCity(request.getCity());
+        if (StringUtils.hasText(request.getPinCode()) && !StringUtils.hasText(user.getPinCode()))
+            user.setPinCode(request.getPinCode());
+        if (request.getDateOfBirth() != null && user.getDateOfBirth() == null)
+            user.setDateOfBirth(request.getDateOfBirth());
+        if (StringUtils.hasText(request.getGender()) && !StringUtils.hasText(user.getGender()))
+            user.setGender(request.getGender());
+        if (StringUtils.hasText(request.getProfilePicFileId()) && !StringUtils.hasText(user.getProfilePicFileId()))
+            user.setProfilePicFileId(request.getProfilePicFileId());
+    }
+
+    /**
+     * The account a create-or-get call resolved to, and whether this call created it. Only an
+     * account created in the same call has first-time credentials the caller may be shown.
+     */
+    public record AccountResult(User user, boolean created) {
+    }
+
     @Transactional
     public User createUser(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
+        return createOrGetUser(registerRequest, instituteId, sendWelcomeMail).user();
+    }
+
+    @Transactional
+    public AccountResult createOrGetUser(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
         // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
         // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
         // so the account is created unfindable and the learner can never log in.
@@ -244,28 +282,7 @@ public class AuthService {
         User user;
         if (isAlreadyPresent) {
             user = optionalUser.get();
-            // Bug 2 fix: only fill in fields the existing user does not already have —
-            // never clobber existing profile data with new registration input.
-            if (StringUtils.hasText(normalizedEmail) && !StringUtils.hasText(user.getEmail()))
-                user.setEmail(normalizedEmail);
-            if (StringUtils.hasText(registerRequest.getFullName()) && !StringUtils.hasText(user.getFullName()))
-                user.setFullName(registerRequest.getFullName());
-            if (StringUtils.hasText(registerRequest.getAddressLine()) && !StringUtils.hasText(user.getAddressLine()))
-                user.setAddressLine(registerRequest.getAddressLine());
-            if (StringUtils.hasText(registerRequest.getCity()) && !StringUtils.hasText(user.getCity()))
-                user.setCity(registerRequest.getCity());
-            if (StringUtils.hasText(registerRequest.getPinCode()) && !StringUtils.hasText(user.getPinCode()))
-                user.setPinCode(registerRequest.getPinCode());
-            if (StringUtils.hasText(registerRequest.getMobileNumber()) && !StringUtils.hasText(user.getMobileNumber()))
-                user.setMobileNumber(registerRequest.getMobileNumber());
-            if (registerRequest.getDateOfBirth() != null && user.getDateOfBirth() == null)
-                user.setDateOfBirth(registerRequest.getDateOfBirth());
-            if (StringUtils.hasText(registerRequest.getGender()) && !StringUtils.hasText(user.getGender()))
-                user.setGender(registerRequest.getGender());
-            if (StringUtils.hasText(registerRequest.getProfilePicFileId()) && !StringUtils.hasText(user.getProfilePicFileId()))
-                user.setProfilePicFileId(registerRequest.getProfilePicFileId());
-            if (StringUtils.hasText(registerRequest.getLinkedParentId()) && !StringUtils.hasText(user.getLinkedParentId()))
-                user.setLinkedParentId(registerRequest.getLinkedParentId());
+            fillProfileOfExistingAccount(user, registerRequest);
             if (!user.isRootUser())
                 user.setRootUser(true);
             user = userRepository.save(user);
@@ -329,7 +346,7 @@ public class AuthService {
                 sendWelcomeMailToUser(user, instituteId, userRoleSet);
             }
         }
-        return user;
+        return new AccountResult(user, !isAlreadyPresent);
     }
 
     /**
@@ -628,18 +645,30 @@ public class AuthService {
         UserDTO parentDTO = userDTOs.get(0);
         UserDTO childDTO = userDTOs.get(1);
 
-        User parentUser = createUser(parentDTO, instituteId, isNotify);
+        AccountResult parent = createOrGetUser(parentDTO, instituteId, isNotify);
+        User parentUser = parent.user();
         parentUser.setIsParent(true);
         parentUser = userRepository.save(parentUser);
 
-        User childUser = createUser(childDTO, instituteId, isNotify);
-        childUser.setLinkedParentId(parentUser.getId());
-        childUser = userRepository.save(childUser);
+        AccountResult child = createOrGetUser(childDTO, instituteId, isNotify);
+        User childUser = child.user();
+        // Only a child account created in this call is linked here. An existing account keeps
+        // its guardian link as it is; staff link an existing learner to a guardian through
+        // the guardian-link screens (linkParentChild).
+        if (child.created()) {
+            childUser.setLinkedParentId(parentUser.getId());
+            childUser = userRepository.save(childUser);
+        }
 
+        // First-time credentials are returned only for accounts created in this call.
         UserDTO parentResponseDTO = convertToUserDto(parentUser);
-        parentResponseDTO.setPassword(parentUser.getPassword());
+        if (parent.created()) {
+            parentResponseDTO.setPassword(parentUser.getPassword());
+        }
         UserDTO childResponseDTO = convertToUserDto(childUser);
-        childResponseDTO.setPassword(childUser.getPassword());
+        if (child.created()) {
+            childResponseDTO.setPassword(childUser.getPassword());
+        }
 
         return List.of(parentResponseDTO, childResponseDTO);
     }
@@ -697,7 +726,14 @@ public class AuthService {
 
     @Transactional
     public User createUserForLearnerEnrollment(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail, String overrideLoginUrl) {
-        return createUserForLearnerEnrollment(registerRequest, instituteId, sendWelcomeMail, overrideLoginUrl, false);
+        return createOrGetLearner(registerRequest, instituteId, sendWelcomeMail, overrideLoginUrl, false).user();
+    }
+
+    /** {@link #createUserForLearnerEnrollment(UserDTO, String, boolean, String)}, telling whether the account is new. */
+    @Transactional
+    public AccountResult createOrGetLearnerForEnrollment(UserDTO registerRequest, String instituteId,
+                                                         boolean sendWelcomeMail, String overrideLoginUrl) {
+        return createOrGetLearner(registerRequest, instituteId, sendWelcomeMail, overrideLoginUrl, false);
     }
 
     /**
@@ -710,11 +746,11 @@ public class AuthService {
      */
     @Transactional
     public User createUserForLearnerSelfSignup(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
-        return createUserForLearnerEnrollment(registerRequest, instituteId, sendWelcomeMail, null, true);
+        return createOrGetLearner(registerRequest, instituteId, sendWelcomeMail, null, true).user();
     }
 
-    private User createUserForLearnerEnrollment(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,
-                                                String overrideLoginUrl, boolean selfSignup) {
+    private AccountResult createOrGetLearner(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,
+                                             String overrideLoginUrl, boolean selfSignup) {
         boolean callerChoseUsername = StringUtils.hasText(registerRequest.getUsername());
         if (selfSignup) {
             // The role list comes from a body anyone can write. Reduce it here, at the write,
@@ -778,28 +814,7 @@ public class AuthService {
         User user;
         if (isAlreadyPresent) {
             user = optionalUser.get();
-            // Bug 2 fix: only fill in fields the existing user does not already have —
-            // never clobber existing profile data with new registration input.
-            if (StringUtils.hasText(normalizedEmail) && !StringUtils.hasText(user.getEmail()))
-                user.setEmail(normalizedEmail);
-            if (StringUtils.hasText(registerRequest.getFullName()) && !StringUtils.hasText(user.getFullName()))
-                user.setFullName(registerRequest.getFullName());
-            if (StringUtils.hasText(registerRequest.getAddressLine()) && !StringUtils.hasText(user.getAddressLine()))
-                user.setAddressLine(registerRequest.getAddressLine());
-            if (StringUtils.hasText(registerRequest.getCity()) && !StringUtils.hasText(user.getCity()))
-                user.setCity(registerRequest.getCity());
-            if (StringUtils.hasText(registerRequest.getPinCode()) && !StringUtils.hasText(user.getPinCode()))
-                user.setPinCode(registerRequest.getPinCode());
-            if (StringUtils.hasText(registerRequest.getMobileNumber()) && !StringUtils.hasText(user.getMobileNumber()))
-                user.setMobileNumber(registerRequest.getMobileNumber());
-            if (registerRequest.getDateOfBirth() != null && user.getDateOfBirth() == null)
-                user.setDateOfBirth(registerRequest.getDateOfBirth());
-            if (StringUtils.hasText(registerRequest.getGender()) && !StringUtils.hasText(user.getGender()))
-                user.setGender(registerRequest.getGender());
-            if (StringUtils.hasText(registerRequest.getProfilePicFileId()) && !StringUtils.hasText(user.getProfilePicFileId()))
-                user.setProfilePicFileId(registerRequest.getProfilePicFileId());
-            if (StringUtils.hasText(registerRequest.getLinkedParentId()) && !StringUtils.hasText(user.getLinkedParentId()))
-                user.setLinkedParentId(registerRequest.getLinkedParentId());
+            fillProfileOfExistingAccount(user, registerRequest);
             if (!user.isRootUser())
                 user.setRootUser(true);
             user = userRepository.save(user);
@@ -873,7 +888,7 @@ public class AuthService {
                         user.getId(), instituteId, e.getMessage(), e);
             }
         }
-        return user;
+        return new AccountResult(user, !isAlreadyPresent);
     }
 
     /**

@@ -2209,6 +2209,23 @@ public class ApplicantService {
                         String username = parentUser != null ? parentUser.getUsername() : "";
                         String password = parentUser != null ? parentUser.getPassword() : ""; // Use getPassword, not
                                                                                               // getPasswordHash
+                        // create-or-get answers with a password only for a new account; for an
+                        // existing one the stored login is read here. The mail goes to the
+                        // account's own address (parentUser.getEmail() is the stored one).
+                        if (parentUser != null && !org.springframework.util.StringUtils.hasText(password)
+                                        && org.springframework.util.StringUtils.hasText(parentUser.getId())) {
+                                try {
+                                        UserDTO withPassword = authService
+                                                        .getUsersFromAuthServiceWithPasswordByUserId(parentUser.getId());
+                                        password = withPassword != null && withPassword.getPassword() != null
+                                                        ? withPassword.getPassword()
+                                                        : "";
+                                } catch (Exception e) {
+                                        logger.warn("Could not read the stored login for applicant mail: {}",
+                                                        e.getMessage());
+                                        password = "";
+                                }
+                        }
 
                         // Build portal URL (hardcoded for now)
                         String portalUrl = "https://learner-portal.vacademy.io";

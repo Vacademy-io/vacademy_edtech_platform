@@ -128,7 +128,7 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
         }
     }
 
-    private Map<String, Object> buildOrderPayload(UserDTO user, PaymentInitiationRequestDTO request) {
+    Map<String, Object> buildOrderPayload(UserDTO user, PaymentInitiationRequestDTO request) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("order_id", request.getOrderId());
         payload.put("order_amount", request.getAmount());

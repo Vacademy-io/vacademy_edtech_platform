@@ -1,13 +1,17 @@
 package vacademy.io.admin_core_service.features.learner.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.learner.dto.*;
 import vacademy.io.admin_core_service.features.learner.service.SubOrgLearnerService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgAccessScopeService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
+import vacademy.io.common.exceptions.VacademyException;
 
 @RestController
 @RequestMapping("/admin-core-service/sub-org/v1")
@@ -42,9 +46,40 @@ public class SubOrgLearnerController {
             @RequestBody SubOrgEnrollRequestDTO request,
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
+        requireCanAddMember(user, request);
         SubOrgEnrollResponseDTO response = subOrgLearnerService.enrollLearnerToSubOrg(request,user);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Adding a member: a platform super-admin, an admin of this sub-organization (the learner
+     * portal's team page), or staff of the institute (admin dashboard, assistant tools) who is
+     * not limited to other sub-organizations.
+     */
+    private void requireCanAddMember(CustomUserDetails user, SubOrgEnrollRequestDTO request) {
+        if (request == null) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+        if (user == null || !StringUtils.hasText(user.getUserId())) {
+            throw new VacademyException(HttpStatus.FORBIDDEN, "Only staff of this institute can add members");
+        }
+        if (isSuperAdmin(user)
+                || subOrgLearnerService.isActiveAdminOfSubOrg(user.getUserId(), request.getSubOrgId(),
+                        request.getInstituteId())) {
+            return;
+        }
+        instituteAccessValidator.requireInstituteStaff(user, request.getInstituteId());
+        subOrgAccessScopeService.assertNotCrossSubOrg(user, request.getSubOrgId());
+    }
+
+    private static boolean isSuperAdmin(CustomUserDetails user) {
+        try {
+            SuperAdminAuthUtil.requireSuperAdmin(user);
+            return true;
+        } catch (VacademyException e) {
+            return false;
+        }
     }
 
     @PostMapping("/terminate-member")

@@ -154,6 +154,9 @@ public class AudienceService {
     private AuthService authService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.learner.service.LearnerProfileEditGuard learnerProfileEditGuard;
+
+    @Autowired
     private CustomFieldRepository customFieldRepository;
 
     @Autowired
@@ -5529,6 +5532,17 @@ public class AudienceService {
     }
 
     /**
+     * The institute whose lead list holds this lead (404 when the lead does not exist, null when
+     * its list is gone), for access checks on routes that take a lead id.
+     */
+    public String getInstituteIdOfLead(String responseId) {
+        AudienceResponse response = audienceResponseRepository.findById(responseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
+        return response.getAudienceId() == null ? null
+                : audienceRepository.findById(response.getAudienceId()).map(Audience::getInstituteId).orElse(null);
+    }
+
+    /**
      * Edit a lead's profile from the CRM.
      *
      * <p>Writes only where a lead is actually read from — the auth user
@@ -5542,9 +5556,13 @@ public class AudienceService {
      * same campaign already owns, it is rejected (409) so two leads cannot
      * collide on one {@code dedupe_key}. Only a value that actually changes is
      * checked — the unchanged half would match this person's own repeat leads.</p>
+     *
+     * <p>The e-mail and mobile number are the sign-in identifiers of the lead's whole account,
+     * which may also be used in other institutes. A change to either is allowed only as
+     * {@code LearnerProfileEditGuard.requireCanChangeAccountFrom} allows for {@code caller}.</p>
      */
     @Transactional
-    public void updateLeadProfile(String responseId, LeadProfileEditRequestDTO request) {
+    public void updateLeadProfile(String responseId, LeadProfileEditRequestDTO request, CustomUserDetails caller) {
         if (request == null) {
             throw new InvalidRequestException("Request body is required");
         }
@@ -5574,6 +5592,8 @@ public class AudienceService {
                     && (existing == null || !sameLast10Digits(newPhone, existing.getMobileNumber()))
                     ? newPhone : null;
             if (changedEmail != null || changedPhone != null) {
+                learnerProfileEditGuard.requireCanChangeAccountFrom(caller, leadUserId, getInstituteIdOfLead(responseId),
+                        "Only an admin of every institute this person belongs to can change their email or mobile number");
                 // Institute-configured dedup (LEAD_SETTING.data.dedup) — the same check used
                 // at lead creation, so editing a lead's contact info can't silently collide
                 // with another lead the admin's field/scope setting is supposed to catch.
@@ -7113,18 +7133,22 @@ public class AudienceService {
                 UserDTO existingParent = parentWithChild.getParent();
                 UserDTO existingChild = parentWithChild.getChild();
 
-                // Update Parent User
+                // Update Parent User. The account's sign-in identifiers (e-mail, mobile number)
+                // are kept as they are; a typed e-mail or mobile is kept on the lead row instead
+                // (parent_email / parent_mobile).
                 if (requestDTO.getParentUserDTO() != null) {
-                    UserDTO mergedParent = mergeUserDTO(existingParent, requestDTO.getParentUserDTO());
+                    UserDTO mergedParent = mergeProfileKeepingSignInIdentifiers(existingParent,
+                            requestDTO.getParentUserDTO());
                     authService.updateUser(mergedParent, parentUserId);
+                    List<String> leadContactUpdates = keepTypedContactOnLead(response, requestDTO);
+                    if (!leadContactUpdates.isEmpty()) {
+                        audienceResponseRepository.save(response);
+                        audienceResponseUpdates.addAll(leadContactUpdates);
+                    }
 
                     // Track which fields were updated
                     if (requestDTO.getParentUserDTO().getFullName() != null)
                         parentUserUpdates.add("full_name");
-                    if (requestDTO.getParentUserDTO().getEmail() != null)
-                        parentUserUpdates.add("email");
-                    if (requestDTO.getParentUserDTO().getMobileNumber() != null)
-                        parentUserUpdates.add("mobile_number");
                     if (requestDTO.getParentUserDTO().getAddressLine() != null)
                         parentUserUpdates.add("address_line");
                     if (requestDTO.getParentUserDTO().getCity() != null)
@@ -7141,15 +7165,14 @@ public class AudienceService {
 
                 // Update Child User (if exists)
                 if (requestDTO.getChildUserDTO() != null && existingChild != null) {
-                    UserDTO mergedChild = mergeUserDTO(existingChild, requestDTO.getChildUserDTO());
+                    UserDTO mergedChild = mergeProfileKeepingSignInIdentifiers(existingChild,
+                            requestDTO.getChildUserDTO());
                     authService.updateUser(mergedChild, existingChild.getId());
                     childUserId = existingChild.getId();
 
                     // Track which fields were updated
                     if (requestDTO.getChildUserDTO().getFullName() != null)
                         childUserUpdates.add("full_name");
-                    if (requestDTO.getChildUserDTO().getEmail() != null)
-                        childUserUpdates.add("email");
                     if (requestDTO.getChildUserDTO().getDateOfBirth() != null)
                         childUserUpdates.add("date_of_birth");
                     if (requestDTO.getChildUserDTO().getGender() != null)
@@ -7328,6 +7351,62 @@ public class AudienceService {
                 .isParent(existing.getIsParent())
                 .linkedParentId(existing.getLinkedParentId())
                 .build();
+    }
+
+    /**
+     * Same merge as {@link #mergeUserDTO}, for the public lead update: profile fields take the
+     * new values, while the account's sign-in identifiers (e-mail, mobile number) keep their
+     * stored values. Those are only set by flows that verify them or by staff.
+     */
+    static UserDTO mergeProfileKeepingSignInIdentifiers(UserDTO existing, UserDTO updates) {
+        return UserDTO.builder()
+                .id(existing.getId())
+                .username(existing.getUsername())
+                .email(existing.getEmail())
+                .fullName(updates.getFullName() != null ? updates.getFullName() : existing.getFullName())
+                .addressLine(updates.getAddressLine() != null ? updates.getAddressLine() : existing.getAddressLine())
+                .city(updates.getCity() != null ? updates.getCity() : existing.getCity())
+                .region(updates.getRegion() != null ? updates.getRegion() : existing.getRegion())
+                .pinCode(updates.getPinCode() != null ? updates.getPinCode() : existing.getPinCode())
+                .mobileNumber(existing.getMobileNumber())
+                .dateOfBirth(updates.getDateOfBirth() != null ? updates.getDateOfBirth() : existing.getDateOfBirth())
+                .gender(updates.getGender() != null ? updates.getGender() : existing.getGender())
+                .isRootUser(existing.isRootUser())
+                .profilePicFileId(updates.getProfilePicFileId() != null ? updates.getProfilePicFileId()
+                        : existing.getProfilePicFileId())
+                .roles(existing.getRoles())
+                .lastLoginTime(existing.getLastLoginTime())
+                .isParent(existing.getIsParent())
+                .linkedParentId(existing.getLinkedParentId())
+                .build();
+    }
+
+    /**
+     * Public lead update: an e-mail or mobile typed for the parent goes on the lead row
+     * (parent_email / parent_mobile), unless the request already set those columns itself.
+     * Returns the lead columns that changed.
+     */
+    static List<String> keepTypedContactOnLead(AudienceResponse response, UpdateLeadWithEnquiryRequestDTO requestDTO) {
+        List<String> changed = new ArrayList<>();
+        UserDTO parent = requestDTO.getParentUserDTO();
+        if (parent == null) {
+            return changed;
+        }
+        if (requestDTO.getParentEmail() == null && StringUtils.hasText(parent.getEmail())
+                && !parent.getEmail().equals(response.getParentEmail())) {
+            response.setParentEmail(parent.getEmail());
+            changed.add("parent_email");
+        }
+        if (requestDTO.getParentMobile() == null && StringUtils.hasText(parent.getMobileNumber())) {
+            String mobile = parent.getMobileNumber().length() > 20
+                    ? parent.getMobileNumber().substring(0, 20)
+                    : parent.getMobileNumber();
+            if (!mobile.equals(response.getParentMobile())) {
+                response.setParentMobile(mobile);
+                changed.add("parent_mobile");
+            }
+        }
+        return changed;
     }
 
     /**

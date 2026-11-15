@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.learner.manager;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -9,6 +10,7 @@ import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.dto.request.CustomFieldValueDto;
 import vacademy.io.admin_core_service.features.common.service.CustomFieldValueService;
 import vacademy.io.admin_core_service.features.learner.dto.LearnerProfileUpdateRequestDTO;
+import vacademy.io.admin_core_service.features.learner.service.LearnerProfileEditGuard;
 import vacademy.io.admin_core_service.features.learner.service.LearnerService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -26,6 +28,9 @@ public class LearnerProfileUpdateManager {
     @Autowired
     private CustomFieldValueService customFieldValueService;
 
+    @Autowired
+    private LearnerProfileEditGuard learnerProfileEditGuard;
+
     @Transactional
     public void updateLearnerProfile(LearnerProfileUpdateRequestDTO request, CustomUserDetails actor) {
         if (request == null) {
@@ -36,6 +41,11 @@ public class LearnerProfileUpdateManager {
         if (!StringUtils.hasText(userId)) {
             throw new VacademyException("User id is required");
         }
+
+        // Only the learner themselves, or staff of an institute the learner belongs to; the
+        // custom field values edited with it must be this learner's own.
+        learnerProfileEditGuard.requireCanEdit(actor, userId, request.getUserDetails());
+        requireOwnCustomFieldValues(request, userId);
 
         if (request.getUserDetails() != null && !StringUtils.hasText(request.getUserDetails().getId())) {
             request.getUserDetails().setId(userId);
@@ -53,6 +63,19 @@ public class LearnerProfileUpdateManager {
 
         if (!CollectionUtils.isEmpty(request.getCustomFieldValues())) {
             customFieldValueService.upsertCustomFieldValues(request.getCustomFieldValues());
+        }
+    }
+
+    /** Custom field values sent with a profile edit belong to the learner being edited. */
+    static void requireOwnCustomFieldValues(LearnerProfileUpdateRequestDTO request, String userId) {
+        if (CollectionUtils.isEmpty(request.getCustomFieldValues())) {
+            return;
+        }
+        for (CustomFieldValueDto value : request.getCustomFieldValues()) {
+            if (value != null && StringUtils.hasText(value.getSourceId()) && !userId.equals(value.getSourceId())) {
+                throw new VacademyException(HttpStatus.FORBIDDEN,
+                        "Custom field values of a profile edit must belong to the learner being edited");
+            }
         }
     }
 

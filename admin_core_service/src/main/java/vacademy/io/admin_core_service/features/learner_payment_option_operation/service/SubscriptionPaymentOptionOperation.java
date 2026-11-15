@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -254,14 +255,14 @@ public class SubscriptionPaymentOptionOperation implements PaymentOptionOperatio
                 }
                 applyMandateMaxAmount(mandateRequest, enrollInvite, userPlan);
                 paymentResponseDTO = paymentService.handleMandatePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         instituteId,
                         enrollInvite,
                         userPlan,
                         mandateRequest);
             } else {
                 paymentResponseDTO = paymentService.handlePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,

@@ -31,10 +31,19 @@ public class LearnerService {
     @Autowired
     private LearnerLmsUserSyncService learnerLmsUserSyncService;
 
+    @Autowired
+    private LearnerProfileEditGuard learnerProfileEditGuard;
+
     public String editLearnerDetails(LearnerDetailsEditDTO learnerDetailsEditDTO, CustomUserDetails user) {
         if (Objects.isNull(learnerDetailsEditDTO)) {
             throw new VacademyException("Invalid request");
         }
+        // Only the learner themselves, or staff of an institute the learner belongs to.
+        UserDTO requested = new UserDTO();
+        requested.setEmail(learnerDetailsEditDTO.getEmail());
+        requested.setMobileNumber(learnerDetailsEditDTO.getContactNumber());
+        requested.setUsername(learnerDetailsEditDTO.getUserName());
+        learnerProfileEditGuard.requireCanEdit(user, learnerDetailsEditDTO.getUserId(), requested);
         Student student = instituteStudentRepository.findTopByUserId(learnerDetailsEditDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
         // Captured before mutation: the LMS sync looks the user up by their

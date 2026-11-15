@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -263,7 +264,7 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
             log.info("Initiating CPO gateway payment for user={}, amount={}, currency={}",
                     user.getId(), paymentRequest.getAmount(), paymentRequest.getCurrency());
             paymentResponseDTO = paymentService.handlePayment(
-                    user, enrollDTO, instituteId, enrollInvite, userPlan);
+                    GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData), enrollDTO, instituteId, enrollInvite, userPlan);
             if (isPaymentSuccessful(paymentResponseDTO)) {
                 userPlanService.applyOperationsOnFirstPayment(userPlan);
             }

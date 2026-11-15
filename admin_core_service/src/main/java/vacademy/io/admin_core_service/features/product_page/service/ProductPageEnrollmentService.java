@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.product_page.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -514,6 +515,9 @@ public class ProductPageEnrollmentService {
         // auth-service again below: only what was asked for goes with it.
         user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(), request.getInstituteId()));
         payReq.setEmail(user.getEmail());
+        // The gateway gets the phone typed at checkout when the account has none; the account
+        // itself is not changed.
+        UserDTO gatewayCustomer = GatewayCustomerContact.withCheckoutPhone(user, request.getUser());
 
         // ── Razorpay Phase 1: order creation ──────────────────────────────────
         // (isRazorpay / isRazorpayPhase2 are settled above, before pricing.)
@@ -538,7 +542,7 @@ public class ProductPageEnrollmentService {
             // own. The Phase 2 callback stays the fast path, but it is no longer the only
             // path, so a lost browser can no longer cost a learner their course.
             PaymentResponseDTO gatewayResponse = paymentService.handlePaymentWithUser(
-                    payReq, request.getInstituteId(), user, null);
+                    payReq, request.getInstituteId(), gatewayCustomer, null);
 
             String paymentLogId = payReq.getOrderId();
             log.info("Razorpay Phase 1: order created, paymentLogId={}", paymentLogId);
@@ -662,7 +666,7 @@ public class ProductPageEnrollmentService {
         } else {
             // Online paid gateway (Cashfree/PhonePe redirect, Stripe, Eway, etc.)
             PaymentResponseDTO gatewayResponse = paymentService.handlePaymentWithUser(
-                    payReq, request.getInstituteId(), user, null);
+                    payReq, request.getInstituteId(), gatewayCustomer, null);
             parentPaymentLogId = payReq.getOrderId();
             log.info("Combined payment initiated, parentPaymentLogId={}", parentPaymentLogId);
 

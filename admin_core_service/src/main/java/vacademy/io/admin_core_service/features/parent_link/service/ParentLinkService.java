@@ -33,6 +33,8 @@ import vacademy.io.common.auth.dto.BackfillCreatedPairDTO;
 import vacademy.io.common.auth.dto.BackfillParentItemDTO;
 import vacademy.io.common.auth.dto.BackfillParentsResultDTO;
 import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.admin_core_service.features.learner.service.LearnerProfileEditGuard;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
@@ -75,6 +77,67 @@ public class ParentLinkService {
 
     @Autowired
     private DynamicNotificationService dynamicNotificationService;
+
+    @Autowired
+    private LearnerProfileEditGuard learnerProfileEditGuard;
+
+    private static final String NOT_IN_INSTITUTE = "Both the guardian and the learner must belong to this institute";
+    private static final String GUARDIAN_LINK_REFUSED =
+            "Only an admin of every institute this learner belongs to can change their guardian";
+
+    /**
+     * Checks a staff member's {@link #link} request (the guardian screens): every existing
+     * account named must belong to the request's institute, and an existing learner's guardian
+     * link, which applies to the learner's whole account, is changed only as
+     * {@link LearnerProfileEditGuard#requireCanChangeAccountFrom} allows. The caller's staff
+     * role in the institute is checked by the controller.
+     */
+    public void requireCanLink(CustomUserDetails caller, ParentLinkActionRequestDTO request) {
+        if (request == null || !StringUtils.hasText(request.getInstituteId())
+                || !StringUtils.hasText(request.getAnchorUserId())) {
+            throw new VacademyException("instituteId, anchorUserId, direction and mode are required");
+        }
+        String instituteId = request.getInstituteId();
+        boolean parentAddsStudent = "PARENT_ADDS_STUDENT".equalsIgnoreCase(request.getDirection());
+        boolean linkExisting = "LINK_EXISTING".equalsIgnoreCase(request.getMode());
+        String existingParent = parentAddsStudent ? request.getAnchorUserId()
+                : (linkExisting ? request.getExistingUserId() : null);
+        String existingStudent = parentAddsStudent ? (linkExisting ? request.getExistingUserId() : null)
+                : request.getAnchorUserId();
+        requireBelongs(existingParent, instituteId);
+        requireBelongs(existingStudent, instituteId);
+        if (StringUtils.hasText(existingStudent)) {
+            learnerProfileEditGuard.requireCanChangeAccountFrom(caller, existingStudent, instituteId,
+                    GUARDIAN_LINK_REFUSED);
+        }
+    }
+
+    /** Same checks for {@link #linkNewGuardian}: only an existing learner can be named there. */
+    public void requireCanLinkNewGuardian(CustomUserDetails caller, NewGuardianLinkRequestDTO request) {
+        if (request == null || !StringUtils.hasText(request.getInstituteId())) {
+            throw new VacademyException("instituteId and mode are required");
+        }
+        if ("LINK_EXISTING".equalsIgnoreCase(request.getMode())
+                && StringUtils.hasText(request.getStudentExistingUserId())) {
+            requireBelongs(request.getStudentExistingUserId(), request.getInstituteId());
+            learnerProfileEditGuard.requireCanChangeAccountFrom(caller, request.getStudentExistingUserId(),
+                    request.getInstituteId(), GUARDIAN_LINK_REFUSED);
+        }
+    }
+
+    /** A role in the institute (auth-service), or an active enrolment in it. */
+    private void requireBelongs(String userId, String instituteId) {
+        if (!StringUtils.hasText(userId)) {
+            return;
+        }
+        if (learnerProfileEditGuard.belongsTo(userId, instituteId)) {
+            return;
+        }
+        List<String> enrolled = ssigmRepository.findPackageSessionIdsByUserIdAndInstituteId(userId, instituteId);
+        if (enrolled == null || enrolled.isEmpty()) {
+            throw new VacademyException(org.springframework.http.HttpStatus.FORBIDDEN, NOT_IN_INSTITUTE);
+        }
+    }
 
     public UserDTO getParentOfStudent(String studentUserId) {
         if (!StringUtils.hasText(studentUserId)) {

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner_payment_option_operation.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +253,7 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
             } else {
                 log.info("Initiating payment through PaymentService for user: {}", user.getId());
                 paymentResponseDTO = paymentService.handlePayment(
-                        user,
+                        GatewayCustomerContact.withCheckoutPhone(user, userDTO, extraData),
                         learnerPackageSessionsEnrollDTO,
                         instituteId,
                         enrollInvite,

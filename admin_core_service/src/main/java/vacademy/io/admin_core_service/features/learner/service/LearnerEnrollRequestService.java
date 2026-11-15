@@ -70,6 +70,7 @@ import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.institute.entity.session.PackageSession;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowEngineService;
 import vacademy.io.common.logging.SentryLogger;
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 
 import java.text.SimpleDateFormat;
 
@@ -394,8 +395,16 @@ public class LearnerEnrollRequestService {
                         CustomFieldValueDTO.toValueMap(enrollDTO.getCustomFieldValues()));
             }
             List<String> askedRoles = learnerEnrollRequestDTO.getUser().getRoles();
+            String typedMobile = learnerEnrollRequestDTO.getUser().getMobileNumber();
             UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(learnerEnrollRequestDTO.getUser(),
                     learnerEnrollRequestDTO.getInstituteId(), sendCredentials, learndashBaseUrl);
+            // An existing account without a mobile number does not take the typed one. The
+            // payment gateway still gets it as the customer contact (GatewayCustomerContact);
+            // the user carried on below, and the account, keep what the account holds.
+            if (!StringUtils.hasText(user.getMobileNumber()) && StringUtils.hasText(typedMobile)) {
+                extraData = new HashMap<>(extraData == null ? Map.of() : extraData);
+                extraData.put(GatewayCustomerContact.CHECKOUT_MOBILE_NUMBER, typedMobile);
+            }
             // The answer lists the account's roles in every institute, and this user is posted
             // to auth-service again further on: only what was asked for goes with it.
             user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(),
