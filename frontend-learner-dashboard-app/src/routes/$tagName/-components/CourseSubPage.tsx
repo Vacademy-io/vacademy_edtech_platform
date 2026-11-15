@@ -33,6 +33,7 @@ import { Preferences } from "@capacitor/preferences";
 import { isNullOrEmptyOrUndefined } from "@/lib/utils";
 import { shouldShowMobileGetStarted } from "../-utils/catalogue-cta";
 import { headerOffsetClass } from "./header/header-chrome";
+import { isCommerceEnabled } from "./commerce/config";
 
 interface CourseSubPageProps {
   tagName: string;
@@ -400,11 +401,14 @@ const CourseSubPageContent: React.FC<CourseSubPageProps> = ({
   }
 
   // Find the page configuration that matches the current route
-  // A site's own "page not found" (an authored page with the route "404") stands in for an
-  // address it has no page for; without one, the generic message below.
+  // A shop's own "page not found" (an authored page with the route "404") stands in for an
+  // address it has no page for; every other site, and a shop without one, gets the generic
+  // message below.
   const currentPage =
     catalogueData.pages.find(isSubPage(page)) ??
-    (appRouteRedirect ? undefined : catalogueData.pages.find((p) => p.route === "404"));
+    (appRouteRedirect || !isCommerceEnabled(catalogueData.globalSettings)
+      ? undefined
+      : catalogueData.pages.find((p) => p.route === "404"));
 
   /** Same opt-out as CourseCataloguePage. This component is the one that
    *  ACTUALLY renders custom pages on published sites: /$tagName/$courseId/

@@ -34,6 +34,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { hi } from '../i18n/messages.hi';
 import { useCommerceCart } from '../state/cart-store';
+import { ORDER_KEY_STATE, handOffOrder, orderHandoffKey, readOrderHandoff, resetOrderHandoffMemory } from '../state/order-handoff';
 import { AccountPage } from './Account';
 import { CheckoutPage } from './Checkout';
 import { OrderPage } from './OrderPage';
@@ -253,7 +254,17 @@ const memoryStorage = (): Storage => {
     };
 };
 
+/** The order record this tab keeps for the history state the order page was opened with. */
+const handoffOf = (state: unknown) => readOrderHandoff('inst-1', state, window.sessionStorage);
+
+/** The history state carries only the random key: never the token, the paid time or anything else. */
+const expectKeyOnly = (state: unknown) => {
+    expect(Object.keys(state as Record<string, unknown>)).toEqual([ORDER_KEY_STATE]);
+    expect(JSON.stringify(state)).not.toContain(ORDER_TOKEN);
+};
+
 beforeEach(() => {
+    resetOrderHandoffMemory();
     Object.defineProperty(window, 'localStorage', { value: memoryStorage(), configurable: true });
     Object.defineProperty(window, 'sessionStorage', { value: memoryStorage(), configurable: true });
     requests.length = 0;
@@ -326,10 +337,13 @@ describe('checkout', () => {
         expect(sent.body!.save_address).toBeUndefined();
         expect(RazorpayStub.opened[0]).toMatchObject({ key: 'rzp_test_1', order_id: 'order_1', amount: 497900, name: 'Example Brand' });
         expect(calls('/checkout/ord-1/confirm-payment')[0]!.body).toEqual({ gateway_order_id: 'order_1', gateway_payment_id: 'pay_1', signature: 'sig_1' });
-        // The token goes in the history state, never in the address (analytics read addresses).
+        // The token stays in this tab's sessionStorage: the address and the history state (which
+        // analytics scripts and tag managers read) carry only a random key.
         expect(router.navigate[0]).toBe('/shop/order');
         expect(router.navigate[0]).not.toContain(ORDER_TOKEN);
-        expect(router.states[0]).toMatchObject({ cmxOrderToken: ORDER_TOKEN, cmxPaidAt: expect.any(Number) });
+        expectKeyOnly(router.states[0]);
+        expect(handoffOf(router.states[0])).toMatchObject({ token: ORDER_TOKEN, paidAt: expect.any(Number), placedHere: true, phoneProved: false });
+        expect(window.sessionStorage.getItem(orderHandoffKey('inst-1'))).toContain(ORDER_TOKEN);
         expect(useCommerceCart.getState().cart.lines).toHaveLength(0);
     });
 
@@ -343,7 +357,8 @@ describe('checkout', () => {
         await fillAddress({ email: 'asha@example.com' });
         await click(payButton());
         await settle(() => router.navigate.length === 1);
-        expect(router.states[0]).toMatchObject({ cmxOrderToken: ORDER_TOKEN, cmxPaidAt: expect.any(Number) });
+        expectKeyOnly(router.states[0]);
+        expect(handoffOf(router.states[0])).toMatchObject({ token: ORDER_TOKEN, paidAt: expect.any(Number) });
     });
 
     it('PHONE_OTP: asks for the code before paying, then resubmits with the token and keeps the session apart from learner keys', async () => {
@@ -364,6 +379,7 @@ describe('checkout', () => {
         await settle(() => router.navigate.length === 1);
         expect(calls('/otp/verify')[0]!.body).toEqual({ phone: '+919876543210', code: '123456', purpose: 'CHECKOUT' });
         expect(calls('/checkout')[0]!.body!.phone_token).toBe('v1.cGhvbmU.c2ln');
+        expect(handoffOf(router.states[0])).toMatchObject({ token: ORDER_TOKEN, placedHere: true, phoneProved: true });
         const stored = JSON.parse(window.localStorage.getItem('cmx.session.v1.inst-1') || '{}') as { token?: string };
         expect(stored.token).toBe(SESSION);
         expect(window.localStorage.getItem('accessToken')).toBeNull();
@@ -437,6 +453,15 @@ describe('checkout', () => {
         expect(button(hi['otp.verifyRecommended'])).toBeNull();
         expect(button(hi['checkout.useSaved'])).toBeTruthy();
         expect(text()).not.toContain(`${hi['form.email']} (${hi['form.optional']})`);
+        // The e-mail stays required after a code in this mode, so no "or verify on WhatsApp" hint.
+        expect(text()).toContain(hi['checkout.emailHint']);
+        expect(text()).not.toContain(hi['checkout.emailHintRequired']);
+    });
+
+    it('EITHER: the e-mail hint offers WhatsApp instead', async () => {
+        await render(<CheckoutPage />);
+        await settle(() => !!payButton() && !payButton()!.disabled);
+        expect(text()).toContain(hi['checkout.emailHintRequired']);
     });
 
     it('shows COD only when the shop sells it online and the cart qualifies; COD always asks for the code', async () => {
@@ -544,15 +569,24 @@ describe('checkout', () => {
 });
 
 describe('order page', () => {
-    const open = async (state: Record<string, unknown> = { cmxOrderToken: ORDER_TOKEN }) => {
+    /** Opens the order page as the storefront does: a key in the history state, the token in sessionStorage. */
+    const open = async (opts: { paidAt?: number; placedHere?: boolean; phoneProved?: boolean } = { placedHere: true }) => {
+        const state = handOffOrder('inst-1', ORDER_TOKEN, opts, window.sessionStorage);
         window.history.replaceState(state, '', '/shop/order');
+        await render(<OrderPage />);
+        return state;
+    };
+    const remount = async () => {
+        await act(async () => root?.unmount());
+        document.body.innerHTML = '';
         await render(<OrderPage />);
     };
 
-    it('reads the token from the history state and sends it only as a header', async () => {
+    it('reads the token this tab kept for the history key and sends it only as a header', async () => {
         await open();
         await settle(() => calls('/orders/view').length === 1);
         expect(window.location.href).not.toContain(ORDER_TOKEN);
+        expect(JSON.stringify(window.history.state)).not.toContain(ORDER_TOKEN);
         const request = calls('/orders/view')[0]!;
         expect(request.headers['X-Commerce-Order-Token']).toBe(ORDER_TOKEN);
         expect(request.url).not.toContain(ORDER_TOKEN);
@@ -563,30 +597,94 @@ describe('order page', () => {
         await render(<OrderPage />);
         await settle(() => calls('/orders/view').length === 1);
         expect(window.location.hash).toBe('');
-        expect((window.history.state as Record<string, unknown>).cmxOrderToken).toBe(ORDER_TOKEN);
+        expectKeyOnly(window.history.state);
+        expect(handoffOf(window.history.state)?.token).toBe(ORDER_TOKEN);
         expect(calls('/orders/view')[0]!.headers['X-Commerce-Order-Token']).toBe(ORDER_TOKEN);
+        // Read once: a reload of the stripped address opens the same order.
+        await remount();
+        await settle(() => calls('/orders/view').length === 2);
+        expect(calls('/orders/view')[1]!.headers['X-Commerce-Order-Token']).toBe(ORDER_TOKEN);
+    });
+
+    it('a language switch that replaces the history state keeps the order across a reload', async () => {
+        await open();
+        await settle(() => text().includes(hi['order.thanks']));
+        // What router.history.replace(path) leaves: the router's own keys only.
+        window.history.replaceState({ key: 'k1', __TSR_key: 'k1', __TSR_index: 4 }, '', '/shop/order?lang=en');
+        await remount();
+        await settle(() => calls('/orders/view').length === 2);
+        expect(calls('/orders/view')[1]!.headers['X-Commerce-Order-Token']).toBe(ORDER_TOKEN);
+        await settle(() => text().includes(hi['order.thanks']));
+        // The key is back in the entry, next to the router's own.
+        expect(window.history.state).toMatchObject({ __TSR_index: 4, [ORDER_KEY_STATE]: expect.any(String) });
     });
 
     it('just paid on this device: an order still unpaid on the server reads "confirming", with no pay button', async () => {
         orderView = view({ status: 'PENDING_PAYMENT', payment_status: 'PENDING', payment_processing: false, payment_retryable: true, hold_expires_at: '2030-01-01T00:00:00Z' });
-        await open({ cmxOrderToken: ORDER_TOKEN, cmxPaidAt: Date.now() });
+        await open({ paidAt: Date.now(), placedHere: true });
         await settle(() => text().includes(hi['order.processing.title']));
         expect(button(hi['checkout.payNow'])).toBeNull();
     });
 
-    it('confirmed: thanks, timeline, and purchase once per order number', async () => {
+    it('confirmed after checkout in this tab: thanks, timeline, and purchase once per order number', async () => {
         const gtag = vi.fn();
         (window as unknown as { gtag: unknown }).gtag = gtag;
-        await open();
+        await open({ placedHere: true });
         await settle(() => text().includes(hi['order.thanks']));
         expect(text()).toContain(hi['order.step.CONFIRMED']);
         expect(text()).toContain('₹4,979');
         expect(gtag.mock.calls.filter((c) => c[1] === 'purchase')).toHaveLength(1);
         await act(async () => root?.unmount());
         document.body.innerHTML = '';
-        await open();
+        await open({ placedHere: true });
         await settle(() => text().includes(hi['order.thanks']));
         expect(gtag.mock.calls.filter((c) => c[1] === 'purchase')).toHaveLength(1);
+    });
+
+    it('an old order opened from the account (or an old link) never sends purchase', async () => {
+        const gtag = vi.fn();
+        (window as unknown as { gtag: unknown }).gtag = gtag;
+        orderView = view({ status: 'DELIVERED' });
+        await open({ phoneProved: true });
+        await settle(() => text().includes(hi['order.status.DELIVERED']));
+        expect(gtag.mock.calls.filter((c) => c[1] === 'purchase')).toHaveLength(0);
+        await act(async () => root?.unmount());
+        document.body.innerHTML = '';
+        window.history.replaceState(null, '', `/shop/order#t=${ORDER_TOKEN.replace('c2ln', 'b2xk')}`);
+        await render(<OrderPage />);
+        await settle(() => calls('/orders/view').length === 2);
+        await settle(() => text().includes(hi['order.status.DELIVERED']));
+        expect(gtag.mock.calls.filter((c) => c[1] === 'purchase')).toHaveLength(0);
+    });
+
+    it('the thank-you line promises the details elsewhere only when the phone was proved', async () => {
+        await open({ placedHere: true, phoneProved: true });
+        await settle(() => text().includes(hi['order.thanks']));
+        expect(text()).toContain(hi['order.thanksBody']);
+        await act(async () => root?.unmount());
+        document.body.innerHTML = '';
+        // Another tab, where nothing proved the phone for this order.
+        window.sessionStorage.clear();
+        resetOrderHandoffMemory();
+        await open({ placedHere: true, phoneProved: false });
+        await settle(() => text().includes(hi['order.thanks']));
+        expect(text()).toContain(hi['order.thanksBodyStatusOnly']);
+        expect(text()).not.toContain(hi['order.thanksBody']);
+    });
+
+    it('"Pay now" on the order page: the paid time is kept with the order, so a reload still waits', async () => {
+        orderView = view({ status: 'PENDING_PAYMENT', payment_status: 'PENDING', payment_retryable: true, hold_expires_at: '2030-01-01T00:00:00Z' });
+        const state = await open({ phoneProved: true });
+        await settle(() => !!button(hi['checkout.payNow']));
+        expect(handoffOf(state)).toMatchObject({ paidAt: null, placedHere: false });
+        await click(button(hi['checkout.payNow']));
+        await settle(() => calls('/checkout/ord-1/confirm-payment').length === 1);
+        await settle(() => handoffOf(state)?.paidAt !== null);
+        expect(handoffOf(state)).toMatchObject({ paidAt: expect.any(Number), placedHere: true });
+        expect(JSON.stringify(window.history.state)).not.toContain(ORDER_TOKEN);
+        await remount();
+        await settle(() => text().includes(hi['order.processing.title']));
+        expect(button(hi['checkout.payNow'])).toBeNull();
     });
 
     it('processing: "Confirming your payment" and never a pay button', async () => {
@@ -615,6 +713,7 @@ describe('order page', () => {
     });
 
     it('without a token: links to track and account, and no request', async () => {
+        expect(window.sessionStorage.getItem(orderHandoffKey('inst-1'))).toBeNull();
         window.history.replaceState(null, '', '/shop/order');
         await render(<OrderPage />);
         expect(text()).toContain(hi['order.noToken.title']);
@@ -682,11 +781,12 @@ describe('account', () => {
         expect(rows[1]!.classList.contains('cmx-order-row--masked')).toBe(true);
         expect(rows[1]!.querySelector('a[href*="order"]')).toBeNull();
         expect(rows[1]!.textContent).not.toContain('₹');
-        // "View order" carries the token in the history state, not in a link's address.
+        // "View order" keeps the token in this tab's sessionStorage, never in an address or the history state.
         expect(document.body.innerHTML).not.toContain(ORDER_TOKEN);
         await click(Array.from(rows[0]!.querySelectorAll('button')).find((b) => b.textContent === hi['account.viewOrder']));
         expect(router.navigate[0]).toBe('/shop/order');
-        expect(router.states[0]).toEqual({ cmxOrderToken: ORDER_TOKEN });
+        expectKeyOnly(router.states[0]);
+        expect(handoffOf(router.states[0])).toMatchObject({ token: ORDER_TOKEN, placedHere: false, phoneProved: true });
         await click(button(hi['account.signOutEverywhere']));
         await settle(() => text().includes(hi['account.gate.body']));
         expect(calls('/me/logout')[0]!.headers['X-Commerce-Session']).toBe(SESSION);

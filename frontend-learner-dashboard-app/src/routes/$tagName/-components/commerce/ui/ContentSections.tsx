@@ -9,6 +9,7 @@ import React, { useRef, useState } from 'react';
 import { CaretDown, EnvelopeSimple, MagnifyingGlass, MapPin, Phone, Play, Storefront, WhatsappLogo } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { isSpamSubmission, submitWebsiteLead } from '../../../-utils/website-lead';
+import { submitPhoneOnlyLead } from '../api/lead';
 import { findCategory } from '../edge/commerce-edge';
 import { withinDates } from '../logic/dates';
 import { sendCommerceEvent } from '../logic/events';
@@ -735,15 +736,22 @@ const CRM_LABELS = { role: 'I am a', city: 'City', organisation: 'Organisation',
 /**
  * commerceLeadForm: { anchor, eyebrow, title, text, audienceId, variant: "card" | "inline",
  * fields ["email", "city", "organisation", "quantity", "message"], roles [], submitLabel,
- * successText, consentText, sourceKey }. Sends through the site's lead pipeline
- * (website-lead: the campaign `audienceId`, else the site's default list). "inline" asks for
- * the phone only (an opt-in). No identity documents are ever asked for.
+ * successText, consentText, sourceKey }. The e-mail is optional when the form names a campaign
+ * (`audienceId`): a lead with an e-mail goes through the site's lead pipeline (website-lead), a
+ * lead with only a phone through the campaign route (api/lead.ts), which needs that campaign.
+ * Without a campaign the e-mail is asked for and required, and leads land in the site's default
+ * list. "inline" asks for the phone only (an opt-in), plus the e-mail without a campaign. No
+ * identity documents are ever asked for.
  */
 const LeadForm: Section = ({ props }) => {
     const { t, instituteId, tagName } = useCommerceSite();
     const tx = useText();
     const inline = str(props.variant) === 'inline';
-    const fields: LeadField[] = inline ? ['phone'] : leadFields(props.fields);
+    const audienceId = str(props.audienceId, 60);
+    // A lead with a phone and no e-mail can be saved only into a named campaign.
+    const phoneOnlyOk = !!audienceId;
+    const asked: LeadField[] = inline ? ['phone'] : leadFields(props.fields);
+    const fields: LeadField[] = phoneOnlyOk || asked.includes('email') ? asked : inline ? ['phone', 'email'] : leadFields([...strings(props.fields), 'email']);
     const roles = strings(props.roles, 8);
     const [values, setValues] = useState<Partial<Record<LeadField, string>>>({});
     const [role, setRole] = useState('');
@@ -755,7 +763,7 @@ const LeadForm: Section = ({ props }) => {
 
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
-        const found = validateLead(values, inline ? ['phone'] : fields);
+        const found = validateLead(values, fields, { emailRequired: !phoneOnlyOk });
         setErrors(found);
         if (Object.keys(found).length > 0) return;
         // A bot sees the usual thank-you and nothing is sent.
@@ -770,22 +778,27 @@ const LeadForm: Section = ({ props }) => {
             const value = (values[field] || '').trim();
             if (value) extra[CRM_LABELS[field]] = value.slice(0, 1000);
         }
+        const email = (values.email || '').trim();
+        const lead = {
+            instituteId,
+            fullName: (values.name || '').trim(),
+            mobileNumber: normalizeMobile(values.phone || '') || '',
+            sourceType: 'WEBSITE_FORM',
+            sourceId: `${tagName}:${anchorId(props.sourceKey) || 'shop-lead-form'}`,
+        };
         try {
-            await submitWebsiteLead({
-                instituteId,
-                audienceId: str(props.audienceId, 60) || undefined,
-                fullName: (values.name || '').trim(),
-                email: (values.email || '').trim(),
-                mobileNumber: normalizeMobile(values.phone || '') || '',
-                sourceType: 'WEBSITE_FORM',
-                sourceId: `${tagName}:${anchorId(props.sourceKey) || 'shop-lead-form'}`,
-                customFieldValues: extra,
-            });
+            if (email || !phoneOnlyOk) {
+                await submitWebsiteLead({ ...lead, audienceId: audienceId || undefined, email, customFieldValues: extra });
+            } else {
+                await submitPhoneOnlyLead({ ...lead, audienceId });
+            }
             setState('sent');
         } catch {
             setState('failed');
         }
     };
+
+    const fieldLabel = (field: LeadField): MessageKey => (field === 'email' && !phoneOnlyOk ? 'lead.emailRequired' : FIELD_LABELS[field]);
 
     const input = (field: LeadField) => {
         const id = `${formId}-${field}`;
@@ -802,7 +815,7 @@ const LeadForm: Section = ({ props }) => {
         return (
             <div key={field} className="cmx-field">
                 <label htmlFor={id} className={inline ? 'cmx-sr' : undefined}>
-                    {t(FIELD_LABELS[field])}
+                    {t(fieldLabel(field))}
                 </label>
                 {field === 'message' ? (
                     <textarea {...common} rows={3} maxLength={1000} />
@@ -812,7 +825,7 @@ const LeadForm: Section = ({ props }) => {
                         type={field === 'phone' ? 'tel' : field === 'email' ? 'email' : field === 'quantity' ? 'number' : 'text'}
                         inputMode={field === 'phone' || field === 'quantity' ? 'numeric' : undefined}
                         autoComplete={field === 'phone' ? 'tel-national' : field === 'name' ? 'name' : field === 'email' ? 'email' : field === 'city' ? 'address-level2' : 'off'}
-                        placeholder={inline ? t(FIELD_LABELS[field]) : undefined}
+                        placeholder={inline ? t(fieldLabel(field)) : undefined}
                         maxLength={field === 'phone' ? 16 : 120}
                         min={field === 'quantity' ? 1 : undefined}
                     />

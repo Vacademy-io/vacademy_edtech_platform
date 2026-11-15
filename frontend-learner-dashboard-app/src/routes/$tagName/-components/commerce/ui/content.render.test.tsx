@@ -11,7 +11,7 @@ const router = vi.hoisted(() => ({
     location: { pathname: '/', search: '', hash: '', searchStr: '' },
     navigate: [] as string[],
 }));
-const leads = vi.hoisted(() => ({ sent: [] as unknown[], fail: false }));
+const leads = vi.hoisted(() => ({ sent: [] as unknown[], phoneOnly: [] as unknown[], fail: false }));
 
 vi.mock('@tanstack/react-router', () => ({
     useRouter: () => ({
@@ -36,11 +36,20 @@ vi.mock('../../../-utils/website-lead', () => ({
     isSpamSubmission: () => false,
 }));
 
+vi.mock('../api/lead', () => ({
+    submitPhoneOnlyLead: async (payload: unknown) => {
+        if (leads.fail) throw new Error('offline');
+        leads.phoneOnly.push(payload);
+    },
+}));
+
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CommerceSectionView, COMMERCE_SECTION_TYPES } from './Sections';
 import { CommerceSiteProvider } from './site';
+import { en } from '../i18n/messages.en';
+import { hi } from '../i18n/messages.hi';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -93,6 +102,7 @@ const submit = async (form: Element | null) => {
 beforeEach(() => {
     router.navigate.length = 0;
     leads.sent.length = 0;
+    leads.phoneOnly.length = 0;
     leads.fail = false;
     vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
         const url = new URL(String(input));
@@ -181,7 +191,7 @@ describe('content blocks', () => {
         await render('commerceStoryCards', {
             title: 'Meet the makers',
             items: [
-                { name: 'Asha', place: 'Varanasi', craft: 'Handloom', quote: 'I weave at home.', image: 'https://cdn.example/a.webp', route: 'makers#asha', routeLabel: 'Read her story', shopRoute: 'c/sarees', shopLabel: 'Shop her work' },
+                { name: 'Asha', place: 'Varanasi', craft: 'Handloom', quote: 'I weave at home.', image: 'https://cdn.example/a.webp', route: 'makers#asha', routeLabel: 'Read more', shopRoute: 'c/sarees', shopLabel: 'Shop the range' },
                 { place: 'no name, dropped' },
             ],
         });
@@ -348,7 +358,7 @@ describe('content blocks', () => {
     });
 
     it('not found: search goes to the shop search, chips name real categories', async () => {
-        await render('commerceNotFound', { title: 'This thread has come loose', collectionIds: ['sarees', 'missing'] });
+        await render('commerceNotFound', { title: 'Page not found', collectionIds: ['sarees', 'missing'] });
         for (let i = 0; i < 20 && !document.querySelector('.cmx-chip'); i += 1) {
             await act(async () => {
                 await new Promise((resolve) => setTimeout(resolve, 20));
@@ -364,18 +374,52 @@ describe('content blocks', () => {
 
 describe('lead form', () => {
     it('shows field errors and sends nothing until name and a valid mobile are given', async () => {
-        await render('commerceLeadForm', { title: 'Reseller application', fields: ['city', 'message'], roles: ['Shop', 'Online'], sourceKey: 'reseller' });
+        await render('commerceLeadForm', { title: 'Reseller application', fields: ['city', 'message'], roles: ['Shop', 'Online'], audienceId: 'aud-1', sourceKey: 'reseller' });
         expect(document.querySelectorAll('input:not(.cmx-hp), textarea')).toHaveLength(4);
         await submit(document.querySelector('form'));
         expect(document.querySelectorAll('[role="alert"]')).toHaveLength(2);
         expect(document.querySelector('input[name="phone"]')?.getAttribute('aria-invalid')).toBe('true');
         expect(leads.sent).toHaveLength(0);
+        expect(leads.phoneOnly).toHaveLength(0);
     });
 
-    it('sends through the site lead pipeline with the role and extra fields', async () => {
-        await render('commerceLeadForm', { fields: ['city'], roles: ['Shop', 'Online'], audienceId: 'aud-1', sourceKey: 'Reseller form', successText: 'We will call you.' });
+    it('a phone-only lead goes to the named campaign: name and phone only, no e-mail asked', async () => {
+        await render('commerceLeadForm', { fields: ['email', 'city'], audienceId: 'aud-1', sourceKey: 'Reseller form' });
+        expect([hi['lead.email'], en['lead.email']].some((label) => text().includes(label))).toBe(true);
+        await typeInto(document.querySelector('input[name="name"]'), 'Asha');
+        await typeInto(document.querySelector('input[name="phone"]'), '98765 43210');
+        await typeInto(document.querySelector('input[name="city"]'), 'Varanasi');
+        await submit(document.querySelector('form'));
+        expect(leads.sent).toHaveLength(0);
+        expect(leads.phoneOnly).toEqual([
+            { instituteId: 'inst-1', audienceId: 'aud-1', fullName: 'Asha', mobileNumber: '9876543210', sourceType: 'WEBSITE_FORM', sourceId: 'shop:reseller-form' },
+        ]);
+        expect(document.querySelector('.cmx-note--error')).toBeNull();
+    });
+
+    it('without a campaign the e-mail is asked for and required, and the lead goes through the site pipeline', async () => {
+        await render('commerceLeadForm', { fields: ['city'], sourceKey: 'contact' });
+        expect(document.querySelector('input[name="email"]')).toBeTruthy();
+        expect(text()).not.toContain(hi['lead.email']);
+        expect(text()).not.toContain(en['lead.email']);
+        await typeInto(document.querySelector('input[name="name"]'), 'Asha');
+        await typeInto(document.querySelector('input[name="phone"]'), '9876543210');
+        await submit(document.querySelector('form'));
+        expect(document.querySelector('input[name="email"]')?.getAttribute('aria-invalid')).toBe('true');
+        expect(leads.sent).toHaveLength(0);
+        await typeInto(document.querySelector('input[name="email"]'), 'asha@example.com');
+        await submit(document.querySelector('form'));
+        expect(leads.phoneOnly).toHaveLength(0);
+        expect(leads.sent).toEqual([
+            expect.objectContaining({ audienceId: undefined, email: 'asha@example.com', mobileNumber: '9876543210', sourceId: 'shop:contact' }),
+        ]);
+    });
+
+    it('with an e-mail: the site lead pipeline, with the role and extra fields', async () => {
+        await render('commerceLeadForm', { fields: ['email', 'city'], roles: ['Shop', 'Online'], audienceId: 'aud-1', sourceKey: 'Reseller form', successText: 'We will call you.' });
         await typeInto(document.querySelector('input[name="name"]'), 'Asha');
         await typeInto(document.querySelector('input[name="phone"]'), '+91 98765 43210');
+        await typeInto(document.querySelector('input[name="email"]'), 'asha@example.com');
         await typeInto(document.querySelector('input[name="city"]'), 'Varanasi');
         await act(async () => {
             (document.querySelector('[role="radio"]') as HTMLElement).click();
@@ -386,7 +430,7 @@ describe('lead form', () => {
                 instituteId: 'inst-1',
                 audienceId: 'aud-1',
                 fullName: 'Asha',
-                email: '',
+                email: 'asha@example.com',
                 mobileNumber: '9876543210',
                 sourceType: 'WEBSITE_FORM',
                 sourceId: 'shop:reseller-form',
@@ -399,7 +443,7 @@ describe('lead form', () => {
 
     it('inline variant asks for the phone only, and says so when sending fails', async () => {
         leads.fail = true;
-        await render('commerceLeadForm', { variant: 'inline', fields: ['message'], submitLabel: 'Join' });
+        await render('commerceLeadForm', { variant: 'inline', fields: ['message'], audienceId: 'aud-1', submitLabel: 'Join' });
         expect(document.querySelectorAll('input:not(.cmx-hp), textarea')).toHaveLength(1);
         await typeInto(document.querySelector('input[name="phone"]'), '9876543210');
         await submit(document.querySelector('form'));

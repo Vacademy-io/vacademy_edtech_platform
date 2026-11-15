@@ -396,8 +396,8 @@ export const pollDelay = (elapsedMs: number): number | null => {
 
 /**
  * The order token in an "#t=<token>" fragment, else null. The storefront no longer makes such
- * links (the token travels in the history state, never in an address that analytics may read);
- * this reads one that was saved or shared before.
+ * links (the token stays in this tab's sessionStorage, never in an address that analytics may
+ * read); this reads one that was saved or shared before.
  */
 export const readOrderFragment = (hash: string | null | undefined): string | null => {
     const raw = (hash || '').replace(/^#/, '');
@@ -405,31 +405,6 @@ export const readOrderFragment = (hash: string | null | undefined): string | nul
     const params = new URLSearchParams(raw);
     const token = params.get('t');
     return token && token.length <= 512 && /^[A-Za-z0-9._~-]+$/.test(token) ? token : null;
-};
-
-/** History-state keys of the order page. */
-export const ORDER_TOKEN_STATE = 'cmxOrderToken';
-export const ORDER_PAID_STATE = 'cmxPaidAt';
-
-/**
- * What the order page is opened with: the order token (and, right after a payment, when the
- * payment window said it went through) as history state, so neither is ever in the address.
- */
-export const orderHistoryState = (token: string | null | undefined, paidAt?: number | null): Record<string, unknown> => ({
-    ...(token ? { [ORDER_TOKEN_STATE]: token } : {}),
-    ...(typeof paidAt === 'number' && Number.isFinite(paidAt) ? { [ORDER_PAID_STATE]: paidAt } : {}),
-});
-
-/** A usable order token from history state, else null. */
-export const tokenFromState = (state: unknown): string | null => {
-    const value = state && typeof state === 'object' ? (state as Record<string, unknown>)[ORDER_TOKEN_STATE] : null;
-    return typeof value === 'string' && value.length <= 512 && /^[A-Za-z0-9._~-]+$/.test(value) ? value : null;
-};
-
-/** When the payment window said "paid" (epoch ms) from history state, else null. */
-export const paidAtFromState = (state: unknown): number | null => {
-    const value = state && typeof state === 'object' ? (state as Record<string, unknown>)[ORDER_PAID_STATE] : null;
-    return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
 /** Ordered steps of the timeline a buyer sees. */

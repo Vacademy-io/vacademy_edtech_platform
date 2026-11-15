@@ -7,8 +7,8 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { CourseCatalogueService } from '../../-services/course-catalogue-service';
-import { isCommerceEnabled } from './config';
-import { parseCommerceRoute } from './routes';
+import { parseCommerceConfig } from './config';
+import { isBuyingRoute, parseCommerceRoute } from './routes';
 
 const loadEntry = () => import('./entry');
 const CommerceRoutePage = lazy(() => loadEntry().then((m) => ({ default: m.CommerceRoutePage })));
@@ -18,7 +18,9 @@ const CommerceRoutePage = lazy(() => loadEntry().then((m) => ({ default: m.Comme
  * site's base. When they do not name a shop route, `fallback` renders at once and nothing is
  * fetched: every existing address behaves exactly as before. When they do, the site's
  * catalogue is read (the same cached request the page itself makes) and the shop page renders
- * only if that site has a shop; otherwise `fallback`.
+ * only if that site has a shop; otherwise `fallback`. The buying routes (checkout, order,
+ * track-order, account) answer only when the shop's checkout is switched on; before that, an
+ * authored page of the same name keeps its address.
  */
 export const CommerceRouteGate: React.FC<{
     instituteId: string;
@@ -50,7 +52,8 @@ export const CommerceRouteGate: React.FC<{
     if (!route) return <>{fallback}</>;
     if (isPending) return <DashboardLoader />;
     const globalSettings = data?.globalSettings as unknown;
-    if (!data || !isCommerceEnabled(globalSettings)) return <>{fallback}</>;
+    const shop = data ? parseCommerceConfig(globalSettings) : null;
+    if (!shop?.enabled || (isBuyingRoute(route) && !shop.checkout)) return <>{fallback}</>;
     return (
         <Suspense fallback={<DashboardLoader />}>
             <CommerceRoutePage instituteId={instituteId} tagName={tagName} globalSettings={globalSettings} siteName={siteName} route={route} />

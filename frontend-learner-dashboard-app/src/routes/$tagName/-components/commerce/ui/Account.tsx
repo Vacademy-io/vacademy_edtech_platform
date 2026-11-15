@@ -12,10 +12,11 @@ import { cn } from '@/lib/utils';
 import { CommerceApiError } from '../api/client';
 import type { AddressView, CheckoutAddress, OrderSummary, ShopperAuth } from '../api/types';
 import type { MessageKey } from '../i18n';
-import { INDIAN_STATES, isPincode, normaliseMobile, orderHistoryState, stateName } from '../logic/checkout';
+import { INDIAN_STATES, isPincode, normaliseMobile, stateName } from '../logic/checkout';
 import { formatDate } from '../logic/dates';
 import { formatMoney } from '../logic/format';
 import { useCommerceCart } from '../state/cart-store';
+import { handOffOrder } from '../state/order-handoff';
 import { FIELD_ERROR_KEYS, Field, apiErrorKey, statusKey, useCheckoutConfig, useShopperSession } from './buy-common';
 import { StateSelect } from './Checkout';
 import { OtpStep, PhoneField } from './Otp';
@@ -222,7 +223,7 @@ const OrdersSection: React.FC<{ auth: ShopperAuth; onInvalid(): void }> = ({ aut
 };
 
 const OrderRow: React.FC<{ order: OrderSummary }> = ({ order }) => {
-    const { t, locale, href, config: shop, client } = useCommerceSite();
+    const { t, locale, href, config: shop, client, instituteId } = useCommerceSite();
     const router = useRouter();
     const add = useCommerceCart((s) => s.add);
     const [reorder, setReorder] = useState<'idle' | 'busy' | MessageKey>('idle');
@@ -298,11 +299,14 @@ const OrderRow: React.FC<{ order: OrderSummary }> = ({ order }) => {
             </div>
             {!masked && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                    {/* A button, not a link: the token travels in the history state, never in an address. */}
+                    {/* A button, not a link: the token stays in this tab's sessionStorage, never in an address. */}
                     <button
                         type="button"
                         className="cmx-btn cmx-btn--outline"
-                        onClick={() => void router.navigate({ href: href('order'), state: orderHistoryState(order.order_access_token) as never })}
+                        onClick={() =>
+                            // Only unmasked rows (orders whose phone was proved) open here.
+                            void router.navigate({ href: href('order'), state: handOffOrder(instituteId, order.order_access_token, { phoneProved: true }) as never })
+                        }
                     >
                         {t('account.viewOrder')}
                     </button>

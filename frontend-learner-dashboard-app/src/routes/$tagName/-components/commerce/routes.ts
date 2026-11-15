@@ -44,6 +44,10 @@ const BUYING: Record<string, CommerceRoute> = {
     account: { kind: 'account' },
 };
 
+/** Checkout, order, track order and account: pages only a shop with checkout switched on answers. */
+export const isBuyingRoute = (route: CommerceRoute): boolean =>
+    route.kind === 'checkout' || route.kind === 'order' || route.kind === 'track' || route.kind === 'account';
+
 const decode = (segment: string): string => {
     try {
         return decodeURIComponent(segment);

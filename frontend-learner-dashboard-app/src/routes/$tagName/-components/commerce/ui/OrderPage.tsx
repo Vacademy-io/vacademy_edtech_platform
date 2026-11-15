@@ -1,11 +1,12 @@
 /**
- * The thank-you and order page (contract P2 §9). Opened with the order access token in the
- * history state (never in the address, where analytics scripts could read it); an older
- * "order#t=…" link still works, and its token is moved into the history state at once. The
- * token travels to the API only in the X-Commerce-Order-Token header. A payment in progress
- * shows "Confirming your payment" and the page reads the order again (every 3 s for 30 s, then
- * every 10 s up to 5 minutes); it never offers a second payment while one is in progress, nor
- * in the five minutes after this device's payment window said the payment went through.
+ * The thank-you and order page (contract P2 §9). Opened with a random key in the history state
+ * whose order token this tab keeps in sessionStorage (state/order-handoff.ts): the token is never
+ * in the address or in history.state, where analytics scripts could read it. An older
+ * "order#t=…" link still works: its token is kept the same way and removed from the address at
+ * once. The token travels to the API only in the X-Commerce-Order-Token header. A payment in
+ * progress shows "Confirming your payment" and the page reads the order again (every 3 s for
+ * 30 s, then every 10 s up to 5 minutes); it never offers a second payment while one is in
+ * progress, nor in the five minutes after this tab's payment window said the payment went through.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,44 +14,48 @@ import { CheckCircle, Clock, Phone, WhatsappLogo, XCircle } from '@phosphor-icon
 import { CommerceApiError } from '../api/client';
 import type { OrderView } from '../api/types';
 import type { MessageKey } from '../i18n';
-import { ORDER_TOKEN_STATE, PURCHASED_STATUSES, orderStage, paidAtFromState, pollDelay, readOrderFragment, tokenFromState } from '../logic/checkout';
+import { PURCHASED_STATUSES, orderStage, pollDelay, readOrderFragment } from '../logic/checkout';
 import { formatDate } from '../logic/dates';
 import { sendPurchaseOnce } from '../logic/events';
 import { payWithRazorpay } from '../logic/razorpay';
+import { ORDER_KEY_STATE, handOffOrder, markOrderPaid, orderKeyFromState, readOrderHandoff, type OrderHandoff } from '../state/order-handoff';
+import { browserSessionStorage, type KeyValueStorage } from '../state/session';
 import { OrderBody, OrderTimeline, apiErrorKey, statusKey, useShopperSession } from './buy-common';
 import { ErrorState, shouldRetry } from './primitives';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
+export type OpenedOrder = OrderHandoff & { key: string };
+
 /**
- * The order token of this page: from history.state (how the storefront opens it, and on a
- * reload or Back), else from an older "#t=" link, which is then moved into history.state and
- * removed from the address bar.
+ * The order this page shows: the record the history state's key names (or, after a language
+ * switch replaced the state, the one this tab used last); else an older "#t=" link, whose token
+ * is then kept in sessionStorage and removed from the address bar. The key is put back in the
+ * history state, so Back and a reload find the same order.
  */
-export const takeOrderToken = (win: Window | undefined = typeof window === 'undefined' ? undefined : window): string | null => {
+export const takeOrder = (
+    instituteId: string,
+    win: Window | undefined = typeof window === 'undefined' ? undefined : window,
+    storage: KeyValueStorage | null = browserSessionStorage()
+): OpenedOrder | null => {
     if (!win) return null;
     try {
-        const kept = tokenFromState(win.history.state);
+        const address = `${win.location.pathname}${win.location.search}`;
+        const current = (win.history.state && typeof win.history.state === 'object' ? win.history.state : {}) as Record<string, unknown>;
+        const fromHash = readOrderFragment(win.location.hash);
+        // A key in the state wins; a "#t=" link wins over the order this tab used last.
+        const kept = orderKeyFromState(current) || !fromHash ? readOrderHandoff(instituteId, current, storage) : null;
         if (kept) {
-            // A stray fragment never stays in the address next to it.
-            if (win.location.hash) win.history.replaceState(win.history.state, '', `${win.location.pathname}${win.location.search}`);
+            if (win.location.hash || orderKeyFromState(current) !== kept.key) {
+                win.history.replaceState({ ...current, [ORDER_KEY_STATE]: kept.key }, '', address);
+            }
             return kept;
         }
-        const fromHash = readOrderFragment(win.location.hash);
         if (fromHash) {
-            const state = (win.history.state && typeof win.history.state === 'object' ? win.history.state : {}) as Record<string, unknown>;
-            win.history.replaceState({ ...state, [ORDER_TOKEN_STATE]: fromHash }, '', `${win.location.pathname}${win.location.search}`);
-            return fromHash;
+            const state = handOffOrder(instituteId, fromHash, {}, storage);
+            win.history.replaceState({ ...current, ...state }, '', address);
+            return readOrderHandoff(instituteId, state, storage);
         }
         return null;
-    } catch {
-        return null;
-    }
-};
-
-/** When this device's payment window said "paid", from history.state, else null. */
-const takePaidAt = (win: Window | undefined = typeof window === 'undefined' ? undefined : window): number | null => {
-    try {
-        return win ? paidAtFromState(win.history.state) : null;
     } catch {
         return null;
     }
@@ -63,13 +68,18 @@ const CANCEL_KEYS: Record<string, MessageKey> = {
 };
 
 /** The heading and line of an order's state. */
-export const OrderState: React.FC<{ view: OrderView; pollingOver?: boolean; onPay?: () => void; paying?: boolean; paidAt?: number | null }> = ({
-    view,
-    pollingOver,
-    onPay,
-    paying,
-    paidAt = null,
-}) => {
+export const OrderState: React.FC<{
+    view: OrderView;
+    pollingOver?: boolean;
+    onPay?: () => void;
+    paying?: boolean;
+    paidAt?: number | null;
+    /**
+     * The line under the thank-you: "Your orders" and Track show the details only of an order
+     * whose phone was proved; without that, Track shows the status only. Null for none.
+     */
+    thanksBody?: MessageKey | null;
+}> = ({ view, pollingOver, onPay, paying, paidAt = null, thanksBody = 'order.thanksBodyStatusOnly' }) => {
     const { t } = useCommerceSite();
     const stage = orderStage(view, Date.now(), paidAt);
     switch (stage.kind) {
@@ -145,7 +155,7 @@ export const OrderState: React.FC<{ view: OrderView; pollingOver?: boolean; onPa
                     <CheckCircle size={28} weight="fill" aria-hidden="true" className="cmx-ok" />
                     <div>
                         <p className="cmx-h2">{(view.status || '').toUpperCase() === 'CONFIRMED' ? t('order.thanks') : t(statusKey(view.status))}</p>
-                        <p className="cmx-body">{t('order.thanksBody')}</p>
+                        {thanksBody && <p className="cmx-body">{t(thanksBody)}</p>}
                     </div>
                 </div>
             );
@@ -155,8 +165,11 @@ export const OrderState: React.FC<{ view: OrderView; pollingOver?: boolean; onPa
 export const OrderPage: React.FC = () => {
     const { t, client, instituteId, config: shop, siteName, locale } = useCommerceSite();
     const queryClient = useQueryClient();
-    const [token] = useState<string | null>(() => takeOrderToken());
-    const [paidAt, setPaidAt] = useState<number | null>(() => takePaidAt());
+    const [opened] = useState<OpenedOrder | null>(() => takeOrder(instituteId));
+    const token = opened?.token ?? null;
+    const [paidAt, setPaidAt] = useState<number | null>(opened?.paidAt ?? null);
+    // Only an order this tab placed or paid sends `purchase`; opening an old order never does.
+    const [placedHere, setPlacedHere] = useState(opened?.placedHere === true);
     const { session, clear: dropSession } = useShopperSession();
     const [pollStart, setPollStart] = useState<number | null>(paidAt);
     const [paying, setPaying] = useState(false);
@@ -190,9 +203,10 @@ export const OrderPage: React.FC = () => {
     }, [processing, pollStart]);
     const pollingOver = pollStart !== null && Date.now() - pollStart >= 300_000;
 
-    // purchase: once per order number on this device, when the order is bought.
+    // purchase: once per order number on this device, when the order is bought, and only when
+    // this tab's checkout (or this page's own Pay now) produced it.
     useEffect(() => {
-        if (!view || !PURCHASED_STATUSES.has((view.status || '').toUpperCase())) return;
+        if (!placedHere || !view || !PURCHASED_STATUSES.has((view.status || '').toUpperCase())) return;
         sendPurchaseOnce({
             name: 'purchase',
             transactionId: view.order_number,
@@ -210,7 +224,7 @@ export const OrderPage: React.FC = () => {
             currency: view.currency,
             paymentType: (view.payment_method || '').toUpperCase() === 'COD' ? 'cod' : 'prepaid',
         }, instituteId);
-    }, [view, instituteId]);
+    }, [view, instituteId, placedHere]);
 
     const pay = async () => {
         if (!view || !token) return;
@@ -228,8 +242,12 @@ export const OrderPage: React.FC = () => {
                             signature: outcome.signature,
                         })
                         .catch(() => undefined);
-                    setPaidAt(Date.now());
-                    setPollStart(Date.now());
+                    const now = Date.now();
+                    // Kept with the order in this tab, so a reload still waits for the capture.
+                    if (opened) markOrderPaid(instituteId, opened.key, now);
+                    setPaidAt(now);
+                    setPlacedHere(true);
+                    setPollStart(now);
                 }
             }
         } catch (failure) {
@@ -284,7 +302,14 @@ export const OrderPage: React.FC = () => {
             <p className="cmx-eyebrow">{t('order.number', { number: view.order_number })}</p>
             <h1 className="cmx-sr">{t('order.title', { number: view.order_number })}</h1>
             {view.placed_at && <p className="cmx-small cmx-muted mb-4">{t('order.placedOn', { date: formatDate(view.placed_at, locale) })}</p>}
-            <OrderState view={view} pollingOver={pollingOver} onPay={stage.kind === 'pay' ? () => void pay() : undefined} paying={paying} paidAt={paidAt} />
+            <OrderState
+                view={view}
+                pollingOver={pollingOver}
+                onPay={stage.kind === 'pay' ? () => void pay() : undefined}
+                paying={paying}
+                paidAt={paidAt}
+                thanksBody={opened?.phoneProved === true ? 'order.thanksBody' : 'order.thanksBodyStatusOnly'}
+            />
             {payError && (
                 <p className="cmx-note cmx-note--error mt-3" role="alert">
                     {t(payError)}

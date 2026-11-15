@@ -106,8 +106,15 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export type LeadErrors = Partial<Record<LeadField, 'required' | 'phoneInvalid' | 'emailInvalid'>>;
 
-/** What is wrong with a filled form; {} when it can be sent. Name and phone are required. */
-export const validateLead = (values: Partial<Record<LeadField, string>>, fields: readonly LeadField[]): LeadErrors => {
+/**
+ * What is wrong with a filled form; {} when it can be sent. Name and phone are required, and the
+ * e-mail too when `emailRequired` (a form that names no campaign cannot send a phone-only lead).
+ */
+export const validateLead = (
+    values: Partial<Record<LeadField, string>>,
+    fields: readonly LeadField[],
+    opts: { emailRequired?: boolean } = {}
+): LeadErrors => {
     const errors: LeadErrors = {};
     if (fields.includes('name') && !(values.name || '').trim()) errors.name = 'required';
     if (fields.includes('phone')) {
@@ -115,6 +122,7 @@ export const validateLead = (values: Partial<Record<LeadField, string>>, fields:
         else if (!normalizeMobile(values.phone || '')) errors.phone = 'phoneInvalid';
     }
     const email = (values.email || '').trim();
-    if (fields.includes('email') && email && !EMAIL.test(email)) errors.email = 'emailInvalid';
+    if (fields.includes('email') && opts.emailRequired && !email) errors.email = 'required';
+    else if (fields.includes('email') && email && !EMAIL.test(email)) errors.email = 'emailInvalid';
     return errors;
 };

@@ -10,13 +10,10 @@ import {
     checkoutErrorAction,
     isGstin,
     normaliseMobile,
-    orderHistoryState,
     orderStage,
-    paidAtFromState,
     pollDelay,
     readOrderFragment,
     renewAttempt,
-    tokenFromState,
     typedMobile,
     validateForm,
     withPlaced,
@@ -208,17 +205,6 @@ describe('the order page', () => {
         expect(orderStage(pending, now, now - 5 * 60_000).kind).toBe('pay');
         expect(orderStage(pending, now, null).kind).toBe('pay');
         expect(orderStage({ status: 'CONFIRMED' }, now, now).kind).toBe('placed');
-    });
-
-    it('carries the token and the paid time in the history state, never in an address', () => {
-        expect(orderHistoryState('v1.a.b')).toEqual({ cmxOrderToken: 'v1.a.b' });
-        expect(orderHistoryState('v1.a.b', 1234)).toEqual({ cmxOrderToken: 'v1.a.b', cmxPaidAt: 1234 });
-        expect(orderHistoryState(null)).toEqual({});
-        expect(tokenFromState({ cmxOrderToken: 'v1.a.b', __TSR_index: 2 })).toBe('v1.a.b');
-        expect(tokenFromState({ cmxOrderToken: '<script>' })).toBeNull();
-        expect(tokenFromState(null)).toBeNull();
-        expect(paidAtFromState({ cmxPaidAt: 1234 })).toBe(1234);
-        expect(paidAtFromState({ cmxPaidAt: 'x' })).toBeNull();
     });
 
     it('reads the order token of an older link from the fragment', () => {

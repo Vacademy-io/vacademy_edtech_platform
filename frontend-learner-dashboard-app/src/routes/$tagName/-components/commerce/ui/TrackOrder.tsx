@@ -55,7 +55,7 @@ export const TrackOrderPage: React.FC = () => {
             <div className="cmx-shell cmx-section cmx-order">
                 <p className="cmx-eyebrow">{t('order.number', { number: view.order_number })}</p>
                 <h1 className="cmx-sr">{t('order.title', { number: view.order_number })}</h1>
-                <OrderState view={view} />
+                <OrderState view={view} thanksBody={view.masked ? null : 'order.thanksBody'} />
                 <div className="cmx-order__grid">
                     <section className="cmx-panel" aria-label={t('order.items')}>
                         <OrderTimeline view={view} />

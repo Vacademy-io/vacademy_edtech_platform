@@ -26,9 +26,14 @@ export class ChallengeError extends Error {
     }
 }
 
+/** How long a shopper has to answer the check once Cloudflare asks for an interaction. */
+export const INTERACTIVE_TIMEOUT_MS = 120_000;
+
 /**
- * A fresh token from an invisible widget in `host` (a hidden box the page keeps). The widget is
- * removed after use, so the next call renders a new one and never reuses a token.
+ * A fresh token from an invisible widget in `host` (a box near the pay bar). The widget is
+ * removed after use, so the next call renders a new one and never reuses a token. When Cloudflare
+ * asks for an interaction, the box is scrolled into view (the sticky pay bar may sit over it) and
+ * the shopper gets longer to answer.
  */
 export const challengeToken = async (siteKey: string, host: HTMLElement, timeoutMs = 30_000): Promise<string> => {
     await loadTurnstile();
@@ -36,6 +41,7 @@ export const challengeToken = async (siteKey: string, host: HTMLElement, timeout
     if (!turnstile) throw new ChallengeError('turnstile missing');
     return new Promise<string>((resolve, reject) => {
         let widgetId = '';
+        let timer: ReturnType<typeof setTimeout>;
         const cleanup = () => {
             clearTimeout(timer);
             try {
@@ -44,15 +50,27 @@ export const challengeToken = async (siteKey: string, host: HTMLElement, timeout
                 // Already gone.
             }
         };
-        const timer = setTimeout(() => {
-            cleanup();
-            reject(new ChallengeError('timeout'));
-        }, timeoutMs);
+        const startTimer = (ms: number) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                cleanup();
+                reject(new ChallengeError('timeout'));
+            }, ms);
+        };
+        startTimer(timeoutMs);
         try {
             widgetId = turnstile.render(host, {
                 sitekey: siteKey,
                 execution: 'execute',
                 appearance: 'interaction-only',
+                'before-interactive-callback': () => {
+                    try {
+                        host.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+                    } catch {
+                        // Scrolling is a help, never a failure.
+                    }
+                    startTimer(Math.max(timeoutMs, INTERACTIVE_TIMEOUT_MS));
+                },
                 callback: (token: string) => {
                     cleanup();
                     resolve(token);

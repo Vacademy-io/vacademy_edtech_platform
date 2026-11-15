@@ -25,7 +25,6 @@ import {
     isPincode,
     maskedMobile,
     normaliseMobile,
-    orderHistoryState,
     renewAttempt,
     validateForm,
     withPlaced,
@@ -42,6 +41,7 @@ import { payWithRazorpay } from '../logic/razorpay';
 import { ChallengeError } from '../logic/turnstile';
 import { toPriceRequest } from '../state/cart-logic';
 import { useCommerceCart } from '../state/cart-store';
+import { handOffOrder } from '../state/order-handoff';
 import { browserSessionStorage, sessionMatchesPhone } from '../state/session';
 import { CartTotals } from './Cart';
 import {
@@ -122,6 +122,8 @@ export const CheckoutPage: React.FC = () => {
     const [attempt, setAttempt] = useState<CheckoutAttempt | null>(null);
     const autoFilled = useRef({ city: false, state: false });
     const resubmitAfterOtp = useRef(false);
+    // Whether the last order sent carried a proof of the phone (a fresh code or the session).
+    const orderPhoneProved = useRef(false);
     const fields = useRef<Partial<Record<FieldName, HTMLInputElement | HTMLSelectElement | null>>>({});
     const otpRef = useRef<HTMLDivElement>(null);
     const noticeRef = useRef<HTMLDivElement>(null);
@@ -281,10 +283,15 @@ export const CheckoutPage: React.FC = () => {
         if (pay === 'cod' && !codSelectable && !pricing) setPay('upi');
     }, [pay, codSelectable, pricing]);
 
-    // The token goes in the history state, never in the address (where analytics could read it).
+    // The token stays in this tab's sessionStorage; the address and history.state (which analytics
+    // scripts can read) carry only a random key.
     const goToOrder = useCallback(
-        (token: string | null | undefined, paidAt?: number) => router.navigate({ href: href('order'), state: orderHistoryState(token, paidAt) as never }),
-        [router, href]
+        (token: string | null | undefined, paidAt?: number) =>
+            router.navigate({
+                href: href('order'),
+                state: handOffOrder(instituteId, token, { paidAt, placedHere: true, phoneProved: orderPhoneProved.current }) as never,
+            }),
+        [router, href, instituteId]
     );
 
     const showNotice = (key: MessageKey, tone: 'warn' | 'error' = 'error', link?: 'cart') => {
@@ -407,6 +414,7 @@ export const CheckoutPage: React.FC = () => {
         let current = opts.renewed ? renewAttempt(store, instituteId, hash) : attemptFor(store, instituteId, hash);
         setAttempt(current);
         const sentSession = method === 'PREPAID' && sessionForPhone && session ? session.token : null;
+        orderPhoneProved.current = !!token || !!sentSession;
         try {
             const challengeToken = await challenge.get();
             const body = buildCheckoutBody({
@@ -691,7 +699,7 @@ export const CheckoutPage: React.FC = () => {
                         <Field
                             label={t('form.email')}
                             optionalText={rules.emailRequired ? null : t('form.optional')}
-                            hint={rules.emailRequired ? t('checkout.emailHintRequired') : t('checkout.emailHint')}
+                            hint={rules.emailRequired && mode !== 'EMAIL' ? t('checkout.emailHintRequired') : t('checkout.emailHint')}
                             type="email"
                             inputMode="email"
                             autoComplete="email"
