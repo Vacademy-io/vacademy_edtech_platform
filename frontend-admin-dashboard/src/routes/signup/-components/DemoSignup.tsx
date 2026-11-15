@@ -88,7 +88,7 @@ const DemoForm = ({
                 email: values.email,
                 phone: values.phone ?? '',
             }),
-        onSuccess: (tokens) => enterApp(tokens, product.app_path),
+        onSuccess: (tokens) => enterApp(tokens, product.app_path, { newAccount: true }),
         onError: (e) => {
             const status = (e as { response?: { status?: number } })?.response?.status;
             setAlreadyRegistered(status === 409);

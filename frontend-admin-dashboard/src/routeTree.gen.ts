@@ -71,6 +71,7 @@ import { Route as EvalezySettingsRouteImport } from "./routes/evalezy/settings"
 import { Route as EvalezyProfileRouteImport } from "./routes/evalezy/profile"
 import { Route as EvalezyPlanRouteImport } from "./routes/evalezy/plan"
 import { Route as EvalezyNewRouteImport } from "./routes/evalezy/new"
+import { Route as EvalezyHelpRouteImport } from "./routes/evalezy/help"
 import { Route as EvalezyCreditsRouteImport } from "./routes/evalezy/credits"
 import { Route as EvalezyAssessmentIdRouteImport } from "./routes/evalezy/$assessmentId"
 import { Route as EngagementEnginesEngineIdRouteImport } from "./routes/engagement-engines/$engineId"
@@ -674,6 +675,11 @@ const EvalezyPlanRoute = EvalezyPlanRouteImport.update({
 const EvalezyNewRoute = EvalezyNewRouteImport.update({
   id: "/new",
   path: "/new",
+  getParentRoute: () => EvalezyRouteRoute,
+} as any)
+const EvalezyHelpRoute = EvalezyHelpRouteImport.update({
+  id: "/help",
+  path: "/help",
   getParentRoute: () => EvalezyRouteRoute,
 } as any)
 const EvalezyCreditsRoute = EvalezyCreditsRouteImport.update({
@@ -2295,6 +2301,7 @@ export interface FileRoutesByFullPath {
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
@@ -2556,6 +2563,7 @@ export interface FileRoutesByTo {
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
@@ -2820,6 +2828,7 @@ export interface FileRoutesById {
   "/engagement-engines/$engineId": typeof EngagementEnginesEngineIdRoute
   "/evalezy/$assessmentId": typeof EvalezyAssessmentIdRoute
   "/evalezy/credits": typeof EvalezyCreditsRoute
+  "/evalezy/help": typeof EvalezyHelpRoute
   "/evalezy/new": typeof EvalezyNewRoute
   "/evalezy/plan": typeof EvalezyPlanRoute
   "/evalezy/profile": typeof EvalezyProfileRoute
@@ -3085,6 +3094,7 @@ export interface FileRouteTypes {
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
+    | "/evalezy/help"
     | "/evalezy/new"
     | "/evalezy/plan"
     | "/evalezy/profile"
@@ -3346,6 +3356,7 @@ export interface FileRouteTypes {
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
+    | "/evalezy/help"
     | "/evalezy/new"
     | "/evalezy/plan"
     | "/evalezy/profile"
@@ -3609,6 +3620,7 @@ export interface FileRouteTypes {
     | "/engagement-engines/$engineId"
     | "/evalezy/$assessmentId"
     | "/evalezy/credits"
+    | "/evalezy/help"
     | "/evalezy/new"
     | "/evalezy/plan"
     | "/evalezy/profile"
@@ -4562,6 +4574,13 @@ declare module "@tanstack/react-router" {
       path: "/new"
       fullPath: "/evalezy/new"
       preLoaderRoute: typeof EvalezyNewRouteImport
+      parentRoute: typeof EvalezyRouteRoute
+    }
+    "/evalezy/help": {
+      id: "/evalezy/help"
+      path: "/help"
+      fullPath: "/evalezy/help"
+      preLoaderRoute: typeof EvalezyHelpRouteImport
       parentRoute: typeof EvalezyRouteRoute
     }
     "/evalezy/credits": {
@@ -5949,6 +5968,7 @@ declare module "@tanstack/react-router" {
 interface EvalezyRouteRouteChildren {
   EvalezyAssessmentIdRoute: typeof EvalezyAssessmentIdRoute
   EvalezyCreditsRoute: typeof EvalezyCreditsRoute
+  EvalezyHelpRoute: typeof EvalezyHelpRoute
   EvalezyNewRoute: typeof EvalezyNewRoute
   EvalezyPlanRoute: typeof EvalezyPlanRoute
   EvalezyProfileRoute: typeof EvalezyProfileRoute
@@ -5959,6 +5979,7 @@ interface EvalezyRouteRouteChildren {
 const EvalezyRouteRouteChildren: EvalezyRouteRouteChildren = {
   EvalezyAssessmentIdRoute: EvalezyAssessmentIdRoute,
   EvalezyCreditsRoute: EvalezyCreditsRoute,
+  EvalezyHelpRoute: EvalezyHelpRoute,
   EvalezyNewRoute: EvalezyNewRoute,
   EvalezyPlanRoute: EvalezyPlanRoute,
   EvalezyProfileRoute: EvalezyProfileRoute,

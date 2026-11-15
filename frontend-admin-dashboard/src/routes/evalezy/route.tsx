@@ -9,6 +9,7 @@ import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
 import { isIOS } from '@/native';
 import { EvalezyHeader } from './-components/EvalezyHeader';
 import { TrialBanner } from './-components/TrialBanner';
+import { WelcomeTutorialDialog } from './-components/Tutorials';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
 import { isPaymentPending, PAYMENT_PENDING_PATHS, usePlanAccess } from './-hooks/usePlanAccess';
 
@@ -65,6 +66,8 @@ function EvalezyLayout() {
                     </div>
                 )}
             </main>
+            {/* Right after a sign-up (trial, demo or buy): the 2-minute tutorial, once. */}
+            {!isLoading && !lockedOut && settings.enabled && <WelcomeTutorialDialog />}
         </div>
     );
 }

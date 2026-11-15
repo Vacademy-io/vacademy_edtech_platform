@@ -11,6 +11,7 @@ import { getInstituteId } from '@/constants/helper';
 import { cn } from '@/lib/utils';
 import { getAssessmentListWithFilters } from '@/routes/assessment/assessment-list/-services/assessment-services';
 import type { TestContent } from '@/types/assessments/schedule-test-list';
+import { TutorialCard } from './-components/Tutorials';
 
 export const Route = createFileRoute('/evalezy/')({
     component: EvalezyHome,
@@ -99,6 +100,8 @@ function EvalezyHome() {
                     {t('home.new')}
                 </MyButton>
             </div>
+
+            <TutorialCard />
 
             <MyInput
                 inputType="search"
