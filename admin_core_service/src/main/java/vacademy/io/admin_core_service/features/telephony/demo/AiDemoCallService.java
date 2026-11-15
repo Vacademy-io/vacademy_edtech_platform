@@ -28,21 +28,24 @@ import java.util.Optional;
 /**
  * Public "Try the AI call" demo, driven entirely by a lead list.
  *
- * The visitor fills the telleo.ai/try-ai-call form, which posts a normal lead (name, phone,
- * Organisation, Language) to a demo audience whose setting_json carries
- * {"tryAiCall": {"agentId": "..."}}. When that phone calls the institute's AI line, the
- * voice-bot call context {@link #bindInbound binds} the call to the lead: the audience's
- * agent answers in the lead's language, as the admission counsellor of the lead's
- * organisation, and the call is attributed to the lead. No institute setting, no new table.
- * Turning the audience off (status not ACTIVE) turns the demo off.
+ * The visitor fills the telleo.ai/try-ai-call form, which posts a normal lead (name,
+ * Organisation, Language, no phone) to a demo audience whose setting_json carries
+ * {"tryAiCall": {"agentId": "..."}}, then dials the institute's AI line. The voice-bot call
+ * context {@link #bindInbound binds} the inbound call to the OLDEST form from the last
+ * {@link #WINDOW} that has no call yet (claimed atomically, so two callers never share a
+ * form), attributes the call to that lead and writes the caller's number onto it. The
+ * audience's agent then answers in the lead's language as the admission counsellor of the
+ * lead's organisation. If two visitors submit and dial at the same moment in opposite
+ * orders they can be swapped; the short window keeps that rare. No institute setting, no
+ * new table. Turning the audience off (status not ACTIVE) turns the demo off.
  */
 @Service
 public class AiDemoCallService {
 
     private static final Logger log = LoggerFactory.getLogger(AiDemoCallService.class);
 
-    /** How long after filling the form a call is still treated as a demo call. */
-    static final Duration WINDOW = Duration.ofHours(12);
+    /** A form waits this long for its call. Short, because forms are matched by order. */
+    static final Duration WINDOW = Duration.ofMinutes(5);
     static final String MARKER = "tryAiCall";
 
     @Autowired private AudienceResponseRepository audienceResponseRepository;
@@ -51,6 +54,7 @@ public class AiDemoCallService {
     // @Lazy: AudienceService is a large service; avoid an eager bean cycle (same as the
     // voice-bot controller). Only its read-only custom field lookup is used.
     @Autowired @Lazy private AudienceService audienceService;
+    @Autowired private org.springframework.transaction.PlatformTransactionManager txManager;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -71,39 +75,56 @@ public class AiDemoCallService {
     }
 
     /**
-     * For an INBOUND call: the newest Try-the-AI-call lead from the caller's number in this
-     * institute, submitted within {@link #WINDOW}. Attributes the call to that lead when it is
-     * not attributed yet. Empty for every other call. Never throws: a demo problem must never
-     * break a real inbound call.
+     * For an INBOUND call: the demo lead this call is for. On the first call-context fetch
+     * the oldest waiting form is claimed and the call attributed to it; a re-fetch finds it
+     * through the call attribution. Empty for every other call. Never throws: a demo
+     * problem must never break a real inbound call.
      */
     public Optional<Binding> bindInbound(TelephonyCallLog row) {
         try {
             if (row == null || !CallDirection.INBOUND.name().equalsIgnoreCase(row.getDirection())) {
                 return Optional.empty();
             }
-            String last10 = lastTen(row.getFromNumber());
-            if (last10 == null) return Optional.empty();
-            AudienceResponse lead = audienceResponseRepository.findLatestTryAiCallLead(row.getInstituteId(),
-                    last10, Timestamp.from(Instant.now().minus(WINDOW))).orElse(null);
+            AudienceResponse lead = row.getResponseId() != null
+                    ? audienceResponseRepository.findById(row.getResponseId()).orElse(null)
+                    : claim(row);
             if (lead == null) return Optional.empty();
-            String agentId = audienceRepository.findById(lead.getAudienceId())
-                    .map(this::agentIdOf).orElse(null);
+            Audience audience = audienceRepository.findById(lead.getAudienceId()).orElse(null);
+            if (!isDemoList(audience)) return Optional.empty();
 
             Map<String, String> fields = audienceService.getLeadCustomFields(lead.getId());
             AiDemoCallLanguages.Language lang = AiDemoCallLanguages.find(field(fields, "language", "preferred language"))
                     .orElseGet(() -> AiDemoCallLanguages.find("hinglish").orElseThrow());
             String org = field(fields, "organisation", "organization", "institute name", "institute", "company");
             String name = firstNonBlank(field(fields, "full name", "name"), lead.getParentName());
-
-            if (row.getResponseId() == null && lead.getUserId() != null) {
-                callLogRepo.attachLeadIfUnattributed(row.getId(), lead.getId(), lead.getUserId());
-            }
-            log.info("ai-demo-call: call {} is lead {} ({})", row.getId(), lead.getId(), lang.code());
-            return Optional.of(new Binding(lead.getId(), lead.getUserId(), name, org, lang, agentId));
+            return Optional.of(new Binding(lead.getId(), lead.getUserId(), name, org, lang, agentIdOf(audience)));
         } catch (Exception e) {
             log.warn("ai-demo-call: bind skipped for call {}: {}", row == null ? null : row.getId(), e.getMessage());
             return Optional.empty();
         }
+    }
+
+    /** Claims the oldest waiting form, attributes the call and stores the caller number, in one transaction. */
+    private AudienceResponse claim(TelephonyCallLog row) {
+        return new org.springframework.transaction.support.TransactionTemplate(txManager).execute(tx -> {
+            AudienceResponse lead = audienceResponseRepository.claimOldestTryAiCallLead(row.getInstituteId(),
+                    Timestamp.from(Instant.now().minus(WINDOW))).orElse(null);
+            if (lead == null) return null;
+            if (callLogRepo.attachLeadIfUnattributed(row.getId(), lead.getId(),
+                    lead.getUserId() == null ? "UNKNOWN" : lead.getUserId()) == 0) {
+                tx.setRollbackOnly();
+                return null;
+            }
+            if (row.getFromNumber() != null && lastTen(row.getFromNumber()) != null) {
+                audienceResponseRepository.fillParentMobileIfBlank(lead.getId(), "+91" + lastTen(row.getFromNumber()));
+            }
+            log.info("ai-demo-call: call {} claimed lead {}", row.getId(), lead.getId());
+            return lead;
+        });
+    }
+
+    private boolean isDemoList(Audience a) {
+        return a != null && a.getSettingJson() != null && a.getSettingJson().contains("\"" + MARKER + "\"");
     }
 
     /**
@@ -113,9 +134,7 @@ public class AiDemoCallService {
     public Optional<String> status(String leadId) {
         AudienceResponse lead = leadId == null ? null : audienceResponseRepository.findById(leadId).orElse(null);
         if (lead == null) return Optional.empty();
-        boolean demoList = audienceRepository.findById(lead.getAudienceId())
-                .map(a -> a.getSettingJson() != null && a.getSettingJson().contains("\"" + MARKER + "\""))
-                .orElse(false);
+        boolean demoList = audienceRepository.findById(lead.getAudienceId()).map(this::isDemoList).orElse(false);
         if (!demoList) return Optional.empty();
 
         Instant since = lead.getSubmittedAt() == null ? Instant.EPOCH : lead.getSubmittedAt().toInstant();

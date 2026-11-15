@@ -15,6 +15,8 @@ import vacademy.io.admin_core_service.features.audience.repository.AudienceRespo
 import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.TelephonyCallLogRepository;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -37,6 +39,7 @@ class AiDemoCallServiceTest {
     @Mock AudienceRepository audienceRepository;
     @Mock TelephonyCallLogRepository callLogRepo;
     @Mock AudienceService audienceService;
+    @Mock PlatformTransactionManager txManager;
     @InjectMocks AiDemoCallService service;
 
     private Audience audience;
@@ -55,6 +58,8 @@ class AiDemoCallServiceTest {
         when(lead.getParentName()).thenReturn("Anil Kumar");
         when(lead.getSubmittedAt()).thenReturn(Timestamp.from(Instant.now().minusSeconds(60)));
         when(audienceResponseRepository.findById("lead-1")).thenReturn(Optional.of(lead));
+        when(txManager.getTransaction(any())).thenAnswer(i -> new SimpleTransactionStatus());
+        when(callLogRepo.attachLeadIfUnattributed(any(), any(), any())).thenReturn(1);
         when(audienceService.getLeadCustomFields("lead-1")).thenReturn(
                 Map.of("Full Name", "Anil Kumar", "Organisation", "Sunrise {{x}} School", "Language", "Tamil"));
     }
@@ -69,15 +74,15 @@ class AiDemoCallServiceTest {
         return row;
     }
 
-    private void leadFound() {
-        when(audienceResponseRepository.findLatestTryAiCallLead(eq(INST), eq("9876543210"), any()))
-                .thenReturn(Optional.of(lead));
+    private void leadWaiting() {
+        when(audienceResponseRepository.claimOldestTryAiCallLead(eq(INST), any())).thenReturn(Optional.of(lead));
     }
 
     @Test
-    void bindsCallerToTheirDemoLeadAndAttributesTheCall() {
-        leadFound();
+    void claimsTheOldestWaitingFormAttributesTheCallAndStoresTheCallerNumber() {
+        leadWaiting();
         var b = service.bindInbound(inbound("919876543210", null)).orElseThrow();
+        verify(audienceResponseRepository).fillParentMobileIfBlank("lead-1", "+919876543210");
         assertEquals("agent-demo", b.agentId());
         assertEquals("tamil", b.language().code());
         assertEquals("kayal", b.language().voice());
@@ -88,15 +93,34 @@ class AiDemoCallServiceTest {
     }
 
     @Test
-    void neverOverwritesAnExistingAttribution() {
-        leadFound();
-        assertTrue(service.bindInbound(inbound("919876543210", "other-lead")).isPresent());
-        verify(callLogRepo, never()).attachLeadIfUnattributed(any(), any(), any());
+    void aRefetchFindsTheLeadThroughTheAttributionWithoutClaimingAgain() {
+        assertEquals("lead-1", service.bindInbound(inbound("919876543210", "lead-1")).orElseThrow().leadId());
+        verify(audienceResponseRepository, never()).claimOldestTryAiCallLead(any(), any());
+    }
+
+    @Test
+    void aCallAlreadyAttributedToAnOrdinaryLeadIsNotADemo() {
+        AudienceResponse other = mock(AudienceResponse.class);
+        when(other.getAudienceId()).thenReturn("aud-2");
+        Audience plain = mock(Audience.class);
+        when(plain.getSettingJson()).thenReturn("{}");
+        when(audienceRepository.findById("aud-2")).thenReturn(Optional.of(plain));
+        when(audienceResponseRepository.findById("other-lead")).thenReturn(Optional.of(other));
+        assertTrue(service.bindInbound(inbound("919876543210", "other-lead")).isEmpty());
+        verify(audienceResponseRepository, never()).claimOldestTryAiCallLead(any(), any());
+    }
+
+    @Test
+    void lostAttributionRaceReleasesTheForm() {
+        leadWaiting();
+        when(callLogRepo.attachLeadIfUnattributed(any(), any(), any())).thenReturn(0);
+        assertTrue(service.bindInbound(inbound("919876543210", null)).isEmpty());
+        verify(audienceResponseRepository, never()).fillParentMobileIfBlank(any(), any());
     }
 
     @Test
     void missingLanguageFallsBackToHinglishAndMissingAgentToNull() {
-        leadFound();
+        leadWaiting();
         when(audienceService.getLeadCustomFields("lead-1")).thenReturn(Map.of("Organisation", "Sunrise"));
         when(audience.getSettingJson()).thenReturn("{\"tryAiCall\":{}}");
         var b = service.bindInbound(inbound("919876543210", null)).orElseThrow();
@@ -111,11 +135,10 @@ class AiDemoCallServiceTest {
         when(out.getDirection()).thenReturn("OUTBOUND");
         assertTrue(service.bindInbound(out).isEmpty());
 
-        when(audienceResponseRepository.findLatestTryAiCallLead(any(), any(), any())).thenReturn(Optional.empty());
+        when(audienceResponseRepository.claimOldestTryAiCallLead(any(), any())).thenReturn(Optional.empty());
         assertTrue(service.bindInbound(inbound("919876543210", null)).isEmpty());
-        assertTrue(service.bindInbound(inbound("12345", null)).isEmpty());
 
-        when(audienceResponseRepository.findLatestTryAiCallLead(any(), any(), any()))
+        when(audienceResponseRepository.claimOldestTryAiCallLead(any(), any()))
                 .thenThrow(new RuntimeException("db down"));
         assertTrue(service.bindInbound(inbound("919876543210", null)).isEmpty());
     }

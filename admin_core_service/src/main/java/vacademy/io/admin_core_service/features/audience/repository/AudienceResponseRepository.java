@@ -33,20 +33,27 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
     List<Object[]> findIdNameAndMobileByIds(@Param("ids") java.util.Collection<String> ids);
 
     /**
-     * The newest lead, submitted since the given instant, whose parent mobile ends in the given
-     * ten digits, in an ACTIVE audience of the institute marked as a Try the AI call demo list
-     * (its setting_json carries a tryAiCall object). The voice-bot call context uses it to match
-     * an inbound caller to the form they just filled. Demo lists are small, so the scan is cheap.
+     * Claims the oldest unclaimed lead submitted since the given instant in an ACTIVE audience
+     * of the institute marked as a Try the AI call demo list (its setting_json carries a
+     * tryAiCall object). Unclaimed means no call log is attributed to it yet. The demo form
+     * asks for no phone, so an inbound call is matched to the oldest waiting form. FOR UPDATE
+     * SKIP LOCKED makes two simultaneous calls take two different forms. Must run in a
+     * transaction that also attributes the call, so the claim is visible once committed.
      */
     @Query(value = "SELECT ar.* FROM audience_response ar JOIN audience a ON a.id = ar.audience_id "
             + "WHERE a.institute_id = :instituteId AND a.status = 'ACTIVE' "
             + "AND a.setting_json LIKE '%\"tryAiCall\"%' "
             + "AND ar.submitted_at > :since "
-            + "AND right(regexp_replace(ar.parent_mobile, '[^0-9]', '', 'g'), 10) = :last10 "
-            + "ORDER BY ar.submitted_at DESC LIMIT 1", nativeQuery = true)
-    Optional<AudienceResponse> findLatestTryAiCallLead(@Param("instituteId") String instituteId,
-                                                       @Param("last10") String last10,
-                                                       @Param("since") Timestamp since);
+            + "AND NOT EXISTS (SELECT 1 FROM telephony_call_log c WHERE c.response_id = ar.id) "
+            + "ORDER BY ar.submitted_at ASC LIMIT 1 FOR UPDATE OF ar SKIP LOCKED", nativeQuery = true)
+    Optional<AudienceResponse> claimOldestTryAiCallLead(@Param("instituteId") String instituteId,
+                                                        @Param("since") Timestamp since);
+
+    /** Fills the lead parent mobile only when it is still blank. */
+    @Modifying
+    @Query(value = "UPDATE audience_response SET parent_mobile = :mobile "
+            + "WHERE id = :id AND COALESCE(parent_mobile, '') = ''", nativeQuery = true)
+    int fillParentMobileIfBlank(@Param("id") String id, @Param("mobile") String mobile);
 
     /**
      * Leads in one campaign stamped between two instants. A CSV import or migration stamps

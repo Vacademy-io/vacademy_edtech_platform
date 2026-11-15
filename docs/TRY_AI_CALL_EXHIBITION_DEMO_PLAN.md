@@ -35,13 +35,13 @@ These facts from the existing system shape the design:
 ```
 Visitor phone (browser)                 admin_core                         Plivo / voice bot
 -----------------------                 ----------                         -----------------
-POST /open/v1/audience/lead/submit  -> lead in demo audience (name, phone, Organisation, Language)
+POST /open/v1/audience/lead/submit  -> lead in demo audience (name, Organisation, Language; no phone)
      <- leadId
 tap "Call now" -> tel:+918035614126
                                                                            Plivo -> /plivo/answer/inbound
                                                                            IVR -> AI_AGENT node -> bot /answer
                                          call-context(corr, agent=Vaani) <- bot
-                                         row INBOUND + newest tryAiCall lead for caller phone (12 h)
+                                         row INBOUND + oldest unclaimed tryAiCall lead (5 min), claimed atomically
                                          -> attribute call log to the lead
                                          -> agent = audience tryAiCall.agentId, language/voice/opening
                                          -> leadName, leadFields from the lead
@@ -67,7 +67,7 @@ Route: `https://telleo.ai/try-ai-call/`, mobile-first, built in the existing Tel
 - Large display of the number, with **Copy number** and **Call again** buttons. Fallback text: "If your phone didn't start the call, dial this number from {their number}."
 - A live status chip from polling: "Waiting for your call..." → "Connected. Listen to your AI counsellor!" → "Call ended. Thanks for trying Telleo."
 - After the call ends: "Want this for {org}?" CTA → the existing `/demo` page with the org pre-filled. A **Try another language** button resets to Screen 1 with the fields kept.
-- Window: a call within 12 hours of submitting is personalised.
+- Window: the form waits 5 minutes for its call, so the page dials straight away.
 
 **Edge cases shown to the visitor**
 - Rate limited: "Too many tries. Please wait a minute."
@@ -107,17 +107,24 @@ Marathi is deliberately left out: it is Devanagari, and its live agents keep the
 
 Tests: `tests/test_own_script_language.py` (10 pass). The existing prompt suites fail the same 28 tests before and after the change, all from Windows `strftime("%-d")`, which works on Linux.
 
-### 5.5 The hook in `VoiceBotInternalController.callContext`
+### 5.5 The hook in `VoiceBotInternalController.callContext`: matching by timing
 
-For an INBOUND call, `AiDemoCallService.bindInbound` runs `AudienceResponseRepository.findLatestTryAiCallLead`. It finds the newest lead from the caller's last 10 digits, in an ACTIVE audience of this institute marked with `tryAiCall`, submitted in the last **12 hours**. If one is found:
-- the agent becomes the audience's `agentId`;
-- `language`, `tts_model`, `voice` and `openingLine` come from the lead's Language;
-- `leadName` and `leadFields` come from the lead (Organisation fills `{{institute_name}}`);
-- the call log is attributed to the lead with `attachLeadIfUnattributed`, so the call shows on the lead and the AI outcome applies to it.
+The form asks for **no phone number**. On an unattributed INBOUND call, `AiDemoCallService.bindInbound` claims the **oldest form from the last 5 minutes that has no call yet**: `AudienceResponseRepository.claimOldestTryAiCallLead`, using `FOR UPDATE SKIP LOCKED`. In the same transaction it:
+- attributes the call log to that lead with `attachLeadIfUnattributed`;
+- writes the caller's number onto the lead with `fillParentMobileIfBlank`, so the CRM still gets the phone.
 
-Any exception skips the demo, so a real inbound call is never broken.
+If the bot fetches call context again, it finds the lead through the attribution and does not claim a second form.
 
-Status for the page comes from `GET /admin-core-service/open/v1/ai-demo-call/lead/{leadId}/status`, which returns PENDING, CONNECTED, ENDED or EXPIRED. It answers only for leads in a demo list.
+From the lead:
+- the agent is the audience's `tryAiCall.agentId`;
+- `language`, `voice`, `tts_model` and `openingLine` come from the lead's Language;
+- name and Organisation fill `{{name}}` and `{{institute_name}}`.
+
+A call already attributed to an ordinary lead is not a demo. Any exception skips the demo.
+
+**Known risk (accepted):** if two visitors submit within seconds of each other and dial in the opposite order, each is greeted as the other. Two simultaneous calls can never claim the same form. The page dials automatically, and asks visitors to call within a few minutes.
+
+Status for the page: `GET /admin-core-service/open/v1/ai-demo-call/lead/{leadId}/status` returns PENDING, CONNECTED, ENDED or EXPIRED (5 minutes with no call).
 
 ### 5.6 Files
 
