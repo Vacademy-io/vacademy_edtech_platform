@@ -33,6 +33,22 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
     List<Object[]> findIdNameAndMobileByIds(@Param("ids") java.util.Collection<String> ids);
 
     /**
+     * The newest lead, submitted since the given instant, whose parent mobile ends in the given
+     * ten digits, in an ACTIVE audience of the institute marked as a Try the AI call demo list
+     * (its setting_json carries a tryAiCall object). The voice-bot call context uses it to match
+     * an inbound caller to the form they just filled. Demo lists are small, so the scan is cheap.
+     */
+    @Query(value = "SELECT ar.* FROM audience_response ar JOIN audience a ON a.id = ar.audience_id "
+            + "WHERE a.institute_id = :instituteId AND a.status = 'ACTIVE' "
+            + "AND a.setting_json LIKE '%\"tryAiCall\"%' "
+            + "AND ar.submitted_at > :since "
+            + "AND right(regexp_replace(ar.parent_mobile, '[^0-9]', '', 'g'), 10) = :last10 "
+            + "ORDER BY ar.submitted_at DESC LIMIT 1", nativeQuery = true)
+    Optional<AudienceResponse> findLatestTryAiCallLead(@Param("instituteId") String instituteId,
+                                                       @Param("last10") String last10,
+                                                       @Param("since") Timestamp since);
+
+    /**
      * Leads in one campaign stamped between two instants. A CSV import or migration stamps
      * hundreds of rows within a minute, while real form traffic peaks near ten a minute, so
      * the AI voice bot uses this to tell a genuine enquiry date from an import date.

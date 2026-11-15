@@ -3,19 +3,21 @@ package vacademy.io.admin_core_service.features.telephony.demo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
-import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
+import vacademy.io.admin_core_service.features.audience.entity.Audience;
+import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
+import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
+import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
+import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.TelephonyCallLogRepository;
-import vacademy.io.common.institute.entity.Institute;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,206 +30,132 @@ import static org.mockito.Mockito.*;
 class AiDemoCallServiceTest {
 
     private static final String INST = "inst-1";
+    private static final String AUD = "aud-1";
+    private static final String DEMO_JSON = "{\"formAppearance\":{},\"tryAiCall\":{\"agentId\":\"agent-demo\"}}";
 
-    @Mock AiDemoCallRequestRepository repo;
-    @Mock InstituteRepository instituteRepository;
-    @Mock InstituteSettingService instituteSettingService;
+    @Mock AudienceResponseRepository audienceResponseRepository;
+    @Mock AudienceRepository audienceRepository;
     @Mock TelephonyCallLogRepository callLogRepo;
+    @Mock AudienceService audienceService;
+    @InjectMocks AiDemoCallService service;
 
-    AiDemoCallService service;
+    private Audience audience;
+    private AudienceResponse lead;
 
     @BeforeEach
     void setUp() {
-        service = new AiDemoCallService(repo, instituteRepository, instituteSettingService, callLogRepo);
-        when(instituteRepository.findById(INST)).thenReturn(Optional.of(mock(Institute.class)));
-        when(repo.save(any())).thenAnswer(i -> i.getArgument(0));
+        audience = mock(Audience.class);
+        when(audience.getSettingJson()).thenReturn(DEMO_JSON);
+        when(audienceRepository.findById(AUD)).thenReturn(Optional.of(audience));
+
+        lead = mock(AudienceResponse.class);
+        when(lead.getId()).thenReturn("lead-1");
+        when(lead.getUserId()).thenReturn("user-1");
+        when(lead.getAudienceId()).thenReturn(AUD);
+        when(lead.getParentName()).thenReturn("Anil Kumar");
+        when(lead.getSubmittedAt()).thenReturn(Timestamp.from(Instant.now().minusSeconds(60)));
+        when(audienceResponseRepository.findById("lead-1")).thenReturn(Optional.of(lead));
+        when(audienceService.getLeadCustomFields("lead-1")).thenReturn(
+                Map.of("Full Name", "Anil Kumar", "Organisation", "Sunrise {{x}} School", "Language", "Tamil"));
     }
 
-    private void setting(Map<String, Object> data) {
-        when(instituteSettingService.getSettingData(any(), eq("AI_DEMO_CALL_SETTING"))).thenReturn(data);
-    }
-
-    private void enabled() {
-        setting(Map.of("enabled", true, "agentId", "agent-demo", "dialNumber", "+918035614126"));
-    }
-
-    private static TelephonyCallLog inbound(String from) {
+    private static TelephonyCallLog inbound(String from, String responseId) {
         TelephonyCallLog row = mock(TelephonyCallLog.class);
         when(row.getId()).thenReturn("corr-1");
         when(row.getInstituteId()).thenReturn(INST);
         when(row.getDirection()).thenReturn("INBOUND");
         when(row.getFromNumber()).thenReturn(from);
+        when(row.getResponseId()).thenReturn(responseId);
         return row;
     }
 
-    // phone and text helpers
+    private void leadFound() {
+        when(audienceResponseRepository.findLatestTryAiCallLead(eq(INST), eq("9876543210"), any()))
+                .thenReturn(Optional.of(lead));
+    }
 
     @Test
-    void indianMobileAcceptsCommonSpellingsAndRejectsTheRest() {
-        assertEquals("9876543210", AiDemoCallService.indianMobile("9876543210"));
-        assertEquals("9876543210", AiDemoCallService.indianMobile("+91 98765 43210"));
-        assertEquals("9876543210", AiDemoCallService.indianMobile("09876543210"));
-        assertEquals("9876543210", AiDemoCallService.indianMobile("919876543210"));
-        assertNull(AiDemoCallService.indianMobile("5876543210"));
-        assertNull(AiDemoCallService.indianMobile("98765"));
-        assertNull(AiDemoCallService.indianMobile("+1 415 555 0100"));
-        assertNull(AiDemoCallService.indianMobile(null));
+    void bindsCallerToTheirDemoLeadAndAttributesTheCall() {
+        leadFound();
+        var b = service.bindInbound(inbound("919876543210", null)).orElseThrow();
+        assertEquals("agent-demo", b.agentId());
+        assertEquals("tamil", b.language().code());
+        assertEquals("kayal", b.language().voice());
+        assertEquals("Anil Kumar", b.visitorName());
+        assertFalse(b.organisation().contains("{"), "braces would read as bot placeholders");
+        assertEquals(b.organisation(), b.leadFields().get("institute name"));
+        verify(callLogRepo).attachLeadIfUnattributed("corr-1", "lead-1", "user-1");
+    }
+
+    @Test
+    void neverOverwritesAnExistingAttribution() {
+        leadFound();
+        assertTrue(service.bindInbound(inbound("919876543210", "other-lead")).isPresent());
+        verify(callLogRepo, never()).attachLeadIfUnattributed(any(), any(), any());
+    }
+
+    @Test
+    void missingLanguageFallsBackToHinglishAndMissingAgentToNull() {
+        leadFound();
+        when(audienceService.getLeadCustomFields("lead-1")).thenReturn(Map.of("Organisation", "Sunrise"));
+        when(audience.getSettingJson()).thenReturn("{\"tryAiCall\":{}}");
+        var b = service.bindInbound(inbound("919876543210", null)).orElseThrow();
+        assertEquals("hinglish", b.language().code());
+        assertNull(b.agentId());
+        assertEquals("Anil Kumar", b.visitorName());
+    }
+
+    @Test
+    void skipsOutboundUnknownCallersAndNeverThrows() {
+        TelephonyCallLog out = inbound("919876543210", null);
+        when(out.getDirection()).thenReturn("OUTBOUND");
+        assertTrue(service.bindInbound(out).isEmpty());
+
+        when(audienceResponseRepository.findLatestTryAiCallLead(any(), any(), any())).thenReturn(Optional.empty());
+        assertTrue(service.bindInbound(inbound("919876543210", null)).isEmpty());
+        assertTrue(service.bindInbound(inbound("12345", null)).isEmpty());
+
+        when(audienceResponseRepository.findLatestTryAiCallLead(any(), any(), any()))
+                .thenThrow(new RuntimeException("db down"));
+        assertTrue(service.bindInbound(inbound("919876543210", null)).isEmpty());
+    }
+
+    @Test
+    void statusFollowsTheLeadsInboundCall() {
+        assertEquals("PENDING", service.status("lead-1").orElseThrow());
+
+        TelephonyCallLog call = mock(TelephonyCallLog.class);
+        when(call.getCreatedAt()).thenReturn(Timestamp.from(Instant.now()));
+        when(call.getStatus()).thenReturn("IN_PROGRESS");
+        when(callLogRepo.findFirstByResponseIdAndDirectionOrderByCreatedAtDesc("lead-1", "INBOUND"))
+                .thenReturn(Optional.of(call));
+        assertEquals("CONNECTED", service.status("lead-1").orElseThrow());
+
+        when(call.getStatus()).thenReturn("COMPLETED");
+        assertEquals("ENDED", service.status("lead-1").orElseThrow());
+    }
+
+    @Test
+    void statusRevealsNothingOutsideADemoList() {
+        when(audience.getSettingJson()).thenReturn("{\"formAppearance\":{}}");
+        assertTrue(service.status("lead-1").isEmpty());
+        assertTrue(service.status("nope").isEmpty());
+    }
+
+    @Test
+    void languageLookupAcceptsLabelOrCode() {
+        assertEquals("malayalam", AiDemoCallLanguages.find(" Malayalam ").orElseThrow().code());
+        assertEquals("kannada", AiDemoCallLanguages.find("kannada").orElseThrow().code());
+        assertTrue(AiDemoCallLanguages.find("klingon").isEmpty());
+        for (AiDemoCallLanguages.Language l : AiDemoCallLanguages.ALL) {
+            assertTrue(l.openingLine().contains("{{institute_name}}"), l.code());
+        }
     }
 
     @Test
     void lastTenMatchesPlivoCallerIdFormats() {
         assertEquals("9876543210", AiDemoCallService.lastTen("919876543210"));
-        assertEquals("9876543210", AiDemoCallService.lastTen("+919876543210"));
+        assertEquals("9876543210", AiDemoCallService.lastTen("+91 98765 43210"));
         assertNull(AiDemoCallService.lastTen("12345"));
-    }
-
-    @Test
-    void cleanStripsPlaceholderBracesAndCaps() {
-        assertEquals("A name B", AiDemoCallService.clean("A{{name}}B", 120));
-        assertEquals("Sunrise School", AiDemoCallService.clean("  Sunrise   School ", 120));
-        assertEquals(5, AiDemoCallService.clean("abcdefgh", 5).length());
-        assertNull(AiDemoCallService.clean("   ", 10));
-    }
-
-    // settings
-
-    @Test
-    void builtInLanguagesCoverTheExhibitionList() {
-        AiDemoCallSettings s = new AiDemoCallSettings();
-        List<String> codes = s.effectiveLanguages().stream().map(AiDemoCallSettings.Language::getCode).toList();
-        assertTrue(codes.containsAll(List.of("english", "hindi", "hinglish", "malayalam", "kannada", "tamil")));
-        for (AiDemoCallSettings.Language l : s.effectiveLanguages()) {
-            assertTrue(l.getOpeningLine().contains("{{institute_name}}"), l.getCode());
-            assertTrue(l.getOpeningLine().contains("{{name}}"), l.getCode());
-            assertNotNull(l.getVoice(), l.getCode());
-        }
-    }
-
-    @Test
-    void configuredLanguageInheritsBuiltInGapsAndKeepsOrder() {
-        AiDemoCallSettings s = new AiDemoCallSettings();
-        AiDemoCallSettings.Language tamil = new AiDemoCallSettings.Language();
-        tamil.setCode("Tamil");
-        tamil.setVoice("ta-IN-PallaviNeural");
-        tamil.setTtsModel("edge");
-        AiDemoCallSettings.Language english = new AiDemoCallSettings.Language();
-        english.setCode("english");
-        s.setLanguages(List.of(tamil, english));
-        List<AiDemoCallSettings.Language> eff = s.effectiveLanguages();
-        assertEquals(List.of("tamil", "english"), eff.stream().map(AiDemoCallSettings.Language::getCode).toList());
-        assertEquals("ta-IN-PallaviNeural", eff.get(0).getVoice());
-        assertEquals("edge", eff.get(0).getTtsModel());
-        assertEquals("Tamil", eff.get(0).getLabel());
-        assertTrue(eff.get(0).getOpeningLine().contains("{{institute_name}}"));
-        assertEquals("ipsita", eff.get(1).getVoice());
-    }
-
-    // create request
-
-    @Test
-    void createRequestSupersedesOlderAndStoresLastTen() {
-        enabled();
-        AiDemoCallRequest r = service.createRequest(INST, "Anil Kumar", "Sunrise School",
-                "+91 98765 43210", "Tamil", "qr", "1.2.3.4");
-        verify(repo).supersedePending(INST, "9876543210");
-        assertEquals("9876543210", r.getPhone());
-        assertEquals("tamil", r.getLanguage());
-        assertEquals(AiDemoCallRequest.PENDING, r.getStatus());
-        assertTrue(r.getExpiresAt().after(r.getCreatedAt()));
-    }
-
-    @Test
-    void createRequestRejectsWhenDisabledOrInvalid() {
-        setting(Map.of("enabled", false));
-        var paused = assertThrows(AiDemoCallService.DemoCallException.class,
-                () -> service.createRequest(INST, "Anil", "Org", "9876543210", "tamil", null, null));
-        assertEquals(409, paused.getStatus());
-
-        enabled();
-        assertEquals(400, assertThrows(AiDemoCallService.DemoCallException.class,
-                () -> service.createRequest(INST, "Anil", "Org", "123", "tamil", null, null)).getStatus());
-        assertEquals(400, assertThrows(AiDemoCallService.DemoCallException.class,
-                () -> service.createRequest(INST, "Anil", "Org", "9876543210", "klingon", null, null)).getStatus());
-        assertEquals(400, assertThrows(AiDemoCallService.DemoCallException.class,
-                () -> service.createRequest(INST, "Anil", " ", "9876543210", "tamil", null, null)).getStatus());
-        verify(repo, never()).save(any());
-    }
-
-    // bind on inbound
-
-    private AiDemoCallRequest pending() {
-        return AiDemoCallRequest.builder().id("req-1").instituteId(INST).phone("9876543210")
-                .visitorName("Anil Kumar").organisation("Sunrise School").language("tamil")
-                .status(AiDemoCallRequest.PENDING)
-                .createdAt(Timestamp.from(Instant.now()))
-                .expiresAt(Timestamp.from(Instant.now().plusSeconds(600))).build();
-    }
-
-    @Test
-    void bindInboundClaimsTheCallersPendingRequest() {
-        enabled();
-        when(repo.findFirstByCallLogId("corr-1")).thenReturn(Optional.empty());
-        when(repo.findFirstByInstituteIdAndPhoneAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
-                eq(INST), eq("9876543210"), eq("PENDING"), any())).thenReturn(Optional.of(pending()));
-        when(repo.bind(eq("req-1"), eq("corr-1"), any())).thenReturn(1);
-
-        var b = service.bindInbound(inbound("919876543210")).orElseThrow();
-        assertEquals("agent-demo", b.agentId());
-        assertEquals("tamil", b.language().getCode());
-        assertEquals("Sunrise School", b.leadFields().get("institute name"));
-    }
-
-    @Test
-    void bindInboundIsIdempotentForTheSameCall() {
-        enabled();
-        AiDemoCallRequest bound = pending();
-        bound.setStatus(AiDemoCallRequest.CONNECTED);
-        bound.setCallLogId("corr-1");
-        when(repo.findFirstByCallLogId("corr-1")).thenReturn(Optional.of(bound));
-        assertTrue(service.bindInbound(inbound("919876543210")).isPresent());
-        verify(repo, never()).bind(any(), any(), any());
-    }
-
-    @Test
-    void bindInboundSkipsOutboundUnknownLostRaceAndDisabled() {
-        enabled();
-        TelephonyCallLog out = inbound("919876543210");
-        when(out.getDirection()).thenReturn("OUTBOUND");
-        assertTrue(service.bindInbound(out).isEmpty());
-
-        when(repo.findFirstByCallLogId(any())).thenReturn(Optional.empty());
-        when(repo.findFirstByInstituteIdAndPhoneAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
-                any(), any(), any(), any())).thenReturn(Optional.empty());
-        assertTrue(service.bindInbound(inbound("919876543210")).isEmpty());
-
-        when(repo.findFirstByInstituteIdAndPhoneAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(
-                any(), any(), any(), any())).thenReturn(Optional.of(pending()));
-        when(repo.bind(any(), any(), any())).thenReturn(0);
-        assertTrue(service.bindInbound(inbound("919876543210")).isEmpty());
-
-        setting(Map.of("enabled", false));
-        assertTrue(service.bindInbound(inbound("919876543210")).isEmpty());
-    }
-
-    @Test
-    void bindInboundNeverThrows() {
-        when(instituteSettingService.getSettingData(any(), any())).thenThrow(new RuntimeException("bad json"));
-        assertTrue(service.bindInbound(inbound("919876543210")).isEmpty());
-    }
-
-    // rate limiter
-
-    @Test
-    void rateLimiterCapsPerPhoneButLetsASharedIpThrough() {
-        AiDemoCallRateLimiter rl = new AiDemoCallRateLimiter();
-        Instant t = Instant.parse("2026-11-20T10:00:00Z");
-        for (int i = 0; i < AiDemoCallRateLimiter.PHONE_PER_10_MIN; i++) {
-            assertTrue(rl.tryAcquire(INST, "9876543210", "10.0.0.1", t));
-        }
-        assertFalse(rl.tryAcquire(INST, "9876543210", "10.0.0.1", t));
-        for (int i = 0; i < 20; i++) {
-            assertTrue(rl.tryAcquire(INST, String.valueOf(9000000000L + i), "10.0.0.1", t));
-        }
-        assertTrue(rl.tryAcquire(INST, "9876543210", "10.0.0.1", t.plusSeconds(601)));
     }
 }

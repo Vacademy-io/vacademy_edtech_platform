@@ -35,19 +35,18 @@ These facts from the existing system shape the design:
 ```
 Visitor phone (browser)                 admin_core                         Plivo / voice bot
 -----------------------                 ----------                         -----------------
-GET  /open/v1/ai-demo-call/{inst}/config  -> languages, dial number
-POST /open/v1/ai-demo-call/{inst}/request -> save PENDING row (phone, name, org, lang, expires +20 min)
-     <- {requestId, dialNumber, telUri}
+POST /open/v1/audience/lead/submit  -> lead in demo audience (name, phone, Organisation, Language)
+     <- leadId
 tap "Call now" -> tel:+918035614126
                                                                            Plivo -> /plivo/answer/inbound
                                                                            IVR -> AI_AGENT node -> bot /answer
                                          call-context(corr, agent=Vaani) <- bot
-                                         row INBOUND + demo enabled + PENDING request for caller phone
-                                         -> bind request (CONNECTED, call_log_id = corr)
-                                         -> agent = demo counsellor, language/voice/opening for request
-                                         -> leadName = visitor, leadFields = {institute name: org}
+                                         row INBOUND + newest tryAiCall lead for caller phone (12 h)
+                                         -> attribute call log to the lead
+                                         -> agent = audience tryAiCall.agentId, language/voice/opening
+                                         -> leadName, leadFields from the lead
                                                                            bot speaks in chosen language
-page polls GET .../request/{id}  -> PENDING -> CONNECTED -> ENDED ("Thanks for trying!")
+page polls GET /open/v1/ai-demo-call/lead/{leadId}/status -> PENDING -> CONNECTED -> ENDED ("Thanks for trying!")
 ```
 
 A caller with no pending request (a normal Telleo sales enquiry) still gets Vaani exactly as today.
@@ -68,7 +67,7 @@ Route: `https://telleo.ai/try-ai-call/`, mobile-first, built in the existing Tel
 - Large display of the number, with **Copy number** and **Call again** buttons. Fallback text: "If your phone didn't start the call, dial this number from {their number}."
 - A live status chip from polling: "Waiting for your call..." → "Connected. Listen to your AI counsellor!" → "Call ended. Thanks for trying Telleo."
 - After the call ends: "Want this for {org}?" CTA → the existing `/demo` page with the org pre-filled. A **Try another language** button resets to Screen 1 with the fields kept.
-- Expiry: after 20 minutes the request lapses and the page asks the visitor to tap again.
+- Window: a call within 12 hours of submitting is personalised.
 
 **Edge cases shown to the visitor**
 - Rate limited: "Too many tries. Please wait a minute."
@@ -79,63 +78,26 @@ Route: `https://telleo.ai/try-ai-call/`, mobile-first, built in the existing Tel
 
 ## 5. Backend changes (admin_core_service + voice_bot_service)
 
-### 5.1 Migration `V679__Ai_demo_call_request.sql` (renumber at merge if taken)
+### 5.1 The demo audience is the only config (no table, no institute setting)
 
-```sql
-CREATE TABLE IF NOT EXISTS ai_demo_call_request (
-    id            VARCHAR(36)  PRIMARY KEY,
-    institute_id  VARCHAR(255) NOT NULL,
-    phone         VARCHAR(10)  NOT NULL,   -- last 10 digits, the inbound match key
-    phone_raw     VARCHAR(32),
-    visitor_name  VARCHAR(120),
-    organisation  VARCHAR(160) NOT NULL,
-    language      VARCHAR(30)  NOT NULL,   -- _STT_LANGS key: tamil, hinglish, ...
-    status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING', -- PENDING | CONNECTED | SUPERSEDED
-    call_log_id   VARCHAR(255),
-    source        VARCHAR(120),
-    client_ip     VARCHAR(64),
-    created_at    TIMESTAMP    NOT NULL DEFAULT now(),
-    expires_at    TIMESTAMP    NOT NULL,
-    connected_at  TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_ai_demo_req_match
-    ON ai_demo_call_request (institute_id, phone, status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_demo_req_call_log
-    ON ai_demo_call_request (call_log_id);
-```
+Created directly in the database on CRM `3f343028`:
+- **Audience:** `1d7e7d4d-60b8-4865-aff9-4550d43d3ce5`, "Telleo – Try AI call (Exhibition)", ACTIVE.
+- **Its `setting_json`:** `{"tryAiCall": {"agentId": "cb35411c-0ae6-4c46-a86c-f4c6c9167c99"}}`. The `tryAiCall` key marks the list as a demo list, and `agentId` is the agent that answers.
+- **Fields:** Full Name, Email and Phone Number (CRM's existing fields), plus new Organisation and Language.
+- **Off switch:** set the audience status to anything other than ACTIVE.
+- **Caution:** editing this campaign's form appearance in the admin UI may rewrite `setting_json`. Check that the `tryAiCall` key survives any edit.
 
-The table doubles as the exhibition lead list (name, org, phone, language, time).
+### 5.2 Submitting
 
-### 5.2 Config: `AI_DEMO_CALL_SETTING` in the demo institute's `setting_json`
+The page posts to the existing open endpoint `POST /admin-core-service/open/v1/audience/lead/submit`. It sends the audience id and the field ids, and leaves email empty; the server makes up a placeholder address. Each visitor becomes a normal CRM lead (user, score, counsellor pool).
 
-```json
-{
-  "enabled": true,
-  "agentId": "<admission counsellor agent id>",
-  "dialNumber": "+918035614126",
-  "displayNumber": "+91 80356 14126",
-  "ttlMinutes": 20,
-  "languages": [
-    {"code": "english",   "label": "English",   "nativeLabel": "English",  "voice": "en-IN-NeerjaNeural",  "ttsModel": "edge", "openingLine": "..."},
-    {"code": "hinglish",  "label": "Hinglish",  "nativeLabel": "Hinglish", "voice": "hi-IN-SwaraNeural",   "ttsModel": "edge", "openingLine": "..."},
-    {"code": "tamil",     "label": "Tamil",     "nativeLabel": "தமிழ்",     "voice": "ta-IN-PallaviNeural", "ttsModel": "edge", "openingLine": "..."}
-  ]
-}
-```
+Accepted limits of the existing endpoint:
+- 8 submissions per minute per IP. Visitors on venue Wi-Fi share one IP.
+- A second submit from the same phone returns "already submitted", and the first organisation and language stay. The page tells the visitor so.
 
-- `languages` is optional. If it is absent, a built-in table is used, covering English, Hinglish, Hindi, Malayalam, Kannada, Tamil, Telugu, Marathi, Bengali and Gujarati, each with an edge female voice and an opening line in that language. The agent is "Vaani", a female persona, so every voice is female and the Hindi verb gender stays consistent.
-- Each built-in opening line uses `{{name}}` and `{{institute_name}}`. Native speakers on the team should review them before the event.
-- `enabled=false` turns the hook off at once. The page then shows "paused", and callers get the normal agent.
+### 5.3 Language table
 
-### 5.3 Public API: `/admin-core-service/open/v1/ai-demo-call/{instituteId}` (already `permitAll` under `/open/**`)
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/config` | `{enabled, dialNumber, displayNumber, languages:[{code,label,nativeLabel}]}`. Voices and prompts are not exposed. |
-| POST | `/request` | Body `{name, organisation, phone, language, source?}`. Validates (org 2–120 chars, Indian mobile, language in config) and rate-limits. Marks older PENDING rows for the same phone as SUPERSEDED, inserts a new PENDING row and returns `{requestId, dialNumber, displayNumber, telUri, expiresAt}`. |
-| GET | `/request/{requestId}` | `{status: PENDING, CONNECTED, ENDED or EXPIRED}`. ENDED comes from the bound call log's end status. It returns no personal data, and the id is an unguessable UUID. |
-
-**Rate limits** (in memory, per pod): per phone, 5 requests per 10 minutes; per IP, 30 per minute and 300 per hour. The IP limit is deliberately loose because exhibition Wi-Fi and mobile carrier NAT put many visitors behind one IP. Per institute, a 2,000-per-hour safety ceiling.
+`AiDemoCallLanguages` holds 10 languages, each with a Navana voice and an opening line in that language. The lead's Language value can be either the label or the code.
 
 ### 5.4 Voice bot: own-script languages (done, tested)
 
@@ -147,27 +109,23 @@ Tests: `tests/test_own_script_language.py` (10 pass). The existing prompt suites
 
 ### 5.5 The hook in `VoiceBotInternalController.callContext`
 
-At the start of `callContext`, when `row.direction == INBOUND`:
+For an INBOUND call, `AiDemoCallService.bindInbound` runs `AudienceResponseRepository.findLatestTryAiCallLead`. It finds the newest lead from the caller's last 10 digits, in an ACTIVE audience of this institute marked with `tryAiCall`, submitted in the last **12 hours**. If one is found:
+- the agent becomes the audience's `agentId`;
+- `language`, `tts_model`, `voice` and `openingLine` come from the lead's Language;
+- `leadName` and `leadFields` come from the lead (Organisation fills `{{institute_name}}`);
+- the call log is attributed to the lead with `attachLeadIfUnattributed`, so the call shows on the lead and the AI outcome applies to it.
 
-1. Read `AI_DEMO_CALL_SETTING`. If it is missing or disabled, do nothing; the call behaves exactly as today.
-2. Find the request: first by `call_log_id = corr` (idempotent if the bot re-fetches), else the newest PENDING row with `phone = last10(row.fromNumber)`, `institute_id = row.instituteId` and `expires_at > now()`. Bind it with an UPDATE guarded on `status='PENDING'`.
-3. If found:
-   - `agentId` = the setting's `agentId`, falling back to the node's agent.
-   - After the agent map is built, override `language`, `voice`, `tts_model` and `openingLine` from that language's entry.
-   - `leadName` = the visitor's name. `leadGender` = `NameGender.of(name)`.
-   - `leadFields` = `{"organisation": org, "institute name": org}`.
-   - Strip send and booking keys, as test calls do: there is no CRM lead to message.
-4. Any exception is logged and skipped. A demo bug must never break a real inbound call.
+Any exception skips the demo, so a real inbound call is never broken.
 
-### 5.6 New Java files
+Status for the page comes from `GET /admin-core-service/open/v1/ai-demo-call/lead/{leadId}/status`, which returns PENDING, CONNECTED, ENDED or EXPIRED. It answers only for leads in a demo list.
 
-- `features/telephony/demo/AiDemoCallRequest.java` (entity) and `AiDemoCallRequestRepository.java`
-- `features/telephony/demo/AiDemoCallSettings.java` (POJO and built-in language table)
-- `features/telephony/demo/AiDemoCallService.java` (config, create request, status, bind for inbound)
-- `features/telephony/demo/AiDemoCallRateLimiter.java`
-- `features/telephony/demo/OpenAiDemoCallController.java`
-- `SettingKeyEnums.AI_DEMO_CALL_SETTING`
-- Unit tests for phone normalisation, language validation, supersede-and-bind, the rate limiter and the `callContext` override.
+### 5.6 Files
+
+- `features/telephony/demo/`: `AiDemoCallLanguages`, `AiDemoCallService`, `OpenAiDemoCallController`, plus the test.
+- `AudienceResponseRepository.findLatestTryAiCallLead`.
+- `TelephonyCallLogRepository.findFirstByResponseIdAndDirectionOrderByCreatedAtDesc` and `attachLeadIfUnattributed`.
+- The hook in `VoiceBotInternalController.callContext`.
+- No migration.
 
 ## 6. The demo agent (admission counsellor)
 
@@ -185,7 +143,7 @@ A new `ai_agent` on CRM `3f343028`:
   6. Close: "This is how Telleo's AI counsellor would handle every enquiry for {{institute_name}}, in any language, 24x7. Our team at the stall can set it up for you."
 - Guardrails: never claim real fees or seats for the named organisation. Stay polite and short. If asked whether it is a real person, say it is Telleo's AI counsellor.
 - Dispositions: `Interested`, `Callback`, `Not_Interested`. Extraction: course of interest, class, city, visit slot agreed.
-- Registered in `AI_CALLING_SETTING.campaigns` (the bridge step), and set as `AI_DEMO_CALL_SETTING.agentId`.
+- Registered in `AI_CALLING_SETTING.campaigns` (the bridge step), and named as the agent in the demo audience's `setting_json` (`tryAiCall.agentId`).
 
 The prompt is authored in English with Hinglish examples. The bot's language rule (section 5.4) then makes the model speak the chosen language.
 
@@ -211,9 +169,9 @@ Each item needs DB read access (tunnel) and an OK for writes:
 
 ## 9. Rollback
 
-- Instant: set `AI_DEMO_CALL_SETTING.enabled=false`. Callers then get Vaani as before.
+- Instant: set the demo audience's status to anything other than ACTIVE. Callers then get Vaani as before.
 - Code: the hook is a no-op without the setting. The bot change only affects own-script languages, and no live agent uses one yet (to be confirmed in DB step 1).
-- Data: `ai_demo_call_request` is additive and can be left in place.
+- Data: the demo audience and its leads are ordinary CRM rows and can be left in place.
 
 ## 10. Not in scope (possible follow-ups)
 
@@ -224,7 +182,7 @@ Each item needs DB read access (tunnel) and an OK for writes:
 ## 11. Build log (2026-11-15)
 
 **Decisions made while building**
-- Voices: **Navana (Bodhi)**, not Edge. Every Navana voice speaks all ten languages, and Vaani on this line already runs on Navana/ipsita. Each language gets a regional female voice: ipsita (English, Hinglish, Hindi), kayal (Tamil), ammu (Malayalam), netra (Kannada), vanaja (Telugu), mukta (Marathi), jayita (Bengali), falguni (Gujarati). Any entry can be switched to Edge in `AI_DEMO_CALL_SETTING.languages` without a deploy.
+- Voices: **Navana (Bodhi)**, not Edge. Every Navana voice speaks all ten languages, and Vaani on this line already runs on Navana/ipsita. Each language gets a regional female voice: ipsita (English, Hinglish, Hindi), kayal (Tamil), ammu (Malayalam), netra (Kannada), vanaja (Telugu), mukta (Marathi), jayita (Bengali), falguni (Gujarati). Voices live in `AiDemoCallLanguages`, so changing one is a code change.
 - Inbound: **keep `+918035614126` on Vaani and swap per caller** (confirmed by the product owner). Callers who did not fill the page still reach Telleo sales.
 - The page opens the dialer automatically after saving. It also keeps a large Call button, because some browsers block automatic `tel:` navigation.
 
@@ -237,15 +195,16 @@ Each item needs DB read access (tunnel) and an OK for writes:
 
 **Database writes (applied)**
 - `ai_agent` **`cb35411c-0ae6-4c46-a86c-f4c6c9167c99`** "Try AI call - Admission counsellor" on CRM: BOTH, hinglish, navana/ipsita, 4 minutes, prompt in `C:/tmp/try_ai_call/counsellor_prompt.md`.
-- Registered in CRM's `AI_CALLING_SETTING.campaigns`. `AI_DEMO_CALL_SETTING` written with `enabled=true`, agent id `cb35411c`, dial number `+918035614126`, TTL 20 minutes.
+- Registered in CRM's `AI_CALLING_SETTING.campaigns`.
+- Demo audience `1d7e7d4d` with its Organisation and Language fields: script `C:/tmp/try_ai_call/create_demo_audience.py`.
+- `AI_DEMO_CALL_SETTING`: written first, then **removed** when the design moved to the audience.
 - Script: `C:/tmp/try_ai_call/create_demo_agent.py`. It dry-runs by default and is guarded on `setting_json`.
 - Both writes are inert until the backend is deployed: no code reads the key yet, and no IVR points at the agent.
-- Revert: delete the agent row, then remove its campaigns entry and the `AI_DEMO_CALL_SETTING` key.
+- Revert: delete the agent row and remove its campaigns entry, then set the demo audience to DELETED.
 
 **Files**
-- Backend: `V679__Ai_demo_call_request.sql` and `features/telephony/demo/*`:
+- Backend (superseded by section 5.6; the table and the setting were dropped):
   - `AiDemoCallRequest`, `AiDemoCallRequestRepository`, `AiDemoCallSettings`, `AiDemoCallService`, `AiDemoCallRateLimiter`, `OpenAiDemoCallController`
-  - `SettingKeyEnums.AI_DEMO_CALL_SETTING`
   - the hook in `VoiceBotInternalController.callContext`
   - `AiDemoCallServiceTest`
 - Bot: `app/bot.py` (own-script rules) and `tests/test_own_script_language.py`.

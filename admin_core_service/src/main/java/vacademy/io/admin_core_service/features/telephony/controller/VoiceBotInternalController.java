@@ -97,6 +97,14 @@ public class VoiceBotInternalController {
         return out;
     }
 
+    /** The demo lead's own form fields plus the placeholder spellings the bot reads. */
+    private Map<String, String> mergedDemoFields(
+            vacademy.io.admin_core_service.features.telephony.demo.AiDemoCallService.Binding demo) {
+        Map<String, String> out = new LinkedHashMap<>(audienceService.getLeadCustomFields(demo.leadId()));
+        out.putAll(demo.leadFields());
+        return out;
+    }
+
     private AiCallApiCall apiCallFor(TelephonyCallLog row) {
         if (row == null || !vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
                 .API_CONTACT.name().equals(row.getSubjectType()) || row.getSubjectId() == null) {
@@ -134,10 +142,10 @@ public class VoiceBotInternalController {
 
         String instituteName = instituteRepository.findById(instituteId)
                 .map(i -> i.getInstituteName()).orElse("our institute");
-        // "Try the AI call" demo (V679): an inbound call from a number that just filled the
-        // public demo page is answered by the demo agent, in the language the visitor picked,
-        // as the admission counsellor of the organisation they typed. Empty for every other
-        // call, and never throws.
+        // "Try the AI call" demo: an inbound call from a number that just filled the demo form
+        // (a lead in an audience marked tryAiCall) is answered by that audience's agent, in the
+        // lead's language, as the admission counsellor of the lead's organisation. The call is
+        // attributed to the lead. Empty for every other call, and never throws.
         var demo = aiDemoCallService.bindInbound(row).orElse(null);
         String effectiveAgentId = demo != null && demo.agentId() != null ? demo.agentId() : agentId;
         // A call placed through the public AI calling API: the client sent the contact's
@@ -148,7 +156,7 @@ public class VoiceBotInternalController {
         // a pseudo id too.
         boolean agentTest = vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
                 .AGENT_TEST.name().equals(row.getSubjectType());
-        String leadName = demo != null ? demo.request().getVisitorName()
+        String leadName = demo != null && demo.visitorName() != null ? demo.visitorName()
                 : apiCall != null ? apiCall.getContactName()
                 : agentTest ? testCallName(row)
                 : row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
@@ -177,10 +185,10 @@ public class VoiceBotInternalController {
         if (demo != null) {
             // The visitor's language decides STT, script rule, voice and the first line.
             var lang = demo.language();
-            agent.put("language", lang.getCode());
-            if (lang.getTtsModel() != null) agent.put("tts_model", lang.getTtsModel());
-            if (lang.getVoice() != null) agent.put("voice", lang.getVoice());
-            if (lang.getOpeningLine() != null) agent.put("openingLine", lang.getOpeningLine());
+            agent.put("language", lang.code());
+            agent.put("tts_model", lang.ttsModel());
+            agent.put("voice", lang.voice());
+            agent.put("openingLine", lang.openingLine());
         }
         if (apiCall != null || agentTest || demo != null) {
             // The contact belongs to the client's CRM, not ours: there is no lead to send a
@@ -221,7 +229,7 @@ public class VoiceBotInternalController {
         // For an API call, the client's variables play this part: they fill the agent's
         // {{placeholders}} and are listed to the model as what it already knows.
         Map<String, String> leadFields = demo != null
-                ? demo.leadFields()
+                ? mergedDemoFields(demo)
                 : apiCall != null
                 ? apiVariablesForBot(apiCall.getVariables())
                 : row.getResponseId() == null
@@ -231,8 +239,10 @@ public class VoiceBotInternalController {
         // with the real date instead of a stock line repeated three times (call 6313b454).
         Map<String, Object> leadEnquiry = leadEnquiry(row.getResponseId());
         if (leadEnquiry != null) out.put("leadEnquiry", leadEnquiry);
-        out.put("responseId", row.getResponseId());
-        out.put("userId", row.getUserId());
+        // A demo call was attributed to its lead inside bindInbound, after this row was read.
+        out.put("responseId", demo != null && row.getResponseId() == null ? demo.leadId() : row.getResponseId());
+        out.put("userId", demo != null && row.getResponseId() == null && demo.userId() != null
+                ? demo.userId() : row.getUserId());
         out.put("agent", agent);
         out.put("handoff", Map.of(
                 "enabled", !handoffNumbers.isEmpty(),
