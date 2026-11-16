@@ -142,3 +142,26 @@ describe("helpers", () => {
     expect(optionFeedbackState(undefined, "b", true)).toBe("none");
   });
 });
+
+describe("feedbackFromLocalKey with a numeric ± tolerance", () => {
+  const withTolerance = {
+    question_type: "NUMERIC",
+    auto_evaluation_json: '{"correctAnswers":["1500"],"tolerance":1}',
+  };
+
+  it("accepts an answer inside the tolerance and shows the margin", () => {
+    const fb = feedbackFromLocalKey(withTolerance, "1499.5");
+    expect(fb?.verdict).toBe("correct");
+    expect(fb?.correctAnswerText).toBe("1500 (± 1)");
+  });
+
+  it("rejects an answer outside the tolerance", () => {
+    expect(feedbackFromLocalKey(withTolerance, "1502")?.verdict).toBe("incorrect");
+  });
+
+  it("keeps the exact rule when the question has no tolerance", () => {
+    const exact = { question_type: "NUMERIC", auto_evaluation_json: '{"correctAnswers":["1500"]}' };
+    expect(feedbackFromLocalKey(exact, "1499.5")?.verdict).toBe("incorrect");
+    expect(feedbackFromLocalKey(exact, "1500")?.correctAnswerText).toBe("1500");
+  });
+});

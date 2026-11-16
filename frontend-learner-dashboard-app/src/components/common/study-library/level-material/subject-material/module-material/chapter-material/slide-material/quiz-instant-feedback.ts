@@ -1,3 +1,4 @@
+import { numericToleranceVerdict, readNumericToleranceKey } from "./numeric-answer-match";
 /**
  * "Show answer after each question" (quiz study mode): the verdict, the correct
  * answer and the explanation shown when a learner checks one question.
@@ -138,10 +139,15 @@ export const feedbackFromLocalKey = (
 
   if (NUMERIC.has(type ?? "")) {
     const accepted = key.correctAnswers.length > 0 ? key.correctAnswers : key.modelAnswer ? [key.modelAnswer] : [];
+    // A ± tolerance (accounting papers) decides first, exactly as the quiz score and
+    // the server do; without one the plain numeric match applies.
+    const withinTolerance = numericToleranceVerdict(type, question.auto_evaluation_json, answer);
+    const tolerance = readNumericToleranceKey(question.auto_evaluation_json)?.tolerance;
+    const answerText = accepted.join(", ");
     return {
-      verdict: numericAnswerMatches(answer, accepted) ? "correct" : "incorrect",
+      verdict: (withinTolerance ?? numericAnswerMatches(answer, accepted)) ? "correct" : "incorrect",
       correctOptionIds: [],
-      correctAnswerText: accepted.join(", ") || null,
+      correctAnswerText: answerText ? (tolerance ? `${answerText} (± ${tolerance})` : answerText) : null,
       explanationHtml,
     };
   }

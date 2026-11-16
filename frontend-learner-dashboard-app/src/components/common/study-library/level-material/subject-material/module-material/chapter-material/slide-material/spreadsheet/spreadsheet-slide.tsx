@@ -10,6 +10,8 @@ import { useLearnerCbeStrings } from "@/lib/cbe/learner-cbe-strings";
 import { getPublicUrl } from "@/services/upload_file";
 import { markSlideCompletion } from "@/services/study-library/tracking-api/mark-slide-completion";
 import { getSlideCompletionThreshold } from "@/constants/study-library";
+import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
 import type { Slide } from "@/hooks/study-library/use-slides";
 import type { CompletionContext } from "../mark-complete-button";
 import { parseSpreadsheetSlideData, spreadsheetDownloadName } from "./spreadsheet-slide-utils";
@@ -57,6 +59,9 @@ export function SpreadsheetSlide({
     [slide.document_slide?.published_data]
   );
   const [downloading, setDownloading] = useState(false);
+  // The institute's Content Protection matrix (Settings) decides who may download
+  // files; a workbook is treated like the other uploaded documents (Word files).
+  const { canDownload: roleCanDownload } = useSlideDownloadPermission();
 
   // Mark viewed once per slide, only if it is not complete already.
   const markedRef = useRef<string | null>(null);
@@ -96,7 +101,8 @@ export function SpreadsheetSlide({
     );
   }
 
-  const canDownload = data.allowDownload && !!data.fileId;
+  const canDownload =
+    data.allowDownload && !!data.fileId && roleCanDownload(SlideDownloadTypeKey.DOCUMENT_DOC);
   const downloadName = spreadsheetDownloadName(data, slide.title);
   const downloadExt = downloadName.split(".").pop() || "xlsx";
 

@@ -1102,8 +1102,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   const handleNumericInput = (value: string) => {
     if (currentLocked) return;
-    // Check if the input is a valid number
-    const isNumeric = /^\d*\.?\d*$/.test(value);
+    // Check if the input is a valid number. A leading minus is allowed, as on question,
+    // video and assignment slides: accounting answers are often negative (-500).
+    const isNumeric = /^-?\d*\.?\d*$/.test(value);
     
     if (value === "") {
       setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: "" }));
