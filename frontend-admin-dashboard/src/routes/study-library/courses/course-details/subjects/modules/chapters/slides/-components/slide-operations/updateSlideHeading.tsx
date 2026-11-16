@@ -15,6 +15,7 @@ import {
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { UseMutateAsyncFunction } from '@tanstack/react-query';
 import { createQuizSlidePayload } from '../quiz/utils/api-helpers';
+import { quizTitleAfterRename } from '../document-quiz/document-quiz-ref';
 import {
     converDataToAssignmentFormat,
     convertToQuestionBackendSlideFormat,
@@ -229,7 +230,8 @@ export const updateHeading = async (
             const newQuizSlide = {
                 ...activeItem.quiz_slide,
                 id: activeItem.quiz_slide?.id || '',
-                title: heading,
+                // A Document + Quiz slide keeps its document reference in quiz_slide.title.
+                title: quizTitleAfterRename(activeItem.quiz_slide?.title, heading),
                 description: activeItem.quiz_slide?.description || {
                     id: '',
                     content: '',

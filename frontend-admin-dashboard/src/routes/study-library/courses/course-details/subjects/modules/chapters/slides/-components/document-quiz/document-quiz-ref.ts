@@ -80,6 +80,18 @@ export function parseDocumentQuizRef(raw: unknown): DocumentQuizRef | null {
     };
 }
 
+/**
+ * quiz_slide.title after the admin renames the slide. A plain quiz follows the new
+ * heading as before; a Document + Quiz slide keeps its marker, or the editor would
+ * lose the document until the next reload.
+ */
+export function quizTitleAfterRename(
+    currentTitle: string | null | undefined,
+    heading: string
+): string {
+    return currentTitle && parseDocumentQuizRef(currentTitle) ? currentTitle : heading;
+}
+
 /** True for a QUIZ slide that carries a document. */
 export function isDocumentQuizSlide(
     slide:

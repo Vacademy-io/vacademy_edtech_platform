@@ -3,6 +3,7 @@ import {
     DOCUMENT_QUIZ_MAX_LENGTH,
     isDocumentQuizSlide,
     parseDocumentQuizRef,
+    quizTitleAfterRename,
     serializeDocumentQuizRef,
 } from '../document-quiz-ref';
 
@@ -127,5 +128,23 @@ describe('isDocumentQuizSlide', () => {
             isDocumentQuizSlide({ source_type: 'DOCUMENT', quiz_slide: { title: marker } })
         ).toBe(false);
         expect(isDocumentQuizSlide(null)).toBe(false);
+    });
+});
+
+describe('quizTitleAfterRename', () => {
+    it('keeps the document marker when a Document + Quiz slide is renamed', () => {
+        const marker = serializeDocumentQuizRef({
+            fileId: FILE_ID,
+            fileName: 'a.pdf',
+            source: 'PDF',
+        });
+        expect(quizTitleAfterRename(marker, 'New name')).toBe(marker);
+    });
+
+    it('follows the new heading for a plain quiz, as before', () => {
+        expect(quizTitleAfterRename('Chapter 1 quiz', 'New name')).toBe('New name');
+        expect(quizTitleAfterRename(undefined, 'New name')).toBe('New name');
+        expect(quizTitleAfterRename(null, 'New name')).toBe('New name');
+        expect(quizTitleAfterRename('{"kind":"OTHER","file_id":"x"}', 'New name')).toBe('New name');
     });
 });

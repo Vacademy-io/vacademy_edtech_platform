@@ -110,7 +110,9 @@ export const DocumentQuizSlide = ({ documentRef, quiz }: DocumentQuizSlideProps)
         <section
           aria-label={t("documentQuiz.documentTab")}
           className={cn(
-            "min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:flex md:flex-none",
+            // overflow-y-auto, not hidden: on wide screens the PDF viewer sizes itself
+            // from the window height, which can be a little taller than this panel.
+            "min-h-0 min-w-0 flex-1 flex-col overflow-y-auto md:flex md:flex-none",
             tab === "document" ? "flex" : "hidden"
           )}
           // Inline width: the divider position is a live, learner-dragged value.
