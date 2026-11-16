@@ -2,9 +2,11 @@ package vacademy.io.admin_core_service.features.commerce.stock.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStockShortFlagger;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceApprovalService;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.AdjustmentRequest;
@@ -41,6 +43,10 @@ public class StockAdjustmentService {
     private final CommerceStockSettings settings;
     private final CommerceApprovalService approvalService;
     private final CommerceAuditService auditService;
+
+    /** Flags open orders a damage or a count left short; absent in tests built by hand. */
+    @Autowired(required = false)
+    private CommerceStockShortFlagger stockShortFlagger;
 
     public StockAdjustmentService(StockLedgerService ledger, StockVariantRepository variantRepository,
                                   CommercePieceRepository pieceRepository, CommerceStockSettings settings,
@@ -134,6 +140,10 @@ public class StockAdjustmentService {
                 .build());
         if (result.isUntracked()) {
             throw new InvalidRequestException("ITEM_UNTRACKED: this item is not counted and cannot be adjusted");
+        }
+        if (result.created() && result.sellableShortfall() > 0 && stockShortFlagger != null) {
+            // After this transaction commits: open orders of this variant here are short.
+            stockShortFlagger.afterCommit(instituteId, locationId, packageSessionId, result.sellableShortfall());
         }
         if (result.created()) {
             Map<String, Object> audit = new LinkedHashMap<>();

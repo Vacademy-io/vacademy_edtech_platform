@@ -78,6 +78,8 @@ public class CartPriceSnapshot {
         private BigDecimal mrp;
         private String taxClassId;
         private Integer weightGrams;
+        /** The catalogue price of one unit when staff typed another {@link #unitPrice}; else null. */
+        private BigDecimal listUnitPrice;
     }
 
     @Data

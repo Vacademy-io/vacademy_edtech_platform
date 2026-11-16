@@ -363,6 +363,24 @@ class CommerceOrderWriterTest {
     }
 
     @Test
+    void aStaffTypedPriceIsNotComparedWithTheCatalogueAndTheLogsCarryTheGivenVendor() {
+        CommerceOrder order = order("900.00");
+        CommerceOrderLine a = item("l1", "ps-a", 2, "450.00", "900.00");
+        a.setPriceOverrideBy("manager-1");
+        link("ps-a", "499.50");
+        held("ps-a");
+
+        writer.writeMoneyRows(order, List.of(a), 15, CommerceOrderWriter.VENDOR_OFFLINE);
+        verify(paymentLogService).createPaymentLog(eq(USER), anyDouble(), eq("OFFLINE"), eq("OFFLINE"), eq("INR"),
+                any(UserPlan.class), eq("order-1"));
+
+        // Without the override the same price difference is a changed cart.
+        CommerceOrderLine b = item("l2", "ps-a", 2, "450.00", "900.00");
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
+                () -> writer.writeMoneyRows(order("900.00"), List.of(b), 15));
+    }
+
+    @Test
     void stockIsHeldBeforeAnyPlanOrLogIsWritten() {
         link("ps-a", "100.00");
         held("ps-a");

@@ -100,6 +100,34 @@ public interface CommerceOrderLegacyRepository extends Repository<CommerceOrder,
             """, nativeQuery = true)
     int cancelPendingPlans(@Param("ids") Collection<String> ids);
 
+    /**
+     * A cancelled order (or line): its plans close, paid or not. A late payment still activates
+     * a CANCELED plan, so this is only for orders staff have cancelled.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE user_plan SET status = 'CANCELED'
+            WHERE id IN (:ids) AND status IN ('ACTIVE', 'PENDING_FOR_PAYMENT', 'PAYMENT_FAILED')
+            """, nativeQuery = true)
+    int cancelPlans(@Param("ids") Collection<String> ids);
+
+    /** The amount a log of an unpaid order carries, after a line cancel; a PAID log is never changed. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE payment_log SET payment_amount = CAST(:amount AS DOUBLE PRECISION)
+            WHERE id = :id AND payment_group_id = :groupId AND payment_status IS DISTINCT FROM 'PAID'
+            """, nativeQuery = true)
+    int setLogAmount(@Param("id") String id, @Param("groupId") String groupId, @Param("amount") BigDecimal amount);
+
+    /** Logs of an order paid outside the gateway (cash on delivery, a staff order): vendor and mode. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE payment_log SET vendor = 'OFFLINE', vendor_id = 'OFFLINE', payment_mode = CAST(:mode AS VARCHAR)
+            WHERE id IN (:ids) AND payment_group_id = :groupId
+            """, nativeQuery = true)
+    int markLogsOffline(@Param("ids") Collection<String> ids, @Param("groupId") String groupId,
+                        @Param("mode") String paymentMode);
+
     interface HoldRow {
         String getId();
         String getUserPlanId();

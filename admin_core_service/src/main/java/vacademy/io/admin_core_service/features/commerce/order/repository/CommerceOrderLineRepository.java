@@ -16,4 +16,6 @@ public interface CommerceOrderLineRepository extends JpaRepository<CommerceOrder
     Optional<CommerceOrderLine> findFirstByUserPlanId(String userPlanId);
 
     Optional<CommerceOrderLine> findFirstByPaymentLogId(String paymentLogId);
+
+    Optional<CommerceOrderLine> findByIdAndOrderId(String id, String orderId);
 }

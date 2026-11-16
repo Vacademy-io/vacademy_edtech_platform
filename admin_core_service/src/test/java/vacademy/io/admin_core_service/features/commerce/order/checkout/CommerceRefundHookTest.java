@@ -54,4 +54,15 @@ class CommerceRefundHookTest {
         hook.refundDuplicatePayment("inst-1", "order-1", "ORD-000007", "order_rzp2", "pay_second",
                 new BigDecimal("499.00"), "INR");
     }
+
+    @Test
+    void moneyDueBackAfterADeskActionIsOneRowPerEvent() {
+        hook.refundDue("inst-1", "order-1", "ORD-000007", "LCAN:line-1:2", new BigDecimal("250.00"), "INR",
+                "A line of the paid order was cancelled.");
+        verify(exceptions).record(anyString(), eq("inst-1"), eq("order-1"), eq("ORD-000007"), eq("REFUND_DUE"),
+                isNull(), eq("LCAN:line-1:2"), eq(new BigDecimal("250.00")), eq("INR"), anyString());
+        hook.refundDue("inst-1", "order-1", "ORD-000007", "RTO:sh-1", BigDecimal.ZERO, "INR", "nothing");
+        hook.refundDue("inst-1", "order-1", "ORD-000007", "RTO:sh-1", null, "INR", "nothing");
+        org.mockito.Mockito.verifyNoMoreInteractions(exceptions);
+    }
 }

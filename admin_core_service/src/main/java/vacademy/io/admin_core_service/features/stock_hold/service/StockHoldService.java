@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -699,6 +700,97 @@ public class StockHoldService {
             closed += stockHoldRepository.closeSold(row.getId(), reason);
         }
         return closed;
+    }
+
+    // ── Order desk (WP-30). Called by commerce code only, inside its order transaction. ──
+
+    /** {@code release_reason} of a row closed because its goods left on a shipment. */
+    public static final String REASON_SHIPPED = "SHIPPED";
+
+    /**
+     * Gives back {@code quantity} units of the plan's PURCHASE row of {@code packageSessionId}, in
+     * the caller's transaction (a cancel or a line cancel of a confirmed order):
+     * <ul>
+     *   <li>a SOLD row: the whole row (SOLD to RESTORED) or part of it (its quantity falls), and
+     *       the units go back on sale, the variant's sellable deficit paid first;</li>
+     *   <li>a HELD row (an unpaid order): the same, ending RELEASED;</li>
+     *   <li>an oversold row took no stock: it is closed or shrunk with nothing given back.</li>
+     * </ul>
+     *
+     * @param reason {@code release_reason} when the whole row ends; at most 32 characters
+     * @return units given back on sale
+     * @throws ConflictException (409) STOCK_NOT_SETTLED when the plan has no SOLD or HELD row of
+     *         that item holding at least {@code quantity}
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public int giveBackSold(String userPlanId, String packageSessionId, int quantity, String reason) {
+        if (!StringUtils.hasText(userPlanId) || !StringUtils.hasText(packageSessionId) || quantity < 1) {
+            throw new InvalidRequestException("A give-back needs a plan, an item and a quantity of at least 1");
+        }
+        if (reason != null && reason.length() > 32) {
+            throw new InvalidRequestException("reason is longer than 32 characters");
+        }
+        for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
+            if (!userPlanId.equals(row.getUserPlanId()) || !packageSessionId.equals(row.getPackageSessionId())
+                    || !PURCHASE.equals(row.getKind())) {
+                continue;
+            }
+            String status = row.getStatus();
+            if (!SOLD.equals(status) && !HELD.equals(status)) {
+                continue;
+            }
+            int held = quantityOf(row);
+            if (held < quantity) {
+                continue;
+            }
+            boolean oversold = Boolean.TRUE.equals(stockHoldRepository.isOversold(row.getId()));
+            int won;
+            if (held == quantity) {
+                won = SOLD.equals(status)
+                        ? stockHoldRepository.transitionStatus(row.getId(), SOLD, RESTORED)
+                        : stockHoldRepository.transitionStatus(row.getId(), HELD, RELEASED);
+                if (won == 1 && reason != null) {
+                    stockHoldRepository.setReleaseReason(row.getId(), reason);
+                }
+            } else {
+                won = stockHoldRepository.reduceQuantity(row.getId(), status, quantity);
+            }
+            if (won != 1) {
+                continue; // changed under us; another row may still fit
+            }
+            if (oversold) {
+                return 0; // took no stock, so nothing goes back
+            }
+            giveBack(packageSessionId, quantity);
+            return quantity;
+        }
+        throw new ConflictException("STOCK_NOT_SETTLED: the reserved stock of this line is not where the order "
+                + "expects it");
+    }
+
+    /**
+     * The undo of a shipment: the plan's rows of {@code packageSessionId} that the shipment closed
+     * (RESTORED with reason SHIPPED) are SOLD again. No counter moves (the reversing SALE
+     * movement has put the units back on the shelf, still promised).
+     *
+     * @return rows reopened
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public int reopenShipped(String userPlanId, String packageSessionId) {
+        if (!StringUtils.hasText(userPlanId)) {
+            return 0;
+        }
+        int reopened = 0;
+        for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
+            if (!userPlanId.equals(row.getUserPlanId()) || !RESTORED.equals(row.getStatus())) {
+                continue;
+            }
+            if (packageSessionId != null && !packageSessionId.equals(row.getPackageSessionId())) {
+                continue;
+            }
+            reopened += stockHoldRepository.reopenShipped(row.getId());
+        }
+        return reopened;
     }
 
     private boolean paymentInProgress(String orderPaymentLogId) {

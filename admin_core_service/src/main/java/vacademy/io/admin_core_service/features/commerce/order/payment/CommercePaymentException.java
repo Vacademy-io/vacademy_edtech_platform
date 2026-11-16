@@ -26,6 +26,8 @@ public class CommercePaymentException {
 
     public static final String KIND_OVERSOLD_PAID = "OVERSOLD_PAID";
     public static final String KIND_DUPLICATE_PAYMENT = "DUPLICATE_PAYMENT";
+    /** Money of a paid order due back after a cancel, a line cancel or an RTO (V688). */
+    public static final String KIND_REFUND_DUE = "REFUND_DUE";
     public static final String STATUS_OPEN = "OPEN";
     public static final String STATUS_RESOLVED = "RESOLVED";
 

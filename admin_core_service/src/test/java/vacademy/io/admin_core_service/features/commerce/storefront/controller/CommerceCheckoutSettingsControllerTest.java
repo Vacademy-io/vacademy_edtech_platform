@@ -160,4 +160,19 @@ class CommerceCheckoutSettingsControllerTest {
         assertEquals("COMMERCE_SETTING", entry.get("key").asText());
         assertEquals("EITHER", entry.get("data").get("buyerIdentity").asText());
     }
+
+    @Test
+    void theOrderDeskKeyIsWrittenUnderOrdersAndOnlyABooleanIsTaken() throws Exception {
+        Map<String, Object> answer = controller.update(JSON.readTree(
+                "{\"orders\": {\"refund_shipping_on_rto\": false}}"), "inst-1", user).getBody();
+        JsonNode data = written().get("data");
+        assertEquals(false, data.get("orders").get("refundShippingOnRto").asBoolean());
+        assertEquals(4000, data.get("cod").get("maxOrderValue").asInt(), "other keys are kept");
+        assertTrue(answer.containsKey("orders"));
+        for (String body : new String[] {"{\"orders\": {\"refund_shipping_on_rto\": \"no\"}}",
+                "{\"orders\": []}"}) {
+            assertThrows(InvalidRequestException.class, () -> controller.update(JSON.readTree(body), "inst-1", user),
+                    body);
+        }
+    }
 }

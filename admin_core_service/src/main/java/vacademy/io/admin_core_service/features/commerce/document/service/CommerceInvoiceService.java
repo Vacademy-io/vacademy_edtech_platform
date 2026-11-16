@@ -139,10 +139,10 @@ public class CommerceInvoiceService {
             }
             creditedInFull = true;
         }
-        if (creditedInFull) {
+        if (creditedInFull && !request.isAllowAfterFullCredit()) {
             // A full credit note closes the order's document for good (a return, an RTO). The
-            // one new invoice that may follow a full credit is the B2B reissue, which does not
-            // come through here.
+            // new invoices that may follow a full credit are the B2B reissue, which does not
+            // come through here, and the re-pack of an unpacked order (allowAfterFullCredit).
             throw new ConflictException("INVOICE_FULLY_CREDITED: the invoice of this order was credited in full; "
                     + "a new sale needs a new order");
         }

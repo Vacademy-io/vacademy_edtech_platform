@@ -121,4 +121,28 @@ public class CommerceOrderLine extends CommerceCatalogueEntity {
 
     @Column(name = "cost_total", precision = 12, scale = 2)
     private BigDecimal costTotal;
+
+    // -- Order desk (V688) --
+
+    /** Open units of this line that are no longer on the shelf; cleared by ship, cancel or staff. */
+    @Column(name = "stock_short_qty", nullable = false)
+    private Integer stockShortQty = 0;
+
+    /** The catalogue price of one unit when staff typed another price (price_override_by set). */
+    @Column(name = "list_unit_price", updatable = false, precision = 12, scale = 2)
+    private BigDecimal listUnitPrice;
+
+    /** What the cancelled units of this line took off the order total (tax included). */
+    @Column(name = "cancelled_value", nullable = false, precision = 12, scale = 2)
+    private BigDecimal cancelledValue = BigDecimal.ZERO.setScale(2);
+
+    /** Units still to ship or ship again: quantity less cancelled and shipped. */
+    public int openQuantity() {
+        return quantity - (qtyCancelled == null ? 0 : qtyCancelled) - (qtyShipped == null ? 0 : qtyShipped);
+    }
+
+    /** Units not cancelled. */
+    public int liveQuantity() {
+        return quantity - (qtyCancelled == null ? 0 : qtyCancelled);
+    }
 }

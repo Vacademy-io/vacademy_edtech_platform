@@ -47,12 +47,24 @@ import java.util.Set;
  * <p>{@code buyerIdentity} ({@link BuyerIdentity}) says who the buyer of a shop order is; missing
  * or unknown is {@code EITHER}. {@code otp.instituteHourlyCap} is how many OTP messages the shop
  * may send in one hour (10 to 2000; missing or out of range is 300).
+ *
+ * <p>{@code orders.refundShippingOnRto} (the order desk): when a prepaid parcel comes back, the
+ * delivery charge is refunded too (true, the default) or kept (false). Only a JSON false keeps it.
  */
 public record StorefrontSettings(String baseLocale, int lowStockThreshold, String leadMediaTag,
                                  List<BigDecimal> priceBands, Map<String, String> dispatchPromise,
                                  Cod cod, String pricingRulesJson, int maxOrderQuantity,
                                  List<String> mediaTags, BuyerIdentity buyerIdentity,
-                                 int otpInstituteHourlyCap) {
+                                 int otpInstituteHourlyCap, boolean refundShippingOnRto) {
+
+    /** Without the order-desk keys: the delivery charge is refunded on an RTO. */
+    public StorefrontSettings(String baseLocale, int lowStockThreshold, String leadMediaTag,
+                              List<BigDecimal> priceBands, Map<String, String> dispatchPromise, Cod cod,
+                              String pricingRulesJson, int maxOrderQuantity, List<String> mediaTags,
+                              BuyerIdentity buyerIdentity, int otpInstituteHourlyCap) {
+        this(baseLocale, lowStockThreshold, leadMediaTag, priceBands, dispatchPromise, cod, pricingRulesJson,
+                maxOrderQuantity, mediaTags, buyerIdentity, otpInstituteHourlyCap, true);
+    }
 
     public static final String DEFAULT_BASE_LOCALE = "en";
     public static final int DEFAULT_LOW_STOCK_THRESHOLD = 3;
@@ -106,7 +118,7 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
         }
         return new StorefrontSettings(locale.trim().toLowerCase(Locale.ROOT), lowStockThreshold, leadMediaTag,
                 priceBands, dispatchPromise, cod, pricingRulesJson, maxOrderQuantity, mediaTags, buyerIdentity,
-                otpInstituteHourlyCap);
+                otpInstituteHourlyCap, refundShippingOnRto);
     }
 
     /**
@@ -221,8 +233,12 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
         BuyerIdentity buyerIdentity = BuyerIdentity.parse(text(root.path("buyerIdentity")));
         int otpCap = bounded(number(root.path("otp").path("instituteHourlyCap")), MIN_OTP_INSTITUTE_HOURLY_CAP,
                 MAX_OTP_INSTITUTE_HOURLY_CAP, DEFAULT_OTP_INSTITUTE_HOURLY_CAP);
+        // Only a real JSON false keeps the delivery charge; anything else refunds it.
+        JsonNode refundShipping = root.path("orders").path("refundShippingOnRto");
+        boolean refundShippingOnRto = !(refundShipping.isBoolean() && !refundShipping.asBoolean());
         return new StorefrontSettings(baseLocale, threshold, text(root.path("leadMediaTag")), List.copyOf(bands),
-                Map.copyOf(promise), cod, rules, maxQuantity, List.copyOf(tags), buyerIdentity, otpCap);
+                Map.copyOf(promise), cod, rules, maxQuantity, List.copyOf(tags), buyerIdentity, otpCap,
+                refundShippingOnRto);
     }
 
     /** A whole number within [min, max]; anything else (a fraction too) is the fallback. */

@@ -20,6 +20,8 @@ import java.util.Date;
 public class CommerceOrderTender extends CommerceCatalogueEntity {
 
     public static final String MODE_GATEWAY = "GATEWAY";
+    public static final String MODE_COD = "COD";
+    public static final String MODE_CREDIT = "CREDIT";
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_RECEIVED = "RECEIVED";
     public static final String STATUS_VOID = "VOID";

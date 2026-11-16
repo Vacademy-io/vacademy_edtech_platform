@@ -40,6 +40,14 @@ public final class StaffOrderDtos {
         private BigDecimal total;
         private BigDecimal amountPaid;
         private String createdAt;
+        // Order desk (WP-30)
+        private Boolean stockShort;
+        private BigDecimal refundDue;
+        /** Of the live (not cancelled) shipment. */
+        private String shipmentStatus;
+        private String trackingNumber;
+        /** When the order entered its current status. */
+        private String statusSince;
     }
 
     @Data
@@ -82,11 +90,64 @@ public final class StaffOrderDtos {
         private String holdExpiresAt;
         private String confirmedAt;
         private String cancelledAt;
-        /** The statuses the order status table allows next. The moves themselves come later. */
+        /** The statuses the order status table allows next. */
         private List<String> nextStatuses;
         private List<StaffOrderLine> lines;
         private List<StaffTender> tenders;
         private List<StaffTimelineEntry> timeline;
+        // Order desk (WP-30)
+        private List<StaffShipment> shipments;
+        private BigDecimal refundDue;
+        private Boolean stockShort;
+        private BigDecimal codAmount;
+        private String codRemittanceId;
+        /** The live (not fully credited) invoice of the order. */
+        private String invoiceId;
+        private List<String> creditNoteIds;
+        /** Action codes the caller's roles may run on the order now. */
+        private List<String> nextActions;
+        /** True when this answers a repeat of an earlier request with the same client_request_id. */
+        private Boolean replayed;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class StaffShipment {
+        private String id;
+        private String status;
+        private String locationId;
+        private String carrierCode;
+        private String carrierName;
+        private String trackingNumber;
+        private String trackingUrl;
+        private Integer shipCount;
+        private Integer weightGrams;
+        private String invoiceId;
+        private String rtoReason;
+        private String packedAt;
+        private String shippedAt;
+        private String deliveredOn;
+        private String rtoAt;
+        private String rtoReceivedAt;
+        private String cancelledAt;
+        private List<StaffShipmentLine> lines;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class StaffShipmentLine {
+        private String id;
+        private String orderLineId;
+        private int quantity;
+        private List<String> pieceCodes;
     }
 
     @Data
@@ -121,6 +182,12 @@ public final class StaffOrderDtos {
         private int qtyCancelled;
         private int qtyShipped;
         private int qtyReturned;
+        // Order desk (WP-30)
+        private Integer stockShortQty;
+        private BigDecimal listUnitPrice;
+        private String priceOverrideBy;
+        private BigDecimal cancelledValue;
+        private BigDecimal costTotal;
     }
 
     @Data

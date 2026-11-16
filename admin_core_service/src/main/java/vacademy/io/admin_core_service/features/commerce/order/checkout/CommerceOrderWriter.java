@@ -77,9 +77,15 @@ import java.util.UUID;
 public class CommerceOrderWriter {
 
     public static final String CHANNEL_ONLINE = "ONLINE";
+    public static final String CHANNEL_ADMIN = "ADMIN";
+    public static final String PAYMENT_PARTIALLY_PAID = "PARTIALLY_PAID";
+    /** payment_method of a staff-created order: money is taken by hand, never through the gateway. */
+    public static final String METHOD_OFFLINE = "OFFLINE";
+    /** payment_log vendor of an order paid outside the gateway (a staff order; cash on delivery). */
+    public static final String VENDOR_OFFLINE = "OFFLINE";
     public static final String PAYMENT_UNPAID = "UNPAID";
     public static final String PAYMENT_PAID = "PAID";
-    static final String ORDER_COUNTER_SCOPE = "ORD";
+    public static final String ORDER_COUNTER_SCOPE = "ORD";
     /**
      * The stock of a shop order is held this much longer than the order's own hold time: the
      * lost-webhook fetch asks the gateway once more in that gap, before the hold-expiry job
@@ -231,6 +237,132 @@ public class CommerceOrderWriter {
         return new Written(order, lines, money.releaseToken());
     }
 
+    /** A staff-created order, resolved before its transaction opens. */
+    public record StaffNewOrder(String instituteId, String orderNumber, String clientRequestId, String requestHash,
+                                String userId, String actorUserId, String phone, String name, String email,
+                                Map<String, Object> shippingAddress, Map<String, Object> billingAddress,
+                                String buyerGstin, String customerNote, CartPriceSnapshot snapshot,
+                                int holdMinutes, List<StaffTender> tenders, boolean restOnCredit) {
+    }
+
+    /** Money staff received when the order was made. */
+    public record StaffTender(String mode, BigDecimal amount, String reference) {
+    }
+
+    /**
+     * Writes a staff-created order (channel ADMIN): CONFIRMED at once, its stock held and then
+     * SOLD in this transaction (nothing can release it), payment logs of vendor OFFLINE, a
+     * RECEIVED tender per amount taken and, for the rest, one CREDIT tender PENDING. The phone
+     * is the one staff typed: the order is not phone-verified and the customer row of the phone
+     * is not changed. Paying the logs and activating the plans is the caller's step.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Written writeStaff(StaffNewOrder n) {
+        CartPriceSnapshot snapshot = n.snapshot();
+        TaxResult tax = snapshot.getTax();
+        CommerceCustomer customer = customerService.findOrCreateUnverified(n.instituteId(), n.phone());
+        CartPriceSnapshot.Discount coupon = couponOf(snapshot);
+
+        Date now = new Date();
+        CommerceOrder order = new CommerceOrder();
+        order.setInstituteId(n.instituteId());
+        order.setOrderNumber(n.orderNumber());
+        order.setPaymentGroupId(UUID.randomUUID().toString());
+        order.setChannel(CHANNEL_ADMIN);
+        order.setUserId(n.userId());
+        order.setCustomerId(customer.getId());
+        order.setCustomerName(n.name());
+        order.setCustomerPhone(n.phone());
+        order.setCustomerEmail(n.email());
+        order.setPhoneVerified(false);
+        order.setShippingAddressJson(json(n.shippingAddress()));
+        order.setBillingAddressJson(json(n.billingAddress() == null ? n.shippingAddress() : n.billingAddress()));
+        order.setBuyerGstin(n.buyerGstin());
+        order.setPlaceOfSupplyState(snapshot.getPlaceOfSupplyState());
+        order.setSubtotal(money(tax.getSubtotal()));
+        order.setDiscount(money(tax.getDiscount()));
+        order.setShipping(money(tax.getShipping()));
+        order.setCodCharge(money(tax.getCodCharge()));
+        order.setTax(money(tax.getTaxAmount()));
+        order.setRoundOff(money(tax.getRoundOff()));
+        order.setTotal(money(snapshot.getTotal()));
+        order.setAmountPaid(ZERO);
+        order.setCurrency(snapshot.getCurrency());
+        order.setPaymentMethod(METHOD_OFFLINE);
+        order.setPaymentStatus(PAYMENT_UNPAID);
+        CommerceOrderTransitions.require(null, CommerceOrderStatus.CONFIRMED);
+        order.setStatus(CommerceOrderStatus.CONFIRMED.name());
+        order.setConfirmedAt(now);
+        order.setFulfilmentLocationId(snapshot.getFulfilmentLocationId());
+        order.setCustomerNote(n.customerNote());
+        order.setClientRequestId(n.clientRequestId());
+        order.setRequestHash(n.requestHash());
+        order.setLocale(snapshot.getLocale());
+        order.setCreatedBy(n.actorUserId());
+        order.setPriceSnapshotJson(json(snapshot));
+        if (coupon != null) {
+            order.setCouponCode(coupon.getCode());
+            order.setAppliedCouponDiscountId(coupon.getAppliedCouponDiscountId());
+        }
+        // Flushed: a repeat of the request fails on the unique key here, before anything else.
+        order = orderRepository.saveAndFlush(order);
+        redeemOnce(coupon);
+
+        List<CommerceOrderLine> lines = buildLines(order, snapshot);
+        Map<String, CartPriceSnapshot.Line> byRef = new HashMap<>();
+        for (CartPriceSnapshot.Line line : snapshot.getLines()) {
+            byRef.put(line.getLineRef(), line);
+        }
+        for (CommerceOrderLine line : lines) {
+            CartPriceSnapshot.Line priced = byRef.get(line.getLineRef());
+            if (priced != null && priced.getListUnitPrice() != null) {
+                line.setListUnitPrice(money(priced.getListUnitPrice()));
+                line.setPriceOverrideBy(n.actorUserId());
+            }
+        }
+        lines = lineRepository.saveAll(lines);
+        MoneyRows money = writeMoneyRows(order, lines, n.holdMinutes(), VENDOR_OFFLINE);
+        // Confirmed now: the stock is sold, so neither the expiry job nor a release can free it.
+        stockHoldService.markSoldNow(money.holds());
+        lines = lineRepository.saveAll(lines);
+        order.setPrimaryPaymentLogId(money.primaryPaymentLogId());
+
+        BigDecimal received = ZERO;
+        for (StaffTender t : n.tenders() == null ? List.<StaffTender>of() : n.tenders()) {
+            CommerceOrderTender tender = new CommerceOrderTender();
+            tender.setInstituteId(order.getInstituteId());
+            tender.setOrderId(order.getId());
+            tender.setMode(t.mode());
+            tender.setAmount(money(t.amount()));
+            tender.setReference(t.reference());
+            tender.setStatus(CommerceOrderTender.STATUS_RECEIVED);
+            tender.setReceivedAt(now);
+            tender.setRecordedBy(n.actorUserId());
+            tenderRepository.save(tender);
+            received = received.add(money(t.amount()));
+        }
+        BigDecimal rest = order.getTotal().subtract(received);
+        if (rest.signum() > 0) {
+            if (!n.restOnCredit()) {
+                throw new IllegalStateException("a staff order short of its total needs the rest on credit");
+            }
+            CommerceOrderTender credit = new CommerceOrderTender();
+            credit.setInstituteId(order.getInstituteId());
+            credit.setOrderId(order.getId());
+            credit.setMode(CommerceOrderTender.MODE_CREDIT);
+            credit.setAmount(rest);
+            credit.setStatus(CommerceOrderTender.STATUS_PENDING);
+            credit.setRecordedBy(n.actorUserId());
+            tenderRepository.save(credit);
+        }
+        order.setAmountPaid(received);
+        order.setPaymentStatus(received.signum() == 0 ? PAYMENT_UNPAID
+                : received.compareTo(order.getTotal()) >= 0 ? PAYMENT_PAID : PAYMENT_PARTIALLY_PAID);
+        order = orderRepository.save(order);
+        history(order, null, CommerceOrderStatus.CONFIRMED, n.actorUserId(), "Order created by staff");
+        return new Written(order, lines, null);
+    }
+
     /**
      * The legacy money rows of an order: a stock hold per stock-tracked variant, then per ITEM
      * line a {@code user_plan} (PENDING_FOR_PAYMENT) and a {@code payment_log} (PAYMENT_PENDING)
@@ -244,6 +376,18 @@ public class CommerceOrderWriter {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public MoneyRows writeMoneyRows(CommerceOrder order, List<CommerceOrderLine> lines, int holdMinutes) {
+        return writeMoneyRows(order, lines, holdMinutes, PaymentGateway.RAZORPAY.name());
+    }
+
+    /**
+     * {@link #writeMoneyRows(CommerceOrder, List, int)} with the vendor of the payment logs:
+     * RAZORPAY for an online order, {@link #VENDOR_OFFLINE} for a staff order or cash on
+     * delivery. A line whose price staff typed ({@code price_override_by} set) is not compared
+     * with the catalogue price, which it differs from on purpose.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public MoneyRows writeMoneyRows(CommerceOrder order, List<CommerceOrderLine> lines, int holdMinutes,
+                                    String vendor) {
         List<CommerceOrderLine> items = lines.stream()
                 .filter(line -> CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())).toList();
         if (items.isEmpty()) {
@@ -268,8 +412,10 @@ public class CommerceOrderWriter {
         }
         for (CommerceOrderLine line : items) {
             SaleLinkRow link = links.get(line.getPackageSessionId());
-            if (link == null || link.getActualPrice() == null
-                    || link.getActualPrice().compareTo(line.getUnitPrice()) != 0
+            boolean typedPrice = StringUtils.hasText(line.getPriceOverrideBy());
+            if (link == null
+                    || (!typedPrice && (link.getActualPrice() == null
+                            || link.getActualPrice().compareTo(line.getUnitPrice()) != 0))
                     || (link.getCurrency() != null && !link.getCurrency().equalsIgnoreCase(order.getCurrency()))) {
                 // The price or the product changed between pricing and this transaction.
                 throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.CART_CHANGED,
@@ -313,15 +459,14 @@ public class CommerceOrderWriter {
             payment.setCurrency(order.getCurrency());
             payment.setOrderId(order.getId());
             payment.setInstituteId(order.getInstituteId());
-            payment.setVendor(PaymentGateway.RAZORPAY.name());
+            payment.setVendor(vendor);
 
             // No coupon is handed down: commerce redeems it itself, once for the order.
             UserPlan userPlan = userPlanService.createUserPlan(order.getUserId(), plan, null, invite, option,
                     payment, UserPlanStatusEnum.PENDING_FOR_PAYMENT.name(), UserPlanSourceEnum.USER.name(), null,
                     null, null, line.getQuantity());
             String logId = paymentLogService.createPaymentLog(order.getUserId(), amount.doubleValue(),
-                    PaymentGateway.RAZORPAY.name(), PaymentGateway.RAZORPAY.name(), order.getCurrency(), userPlan,
-                    order.getId());
+                    vendor, vendor, order.getCurrency(), userPlan, order.getId());
             line.setUserPlanId(userPlan.getId());
             line.setPaymentLogId(logId);
             line.setLogAmount(amount);

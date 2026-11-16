@@ -64,6 +64,34 @@ public interface CommercePieceRepository extends JpaRepository<CommercePiece, St
                    @Param("fromStatus") String fromStatus, @Param("fromLocationId") String fromLocationId,
                    @Param("toStatus") String toStatus, @Param("toLocationId") String toLocationId);
 
+    // -- Order desk (WP-30) --
+
+    /** The pieces named for an order line (packed, shipped or back from an RTO), by code. */
+    @Query(value = ROW + " WHERE cp.institute_id = :instituteId AND cp.order_line_id = :orderLineId"
+            + " ORDER BY cp.code", nativeQuery = true)
+    List<PieceRow> findRowsByOrderLine(@Param("instituteId") String instituteId,
+                                       @Param("orderLineId") String orderLineId);
+
+    /** Packing: a piece IN_STOCK at the location becomes RESERVED for the order line. 1 = this caller won. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_piece
+            SET status = 'RESERVED', order_line_id = :orderLineId, updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND id = :id AND status = 'IN_STOCK' AND location_id = :locationId
+            """, nativeQuery = true)
+    int reserveForLine(@Param("instituteId") String instituteId, @Param("id") String pieceId,
+                       @Param("locationId") String locationId, @Param("orderLineId") String orderLineId);
+
+    /** Unpacking or a line cancel: a piece RESERVED for the line goes back IN_STOCK. 1 = this caller won. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_piece
+            SET status = 'IN_STOCK', order_line_id = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND id = :id AND status = 'RESERVED' AND order_line_id = :orderLineId
+            """, nativeQuery = true)
+    int unreserve(@Param("instituteId") String instituteId, @Param("id") String pieceId,
+                  @Param("orderLineId") String orderLineId);
+
     /** Written only by StockLedgerService, with the piece row locked. */
     @Modifying(flushAutomatically = true)
     @Query(value = """

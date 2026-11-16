@@ -183,4 +183,30 @@ public class CommerceOrder extends CommerceCatalogueEntity {
     /** True when the buyer proved the phone of the order (OTP or shopper session) (V687). */
     @Column(name = "phone_verified", nullable = false)
     private Boolean phoneVerified = false;
+
+    // -- Order desk (V688) --
+
+    /** Money of a paid order that is due back (cancel, line cancel, RTO); never above amount_paid. */
+    @Column(name = "refund_due", nullable = false, precision = 12, scale = 2)
+    private BigDecimal refundDue = BigDecimal.ZERO.setScale(2);
+
+    /** Open units of the order left the shelf (damage, count, receipt reversal); see stock_short_qty. */
+    @Column(name = "stock_short", nullable = false)
+    private Boolean stockShort = false;
+
+    @Column(name = "stock_short_at")
+    private Date stockShortAt;
+
+    @Column(name = "packed_at")
+    private Date packedAt;
+
+    @Column(name = "shipped_at")
+    private Date shippedAt;
+
+    @Column(name = "delivered_at")
+    private Date deliveredAt;
+
+    /** A COD order above the confirmation amount is cancelled when staff have not confirmed it by then. */
+    @Column(name = "cod_confirm_due_at")
+    private Date codConfirmDueAt;
 }

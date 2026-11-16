@@ -355,6 +355,28 @@ class CommerceInvoiceServiceTest {
     }
 
     @Test
+    void theRepackOfAnUnpackedOrderGetsANewInvoiceOnlyWithTheFlag() {
+        // Unpack credited the first invoice in full; the order desk re-packs it with the flag.
+        Invoice credited = new Invoice();
+        credited.setId("inv-credited");
+        credited.setInstituteId(INST);
+        credited.setDocumentType("TAX_INVOICE");
+        credited.setTotalAmount(new BigDecimal("1168.00"));
+        when(mappings.findCommerceDocumentsByPaymentLogIds(anyCollection())).thenReturn(List.of(credited));
+        when(creditNotes.hasCreditNotes(INST, "inv-credited")).thenReturn(true);
+        when(creditNotes.creditedTotal(INST, "inv-credited")).thenReturn(new BigDecimal("1168.00"));
+
+        assertFalse(request(TaxMode.REGULAR).isAllowAfterFullCredit(), "the flag is off unless the desk sets it");
+        assertTrue(assertThrows(ConflictException.class, () -> service.issue(INST, request(TaxMode.REGULAR)))
+                .getMessage().startsWith("INVOICE_FULLY_CREDITED"));
+
+        CommerceInvoiceRequest repack = request(TaxMode.REGULAR);
+        repack.setAllowAfterFullCredit(true);
+        assertFalse(service.issue(INST, repack).alreadyExisted(), "a second invoice is issued");
+        verify(invoices).saveAndFlush(any(Invoice.class));
+    }
+
+    @Test
     void afterAB2bReissueTheOrderStillHasItsLiveInvoice() {
         Invoice credited = new Invoice();
         credited.setId("inv-credited");

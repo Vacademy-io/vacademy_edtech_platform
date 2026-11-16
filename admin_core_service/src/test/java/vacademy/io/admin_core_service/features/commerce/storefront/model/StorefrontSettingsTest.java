@@ -129,4 +129,15 @@ class StorefrontSettingsTest {
         assertEquals(2, out.maxOpenOrdersPerPhone());
         assertEquals(2, out.maxRefusals());
     }
+
+    @Test
+    void theDeliveryChargeIsRefundedOnAnRtoUnlessAJsonFalseKeepsIt() throws Exception {
+        assertTrue(StorefrontSettings.parse(null).refundShippingOnRto());
+        assertTrue(parse("{}").refundShippingOnRto());
+        assertTrue(parse("{\"orders\": {\"refundShippingOnRto\": \"false\"}}").refundShippingOnRto());
+        assertTrue(parse("{\"orders\": {\"refundShippingOnRto\": 0}}").refundShippingOnRto());
+        assertTrue(parse("{\"orders\": {\"refundShippingOnRto\": true}}").refundShippingOnRto());
+        org.junit.jupiter.api.Assertions.assertFalse(
+                parse("{\"orders\": {\"refundShippingOnRto\": false}}").refundShippingOnRto());
+    }
 }

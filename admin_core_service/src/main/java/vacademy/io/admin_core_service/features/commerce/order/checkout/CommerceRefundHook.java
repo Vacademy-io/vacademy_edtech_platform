@@ -54,6 +54,24 @@ public class CommerceRefundHook {
                 instituteId, orderId, orderNumber, gatewayOrderId, gatewayPaymentId, amount, currency);
     }
 
+    /**
+     * The order desk raised {@code commerce_order.refund_due}: a paid order was cancelled, a line
+     * of it was cancelled, or its parcel came back. One row per event key ({@code OCAN:<order>},
+     * {@code LCAN:<line>:<n>}, {@code RTO:<shipment>}), however often the action is replayed.
+     * Joins the caller's transaction (the row commits with the change); never throws.
+     */
+    public void refundDue(String instituteId, String orderId, String orderNumber, String eventKey, BigDecimal amount,
+                          String currency, String detail) {
+        if (amount == null || amount.signum() <= 0) {
+            return;
+        }
+        record(instituteId, orderId, orderNumber, CommercePaymentException.KIND_REFUND_DUE, null, eventKey, amount,
+                currency, detail);
+        log.error("COMMERCE_ALERT refund_due institute={} order={} number={} event={} amount={} {} "
+                        + "(automatic refund is not built yet: refund by hand)",
+                instituteId, orderId, orderNumber, eventKey, amount, currency);
+    }
+
     private void record(String instituteId, String orderId, String orderNumber, String kind, String gatewayOrderId,
                         String gatewayPaymentId, BigDecimal amount, String currency, String detail) {
         try {

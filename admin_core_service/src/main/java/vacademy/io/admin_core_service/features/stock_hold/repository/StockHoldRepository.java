@@ -172,6 +172,31 @@ public interface StockHoldRepository extends JpaRepository<StockHold, String> {
             """, nativeQuery = true)
     int closeSold(@Param("id") String id, @Param("reason") String reason);
 
+    // ── Order desk (WP-30): part give-back and the undo of a shipment ──
+
+    /** The oversold flag of a row, read fresh. */
+    @Query(value = "SELECT COALESCE(h.oversold, FALSE) FROM stock_hold h WHERE h.id = :id", nativeQuery = true)
+    Boolean isOversold(@Param("id") String id);
+
+    /**
+     * Part of a row goes back: its quantity falls by :quantity, only while the row is still in
+     * :status and holds more than that (a whole row is ended by a status change instead).
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET quantity = quantity - :quantity, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = :status AND quantity > :quantity
+            """, nativeQuery = true)
+    int reduceQuantity(@Param("id") String id, @Param("status") String status, @Param("quantity") int quantity);
+
+    /** The undo of a shipment: a row the shipment closed (RESTORED, reason SHIPPED) is SOLD again. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET status = 'SOLD', release_reason = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = 'RESTORED' AND release_reason = 'SHIPPED'
+            """, nativeQuery = true)
+    int reopenShipped(@Param("id") String id);
+
     // ── attach(): one column per statement, so a null argument leaves that column alone ──
 
     @Modifying(flushAutomatically = true)

@@ -32,6 +32,10 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, St
     List<StockMovement> findByInstituteIdAndReferenceTypeAndReferenceId(String instituteId, String referenceType,
                                                                         String referenceId);
 
+    /** The movements of several references of one type (the lines of a shipment), oldest first. */
+    List<StockMovement> findByInstituteIdAndReferenceTypeAndReferenceIdInOrderByCreatedAtAsc(
+            String instituteId, String referenceType, Collection<String> referenceIds);
+
     /**
      * Units sent on a transfer and not yet received: minus the sum of TRANSFER_OUT (negative)
      * and TRANSFER_IN (positive, posted for the full sent quantity) rows.

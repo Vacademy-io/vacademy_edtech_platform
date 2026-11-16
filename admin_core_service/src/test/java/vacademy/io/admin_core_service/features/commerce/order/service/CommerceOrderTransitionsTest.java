@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.commerce.order.service;
 
 import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CommerceOrderStatus;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
 import vacademy.io.common.exceptions.ConflictException;
 
 import java.util.LinkedHashSet;
@@ -116,5 +117,84 @@ class CommerceOrderTransitionsTest {
         assertEquals(null, CommerceOrderStatus.of("OVERSOLD_PAID"));
         assertEquals(null, CommerceOrderStatus.of(null));
         assertEquals(CANCELLED, CommerceOrderStatus.of("CANCELLED"));
+    }
+
+    // ------------------------------------------------------------------ staff moves (WP-30)
+
+    @Test
+    void theTransitionRouteMakesExactlySevenStaffMoves() {
+        Set<String> moves = new java.util.TreeSet<>();
+        for (CommerceOrderTransitions.StaffMove move : CommerceOrderTransitions.StaffMove.values()) {
+            moves.add(move.from() + ">" + move.to());
+            assertTrue(CommerceOrderTransitions.isAllowed(move.from(), move.to()), "a staff move is in the table");
+            assertEquals(move, CommerceOrderTransitions.requireStaffMove(move.from(), move.to()));
+        }
+        assertEquals(new java.util.TreeSet<>(Set.of("COD_PENDING_CONFIRMATION>CONFIRMED",
+                "COD_PENDING_CONFIRMATION>CANCELLED", "CONFIRMED>CANCELLED", "PACKED>CONFIRMED", "PACKED>CANCELLED",
+                "SHIPPED>PACKED", "DELIVERED>SHIPPED")), moves);
+        Set<CommerceRole> floor = Set.of(CommerceRole.STORE_MANAGER, CommerceRole.WAREHOUSE_STAFF);
+        Set<CommerceRole> manager = Set.of(CommerceRole.STORE_MANAGER);
+        assertEquals(floor, CommerceOrderTransitions.StaffMove.CONFIRM_COD.roles());
+        assertEquals(floor, CommerceOrderTransitions.StaffMove.CANCEL_COD.roles());
+        assertEquals(manager, CommerceOrderTransitions.StaffMove.CANCEL_CONFIRMED.roles());
+        assertEquals(manager, CommerceOrderTransitions.StaffMove.UNPACK.roles());
+        assertEquals(manager, CommerceOrderTransitions.StaffMove.CANCEL_PACKED.roles());
+        assertEquals(manager, CommerceOrderTransitions.StaffMove.UNDO_SHIP.roles());
+        assertEquals(manager, CommerceOrderTransitions.StaffMove.UNDO_DELIVERY.roles());
+    }
+
+    @Test
+    void tableMovesThatAreNotStaffMovesAreRefusedWithTheRouteToUse() {
+        assertTrue(assertThrows(ConflictException.class, () -> CommerceOrderTransitions.requireStaffMove(CONFIRMED,
+                PACKED)).getMessage().contains("POST /shipments"));
+        assertTrue(assertThrows(ConflictException.class, () -> CommerceOrderTransitions.requireStaffMove(PACKED,
+                SHIPPED)).getMessage().contains("POST /shipments/{id}/ship"));
+        assertTrue(assertThrows(ConflictException.class, () -> CommerceOrderTransitions.requireStaffMove(SHIPPED,
+                RTO)).getMessage().contains("POST /shipments/{id}/status"));
+        for (CommerceOrderStatus[] pair : new CommerceOrderStatus[][]{{PENDING_PAYMENT, CONFIRMED},
+                {PENDING_PAYMENT, CANCELLED}, {CANCELLED, CONFIRMED}, {DELIVERED, CANCELLED}}) {
+            ConflictException e = assertThrows(ConflictException.class,
+                    () -> CommerceOrderTransitions.requireStaffMove(pair[0], pair[1]));
+            assertTrue(e.getMessage().startsWith("ORDER_TRANSITION_NOT_ALLOWED"), e.getMessage());
+        }
+    }
+
+    private static CommerceOrderTransitions.ActionState state(CommerceOrderStatus status, String shipment) {
+        return new CommerceOrderTransitions.ActionState(status, shipment, "ONLINE", "PREPAID", "PAID", false, false,
+                false);
+    }
+
+    @Test
+    void nextActionsFollowTheStatusAndTheCallersRoles() {
+        Set<CommerceRole> manager = Set.of(CommerceRole.STORE_MANAGER);
+        Set<CommerceRole> warehouse = Set.of(CommerceRole.WAREHOUSE_STAFF);
+        Set<CommerceRole> accountant = Set.of(CommerceRole.ACCOUNTANT);
+        assertEquals(java.util.List.of("PACK", "CANCEL", "CANCEL_LINE"),
+                CommerceOrderTransitions.nextActions(state(CONFIRMED, null), manager, false));
+        assertEquals(java.util.List.of("PACK"), CommerceOrderTransitions.nextActions(state(CONFIRMED, null), warehouse,
+                false));
+        assertEquals(java.util.List.of(), CommerceOrderTransitions.nextActions(state(CONFIRMED, null), accountant,
+                false));
+        assertEquals(java.util.List.of("SHIP", "UNPACK", "CANCEL", "CANCEL_LINE"),
+                CommerceOrderTransitions.nextActions(state(PACKED, "PACKED"), Set.of(), true));
+        assertEquals(java.util.List.of("DELIVER", "RTO", "EDIT_TRACKING"),
+                CommerceOrderTransitions.nextActions(state(SHIPPED, "SHIPPED"), warehouse, false));
+        assertEquals(java.util.List.of("RTO_RECEIVE"),
+                CommerceOrderTransitions.nextActions(state(RTO, "RTO"), warehouse, false));
+        assertEquals(java.util.List.of(), CommerceOrderTransitions.nextActions(state(RTO, "RTO_RECEIVED"), manager,
+                false));
+        assertEquals(java.util.List.of("UNDO_DELIVERY"),
+                CommerceOrderTransitions.nextActions(state(DELIVERED, "DELIVERED"), manager, false));
+        assertEquals(java.util.List.of(), CommerceOrderTransitions.nextActions(new CommerceOrderTransitions
+                .ActionState(DELIVERED, "DELIVERED", "ONLINE", "COD", "PAID", false, true, false), manager, false));
+        assertEquals(java.util.List.of("CONFIRM", "CANCEL", "CANCEL_LINE"),
+                CommerceOrderTransitions.nextActions(state(COD_PENDING_CONFIRMATION, null), manager, false));
+        // A staff order with money due: a receipt for the manager and the accountant, not for COD.
+        CommerceOrderTransitions.ActionState dues = new CommerceOrderTransitions.ActionState(CONFIRMED, null, "ADMIN",
+                "OFFLINE", "PARTIALLY_PAID", true, false, false);
+        assertEquals(java.util.List.of("RECORD_RECEIPT"), CommerceOrderTransitions.nextActions(dues, accountant, false));
+        assertEquals(java.util.List.of("PACK", "CANCEL", "CANCEL_LINE", "RECORD_RECEIPT", "CLEAR_STOCK_SHORT"),
+                CommerceOrderTransitions.nextActions(dues, manager, false));
+        assertTrue(CommerceOrderTransitions.nextActions(null, manager, true).isEmpty());
     }
 }

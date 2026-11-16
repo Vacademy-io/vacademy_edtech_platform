@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.commerce.order.checkout;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -29,14 +30,24 @@ import vacademy.io.admin_core_service.features.commerce.order.repository.Commerc
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderStatusHistoryRepository;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderTenderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.service.CommerceOrderTransitions;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
+import vacademy.io.admin_core_service.features.commerce.shipment.entity.CommerceShipment;
+import vacademy.io.admin_core_service.features.commerce.shipment.entity.CommerceShipmentLine;
+import vacademy.io.admin_core_service.features.commerce.shipment.repository.CommerceShipmentLineRepository;
+import vacademy.io.admin_core_service.features.commerce.shipment.repository.CommerceShipmentRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.CommercePieceRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reads of orders: the buyer's order page (by signed token), track-order (order number plus a
@@ -71,7 +82,12 @@ public class CommerceOrderQueryService {
     /** Not read-only, so it reads the primary: the thank-you page opens right after the commit. */
     private final TransactionTemplate primary;
     private final TransactionTemplate readOnly;
+    /** The order desk's parcels; null in tests built by hand without them. */
+    private final CommerceShipmentRepository shipmentRepository;
+    private final CommerceShipmentLineRepository shipmentLineRepository;
+    private final CommercePieceRepository pieceRepository;
 
+    /** Without the order desk's repositories (the staff detail then lists no parcels). */
     public CommerceOrderQueryService(CommerceOrderRepository orderRepository,
                                      CommerceOrderLineRepository lineRepository,
                                      CommerceOrderTenderRepository tenderRepository,
@@ -83,6 +99,28 @@ public class CommerceOrderQueryService {
                                      CommercePaymentConfirmService paymentConfirmService,
                                      ObjectMapper objectMapper,
                                      PlatformTransactionManager transactionManager) {
+        this(orderRepository, lineRepository, tenderRepository, historyRepository, customerService, accessTokens,
+                verifiedPhones, sessions, paymentConfirmService, objectMapper, transactionManager, null, null, null);
+    }
+
+    @Autowired
+    public CommerceOrderQueryService(CommerceOrderRepository orderRepository,
+                                     CommerceOrderLineRepository lineRepository,
+                                     CommerceOrderTenderRepository tenderRepository,
+                                     CommerceOrderStatusHistoryRepository historyRepository,
+                                     CommerceCustomerService customerService,
+                                     CommerceOrderAccessTokens accessTokens,
+                                     VerifiedPhones verifiedPhones,
+                                     CommerceShopperSessions sessions,
+                                     CommercePaymentConfirmService paymentConfirmService,
+                                     ObjectMapper objectMapper,
+                                     PlatformTransactionManager transactionManager,
+                                     CommerceShipmentRepository shipmentRepository,
+                                     CommerceShipmentLineRepository shipmentLineRepository,
+                                     CommercePieceRepository pieceRepository) {
+        this.shipmentRepository = shipmentRepository;
+        this.shipmentLineRepository = shipmentLineRepository;
+        this.pieceRepository = pieceRepository;
         this.orderRepository = orderRepository;
         this.lineRepository = lineRepository;
         this.tenderRepository = tenderRepository;
@@ -447,44 +485,112 @@ public class CommerceOrderQueryService {
 
     // ------------------------------------------------------------------ staff
 
+    /** The desk queues of the staff list ({@code queue}). */
+    public static final Set<String> QUEUES = Set.of("TO_CONFIRM", "TO_PACK", "TO_SHIP", "IN_TRANSIT",
+            "COD_TO_COLLECT", "RTO_TO_RECEIVE", "STOCK_SHORT", "DUES");
+    private static final Set<String> PAYMENT_STATUSES = Set.of("UNPAID", "PARTIALLY_PAID", "PAID");
+    private static final Set<String> CHANNELS = Set.of("ONLINE", "ADMIN", "POS");
+    private static final ZoneId INDIA = ZoneId.of("Asia/Kolkata");
+
+    /** The filters of the staff order list; every one optional. Dates are days in India, both ends included. */
+    public record StaffListFilter(String status, String paymentMethod, String paymentStatus, String channel,
+                                  String queue, String search, LocalDate from, LocalDate to) {
+
+        public static StaffListFilter of(String status, String search) {
+            return new StaffListFilter(status, null, null, null, null, search, null, null);
+        }
+    }
+
     /** The order list of the admin. The caller has passed the access guard for the institute. */
     public StaffOrderDtos.StaffOrderPage staffList(String instituteId, String status, String search, int page,
+                                                 int pageSize) {
+        return staffList(instituteId, StaffListFilter.of(status, search), page, pageSize);
+    }
+
+    /** The order list with the desk's filters and queues. */
+    public StaffOrderDtos.StaffOrderPage staffList(String instituteId, StaffListFilter filter, int page,
                                                  int pageSize) {
         int size = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
         int index = Math.max(page, 0);
         PageRequest pageable = PageRequest.of(index, size);
-        String text = StringUtils.hasText(search) ? search.trim() : null;
+        StaffListFilter f = filter == null ? StaffListFilter.of(null, null) : filter;
+        String text = StringUtils.hasText(f.search()) ? f.search().trim() : null;
         if (text != null && text.length() > 64) {
             text = text.substring(0, 64);
         }
-        String query = text;
-        CommerceOrderStatus wanted = CommerceOrderStatus.of(StringUtils.hasText(status) ? status.trim() : null);
-        if (StringUtils.hasText(status) && wanted == null) {
+        CommerceOrderStatus wanted = CommerceOrderStatus.of(StringUtils.hasText(f.status())
+                ? f.status().trim().toUpperCase(Locale.ROOT) : null);
+        if (StringUtils.hasText(f.status()) && wanted == null) {
             throw CheckoutException.invalid("status is not an order status.");
         }
+        String method = upper(f.paymentMethod());
+        if (method != null && !Set.of("PREPAID", "COD", "OFFLINE").contains(method)) {
+            throw CheckoutException.invalid("payment_method is PREPAID, COD or OFFLINE.");
+        }
+        String paymentStatus = upper(f.paymentStatus());
+        if (paymentStatus != null && !PAYMENT_STATUSES.contains(paymentStatus)) {
+            throw CheckoutException.invalid("payment_status is UNPAID, PARTIALLY_PAID or PAID.");
+        }
+        String channel = upper(f.channel());
+        if (channel != null && !CHANNELS.contains(channel)) {
+            throw CheckoutException.invalid("channel is ONLINE, ADMIN or POS.");
+        }
+        String queue = upper(f.queue());
+        if (queue != null && !QUEUES.contains(queue)) {
+            throw CheckoutException.invalid("queue is not a desk queue.");
+        }
+        if (f.from() != null && f.to() != null && f.to().isBefore(f.from())) {
+            throw CheckoutException.invalid("to is before from.");
+        }
+        Date fromTime = f.from() == null ? null : Date.from(f.from().atStartOfDay(INDIA).toInstant());
+        Date toTime = f.to() == null ? null : Date.from(f.to().plusDays(1).atStartOfDay(INDIA).toInstant());
+        String query = text;
+        String phone = query == null ? null : CommercePhones.normalise(query);
+        String namePattern = query == null ? null
+                : "%" + query.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                        + "%";
+        String statusName = wanted == null ? null : wanted.name();
         return readOnly.execute(tx -> {
-            Page<CommerceOrder> found;
-            if (query != null) {
-                String phone = CommercePhones.normalise(query);
-                found = orderRepository.search(instituteId, query, phone == null ? query : phone, pageable);
-            } else if (wanted != null) {
-                found = orderRepository.findByInstituteIdAndStatusOrderByCreatedAtDesc(instituteId, wanted.name(),
-                        pageable);
-            } else {
-                found = orderRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId, pageable);
+            Page<CommerceOrder> found = orderRepository.staffSearch(instituteId, statusName, method, paymentStatus,
+                    channel, queue, query, phone == null ? query : phone, namePattern, fromTime, toTime, pageable);
+            List<CommerceOrder> orders = found.getContent();
+            Map<String, CommerceShipment> live = liveShipments(orders);
+            Map<String, Date> since = statusSince(orders);
+            List<StaffOrderDtos.StaffOrderRow> rows = new ArrayList<>();
+            for (CommerceOrder order : orders) {
+                StaffOrderDtos.StaffOrderRow row = staffRow(order);
+                CommerceShipment shipment = live.get(order.getId());
+                if (shipment != null) {
+                    row.setShipmentStatus(shipment.getStatus());
+                    row.setTrackingNumber(shipment.getTrackingNumber());
+                }
+                row.setStatusSince(instant(since.get(order.getId())));
+                rows.add(row);
             }
             return StaffOrderDtos.StaffOrderPage.builder()
-                    .orders(found.getContent().stream().map(this::staffRow).toList())
+                    .orders(rows)
                     .page(index).pageSize(size).total(found.getTotalElements()).build();
         });
     }
 
     public StaffOrderDtos.StaffOrderDetail staffDetail(String instituteId, String orderId) {
-        return readOnly.execute(tx -> {
+        return staffDetail(instituteId, orderId, null, false, false);
+    }
+
+    /**
+     * One order for staff, with its parcels, documents and the desk actions {@code roles} (or an
+     * ADMIN) may run on it now. {@code fromPrimary}: read the primary (the answer of a write).
+     */
+    public StaffOrderDtos.StaffOrderDetail staffDetail(String instituteId, String orderId, Set<CommerceRole> roles,
+                                                       boolean admin, boolean fromPrimary) {
+        return (fromPrimary ? primary : readOnly).execute(tx -> {
             CommerceOrder order = orderRepository.findByIdAndInstituteId(orderId, instituteId)
                     .orElseThrow(CommerceOrderQueryService::notFound);
+            List<CommerceOrderLine> orderLines = lineRepository.findByOrderIdOrderByLineNoAsc(orderId);
             List<StaffOrderDtos.StaffOrderLine> lines = new ArrayList<>();
-            for (CommerceOrderLine line : lineRepository.findByOrderIdOrderByLineNoAsc(orderId)) {
+            boolean hasReturns = false;
+            for (CommerceOrderLine line : orderLines) {
+                hasReturns |= line.getQtyReturned() != null && line.getQtyReturned() > 0;
                 lines.add(StaffOrderDtos.StaffOrderLine.builder()
                         .id(line.getId()).lineNo(line.getLineNo()).lineType(line.getLineType())
                         .packageSessionId(line.getPackageSessionId()).packageId(line.getPackageId())
@@ -496,10 +602,17 @@ public class CommerceOrderQueryService {
                         .taxRate(line.getTaxRate()).taxableValue(line.getTaxableValue())
                         .taxAmount(line.getTaxAmount()).lineTotal(line.getLineTotal())
                         .qtyCancelled(line.getQtyCancelled()).qtyShipped(line.getQtyShipped())
-                        .qtyReturned(line.getQtyReturned()).build());
+                        .qtyReturned(line.getQtyReturned())
+                        .stockShortQty(line.getStockShortQty()).listUnitPrice(line.getListUnitPrice())
+                        .priceOverrideBy(line.getPriceOverrideBy()).cancelledValue(line.getCancelledValue())
+                        .costTotal(line.getCostTotal())
+                        .build());
             }
             List<StaffOrderDtos.StaffTender> tenders = new ArrayList<>();
+            boolean codReceived = false;
             for (CommerceOrderTender tender : tenderRepository.findByOrderIdOrderByCreatedAtAsc(orderId)) {
+                codReceived |= CommerceOrderTender.MODE_COD.equals(tender.getMode())
+                        && CommerceOrderTender.STATUS_RECEIVED.equals(tender.getStatus());
                 tenders.add(StaffOrderDtos.StaffTender.builder().id(tender.getId()).mode(tender.getMode())
                         .amount(tender.getAmount()).status(tender.getStatus()).reference(tender.getReference())
                         .receivedAt(instant(tender.getReceivedAt())).build());
@@ -510,8 +623,23 @@ public class CommerceOrderQueryService {
                         .fromStatus(row.getFromStatus()).at(instant(row.getCreatedAt())).note(row.getNote())
                         .actorUserId(row.getActorUserId()).build());
             }
+            List<StaffOrderDtos.StaffShipment> shipments = shipments(instituteId, orderId, orderLines);
+            String liveShipmentStatus = null;
+            String liveTracking = null;
+            for (StaffOrderDtos.StaffShipment shipment : shipments) {
+                if (!"CANCELLED".equals(shipment.getStatus())) {
+                    liveShipmentStatus = shipment.getStatus();
+                    liveTracking = shipment.getTrackingNumber();
+                }
+            }
+            StaffOrderDtos.StaffOrderRow row = staffRow(order);
+            row.setShipmentStatus(liveShipmentStatus);
+            row.setTrackingNumber(liveTracking);
+            if (!timeline.isEmpty()) {
+                row.setStatusSince(timeline.get(timeline.size() - 1).getAt());
+            }
             return StaffOrderDtos.StaffOrderDetail.builder()
-                    .order(staffRow(order))
+                    .order(row)
                     .userId(order.getUserId())
                     .customerId(order.getCustomerId())
                     .customerEmail(order.getCustomerEmail())
@@ -536,8 +664,106 @@ public class CommerceOrderQueryService {
                     .lines(lines)
                     .tenders(tenders)
                     .timeline(timeline)
+                    .shipments(shipments)
+                    .refundDue(order.getRefundDue())
+                    .stockShort(order.getStockShort())
+                    .codAmount(order.getCodAmount())
+                    .codRemittanceId(order.getCodRemittanceId())
+                    .invoiceId(orderRepository.findLiveInvoiceId(instituteId, orderId).orElse(null))
+                    .creditNoteIds(orderRepository.findCreditNoteIds(instituteId, orderId))
+                    .nextActions(CommerceOrderTransitions.nextActions(new CommerceOrderTransitions.ActionState(
+                            CommerceOrderStatus.of(order.getStatus()), liveShipmentStatus, order.getChannel(),
+                            order.getPaymentMethod(), order.getPaymentStatus(),
+                            Boolean.TRUE.equals(order.getStockShort()),
+                            StringUtils.hasText(order.getCodRemittanceId()) || codReceived, hasReturns),
+                            roles, admin))
                     .build();
         });
+    }
+
+    private List<StaffOrderDtos.StaffShipment> shipments(String instituteId, String orderId,
+                                                         List<CommerceOrderLine> orderLines) {
+        List<StaffOrderDtos.StaffShipment> out = new ArrayList<>();
+        if (shipmentRepository == null) {
+            return out;
+        }
+        List<CommerceShipment> found = shipmentRepository.findByOrderIdOrderByCreatedAtAsc(orderId);
+        if (found.isEmpty()) {
+            return out;
+        }
+        Map<String, List<CommerceShipmentLine>> linesOf = new HashMap<>();
+        for (CommerceShipmentLine line : shipmentLineRepository.findByShipmentIdIn(
+                found.stream().map(CommerceShipment::getId).toList())) {
+            linesOf.computeIfAbsent(line.getShipmentId(), k -> new ArrayList<>()).add(line);
+        }
+        Map<String, List<String>> piecesOf = new HashMap<>();
+        for (CommerceOrderLine line : orderLines) {
+            if (!CommerceOrderLine.TYPE_ITEM.equals(line.getLineType()) || pieceRepository == null) {
+                continue;
+            }
+            List<String> codes = pieceRepository.findRowsByOrderLine(instituteId, line.getId()).stream()
+                    .map(CommercePieceRepository.PieceRow::getCode).toList();
+            if (!codes.isEmpty()) {
+                piecesOf.put(line.getId(), codes);
+            }
+        }
+        for (CommerceShipment s : found) {
+            boolean live = !"CANCELLED".equals(s.getStatus());
+            List<StaffOrderDtos.StaffShipmentLine> lines = new ArrayList<>();
+            for (CommerceShipmentLine line : linesOf.getOrDefault(s.getId(), List.of())) {
+                lines.add(StaffOrderDtos.StaffShipmentLine.builder().id(line.getId())
+                        .orderLineId(line.getOrderLineId()).quantity(line.getQuantity())
+                        .pieceCodes(live ? piecesOf.get(line.getOrderLineId()) : null).build());
+            }
+            out.add(StaffOrderDtos.StaffShipment.builder()
+                    .id(s.getId()).status(s.getStatus()).locationId(s.getLocationId())
+                    .carrierCode(s.getCarrierCode()).carrierName(s.getCarrierName())
+                    .trackingNumber(s.getTrackingNumber()).trackingUrl(s.getTrackingUrl())
+                    .shipCount(s.getShipCount()).weightGrams(s.getWeightGrams()).invoiceId(s.getInvoiceId())
+                    .rtoReason(s.getRtoReason())
+                    .packedAt(instant(s.getPackedAt())).shippedAt(instant(s.getShippedAt()))
+                    .deliveredOn(s.getDeliveredOn() == null ? null : s.getDeliveredOn().toString())
+                    .rtoAt(instant(s.getRtoAt())).rtoReceivedAt(instant(s.getRtoReceivedAt()))
+                    .cancelledAt(instant(s.getCancelledAt()))
+                    .lines(lines)
+                    .build());
+        }
+        return out;
+    }
+
+    /** The live (not cancelled) shipment of each order of a page. */
+    private Map<String, CommerceShipment> liveShipments(List<CommerceOrder> orders) {
+        Map<String, CommerceShipment> out = new HashMap<>();
+        if (shipmentRepository == null || orders.isEmpty()) {
+            return out;
+        }
+        for (CommerceShipment s : shipmentRepository.findByOrderIdInOrderByCreatedAtAsc(
+                orders.stream().map(CommerceOrder::getId).toList())) {
+            if (!"CANCELLED".equals(s.getStatus())) {
+                out.put(s.getOrderId(), s);
+            }
+        }
+        return out;
+    }
+
+    private Map<String, Date> statusSince(List<CommerceOrder> orders) {
+        Map<String, Date> out = new HashMap<>();
+        if (orders.isEmpty()) {
+            return out;
+        }
+        List<CommerceOrderRepository.StatusSince> rows = orderRepository.findStatusSince(
+                orders.stream().map(CommerceOrder::getId).toList());
+        if (rows == null) {
+            return out;
+        }
+        for (CommerceOrderRepository.StatusSince row : rows) {
+            out.put(row.getOrderId(), row.getSince());
+        }
+        return out;
+    }
+
+    private static String upper(String value) {
+        return StringUtils.hasText(value) ? value.trim().toUpperCase(Locale.ROOT) : null;
     }
 
     private StaffOrderDtos.StaffOrderRow staffRow(CommerceOrder order) {
@@ -555,6 +781,8 @@ public class CommerceOrderQueryService {
                 .total(order.getTotal())
                 .amountPaid(order.getAmountPaid())
                 .createdAt(instant(order.getCreatedAt()))
+                .stockShort(order.getStockShort())
+                .refundDue(order.getRefundDue())
                 .build();
     }
 

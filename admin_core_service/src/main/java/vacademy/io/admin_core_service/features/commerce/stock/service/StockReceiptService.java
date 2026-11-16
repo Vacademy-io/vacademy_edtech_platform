@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +18,7 @@ import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditServi
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.ProductStatus;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStockShortFlagger;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.ReceiptCostRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.ReceiptRequest;
@@ -113,6 +115,10 @@ public class StockReceiptService {
     private final ObjectProvider<StockSupplierDirectory> supplierDirectory;
     private final ObjectProvider<StockPeriodGuard> periodGuard;
     private final TransactionTemplate transaction;
+
+    /** Flags open orders a receipt reversal left short; absent in tests built by hand. */
+    @Autowired(required = false)
+    private CommerceStockShortFlagger stockShortFlagger;
 
     public StockReceiptService(StockReceiptRepository receiptRepository,
                                StockReceiptLineRepository lineRepository,
@@ -392,17 +398,24 @@ public class StockReceiptService {
                         .actorUserId(actorUserId)
                         .unitCost(ownCost);
                 List<PieceRow> pieces = pieceRepository.findRowsByReceiptLine(instituteId, line.getId());
+                int shortfall = 0;
                 if (pieces.isEmpty()) {
-                    ledger.post(posting.quantityDelta(-line.getQtyReceived())
+                    shortfall += ledger.post(posting.quantityDelta(-line.getQtyReceived())
                             .reversesMovementId(originalMovementId(instituteId, line.getId(), null))
-                            .idempotencyKey(StockLedgerService.receiptReversalKey(line.getId(), null)).build());
+                            .idempotencyKey(StockLedgerService.receiptReversalKey(line.getId(), null)).build())
+                            .sellableShortfall();
                 } else {
                     for (PieceRow piece : pieces) {
-                        ledger.post(posting.pieceId(piece.getId()).quantityDelta(-1)
+                        shortfall += ledger.post(posting.pieceId(piece.getId()).quantityDelta(-1)
                                 .reversesMovementId(originalMovementId(instituteId, line.getId(), piece.getId()))
                                 .idempotencyKey(StockLedgerService.receiptReversalKey(line.getId(), piece.getId()))
-                                .build());
+                                .build()).sellableShortfall();
                     }
+                }
+                if (shortfall > 0 && stockShortFlagger != null) {
+                    // After the reversal commits: open orders of this variant here are short.
+                    stockShortFlagger.afterCommit(instituteId, receipt.getLocationId(), line.getPackageSessionId(),
+                            shortfall);
                 }
             }
             if (receiptRepository.markReversed(instituteId, receiptId, actorUserId) != 1) {

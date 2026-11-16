@@ -22,8 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The checkout keys of {@code COMMERCE_SETTING} for staff: buyer identity, the hourly OTP cap
- * and the cash-on-delivery limits.
+ * The checkout keys of {@code COMMERCE_SETTING} for staff: buyer identity, the hourly OTP cap,
+ * the cash-on-delivery limits and the order-desk keys ({@code orders.refundShippingOnRto}).
  *
  * <p>A write is read-modify-write under a row lock on the institute, on the stored JSON: only
  * the keys named here change, every other key of the setting (hold time, base language,
@@ -134,6 +134,20 @@ public class CommerceCheckoutSettingsService {
                         StorefrontSettings.MAX_COD_MAX_REFUSALS));
             }
         }
+        JsonNode orders = body.get("orders");
+        if (orders != null && !orders.isNull()) {
+            if (!orders.isObject()) {
+                throw new InvalidRequestException("invalid_request: orders is a JSON object");
+            }
+            if (orders.has("refund_shipping_on_rto")) {
+                if (!orders.path("refund_shipping_on_rto").isBoolean()) {
+                    throw new InvalidRequestException("invalid_request: orders.refund_shipping_on_rto is true or false");
+                }
+                JsonNode stored = data.get("orders");
+                ObjectNode ordersNode = stored instanceof ObjectNode o ? o : data.putObject("orders");
+                ordersNode.put("refundShippingOnRto", orders.path("refund_shipping_on_rto").asBoolean());
+            }
+        }
         settingWriter.putSettingKey(institute, KEY, entry, InstituteSettingWriter.Actor.tenant(userId));
         return view(StorefrontSettings.parse(data));
     }
@@ -150,6 +164,9 @@ public class CommerceCheckoutSettingsService {
         cod.put("max_open_orders_per_phone", settings.cod().maxOpenOrdersPerPhone());
         cod.put("max_refusals", settings.cod().maxRefusals());
         answer.put("cod", cod);
+        Map<String, Object> orders = new LinkedHashMap<>();
+        orders.put("refund_shipping_on_rto", settings.refundShippingOnRto());
+        answer.put("orders", orders);
         return answer;
     }
 

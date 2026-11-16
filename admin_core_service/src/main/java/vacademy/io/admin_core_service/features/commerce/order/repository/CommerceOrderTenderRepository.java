@@ -13,6 +13,18 @@ public interface CommerceOrderTenderRepository extends JpaRepository<CommerceOrd
 
     List<CommerceOrderTender> findByOrderIdOrderByCreatedAtAsc(String orderId);
 
+    /** One PENDING tender to RECEIVED or VOID (the order desk); 1 = this caller moved it. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_order_tender
+            SET status = :toStatus, received_at = CAST(:receivedAt AS TIMESTAMP),
+                reference = COALESCE(CAST(:reference AS VARCHAR), reference),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = 'PENDING'
+            """, nativeQuery = true)
+    int settleOne(@Param("id") String id, @Param("toStatus") String toStatus, @Param("receivedAt") Date receivedAt,
+                  @Param("reference") String reference);
+
     /** PENDING to RECEIVED or VOID; a tender that already left PENDING is not touched. */
     @Modifying(flushAutomatically = true)
     @Query(value = """

@@ -46,4 +46,10 @@ public class CommerceInvoiceRequest {
     /** Only for a bill-book entry: the number on the paper bill. No system number is issued. */
     private String externalInvoiceNumber;
     private String actorUserId;
+    /**
+     * The order desk only: an order whose invoice was credited in full when it was unpacked is
+     * invoiced again when it is packed again. Everyone else leaves it false, and an order with a
+     * fully credited invoice is refused (INVOICE_FULLY_CREDITED).
+     */
+    private boolean allowAfterFullCredit;
 }

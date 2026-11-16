@@ -25,7 +25,8 @@ import java.util.Set;
  * PUT /admin-core-service/commerce/v1/checkout-settings?instituteId=
  *     { "buyer_identity": "EITHER", "otp_institute_hourly_cap": 300,
  *       "cod": { "enabled": false, "max_order_value": 5000.00, "staff_confirm_threshold": 3000.00,
- *                "max_open_orders_per_phone": 2, "max_refusals": 2 } }
+ *                "max_open_orders_per_phone": 2, "max_refusals": 2 },
+ *       "orders": { "refund_shipping_on_rto": true } }
  * </pre>
  * The store manager writes; the accountant reads. A key left out of the PUT keeps its value.
  */

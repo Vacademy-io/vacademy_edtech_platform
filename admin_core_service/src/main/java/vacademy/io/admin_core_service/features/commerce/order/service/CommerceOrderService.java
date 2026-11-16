@@ -132,9 +132,23 @@ public class CommerceOrderService {
     public record CartPrice(CartPriceSnapshot snapshot, CartPriceDtos.CartPrice view) {
     }
 
-    /** One cart line that can be bought, with the row it was priced from. */
+    /**
+     * One cart line that can be bought, with the row it was priced from. {@code unitPrice} is the
+     * variant's price, or the price staff typed for a staff order.
+     */
     private record Priced(String lineRef, CartVariant variant, int quantity, BigDecimal gross, String name,
-                          String variantLabel) {
+                          String variantLabel, BigDecimal unitPrice) {
+    }
+
+    /**
+     * What a staff order adds to pricing: a unit price typed by a manager for some lines (by
+     * line ref), and whether the delivery charge applies (no address, or waived).
+     */
+    public record StaffPricing(Map<String, BigDecimal> unitPriceByLineRef, boolean chargeShipping) {
+
+        BigDecimal unitPrice(String lineRef) {
+            return unitPriceByLineRef == null || lineRef == null ? null : unitPriceByLineRef.get(lineRef);
+        }
     }
 
     /** A coupon answer and the most it may take off: the whole cart, or the items the coupon names. */
@@ -226,6 +240,17 @@ public class CommerceOrderService {
      *                              shop's tax or seller setup does not allow a price
      */
     public CartPrice priceCart(String instituteId, CartPriceRequest request) {
+        return priceCart(instituteId, request, null);
+    }
+
+    /**
+     * {@link #priceCart(String, CartPriceRequest)} for a staff order: the lines named in
+     * {@code staff} are priced at the typed unit price (the catalogue price is kept on the
+     * snapshot line as {@code list_unit_price}), and the delivery charge is left out when
+     * {@code chargeShipping} is false. Everything else (stock, discounts, tax) is the same
+     * calculation as the cart's. A null {@code staff} is the cart.
+     */
+    public CartPrice priceCart(String instituteId, CartPriceRequest request, StaffPricing staff) {
         List<CartPriceRequest.Line> asked = validate(request);
         StorefrontSettings settings = storefrontSettings.read(instituteId);
         List<String> chain = StorefrontLocale.chain(request.getLocale(), settings.baseLocale());
@@ -261,9 +286,10 @@ public class CommerceOrderService {
                 variant = null;
             }
             String ref = lineRef(line, variant);
+            BigDecimal override = staff == null ? null : staff.unitPrice(ref);
             int quantity = line.getQuantity() == null ? 0 : line.getQuantity();
             int already = variant == null ? 0 : askedSoFar.getOrDefault(variant.packageSessionId(), 0);
-            String reason = refusal(variant, quantity, already, currency, settings);
+            String reason = refusal(variant, quantity, already, currency, settings, override != null);
             if (reason != null) {
                 unavailable.add(unavailable(ref, line, variant, reason, already, settings));
                 changes.add(CartPriceDtos.Change.builder().lineRef(ref)
@@ -273,13 +299,14 @@ public class CommerceOrderService {
             }
             askedSoFar.merge(variant.packageSessionId(), quantity, Integer::sum);
             currency = currency(variant);
-            if (line.getUnitPrice() != null && line.getUnitPrice().compareTo(variant.price()) != 0) {
+            BigDecimal unitPrice = override != null ? override.setScale(2, RoundingMode.UNNECESSARY) : variant.price();
+            if (override == null && line.getUnitPrice() != null && line.getUnitPrice().compareTo(variant.price()) != 0) {
                 changes.add(CartPriceDtos.Change.builder().lineRef(ref).variantId(variant.packageSessionId())
                         .type(CHANGE_PRICE).oldUnitPrice(line.getUnitPrice()).newUnitPrice(variant.price()).build());
             }
             priced.add(new Priced(ref, variant, quantity,
-                    variant.price().multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.UNNECESSARY),
-                    name(variant, chain), variantLabel(variant, chain)));
+                    unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.UNNECESSARY),
+                    name(variant, chain), variantLabel(variant, chain), unitPrice));
         }
         requireDistinctRefs(priced);
 
@@ -322,7 +349,9 @@ public class CommerceOrderService {
                         / Math.max(1, line.variant().qtyScale()));
             }
         }
-        CommerceShippingCalculator.Quote shipping = CommerceShippingCalculator.quote(rule, goodsValue, weight);
+        boolean chargeShipping = staff == null || staff.chargeShipping();
+        CommerceShippingCalculator.Quote shipping = CommerceShippingCalculator.quote(chargeShipping ? rule : null,
+                goodsValue, weight);
 
         // 5. Tax: once as prepaid, and again with the COD charge when COD was asked for and allowed.
         CommerceTaxContext taxContext = taxSettingService.context(instituteId);
@@ -361,11 +390,13 @@ public class CommerceOrderService {
         List<CartPriceDtos.Line> viewLines = new ArrayList<>();
         for (Priced line : priced) {
             CartVariant v = line.variant();
+            boolean overridden = staff != null && staff.unitPrice(line.lineRef()) != null;
             snapshotLines.add(CartPriceSnapshot.Line.builder()
                     .lineRef(line.lineRef()).packageSessionId(v.packageSessionId()).packageId(v.packageId())
                     .sku(v.sku()).name(line.name()).variantLabel(line.variantLabel()).quantity(line.quantity())
                     .qtyScale(v.qtyScale()).unit(v.unit())
-                    .unitPrice(v.price()).mrp(v.mrp()).taxClassId(v.taxClassId()).weightGrams(v.weightGrams())
+                    .unitPrice(line.unitPrice()).mrp(v.mrp()).taxClassId(v.taxClassId()).weightGrams(v.weightGrams())
+                    .listUnitPrice(overridden ? v.price() : null)
                     .build());
             viewLines.add(viewLine(line, tax));
         }
@@ -477,11 +508,11 @@ public class CommerceOrderService {
      * tell them apart.
      */
     private static String refusal(CartVariant variant, int quantity, int alreadyAsked, String cartCurrency,
-                                  StorefrontSettings settings) {
+                                  StorefrontSettings settings, boolean priceTypedByStaff) {
         if (variant == null) {
             return REASON_NOT_FOUND;
         }
-        if (variant.price() == null || variant.price().signum() <= 0) {
+        if (!priceTypedByStaff && (variant.price() == null || variant.price().signum() <= 0)) {
             return REASON_NO_PRICE;
         }
         if (cartCurrency != null && !cartCurrency.equals(currency(variant))) {
@@ -615,7 +646,7 @@ public class CommerceOrderService {
                     // One item per unit: three of one kurta count like three different ones.
                     for (int unit = 0; unit < line.quantity(); unit++) {
                         items.add(new BasketPricingCalculator.BasketItem("", line.name(),
-                                line.variant().price().doubleValue()));
+                                line.unitPrice().doubleValue()));
                     }
                 }
             }
@@ -770,7 +801,7 @@ public class CommerceOrderService {
                     .lineRef(line.lineRef())
                     .lineType(TaxLineType.ITEM)
                     .description(line.name())
-                    .unitPrice(line.variant().price())
+                    .unitPrice(line.unitPrice())
                     .quantity(line.quantity())
                     .qtyScale(line.variant().qtyScale())
                     .taxClass(taxClasses.get(line.variant().taxClassId()))
@@ -834,7 +865,7 @@ public class CommerceOrderService {
                 .lineRef(line.lineRef()).variantId(v.packageSessionId()).sku(v.sku()).slug(v.slug())
                 .name(line.name()).variantLabel(line.variantLabel()).quantity(line.quantity())
                 .qtyScale(v.qtyScale()).qtyStep(v.qtyStep()).piece(v.piece()).unit(v.unit())
-                .unitPrice(v.price()).compareAtPrice(v.mrp()).gross(line.gross()).discount(discount).net(net)
+                .unitPrice(line.unitPrice()).compareAtPrice(v.mrp()).gross(line.gross()).discount(discount).net(net)
                 .hsnCode(hsn).taxRatePercent(rate).taxableValue(taxable).taxAmount(taxAmount)
                 .build();
     }

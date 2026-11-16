@@ -347,6 +347,27 @@ class CommerceOrderServiceTest {
         assertMoney("500.00", view.getTotals().getTotal());
     }
 
+    @Test
+    void aStaffOrderIsPricedAtTheTypedPriceWithTheCatalogueOneKeptAndDeliveryWaived() {
+        when(shippingRuleService.activeRule(INSTITUTE)).thenReturn(weightRule("2000.00"));
+        CartPriceRequest request = cart(CartPriceRequest.Line.builder().lineRef("L1").variantId("ps-b").quantity(2)
+                .build());
+        CommerceOrderService.CartPrice typed = service.priceCart(INSTITUTE, request,
+                new CommerceOrderService.StaffPricing(java.util.Map.of("L1", new BigDecimal("450.00")), false));
+        assertMoney("450.00", typed.snapshot().getLines().get(0).getUnitPrice());
+        assertMoney("500.00", typed.snapshot().getLines().get(0).getListUnitPrice());
+        assertMoney("0.00", typed.view().getShipping().getCharge());
+        assertMoney("900.00", typed.view().getTotals().getTotal());
+        assertTrue(typed.view().getChanges().isEmpty(), "a typed price is not a price change");
+
+        // No staff pricing: the cart as the shop prices it, delivery charged.
+        CommerceOrderService.CartPrice cart = service.priceCart(INSTITUTE, cart(CartPriceRequest.Line.builder()
+                .lineRef("L1").variantId("ps-b").quantity(2).build()), null);
+        assertMoney("500.00", cart.snapshot().getLines().get(0).getUnitPrice());
+        assertNull(cart.snapshot().getLines().get(0).getListUnitPrice());
+        assertTrue(cart.view().getShipping().getCharge().signum() > 0);
+    }
+
     // ------------------------------------------------------------------ COD
 
     @Test
