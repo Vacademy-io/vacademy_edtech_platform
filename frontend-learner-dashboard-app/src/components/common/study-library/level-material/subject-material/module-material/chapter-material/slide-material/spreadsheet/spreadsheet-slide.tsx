@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { DownloadSimple, FileXls, SpinnerGap } from "@phosphor-icons/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DownloadSimple, FileXls, SpinnerGap, WarningCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SheetView } from "@/components/cbe/SheetView";
@@ -15,6 +15,7 @@ import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
 import type { Slide } from "@/hooks/study-library/use-slides";
 import type { CompletionContext } from "../mark-complete-button";
 import { parseSpreadsheetSlideData, spreadsheetDownloadName } from "./spreadsheet-slide-utils";
+import { fetchSpreadsheetGrid } from "./spreadsheet-grid-loader";
 
 /** Seconds on the slide before it counts as viewed. */
 const VIEWED_AFTER_MS = 3000;
@@ -41,8 +42,9 @@ const saveUrlAs = async (url: string, name: string) => {
 /**
  * Read-only spreadsheet slide: every worksheet tab in the CBE grid (scrolls
  * both ways), plus a Download button for the original workbook when the
- * teacher allows it. Opening the slide marks it complete, like reading a
- * document.
+ * teacher allows it. The slide data holds only metadata; the grid is its own
+ * JSON file, fetched when the slide opens. Viewing the loaded grid marks the
+ * slide complete, like reading a document.
  */
 export function SpreadsheetSlide({
   slide,
@@ -58,6 +60,16 @@ export function SpreadsheetSlide({
     () => parseSpreadsheetSlideData(slide.document_slide?.published_data),
     [slide.document_slide?.published_data]
   );
+  const gridFileId = data?.sheet ? null : (data?.gridFileId ?? null);
+  const gridQuery = useQuery({
+    queryKey: ["spreadsheet-slide-grid", gridFileId],
+    queryFn: () => fetchSpreadsheetGrid(gridFileId as string),
+    enabled: !!gridFileId,
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const sheet = data?.sheet ?? gridQuery.data ?? null;
   const [downloading, setDownloading] = useState(false);
   // The institute's Content Protection matrix (Settings) decides who may download
   // files; a workbook is treated like the other uploaded documents (Word files).
@@ -70,7 +82,7 @@ export function SpreadsheetSlide({
   contextRef.current = completionContext;
   const alreadyComplete = (slide.percentage_completed || 0) >= getSlideCompletionThreshold();
   useEffect(() => {
-    if (!data || alreadyComplete || markedRef.current === slide.id) return;
+    if (!sheet || alreadyComplete || markedRef.current === slide.id) return;
     const timer = window.setTimeout(() => {
       markedRef.current = slide.id;
       markSlideCompletion({
@@ -91,7 +103,7 @@ export function SpreadsheetSlide({
         });
     }, VIEWED_AFTER_MS);
     return () => window.clearTimeout(timer);
-  }, [data, alreadyComplete, slide.id, queryClient]);
+  }, [sheet, alreadyComplete, slide.id, queryClient]);
 
   if (!data) {
     return (
@@ -151,12 +163,42 @@ export function SpreadsheetSlide({
             </Button>
           )}
         </div>
-        <SheetView
-          key={slide.id}
-          sheet={data.sheet}
-          emptyText={t("spreadsheet.empty")}
-          className="min-w-0"
-        />
+        {sheet ? (
+          <SheetView
+            key={slide.id}
+            sheet={sheet}
+            emptyText={t("spreadsheet.empty")}
+            className="min-w-0"
+          />
+        ) : gridQuery.isError ? (
+          <div
+            role="alert"
+            className="flex flex-col items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-6 text-center"
+          >
+            <WarningCircle className="size-6 text-danger-600" aria-hidden />
+            <p className="text-sm text-neutral-600">{t("spreadsheet.loadFailed")}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => gridQuery.refetch()}
+              disabled={gridQuery.isFetching}
+            >
+              {gridQuery.isFetching && (
+                <SpinnerGap className="size-4 animate-spin" aria-hidden />
+              )}
+              {t("spreadsheet.retry")}
+            </Button>
+          </div>
+        ) : (
+          <div
+            role="status"
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutral-200 p-8 text-sm text-neutral-500"
+          >
+            <SpinnerGap className="size-5 animate-spin text-primary-500" aria-hidden />
+            {t("spreadsheet.loading")}
+          </div>
+        )}
       </div>
     </CbeStringsProvider>
   );

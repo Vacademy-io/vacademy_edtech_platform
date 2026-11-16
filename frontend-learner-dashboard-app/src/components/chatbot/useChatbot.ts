@@ -22,7 +22,7 @@ import { TokenKey } from "@/constants/auth/tokens";
 import { enqueueMessage, peekQueue, dequeueMessage, QueuedMessage } from "@/services/offline-queue";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
 import { readDiscussionPrompt } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/discussion/discussion-utils";
-import { spreadsheetSlideText } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/spreadsheet/spreadsheet-slide-utils";
+import { spreadsheetTutorText } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/spreadsheet/spreadsheet-grid-loader";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
 import { useParentPortalStore } from "@/stores/parent-portal-store";
 import { useCourseDetailsStore } from "@/stores/study-library/useCourseDetailsStore";
@@ -337,8 +337,10 @@ export const useChatbot = () => {
             // the tutor only needs the question itself.
             slideContent = readDiscussionPrompt(activeSlide.document_slide.published_data);
           } else if (activeSlide.document_slide?.type === "SPREADSHEET") {
-            // The stored grid JSON is large; the tutor gets the cell values as text.
-            slideContent = spreadsheetSlideText(activeSlide.document_slide.published_data);
+            // The slide data holds only metadata; the grid is its own file. The
+            // tutor gets the cell values as capped text (cached, 5 s limit), or
+            // the file name and tab names when the grid can't be fetched.
+            slideContent = await spreadsheetTutorText(activeSlide.document_slide.published_data);
           } else if (activeSlide.document_slide) {
             slideContent = activeSlide.document_slide.published_data || "";
           }

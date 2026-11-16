@@ -66,6 +66,8 @@ class QuizStudyModeCheckTest {
                     new QuizGrader.Option("M3", "Three")));
     private static final QuizGrader.Question NUMERIC = new QuizGrader.Question("q-num", "NUMERIC", null, null,
             "{\"correctAnswers\":[\"2.5\"]}", "How much", "Half of five", List.of());
+    private static final QuizGrader.Question TOLERANT = new QuizGrader.Question("q-tol", "NUMERIC", null, null,
+            "{\"correctAnswers\":[\"1500\"],\"tolerance\":1}", "Profit", null, List.of());
     private static final QuizGrader.Question ONE_WORD = new QuizGrader.Question("q-word", "ONE_WORD", null, null,
             "{\"data\":{\"answer\":\"Debit\"}}", "Which side", null, List.of());
     private static final QuizGrader.Question INDEXED = new QuizGrader.Question("q-idx", "TRUE_FALSE", null, null,
@@ -86,7 +88,7 @@ class QuizStudyModeCheckTest {
         when(meta.getReAttemptCount()).thenReturn(null);
         when(repository.findInstituteSettingJson(INSTITUTE)).thenReturn(Optional.empty());
         when(loader.load(SLIDE)).thenReturn(Optional.of(new QuizLoader.LoadedQuiz(meta,
-                new QuizGrader.Rules(1.0, 0.0, false), List.of(MCQS, MCQM, NUMERIC, ONE_WORD, INDEXED))));
+                new QuizGrader.Rules(1.0, 0.0, false), List.of(MCQS, MCQM, NUMERIC, TOLERANT, ONE_WORD, INDEXED))));
     }
 
     private void studyMode(Boolean on) {
@@ -171,6 +173,17 @@ class QuizStudyModeCheckTest {
         assertThat(right.getCorrectOptionIds()).containsExactly("2.5");
         assertThat(right.getExplanation()).isEqualTo("Half of five");
         assertThat(check("q-num", null, "3").getCorrect()).isFalse();
+    }
+
+    @Test
+    @DisplayName("on: a numeric tolerance accepts a near answer and is shown with the correct answer")
+    void numericTolerance() {
+        studyMode(true);
+        QuizAnswerCheckResponse near = check("q-tol", null, "1499.5");
+        assertThat(near.getCorrect()).isTrue();
+        assertThat(near.getCorrectAnswerText()).isEqualTo("1500 (\u00B1 1)");
+        assertThat(check("q-tol", null, "1502").getCorrect()).isFalse();
+        assertThat(check("q-num", null, "2.5").getCorrectAnswerText()).isNull();
     }
 
     @Test

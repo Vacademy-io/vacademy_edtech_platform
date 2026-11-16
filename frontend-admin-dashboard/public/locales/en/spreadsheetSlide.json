@@ -12,7 +12,7 @@
         "saving": "Adding…",
         "created": "Spreadsheet slide added",
         "createFailed": "Couldn’t add the spreadsheet slide. Please try again.",
-        "uploadFailed": "Couldn’t upload the original file. Please try again."
+        "uploadFailed": "Couldn’t upload the spreadsheet. Please try again."
     },
     "errors": {
         "empty": "This file has no filled cells.",
@@ -37,6 +37,9 @@
         "allowDownload": "Let learners download the original file",
         "noFile": "The original file wasn’t kept, so learners only see the grid.",
         "invalid": "This spreadsheet slide has no readable data. Replace the file to fix it.",
-        "emptyGrid": "This spreadsheet is empty."
+        "emptyGrid": "This spreadsheet is empty.",
+        "loadingGrid": "Loading the spreadsheet…",
+        "gridLoadFailed": "Couldn’t load the spreadsheet. Check your connection and try again.",
+        "retry": "Try again"
     }
 }

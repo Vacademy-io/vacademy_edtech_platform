@@ -17,13 +17,17 @@ import { useSlidesMutations } from '../../-hooks/use-slides';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { getSlideStatusForUser } from '../../non-admin/hooks/useNonAdminSlides';
 import { buildAppendReorderPayload, getNextSlideOrder } from '../../-helper/slide-naming-utils';
-import { convertSpreadsheetFile, type ConvertedSpreadsheet } from './spreadsheet-import';
+import {
+    convertSpreadsheetFile,
+    uploadConvertedSpreadsheet,
+    type ConvertedSpreadsheet,
+} from './spreadsheet-import';
 import { spreadsheetErrorMessage, spreadsheetLimitHint } from './spreadsheet-errors';
 import {
     SPREADSHEET_DOC_TYPE,
     serializeSpreadsheetData,
-    sheetStats,
     spreadsheetTitleFromFileName,
+    type SpreadsheetSlideData,
 } from './spreadsheet-slide-data';
 
 const ACCEPT = {
@@ -123,24 +127,28 @@ export const AddSpreadsheetDialog = ({
             const accessToken = getTokenFromCookie(TokenKey.accessToken);
             const tokenData = getTokenDecodedData(accessToken);
             const instituteId = tokenData && Object.keys(tokenData.authorities)[0];
-            let fileId: string | undefined;
+            // The workbook (for download) and the grid JSON (what learners see)
+            // are both media files; the slide keeps only their ids.
+            let slideData: SpreadsheetSlideData;
             try {
-                fileId = await uploadFile({
-                    file: picked.file,
-                    setIsUploading: () => undefined,
-                    userId: 'your-user-id',
-                    source: instituteId,
-                    sourceId: 'SPREADSHEET_DOCUMENTS',
+                slideData = await uploadConvertedSpreadsheet({
+                    original: picked.file,
+                    converted: picked.converted,
+                    upload: (file) =>
+                        uploadFile({
+                            file,
+                            setIsUploading: () => undefined,
+                            userId: 'your-user-id',
+                            source: instituteId,
+                            sourceId: 'SPREADSHEET_DOCUMENTS',
+                        }),
                 });
             } catch {
-                fileId = undefined;
-            }
-            if (!fileId) {
                 toast.error(t('dialog.uploadFailed'));
                 return;
             }
 
-            const json = serializeSpreadsheetData({ ...picked.converted.data, file_id: fileId });
+            const json = serializeSpreadsheetData(slideData);
             const slideTitle = title.trim() || spreadsheetTitleFromFileName(picked.file.name);
             const slideId = crypto.randomUUID();
             const slideStatus = getSlideStatusForUser();
@@ -193,7 +201,9 @@ export const AddSpreadsheetDialog = ({
         }
     };
 
-    const stats = picked ? sheetStats(picked.converted.data.sheet) : null;
+    const stats = picked
+        ? { tabs: picked.converted.sheetNames.length, cells: picked.converted.cellCount }
+        : null;
     const hint = spreadsheetLimitHint(i18n.language);
 
     return (

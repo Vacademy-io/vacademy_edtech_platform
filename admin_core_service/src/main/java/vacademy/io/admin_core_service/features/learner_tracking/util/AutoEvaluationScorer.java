@@ -259,7 +259,7 @@ public class AutoEvaluationScorer {
      * slide's {@code correctAnswers}, or {@code data.tolerance} beside {@code validAnswers}.
      * Null when absent, 0, negative or not a number - the exact match applies.
      */
-    BigDecimal numericTolerance(String autoEvaluationJson) {
+    public BigDecimal numericTolerance(String autoEvaluationJson) {
         if (autoEvaluationJson == null || autoEvaluationJson.isBlank()) {
             return null;
         }

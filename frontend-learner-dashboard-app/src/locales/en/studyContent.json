@@ -38,7 +38,10 @@
         "download": "Download .{{ext}}",
         "downloadFailed": "Couldn’t download the file. Please try again.",
         "empty": "This spreadsheet is empty.",
-        "unavailable": "This spreadsheet can’t be shown right now."
+        "unavailable": "This spreadsheet can’t be shown right now.",
+        "loading": "Loading the spreadsheet…",
+        "loadFailed": "Couldn’t load this spreadsheet. Check your connection and try again.",
+        "retry": "Try again"
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",

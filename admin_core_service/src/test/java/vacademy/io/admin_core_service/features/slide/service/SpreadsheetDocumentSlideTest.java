@@ -21,18 +21,19 @@ import static org.mockito.Mockito.when;
 
 /**
  * Spreadsheet (Excel) slides are DOCUMENT slides with type SPREADSHEET whose
- * data / published_data hold the grid JSON written by the admin app. They rely
- * on the generic document paths, so these tests pin that those paths carry the
- * type and the JSON through unchanged.
+ * data / published_data hold small metadata JSON written by the admin app: the
+ * grid itself is a separate media file ({@code grid_file_id}) so slide-list
+ * queries and the course-structure cache never carry it. They rely on the
+ * generic document paths, so these tests pin that those paths carry the type
+ * and the JSON through unchanged (a copy shares the read-only grid file).
  */
 @ExtendWith(MockitoExtension.class)
 class SpreadsheetDocumentSlideTest {
 
     private static final String SHEET_JSON = """
-            {"version":1,"sheet":{"sheets":[{"name":"TB","cells":{"A1":{"v":"Cash"},\
-            "B1":{"v":1200,"f":"=SUM(B2:B3)","s":{"nf":"#,##0"}}},"merges":["A1:C1"]},\
-            {"name":"Notes","cells":{"A1":{"v":"a < b"}}}]},\
-            "file_id":"file-123","file_name":"TB 2026.xlsx","file_size":4096,"allow_download":true}""";
+            {"version":2,"grid_file_id":"grid-456","file_id":"file-123",\
+            "file_name":"TB 2026.xlsx","file_size":4096,"allow_download":true,\
+            "sheet_names":["TB","Notes < 2026"],"cell_count":7}""";
 
     @Mock
     private DocumentSlideRepository documentSlideRepository;
@@ -41,7 +42,7 @@ class SpreadsheetDocumentSlideTest {
     private SlideService slideService;
 
     @Test
-    @DisplayName("Copying a published spreadsheet slide keeps its type and grid JSON")
+    @DisplayName("Copying a published spreadsheet slide keeps its type and metadata JSON (same grid file)")
     void copyKeepsTypeAndJson() {
         DocumentSlide source = new DocumentSlide();
         source.setId("src-doc");
@@ -70,7 +71,7 @@ class SpreadsheetDocumentSlideTest {
     }
 
     @Test
-    @DisplayName("Publishing stores the spreadsheet JSON in both data and published_data")
+    @DisplayName("Publishing stores the spreadsheet metadata JSON in both data and published_data")
     void publishStoresJson() {
         DocumentSlide stored = new DocumentSlide();
         stored.setType("SPREADSHEET");
@@ -91,7 +92,8 @@ class SpreadsheetDocumentSlideTest {
     @Test
     @DisplayName("Replacing one workbook with another is not mistaken for lost document blocks")
     void replacingWorkbookIsNotStructuralLoss() {
-        String replacement = SHEET_JSON.replace("TB 2026.xlsx", "TB 2027.xlsx").replace("1200", "1500");
+        String replacement = SHEET_JSON.replace("TB 2026.xlsx", "TB 2027.xlsx")
+                .replace("grid-456", "grid-789").replace("file-123", "file-124");
         assertThat(SlideService.describeStructuralLoss(SHEET_JSON, replacement)).isEmpty();
     }
 }

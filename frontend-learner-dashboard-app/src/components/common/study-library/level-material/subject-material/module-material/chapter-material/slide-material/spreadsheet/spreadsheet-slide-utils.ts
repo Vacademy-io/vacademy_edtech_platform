@@ -1,51 +1,132 @@
 /**
  * Spreadsheet (Excel) slide — learner-side reader of the stored JSON.
  *
- * A DOCUMENT slide with `document_slide.type = "SPREADSHEET"` keeps
- * `{ version, sheet, file_id, file_name, file_size, allow_download }` in
- * `published_data`. Mirrors the admin writer:
+ * A DOCUMENT slide with `document_slide.type = "SPREADSHEET"` keeps small
+ * metadata in `published_data`:
+ * `{ version: 2, grid_file_id, file_id, file_name, file_size, allow_download, sheet_names, cell_count }`.
+ * The grid itself is a separate JSON media file (`grid_file_id`, contents
+ * `{ version, sheets }`) fetched when the slide opens. Mirrors the admin writer:
  * frontend-admin-dashboard/.../slides/-components/spreadsheet/spreadsheet-slide-data.ts
  *
- * Pure (no React, no imports beyond types) so it can be tested in isolation.
+ * A legacy payload (version 1, never shipped) carried the grid inline as
+ * `sheet`; it is still read so old local test data renders.
+ *
+ * Pure (no React, no app imports beyond types) so it can be tested in isolation.
  */
 import type { CbeCell, CbeSheet, CbeSheetTab } from "@/components/cbe/types";
 
 export const SPREADSHEET_DOC_TYPE = "SPREADSHEET";
 
+/**
+ * Largest grid file the learner app will read. The admin import caps the file
+ * at 1,200,000 characters; anything far bigger is refused rather than parsed.
+ */
+export const SPREADSHEET_GRID_MAX_CHARS = 2_400_000;
+
 export type SpreadsheetSlideData = {
-  sheet: CbeSheet;
+  /** Media file id of the grid JSON; null for a legacy inline grid. */
+  gridFileId: string | null;
+  /** Legacy inline grid (version 1); null when the grid is in its own file. */
+  sheet: CbeSheet | null;
   fileId: string | null;
   fileName: string;
   allowDownload: boolean;
+  sheetNames: string[];
 };
 
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 
-/** Reads the stored JSON (string or object). Null for anything that is not a spreadsheet payload. */
-export function parseSpreadsheetSlideData(raw: unknown): SpreadsheetSlideData | null {
-  let obj: unknown = raw;
-  if (typeof raw === "string") {
-    if (!raw.trim()) return null;
-    try {
-      obj = JSON.parse(raw);
-    } catch {
-      return null;
-    }
+const parseJson = (raw: unknown): unknown => {
+  if (typeof raw !== "string") return raw;
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
   }
+};
+
+/**
+ * Reads a grid: the grid file (`{ version, sheets }`), a bare sheet, or a legacy
+ * slide payload (`{ sheet: { sheets } }`). Null when there is no readable tab.
+ */
+export function parseSpreadsheetGrid(raw: unknown): CbeSheet | null {
+  let obj = parseJson(raw);
   if (!isRecord(obj)) return null;
-  const sheet = obj.sheet;
-  if (!isRecord(sheet) || !Array.isArray(sheet.sheets)) return null;
-  const tabs = (sheet.sheets as unknown[]).filter(
+  if (!Array.isArray(obj.sheets) && isRecord(obj.sheet)) obj = obj.sheet;
+  if (!isRecord(obj) || !Array.isArray(obj.sheets)) return null;
+  const tabs = (obj.sheets as unknown[]).filter(
     (t): t is CbeSheetTab => isRecord(t) && typeof t.name === "string" && isRecord(t.cells)
   );
-  if (!tabs.length) return null;
+  return tabs.length ? { sheets: tabs } : null;
+}
+
+/** Reads the stored slide JSON (string or object). Null for anything that is not a spreadsheet payload. */
+export function parseSpreadsheetSlideData(raw: unknown): SpreadsheetSlideData | null {
+  const obj = parseJson(raw);
+  if (!isRecord(obj)) return null;
+  const gridFileId =
+    typeof obj.grid_file_id === "string" && obj.grid_file_id ? obj.grid_file_id : null;
+  const sheet = gridFileId ? null : parseSpreadsheetGrid(obj.sheet ?? null);
+  if (!gridFileId && !sheet) return null;
+  const storedNames = Array.isArray(obj.sheet_names)
+    ? (obj.sheet_names as unknown[]).filter((n): n is string => typeof n === "string")
+    : [];
   return {
-    sheet: { sheets: tabs },
+    gridFileId,
+    sheet,
     fileId: typeof obj.file_id === "string" && obj.file_id ? obj.file_id : null,
     fileName: typeof obj.file_name === "string" ? obj.file_name : "",
     allowDownload: obj.allow_download !== false,
+    sheetNames: storedNames.length ? storedNames : (sheet?.sheets.map((t) => t.name) ?? []),
   };
+}
+
+export class SpreadsheetGridLoadError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "SpreadsheetGridLoadError";
+  }
+}
+
+/**
+ * Downloads and reads a grid file. `getUrl` resolves the media file id to a
+ * signed URL; `fetchImpl` defaults to the browser fetch. Refuses files over
+ * `maxChars` (by Content-Length when sent, and by the text read).
+ */
+export async function loadSpreadsheetGrid(
+  gridFileId: string,
+  deps: {
+    getUrl: (fileId: string) => Promise<string>;
+    fetchImpl?: (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
+    signal?: AbortSignal;
+    maxChars?: number;
+  }
+): Promise<CbeSheet> {
+  const maxChars = deps.maxChars ?? SPREADSHEET_GRID_MAX_CHARS;
+  const url = await deps.getUrl(gridFileId);
+  if (!url) throw new SpreadsheetGridLoadError("no url");
+  const doFetch = deps.fetchImpl ?? ((u, init) => fetch(u, init));
+  const res = await doFetch(url, { signal: deps.signal });
+  if (!res.ok) throw new SpreadsheetGridLoadError(`http ${res.status}`);
+  const declared = Number(res.headers?.get?.("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > maxChars * 4) {
+    throw new SpreadsheetGridLoadError("too large");
+  }
+  const text = await res.text();
+  if (text.length > maxChars) throw new SpreadsheetGridLoadError("too large");
+  const sheet = parseSpreadsheetGrid(text);
+  if (!sheet) throw new SpreadsheetGridLoadError("unreadable");
+  return sheet;
+}
+
+/** Short tutor text when the grid itself is not at hand: file name and tab names. */
+export function spreadsheetSlideSummary(
+  data: Pick<SpreadsheetSlideData, "fileName" | "sheetNames">
+): string {
+  const name = data.fileName ? `Spreadsheet "${data.fileName}"` : "Spreadsheet";
+  return data.sheetNames.length ? `${name} with tabs: ${data.sheetNames.join(", ")}` : name;
 }
 
 /** A safe download name: the stored file name, else the slide title + .xlsx. */
@@ -115,8 +196,13 @@ export function spreadsheetToPlainText(sheet: CbeSheet, maxChars = 20_000): stri
   return parts.join("\n\n");
 }
 
-/** Tutor text for a stored spreadsheet slide ("" when it cannot be read). */
+/**
+ * Tutor text for a stored spreadsheet slide without any network: the cell
+ * values for a legacy inline grid, else the short summary ("" when it cannot
+ * be read).
+ */
 export function spreadsheetSlideText(raw: unknown): string {
   const data = parseSpreadsheetSlideData(raw);
-  return data ? spreadsheetToPlainText(data.sheet) : "";
+  if (!data) return "";
+  return data.sheet ? spreadsheetToPlainText(data.sheet) : spreadsheetSlideSummary(data);
 }

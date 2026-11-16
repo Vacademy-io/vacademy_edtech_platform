@@ -42,6 +42,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -580,10 +581,21 @@ public class LearnerQuizAttemptService {
         if (CbeConfigSecrets.isCbe(question.questionType(), question.autoEvaluationJson())) {
             return out.build();
         }
+        List<String> correctIds = new ArrayList<>(scorer.correctAnswerIdsForQuestionType(question.questionType(),
+                question.autoEvaluationJson(), question::optionIds));
+        String answerText = scorer.modelAnswerText(question.autoEvaluationJson());
+        // A numeric key with a ± tolerance: say so, as the learner app does when it checks
+        // locally ("1500 (± 1)"), so a near-miss inside the margin reads as correct.
+        if (AutoEvaluationScorer.isNumeric(question.questionType())) {
+            BigDecimal tolerance = scorer.numericTolerance(question.autoEvaluationJson());
+            String base = answerText != null ? answerText : String.join(", ", correctIds);
+            if (tolerance != null && !base.isBlank()) {
+                answerText = base + " (\u00B1 " + tolerance.stripTrailingZeros().toPlainString() + ")";
+            }
+        }
         return out
-                .correctOptionIds(new ArrayList<>(scorer.correctAnswerIdsForQuestionType(question.questionType(),
-                        question.autoEvaluationJson(), question::optionIds)))
-                .correctAnswerText(scorer.modelAnswerText(question.autoEvaluationJson()))
+                .correctOptionIds(correctIds)
+                .correctAnswerText(answerText)
                 .build();
     }
 

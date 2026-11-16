@@ -2,7 +2,13 @@ import * as XLSX from 'xlsx';
 import { describe, expect, it } from 'vitest';
 import { xlsxToCbeSheet } from '@/components/cbe/xlsx-import';
 import type { CbeSheet } from '@/components/cbe/types';
-import { finaliseSpreadsheet, SpreadsheetImportError } from './spreadsheet-import';
+import {
+    finaliseSpreadsheet,
+    SpreadsheetImportError,
+    SpreadsheetUploadError,
+    spreadsheetGridFile,
+    uploadConvertedSpreadsheet,
+} from './spreadsheet-import';
 import {
     buildSpreadsheetSlideData,
     checkSpreadsheetFile,
@@ -10,9 +16,12 @@ import {
     checkSpreadsheetSheet,
     isAcceptedSpreadsheetFile,
     parseSpreadsheetData,
+    parseSpreadsheetGrid,
     serializeSpreadsheetData,
+    serializeSpreadsheetGrid,
     sheetStats,
     spreadsheetTitleFromFileName,
+    SPREADSHEET_DATA_VERSION,
     SPREADSHEET_MAX_CELLS,
     SPREADSHEET_MAX_FILE_BYTES,
     SPREADSHEET_MAX_GRID_CELLS_PER_TAB,
@@ -49,47 +58,138 @@ function columnSheet(n: number, name = 'Big'): CbeSheet {
 }
 
 describe('spreadsheet slide data — round trip', () => {
-    it('keeps every tab, value, formula and merge through convert → serialize → parse', () => {
+    it('keeps every tab, value, formula and merge in the grid file, and only metadata in the slide', async () => {
         const sheet = xlsxToCbeSheet(workbookBytes());
-        const { data, json } = finaliseSpreadsheet(sheet, { name: 'TB 2026.xlsx', size: 4096 });
+        const converted = finaliseSpreadsheet(sheet, { name: 'TB 2026.xlsx', size: 4096 });
+        expect(converted.fileName).toBe('TB 2026.xlsx');
+        expect(converted.sheetNames).toEqual(['TB', 'Notes']);
 
-        expect(data.file_name).toBe('TB 2026.xlsx');
-        expect(data.file_id).toBeNull();
-        expect(data.allow_download).toBe(true);
-
-        const withFile = serializeSpreadsheetData({ ...data, file_id: 'file-123' });
-        const back = parseSpreadsheetData(withFile);
-        expect(back).not.toBeNull();
-        expect(back!.file_id).toBe('file-123');
-        expect(back!.file_size).toBe(4096);
-        expect(back!.sheet.sheets.map((t) => t.name)).toEqual(['TB', 'Notes']);
-        const tb = back!.sheet.sheets[0]!;
+        // The grid file holds the whole grid.
+        const grid = parseSpreadsheetGrid(converted.gridJson);
+        expect(grid).not.toBeNull();
+        expect(grid!.sheets.map((t) => t.name)).toEqual(['TB', 'Notes']);
+        const tb = grid!.sheets[0]!;
         expect(tb.cells.A3?.v).toBe('Cash');
         expect(tb.cells.B5).toMatchObject({ v: 1200, f: '=SUM(B3:B4)' });
         expect(tb.merges).toEqual(['A1:C1']);
-        expect(back!.sheet.sheets[1]!.cells.A2?.v).toBe('Cash in hand');
+        expect(grid!.sheets[1]!.cells.A2?.v).toBe('Cash in hand');
+        expect(serializeSpreadsheetGrid(grid!)).toBe(converted.gridJson);
 
+        // Both files go through the upload helper; the slide keeps their ids.
+        const uploaded: File[] = [];
+        const data = await uploadConvertedSpreadsheet({
+            original: new File(['xlsx'], 'TB 2026.xlsx'),
+            converted,
+            upload: async (file) => {
+                uploaded.push(file);
+                return file.name.endsWith('.json') ? 'grid-456' : 'file-123';
+            },
+        });
+        expect(uploaded.map((f) => f.name).sort()).toEqual(['TB 2026.grid.json', 'TB 2026.xlsx']);
+        const gridUpload = uploaded.find((f) => f.name.endsWith('.json'))!;
+        expect(gridUpload.type).toBe('application/json');
+        expect(await gridUpload.text()).toBe(converted.gridJson);
+
+        const json = serializeSpreadsheetData(data);
+        expect(JSON.parse(json)).toEqual({
+            version: SPREADSHEET_DATA_VERSION,
+            grid_file_id: 'grid-456',
+            file_id: 'file-123',
+            file_name: 'TB 2026.xlsx',
+            file_size: 4096,
+            allow_download: true,
+            sheet_names: ['TB', 'Notes'],
+            cell_count: sheetStats(sheet).cells,
+        });
+        const back = parseSpreadsheetData(json);
+        expect(back).toEqual(data);
+        expect(back!.sheet).toBeUndefined();
         // Serialising the parsed copy again gives the same stored string.
-        expect(serializeSpreadsheetData(back!)).toBe(withFile);
+        expect(serializeSpreadsheetData(back!)).toBe(json);
         // The stored JSON parses exactly like the in-memory object.
-        expect(parseSpreadsheetData(JSON.parse(json))).toEqual(parseSpreadsheetData(json));
+        expect(parseSpreadsheetData(JSON.parse(json))).toEqual(back);
+    });
+
+    it('keeps the slide data small even for a grid at the cell limit', () => {
+        const big = columnSheet(SPREADSHEET_MAX_CELLS);
+        const converted = finaliseSpreadsheet(big, { name: 'big.xlsx', size: 1 });
+        const json = serializeSpreadsheetData(
+            buildSpreadsheetSlideData({
+                gridFileId: 'g',
+                fileId: 'f',
+                fileName: converted.fileName,
+                fileSize: 1,
+                sheetNames: converted.sheetNames,
+                cellCount: converted.cellCount,
+            })
+        );
+        expect(converted.gridJson.length).toBeGreaterThan(100_000);
+        expect(json.length).toBeLessThan(500);
+    });
+
+    it('fails the import when either upload fails', async () => {
+        const converted = finaliseSpreadsheet(columnSheet(2), { name: 'a.xlsx', size: 10 });
+        const original = new File(['x'], 'a.xlsx');
+        await expect(
+            uploadConvertedSpreadsheet({
+                original,
+                converted,
+                upload: async (file) => (file.name.endsWith('.json') ? undefined : 'f'),
+            })
+        ).rejects.toBeInstanceOf(SpreadsheetUploadError);
+        await expect(
+            uploadConvertedSpreadsheet({
+                original,
+                converted,
+                upload: async (file) => {
+                    if (file.name.endsWith('.xlsx')) throw new Error('network');
+                    return 'g';
+                },
+            })
+        ).rejects.toBeInstanceOf(SpreadsheetUploadError);
+    });
+
+    it('still reads a legacy (version 1) slide with the grid inline', () => {
+        const legacy = {
+            version: 1,
+            sheet: columnSheet(3, 'Old'),
+            file_id: 'f',
+            file_name: 'old.xlsx',
+            file_size: 10,
+            allow_download: false,
+        };
+        const data = parseSpreadsheetData(JSON.stringify(legacy));
+        expect(data).not.toBeNull();
+        expect(data!.grid_file_id).toBeNull();
+        expect(data!.sheet!.sheets[0]!.cells.A3?.v).toBe(3);
+        expect(data!.sheet_names).toEqual(['Old']);
+        expect(data!.cell_count).toBe(3);
+        expect(data!.allow_download).toBe(false);
+        // Re-saving a legacy slide keeps its inline grid (it has no grid file).
+        expect(parseSpreadsheetData(serializeSpreadsheetData(data!))!.sheet).toEqual(data!.sheet);
     });
 
     it('reads a CSV upload as one tab', () => {
         const csv = new TextEncoder().encode('Item,Amount\nRent,500\nFood,250\n');
-        const { data } = finaliseSpreadsheet(xlsxToCbeSheet(csv), { name: 'budget.csv', size: 33 });
-        expect(data.sheet.sheets).toHaveLength(1);
-        const cells = data.sheet.sheets[0]!.cells;
+        const converted = finaliseSpreadsheet(xlsxToCbeSheet(csv), {
+            name: 'budget.csv',
+            size: 33,
+        });
+        expect(converted.sheet.sheets).toHaveLength(1);
+        const cells = converted.sheet.sheets[0]!.cells;
         expect(cells.A2?.v).toBe('Rent');
         expect(cells.B2?.v).toBe(500);
+        expect(spreadsheetGridFile(converted).name).toBe('budget.grid.json');
     });
 
     it('treats a missing allow_download as on, and false as off', () => {
         const base = buildSpreadsheetSlideData({
-            sheet: columnSheet(2),
+            gridFileId: 'g',
             fileId: 'f',
             fileName: 'a.xlsx',
             fileSize: 10,
+            sheetNames: ['Big'],
+            cellCount: 2,
         });
         const raw = JSON.parse(serializeSpreadsheetData(base));
         delete raw.allow_download;
@@ -105,9 +205,12 @@ describe('spreadsheet slide data — round trip', () => {
         expect(parseSpreadsheetData('not json')).toBeNull();
         expect(parseSpreadsheetData('<p>hello</p>')).toBeNull();
         expect(parseSpreadsheetData('{}')).toBeNull();
+        expect(parseSpreadsheetData({ grid_file_id: '' })).toBeNull();
         expect(parseSpreadsheetData({ sheet: { sheets: [] } })).toBeNull();
         expect(parseSpreadsheetData({ sheet: { sheets: [{ name: 1, cells: {} }] } })).toBeNull();
         expect(parseSpreadsheetData(null)).toBeNull();
+        expect(parseSpreadsheetGrid('{"sheets":[]}')).toBeNull();
+        expect(parseSpreadsheetGrid('nope')).toBeNull();
     });
 });
 
@@ -194,7 +297,7 @@ describe('spreadsheet slide data — limits', () => {
         expect((caught as SpreadsheetImportError).limit.code).toBe('tooManyCells');
     });
 
-    it('a sheet at the cell limit still fits the stored JSON limit', () => {
+    it('a sheet at the cell limit still fits the grid file limit', () => {
         const wide: CbeSheet = { sheets: [{ name: 'Wide', cells: {} }] };
         // 200 rows × 100 columns of realistic money cells with a number format.
         const cols = 100;

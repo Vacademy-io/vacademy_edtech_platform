@@ -2,12 +2,17 @@
  * Spreadsheet (Excel) slide — storage format and limits.
  *
  * A spreadsheet slide is a DOCUMENT slide with `document_slide.type =
- * "SPREADSHEET"`. Its `data` / `published_data` hold the JSON below, so drafts,
- * publish, copy, move and drip work exactly as for any other document slide and
- * no schema change is needed. The grid is the CBE sheet model
- * (`@/components/cbe` CbeSheet), converted in the browser from the uploaded
- * workbook; the original file is kept in media storage so learners can
- * download it.
+ * "SPREADSHEET"`. Its `data` / `published_data` hold only small metadata (see
+ * SpreadsheetSlideData), so drafts, publish, copy, move and drip work exactly
+ * as for any other document slide and no schema change is needed.
+ *
+ * The grid itself (the CBE sheet model, `@/components/cbe` CbeSheet, converted
+ * in the browser from the uploaded workbook) is stored as its own JSON media
+ * file (`grid_file_id`) and fetched when the slide opens. It must NOT go into
+ * the slide data: every chapter / course slide-list query returns that column
+ * and the server caches it, so a large inline grid would ride along with every
+ * course open. The original workbook is kept in media storage too
+ * (`file_id`) so learners can download it.
  *
  * The learner app reads the same JSON — keep
  * frontend-learner-dashboard-app/.../slide-material/spreadsheet/spreadsheet-slide-utils.ts
@@ -17,7 +22,10 @@ import { parseA1, parseRange } from '@/components/cbe/a1';
 import type { CbeSheet, CbeSheetTab } from '@/components/cbe/types';
 
 export const SPREADSHEET_DOC_TYPE = 'SPREADSHEET' as const;
-export const SPREADSHEET_DATA_VERSION = 1 as const;
+/** 1 = grid inline in the slide data (never shipped); 2 = grid in its own file. */
+export const SPREADSHEET_DATA_VERSION = 2 as const;
+/** Format version of the separate grid JSON file. */
+export const SPREADSHEET_GRID_VERSION = 1 as const;
 
 /** Largest workbook accepted for upload. */
 export const SPREADSHEET_MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -27,7 +35,7 @@ export const SPREADSHEET_MAX_CELLS = 20_000;
 export const SPREADSHEET_MAX_GRID_CELLS_PER_TAB = 100_000;
 /** Most worksheet tabs. */
 export const SPREADSHEET_MAX_TABS = 30;
-/** Largest stored JSON (it travels with the chapter's slide list). */
+/** Largest grid JSON file (learners download it when the slide opens). */
 export const SPREADSHEET_MAX_JSON_CHARS = 1_200_000;
 
 export const SPREADSHEET_ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'] as const;
@@ -37,10 +45,11 @@ export const SPREADSHEET_ACCEPTED_MIME_TYPES = [
     'text/csv',
 ] as const;
 
+/** What `document_slide.data` / `published_data` hold (small: no grid). */
 export type SpreadsheetSlideData = {
     version: typeof SPREADSHEET_DATA_VERSION;
-    /** The read-only grid shown to learners (all worksheet tabs). */
-    sheet: CbeSheet;
+    /** Media file id of the grid JSON (all worksheet tabs), or null for a legacy inline grid. */
+    grid_file_id: string | null;
     /** Media file id of the original upload, or null when it was not kept. */
     file_id: string | null;
     /** Original file name, e.g. "Trial balance.xlsx". */
@@ -49,6 +58,15 @@ export type SpreadsheetSlideData = {
     file_size: number | null;
     /** Learners see a Download button for the original file. Absent = true. */
     allow_download: boolean;
+    /** Worksheet tab names, in order (shown before the grid loads, and to the AI tutor). */
+    sheet_names: string[];
+    /** Filled cells across all tabs. */
+    cell_count: number;
+    /**
+     * Legacy (version 1, never shipped): the grid stored inline. Read so old
+     * local test data still renders; never written when `grid_file_id` is set.
+     */
+    sheet?: CbeSheet;
 };
 
 export type SpreadsheetLimitError =
@@ -147,7 +165,7 @@ export function checkSpreadsheetSheet(sheet: CbeSheet): SpreadsheetLimitError | 
     return null;
 }
 
-/** Limit on the JSON that will be stored. */
+/** Limit on the grid JSON file. */
 export function checkSpreadsheetJson(json: string): SpreadsheetLimitError | null {
     if (json.length > SPREADSHEET_MAX_JSON_CHARS) {
         return { code: 'dataTooLarge', size: json.length, max: SPREADSHEET_MAX_JSON_CHARS };
@@ -155,37 +173,76 @@ export function checkSpreadsheetJson(json: string): SpreadsheetLimitError | null
     return null;
 }
 
+/** The grid file's contents: `{ version, sheets }`. */
+export function serializeSpreadsheetGrid(sheet: CbeSheet): string {
+    return JSON.stringify({ version: SPREADSHEET_GRID_VERSION, sheets: sheet.sheets });
+}
+
+/**
+ * Reads a grid: the grid file (`{ version, sheets }`), a bare CbeSheet, or a
+ * legacy slide payload (`{ sheet: { sheets } }`). Null when there is no
+ * readable tab.
+ */
+export function parseSpreadsheetGrid(raw: unknown): CbeSheet | null {
+    let obj: unknown = raw;
+    if (typeof raw === 'string') {
+        if (!raw.trim()) return null;
+        try {
+            obj = JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    }
+    if (!isRecord(obj)) return null;
+    if (!Array.isArray(obj.sheets) && isRecord(obj.sheet)) obj = obj.sheet;
+    if (!isRecord(obj) || !Array.isArray(obj.sheets)) return null;
+    const tabs = (obj.sheets as unknown[]).filter(
+        (t): t is CbeSheetTab => isRecord(t) && typeof t.name === 'string' && isRecord(t.cells)
+    );
+    return tabs.length ? { sheets: tabs } : null;
+}
+
 export function buildSpreadsheetSlideData(input: {
-    sheet: CbeSheet;
+    gridFileId: string | null;
     fileId: string | null;
     fileName: string;
     fileSize: number | null;
+    sheetNames: string[];
+    cellCount: number;
     allowDownload?: boolean;
 }): SpreadsheetSlideData {
     return {
         version: SPREADSHEET_DATA_VERSION,
-        sheet: input.sheet,
+        grid_file_id: input.gridFileId || null,
         file_id: input.fileId || null,
         file_name: input.fileName,
         file_size: input.fileSize ?? null,
         allow_download: input.allowDownload ?? true,
+        sheet_names: [...input.sheetNames],
+        cell_count: input.cellCount,
     };
 }
 
+/** The slide data JSON. The grid is written inline only for a legacy slide with no grid file. */
 export function serializeSpreadsheetData(data: SpreadsheetSlideData): string {
+    const gridFileId = data.grid_file_id || null;
     return JSON.stringify({
         version: SPREADSHEET_DATA_VERSION,
-        sheet: data.sheet,
+        grid_file_id: gridFileId,
         file_id: data.file_id || null,
         file_name: data.file_name || '',
         file_size: data.file_size ?? null,
         allow_download: data.allow_download !== false,
+        sheet_names: data.sheet_names ?? [],
+        cell_count: data.cell_count ?? 0,
+        ...(!gridFileId && data.sheet ? { sheet: data.sheet } : {}),
     });
 }
 
 /**
  * Reads a stored spreadsheet slide (string or already-parsed object). Returns
- * null for anything that is not a spreadsheet payload with at least one tab.
+ * null for anything that is neither a grid-file payload nor a legacy payload
+ * with an inline grid.
  */
 export function parseSpreadsheetData(raw: unknown): SpreadsheetSlideData | null {
     let obj: unknown = raw;
@@ -198,20 +255,30 @@ export function parseSpreadsheetData(raw: unknown): SpreadsheetSlideData | null 
         }
     }
     if (!isRecord(obj)) return null;
-    const sheet = obj.sheet;
-    if (!isRecord(sheet) || !Array.isArray(sheet.sheets) || sheet.sheets.length === 0) return null;
-    const tabs = (sheet.sheets as unknown[]).filter(
-        (t): t is CbeSheetTab => isRecord(t) && typeof t.name === 'string' && isRecord(t.cells)
-    );
-    if (!tabs.length) return null;
-    return {
+    const gridFileId =
+        typeof obj.grid_file_id === 'string' && obj.grid_file_id ? obj.grid_file_id : null;
+    const inline = gridFileId ? null : parseSpreadsheetGrid(obj.sheet ?? null);
+    if (!gridFileId && !inline) return null;
+    const storedNames = Array.isArray(obj.sheet_names)
+        ? (obj.sheet_names as unknown[]).filter((n): n is string => typeof n === 'string')
+        : [];
+    const data: SpreadsheetSlideData = {
         version: SPREADSHEET_DATA_VERSION,
-        sheet: { sheets: tabs },
+        grid_file_id: gridFileId,
         file_id: typeof obj.file_id === 'string' && obj.file_id ? obj.file_id : null,
         file_name: typeof obj.file_name === 'string' ? obj.file_name : '',
         file_size: typeof obj.file_size === 'number' ? obj.file_size : null,
         allow_download: obj.allow_download !== false,
+        sheet_names: inline && !storedNames.length ? inline.sheets.map((t) => t.name) : storedNames,
+        cell_count:
+            typeof obj.cell_count === 'number' && obj.cell_count >= 0
+                ? obj.cell_count
+                : inline
+                  ? sheetStats(inline).cells
+                  : 0,
     };
+    if (inline) data.sheet = inline;
+    return data;
 }
 
 /** "Budget 2026.xlsx" -> "Budget 2026" (slide title from the file name). */
