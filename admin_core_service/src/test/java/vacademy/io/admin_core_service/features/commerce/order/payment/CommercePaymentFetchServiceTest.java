@@ -391,4 +391,27 @@ class CommercePaymentFetchServiceTest {
         assertEquals(after, CommercePaymentFetchJob.FINAL_AFTER_HOLD);
         verify(gatewayOrders, never()).recordFetch(anyString(), any(), any(), any(), any());
     }
+
+    @Test
+    void aPaymentCarryingOnlyTheShopsOwnRefundsIsInfoAndAForeignRefundStillAlerts() {
+        vacademy.io.admin_core_service.features.commerce.returns.repository.CommerceRefundRepository refunds =
+                org.mockito.Mockito.mock(
+                        vacademy.io.admin_core_service.features.commerce.returns.repository.CommerceRefundRepository.class);
+        service.setRefundRepository(refunds);
+        when(refunds.sumOursOfPayment("RAZORPAY", "pay_1")).thenReturn(new java.math.BigDecimal("50.00"));
+        when(gateway.fetchPayments(INSTITUTE, GW)).thenReturn(List.of(new GatewayPayment("pay_1", GW, "captured",
+                105000L, "INR", NOW.toInstant(), 5000L, "partial")));
+
+        service.fetch(due("CANCELLED", 1, null, NOW, NOW), Kind.LATE, NOW);
+
+        verifyNoInteractions(confirmService);
+        assertEquals(0, count("COMMERCE_ALERT payment fetch found a captured payment that was partly refunded"),
+                "our own refund is not an alert");
+
+        when(refunds.sumOursOfPayment("RAZORPAY", "pay_1")).thenReturn(new java.math.BigDecimal("40.00"));
+        service.fetch(due("CANCELLED", 1, null, NOW, NOW), Kind.LATE, NOW);
+        assertEquals(1, count("COMMERCE_ALERT payment fetch found a captured payment that was partly refunded"),
+                "a refund made by hand still alerts");
+        verifyNoInteractions(confirmService);
+    }
 }

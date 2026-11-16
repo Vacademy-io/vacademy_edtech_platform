@@ -116,6 +116,12 @@ public final class CheckoutDtos {
          * placed: state and timeline only, no order id, items, totals or recipient.
          */
         private boolean masked;
+        /** NONE, IN_PROGRESS, PART or FULL (WP-32). */
+        private String returnState;
+        /** NONE, PENDING, PART or FULL (WP-32). */
+        private String refundState;
+        /** What was given back to the buyer so far (WP-32). */
+        private BigDecimal refundedAmount;
     }
 
     @Data

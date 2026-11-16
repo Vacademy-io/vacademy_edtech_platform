@@ -288,7 +288,8 @@ public class RazorpayWebHookService {
         // Razorpay-hosted invoice, no saved payment method, no legacy post-payment logic. For
         // every other payment this is one statement of key reads that finds nothing.
         if (commerceWebhookBranch != null) {
-            var commerce = commerceWebhookBranch.handle(eventType, paymentEntity, instituteId);
+            var commerce = commerceWebhookBranch.handle(eventType, paymentEntity, instituteId,
+                    refundEntityOf(webhookData));
             if (commerce.commerce()) {
                 webHookService.updateWebHook(webhookId, payload, commerce.commerceOrderId(), eventType);
                 if (commerce.refused()) {
@@ -340,6 +341,12 @@ public class RazorpayWebHookService {
         return ResponseEntity.ok("Webhook processed successfully");
     }
 
+
+    /** The refund entity of a refund event ({@code payload.refund.entity}), or null. */
+    private static JsonNode refundEntityOf(JsonNode webhookData) {
+        JsonNode entity = webhookData == null ? null : webhookData.path("payload").path("refund").path("entity");
+        return entity == null || entity.isMissingNode() || entity.isNull() ? null : entity;
+    }
 
     /**
      * Handles different Razorpay event types

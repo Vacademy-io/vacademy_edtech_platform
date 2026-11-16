@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -313,5 +314,82 @@ class RazorpayCommercePaymentGatewayTest {
         TransactionSynchronizationManager.setActualTransactionActive(true);
         assertThrows(IllegalStateException.class, () -> gateway.fetchPayments("inst-1", "order_gw_1"));
         verifyNoInteractions(razorpayManager);
+    }
+
+    // -- refunds (WP-32) --
+
+    @Test
+    void refundCallsRefuseAnOpenTransaction() {
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        assertThrows(IllegalStateException.class, () -> gateway.fetchPayment("inst-1", "pay_1"));
+        assertThrows(IllegalStateException.class, () -> gateway.createRefund("inst-1", "pay_1", 100, "r-1", Map.of()));
+        assertThrows(IllegalStateException.class, () -> gateway.fetchRefunds("inst-1", "pay_1"));
+        assertThrows(IllegalStateException.class, () -> gateway.fetchRefund("inst-1", "pay_1", "rfnd_1"));
+        org.mockito.Mockito.verifyNoInteractions(razorpayManager);
+    }
+
+    @Test
+    void aRefundIsCreatedWithTheInstitutesCredentialsAndTheRefundIdAsReceiptAndIsMapped() {
+        Map<String, Object> answer = new HashMap<>();
+        answer.put("id", "rfnd_1");
+        answer.put("payment_id", "pay_1");
+        answer.put("amount", 20000);
+        answer.put("currency", "INR");
+        answer.put("status", "PENDING");
+        answer.put("receipt", "refund-uuid-1");
+        answer.put("created_at", 1_800_000_000L);
+        answer.put("acquirer_data", Map.of("arn", "ARN123"));
+        Map<String, String> notes = Map.of("commerce_refund_id", "refund-uuid-1");
+        when(razorpayManager.refundPayment("pay_1", 20000L, "refund-uuid-1", notes, credentials)).thenReturn(answer);
+
+        CommercePaymentGateway.GatewayRefund refund = gateway.createRefund("inst-1", "pay_1", 20000L,
+                "refund-uuid-1", notes);
+
+        assertEquals(new CommercePaymentGateway.GatewayRefund("rfnd_1", "pay_1", 20000L, "INR", "pending",
+                "refund-uuid-1", "ARN123", java.time.Instant.ofEpochSecond(1_800_000_000L)), refund);
+        verify(razorpayManager).refundPayment("pay_1", 20000L, "refund-uuid-1", notes, credentials);
+    }
+
+    @Test
+    void refundReadsAreMappedAndARefundWithoutAnArnTakesTheRrn() {
+        Map<String, Object> one = new HashMap<>();
+        one.put("id", "rfnd_2");
+        one.put("payment_id", "pay_1");
+        one.put("amount", 500);
+        one.put("status", "processed");
+        one.put("receipt", "refund-uuid-2");
+        one.put("acquirer_data", Map.of("arn", "null", "rrn", "RRN9"));
+        when(razorpayManager.fetchPaymentRefunds("pay_1", credentials)).thenReturn(List.of(one));
+        when(razorpayManager.fetchPaymentRefund("pay_1", "rfnd_2", credentials)).thenReturn(one);
+        Map<String, Object> payment = new HashMap<>();
+        payment.put("id", "pay_1");
+        payment.put("status", "captured");
+        payment.put("amount", 49900);
+        payment.put("amount_refunded", 500);
+        payment.put("currency", "INR");
+        when(razorpayManager.fetchPayment("pay_1", credentials)).thenReturn(payment);
+
+        assertEquals("refund-uuid-2", gateway.fetchRefunds("inst-1", "pay_1").get(0).receipt());
+        assertEquals("RRN9", gateway.fetchRefund("inst-1", "pay_1", "rfnd_2").bankReference());
+        CommercePaymentGateway.GatewayPayment read = gateway.fetchPayment("inst-1", "pay_1");
+        assertEquals("captured", read.status());
+        assertEquals(500L, read.amountRefundedMinor());
+    }
+
+    @Test
+    void refundErrorsHideTheCredentialsAndANotConfiguredShopIsSaidSo() {
+        when(razorpayManager.refundPayment(anyString(), any(), anyString(), any(), any()))
+                .thenThrow(new RuntimeException("rejected for " + SECRET));
+        CommercePaymentGatewayException e = assertThrows(CommercePaymentGatewayException.class,
+                () -> gateway.createRefund("inst-1", "pay_1", 100L, "refund-uuid-1", Map.of()));
+        assertEquals(CommercePaymentGatewayException.UNAVAILABLE, e.getCode());
+        org.junit.jupiter.api.Assertions.assertFalse(e.getMessage().contains(SECRET));
+        assertThrows(CommercePaymentGatewayException.class,
+                () -> gateway.createRefund("inst-1", "pay_1", 100L, "x".repeat(41), Map.of()));
+        when(gatewayMappings.findInstitutePaymentGatewaySpecifData("RAZORPAY", "inst-2"))
+                .thenThrow(new RuntimeException("none"));
+        CommercePaymentGatewayException none = assertThrows(CommercePaymentGatewayException.class,
+                () -> gateway.fetchRefunds("inst-2", "pay_1"));
+        assertEquals(CommercePaymentGatewayException.NOT_CONFIGURED, none.getCode());
     }
 }

@@ -39,6 +39,32 @@ public class StaffOrderRequest {
     /** Packed, handed over and delivered in the same request (a buyer at the shop). */
     private Boolean handOverNow;
     private String customerNote;
+    /** An exchange (WP-32): the credit of a received return pays (part of) this order. */
+    private Exchange exchange;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Exchange {
+        private String returnId;
+        /** Required when the return's credit is more than the new order. */
+        private RemainderRefund remainderRefund;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class RemainderRefund {
+        /** GATEWAY, CASH, UPI or BANK_TRANSFER. */
+        private String method;
+        private String reference;
+    }
 
     @Data
     @Builder

@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.commerce.returns.repository.CommerceRefundRepository;
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundService;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -69,6 +71,31 @@ public class CommercePaymentFetchService {
     private final CommercePaymentGateway gateway;
     private final CommercePaymentConfirmService confirmService;
     private final CommerceGatewayOrderRepository gatewayOrders;
+
+    /** The shop's refunds (WP-32); set by Spring, absent in tests built by hand. */
+    private CommerceRefundRepository refundRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRefundRepository(CommerceRefundRepository refundRepository) {
+        this.refundRepository = refundRepository;
+    }
+
+    /**
+     * True when what the gateway reports refunded on the payment is exactly the shop's own gateway
+     * refunds on it (paid out or under way): no one refunded by hand.
+     */
+    boolean ourOwnRefunds(CommercePaymentGateway.GatewayPayment payment) {
+        if (refundRepository == null || payment.id() == null || payment.amountRefundedMinor() <= 0) {
+            return false;
+        }
+        try {
+            java.math.BigDecimal ours = refundRepository.sumOursOfPayment(CommerceRefundService.VENDOR, payment.id());
+            return ours != null && ours.signum() > 0
+                    && CommerceRefundService.toMinor(ours, payment.currency()) == payment.amountRefundedMinor();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
 
     public CommercePaymentFetchService(CommercePaymentGateway gateway, CommercePaymentConfirmService confirmService,
                                        CommerceGatewayOrderRepository gatewayOrders) {
@@ -241,6 +268,11 @@ public class CommercePaymentFetchService {
                 }
                 // Part of it was given back (by hand, in the gateway): the order is not paid in
                 // full, so nothing is confirmed; the shop decides.
+                if (p.anyRefunded() && ourOwnRefunds(p)) {
+                    log.info("Commerce payment fetch: payment {} of order {} carries only the shop's own refunds "
+                            + "({}); not confirmed from here", p.id(), row.commerceOrderId(), p.amountRefundedMinor());
+                    continue;
+                }
                 if (p.anyRefunded()) {
                     log.error("COMMERCE_ALERT payment fetch found a captured payment that was partly refunded "
                                     + "institute={} order={} gateway_order={} payment={} refunded={}",

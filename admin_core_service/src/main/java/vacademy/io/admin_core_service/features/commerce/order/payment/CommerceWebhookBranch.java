@@ -2,6 +2,8 @@ package vacademy.io.admin_core_service.features.commerce.order.payment;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundWebhookService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentConfirmService.Outcome;
@@ -33,12 +35,30 @@ public class CommerceWebhookBranch {
     private final CommerceGatewayOrderRepository gatewayOrders;
     private final CommercePaymentConfirmService confirmService;
 
+    /** The refund events (WP-32); set by Spring, absent in tests built by hand. */
+    private org.springframework.beans.factory.ObjectProvider<CommerceRefundWebhookService> refundWebhook;
+
+    @Autowired(required = false)
+    public void setRefundWebhook(
+            org.springframework.beans.factory.ObjectProvider<CommerceRefundWebhookService> refundWebhook) {
+        this.refundWebhook = refundWebhook;
+    }
+
     /**
      * @param entity      the payment entity of the event, or the order entity of an event that
      *                    carries no payment
      * @param instituteId the institute whose webhook secret verified the signature
      */
     public Result handle(String eventType, JsonNode entity, String instituteId) {
+        return handle(eventType, entity, instituteId, null);
+    }
+
+    /**
+     * As {@link #handle(String, JsonNode, String)}, with the refund entity of a refund event
+     * ({@code payload.refund.entity}, null for any other event). It is read only after the
+     * payment entity matched a commerce gateway order.
+     */
+    public Result handle(String eventType, JsonNode entity, String instituteId, JsonNode refundEntity) {
         if (entity == null) {
             return Result.NOT_COMMERCE;
         }
@@ -82,11 +102,40 @@ public class CommerceWebhookBranch {
                 return confirmService.markFailed(gatewayOrder, instituteId, paymentId, SOURCE);
             case "payment.authorized":
                 return confirmService.markAuthorized(gatewayOrder, instituteId, paymentId, SOURCE);
+            case "refund.processed":
+            case "refund.failed":
+            case "refund.created":
+                return refundEvent(eventType, gatewayOrder, instituteId, paymentId, refundEntity);
             default:
                 log.info("Commerce webhook: event {} for order {} needs no action", eventType,
                         gatewayOrder.getCommerceOrderId());
                 return new Result(Outcome.HANDLED, gatewayOrder.getCommerceOrderId(), null, 0);
         }
+    }
+
+    /**
+     * A refund event of a commerce payment: refused for another institute (as a payment event
+     * is); {@code refund.created} needs nothing; processed and failed move our refund row.
+     */
+    private Result refundEvent(String eventType, CommerceGatewayOrder gatewayOrder, String instituteId,
+                               String paymentId, JsonNode refundEntity) {
+        if (instituteId == null || !instituteId.equals(gatewayOrder.getInstituteId())) {
+            return confirmService.refuse(CommercePaymentConfirmService.REASON_INSTITUTE_MISMATCH, gatewayOrder,
+                    instituteId, paymentId, SOURCE, "the gateway order belongs to another institute");
+        }
+        if (!"refund.created".equals(eventType)) {
+            CommerceRefundWebhookService refunds = refundWebhook == null ? null : refundWebhook.getIfAvailable();
+            if (refunds == null) {
+                log.warn("Commerce webhook: {} for order {} not handled here; the refund poll covers it", eventType,
+                        gatewayOrder.getCommerceOrderId());
+            } else {
+                CommerceRefundWebhookService.Outcome outcome = refunds.handle(eventType, refundEntity,
+                        gatewayOrder, instituteId);
+                log.info("Commerce webhook: {} for order {}: {}", eventType, gatewayOrder.getCommerceOrderId(),
+                        outcome);
+            }
+        }
+        return new Result(Outcome.HANDLED, gatewayOrder.getCommerceOrderId(), null, 0);
     }
 
     /**

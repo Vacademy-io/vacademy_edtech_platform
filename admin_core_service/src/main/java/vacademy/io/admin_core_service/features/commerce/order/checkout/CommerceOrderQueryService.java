@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.order.checkout;
 
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceOrderReturnsView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,18 @@ public class CommerceOrderQueryService {
     private final CommerceShipmentRepository shipmentRepository;
     private final CommerceShipmentLineRepository shipmentLineRepository;
     private final CommercePieceRepository pieceRepository;
+
+    /** Returns and refunds (WP-32); set by Spring, absent in tests built by hand. */
+    private org.springframework.beans.factory.ObjectProvider<CommerceOrderReturnsView> returnsView;
+
+    @Autowired(required = false)
+    public void setReturnsView(org.springframework.beans.factory.ObjectProvider<CommerceOrderReturnsView> returnsView) {
+        this.returnsView = returnsView;
+    }
+
+    private CommerceOrderReturnsView returnsView() {
+        return returnsView == null ? null : returnsView.getIfAvailable();
+    }
 
     /** Without the order desk's repositories (the staff detail then lists no parcels). */
     public CommerceOrderQueryService(CommerceOrderRepository orderRepository,
@@ -407,6 +420,15 @@ public class CommerceOrderQueryService {
     }
 
     private CheckoutDtos.OrderView buyerView(CommerceOrder order) {
+        CheckoutDtos.OrderView view = buyerViewOf(order);
+        CommerceOrderReturnsView extra = returnsView();
+        if (extra != null) {
+            extra.enrich(view, order, lineRepository.findByOrderIdOrderByLineNoAsc(order.getId()));
+        }
+        return view;
+    }
+
+    private CheckoutDtos.OrderView buyerViewOf(CommerceOrder order) {
         List<CheckoutDtos.OrderLineView> lines = new ArrayList<>();
         for (CommerceOrderLine line : lineRepository.findByOrderIdOrderByLineNoAsc(order.getId())) {
             if (!CommerceOrderLine.TYPE_ITEM.equals(line.getLineType())) {
@@ -487,7 +509,7 @@ public class CommerceOrderQueryService {
 
     /** The desk queues of the staff list ({@code queue}). */
     public static final Set<String> QUEUES = Set.of("TO_CONFIRM", "TO_PACK", "TO_SHIP", "IN_TRANSIT",
-            "COD_TO_COLLECT", "RTO_TO_RECEIVE", "STOCK_SHORT", "DUES");
+            "COD_TO_COLLECT", "RTO_TO_RECEIVE", "STOCK_SHORT", "DUES", "RETURNS", "REFUND_DUE");
     private static final Set<String> PAYMENT_STATUSES = Set.of("UNPAID", "PARTIALLY_PAID", "PAID");
     private static final Set<String> CHANNELS = Set.of("ONLINE", "ADMIN", "POS");
     private static final ZoneId INDIA = ZoneId.of("Asia/Kolkata");
@@ -567,6 +589,10 @@ public class CommerceOrderQueryService {
                 row.setStatusSince(instant(since.get(order.getId())));
                 rows.add(row);
             }
+            CommerceOrderReturnsView extra = returnsView();
+            if (extra != null) {
+                extra.enrichRows(rows, orders);
+            }
             return StaffOrderDtos.StaffOrderPage.builder()
                     .orders(rows)
                     .page(index).pageSize(size).total(found.getTotalElements()).build();
@@ -638,7 +664,7 @@ public class CommerceOrderQueryService {
             if (!timeline.isEmpty()) {
                 row.setStatusSince(timeline.get(timeline.size() - 1).getAt());
             }
-            return StaffOrderDtos.StaffOrderDetail.builder()
+            StaffOrderDtos.StaffOrderDetail detail = StaffOrderDtos.StaffOrderDetail.builder()
                     .order(row)
                     .userId(order.getUserId())
                     .customerId(order.getCustomerId())
@@ -678,6 +704,11 @@ public class CommerceOrderQueryService {
                             StringUtils.hasText(order.getCodRemittanceId()) || codReceived, hasReturns),
                             roles, admin))
                     .build();
+            CommerceOrderReturnsView extra = returnsView();
+            if (extra != null) {
+                extra.enrich(detail, order, orderLines, roles, admin);
+            }
+            return detail;
         });
     }
 

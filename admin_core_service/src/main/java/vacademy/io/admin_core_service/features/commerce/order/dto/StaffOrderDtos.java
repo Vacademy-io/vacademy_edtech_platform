@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.order.dto;
 
+import vacademy.io.admin_core_service.features.commerce.returns.dto.RefundDtos;
+import vacademy.io.admin_core_service.features.commerce.returns.dto.ReturnDtos;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -48,6 +50,13 @@ public final class StaffOrderDtos {
         private String trackingNumber;
         /** When the order entered its current status. */
         private String statusSince;
+        // Returns and refunds (WP-32)
+        /** refund_due less refund_committed: what is owed back and not yet refunded. */
+        private BigDecimal refundOpen;
+        /** NONE, PENDING, PART or FULL. */
+        private String refundState;
+        /** NONE, IN_PROGRESS, PART or FULL. */
+        private String returnState;
     }
 
     @Data
@@ -108,6 +117,15 @@ public final class StaffOrderDtos {
         private List<String> nextActions;
         /** True when this answers a repeat of an earlier request with the same client_request_id. */
         private Boolean replayed;
+        // Returns and refunds (WP-32)
+        private BigDecimal refundCommitted;
+        private BigDecimal amountRefunded;
+        private BigDecimal refundOpen;
+        private String refundState;
+        private String returnState;
+        private List<ReturnDtos.ReturnSummary> returns;
+        private List<RefundDtos.RefundSummary> refunds;
+        private String exchangeOfOrderId;
     }
 
     @Data

@@ -362,6 +362,8 @@ public class CommerceOrderDeskService {
         order.setConfirmedAt(new Date());
         order.setCodConfirmDueAt(null);
         orderRepository.save(order);
+        // A deferral of the COD timer must not delay the invoice sweep of the confirmed order.
+        orderRepository.clearSweep(order.getId());
         writer.history(order, from, CommerceOrderStatus.CONFIRMED, actor, note == null ? "Confirmed by staff" : note);
         events.afterCommit(event(CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
     }

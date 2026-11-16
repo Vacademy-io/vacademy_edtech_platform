@@ -21,6 +21,10 @@ public class CommerceOrderEvents {
     public static final String ORDER_DELIVERED = "ORDER_DELIVERED";
     public static final String ORDER_CANCELLED = "ORDER_CANCELLED";
     public static final String ORDER_RTO = "ORDER_RTO";
+    /** A return was approved (WP-32): the buyer may send the goods. */
+    public static final String RETURN_APPROVED = "RETURN_APPROVED";
+    /** Money went back to the buyer (WP-32). */
+    public static final String REFUND_PROCESSED = "REFUND_PROCESSED";
 
     /** One event. {@code notifyCustomer} false: staff asked that the buyer is not told. */
     public record OrderEvent(String type, String instituteId, String orderId, String orderNumber,

@@ -91,9 +91,12 @@ class CommerceCodConfirmTimeoutJobTest {
 
         assertEquals(1, job.sweep(NOW));
         verify(desk).cancel(eq(good), eq(lines), eq(CancelReason.COD_NOT_CONFIRMED), isNull(), anyString());
-        // The failed order is left alone for an hour, so it cannot head every later batch.
-        verify(orderRepository).deferSweep("o-1", new Date(NOW.getTime() + 60L * 60 * 1000));
+        // The failed order counts one more failure (its backoff grows), so it cannot head every later batch.
+        verify(orderRepository).deferSweep("o-1", NOW);
         verify(orderRepository, never()).deferSweep(eq("o-2"), any());
+        // The order that was cancelled has its count cleared.
+        verify(orderRepository).clearSweep("o-2");
+        verify(orderRepository, never()).clearSweep("o-1");
     }
 
     @Test
@@ -107,7 +110,6 @@ class CommerceCodConfirmTimeoutJobTest {
 
         assertEquals(1, job.sweep(NOW));
         verify(desk).cancel(eq(good), eq(lines), eq(CancelReason.COD_NOT_CONFIRMED), isNull(), anyString());
-        assertEquals(60, CommerceCodConfirmTimeoutJob.RETRY_AFTER_MINUTES);
     }
 
     @Test

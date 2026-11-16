@@ -49,4 +49,56 @@ public interface CommercePaymentExceptionRepository extends JpaRepository<Commer
             + "WHERE e.id = :id AND e.instituteId = :instituteId AND e.status = 'OPEN'")
     int resolve(@Param("id") String id, @Param("instituteId") String instituteId, @Param("userId") String userId,
                 @Param("note") String note, @Param("now") Date now);
+
+    // -- Refunds (WP-32) --
+
+    /** The automatic refund made for an exception row; set once. */
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_payment_exception SET refund_id = :refundId, updated_at = CURRENT_TIMESTAMP
+            WHERE commerce_order_id = :orderId AND kind = :kind AND gateway_payment_id = :gatewayPaymentId
+              AND refund_id IS NULL
+            """, nativeQuery = true)
+    int linkRefund(@Param("orderId") String orderId, @Param("kind") String kind,
+                   @Param("gatewayPaymentId") String gatewayPaymentId, @Param("refundId") String refundId);
+
+    /** The OPEN rows whose automatic refund was paid out are resolved. */
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_payment_exception
+            SET status = 'RESOLVED', resolved_at = :now, resolved_by = NULL, resolution_note = :note,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE refund_id = :refundId AND status = 'OPEN'
+            """, nativeQuery = true)
+    int resolveByRefund(@Param("refundId") String refundId, @Param("note") String note, @Param("now") Date now);
+
+    /** The OPEN REFUND_DUE rows (written before WP-32) of an order whose due is refunded in full. */
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_payment_exception
+            SET status = 'RESOLVED', resolved_at = :now, resolved_by = NULL, resolution_note = 'Refunded',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE commerce_order_id = :orderId AND kind = 'REFUND_DUE' AND status = 'OPEN'
+            """, nativeQuery = true)
+    int resolveRefundDue(@Param("orderId") String orderId, @Param("now") Date now);
+
+    /**
+     * OPEN oversold and duplicate rows without their automatic refund, older than
+     * {@code createdBefore}: the refund hook is called again for them. An oversold row is read
+     * only when its order has a paying gateway payment (the refund needs one); a duplicate row
+     * only when it names the payment.
+     */
+    @Query(value = """
+            SELECT e.* FROM commerce_payment_exception e
+            WHERE e.status = 'OPEN' AND e.refund_id IS NULL AND e.kind IN ('OVERSOLD_PAID', 'DUPLICATE_PAYMENT')
+              AND e.created_at <= :createdBefore
+              AND ((e.kind = 'DUPLICATE_PAYMENT' AND e.gateway_payment_id <> '')
+                   OR (e.kind = 'OVERSOLD_PAID' AND EXISTS (
+                       SELECT 1 FROM commerce_gateway_order g WHERE g.commerce_order_id = e.commerce_order_id
+                         AND g.paying AND g.gateway_payment_id IS NOT NULL)))
+            ORDER BY e.created_at ASC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    java.util.List<CommercePaymentException> findUnrefunded(@Param("createdBefore") Date createdBefore,
+                                                            @Param("maxRows") int maxRows);
 }

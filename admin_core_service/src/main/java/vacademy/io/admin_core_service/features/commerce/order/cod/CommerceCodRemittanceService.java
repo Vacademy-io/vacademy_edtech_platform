@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.order.cod;
 
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceReturnDueService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +106,14 @@ public class CommerceCodRemittanceService {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    /** Returns (WP-32); set by Spring, absent in tests built by hand. */
+    private ObjectProvider<CommerceReturnDueService> returnDueService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setReturnDueService(ObjectProvider<CommerceReturnDueService> returnDueService) {
+        this.returnDueService = returnDueService;
+    }
 
     public CommerceCodRemittanceService(CommerceCodRemittanceRepository remittanceRepository,
                                         CommerceOrderTenderRepository tenderRepository,
@@ -231,6 +240,11 @@ public class CommerceCodRemittanceService {
             }
             if (entityManager != null) {
                 entityManager.refresh(order);
+            }
+            CommerceReturnDueService dues = returnDueService == null ? null : returnDueService.getIfAvailable();
+            if (dues != null) {
+                // A return received before the money came in: what it is worth is due back now.
+                dues.raiseDeferred(order);
             }
             writer.history(order, CommerceOrderStatus.DELIVERED, CommerceOrderStatus.DELIVERED, actor,
                     "Cash on delivery received: remittance " + clean.reference());

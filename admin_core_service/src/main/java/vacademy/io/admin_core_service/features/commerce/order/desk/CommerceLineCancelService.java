@@ -387,7 +387,7 @@ public class CommerceLineCancelService {
      * from those sums and {@code per_i = quantity_i / U}. A single line (the common case) is 1 per
      * unit as the tax line says. Anything that does not divide falls back to 1.
      */
-    static int[] perUnitCounts(List<InvoiceLineItem> invoiceLines, List<TaxLineResult> taxLines, int lineQuantity) {
+    public static int[] perUnitCounts(List<InvoiceLineItem> invoiceLines, List<TaxLineResult> taxLines, int lineQuantity) {
         int[] per = new int[invoiceLines.size()];
         Arrays.fill(per, 1);
         if (invoiceLines.isEmpty() || taxLines.isEmpty()) {

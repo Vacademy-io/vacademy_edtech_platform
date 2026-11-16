@@ -8,6 +8,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderInvoiceBacklog;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrder;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CancelReason;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CommerceOrderStatus;
@@ -24,17 +25,16 @@ import java.util.List;
  * locked and read again, and only an order still COD_PENDING_CONFIRMATION and due is cancelled
  * (row 2 of the desk table, reason COD_NOT_CONFIRMED, no actor): its stock goes back on sale in
  * that transaction, the COD tender is voided, the plans are cancelled and the coupon use given
- * back. One order that fails does not stop the others, and it is left alone for
- * {@value #RETRY_AFTER_MINUTES} minutes ({@code sweep_retry_after}), so orders that always fail
- * never fill the batch ahead of the orders of other shops. The ShedLock keeps the pods from
- * running the same sweep.
+ * back. One order that fails does not stop the others; it is left alone for 1 h, 4 h, 16 h,
+ * then 24 h ({@code sweep_failures}, {@code sweep_retry_after}) and read after the orders that
+ * never failed, so orders that always fail never fill the batch ahead of the orders of other
+ * shops. A cancel clears the count. The ShedLock keeps the pods from running the same sweep.
  */
 @Slf4j
 @Component
 public class CommerceCodConfirmTimeoutJob {
 
     static final int BATCH = 100;
-    static final int RETRY_AFTER_MINUTES = 60;
 
     private final CommerceCodRemittanceRepository queries;
     private final CommerceOrderRepository orderRepository;
@@ -86,12 +86,7 @@ public class CommerceCodConfirmTimeoutJob {
 
     /** The failed order is left alone for a while; a failure to note that changes nothing else. */
     private void deferQuietly(String orderId, Date now) {
-        try {
-            Date until = new Date(now.getTime() + RETRY_AFTER_MINUTES * 60L * 1000);
-            ownTransaction.executeWithoutResult(status -> orderRepository.deferSweep(orderId, until));
-        } catch (RuntimeException e) {
-            log.warn("COD order {}: could not defer the confirmation timeout retry: {}", orderId, e.getMessage());
-        }
+        CommerceOrderInvoiceBacklog.deferQuietly(orderRepository, ownTransaction, orderId, now, "cod_confirm");
     }
 
     /** Inside the order's transaction: cancelled only when still waiting and still due. */
@@ -107,6 +102,7 @@ public class CommerceCodConfirmTimeoutJob {
         }
         desk.cancel(order, desk.freshLines(orderId), CancelReason.COD_NOT_CONFIRMED, null,
                 "Not confirmed in time");
+        orderRepository.clearSweep(orderId);
         return true;
     }
 }

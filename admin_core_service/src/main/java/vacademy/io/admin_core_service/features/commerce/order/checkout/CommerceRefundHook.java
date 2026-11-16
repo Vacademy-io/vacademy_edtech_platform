@@ -2,22 +2,28 @@ package vacademy.io.admin_core_service.features.commerce.order.checkout;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentException;
 import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentExceptionRepository;
+import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundService;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Money that must go back to a buyer: an order paid
- * after its hold ended with the stock gone, and a second captured payment for an order that
- * was already paid.
+ * Money that must go back to a buyer without a person deciding: an order paid after its hold
+ * ended with the stock gone, and a second captured payment for an order that was already paid.
  *
- * <p>STUB: the refund service does not exist yet. Until it does, every case is
- * written to {@code commerce_payment_exception} (the list staff work from, one row per case,
- * however often the event is delivered) and logged as an alert. The refund work package adds the
- * {@code commerce_refund} row and the gateway refund here; the call sites stay as they are.
+ * <p>Each case is written to {@code commerce_payment_exception} (one row per case, however often
+ * the event is delivered) and then gets its refund row through the gateway (WP-32): the oversold
+ * order's whole payment (its refund due is raised first), or the second payment in full. Only
+ * rows are made here; the refund poll job sends them to the gateway within a minute, never the
+ * webhook or payment thread. The poll also calls this hook again for a row whose refund was not
+ * made (idempotent by key).
+ *
+ * <p>{@link #refundDue} (a cancel, line cancel, RTO or return of a paid order) writes no row: the
+ * order's open due lists it in the order desk's REFUND_DUE queue, where a manager refunds it.
  *
  * <p>Called with no transaction open, after the one that marked the order has committed.
  * Never throws.
@@ -28,14 +34,23 @@ import java.util.UUID;
 public class CommerceRefundHook {
 
     private final CommercePaymentExceptionRepository exceptions;
+    private final ObjectProvider<CommerceRefundService> refunds;
 
     public void refundOversoldPaidOrder(String instituteId, String orderId, String orderNumber, BigDecimal amount,
                                         String currency) {
         record(instituteId, orderId, orderNumber, CommercePaymentException.KIND_OVERSOLD_PAID, null, null, amount,
                 currency, "Paid after the hold ended and the stock was gone; the order is cancelled.");
-        log.error("COMMERCE_ALERT oversold_paid_order_needs_refund institute={} order={} number={} amount={} {} "
-                        + "(automatic refund is not built yet: refund by hand and tell the buyer)",
-                instituteId, orderId, orderNumber, amount, currency);
+        try {
+            CommerceRefundService service = refunds.getIfAvailable();
+            String refundId = service == null ? null : service.autoOversold(instituteId, orderId);
+            if (refundId != null) {
+                log.info("Commerce oversold order {} ({}): refund {} made, sent by the refund poll", orderNumber,
+                        orderId, refundId);
+            }
+        } catch (RuntimeException e) {
+            log.error("COMMERCE_ALERT refund_hook_failed kind=OVERSOLD_PAID institute={} order={}", instituteId,
+                    orderId, e);
+        }
     }
 
     /**
@@ -49,27 +64,35 @@ public class CommerceRefundHook {
         record(instituteId, orderId, orderNumber, CommercePaymentException.KIND_DUPLICATE_PAYMENT, gatewayOrderId,
                 gatewayPaymentId, amount, currency,
                 "A second captured payment for an order that was already paid.");
-        log.error("COMMERCE_ALERT duplicate_payment_needs_refund institute={} order={} number={} gatewayOrder={} "
-                        + "payment={} amount={} {} (automatic refund is not built yet: refund by hand)",
-                instituteId, orderId, orderNumber, gatewayOrderId, gatewayPaymentId, amount, currency);
+        try {
+            CommerceRefundService service = refunds.getIfAvailable();
+            String refundId = service == null ? null
+                    : service.autoDuplicate(instituteId, orderId, gatewayPaymentId, amount);
+            if (refundId != null) {
+                log.info("Commerce order {} ({}): refund {} of the second payment {} made, sent by the refund poll",
+                        orderNumber, orderId, refundId, gatewayPaymentId);
+            } else {
+                log.error("COMMERCE_ALERT duplicate_payment_needs_refund institute={} order={} payment={} amount={} "
+                        + "{}", instituteId, orderId, gatewayPaymentId, amount, currency);
+            }
+        } catch (RuntimeException e) {
+            log.error("COMMERCE_ALERT refund_hook_failed kind=DUPLICATE_PAYMENT institute={} order={} payment={}",
+                    instituteId, orderId, gatewayPaymentId, e);
+        }
     }
 
     /**
-     * The order desk raised {@code commerce_order.refund_due}: a paid order was cancelled, a line
-     * of it was cancelled, or its parcel came back. One row per event key ({@code OCAN:<order>},
-     * {@code LCAN:<line>:<n>}, {@code RTO:<shipment>}), however often the action is replayed.
-     * Joins the caller's transaction (the row commits with the change); never throws.
+     * The order desk raised {@code commerce_order.refund_due} (cancel, line cancel, RTO received,
+     * return received). No row is written: the open due puts the order in the REFUND_DUE queue.
+     * Joins the caller's transaction; never throws.
      */
     public void refundDue(String instituteId, String orderId, String orderNumber, String eventKey, BigDecimal amount,
                           String currency, String detail) {
         if (amount == null || amount.signum() <= 0) {
             return;
         }
-        record(instituteId, orderId, orderNumber, CommercePaymentException.KIND_REFUND_DUE, null, eventKey, amount,
-                currency, detail);
-        log.error("COMMERCE_ALERT refund_due institute={} order={} number={} event={} amount={} {} "
-                        + "(automatic refund is not built yet: refund by hand)",
-                instituteId, orderId, orderNumber, eventKey, amount, currency);
+        log.info("Commerce order {} ({}) of institute {}: {} {} due back ({}): {}", orderNumber, orderId, instituteId,
+                amount, currency, eventKey, detail);
     }
 
     private void record(String instituteId, String orderId, String orderNumber, String kind, String gatewayOrderId,
@@ -78,7 +101,6 @@ public class CommerceRefundHook {
             exceptions.record(UUID.randomUUID().toString(), instituteId, orderId, orderNumber, kind, gatewayOrderId,
                     gatewayPaymentId == null ? "" : gatewayPaymentId, amount, currency, detail);
         } catch (RuntimeException e) {
-            // The alert line below it is then the only record: say so.
             log.error("COMMERCE_ALERT payment_exception_not_recorded institute={} order={} kind={}", instituteId,
                     orderId, kind, e);
         }
