@@ -48,7 +48,8 @@ SELECT 'product.telleo',
            'app_path', '/telleo/setup',
            'login_url', 'https://dash.vacademy.io/login',
            'trial_days', 7,
-           'demo_credits', 60,
+           -- 50 credits = 10 minutes of AI calling at 5 credits a minute (ai_call_out).
+           'demo_credits', 50,
            'self_signup_enabled', false,
            'return_hosts', 'vacademy.io,telleo.ai',
            'signup_rules', jsonb_build_object(
@@ -62,7 +63,16 @@ SELECT 'product.telleo',
                         'signup_alert_whatsapp', e.setting_value -> 'signup_alert_whatsapp',
                         'signup_alert_template', e.setting_value -> 'signup_alert_template',
                         'signup_alert_language', e.setting_value -> 'signup_alert_language',
-                        'whatsapp_waba_id', e.setting_value -> 'whatsapp_waba_id'))
+                        'whatsapp_waba_id', e.setting_value -> 'whatsapp_waba_id',
+                        -- Pricing as Evalezy's: its Starter plan (price = credits + the platform
+                        -- charge), plan length and recharge price. API usage keeps its own rates.
+                        'plans', (SELECT jsonb_agg(p)
+                                    FROM jsonb_array_elements(
+                                             CASE WHEN jsonb_typeof(e.setting_value -> 'plans') = 'array'
+                                                  THEN e.setting_value -> 'plans' ELSE '[]'::jsonb END) p
+                                   WHERE lower(p ->> 'key') = 'starter'),
+                        'plan_validity_months', e.setting_value -> 'plan_validity_months',
+                        'extra_credit_price_inr', e.setting_value -> 'extra_credit_price_inr'))
                       FROM ai_platform_settings e
                      WHERE e.setting_key = 'product.evalezy'), '{}'::jsonb),
        'V674',

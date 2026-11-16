@@ -29,7 +29,7 @@ public final class TelleoAgentDraftBuilder {
     /** Exactly what the voice bot accepts: "en" would silently take the Hindi path. */
     public static final Set<String> LANGUAGES = Set.of("english", "hindi", "hinglish");
 
-    /** Trial calls stop at 3 minutes, so 60 credits (about 10 minutes) is roughly three full calls. */
+    /** Trial calls stop at 3 minutes, so 50 credits (10 minutes) is roughly three full calls. */
     public static final int TRIAL_MAX_CALL_MINUTES = 3;
 
     private static final int MAX_TEXT = 400;
