@@ -53,6 +53,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { DuplicateCourseDialog } from './duplicate-course-dialog';
 
 const MAX_VISIBLE_TAGS = 5;
 
@@ -817,6 +818,12 @@ const CourseListPage = ({
                                                     })}
                                                 </MyButton>
                                                 {showDeleteButton && (
+                                                    <DuplicateCourseDialog
+                                                        courseId={course.id}
+                                                        courseName={course.package_name}
+                                                    />
+                                                )}
+                                                {showDeleteButton && (
                                                     <div onClick={(e) => e.stopPropagation()}>
                                                         <AlertDialog
                                                             open={
@@ -1074,6 +1081,12 @@ const CourseListPage = ({
                                                         ),
                                                     })}
                                                 </MyButton>
+                                                {showDeleteButton && (
+                                                    <DuplicateCourseDialog
+                                                        courseId={course.id}
+                                                        courseName={course.package_name}
+                                                    />
+                                                )}
                                                 {showDeleteButton && (
                                                     <div onClick={(e) => e.stopPropagation()}>
                                                         <AlertDialog

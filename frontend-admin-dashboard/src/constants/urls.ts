@@ -731,6 +731,8 @@ export const DELETE_COURSE = `${BASE_URL}/admin-core-service/course/v1/delete-co
 export const UPDATE_COURSE = `${BASE_URL}/admin-core-service/course/v1/update-course-details`;
 export const COPY_COURSE_CONTENT = `${BASE_URL}/admin-core-service/course/v1/copy-content`;
 export const COPY_CONTENT_LINEAGE = `${BASE_URL}/admin-core-service/course/v1/copy-lineage`;
+// POST /{instituteId}/{courseId}: one-click course duplicate (new course + same batches + separate content copy).
+export const DUPLICATE_COURSE = `${BASE_URL}/admin-core-service/course/v1/duplicate`;
 
 // Per-course (package-level) settings JSON (package.course_setting) + LMS settings.
 export const PACKAGE_SETTING_BASE = `${BASE_URL}/admin-core-service/package/setting/v1`;

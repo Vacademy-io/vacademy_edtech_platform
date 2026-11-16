@@ -55,6 +55,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import { TranslateCourseDialog } from './translate-course-dialog';
+import { DuplicateCourseDialog } from '../../-components/duplicate-course-dialog';
 import { OfflineSettingsDialog } from './OfflineSettingsDialog';
 import { ComingSoonButton } from './ComingSoonDialog';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -1507,6 +1508,15 @@ export const CourseDetailsPage = () => {
                                                     courseId={effectiveCourseId}
                                                 />
                                             </>
+                                        )}
+                                        {Boolean(isAdmin) && effectiveCourseId && (
+                                            <DuplicateCourseDialog
+                                                variant="button"
+                                                courseId={effectiveCourseId}
+                                                courseName={
+                                                    form.getValues('courseData')?.title ?? ''
+                                                }
+                                            />
                                         )}
                                         {canEdit && effectiveCourseId && offlineAccessEnabled && (
                                             <>

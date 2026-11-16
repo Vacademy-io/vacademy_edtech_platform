@@ -10,12 +10,15 @@ import vacademy.io.admin_core_service.features.course.dto.CopyCourseContentRespo
 import vacademy.io.admin_core_service.features.course.dto.CourseBatchDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseRequestDTO;
 import vacademy.io.admin_core_service.features.course.dto.bulk.BulkAddCourseResponseDTO;
+import vacademy.io.admin_core_service.features.course.dto.duplicate.DuplicateCourseRequest;
+import vacademy.io.admin_core_service.features.course.dto.duplicate.DuplicateCourseResponse;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureRequestDTO;
 import vacademy.io.admin_core_service.features.course.dto.restructure.CourseRestructureResponseDTO;
 import vacademy.io.admin_core_service.features.course.service.BulkCourseService;
 import vacademy.io.admin_core_service.features.course.service.CourseRestructureService;
 import vacademy.io.admin_core_service.features.course.service.CourseContentCopyService;
+import vacademy.io.admin_core_service.features.course.service.CourseDuplicateService;
 import vacademy.io.admin_core_service.features.course.service.CourseService;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -31,6 +34,7 @@ public class CourseController {
     private final BulkCourseService bulkCourseService;
     private final CourseContentCopyService courseContentCopyService;
     private final CourseRestructureService courseRestructureService;
+    private final CourseDuplicateService courseDuplicateService;
     private final InstituteAccessValidator instituteAccessValidator;
 
     @PostMapping("/add-course/{instituteId}")
@@ -130,6 +134,29 @@ public class CourseController {
                 request.getMode(),
                 userDetails == null ? null : userDetails.getUserId());
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * One-click "Duplicate course": a new course with the source's details, the same batches
+     * (levels + sessions) and a separate copy of every batch's content. Learners, enrolments,
+     * payment options, invite links and issued certificates are never copied. Body optional:
+     * {"new_course_name": "..."}; blank = "<source name> (Copy)". Institute staff only, and the
+     * course must belong to the institute. See CourseDuplicateService.
+     */
+    @PostMapping("/duplicate/{instituteId}/{courseId}")
+    @Auditable(
+            entityType = "COURSE",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.courseId",
+            descriptionExpr = "'duplicated course ' + #courseId + ' as ' + #result?.body?.courseName")
+    public ResponseEntity<DuplicateCourseResponse> duplicateCourse(
+            @PathVariable("instituteId") String instituteId,
+            @PathVariable("courseId") String courseId,
+            @RequestBody(required = false) DuplicateCourseRequest request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
+        return ResponseEntity.ok(courseDuplicateService.duplicate(instituteId, courseId,
+                request == null ? null : request.getNewCourseName(), userDetails));
     }
 
     /**
