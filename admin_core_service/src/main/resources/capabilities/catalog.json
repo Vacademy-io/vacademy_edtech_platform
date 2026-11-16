@@ -1163,6 +1163,35 @@
       ]
     },
     {
+      "key": "learner_home",
+      "label": "Learner home builder",
+      "description": "Design the learner home: banners, shortcuts, course shelves, notices and events, with targeting and results.",
+      "rail": "LMS",
+      "core": false,
+      "opt_in": true,
+      "features": [
+        {
+          "key": "learner_home.builder",
+          "label": "Learner home",
+          "description": "Build, preview and publish the learner home, and read its results.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "learner-home"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/learner-home"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
       "key": "erp",
       "label": "ERP (HR & Payroll)",
       "description": "People, leave, attendance, payroll, compliance and accounts.",

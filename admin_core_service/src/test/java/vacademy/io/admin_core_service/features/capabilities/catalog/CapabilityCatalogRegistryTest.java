@@ -120,8 +120,14 @@ public class CapabilityCatalogRegistryTest {
         for (String ungoverned : java.util.List.of("commerce-home", "commerce-settings", "commerce-reports")) {
             assertTrue(nav.values().stream().noneMatch(list -> list.contains(ungoverned)), ungoverned);
         }
-        // No other shipped module is opt-in: LEGACY institutes keep everything they had.
-        assertEquals(1, registry.modules().stream().filter(CapabilityCatalog.Module::optIn).count());
+        // The only other opt-in module is the new learner home builder: LEGACY institutes keep
+        // everything they had, and gain nothing they did not ask for.
+        assertEquals(java.util.List.of("commerce", "learner_home"), registry.modules().stream()
+                .filter(CapabilityCatalog.Module::optIn).map(CapabilityCatalog.Module::key).sorted().toList());
+        CapabilityCatalog.Module home = registry.modulesByKey().get("learner_home");
+        assertEquals("LMS", home.rail());
+        assertEquals(java.util.List.of("learner-home"), home.features().get(0).governs().nav());
+        assertTrue(home.features().get(0).defaultOn());
     }
 
     @Test

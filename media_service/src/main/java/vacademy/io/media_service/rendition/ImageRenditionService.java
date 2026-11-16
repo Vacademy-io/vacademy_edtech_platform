@@ -29,9 +29,10 @@ import java.util.concurrent.TimeUnit;
  * metadata row points at, in one of this service's two buckets; no URL is ever taken from a
  * caller, and nothing is fetched from outside the buckets. Files that are private by source
  * or key prefix are refused, so no public copy of them comes into being here. More than that:
- * the file must have been uploaded as a product image ({@link #PRODUCT_MEDIA_SOURCE}) for one
- * of the owners the caller names (the institute, or the product the gallery row belongs to).
- * A file of another institute, or one uploaded for anything else, never gets a public copy.
+ * the file must have been uploaded under one of the {@link #RENDITION_SOURCES} (a product image,
+ * or a learner-home image) for one of the owners the caller names (the institute, or the product
+ * the gallery row belongs to). A file of another institute, or one uploaded for anything else,
+ * never gets a public copy.
  *
  * <p>A second call for the same file is cheap and changes nothing: a rendition whose object
  * is already in the public bucket is not made again, and the source is decoded only when at
@@ -48,8 +49,13 @@ public class ImageRenditionService {
     /** A 640 px product image stays under 150 KB. */
     private static final long BUDGET_AT_640 = 150_000L;
     private static final int MAX_SIDE = 30_000;
-    /** The upload source of a product image; nothing else is ever copied to the public bucket. */
+    /** The upload source of a product image. */
     public static final String PRODUCT_MEDIA_SOURCE = "COMMERCE_PRODUCT_MEDIA";
+    /** The upload source of a learner-home image (banners, shortcut icons, notice and event images). */
+    public static final String LEARNER_HOME_MEDIA_SOURCE = "LEARNER_HOME_MEDIA";
+    /** Upload sources whose files may get public renditions; nothing else is ever copied to the public bucket. */
+    public static final java.util.Set<String> RENDITION_SOURCES =
+            java.util.Set.of(PRODUCT_MEDIA_SOURCE, LEARNER_HOME_MEDIA_SOURCE);
 
     private final AmazonS3 s3Client;
     private final RenditionSourceReader sourceReader;
@@ -140,7 +146,8 @@ public class ImageRenditionService {
     }
 
     private static boolean ownedProductImage(RenditionSourceReader.Source file, Collection<String> owners) {
-        if (!PRODUCT_MEDIA_SOURCE.equals(file.source()) || !StringUtils.hasText(file.sourceId()) || owners == null) {
+        if (file.source() == null || !RENDITION_SOURCES.contains(file.source())
+                || !StringUtils.hasText(file.sourceId()) || owners == null) {
             return false;
         }
         for (String owner : owners) {

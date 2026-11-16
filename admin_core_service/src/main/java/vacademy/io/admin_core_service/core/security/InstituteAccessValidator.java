@@ -128,6 +128,15 @@ public class InstituteAccessValidator {
     }
 
     /**
+     * Any member of the institute (learner or staff), with NO root-user bypass: a non-empty
+     * authorities list and the clientId header equal to {@code instituteId}. For learner-facing
+     * endpoints that act on the caller's own data in that institute (the learner home).
+     */
+    public void requireInstituteMember(CustomUserDetails user, String instituteId) {
+        requireMemberWithoutRootBypass(user, instituteId);
+    }
+
+    /**
      * The non-root membership test of {@link #validateUserAccess}, without its root bypass.
      * Only the authorities path is used: in this service the principal is rebuilt from
      * auth_service's payload and its JPA roles set is always null, and the authorities are
