@@ -67,7 +67,10 @@ export type StudentDashboardWidgetId =
   // nothing for an institute with no plan running. Placed first in the rail
   // at lg and up, else right under the hero; see the dashboard route.
   | "todayTasks"
-  | "custom";
+  // Institute-authored cards. Older settings saved every one as "custom";
+  // new ones get a unique "custom:<shortid>".
+  | "custom"
+  | `custom:${string}`;
 
 export interface StudentDashboardWidgetConfig {
   id: StudentDashboardWidgetId;

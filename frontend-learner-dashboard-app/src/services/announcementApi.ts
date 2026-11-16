@@ -1,6 +1,7 @@
-import axios from 'axios';
+import type { AxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
 import { BASE_URL } from '@/constants/urls';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import type {
   UserMessage,
   UserMessagesResponse,
@@ -20,11 +21,21 @@ import type {
 // Base configuration for notification service API
 const NOTIFICATION_SERVICE_BASE = `${BASE_URL}/notification-service/v1`;
 
-// Create axios instance for notification service (no JWT required)
-const notificationApi = axios.create({
-  baseURL: NOTIFICATION_SERVICE_BASE,
-  timeout: 10000,
-});
+// Notification service calls go through the authenticated instance: the user-messages
+// endpoints require the learner's token and only return that learner's own messages.
+const NOTIFICATION_TIMEOUT_MS = 10000;
+const notificationApi = {
+  get: <T = unknown>(path: string, config?: AxiosRequestConfig) =>
+    authenticatedAxiosInstance.get<T>(`${NOTIFICATION_SERVICE_BASE}${path}`, {
+      timeout: NOTIFICATION_TIMEOUT_MS,
+      ...config,
+    }),
+  post: <T = unknown>(path: string, data?: unknown, config?: AxiosRequestConfig) =>
+    authenticatedAxiosInstance.post<T>(`${NOTIFICATION_SERVICE_BASE}${path}`, data, {
+      timeout: NOTIFICATION_TIMEOUT_MS,
+      ...config,
+    }),
+};
 
 // Helper function to get user context
 const getUserContext = async () => {

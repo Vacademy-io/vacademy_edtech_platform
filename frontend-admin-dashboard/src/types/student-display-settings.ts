@@ -68,7 +68,10 @@ export type StudentDashboardWidgetId =
     // Today's teacher-scheduled tasks (the Daily Engagement module). The
     // learner dashboard renders nothing for an institute with no plan running.
     | 'todayTasks'
-    | 'custom';
+    // Institute-authored cards. Older settings saved every one as "custom";
+    // new ones get a unique "custom:<shortid>".
+    | 'custom'
+    | `custom:${string}`;
 
 /**
  * Ids that used to be offered here but that the learner dashboard never reads.

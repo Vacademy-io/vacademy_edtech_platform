@@ -66,7 +66,11 @@ import {
   writeEngagementPlanFlag,
 } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
-import { getStudentDisplaySettings } from "@/services/student-display-settings";
+import {
+  customWidgetLinkAction,
+  getStudentDisplaySettings,
+  visibleCustomWidgets,
+} from "@/services/student-display-settings";
 import { useWeeklyAttendanceQuery } from "@/services/attendance/getWeeklyAttendance";
 import type { StudentDashboardWidgetConfig } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
@@ -608,9 +612,16 @@ export function DashboardComponent() {
   // on it (isWidgetVisible is re-created every render and can't go in deps).
   const showGamification = isWidgetVisible("gamification");
 
-  const customWidget = widgetConfigs?.find(
-    (w) => w.id === "custom" && w.visible !== false
-  );
+  // Every visible institute-authored card, in order (each has its own id).
+  const customWidgets = visibleCustomWidgets(widgetConfigs);
+  const openCustomWidgetLink = (link: string | undefined) => {
+    const action = customWidgetLinkAction(link);
+    if (!action) return;
+    if (action.kind === "external") void openInBrowser(action.url);
+    else if (action.kind === "assign") window.location.assign(action.url);
+    else if (action.kind === "href") navigate({ href: action.href });
+    else navigate({ to: action.to as never });
+  };
 
   // ── Today's daily tasks (engagement plan) ──────────────────────────────────
   const showTodayTasks =
@@ -1258,26 +1269,20 @@ export function DashboardComponent() {
       visible: isWidgetVisible("learningAnalytics"),
       render: <PastLearningInsights />,
     },
-    {
-      id: "custom" as const,
-      order: getWidgetOrder("custom"),
-      visible: Boolean(customWidget),
-      render: customWidget && isFunTheme ? (
+    ...customWidgets.map((customWidget) => ({
+      id: customWidget.id,
+      order: customWidget.order ?? 0,
+      visible: true,
+      render: isFunTheme ? (
         <FunCustomCard
           title={customWidget.title || t("dashboardPage.customWidgetFallbackTitle")}
           subTitle={customWidget.subTitle}
           openLabel={t("dashboardPage.openButton")}
           onOpen={
-            customWidget.link
-              ? () => {
-                  const link = customWidget.link as string;
-                  if (/^https?:\/\//.test(link)) window.open(link, "_blank");
-                  else navigate({ to: link as never });
-                }
-              : undefined
+            customWidget.link ? () => openCustomWidgetLink(customWidget.link) : undefined
           }
         />
-      ) : customWidget ? (
+      ) : (
         <Card
           className={cn(
             "transition-shadow",
@@ -1298,14 +1303,7 @@ export function DashboardComponent() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  const link = customWidget.link as string;
-                  if (/^https?:\/\//.test(link)) {
-                    window.open(link, "_blank");
-                  } else {
-                    navigate({ to: link as never });
-                  }
-                }}
+                onClick={() => openCustomWidgetLink(customWidget.link)}
                 className="w-full justify-between"
               >
                 {t("dashboardPage.openButton")} <CaretRight size={14} />
@@ -1313,8 +1311,8 @@ export function DashboardComponent() {
             )}
           </CardContent>
         </Card>
-      ) : null,
-    },
+      ),
+    })),
     {
       id: "myMembership" as const,
       order: getWidgetOrder("myMembership"),

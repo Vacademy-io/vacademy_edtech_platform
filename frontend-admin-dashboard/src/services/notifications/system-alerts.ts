@@ -1,4 +1,4 @@
-import axios from 'axios';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 
 export interface SystemAlertContentBody {
@@ -66,7 +66,7 @@ export async function fetchSystemAlerts(params: {
     const { userId, page = 0, size = 20 } = params;
     try {
         const url = getSystemAlertsUrl(userId);
-        const response = await axios.get(url, {
+        const response = await authenticatedAxiosInstance.get(url, {
             params: {
                 page,
                 size,
@@ -144,11 +144,14 @@ export async function markSystemAlertAsRead(
     userId: string
 ): Promise<void> {
     try {
-        await axios.post(`${BASE_URL}/notification-service/v1/user-messages/interactions/read`, {
-            recipientMessageId,
-            userId,
-            interactionType: 'READ',
-        });
+        await authenticatedAxiosInstance.post(
+            `${BASE_URL}/notification-service/v1/user-messages/interactions/read`,
+            {
+                recipientMessageId,
+                userId,
+                interactionType: 'READ',
+            }
+        );
     } catch (error) {
         console.warn('Failed to mark system alert as read:', error);
     }
@@ -168,11 +171,14 @@ export async function dismissSystemAlert(
     recipientMessageId: string,
     userId: string
 ): Promise<void> {
-    await axios.post(`${BASE_URL}/notification-service/v1/user-messages/interactions/dismiss`, {
-        recipientMessageId,
-        userId,
-        interactionType: 'DISMISSED',
-    });
+    await authenticatedAxiosInstance.post(
+        `${BASE_URL}/notification-service/v1/user-messages/interactions/dismiss`,
+        {
+            recipientMessageId,
+            userId,
+            interactionType: 'DISMISSED',
+        }
+    );
 }
 
 // Clear ALL of a user's system alerts. The backend has no bulk endpoint, so we
