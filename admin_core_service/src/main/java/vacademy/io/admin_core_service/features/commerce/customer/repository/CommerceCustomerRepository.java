@@ -74,4 +74,37 @@ public interface CommerceCustomerRepository extends JpaRepository<CommerceCustom
             WHERE id = :id AND institute_id = :instituteId
             """, nativeQuery = true)
     int bumpSessionEpoch(@Param("id") String id, @Param("instituteId") String instituteId);
+
+    // -- Cash on delivery (WP-31) --
+
+    /**
+     * The customer row of a phone, locked FOR UPDATE: its refusal count. Two COD orders of one
+     * phone placed at the same moment queue here, so the limits read below are race-free.
+     * Null when the shop has no row for the phone.
+     */
+    @Query(value = """
+            SELECT c.cod_refusals FROM commerce_customer c
+            WHERE c.institute_id = :instituteId AND c.phone = :phone
+            FOR UPDATE
+            """, nativeQuery = true)
+    Integer lockCodRefusalsByPhone(@Param("instituteId") String instituteId, @Param("phone") String phone);
+
+    /** The refusal count of a phone, not locked (the early check before the order transaction). */
+    @Query(value = """
+            SELECT c.cod_refusals FROM commerce_customer c
+            WHERE c.institute_id = :instituteId AND c.phone = :phone
+            """, nativeQuery = true)
+    Integer findCodRefusalsByPhone(@Param("instituteId") String instituteId, @Param("phone") String phone);
+
+    /**
+     * Cash-on-delivery orders of a phone that are open and not paid: placed, confirmed, packed or
+     * on their way. A delivered order waiting for the courier's money does not count.
+     */
+    @Query(value = """
+            SELECT COUNT(*) FROM commerce_order o
+            WHERE o.institute_id = :instituteId AND o.customer_phone = :phone
+              AND o.payment_method = 'COD' AND o.payment_status = 'UNPAID'
+              AND o.status IN ('COD_PENDING_CONFIRMATION', 'CONFIRMED', 'PACKED', 'SHIPPED')
+            """, nativeQuery = true)
+    long countOpenCodOrders(@Param("instituteId") String instituteId, @Param("phone") String phone);
 }

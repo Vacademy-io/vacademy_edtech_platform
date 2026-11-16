@@ -706,4 +706,110 @@ class CommerceOrderWriterTest {
         long orderMinutes = (written.order().getHoldExpiresAt().getTime() - System.currentTimeMillis()) / 60_000L;
         assertTrue(orderMinutes >= 14 && orderMinutes <= 15, "the order's own time stays the shop's hold time");
     }
+
+    // ------------------------------------------------------------------ cash on delivery (WP-31)
+
+    /** 1000 + 5 % tax + a 40.00 COD charge, priced for COD. */
+    private static CartPriceSnapshot codSnapshot() {
+        TaxLineResult itemTax = TaxLineResult.builder().lineRef("r1").lineType(TaxLineType.ITEM)
+                .gross(new BigDecimal("1000.00")).lineDiscount(BigDecimal.ZERO).orderDiscount(BigDecimal.ZERO)
+                .taxableValue(new BigDecimal("1000.00")).taxAmount(new BigDecimal("50.00")).build();
+        TaxLineResult codTax = TaxLineResult.builder().lineRef("COD_CHARGE").lineType(TaxLineType.COD_CHARGE)
+                .description("Cash on delivery charge").gross(new BigDecimal("40.00")).lineDiscount(BigDecimal.ZERO)
+                .orderDiscount(BigDecimal.ZERO).taxableValue(new BigDecimal("40.00")).taxAmount(BigDecimal.ZERO)
+                .build();
+        BigDecimal total = new BigDecimal("1090.00");
+        return CartPriceSnapshot.builder().version(1).instituteId(INSTITUTE).currency("INR").locale("hi")
+                .paymentMethod("COD").pincode("226001").placeOfSupplyState("09").fulfilmentLocationId("loc-1")
+                .lines(List.of(CartPriceSnapshot.Line.builder().lineRef("r1").packageSessionId("ps-a").quantity(1)
+                        .qtyScale(1).name("Kurta").sku("SKU-A").unitPrice(new BigDecimal("1000.00")).build()))
+                .discounts(List.of())
+                .tax(TaxResult.builder().lines(List.of(itemTax, codTax)).subtotal(new BigDecimal("1000.00"))
+                        .discount(BigDecimal.ZERO).shipping(BigDecimal.ZERO).codCharge(new BigDecimal("40.00"))
+                        .taxAmount(new BigDecimal("50.00")).roundOff(BigDecimal.ZERO).total(total).build())
+                .total(total)
+                .build();
+    }
+
+    @Test
+    void aCodOrderIsConfirmedItsStockSoldItsLogsOfflineAndItsTenderACodAmount() {
+        stubSaves();
+        when(legacyRepository.markLogsOffline(anyCollection(), anyString(), anyString()))
+                .thenAnswer(call -> ((Collection<?>) call.getArgument(0)).size());
+
+        CommerceOrderWriter.Written written = writer.write(newOrder(codSnapshot()),
+                new CommerceOrderWriter.CodPlacement(false, null));
+
+        CommerceOrder order = written.order();
+        assertEquals("CONFIRMED", order.getStatus());
+        assertNotNull(order.getConfirmedAt());
+        assertNull(order.getCodConfirmDueAt());
+        assertEquals("COD", order.getPaymentMethod());
+        assertEquals("UNPAID", order.getPaymentStatus());
+        assertEquals(new BigDecimal("1090.00"), order.getCodAmount());
+        assertEquals(new BigDecimal("40.00"), order.getCodCharge());
+        assertNull(order.getHoldExpiresAt(), "nothing expires a COD order");
+        assertEquals(Boolean.TRUE, order.getPhoneVerified());
+        assertNull(written.releaseToken(), "a sold hold has nothing to release");
+        // The COD charge is a line of its own; the one item log carries the whole total.
+        assertEquals(2, written.lines().size());
+        assertEquals(CommerceOrderLine.TYPE_COD_CHARGE, written.lines().get(1).getLineType());
+        assertEquals(new BigDecimal("40.00"), written.lines().get(1).getLineTotal());
+        assertEquals(new BigDecimal("1090.00"), written.lines().get(0).getLogAmount());
+
+        InOrder sold = inOrder(stockHoldService, legacyRepository);
+        sold.verify(stockHoldService).hold(eq(INSTITUTE), any(), eq(StockHoldKind.PURCHASE), eq(15));
+        sold.verify(stockHoldService).markSoldNow(holds);
+        verify(paymentLogService).createPaymentLog(eq(USER), anyDouble(), eq("OFFLINE"), eq("OFFLINE"), eq("INR"),
+                any(UserPlan.class), eq("order-1"));
+        verify(legacyRepository).markLogsOffline(List.of("log-1"), order.getPaymentGroupId(), "COD");
+
+        ArgumentCaptor<CommerceOrderTender> tender = ArgumentCaptor.forClass(CommerceOrderTender.class);
+        verify(tenderRepository).save(tender.capture());
+        assertEquals("COD", tender.getValue().getMode());
+        assertEquals("PENDING", tender.getValue().getStatus());
+        assertEquals(new BigDecimal("1090.00"), tender.getValue().getAmount());
+
+        ArgumentCaptor<CommerceOrderStatusHistory> history = ArgumentCaptor.forClass(CommerceOrderStatusHistory.class);
+        verify(historyRepository).save(history.capture());
+        assertNull(history.getValue().getFromStatus());
+        assertEquals("CONFIRMED", history.getValue().getToStatus());
+    }
+
+    @Test
+    void aCodOrderAboveTheConfirmAmountWaitsForStaffUntilItsDueTime() {
+        stubSaves();
+        when(legacyRepository.markLogsOffline(anyCollection(), anyString(), anyString()))
+                .thenAnswer(call -> ((Collection<?>) call.getArgument(0)).size());
+        java.util.Date due = new java.util.Date(System.currentTimeMillis() + 48 * 3_600_000L);
+
+        CommerceOrder order = writer.write(newOrder(codSnapshot()), new CommerceOrderWriter.CodPlacement(true, due))
+                .order();
+
+        assertEquals("COD_PENDING_CONFIRMATION", order.getStatus());
+        assertEquals(due, order.getCodConfirmDueAt());
+        assertNull(order.getConfirmedAt());
+        verify(stockHoldService).markSoldNow(holds);
+    }
+
+    @Test
+    void aCodOrderNeedsAProvedPhoneAndACartPricedForCod() {
+        stubSaves();
+        CommerceOrderWriter.CodPlacement cod = new CommerceOrderWriter.CodPlacement(false, null);
+        assertThrows(IllegalStateException.class,
+                () -> writer.write(newOrder(codSnapshot(), false, false, null), cod));
+        assertThrows(IllegalStateException.class, () -> writer.write(newOrder(snapshot(false)), cod));
+        verify(stockHoldService, never()).markSoldNow(any());
+        verify(paymentLogService, never()).createPaymentLog(anyString(), anyDouble(), anyString(), anyString(),
+                anyString(), any(UserPlan.class), anyString());
+    }
+
+    @Test
+    void aCodOrderWhoseLogsCannotBeMarkedIsRolledBack() {
+        stubSaves();
+        when(legacyRepository.markLogsOffline(anyCollection(), anyString(), anyString())).thenReturn(0);
+        assertThrows(IllegalStateException.class, () -> writer.write(newOrder(codSnapshot()),
+                new CommerceOrderWriter.CodPlacement(false, null)));
+        verify(tenderRepository, never()).save(any());
+    }
 }

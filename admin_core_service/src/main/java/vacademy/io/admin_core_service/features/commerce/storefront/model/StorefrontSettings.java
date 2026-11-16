@@ -26,7 +26,8 @@ import java.util.Set;
  *   "priceBands": [1000, 2500, 5000],
  *   "dispatchPromise": { "hi": "...", "en": "Ships in 2 working days" },
  *   "cod": { "enabled": true, "maxOrderValue": 5000, "staffConfirmThreshold": 3000,
- *            "blockedPincodes": ["190001"], "maxOpenOrdersPerPhone": 2, "maxRefusals": 2 },
+ *            "blockedPincodes": ["190001"], "maxOpenOrdersPerPhone": 2, "maxRefusals": 2,
+ *            "confirmWithinHours": 48 },
  *   "buyerIdentity": "EITHER",
  *   "otp": { "instituteHourlyCap": 300 },
  *   "offers": { ... as on a product page ... },
@@ -47,6 +48,10 @@ import java.util.Set;
  * <p>{@code buyerIdentity} ({@link BuyerIdentity}) says who the buyer of a shop order is; missing
  * or unknown is {@code EITHER}. {@code otp.instituteHourlyCap} is how many OTP messages the shop
  * may send in one hour (10 to 2000; missing or out of range is 300).
+ *
+ * <p>{@code cod.confirmWithinHours} (1 to 168, default 48): a cash-on-delivery order above
+ * {@code staffConfirmThreshold} that staff have not confirmed within this many hours is
+ * cancelled by the timer.
  *
  * <p>{@code orders.refundShippingOnRto} (the order desk): when a prepaid parcel comes back, the
  * delivery charge is refunded too (true, the default) or kept (false). Only a JSON false keeps it.
@@ -84,6 +89,9 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
     public static final int MAX_COD_MAX_OPEN_ORDERS_PER_PHONE = 20;
     public static final int DEFAULT_COD_MAX_REFUSALS = 2;
     public static final int MAX_COD_MAX_REFUSALS = 20;
+    public static final int DEFAULT_COD_CONFIRM_WITHIN_HOURS = 48;
+    public static final int MIN_COD_CONFIRM_WITHIN_HOURS = 1;
+    public static final int MAX_COD_CONFIRM_WITHIN_HOURS = 168;
 
     /** The settings without the checkout keys: buyer identity and OTP cap take their defaults. */
     public StorefrontSettings(String baseLocale, int lowStockThreshold, String leadMediaTag,
@@ -95,7 +103,21 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
 
     /** Cash on delivery: off unless the seller switched it on. */
     public record Cod(boolean enabled, BigDecimal maxOrderValue, BigDecimal staffConfirmThreshold,
-                      Set<String> blockedPincodes, int maxOpenOrdersPerPhone, int maxRefusals) {
+                      Set<String> blockedPincodes, int maxOpenOrdersPerPhone, int maxRefusals,
+                      int confirmWithinHours) {
+
+        /** Without the confirmation window: it takes its default. */
+        public Cod(boolean enabled, BigDecimal maxOrderValue, BigDecimal staffConfirmThreshold,
+                   Set<String> blockedPincodes, int maxOpenOrdersPerPhone, int maxRefusals) {
+            this(enabled, maxOrderValue, staffConfirmThreshold, blockedPincodes, maxOpenOrdersPerPhone, maxRefusals,
+                    DEFAULT_COD_CONFIRM_WITHIN_HOURS);
+        }
+
+        /** The same limits with {@code enabled} as given (the deployment switch, for example). */
+        public Cod withEnabled(boolean on) {
+            return on == enabled ? this : new Cod(on, maxOrderValue, staffConfirmThreshold, blockedPincodes,
+                    maxOpenOrdersPerPhone, maxRefusals, confirmWithinHours);
+        }
 
         /** Without the two per-phone limits: they take their defaults. */
         public Cod(boolean enabled, BigDecimal maxOrderValue, BigDecimal staffConfirmThreshold,
@@ -200,7 +222,9 @@ public record StorefrontSettings(String baseLocale, int lowStockThreshold, Strin
                 max, confirm, Set.copyOf(blocked),
                 bounded(number(codNode.path("maxOpenOrdersPerPhone")), 1, MAX_COD_MAX_OPEN_ORDERS_PER_PHONE,
                         DEFAULT_COD_MAX_OPEN_ORDERS_PER_PHONE),
-                bounded(number(codNode.path("maxRefusals")), 0, MAX_COD_MAX_REFUSALS, DEFAULT_COD_MAX_REFUSALS));
+                bounded(number(codNode.path("maxRefusals")), 0, MAX_COD_MAX_REFUSALS, DEFAULT_COD_MAX_REFUSALS),
+                bounded(number(codNode.path("confirmWithinHours")), MIN_COD_CONFIRM_WITHIN_HOURS,
+                        MAX_COD_CONFIRM_WITHIN_HOURS, DEFAULT_COD_CONFIRM_WITHIN_HOURS));
 
         String rules = null;
         if (root.path("offers").isObject() || root.path("basketPricing").isObject()) {

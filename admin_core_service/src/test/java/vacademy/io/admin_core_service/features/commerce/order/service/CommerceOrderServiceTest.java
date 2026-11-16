@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceSellerLookup;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.order.cod.CodEligibility;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
@@ -113,7 +114,7 @@ class CommerceOrderServiceTest {
 
         service = new CommerceOrderService(storefrontSettings, variantLoader, shippingRuleService, pincodeService,
                 taxSettingService, taxClassService, sellerLookup, stockSettings, clock, couponValidationService,
-                new OfferCalculator(), new BasketPricingCalculator());
+                new OfferCalculator(), new BasketPricingCalculator(), new CommerceCodAvailability(true));
 
         variants.put("ps-a", variant("ps-a", "SKU-A", "1050.00", 10, 1, 1));
         variants.put("ps-b", variant("ps-b", "SKU-B", "500.00", 10, 1, 1));
@@ -429,6 +430,23 @@ class CommerceOrderServiceTest {
         CartPriceDtos.CartPrice disabled = service.priceCart(INSTITUTE, off).view();
         assertEquals(CodEligibility.COD_DISABLED, disabled.getCod().getReason());
         assertEquals("PREPAID", disabled.getPaymentMethod());
+    }
+
+    @Test
+    void withCodPlacementSwitchedOffTheCartNeverOffersCod() {
+        // The shop switched COD on; the deployment (COMMERCE_COD_PLACEMENT_ENABLED) did not.
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "codAvailability",
+                CommerceCodAvailability.off());
+        CartPriceRequest request = cart(line("ps-b", 1));
+        request.setPaymentMethod("COD");
+        request.setPincode("226001");
+        CommerceOrderService.CartPrice priced = service.priceCart(INSTITUTE, request);
+        assertFalse(priced.view().getCod().isEligible());
+        assertEquals(CodEligibility.COD_DISABLED, priced.view().getCod().getReason());
+        assertEquals("PREPAID", priced.view().getPaymentMethod());
+        assertEquals("PREPAID", priced.snapshot().getPaymentMethod());
+        assertMoney("0.00", priced.view().getTotals().getCodCharge());
+        assertTrue(priced.snapshot().getTax().getLines().stream().noneMatch(l -> l.getLineType() == TaxLineType.COD_CHARGE));
     }
 
     @Test

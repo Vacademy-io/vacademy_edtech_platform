@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.catalog_api.CatalogApiEnvelope;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiException;
 import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
 import vacademy.io.admin_core_service.features.commerce.order.cod.CodEligibility;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.pincode.CommercePincodeService;
@@ -57,6 +58,7 @@ public class PublicCommerceCartController implements CatalogApiEnvelope {
     private final CommerceOrderService orderService;
     private final CommercePincodeService pincodeService;
     private final CommerceStorefrontSettings storefrontSettings;
+    private final CommerceCodAvailability codAvailability;
 
     @PostMapping("/cart/price")
     public ResponseEntity<CartPriceDtos.CartPrice> price(HttpServletRequest http,
@@ -88,7 +90,8 @@ public class PublicCommerceCartController implements CatalogApiEnvelope {
                     "A pincode has six digits.", details, null);
         }
         StorefrontSettings settings = storefrontSettings.read(p.instituteId());
-        String codReason = !settings.cod().enabled() ? CodEligibility.COD_DISABLED
+        // COD_DISABLED also while the deployment does not place COD orders: checkout would refuse.
+        String codReason = !codAvailability.effective(settings.cod()) ? CodEligibility.COD_DISABLED
                 : settings.cod().blockedPincodes().contains(found.pincode()) ? CodEligibility.PINCODE_BLOCKED : null;
         String locale = http.getParameter("locale") != null ? http.getParameter("locale") : http.getParameter("lang");
         return ResponseEntity.ok()

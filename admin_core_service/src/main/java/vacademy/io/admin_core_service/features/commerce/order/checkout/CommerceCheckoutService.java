@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.commerce.order.checkout;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,9 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
 import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
 import vacademy.io.admin_core_service.features.commerce.customer.service.CommerceCustomerService;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodPlacementRules;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CheckoutDtos;
@@ -30,6 +34,7 @@ import vacademy.io.admin_core_service.features.commerce.otp.CommerceBotCheck;
 import vacademy.io.admin_core_service.features.commerce.otp.CommerceRateLimiter;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.model.StorefrontSettings;
 import vacademy.io.admin_core_service.features.commerce.storefront.service.CommerceStorefrontSettings;
 import vacademy.io.admin_core_service.features.commerce.tax.service.GstinValidator;
 
@@ -71,7 +76,14 @@ import java.util.regex.Pattern;
  *       it. A failed gateway call leaves the order PENDING_PAYMENT for a retry; the claim on
  *       the order row means the gateway is never asked twice at once for one order.</li>
  * </ol>
- * COD is a later package: the payment method is checked in one place ({@link #paymentMethod}).
+ * <p><b>Cash on delivery</b> (WP-31) follows the same steps with these changes: it needs the
+ * deployment switch and the shop's setting ({@link CommerceCodAvailability}); the phone must be
+ * proved by a verified-phone token of this shop (a shopper session does not count) before
+ * anything else is done; the cart is priced for COD and must qualify; the open COD orders and the
+ * refusals of the phone are checked early and again in the write transaction under a lock on the
+ * customer row, where the token is also spent; the order is CONFIRMED (or waits for a staff call
+ * above the shop's amount), its stock SOLD at once, and no gateway order is ever made
+ * ({@link CommerceCodPlacementRules}).
  */
 @Slf4j
 @Service
@@ -129,6 +141,9 @@ public class CommerceCheckoutService {
     private final ObjectMapper objectMapper;
     /** Not read-only: a read-only transaction would read the replica. */
     private final TransactionTemplate primary;
+    private final CommerceCodAvailability codAvailability;
+    private final CommerceCodPlacementRules codRules;
+    private final CommerceOrderEvents events;
 
     public CommerceCheckoutService(CommerceOrderService orderService,
                                    CommerceOrderWriter writer,
@@ -149,6 +164,39 @@ public class CommerceCheckoutService {
                                    CommerceStorefrontSettings storefrontSettings,
                                    ObjectMapper objectMapper,
                                    PlatformTransactionManager transactionManager) {
+        this(orderService, writer, buyerResolver, counterService, stockSettings, orderRepository, lineRepository,
+                legacyRepository, gateway, accessTokens, botCheck, paymentConfirmService, orderPaymentService,
+                rateLimiter, verifiedPhones, shopperSessions, storefrontSettings, objectMapper, transactionManager,
+                CommerceCodAvailability.off(), null, null);
+    }
+
+    /** With cash on delivery: the deployment switch, its placement rules and the order events. */
+    @Autowired
+    public CommerceCheckoutService(CommerceOrderService orderService,
+                                   CommerceOrderWriter writer,
+                                   CommerceBuyerResolver buyerResolver,
+                                   CommerceCounterService counterService,
+                                   CommerceStockSettings stockSettings,
+                                   CommerceOrderRepository orderRepository,
+                                   CommerceOrderLineRepository lineRepository,
+                                   CommerceOrderLegacyRepository legacyRepository,
+                                   CheckoutGateway gateway,
+                                   CommerceOrderAccessTokens accessTokens,
+                                   CommerceBotCheck botCheck,
+                                   CommercePaymentConfirmService paymentConfirmService,
+                                   CommerceOrderPaymentService orderPaymentService,
+                                   CommerceRateLimiter rateLimiter,
+                                   VerifiedPhones verifiedPhones,
+                                   CommerceShopperSessions shopperSessions,
+                                   CommerceStorefrontSettings storefrontSettings,
+                                   ObjectMapper objectMapper,
+                                   PlatformTransactionManager transactionManager,
+                                   CommerceCodAvailability codAvailability,
+                                   CommerceCodPlacementRules codRules,
+                                   CommerceOrderEvents events) {
+        this.codAvailability = codAvailability == null ? CommerceCodAvailability.off() : codAvailability;
+        this.codRules = codRules;
+        this.events = events;
         this.orderService = orderService;
         this.writer = writer;
         this.buyerResolver = buyerResolver;
@@ -176,7 +224,11 @@ public class CommerceCheckoutService {
                  Map<String, Object> shippingAddress, Map<String, Object> billingAddress,
                  CommerceCustomerService.AddressInput addressToRemember, boolean marketingConsent,
                  String buyerGstin, String customerNote, String giftNote, String challengeToken,
-                 String phoneToken) {
+                 String phoneToken, String paymentMethod) {
+
+        boolean cod() {
+            return CartPriceRequest.COD.equals(paymentMethod);
+        }
     }
 
     // ------------------------------------------------------------------ place
@@ -207,6 +259,8 @@ public class CommerceCheckoutService {
                     "Checkout is not available for this shop yet.");
         }
         Clean clean = validate(request);
+        // Cash on delivery: the deployment and the shop must both allow it (step 1 of WP-31).
+        StorefrontSettings.Cod cod = clean.cod() ? codSettings(instituteId) : null;
         String hash = requestHash(clean);
 
         // Idempotency, first look: the common replay (double click, retry after a timeout).
@@ -220,7 +274,17 @@ public class CommerceCheckoutService {
         // checkout, or a shopper session of the same phone. Everything that touches the
         // customer of that phone, and the buyer of the order, depends on this. Asked before the
         // bot check, so that a refusal by the shop's mode does not spend the shopper's token.
-        boolean phoneVerified = phoneProved(instituteId, clean, sessionToken);
+        boolean phoneVerified;
+        if (cod != null) {
+            // COD needs a fresh OTP token of this phone; a shopper session does not count. Read
+            // here, spent in the write transaction. Nothing is written or counted without it.
+            if (!codRules.proved(instituteId, clean.phoneToken(), clean.phone())) {
+                throw CommerceCodPlacementRules.phoneNotProved();
+            }
+            phoneVerified = true;
+        } else {
+            phoneVerified = phoneProved(instituteId, clean, sessionToken);
+        }
         BuyerIdentity mode = buyerIdentity(instituteId);
         CommerceBuyerResolver.requireAllowed(mode, phoneVerified, clean.email());
 
@@ -246,6 +310,10 @@ public class CommerceCheckoutService {
 
         CartPriceSnapshot snapshot = price(instituteId, clean);
         requireUnderOpenOrderCap(instituteId, clean, phoneVerified);
+        if (cod != null) {
+            // Early and without a lock; the write transaction checks again under the lock.
+            codRules.requireUnderLimits(instituteId, clean.phone(), cod);
+        }
         // The state the tax was computed for is the state of the address the order keeps: the
         // pincode decides, and a state typed beside it is only used when the pincode names none.
         String state = snapshot.getPlaceOfSupplyState();
@@ -271,9 +339,31 @@ public class CommerceCheckoutService {
                 clean.shippingAddress(), clean.billingAddress(), remember,
                 clean.marketingConsent(), clean.buyerGstin(), clean.customerNote(), clean.giftNote(), snapshot,
                 holdMinutes, phoneVerified, buyer.holder());
+        CommerceOrderWriter.CodPlacement codPlacement = null;
+        if (cod != null) {
+            CommerceCodPlacementRules.Terms terms = CommerceCodPlacementRules.terms(cod, snapshot.getTotal(), new Date());
+            codPlacement = new CommerceOrderWriter.CodPlacement(terms.staffConfirmation(), terms.confirmDueAt());
+        }
+        CommerceOrderWriter.CodPlacement placing = codPlacement;
         CommerceOrderWriter.Written written;
         try {
-            written = primary.execute(status -> writer.write(newOrder));
+            written = primary.execute(status -> {
+                if (placing == null) {
+                    return writer.write(newOrder);
+                }
+                // One transaction: the token is spent and the limits of the phone are checked
+                // under the lock of its customer row, then the order is written. A refusal or a
+                // failure anywhere rolls all of it back, the spent token included.
+                codRules.spendAndLock(instituteId, clean.phoneToken(), clean.phone(), cod);
+                CommerceOrderWriter.Written w = writer.write(newOrder, placing);
+                if (events != null) {
+                    CommerceOrder o = w.order();
+                    events.afterCommit(new CommerceOrderEvents.OrderEvent(placing.staffConfirmation()
+                            ? CommerceOrderEvents.COD_CONFIRMATION_NEEDED : CommerceOrderEvents.ORDER_CONFIRMED,
+                            o.getInstituteId(), o.getId(), o.getOrderNumber(), null, true));
+                }
+                return w;
+            });
         } catch (DataIntegrityViolationException e) {
             // Two requests with one key at the same moment: the other one won the unique key.
             CommerceOrder winner = primary.execute(status -> orderRepository
@@ -294,8 +384,13 @@ public class CommerceCheckoutService {
             return replay(winner, hash);
         }
         CommerceOrder order = written.order();
-        log.info("Commerce order {} ({}) placed for institute {}: {} line(s), total {} {}", order.getOrderNumber(),
-                order.getId(), instituteId, written.lines().size(), order.getTotal(), order.getCurrency());
+        log.info("Commerce order {} ({}) placed for institute {}: {} line(s), total {} {}{}", order.getOrderNumber(),
+                order.getId(), instituteId, written.lines().size(), order.getTotal(), order.getCurrency(),
+                cod != null ? ", cash on delivery, " + order.getStatus() : "");
+        if (cod != null) {
+            // No gateway order and nothing to hold: the money comes with the parcel.
+            return placed(order, null, null, false, false);
+        }
 
         CheckoutDtos.Payment payment = gatewayOrder(order.getId());
         CheckoutDtos.Hold hold = CheckoutDtos.Hold.builder()
@@ -344,7 +439,30 @@ public class CommerceCheckoutService {
             throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.IDEMPOTENCY_KEY_REUSED,
                     "This client_request_id was used for a different order.");
         }
+        if (CartPriceRequest.COD.equals(earlier.getPaymentMethod())) {
+            // A cash-on-delivery order has no payment step.
+            return placed(earlier, null, null, true, false);
+        }
         return paymentStep(earlier);
+    }
+
+    /**
+     * The shop's COD settings when COD can be placed now (deployment switch and shop setting);
+     * else 409 {@code payment_method_not_available}, reason {@code COD_NOT_AVAILABLE}.
+     */
+    private StorefrontSettings.Cod codSettings(String instituteId) {
+        StorefrontSettings.Cod cod;
+        try {
+            cod = storefrontSettings.read(instituteId).cod();
+        } catch (RuntimeException e) {
+            log.warn("Could not read the COD settings of institute {}: {}", instituteId, e.getClass().getSimpleName());
+            cod = null;
+        }
+        if (codRules == null || !codAvailability.effective(cod)) {
+            throw CommerceCodPlacementRules.notAvailable(CommerceCodPlacementRules.REASON_COD_NOT_AVAILABLE,
+                    "Cash on delivery is not available.");
+        }
+        return cod;
     }
 
     /**
@@ -601,7 +719,7 @@ public class CommerceCheckoutService {
                 .couponCode(clean.couponCode())
                 .pincode((String) shipping.get("pincode"))
                 .stateCode((String) shipping.get("state_code"))
-                .paymentMethod(CartPriceRequest.PREPAID)
+                .paymentMethod(clean.cod() ? CartPriceRequest.COD : CartPriceRequest.PREPAID)
                 .locale(clean.locale())
                 .email(clean.email())
                 .build();
@@ -626,6 +744,12 @@ public class CommerceCheckoutService {
         if (snapshot.getPlaceOfSupplyState() == null) {
             // The state of the address decides the tax head: no order without it.
             throw CheckoutException.invalid("The delivery address needs a valid pincode or state.");
+        }
+        if (clean.cod() && !CartPriceRequest.COD.equals(snapshot.getPaymentMethod())) {
+            // The cart does not qualify for COD at this address (limit, blocked pincode, ...);
+            // the reason is the cart's, and the total compared below would be the prepaid one.
+            String reason = priced.view().getCod() == null ? null : priced.view().getCod().getReason();
+            throw CommerceCodPlacementRules.notAvailable(reason, "Cash on delivery is not available for this order.");
         }
         if (snapshot.getTotal() == null || snapshot.getTotal().compareTo(clean.expectedTotal()) != 0) {
             throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.PRICE_CHANGED,
@@ -696,7 +820,7 @@ public class CommerceCheckoutService {
         if (lines.size() > CommerceOrderService.MAX_LINES) {
             throw CheckoutException.invalid("A cart holds at most " + CommerceOrderService.MAX_LINES + " lines.");
         }
-        paymentMethod(request.getPaymentMethod());
+        String method = paymentMethod(request.getPaymentMethod());
         BigDecimal expected = request.getExpectedTotal();
         if (expected == null || expected.signum() < 0 || expected.scale() > 2
                 || expected.precision() - expected.scale() > 10) {
@@ -752,12 +876,13 @@ public class CommerceCheckoutService {
                 text(request.getCustomerNote(), "customer_note", 500, false),
                 text(request.getGiftNote(), "gift_note", 500, false),
                 text(request.getChallengeToken(), "challenge_token", 2048, false),
-                text(request.getPhoneToken(), "phone_token", 2048, false));
+                text(request.getPhoneToken(), "phone_token", 2048, false), method);
     }
 
     /**
-     * The one place the payment method of an online order is decided. Prepaid is built; COD is
-     * a later package and plugs in here (OTP first, limits, holds sold at placement, no gateway order).
+     * The payment method of an online order in its stored spelling: PREPAID (also when none is
+     * sent) or COD. Whether COD may be placed is decided in {@link #placeOrder} (deployment
+     * switch and the shop's setting), before anything else.
      */
     static String paymentMethod(String asked) {
         String method = trim(asked);
@@ -765,11 +890,7 @@ public class CommerceCheckoutService {
             return CartPriceRequest.PREPAID;
         }
         if (CartPriceRequest.COD.equalsIgnoreCase(method)) {
-            // CommerceCheckoutConfig.COD_ONLINE is false until COD placement is built.
-            Map<String, Object> details = new LinkedHashMap<>();
-            details.put("reason", "COD_NOT_AVAILABLE");
-            throw new CheckoutException(HttpStatus.CONFLICT, CheckoutException.PAYMENT_METHOD_NOT_AVAILABLE,
-                    "Cash on delivery is not available yet.", details);
+            return CartPriceRequest.COD;
         }
         throw CheckoutException.invalid("payment_method is PREPAID or COD.");
     }
@@ -826,6 +947,10 @@ public class CommerceCheckoutService {
         text.append("S|").append(addressPart(clean.shippingAddress())).append('\n');
         text.append("I|").append(addressPart(clean.billingAddress())).append('\n');
         text.append("N|").append(part(clean.customerNote())).append('|').append(part(clean.giftNote())).append('\n');
+        if (clean.cod()) {
+            // Only for COD, so that the hash of every prepaid request stays as it was.
+            text.append("P|COD\n");
+        }
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(text.toString().getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder(64);

@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiErrorAdvice;
 import vacademy.io.admin_core_service.features.catalog_api.CatalogApiException;
 import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.pincode.CommercePincodeService;
 import vacademy.io.admin_core_service.features.commerce.order.service.CartPricingException;
@@ -50,6 +51,9 @@ class PublicCommerceCartControllerTest {
     private CommerceAccessGuard guard;
     private CommerceOrderService orderService;
     private CommercePincodeService pincodeService;
+    private CommerceStorefrontSettings settings;
+    /** The deployment allows COD placement unless a test builds the routes with it off. */
+    private CommerceCodAvailability codAvailability = new CommerceCodAvailability(true);
     private MockMvc mvc;
 
     @BeforeEach
@@ -58,11 +62,15 @@ class PublicCommerceCartControllerTest {
         guard = mock(CommerceAccessGuard.class);
         orderService = mock(CommerceOrderService.class);
         pincodeService = mock(CommercePincodeService.class);
-        CommerceStorefrontSettings settings = mock(CommerceStorefrontSettings.class);
+        settings = mock(CommerceStorefrontSettings.class);
         when(settings.read("inst-1")).thenReturn(StorefrontTestData.settings());
         when(auth.authenticateUnmetered(any(), eq(CatalogApiAuth.SCOPE_READ))).thenReturn(READER);
+        build();
+    }
+
+    private void build() {
         mvc = MockMvcBuilders.standaloneSetup(new PublicCommerceCartController(auth, new StorefrontFeatureGate(guard),
-                        orderService, pincodeService, settings))
+                        orderService, pincodeService, settings, codAvailability))
                 .setControllerAdvice(new CatalogApiErrorAdvice()).build();
     }
 
@@ -162,6 +170,23 @@ class PublicCommerceCartControllerTest {
                 .andExpect(jsonPath("$.cod_reason").value("PINCODE_BLOCKED"))
                 .andExpect(jsonPath("$.city").doesNotExist())
                 .andExpect(jsonPath("$.dispatch_promise").value("2 कार्य दिवसों में भेजा जाएगा"));
+    }
+
+    @Test
+    void withCodPlacementSwitchedOffThePincodeAnswersCodDisabledWhateverTheShopSet() throws Exception {
+        codAvailability = CommerceCodAvailability.off();
+        build();
+        when(pincodeService.lookup("226001")).thenReturn(new CommercePincodeService.Pincode("226001", "Lucknow",
+                "09", "Uttar Pradesh", CommercePincodeService.SOURCE_DIRECTORY));
+        mvc.perform(get(BASE + "/pincode/226001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cod_allowed").value(false))
+                .andExpect(jsonPath("$.cod_reason").value("COD_DISABLED"));
+        // A blocked pincode answers COD_DISABLED too: the switch is the first reason.
+        when(pincodeService.lookup("190001")).thenReturn(new CommercePincodeService.Pincode("190001", null, "01",
+                "Jammu and Kashmir", CommercePincodeService.SOURCE_PIN_PREFIX));
+        mvc.perform(get(BASE + "/pincode/190001"))
+                .andExpect(jsonPath("$.cod_reason").value("COD_DISABLED"));
     }
 
     @Test

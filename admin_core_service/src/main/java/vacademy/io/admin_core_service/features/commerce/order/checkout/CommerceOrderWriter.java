@@ -143,6 +143,25 @@ public class CommerceOrderWriter {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Written write(NewOrder n) {
+        return write(n, null);
+    }
+
+    /**
+     * A cash-on-delivery order placed online (WP-31): the caller has spent the shopper's OTP token
+     * and checked the limits of the phone in this transaction. The order is CONFIRMED, or
+     * COD_PENDING_CONFIRMATION until staff call (above the shop's confirmation amount); it has no
+     * hold time, its stock is SOLD at once, its payment logs are of vendor OFFLINE with payment
+     * mode COD, and one COD tender PENDING carries the whole total ({@code cod_amount}).
+     */
+    public record CodPlacement(boolean staffConfirmation, Date confirmDueAt) {
+    }
+
+    /** {@link #write(NewOrder)}, or with {@code cod} a cash-on-delivery order (see {@link CodPlacement}). */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Written write(NewOrder n, CodPlacement cod) {
+        if (cod != null && !n.phoneVerified()) {
+            throw new IllegalStateException("a cash-on-delivery order needs a proved phone");
+        }
         CartPriceSnapshot snapshot = n.snapshot();
         TaxResult tax = snapshot.getTax();
 
@@ -194,10 +213,27 @@ public class CommerceOrderWriter {
         order.setTotal(money(snapshot.getTotal()));
         order.setAmountPaid(ZERO);
         order.setCurrency(snapshot.getCurrency());
-        order.setPaymentMethod(CartPriceRequest.PREPAID);
         order.setPaymentStatus(PAYMENT_UNPAID);
-        CommerceOrderTransitions.require(null, CommerceOrderStatus.PENDING_PAYMENT);
-        order.setStatus(CommerceOrderStatus.PENDING_PAYMENT.name());
+        CommerceOrderStatus initial;
+        if (cod == null) {
+            order.setPaymentMethod(CartPriceRequest.PREPAID);
+            initial = CommerceOrderStatus.PENDING_PAYMENT;
+        } else {
+            if (!CartPriceRequest.COD.equals(snapshot.getPaymentMethod())) {
+                throw new IllegalStateException("a cash-on-delivery order needs a cart priced for COD");
+            }
+            order.setPaymentMethod(CartPriceRequest.COD);
+            order.setCodAmount(money(snapshot.getTotal()));
+            initial = cod.staffConfirmation() ? CommerceOrderStatus.COD_PENDING_CONFIRMATION
+                    : CommerceOrderStatus.CONFIRMED;
+            if (cod.staffConfirmation()) {
+                order.setCodConfirmDueAt(cod.confirmDueAt());
+            } else {
+                order.setConfirmedAt(new Date());
+            }
+        }
+        CommerceOrderTransitions.require(null, initial);
+        order.setStatus(initial.name());
         order.setFulfilmentLocationId(snapshot.getFulfilmentLocationId());
         order.setCustomerNote(n.customerNote());
         order.setGiftNote(n.giftNote());
@@ -210,7 +246,8 @@ public class CommerceOrderWriter {
             order.setCouponCode(coupon.getCode());
             order.setAppliedCouponDiscountId(coupon.getAppliedCouponDiscountId());
         }
-        order.setHoldExpiresAt(holdExpiresAt);
+        // A COD order waits for no payment: nothing expires it (staff confirm or cancel it).
+        order.setHoldExpiresAt(cod == null ? holdExpiresAt : null);
         // Flushed here: a second request with the same client_request_id fails on the unique
         // key now, before any stock is held, any plan is written or the coupon is touched.
         order = orderRepository.saveAndFlush(order);
@@ -219,8 +256,19 @@ public class CommerceOrderWriter {
         redeemOnce(coupon);
 
         List<CommerceOrderLine> lines = lineRepository.saveAll(buildLines(order, snapshot));
-        // The stock is held a little longer than the order (see FINAL_FETCH_GRACE_MINUTES).
-        MoneyRows money = writeMoneyRows(order, lines, n.holdMinutes() + FINAL_FETCH_GRACE_MINUTES);
+        MoneyRows money;
+        if (cod == null) {
+            // The stock is held a little longer than the order (see FINAL_FETCH_GRACE_MINUTES).
+            money = writeMoneyRows(order, lines, n.holdMinutes() + FINAL_FETCH_GRACE_MINUTES);
+        } else {
+            money = writeMoneyRows(order, lines, n.holdMinutes(), VENDOR_OFFLINE);
+            // Placed: the stock is sold now, so neither the expiry job nor a release can free it.
+            stockHoldService.markSoldNow(money.holds());
+            if (legacyRepository.markLogsOffline(money.paymentLogIds(), order.getPaymentGroupId(),
+                    CartPriceRequest.COD) != money.paymentLogIds().size()) {
+                throw new IllegalStateException("payment logs of COD order " + order.getId() + " could not be marked");
+            }
+        }
         lines = lineRepository.saveAll(lines);
         order.setPrimaryPaymentLogId(money.primaryPaymentLogId());
         order = orderRepository.save(order);
@@ -228,13 +276,17 @@ public class CommerceOrderWriter {
         CommerceOrderTender tender = new CommerceOrderTender();
         tender.setInstituteId(order.getInstituteId());
         tender.setOrderId(order.getId());
-        tender.setMode(CommerceOrderTender.MODE_GATEWAY);
+        tender.setMode(cod == null ? CommerceOrderTender.MODE_GATEWAY : CommerceOrderTender.MODE_COD);
         tender.setAmount(order.getTotal());
         tender.setStatus(CommerceOrderTender.STATUS_PENDING);
         tenderRepository.save(tender);
 
-        history(order, null, CommerceOrderStatus.PENDING_PAYMENT, n.userId(), "Order placed");
-        return new Written(order, lines, money.releaseToken());
+        history(order, null, CommerceOrderStatus.of(order.getStatus()), n.userId(),
+                cod == null ? "Order placed" : cod.staffConfirmation()
+                        ? "Order placed, cash on delivery: waiting for a call to confirm"
+                        : "Order placed, cash on delivery");
+        // A COD order has no stock to release: its holds are sold.
+        return new Written(order, lines, cod == null ? money.releaseToken() : null);
     }
 
     /** A staff-created order, resolved before its transaction opens. */

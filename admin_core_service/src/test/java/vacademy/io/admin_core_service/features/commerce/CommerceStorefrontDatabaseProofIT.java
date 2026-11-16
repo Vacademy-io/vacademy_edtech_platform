@@ -156,6 +156,10 @@ class CommerceStorefrontDatabaseProofIT {
     static void database(DynamicPropertyRegistry registry) {
         CommerceM1DatabaseProofIT.database(registry);
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "16");
+        // The cart offers COD only with the deployment switch on (WP-31; default off). The COD
+        // pricing proved here needs it; COD_DISABLED with the switch off is proved by
+        // CommerceOrderServiceTest and CommerceCodDatabaseProofIT.
+        registry.add("commerce.cod.placement-enabled", () -> "true");
     }
 
     @Autowired

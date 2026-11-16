@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.customer.CommerceShopperSessions;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
 import vacademy.io.admin_core_service.features.commerce.otp.CommerceBotCheck;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
 import vacademy.io.admin_core_service.features.commerce.storefront.model.StorefrontSettings;
@@ -24,11 +25,6 @@ import java.util.Map;
 @Component
 public class CommerceCheckoutConfig {
 
-    /**
-     * Cash on delivery can be placed online. False until COD placement is built: the answer
-     * then says {@code cod.online: false} and lists no COD method, whatever the shop set.
-     */
-    public static final boolean COD_ONLINE = false;
     static final String OTP_CHANNEL = "WHATSAPP";
     static final int OTP_CODE_LENGTH = 6;
     static final int OTP_RESEND_AFTER_SECONDS = 60;
@@ -37,21 +33,25 @@ public class CommerceCheckoutConfig {
     private final CommerceStorefrontSettings storefrontSettings;
     private final CommerceStockSettings stockSettings;
     private final CommerceBotCheck botCheck;
+    private final CommerceCodAvailability codAvailability;
     private final String turnstileSiteKey;
 
     public CommerceCheckoutConfig(CommerceStorefrontSettings storefrontSettings, CommerceStockSettings stockSettings,
-                                  CommerceBotCheck botCheck,
+                                  CommerceBotCheck botCheck, CommerceCodAvailability codAvailability,
                                   @Value("${commerce.turnstile.site-key:}") String turnstileSiteKey) {
         this.storefrontSettings = storefrontSettings;
         this.stockSettings = stockSettings;
         this.botCheck = botCheck;
+        this.codAvailability = codAvailability;
         this.turnstileSiteKey = StringUtils.hasText(turnstileSiteKey) ? turnstileSiteKey.trim() : null;
     }
 
     public Map<String, Object> config(String instituteId) {
         StorefrontSettings settings = storefrontSettings.read(instituteId);
         StorefrontSettings.Cod cod = settings.cod();
-        boolean codOffered = cod.enabled() && COD_ONLINE;
+        // Online only when the deployment switch (COMMERCE_COD_PLACEMENT_ENABLED) and the shop
+        // both say so; "enabled" below is the shop's own setting.
+        boolean codOffered = codAvailability != null && codAvailability.effective(cod);
 
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("buyer_identity", (settings.buyerIdentity() == null ? BuyerIdentity.DEFAULT
@@ -85,7 +85,7 @@ public class CommerceCheckoutConfig {
 
         Map<String, Object> codView = new LinkedHashMap<>();
         codView.put("enabled", cod.enabled());
-        codView.put("online", COD_ONLINE);
+        codView.put("online", codOffered);
         codView.put("max_order_value", cod.maxOrderValue());
         codView.put("staff_confirm_threshold", cod.staffConfirmThreshold());
         answer.put("cod", codView);

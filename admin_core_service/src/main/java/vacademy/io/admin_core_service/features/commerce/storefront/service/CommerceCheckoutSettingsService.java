@@ -23,11 +23,14 @@ import java.util.Map;
 
 /**
  * The checkout keys of {@code COMMERCE_SETTING} for staff: buyer identity, the hourly OTP cap,
- * the cash-on-delivery limits and the order-desk keys ({@code orders.refundShippingOnRto}).
+ * the cash-on-delivery limits (with the blocked pincodes and the staff-confirmation window) and
+ * the order-desk keys ({@code orders.refundShippingOnRto}). The generic institute-settings
+ * route writes {@code COMMERCE_SETTING} for super admins only, so these keys have their writer
+ * here.
  *
  * <p>A write is read-modify-write under a row lock on the institute, on the stored JSON: only
  * the keys named here change, every other key of the setting (hold time, base language,
- * limits, bot check, blocked pincodes, ...) and every other setting of the institute stays as
+ * limits, bot check, ...) and every other setting of the institute stays as
  * stored. A value staff typed that is not allowed is refused (400), never replaced by a
  * default.
  */
@@ -36,6 +39,9 @@ public class CommerceCheckoutSettingsService {
 
     /** The highest COD order value the platform allows until its owner raises it. */
     public static final BigDecimal COD_MAX_CEILING = new BigDecimal("5000.00");
+    /** The most pincodes one shop may block for cash on delivery. */
+    public static final int MAX_BLOCKED_PINCODES = 500;
+    private static final java.util.regex.Pattern PINCODE = java.util.regex.Pattern.compile("^[1-9][0-9]{5}$");
     static final String KEY = CommerceStockSettings.SETTING_KEY;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -133,6 +139,15 @@ public class CommerceCheckoutSettingsService {
                 codNode.put("maxRefusals", wholeNumber(cod.path("max_refusals"), "cod.max_refusals", 0,
                         StorefrontSettings.MAX_COD_MAX_REFUSALS));
             }
+            if (cod.has("confirm_within_hours")) {
+                codNode.put("confirmWithinHours", wholeNumber(cod.path("confirm_within_hours"),
+                        "cod.confirm_within_hours", StorefrontSettings.MIN_COD_CONFIRM_WITHIN_HOURS,
+                        StorefrontSettings.MAX_COD_CONFIRM_WITHIN_HOURS));
+            }
+            if (cod.has("blocked_pincodes")) {
+                // The list sent replaces the stored one.
+                codNode.set("blockedPincodes", pincodes(cod.path("blocked_pincodes")));
+            }
         }
         JsonNode orders = body.get("orders");
         if (orders != null && !orders.isNull()) {
@@ -163,6 +178,8 @@ public class CommerceCheckoutSettingsService {
         cod.put("staff_confirm_threshold", settings.cod().staffConfirmThreshold());
         cod.put("max_open_orders_per_phone", settings.cod().maxOpenOrdersPerPhone());
         cod.put("max_refusals", settings.cod().maxRefusals());
+        cod.put("confirm_within_hours", settings.cod().confirmWithinHours());
+        cod.put("blocked_pincodes", settings.cod().blockedPincodes().stream().sorted().toList());
         answer.put("cod", cod);
         Map<String, Object> orders = new LinkedHashMap<>();
         orders.put("refund_shipping_on_rto", settings.refundShippingOnRto());
@@ -189,6 +206,26 @@ public class CommerceCheckoutSettingsService {
         entry.put("name", "Commerce Settings");
         entry.putObject("data");
         return entry;
+    }
+
+    /** A list of distinct six-digit pincodes (at most {@link #MAX_BLOCKED_PINCODES}), sorted. */
+    static com.fasterxml.jackson.databind.node.ArrayNode pincodes(JsonNode node) {
+        if (node == null || !node.isArray() || node.size() > MAX_BLOCKED_PINCODES) {
+            throw new InvalidRequestException("invalid_request: cod.blocked_pincodes is a list of at most "
+                    + MAX_BLOCKED_PINCODES + " six-digit pincodes");
+        }
+        java.util.TreeSet<String> pins = new java.util.TreeSet<>();
+        for (JsonNode pin : node) {
+            String value = pin == null || !pin.isTextual() ? null : pin.asText().trim();
+            if (value == null || !PINCODE.matcher(value).matches()) {
+                throw new InvalidRequestException("invalid_request: cod.blocked_pincodes holds six-digit pincodes "
+                        + "as text, not starting with 0");
+            }
+            pins.add(value);
+        }
+        com.fasterxml.jackson.databind.node.ArrayNode out = MAPPER.createArrayNode();
+        pins.forEach(out::add);
+        return out;
     }
 
     private static int wholeNumber(JsonNode node, String field, int min, int max) {

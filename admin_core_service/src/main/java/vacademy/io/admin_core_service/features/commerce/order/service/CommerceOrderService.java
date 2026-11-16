@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceO
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceSellerLookup;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.order.cod.CodEligibility;
+import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
@@ -114,6 +115,8 @@ public class CommerceOrderService {
     private final CouponValidationService couponValidationService;
     private final OfferCalculator offerCalculator;
     private final BasketPricingCalculator basketPricingCalculator;
+    /** The deployment switch of COD placement: a cart never offers COD that checkout refuses. */
+    private final CommerceCodAvailability codAvailability;
 
     private final CommerceTaxCalculator taxCalculator = new CommerceTaxCalculator();
     private final ObjectMapper rulesReader = new ObjectMapper();
@@ -373,8 +376,8 @@ public class CommerceOrderService {
                 discounts.total(), shipping, null, rule, taxClasses);
         TaxResult prepaid = calculate(prepaidRequest);
 
-        CodEligibility.Result cod = CodEligibility.check(settings.cod(), prepaid.getTotal().add(codCharge), pincode,
-                codCharge);
+        CodEligibility.Result cod = CodEligibility.check(codAvailability.effectiveCod(settings.cod()),
+                prepaid.getTotal().add(codCharge), pincode, codCharge);
         boolean codApplied = codAsked && cod.eligible();
         TaxRequest finalRequest = prepaidRequest;
         TaxResult tax = prepaid;
@@ -918,7 +921,8 @@ public class CommerceOrderService {
                             String pincode, String placeState, String placeSource, BigDecimal codCharge,
                             CommerceShippingCalculator.Rule rule) {
         CommerceShippingCalculator.Quote shipping = CommerceShippingCalculator.quote(rule, ZERO, 0);
-        CodEligibility.Result cod = CodEligibility.check(settings.cod(), ZERO, pincode, codCharge);
+        CodEligibility.Result cod = CodEligibility.check(codAvailability.effectiveCod(settings.cod()), ZERO, pincode,
+                codCharge);
         CartPriceDtos.Coupon coupon = trim(request.getCouponCode()) == null ? null
                 : CartPriceDtos.Coupon.builder().code(trim(request.getCouponCode()).toUpperCase(Locale.ROOT))
                 .applied(false).reason(CodEligibility.CART_EMPTY).discount(ZERO).build();

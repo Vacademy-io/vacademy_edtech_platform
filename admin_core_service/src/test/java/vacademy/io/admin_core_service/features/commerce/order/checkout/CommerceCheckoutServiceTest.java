@@ -961,7 +961,9 @@ class CommerceCheckoutServiceTest {
         assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals(CheckoutException.PAYMENT_METHOD_NOT_AVAILABLE, e.getCode());
         assertEquals("COD_NOT_AVAILABLE", e.getDetails().get("reason"));
-        assertFalse(CommerceCheckoutConfig.COD_ONLINE);
+        // The deployment switch is off unless COMMERCE_COD_PLACEMENT_ENABLED says otherwise.
+        assertFalse(vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodAvailability.off()
+                .placementEnabled());
     }
 
     @Test

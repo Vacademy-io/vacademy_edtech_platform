@@ -166,6 +166,12 @@ describe('refusals of /checkout', () => {
         for (const [error, action] of cases) expect(checkoutErrorAction(error), error.code).toBe(action);
         expect(checkoutErrorAction(new CommerceApiError('network', 0, '', 'network'))).toBe('network');
     });
+    it('hides cash on delivery for every reason the server gives, and asks for an OTP when COD needs one', () => {
+        for (const reason of ['ORDER_ABOVE_COD_LIMIT', 'PINCODE_BLOCKED', 'PINCODE_INVALID', 'OPEN_COD_ORDERS', 'COD_REFUSALS', 'COD_DISABLED', 'COD_NOT_AVAILABLE']) {
+            expect(checkoutErrorAction(err(409, 'payment_method_not_available', { reason })), reason).toBe('hide_cod');
+        }
+        expect(checkoutErrorAction(err(403, 'phone_verification_required', { param: 'phone_token', reason: 'cod' }))).toBe('otp');
+    });
 });
 
 describe('the order page', () => {
