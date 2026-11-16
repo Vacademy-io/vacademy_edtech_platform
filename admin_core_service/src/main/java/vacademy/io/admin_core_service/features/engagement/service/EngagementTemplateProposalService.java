@@ -358,7 +358,9 @@ public class EngagementTemplateProposalService {
 
     @Transactional
     public EngagementTemplateProposal withdraw(String id, String instituteId) {
-        if (proposalRepository.withdraw(id, instituteId, Instant.now()) == 0) {
+        // A person may also retire a template that is live, so the engine stops choosing it.
+        if (proposalRepository.withdraw(id, instituteId, Instant.now()) == 0
+                && proposalRepository.retireLive(id, instituteId, Instant.now()) == 0) {
             throw new VacademyException("Template can't be withdrawn in its current state");
         }
         return requireProposal(id, instituteId);

@@ -2,7 +2,16 @@ import { isUserAdmin } from '@/utils/userDetails';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { DotsThreeVertical, SignOut, Sparkle, SquaresFour, UserCircle, SlidersHorizontal } from '@phosphor-icons/react';
+import {
+    Crown,
+    DotsThreeVertical,
+    PlayCircle,
+    SignOut,
+    Sparkle,
+    SquaresFour,
+    UserCircle,
+    SlidersHorizontal,
+} from '@phosphor-icons/react';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { removeCookiesAndLogout } from '@/lib/auth/sessionUtility';
 import { isEvalezyMode } from '@/lib/evalezy-mode';
@@ -23,7 +32,9 @@ export const EvalezyHeader = () => {
     const { data: credits } = useAiCreditsQuery(true);
 
     const menu = [
+        { label: t('tutorials.menu'), value: 'help', icon: <PlayCircle size={16} /> },
         { label: t('profile.view'), value: 'profile', icon: <UserCircle size={16} /> },
+        { label: t('plan.menu'), value: 'plan', icon: <Crown size={16} /> },
         { label: t('credits.title'), value: 'credits', icon: <Sparkle size={16} /> },
         ...(isUserAdmin()
             ? [
@@ -47,8 +58,16 @@ export const EvalezyHeader = () => {
     ];
 
     const onSelect = (value: string) => {
+        if (value === 'help') {
+            void navigate({ to: '/evalezy/help' });
+            return;
+        }
         if (value === 'profile') {
             void navigate({ to: '/evalezy/profile' });
+            return;
+        }
+        if (value === 'plan') {
+            void navigate({ to: '/evalezy/plan' });
             return;
         }
         if (value === 'credits') {
@@ -95,6 +114,14 @@ export const EvalezyHeader = () => {
                             </span>
                         </Link>
                     )}
+                    <Link
+                        to="/evalezy/help"
+                        aria-label={t('tutorials.menu')}
+                        title={t('tutorials.menu')}
+                        className="flex size-9 shrink-0 items-center justify-center rounded-md text-primary-500 hover:bg-neutral-100"
+                    >
+                        <PlayCircle size={22} weight="fill" />
+                    </Link>
                     {/* MyDropdown's trigger is itself the button; the child is only its face. */}
                     <MyDropdown dropdownList={menu} onSelect={(value) => onSelect(String(value))}>
                         <span className="flex size-9 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100">

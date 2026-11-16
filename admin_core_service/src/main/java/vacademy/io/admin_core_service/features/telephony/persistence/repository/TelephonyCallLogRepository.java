@@ -343,4 +343,20 @@ public interface TelephonyCallLogRepository extends JpaRepository<TelephonyCallL
             """, nativeQuery = true)
     List<Object[]> countAiCallsInFlight(@Param("providers") List<String> providers,
                                         @Param("since") java.sql.Timestamp since);
+
+    /** Newest call of one direction attributed to a lead. The Try the AI call page polls this. */
+    Optional<TelephonyCallLog> findFirstByResponseIdAndDirectionOrderByCreatedAtDesc(String responseId,
+                                                                                     String direction);
+
+    /**
+     * Attributes an unattributed call to a lead, so it shows on the lead timeline and the AI
+     * outcome applies to that lead. Never overwrites an existing attribution.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE TelephonyCallLog c SET c.responseId = :responseId, c.userId = :userId "
+            + "WHERE c.id = :id AND c.responseId IS NULL")
+    int attachLeadIfUnattributed(@Param("id") String id,
+                                 @Param("responseId") String responseId,
+                                 @Param("userId") String userId);
 }

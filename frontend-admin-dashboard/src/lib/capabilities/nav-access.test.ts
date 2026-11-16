@@ -16,7 +16,10 @@ vi.hoisted(() => {
 });
 
 import { getSidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
-import type { SidebarItemsType } from '@/types/layout-container/layout-container-types';
+import type {
+    SidebarCategory,
+    SidebarItemsType,
+} from '@/types/layout-container/layout-container-types';
 import type { RecentTabEntry } from '@/components/common/layout-container/sidebar/recent-tabs-store';
 import { createEntitlement, FULL_ENTITLEMENT } from './entitlement';
 import {
@@ -29,6 +32,7 @@ import {
     pickActiveCategory,
 } from './nav-access';
 import { canAllExcept, canForModules, CRM_ONLY_MODULES, loadRealCatalog } from './test-support';
+import { filterCommerceSidebar, resolveCommerceAccess } from '@/lib/commerce/commerce-access';
 
 const catalog = loadRealCatalog();
 const staticItems = getSidebarItemsData();
@@ -39,6 +43,15 @@ const crmOnly = createEntitlement({
     can: canForModules(catalog, CRM_ONLY_MODULES),
     staticItems,
 });
+
+/**
+ * The commerce gate mySidebar applies right after the plan filter. Commerce is
+ * gated by its own fail-closed reader (two of its tabs open on ANY commerce
+ * feature, which the catalogue cannot express), so a plan-filtered sidebar is
+ * only what the user sees once this has run too.
+ */
+const afterCommerceGate = (items: SidebarItemsType[], can: (featureKey: string) => boolean) =>
+    filterCommerceSidebar(items, resolveCommerceAccess({ roles: ['ADMIN'], isFeatureOn: can }));
 
 const ids = (items: SidebarItemsType[]) => items.map((i) => i.id);
 const subIds = (items: SidebarItemsType[], tabId: string) =>
@@ -61,7 +74,10 @@ describe('LEGACY regression — the sidebar list is unchanged', () => {
 });
 
 describe('filterSidebarByEntitlement — CRM-only plan', () => {
-    const out = filterSidebarByEntitlement(staticItems, crmOnly);
+    const out = afterCommerceGate(
+        filterSidebarByEntitlement(staticItems, crmOnly),
+        canForModules(catalog, CRM_ONLY_MODULES)
+    );
 
     it('drops LMS, AI and ERP tabs, keeps CRM and core', () => {
         const kept = ids(out);
@@ -420,7 +436,10 @@ describe('pickActiveCategory (rail category for the current route)', () => {
         { id: 'ERP', visible: false, default: false, order: 3 },
     ];
     // What the CRM-only sidebar actually draws.
-    const crmOnlyItems = filterSidebarByEntitlement(staticItems, crmOnly);
+    const crmOnlyItems = afterCommerceGate(
+        filterSidebarByEntitlement(staticItems, crmOnly),
+        canForModules(catalog, CRM_ONLY_MODULES)
+    );
     const available = categoriesWithItems(crmOnlyItems, undefined);
 
     it('LEGACY behaves as before', () => {
@@ -440,6 +459,27 @@ describe('pickActiveCategory (rail category for the current route)', () => {
         // no match → default; no role settings yet → keep the current one
         expect(pickActiveCategory({ ...base, matches: [], sidebarCategories: cats })).toBe('LMS');
         expect(pickActiveCategory({ ...base, matches: [], sidebarCategories: null })).toBeNull();
+    });
+
+    it('never falls back to COMMERCE unless it is available', () => {
+        const allHidden = [
+            { id: 'CRM', visible: false, default: true, order: 0 },
+            { id: 'LMS', visible: false, default: false, order: 1 },
+            { id: 'AI', visible: false, default: false, order: 2 },
+            { id: 'ERP', visible: false, default: false, order: 3 },
+            { id: 'COMMERCE', visible: true, default: false, order: 4 },
+        ];
+        const base = { activeCategory: 'CRM', isNavigation: true, matches: [] as SidebarCategory[] };
+        expect(
+            pickActiveCategory({ ...base, available: null, sidebarCategories: allHidden })
+        ).toBeNull();
+        expect(
+            pickActiveCategory({
+                ...base,
+                available: new Set<SidebarCategory>(['COMMERCE']),
+                sidebarCategories: allHidden,
+            })
+        ).toBe('COMMERCE');
     });
 
     it('MANAGED: a page outside the plan opens a category with items, never an empty panel', () => {

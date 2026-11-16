@@ -99,6 +99,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
         passPercentage: 50,
         reAttemptCountEnabled: false,
         reAttemptCount: 3,
+        showAnswerAfterEachQuestion: false,
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -145,6 +146,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                         negative_marking: quizSettings.negativeMarkingEnabled ? quizSettings.negativeMarking : 0,
                         partial_marking: quizSettings.partialMarking,
                         pass_percentage: quizSettings.passPercentageEnabled ? quizSettings.passPercentage : null,
+                        show_answer_after_each_question: quizSettings.showAnswerAfterEachQuestion,
                         questions: currentQuestions,
                     },
                 });
@@ -192,6 +194,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 passPercentage: passPercentage ?? 50,
                 reAttemptCountEnabled: (qs as any).re_attempt_count != null,
                 reAttemptCount: (qs as any).re_attempt_count ?? 3,
+                showAnswerAfterEachQuestion: qs.show_answer_after_each_question === true,
             });
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -252,6 +255,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
                 partial_marking: quizSettings.partialMarking,
                 pass_percentage: quizSettings.passPercentageEnabled ? quizSettings.passPercentage : null,
                 re_attempt_count: quizSettings.reAttemptCountEnabled ? quizSettings.reAttemptCount : undefined,
+                show_answer_after_each_question: quizSettings.showAnswerAfterEachQuestion,
                 questions: currentQuestions,
             },
         });
@@ -326,6 +330,7 @@ const QuizPreview = ({ activeItem, routeParams }: QuizPreviewProps) => {
         partialMarking: s.partialMarking,
         passPercentage: s.passPercentageEnabled ? s.passPercentage : null,
         reAttemptCount: s.reAttemptCountEnabled ? s.reAttemptCount : null,
+        showAnswerAfterEachQuestion: s.showAnswerAfterEachQuestion,
     });
 
     const handleSaveSettings = async () => {

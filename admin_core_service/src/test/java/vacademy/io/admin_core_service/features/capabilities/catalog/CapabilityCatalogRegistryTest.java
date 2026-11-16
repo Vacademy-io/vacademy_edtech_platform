@@ -80,6 +80,67 @@ public class CapabilityCatalogRegistryTest {
                         feature("crm.ai_calling", true, "calling/calling-ai-agents"))));
     }
 
+    /** {@link #fixture()} plus an opt-in module shop(shop.items on, shop.till on). */
+    public static CapabilityCatalog fixtureWithOptIn() {
+        ObjectNode shop = module("shop", false, feature("shop.items", true), feature("shop.till", true));
+        shop.put("opt_in", true);
+        return CapabilityCatalogRegistry.parse(catalog(
+                module("core", true, feature("core.dashboard", true, "dashboard")),
+                module("lms", false, feature("lms.courses", true, "courses"),
+                        feature("lms.mentorship", false, "mentorship")),
+                module("crm", false, feature("crm.leads", true, "leads"),
+                        feature("crm.ai_calling", true, "calling/calling-ai-agents")),
+                shop));
+    }
+
+    @Test
+    void shippedCatalogueHasTheOptInCommerceModule() {
+        CapabilityCatalogRegistry registry = new CapabilityCatalogRegistry();
+        CapabilityCatalog.Module commerce = registry.modulesByKey().get("commerce");
+        assertNotNull(commerce, "missing module commerce");
+        assertEquals("COMMERCE", commerce.rail());
+        assertFalse(commerce.core());
+        assertTrue(commerce.optIn());
+        assertEquals(java.util.List.of("commerce.catalogue", "commerce.orders", "commerce.stock",
+                        "commerce.pos", "commerce.tax_reports"),
+                commerce.features().stream().map(CapabilityCatalog.Feature::key).toList());
+        for (CapabilityCatalog.Feature feature : commerce.features()) {
+            assertTrue(feature.defaultOn(), feature.key() + " must be default_on");
+        }
+        // The sidebar tabs of the admin shell (WP-06). Home, Settings and Reports open on any
+        // one of several features, so no single feature governs them.
+        java.util.Map<String, java.util.List<String>> nav = new java.util.LinkedHashMap<>();
+        commerce.features().forEach(f -> nav.put(f.key(), f.governs().nav()));
+        assertEquals(java.util.List.of("commerce-products", "commerce-collections", "commerce-discounts"),
+                nav.get("commerce.catalogue"));
+        assertEquals(java.util.List.of("commerce-orders", "commerce-customers"), nav.get("commerce.orders"));
+        assertEquals(java.util.List.of("commerce-inventory"), nav.get("commerce.stock"));
+        assertEquals(java.util.List.of("commerce-pos"), nav.get("commerce.pos"));
+        assertTrue(nav.get("commerce.tax_reports").isEmpty());
+        for (String ungoverned : java.util.List.of("commerce-home", "commerce-settings", "commerce-reports")) {
+            assertTrue(nav.values().stream().noneMatch(list -> list.contains(ungoverned)), ungoverned);
+        }
+        // No other shipped module is opt-in: LEGACY institutes keep everything they had.
+        assertEquals(1, registry.modules().stream().filter(CapabilityCatalog.Module::optIn).count());
+    }
+
+    @Test
+    void optInMustBeABooleanAndNeverOnACoreModule() {
+        ObjectNode textual = module("crm", false, feature("crm.leads", true));
+        textual.put("opt_in", "yes");
+        assertInvalid(catalog(module("core", true, feature("core.a", true)), textual),
+                "opt_in must be a boolean");
+        ObjectNode core = module("core", true, feature("core.a", true));
+        core.put("opt_in", true);
+        assertInvalid(catalog(core), "a core module cannot be opt_in");
+    }
+
+    @Test
+    void optInDefaultsToFalse() {
+        assertTrue(fixture().modules().stream().noneMatch(CapabilityCatalog.Module::optIn));
+        assertTrue(fixtureWithOptIn().modulesByKey().get("shop").optIn());
+    }
+
     @Test
     void shippedCatalogueLoadsAndIsValid() {
         CapabilityCatalogRegistry registry = new CapabilityCatalogRegistry();

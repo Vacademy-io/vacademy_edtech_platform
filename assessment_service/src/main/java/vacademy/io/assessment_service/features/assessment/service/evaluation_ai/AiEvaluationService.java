@@ -194,13 +194,22 @@ public class AiEvaluationService {
          * when it is placed). Must run inside the caller's transaction.
          */
         public void requireCreditsForCopies(Assessment assessment, String instituteId, int copies) {
-                if (assessment == null || copies <= 0) {
+                requireCreditsForCopies(assessment, instituteId,
+                                java.util.Collections.nCopies(Math.max(0, copies), (Integer) null));
+        }
+
+        /**
+         * The same check with each copy's page count as uploaded: a copy is billed per
+         * page, so 50 four-page copies need 200 credits, not 50. A copy whose page count
+         * is unknown counts as one page (the minimum).
+         */
+        public void requireCreditsForCopies(Assessment assessment, String instituteId, List<Integer> pagesPerCopy) {
+                if (assessment == null || pagesPerCopy == null || pagesPerCopy.isEmpty()) {
                         return;
                 }
-                // The pages are read later, so this checks the minimum: one page a copy.
-                AiEvaluationCharge charge = AiEvaluationCharge.dashboardHandwritten(null);
-                creditGate.reserve(instituteId, java.util.Collections.nCopies(copies, charge), BigDecimal.ZERO,
-                                AiEvaluationCreditGate.Mode.DASHBOARD);
+                List<AiEvaluationCharge> charges = pagesPerCopy.stream()
+                                .map(AiEvaluationCharge::dashboardHandwritten).toList();
+                creditGate.reserve(instituteId, charges, BigDecimal.ZERO, AiEvaluationCreditGate.Mode.DASHBOARD);
         }
 
         /** The dashboard quote of one attempt: a copy's minimum, or every answer the AI will grade. */

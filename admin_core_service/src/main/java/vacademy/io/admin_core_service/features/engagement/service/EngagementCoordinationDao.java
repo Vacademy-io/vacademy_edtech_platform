@@ -101,18 +101,58 @@ public class EngagementCoordinationDao {
 
     /**
      * A call to this lead ended as wrong number or do-not-disturb (C-2, C-3): no more AI calls.
-     * The disposition is what the counsellor or the AI agent recorded on the call.
+     * The disposition is what the counsellor recorded on the call log, or what the AI agent reported
+     * for its own call. The agent's outcome lives on ai_call_result and never reaches
+     * disposition_key, so reading only the call log let the engine call again a number the agent
+     * itself had heard was wrong. A call broken on our side (health RED) is not believed, as in
+     * AiCallOutcomeProcessor: it must not close a lead for good.
      */
     public boolean doNotCall(String instituteId, String leadRowId) {
         Object n = em.createNativeQuery("""
                 SELECT count(*) FROM telephony_call_log l
+                LEFT JOIN ai_call_result r ON r.call_log_id = l.id
                 WHERE l.institute_id = :instituteId AND l.response_id = :leadRowId
-                  AND l.disposition_key IN ('WRONG_NUMBER', 'DND')
+                  AND (l.disposition_key IN ('WRONG_NUMBER', 'DND')
+                       OR (r.diag_health IS DISTINCT FROM 'RED'
+                           AND UPPER(REGEXP_REPLACE(COALESCE(r.disposition, ''), '[^A-Za-z]', '', 'g'))
+                               IN ('WRONGNUMBER', 'DND', 'DONOTCALL', 'DONOTDISTURB')))
                 """)
                 .setParameter("instituteId", instituteId)
                 .setParameter("leadRowId", leadRowId)
                 .getSingleResult();
         return n instanceof Number num && num.longValue() > 0;
+    }
+
+    /**
+     * What a recorded phone menu says ("press one for sales", "हिंदी के लिए दो दबाएं", "invalid option").
+     * Measured on 2026-11-11 over two weeks of engine calls: 85 transcripts matched and all 85 were menus.
+     * Voicemail is deliberately not here: a person's phone that went to voicemail is worth another try.
+     */
+    static final String PHONE_MENU_PATTERN =
+            "(press (one|two|three|four|1|2|3|4|zero|0|star|hash)|दबा|dabaiye|dabayein|dabaen"
+                    + "|invalid option|not selected any option)";
+
+    /**
+     * The lead's most recent AI call with a transcript reached a recorded key-press menu, not a person.
+     * An AI agent cannot get past a switchboard, so calling the same number again only repeats it (and
+     * the menu's own words were being counted as the caller talking). A later call that a person
+     * answers clears this, because only the latest call is read.
+     */
+    public boolean reachedPhoneMenu(String instituteId, String leadRowId) {
+        List<?> rows = em.createNativeQuery("""
+                SELECT r.transcript ~* :pattern
+                FROM ai_call_result r
+                JOIN telephony_call_log l ON l.id = r.call_log_id
+                WHERE l.institute_id = :instituteId AND l.response_id = :leadRowId
+                  AND r.transcript IS NOT NULL AND r.transcript <> ''
+                ORDER BY r.created_at DESC
+                LIMIT 1
+                """)
+                .setParameter("pattern", PHONE_MENU_PATTERN)
+                .setParameter("instituteId", instituteId)
+                .setParameter("leadRowId", leadRowId)
+                .getResultList();
+        return !rows.isEmpty() && Boolean.TRUE.equals(rows.get(0));
     }
 
     /**

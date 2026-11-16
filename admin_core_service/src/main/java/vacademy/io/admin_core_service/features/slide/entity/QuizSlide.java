@@ -48,6 +48,11 @@ public class QuizSlide {
     @Column(name = "re_attempt_count")
     private Integer reAttemptCount;
 
+    /** Study mode: the learner may check each answer and see the key and explanation straight away. */
+    @Builder.Default
+    @Column(name = "show_answer_after_each_question")
+    private Boolean showAnswerAfterEachQuestion = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -66,6 +71,7 @@ public class QuizSlide {
         this.passPercentage = quizSlideDTO.getPassPercentage();
         this.partialMarking = Boolean.TRUE.equals(quizSlideDTO.getPartialMarking());
         this.reAttemptCount = quizSlideDTO.getReAttemptCount();
+        this.showAnswerAfterEachQuestion = Boolean.TRUE.equals(quizSlideDTO.getShowAnswerAfterEachQuestion());
         if (quizSlideDTO.getDescription() != null) {
             this.descriptionRichText = new RichTextData(quizSlideDTO.getDescription());
         }

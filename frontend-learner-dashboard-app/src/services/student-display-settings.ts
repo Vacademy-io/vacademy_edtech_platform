@@ -13,8 +13,10 @@ import {
 } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
+import { applyAppSkinClass } from "@/lib/app-skin";
 import { readStudentPreviewDraft } from "@/lib/student-preview";
 import { setLastStudentLayout } from "@/lib/student-layout";
+import { externalHref } from "@/routes/$tagName/-utils/catalogue-route-search";
 
 /** Admin live-preview frame: the unsaved draft replaces the saved settings. */
 function previewDraftSettings(): StudentDisplaySettingsData | null {
@@ -39,6 +41,122 @@ function mergeArrayById<T extends { id: string }>(
     byId.set(i.id, def ? ({ ...def, ...i } as T) : (i as T));
   });
   return Array.from(byId.values());
+}
+
+/**
+ * Custom dashboard widgets (institute-authored cards). Older settings stored every
+ * one of them under the same id "custom"; newer ones get "custom:<shortid>".
+ * Either form, or an entry flagged isCustom, counts as custom. Must match the
+ * admin app's isCustomWidget.
+ */
+export function isCustomWidget(
+  w: { id?: string | null; isCustom?: boolean } | null | undefined
+): boolean {
+  if (!w) return false;
+  return w.isCustom === true || (typeof w.id === "string" && w.id.startsWith("custom"));
+}
+
+/**
+ * Dashboard widgets merged with the defaults. Built-in widgets merge by id as
+ * before. Custom widgets are never merged by id: every stored one is kept, in
+ * stored order. One whose id is the shared legacy "custom", a duplicate, or not a
+ * custom-style id gets `custom:legacy-<index>` (index in the stored list), so
+ * every load of the same stored list gives the same ids. Must match the admin
+ * app's merge, which saves these ids back.
+ */
+function mergeDashboardWidgets(
+  incoming: Array<Partial<StudentDashboardWidgetConfig>> | undefined,
+  defaults: StudentDashboardWidgetConfig[]
+): StudentDashboardWidgetConfig[] {
+  const list = Array.isArray(incoming) ? incoming : [];
+  const builtIns = mergeArrayById<StudentDashboardWidgetConfig>(
+    list.filter((w) => !isCustomWidget(w)),
+    defaults
+  ).map((w) => ({
+    id: w.id,
+    order: w.order ?? defaults.find((x) => x.id === w.id)?.order ?? 0,
+    visible: w.visible ?? defaults.find((x) => x.id === w.id)?.visible ?? true,
+    isCustom: w.isCustom ?? false,
+    title: w.title ?? defaults.find((x) => x.id === w.id)?.title,
+    subTitle: w.subTitle ?? defaults.find((x) => x.id === w.id)?.subTitle,
+    link: w.link ?? defaults.find((x) => x.id === w.id)?.link,
+  }));
+
+  const customs = list
+    .map((w, index) => ({ w, index }))
+    .filter(({ w }) => isCustomWidget(w));
+  const taken = new Set<string>(builtIns.map((w) => w.id));
+  // Pass 1: keep every distinct custom-style id as stored. The first plain
+  // "custom" keeps that id, matching the admin app (older builds only render it).
+  const kept = customs.map(({ w }) => {
+    const id = w.id;
+    if (typeof id === "string" && id.startsWith("custom") && !taken.has(id)) {
+      taken.add(id);
+      return id;
+    }
+    return null;
+  });
+  // Pass 2: give the rest a stable id from their stored position.
+  const ids = customs.map(({ index }, i) => {
+    const keptId = kept[i];
+    if (keptId) return keptId;
+    let id = `custom:legacy-${index}`;
+    for (let n = 2; taken.has(id); n++) id = `custom:legacy-${index}-${n}`;
+    taken.add(id);
+    return id;
+  });
+
+  return [
+    ...builtIns,
+    ...customs.map(({ w }, i) => ({
+      id: ids[i] as StudentDashboardWidgetId,
+      order: w.order ?? 0,
+      visible: w.visible ?? true,
+      isCustom: true,
+      title: w.title,
+      subTitle: w.subTitle,
+      link: w.link,
+    })),
+  ];
+}
+
+/** The custom widgets the learner home shows: every visible one, by order. */
+export function visibleCustomWidgets(
+  widgets: StudentDashboardWidgetConfig[] | null | undefined
+): StudentDashboardWidgetConfig[] {
+  return (widgets ?? [])
+    .filter((w) => isCustomWidget(w) && w.visible !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+/**
+ * What a custom widget's link does:
+ * - "external": a web address, opened outside the app (openInBrowser).
+ * - "assign": mailto:/tel:, handed to the browser.
+ * - "href": an app route with its own ?query or #hash, navigated as a URL so the
+ *   router reads the query instead of keeping it in the path.
+ * - "to": a plain app route.
+ * Null for an empty link or a scheme that is never followed (javascript:, data:…).
+ */
+export type CustomWidgetLinkAction =
+  | { kind: "external"; url: string }
+  | { kind: "assign"; url: string }
+  | { kind: "href"; href: string }
+  | { kind: "to"; to: string };
+
+export function customWidgetLinkAction(
+  link: string | null | undefined
+): CustomWidgetLinkAction | null {
+  const target = (link ?? "").trim();
+  if (!target) return null;
+  const external = externalHref(target);
+  if (external !== null) {
+    if (!external) return null;
+    if (/^[\\/]{2}/.test(external)) return { kind: "external", url: `https:${external}` };
+    if (/^https?:/i.test(external)) return { kind: "external", url: external };
+    return { kind: "assign", url: external };
+  }
+  return /[?#]/.test(target) ? { kind: "href", href: target } : { kind: "to", to: target };
 }
 
 const CUSTOM_COURSE_TAB_TYPES: ReadonlyArray<StudentAllCoursesCustomTabType> = [
@@ -168,24 +286,10 @@ function mergeWithDefaults(
       })),
     },
     dashboard: {
-      widgets: mergeArrayById<StudentDashboardWidgetConfig>(
+      widgets: mergeDashboardWidgets(
         incoming?.dashboard?.widgets,
         d.dashboard.widgets
-      ).map((w) => ({
-        id: w.id,
-        order:
-          w.order ?? d.dashboard.widgets.find((x) => x.id === w.id)?.order ?? 0,
-        visible:
-          w.visible ??
-          d.dashboard.widgets.find((x) => x.id === w.id)?.visible ??
-          true,
-        isCustom: w.isCustom ?? false,
-        title: w.title ?? d.dashboard.widgets.find((x) => x.id === w.id)?.title,
-        subTitle:
-          w.subTitle ??
-          d.dashboard.widgets.find((x) => x.id === w.id)?.subTitle,
-        link: w.link ?? d.dashboard.widgets.find((x) => x.id === w.id)?.link,
-      })),
+      ),
     },
     signup: {
       enabled: incoming?.signup?.enabled ?? d.signup.enabled,
@@ -545,19 +649,14 @@ export function applyUiSkinFromSettings(
     }
     // THEME_SETTING.roles.skin wins; ui.type is the pre-migration fallback.
     const t = resolveUiSkin(settings?.ui?.type ?? null);
-    const root = document.documentElement;
-    root.classList.remove(
-      "ui-vibrant",
-      "ui-play",
-      "ui-cleaner-play",
-      "ui-corporate",
-      "ui-fun"
-    );
-    if (t === "vibrant") root.classList.add("ui-vibrant");
-    else if (t === "play") root.classList.add("ui-play");
-    else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
-    else if (t === "corporate") root.classList.add("ui-corporate");
-    else if (t === "fun") root.classList.add("ui-fun");
+    // Through lib/app-skin, so a themed exam screen that holds the skin off
+    // <html> gets the new skin only when it closes.
+    if (t === "vibrant") applyAppSkinClass("ui-vibrant");
+    else if (t === "play") applyAppSkinClass("ui-play");
+    else if (t === "cleanerPlay") applyAppSkinClass("ui-cleaner-play");
+    else if (t === "corporate") applyAppSkinClass("ui-corporate");
+    else if (t === "fun") applyAppSkinClass("ui-fun");
+    else applyAppSkinClass(null);
   } catch {
     // noop — never let skin application break a login flow
   }

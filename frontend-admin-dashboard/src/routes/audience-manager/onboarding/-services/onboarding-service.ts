@@ -13,6 +13,7 @@
  */
 import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { isCommerceRoleName } from '@/lib/commerce/commerce-access';
 import {
     ONBOARDING_FLOWS_BASE,
     ONBOARDING_INSTANCES_BASE,
@@ -94,6 +95,8 @@ export async function fetchOnboardingAssignableRoles(
         const name = (row?.name ?? '').trim();
         if (!name) continue;
         const key = name.toUpperCase();
+        // Commerce roles are assigned only from Teams, and only where the module is on.
+        if (isCommerceRoleName(key)) continue;
         // The endpoint concatenates system + custom roles, so a custom role sharing a system
         // role's name would otherwise appear twice in the picker.
         if (seen.has(key)) continue;

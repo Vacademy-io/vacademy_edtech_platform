@@ -83,6 +83,8 @@ export interface SavedData {
     live_assessment_access: AccessControl;
     evaluation_access: AccessControl;
     pre_user_registrations: number;
+    /** Of pre_user_registrations, those from the public link; absent on older backends. */
+    open_user_registrations?: number;
     registration_form_fields: RegistrationFormField[];
     registration_open_date: string | null;
     pre_batch_registrations: PreBatchRegistration[];

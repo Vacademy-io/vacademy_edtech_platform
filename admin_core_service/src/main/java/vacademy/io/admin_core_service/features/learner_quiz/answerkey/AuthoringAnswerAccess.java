@@ -53,7 +53,9 @@ public class AuthoringAnswerAccess {
     public void requireResultsReader(CustomUserDetails user, String batchId) {
         if (user == null || user.getAuthorities() == null || user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .allMatch(authority -> authority == null || LEARNER_ROLES.contains(authority.trim().toUpperCase()))) {
+                .allMatch(authority -> authority == null || LEARNER_ROLES.contains(authority.trim().toUpperCase())
+                        // shop staff are not course staff
+                        || InstituteAccessValidator.isCommerceRoleName(authority))) {
             throw new ForbiddenException("Quiz results are for institute staff");
         }
         String instituteId = clientIdHeader();

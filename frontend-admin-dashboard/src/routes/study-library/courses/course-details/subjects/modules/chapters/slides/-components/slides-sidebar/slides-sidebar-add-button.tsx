@@ -28,6 +28,8 @@ import { AddAudioDialog } from './add-audio-dialog';
 import { AddScormDialog } from './add-scorm-dialog';
 import { AddAssessmentSlideDialog } from './add-assessment-slide-dialog';
 import { AddAiVideoDialog } from './ai-video/add-ai-video-dialog';
+import { AddSpreadsheetDialog } from '../spreadsheet/add-spreadsheet-dialog';
+import { AddDocumentQuizDialog } from '../document-quiz/add-document-quiz-dialog';
 import { ListChecks } from '@phosphor-icons/react';
 import { useRouter } from '@tanstack/react-router';
 import {
@@ -36,7 +38,7 @@ import {
 } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useDialogStore } from '@/routes/study-library/courses/-stores/slide-add-dialogs-store';
-import { File, GameController, ClipboardText, ChatsCircle } from '@phosphor-icons/react';
+import { File, GameController, ClipboardText, ChatsCircle, FileXls, Files } from '@phosphor-icons/react';
 import {
     DISCUSSION_DOC_TYPE,
     createDefaultDiscussionDataJson,
@@ -106,6 +108,8 @@ export const ChapterSidebarAddButton = () => {
     );
 
     const { items, setActiveItem, setAssessmentCreateMode } = useContentStore();
+    const [isSpreadsheetDialogOpen, setSpreadsheetDialogOpen] = useState(false);
+    const [isDocumentQuizDialogOpen, setIsDocumentQuizDialogOpen] = useState(false);
 
     // Use the Zustand store instead of useState
     const {
@@ -284,10 +288,22 @@ export const ChapterSidebarAddButton = () => {
                 description: t('menu.discussion.description'),
             },
             {
+                label: t('menu.spreadsheet.label'),
+                value: 'spreadsheet',
+                icon: <FileXls className="size-4 text-success-600" />,
+                description: t('menu.spreadsheet.description'),
+            },
+            {
                 label: t('menu.quiz.label'),
                 value: 'quiz',
                 icon: <ClipboardText className="size-4 text-pink-500" />, // ✅ Changed to ListChecks
                 description: t('menu.quiz.description'),
+            },
+            {
+                label: t('menu.documentQuiz.label'),
+                value: 'document-quiz',
+                icon: <Files className="size-4 text-primary-500" />,
+                description: t('menu.documentQuiz.description'),
             },
             {
                 label: t('menu.audio.label'),
@@ -380,6 +396,7 @@ export const ChapterSidebarAddButton = () => {
                 case 'discussion':
                     return ct.discussion !== false;
                 case 'quiz':
+                case 'document-quiz':
                     return ct.quiz !== false;
                 case 'code-editor':
                     return ct.codeEditor !== false;
@@ -393,6 +410,7 @@ export const ChapterSidebarAddButton = () => {
                     return ct.assessment !== false;
                 // presentation treated as a document-type control
                 case 'presentation':
+                case 'spreadsheet':
                     return ct.document !== false;
                 default:
                     return true;
@@ -859,6 +877,14 @@ export const ChapterSidebarAddButton = () => {
                 break;
             }
 
+            case 'spreadsheet':
+                setSpreadsheetDialogOpen(true);
+                break;
+
+            case 'document-quiz':
+                setIsDocumentQuizDialogOpen(true);
+                break;
+
             case 'audio':
                 openAudioDialog();
                 break;
@@ -1080,9 +1106,27 @@ export const ChapterSidebarAddButton = () => {
                 </div>
             </MyDialog>
 
+            <MyDialog
+                trigger={<></>}
+                heading={t('dialogs.addDocumentQuiz')}
+                dialogWidth="min-w-slide-dialog-sm w-auto"
+                open={isDocumentQuizDialogOpen}
+                onOpenChange={setIsDocumentQuizDialogOpen}
+            >
+                <AddDocumentQuizDialog
+                    mode="create"
+                    onDone={() => setIsDocumentQuizDialogOpen(false)}
+                />
+            </MyDialog>
+
             <AddAiVideoDialog
                 open={isAiVideoDialogOpen}
                 onOpenChange={(open) => !open && closeAiVideoDialog()}
+            />
+
+            <AddSpreadsheetDialog
+                open={isSpreadsheetDialogOpen}
+                onOpenChange={setSpreadsheetDialogOpen}
             />
         </div>
     );

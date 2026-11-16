@@ -28,4 +28,10 @@ public class InstituteInfoDTO {
     private String websiteUrl;
     private String learnerPortalUrl;
     private String adminPortalUrl;
+    /**
+     * Permanent public URL of {@link #instituteLogoFileId}. Filled only by the internal
+     * /internal/institute/v1/{id} endpoint, so services without a media client (the
+     * notification service's OTP mail) can show the logo; null when there is none.
+     */
+    private String instituteLogoUrl;
 }

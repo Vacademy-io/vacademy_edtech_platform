@@ -66,10 +66,41 @@ class ReleaseStateWriterTest {
     }
 
     @Test
+    void a_release_clears_the_queued_submit_time_result_email() {
+        writer.release(List.of(attempt("a1"), attempt("a2")));
+        verify(attempts).clearResultNoticePending(List.of("a1", "a2"));
+    }
+
+    @Test
+    void inside_a_transaction_the_queue_clear_waits_for_the_commit() {
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            writer.release(attempt("a1"));
+            verify(attempts, never()).clearResultNoticePending(org.mockito.ArgumentMatchers.anyCollection());
+            org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+            verify(attempts).clearResultNoticePending(List.of("a1"));
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void a_failed_queue_clear_does_not_undo_the_release() {
+        org.mockito.Mockito.doThrow(new IllegalStateException("db"))
+                .when(attempts).clearResultNoticePending(org.mockito.ArgumentMatchers.anyCollection());
+        StudentAttempt a = attempt("a1");
+        writer.release(a);
+        assertThat(a.getReportReleaseStatus()).isEqualTo("RELEASED");
+        verify(comparisonCache, times(1)).clear();
+    }
+
+    @Test
     void nothing_to_release_touches_nothing() {
         writer.release(List.of());
         writer.release((StudentAttempt) null);
         verify(attempts, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(attempts, never()).clearResultNoticePending(org.mockito.ArgumentMatchers.anyCollection());
         verify(comparisonCache, never()).clear();
     }
 

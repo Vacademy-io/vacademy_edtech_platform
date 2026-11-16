@@ -4,5 +4,28 @@
     },
     "dialog": {
         "title": "Individual Learner List"
+    },
+    "titles": {
+        "internal": "Internal Participants",
+        "external": "External Participants (Open Registration)"
+    },
+    "columns": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone Number",
+        "registeredOn": "Registered On",
+        "status": "Status",
+        "details": "Form Responses"
+    },
+    "actions": {
+        "viewResponses": "View",
+        "hideResponses": "Hide"
+    },
+    "empty": {
+        "internal": "No internal participants yet.",
+        "external": "No one has registered through the join link yet."
+    },
+    "states": {
+        "loadError": "Could not load participants."
     }
 }

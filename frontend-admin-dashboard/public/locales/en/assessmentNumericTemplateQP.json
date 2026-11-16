@@ -14,5 +14,10 @@
     "defaults": {
         "answer": "Answer:",
         "explanation": "Explanation:"
+    },
+    "tolerance": {
+        "label": "Accept answers within ±",
+        "hint": "Leave empty or 0 for an exact match.",
+        "badge": "± {{value}}"
     }
 }

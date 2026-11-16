@@ -90,6 +90,7 @@ import java.util.stream.Collectors;
 public class BulkAssignmentService {
 
     private final DefaultInviteResolver defaultInviteResolver;
+    private final vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
     private final UserPlanService userPlanService;
     private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentDateDefaults paymentDateDefaults;
     private final StudentSessionRepository studentSessionRepository;
@@ -164,6 +165,12 @@ public class BulkAssignmentService {
      */
     public BulkAssignResponseDTO bulkAssign(BulkAssignRequestDTO request, String adminUserId) {
         validateRequest(request);
+        // A product is sold, never enrolled into: an enrolment row on a variant would mix the two models.
+        if (request.getAssignments() != null) {
+            commerceLegacyGuard.refuseVariantSessions(
+                    request.getAssignments().stream().map(AssignmentItemDTO::getPackageSessionId).toList(),
+                    "enrol learners into it");
+        }
 
         BulkAssignOptionsDTO options = request.getOptions() != null
                 ? request.getOptions()

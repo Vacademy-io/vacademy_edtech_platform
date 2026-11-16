@@ -57,13 +57,24 @@ public class UserController {
             @RequestParam(name = "instituteId", required = false) String instituteId,
             @RequestParam(name = "isNotify", required = false, defaultValue = "true") boolean isNotify) {
         try {
-            User user = authService.createUser(userDTO, instituteId, isNotify);
-            UserDTO res = new UserDTO(user, userDTO);
-            res.setPassword(user.getPassword());
-            return ResponseEntity.ok(res);
+            return ResponseEntity.ok(toResponse(authService.createOrGetUser(userDTO, instituteId, isNotify), userDTO));
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }
+    }
+
+    /**
+     * The create-or-get answer. The password is included only when the account was created in
+     * this call, so a caller can show or send first-time credentials; an account that already
+     * existed keeps its password to itself.
+     */
+    static UserDTO toResponse(AuthService.AccountResult result, UserDTO request) {
+        User user = result.user();
+        UserDTO res = new UserDTO(user, request);
+        if (result.created()) {
+            res.setPassword(user.getPassword());
+        }
+        return res;
     }
 
     @PostMapping("/internal/create-or-get-existing-learner")
@@ -73,10 +84,8 @@ public class UserController {
             @RequestParam(name = "isNotify", required = false, defaultValue = "true") boolean isNotify,
             @RequestParam(name = "loginUrl", required = false) String loginUrl) {
         try {
-            User user = authService.createUserForLearnerEnrollment(userDTO, instituteId, isNotify, loginUrl);
-            UserDTO res = new UserDTO(user, userDTO);
-            res.setPassword(user.getPassword());
-            return ResponseEntity.ok(res);
+            return ResponseEntity.ok(toResponse(
+                    authService.createOrGetLearnerForEnrollment(userDTO, instituteId, isNotify, loginUrl), userDTO));
         } catch (Exception e) {
             throw new VacademyException(e.getMessage());
         }

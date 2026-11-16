@@ -3,7 +3,8 @@
         "crm": "CRM",
         "lms": "LMS",
         "ai": "الذكاء الاصطناعي",
-        "erp": "ERP"
+        "erp": "ERP",
+        "commerce": "المتجر"
     },
     "search": "بحث",
     "recent": "الأخيرة",

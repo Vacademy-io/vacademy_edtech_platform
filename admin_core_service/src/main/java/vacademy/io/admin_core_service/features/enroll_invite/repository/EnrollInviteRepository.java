@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.enroll_invite.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -83,7 +84,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
     FROM enroll_invite ei
     WHERE ei.institute_id = :instituteId
       AND (:#{#tags == null || #tags.isEmpty()} = true OR ei.tag IN (:tags))
-      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')))
+      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS', 'COMMERCE')))
       AND (:#{#enrollInviteStatus == null || #enrollInviteStatus.isEmpty()} = true OR ei.status IN (:enrollInviteStatus))
       AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR EXISTS (
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
@@ -102,7 +103,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
     FROM enroll_invite ei
     WHERE ei.institute_id = :instituteId
       AND (:#{#tags == null || #tags.isEmpty()} = true OR ei.tag IN (:tags))
-      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')))
+      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS', 'COMMERCE')))
       AND (:#{#enrollInviteStatus == null || #enrollInviteStatus.isEmpty()} = true OR ei.status IN (:enrollInviteStatus))
       AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR EXISTS (
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
@@ -139,7 +140,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
             "LEFT JOIN package_session_learner_invitation_to_payment_option psl ON ei.id = psl.enroll_invite_id " +
             "LEFT JOIN package_session ps ON psl.package_session_id = ps.id " +
             "WHERE ei.institute_id = :instituteId " +
-            "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')) " +
+            "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS', 'COMMERCE')) " +
             "AND (COALESCE(:enrollInviteStatus, NULL) IS NULL OR ei.status IN (:enrollInviteStatus)) " +
             "AND (CAST(:searchName AS text) IS NULL OR CAST(:searchName AS text) = '' OR " +
             "     LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')) OR " +
@@ -150,7 +151,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
                     "LEFT JOIN package_session_learner_invitation_to_payment_option psl ON ei.id = psl.enroll_invite_id " +
                     "LEFT JOIN package_session ps ON psl.package_session_id = ps.id " +
                     "WHERE ei.institute_id = :instituteId " +
-                    "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')) " +
+                    "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS', 'COMMERCE')) " +
                     "AND (COALESCE(:enrollInviteStatus, NULL) IS NULL OR ei.status IN (:enrollInviteStatus)) " +
                     "AND (CAST(:searchName AS text) IS NULL OR CAST(:searchName AS text) = '' OR " +
                     "     LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')) OR " +
@@ -295,6 +296,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
           AND ei.institute_id = :instituteId
           AND ei.status = 'ACTIVE'
           AND ei.invite_code IS NOT NULL AND ei.invite_code <> ''
+          AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
         ORDER BY up.created_at DESC
         LIMIT 1
     """, nativeQuery = true)

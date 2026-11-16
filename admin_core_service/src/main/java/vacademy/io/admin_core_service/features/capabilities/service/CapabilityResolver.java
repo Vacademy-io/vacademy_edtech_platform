@@ -18,15 +18,18 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Entitlement resolution (spec §5) — the one function every consumer goes through.
  *
  * <ul>
- *   <li>{@code mode = LEGACY} (also: no policy row) → every module and feature is on.</li>
+ *   <li>{@code mode = LEGACY} (also: no policy row) → every module and feature is on, except
+ *       {@code opt_in} modules (commerce), which follow their rows as in MANAGED.</li>
  *   <li>{@code mode = MANAGED} → a module is on ⇔ it is core, or its row is enabled and not
  *       expired (no row = off); a feature is on ⇔ its module is on AND (its row is enabled and
  *       not expired, or — no row — the catalogue {@code default_on}).</li>
@@ -49,6 +52,7 @@ public class CapabilityResolver {
             .maximumSize(10_000)
             .expireAfterWrite(CACHE_TTL)
             .build();
+    private final Set<String> optInKeys;
     private Clock clock = Clock.systemUTC();
 
     public CapabilityResolver(CapabilityCatalogRegistry registry,
@@ -57,6 +61,7 @@ public class CapabilityResolver {
         this.registry = registry;
         this.policyRepository = policyRepository;
         this.entitlementRepository = entitlementRepository;
+        this.optInKeys = optInKeys(registry.catalog());
     }
 
     void setClock(Clock clock) {
@@ -72,28 +77,45 @@ public class CapabilityResolver {
      *
      * @param mode     LEGACY or MANAGED
      * @param rows     stored rows, sorted by key
-     * @param resolved MANAGED-mode resolution
+     * @param resolved  MANAGED-mode resolution
+     * @param optInKeys keys of opt-in modules and of their features; LEGACY does not switch these on
      */
     public record Snapshot(String instituteId, String mode, String modeUpdatedBy, Instant modeUpdatedAt,
-                           List<InstituteModuleEntitlement> rows, Resolved resolved, Instant resolvedAt) {
+                           List<InstituteModuleEntitlement> rows, Resolved resolved, Set<String> optInKeys,
+                           Instant resolvedAt) {
 
         public boolean managed() {
             return InstituteModulePolicy.MODE_MANAGED.equals(mode);
         }
 
-        /** What applies now: everything on in LEGACY, {@link #resolved} in MANAGED. */
+        /**
+         * What applies now: {@link #resolved} in MANAGED; in LEGACY everything on except the
+         * opt-in keys, which keep their resolved value.
+         */
         public Resolved effective() {
             if (managed()) {
                 return resolved;
             }
-            return new Resolved(allTrue(resolved.modules()), allTrue(resolved.features()));
+            return new Resolved(legacy(resolved.modules()), legacy(resolved.features()));
         }
 
-        private static Map<String, Boolean> allTrue(Map<String, Boolean> keys) {
+        private Map<String, Boolean> legacy(Map<String, Boolean> resolvedValues) {
             Map<String, Boolean> out = new LinkedHashMap<>();
-            keys.keySet().forEach(k -> out.put(k, Boolean.TRUE));
+            resolvedValues.forEach((k, on) -> out.put(k, optInKeys.contains(k) ? on : Boolean.TRUE));
             return Collections.unmodifiableMap(out);
         }
+    }
+
+    /** Keys of every opt-in module and of its features. */
+    public static Set<String> optInKeys(CapabilityCatalog catalog) {
+        Set<String> out = new LinkedHashSet<>();
+        for (CapabilityCatalog.Module module : catalog.modules()) {
+            if (module.optIn()) {
+                out.add(module.key());
+                module.features().forEach(f -> out.add(f.key()));
+            }
+        }
+        return Collections.unmodifiableSet(out);
     }
 
     // ── Pure resolution (unit-tested truth table) ────────────────────────────
@@ -138,9 +160,24 @@ public class CapabilityResolver {
         return cache.get(instituteId, this::load);
     }
 
-    /** Effective state of one feature for an institute (LEGACY → true). For §10 enforcement. */
+    /**
+     * Effective state of one feature for an institute (LEGACY → true, except features of an
+     * opt-in module). For §10 enforcement.
+     */
     public boolean isFeatureEnabled(String instituteId, String featureKey) {
         return Boolean.TRUE.equals(snapshot(instituteId).effective().features().get(featureKey));
+    }
+
+    /**
+     * Strict check: the resolved value in every mode, so a LEGACY institute passes only when
+     * the module row (and the feature row, if any) is enabled and not expired. Unknown key or
+     * blank institute = false. Commerce uses this; it must never be on by default.
+     */
+    public boolean isFeatureGranted(String instituteId, String featureKey) {
+        if (instituteId == null || instituteId.isBlank() || featureKey == null) {
+            return false;
+        }
+        return Boolean.TRUE.equals(snapshot(instituteId).resolved().features().get(featureKey));
     }
 
     /**
@@ -172,6 +209,6 @@ public class CapabilityResolver {
         return new Snapshot(instituteId, mode,
                 policy.map(InstituteModulePolicy::getUpdatedBy).orElse(null),
                 policy.map(InstituteModulePolicy::getUpdatedAt).orElse(null),
-                List.copyOf(rows), resolve(registry.catalog(), rows, now), now);
+                List.copyOf(rows), resolve(registry.catalog(), rows, now), optInKeys, now);
     }
 }

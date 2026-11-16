@@ -66,6 +66,7 @@ public class SubscriptionService {
     private final vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
     private final PaymentLogService paymentLogService;
     private final vacademy.io.admin_core_service.features.enrollment_policy.service.RenewalDiscountResolver renewalDiscountResolver;
+    private final vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
 
 
     /**
@@ -128,6 +129,7 @@ public class SubscriptionService {
         if (!userId.equals(plan.getUserId())) {
             throw new VacademyException("Subscription does not belong to the current user");
         }
+        commercePlans.refuseCommercePlan(plan, "cancel the subscription");
 
         String vendor = resolveVendor(plan);
         if (StringUtils.hasText(vendor)) {

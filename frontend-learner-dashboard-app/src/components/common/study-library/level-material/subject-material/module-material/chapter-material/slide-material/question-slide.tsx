@@ -311,99 +311,20 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
         },
     });
 
-    // Parse auto evaluation JSON to find correct answer
+    // Start every question blank. This effect used to pre-select the correct
+    // option (or type the correct numeric / one-word answer) straight from the
+    // answer key as soon as the slide opened, which gave the answer away — and
+    // because the previous-answer loader below only fills EMPTY fields, a
+    // returning learner saw the key instead of what they had actually answered.
+    // Only the numeric format settings are needed from the question here.
     useEffect(() => {
+        if (questionType !== "NUMERIC" || !questionData?.options_json) return;
         try {
-            if (questionData?.auto_evaluation_json) {
-                const evaluationData = JSON.parse(
-                    questionData.auto_evaluation_json
-                );
-
-                if (questionType === "MCQS" || questionType === "TRUE_FALSE") {
-                    // For multiple choice questions and true/false
-                    if (evaluationData.data?.correctOptionIds) {
-                        const correctId =
-                            evaluationData.data.correctOptionIds[0];
-                        setSelectedOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: {
-                                id: correctId,
-                                name:
-                                    questionData.options.find(
-                                        (o) => o.id === correctId
-                                    )?.text.content || "",
-                            },
-                        }));
-                    } else {
-                        // If not specified, assume first option is correct (for demo)
-                        setSelectedOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: {
-                                id: questionData.options[0]?.id,
-                                name:
-                                    questionData.options[0]?.text.content || "",
-                            },
-                        }));
-                    }
-                } else if (questionType === "MCQM") {
-                    // For multiple select questions
-                    if (evaluationData.data?.correctOptionIds) {
-                        setSelectedMultiOptionsMap((prev) => ({
-                            ...prev,
-                            [slideId]: evaluationData.data.correctOptionIds.map(
-                                (id: string) => ({
-                                    id,
-                                    name:
-                                        questionData.options.find(
-                                            (o) => o.id === id
-                                        )?.text.content || "",
-                                })
-                            ),
-                        }));
-                    }
-                } else if (
-                    questionType === "ONE_WORD" ||
-                    questionType === "NUMERIC"
-                ) {
-                    // For one-word or numeric questions
-                    if (evaluationData.data?.correctAnswer) {
-                        setInputValuesMap((prev) => ({
-                            ...prev,
-                            [slideId]: evaluationData.data.correctAnswer,
-                        }));
-                    }
-                }
-            } else if (
-                questionType === "MCQS" ||
-                questionType === "TRUE_FALSE"
-            ) {
-                // Default to first option if no evaluation data
-                setSelectedOptionsMap((prev) => ({
-                    ...prev,
-                    [slideId]: {
-                        id: questionData.options[0]?.id,
-                        name: questionData.options[0]?.text.content || "",
-                    },
-                }));
-            }
-
-            // Parse options_json for numeric type questions
-            if (questionType === "NUMERIC" && questionData.options_json) {
-                const options = JSON.parse(questionData.options_json);
-                setIsDecimal(options.numeric_type === "DECIMAL");
-                setMaxDecimals(options.decimals || 0);
-            }
+            const options = JSON.parse(questionData.options_json);
+            setIsDecimal(options.numeric_type === "DECIMAL");
+            setMaxDecimals(options.decimals || 0);
         } catch (error) {
-            console.error("Error parsing JSON data:", error);
-            if (questionType === "MCQS" || questionType === "TRUE_FALSE") {
-                setSelectedOptionsMap((prev) => ({
-                    ...prev,
-                    [slideId]: {
-                        id: questionData.options[0]?.id,
-                        name: questionData.options[0]?.text.content || "",
-                    },
-                }));
-            }
+            console.error("Error parsing numeric options:", error);
         }
     }, [questionData, questionType]);
 

@@ -111,15 +111,15 @@ class AiQuestionEvaluationDuplicatesTest {
         }
 
         @Test
-        void resetForRedispatchDeletesNonEditedRowsAndReportsTheKeptOnes() {
-                when(rows.findEditedQuestionIds("p1")).thenReturn(List.of("q2"));
-                when(rows.deleteNonEditedForProcess("p1")).thenReturn(3);
+        void resetForRedispatchDeletesUnfinishedRowsAndReportsTheKeptOnes() {
+                when(rows.findKeptQuestionIds("p1")).thenReturn(List.of("q2"));
+                when(rows.deleteUnfinishedForProcess("p1")).thenReturn(3);
                 AiQuestionEvaluationService service = new AiQuestionEvaluationService(rows, new ObjectMapper());
 
                 Set<String> kept = service.resetForRedispatch("p1");
 
                 assertThat(kept).containsExactly("q2");
-                verify(rows).deleteNonEditedForProcess("p1");
+                verify(rows).deleteUnfinishedForProcess("p1");
         }
 
         // ------------------------------------------------------------- review override

@@ -138,6 +138,65 @@ public interface StockHoldRepository extends JpaRepository<StockHold, String> {
             """, nativeQuery = true)
     int claim(@Param("id") String id, @Param("userPlanId") String userPlanId);
 
+    // ── Commerce additions (V681 columns). ──
+
+    /** A HELD row of an order with the hash its release token must match. */
+    interface HeldTokenRow {
+        String getId();
+        String getPackageSessionId();
+        Integer getQuantity();
+        String getReleaseTokenHash();
+    }
+
+    @Query("SELECT h.id AS id, h.packageSessionId AS packageSessionId, h.quantity AS quantity, "
+            + "h.releaseTokenHash AS releaseTokenHash FROM StockHold h "
+            + "WHERE h.paymentLogId = :paymentLogId AND h.status = 'HELD'")
+    List<HeldTokenRow> findHeldTokenRowsByPaymentLogId(@Param("paymentLogId") String paymentLogId);
+
+    /** Why the row ended. Written right after the compare-and-set that ended it. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET release_reason = :reason, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id
+            """, nativeQuery = true)
+    int setReleaseReason(@Param("id") String id, @Param("reason") String reason);
+
+    /**
+     * SOLD to RESTORED with no stock given back (commerce: after shipment, RTO, a return, or an
+     * oversold line). Unlike restoreUnclaimed it does not look at who claimed the row.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET status = 'RESTORED', release_reason = :reason, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = 'SOLD'
+            """, nativeQuery = true)
+    int closeSold(@Param("id") String id, @Param("reason") String reason);
+
+    // ── Order desk (WP-30): part give-back and the undo of a shipment ──
+
+    /** The oversold flag of a row, read fresh. */
+    @Query(value = "SELECT COALESCE(h.oversold, FALSE) FROM stock_hold h WHERE h.id = :id", nativeQuery = true)
+    Boolean isOversold(@Param("id") String id);
+
+    /**
+     * Part of a row goes back: its quantity falls by :quantity, only while the row is still in
+     * :status and holds more than that (a whole row is ended by a status change instead).
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET quantity = quantity - :quantity, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = :status AND quantity > :quantity
+            """, nativeQuery = true)
+    int reduceQuantity(@Param("id") String id, @Param("status") String status, @Param("quantity") int quantity);
+
+    /** The undo of a shipment: a row the shipment closed (RESTORED, reason SHIPPED) is SOLD again. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE stock_hold SET status = 'SOLD', release_reason = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = 'RESTORED' AND release_reason = 'SHIPPED'
+            """, nativeQuery = true)
+    int reopenShipped(@Param("id") String id);
+
     // ── attach(): one column per statement, so a null argument leaves that column alone ──
 
     @Modifying(flushAutomatically = true)

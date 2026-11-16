@@ -28,5 +28,8 @@ public enum AssessmentCreationEnum {
     AI_EVALUATION_ENABLED,
     AI_EVALUATION_MODEL,
     // Proctoring tier + knobs (V50).
-    PROCTORING_CONFIG;
+    PROCTORING_CONFIG,
+    // Exam interface of the learner test screen (V68); null = default screen.
+    EXAM_INTERFACE,
+    REPORT_OPTIONS;
 }

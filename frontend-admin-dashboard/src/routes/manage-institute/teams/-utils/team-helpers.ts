@@ -1,3 +1,4 @@
+import { commerceRoleLabel } from '@/lib/commerce/commerce-role-viewer';
 import { parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
 import { mapRoleToCustomName } from '@/utils/roleUtils';
 import type { CustomRole } from '@/routes/manage-custom-teams/-services/custom-team-services';
@@ -95,7 +96,9 @@ export function buildRoleOptions(
         options.push({
             id: role.id,
             name: role.name,
-            label: custom ? role.name : mapRoleToCustomName(role.name),
+            label: custom
+                ? role.name
+                : commerceRoleLabel(role.name) ?? mapRoleToCustomName(role.name),
             custom,
         });
     });

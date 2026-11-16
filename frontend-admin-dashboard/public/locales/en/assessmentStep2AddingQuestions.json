@@ -6,6 +6,14 @@
         "next": "Next"
     },
     "sectionDefaultName": "Section {{number}}",
+    "missing": {
+        "heading": "To continue:",
+        "duration": "Set the Entire Test Duration",
+        "questions": "Add questions to {{section}}",
+        "marks": "Set Marks Per Question in {{section}}",
+        "sectionDuration": "Set the duration of {{section}}",
+        "questionDuration": "Set the time per question in {{section}}"
+    },
     "omrWarning": {
         "title": "OMR sheet mode is on",
         "body_one": "{{count}} question is not a single-correct MCQ. Publishing will be refused until every question is a single-correct MCQ with 2–5 options.",

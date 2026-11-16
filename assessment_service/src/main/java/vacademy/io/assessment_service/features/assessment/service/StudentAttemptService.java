@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.assessment_service.features.assessment.dto.QuestionWiseBasicDetailDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.request.RevaluateRequest;
 import vacademy.io.assessment_service.features.assessment.dto.manual_evaluation.ManualAttemptResponseDto;
@@ -83,22 +85,6 @@ public class StudentAttemptService {
 
     public StudentAttempt updateLeaderBoard(StudentAttempt studentAttempt) {
         return updateStudentAttempt(studentAttempt);
-    }
-
-    public void releaseResultsForEndedAutoReleaseAssessments() {
-        List<StudentAttempt> unreleased = studentAttemptRepository.findUnreleasedAttemptsForEndedAutoReleaseAssessments();
-        Date now = new Date();
-        for (StudentAttempt attempt : unreleased) {
-            attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
-            attempt.setReportLastReleaseDate(now);
-        }
-        if (!unreleased.isEmpty()) {
-            studentAttemptRepository.saveAll(unreleased);
-            log.info("[AUTO-RELEASE] Released results for {} attempts after assessment end", unreleased.size());
-            // The query only returns attempts that were NOT yet released, so every row here
-            // is a genuine transition — no re-notification risk on a repeated cron pass.
-            assessmentWorkflowEventPublisher.publishResultReleased(unreleased);
-        }
     }
 
 
@@ -220,8 +206,48 @@ public class StudentAttemptService {
         }
         if (justReleased) {
             assessmentWorkflowEventPublisher.publishResultReleased(saved, null, null);
+            // The result email (report PDF attached) is sent by AutoResultReleaseJob a minute
+            // or two later, not here: rendering a PDF on the submit request would slow every
+            // submission of a live exam. Written as its own UPDATE, not an entity field, so a
+            // later save of an older copy of this attempt cannot set the flag again. After
+            // commit, so a failure here cannot roll back the learner's submission.
+            // EXAM only: a mock / practice test is retaken freely (up to 19 attempts each in
+            // prod), and a report email per attempt would be spam.
+            if (isExamPlayMode(saved)) {
+                queueResultNoticeAfterCommit(saved.getId());
+            }
         }
         return saved;
+    }
+
+    private static boolean isExamPlayMode(StudentAttempt attempt) {
+        try {
+            String playMode = attempt.getRegistration().getAssessment().getPlayMode();
+            return "EXAM".equalsIgnoreCase(playMode);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void queueResultNoticeAfterCommit(String attemptId) {
+        Runnable mark = () -> {
+            try {
+                studentAttemptRepository.markResultNoticePending(attemptId);
+            } catch (Exception e) {
+                log.error("[AUTO-RELEASE] could not queue the result email for attempt {}: {}",
+                        attemptId, e.getMessage());
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mark.run();
+                }
+            });
+        } else {
+            mark.run();
+        }
     }
 
     private boolean awaitsAiGrading(StudentAttempt attempt) {

@@ -943,7 +943,7 @@ const CourseCatalougePage: React.FC = () => {
   }, [setIsDrippingEnable]);
 
   return (
-    <div className="min-h-screen">
+    <div className={isFun ? "min-h-screen fun-learn-page" : "min-h-screen"}>
       <CatalogueFilterWizard
         open={showFilterWizard}
         steps={filterWizardConfig?.steps ?? []}

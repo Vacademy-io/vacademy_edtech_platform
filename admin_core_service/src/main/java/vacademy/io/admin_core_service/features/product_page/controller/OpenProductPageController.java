@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 import vacademy.io.admin_core_service.features.product_page.dto.*;
 import vacademy.io.admin_core_service.features.product_page.service.ProductPageAutoLoginService;
 import vacademy.io.admin_core_service.features.product_page.service.ProductPageEnrollmentService;
@@ -26,6 +27,9 @@ public class OpenProductPageController {
 
     @Autowired
     private ProductPageAutoLoginService autoLoginService;
+
+    @Autowired
+    private PublicEnrollRoleGuard publicEnrollRoleGuard;
 
     /** Learner landing: fetch page layout + aggregated custom fields, priced for the viewer's region. */
     @GetMapping("/by-code")
@@ -71,6 +75,8 @@ public class OpenProductPageController {
     public ResponseEntity<ProductPageFormSubmitResponse> formSubmit(
             @RequestBody ProductPageFormSubmitRequest request) {
         log.info("Course page form-submit received for code={}", request.getProductPageCode());
+        // No login on this route: the body's role names never reach auth-service as written.
+        publicEnrollRoleGuard.restrictToLearnerRoles(request.getUserDetails(), request.getInstituteId());
         return ResponseEntity.ok(enrollmentService.submitProductPageForm(request));
     }
 
@@ -79,6 +85,7 @@ public class OpenProductPageController {
     public ResponseEntity<ProductPageEnrollResponse> enroll(
             @RequestBody ProductPageEnrollRequest request) {
         log.info("Course page enroll received for code={}", request.getProductPageCode());
+        publicEnrollRoleGuard.restrictToLearnerRoles(request.getUser(), request.getInstituteId());
         return ResponseEntity.ok(enrollmentService.enrollForProductPage(request));
     }
 
@@ -90,6 +97,7 @@ public class OpenProductPageController {
     public ResponseEntity<ProductPageEnrollResponse> cpoEnroll(
             @RequestBody ProductPageCpoEnrollRequest request) {
         log.info("CPO product page enroll received for code={}", request.getProductPageCode());
+        publicEnrollRoleGuard.restrictToLearnerRoles(request.getUserDetails(), request.getInstituteId());
         return ResponseEntity.ok(enrollmentService.enrollCpoForProductPage(request));
     }
 

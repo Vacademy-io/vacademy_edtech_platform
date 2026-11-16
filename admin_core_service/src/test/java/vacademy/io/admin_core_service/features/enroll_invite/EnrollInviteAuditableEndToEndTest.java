@@ -9,7 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -286,7 +285,9 @@ class EnrollInviteAuditableEndToEndTest {
         }
     }
 
-    @Configuration
+    // No @Configuration on purpose: the application scans vacademy.io.* without filters
+    // (SharedConfigurationReference), so a @Configuration here would be loaded into every
+    // @SpringBootTest of the service. @SpringJUnitConfig registers this class by name.
     @EnableAspectJAutoProxy
     static class AuditTestConfig {
 

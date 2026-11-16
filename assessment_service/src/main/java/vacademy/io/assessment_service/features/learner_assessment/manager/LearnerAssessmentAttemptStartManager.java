@@ -63,6 +63,9 @@ public class LearnerAssessmentAttemptStartManager {
     @Autowired
     vacademy.io.assessment_service.features.translation.service.TranslationService translationService;
 
+    @Autowired
+    vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
+
 
     @Transactional
     public ResponseEntity<LearnerAssessmentStartPreviewResponse> startAssessmentPreview(CustomUserDetails user, String assessmentId, String instituteId, String batchIds, BasicParticipantDTO basicParticipantDTO) {
@@ -106,6 +109,7 @@ public class LearnerAssessmentAttemptStartManager {
         List<SectionDto> sectionDtos = createSectionDtoList(assessment.get());
         translationService.localizeSectionDtos(sectionDtos);
         learnerAssessmentStartPreviewResponse.setSectionDtos(sectionDtos);
+        learnerAssessmentStartPreviewResponse.setExamInterface(examInterfaceService.read(assessment.get()));
         return ResponseEntity.ok(learnerAssessmentStartPreviewResponse);
     }
 

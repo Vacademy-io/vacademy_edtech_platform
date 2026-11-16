@@ -22,13 +22,14 @@ import java.util.Map;
 
 /**
  * The public catalogue API's error envelope {"error":{"code","message","request_id","details"?}}.
- * Scoped to {@link PublicCatalogApiController} so every other endpoint keeps the platform's
+ * Scoped to {@link PublicCatalogApiController} and to the controllers marked
+ * {@link CatalogApiEnvelope} (the shop routes of the same API) so every other endpoint keeps the platform's
  * GlobalExceptionHandler shape; ordered first so it wins over that handler for this controller.
  * Modelled on the Telleo API's AiCallingApiErrorAdvice.
  */
 @Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = PublicCatalogApiController.class)
+@RestControllerAdvice(assignableTypes = {PublicCatalogApiController.class, CatalogApiEnvelope.class})
 public class CatalogApiErrorAdvice {
 
     @ExceptionHandler(CatalogApiException.class)

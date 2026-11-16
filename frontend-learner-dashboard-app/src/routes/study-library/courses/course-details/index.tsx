@@ -6,6 +6,8 @@ import { CourseDetailsPage } from "./-components/course-details-page";
 import { CourseDetailsSkeleton } from "./-components/course-details-skeleton";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { Button } from "@/components/ui/button";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { FunCourseError } from "./-components/fun/FunCourseError";
 
 interface CourseSearchParams {
     courseId: string;
@@ -24,10 +26,18 @@ export const Route = createFileRoute("/study-library/courses/course-details/")({
     ),
     errorComponent: ({ error }) => {
         const { t } = useTranslation("courseDetailsC");
+        const isFun = useFunTheme();
         if (error && import.meta.env.VITE_ENABLE_SENTRY === "true") {
             Sentry.captureException(error);
         }
         console.error("Course load error:", error);
+        if (isFun) {
+            return (
+                <LayoutContainer>
+                    <FunCourseError onBack={() => window.history.back()} />
+                </LayoutContainer>
+            );
+        }
         return (
             <LayoutContainer>
                 <div className="flex flex-col items-center justify-center p-12 text-center h-screen-70">

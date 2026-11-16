@@ -45,7 +45,14 @@ function setMe(mode: 'LEGACY' | 'MANAGED', features: Record<string, boolean>) {
     useCapabilitiesStore.setState({
         instituteId: 'inst-1',
         status: 'loaded',
-        data: { mode, catalog_version: 1, modules: {}, features, display_settings_version: null },
+        data: {
+            mode,
+            catalog_version: 1,
+            modules: {},
+            features,
+            opt_in_modules: ['commerce'],
+            display_settings_version: null,
+        },
     });
 }
 

@@ -172,18 +172,18 @@ class CopyIntakeServiceTest {
         verify(ownership).notOwnedBy("i-1", List.of("f1", "other-institutes-file"));
         verify(batches, never()).save(any());
         verify(items, never()).saveAll(any());
-        verify(evaluation, never()).requireCreditsForCopies(any(), any(), org.mockito.ArgumentMatchers.anyInt());
+        verify(evaluation, never()).requireCreditsForCopies(any(), any(), org.mockito.ArgumentMatchers.anyList());
     }
 
     @Test
-    void startChecksCreditsForEveryCopyBeforeCreatingABatch() {
+    void startChecksCreditsForEveryPageOfEveryCopyBeforeCreatingABatch() {
         Assessment a = new Assessment();
         a.setId("a-1");
         when(assessments.findById("a-1")).thenReturn(Optional.of(a));
         org.mockito.Mockito.doThrow(new vacademy.io.assessment_service.features.assessment.service.evaluation_ai.billing
                         .InsufficientCreditsException(java.math.BigDecimal.TEN, java.math.BigDecimal.ONE,
                         java.math.BigDecimal.ONE, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO))
-                .when(evaluation).requireCreditsForCopies(a, "i-1", 2);
+                .when(evaluation).requireCreditsForCopies(a, "i-1", List.of(5, 3));
         CopyIntakeDtos.StartRequest req = CopyIntakeDtos.StartRequest.builder().files(List.of(
                 new CopyIntakeDtos.UploadedFile("f1", "a.pdf", 5),
                 new CopyIntakeDtos.UploadedFile("f2", "b.pdf", 3))).build();

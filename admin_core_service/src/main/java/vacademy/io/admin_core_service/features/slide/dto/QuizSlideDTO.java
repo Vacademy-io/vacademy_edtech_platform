@@ -31,5 +31,8 @@ public class QuizSlideDTO {
 
     private Integer reAttemptCount;
 
+    /** Null on payloads that predate the setting: the stored value is then kept. */
+    private Boolean showAnswerAfterEachQuestion;
+
     private List<QuizSlideQuestionDTO> questions;
 }

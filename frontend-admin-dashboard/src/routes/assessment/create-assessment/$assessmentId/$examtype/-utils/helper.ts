@@ -26,6 +26,7 @@ import { withMissingBuiltInFieldsOnTop } from './step3-registration-fields';
 import { CourseWithSessionsType } from '@/stores/study-library/use-study-library-store';
 import { BatchData } from '@/types/assessments/batch-details';
 import { BASE_URL_LEARNER_DASHBOARD } from '@/constants/urls';
+import { negativeMarkingPercentageFor } from '@/lib/negative-marking';
 
 export const getAssessmentJoinLink = (
     learnerPortalBaseUrl: string | undefined | null,
@@ -403,6 +404,8 @@ export const syncStep1DataWithStore = (form: UseFormReturn<BasicSectionFormType>
         aiEvaluationEnabled: getValues('aiEvaluationEnabled'),
         omrMode: getValues('omrMode'),
         proctoring: getValues('proctoring'),
+        examInterface: getValues('examInterface'),
+        reportOptions: getValues('reportOptions'),
         switchSections: getValues('switchSections'),
         raiseReattemptRequest: getValues('raiseReattemptRequest'),
         raiseTimeIncreaseRequest: getValues('raiseTimeIncreaseRequest'),
@@ -511,12 +514,11 @@ export const convertStep2Data = (data: z.infer<typeof sectionDetailsSchema>) => 
                     data: {
                         totalMark: question.questionMark || '',
                         negativeMark: question.questionPenalty || '',
-                        negativeMarkingPercentage:
-                            question.questionMark && question.questionPenalty
-                                ? (Number(question.questionPenalty) /
-                                      Number(question.questionMark)) *
-                                  100
-                                : '',
+                        negativeMarkingPercentage: negativeMarkingPercentageFor(
+                            question.questionType,
+                            question.questionMark,
+                            question.questionPenalty
+                        ),
                         ...(question.questionType === 'MCQM' && {
                             partialMarking: question.correctOptionIdsCnt
                                 ? 1 / question.correctOptionIdsCnt

@@ -14,6 +14,7 @@ import {
   getOpenLevels,
   buildLevelNameToIdMap,
   LevelNameToIdMap,
+  OpenLevel,
 } from "../../-services/level-service";
 import { fetchInstituteCatalogueTags } from "../../-services/institute-tags-service";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,10 @@ import {
   ShoppingBag,
   Trash,
 } from "@phosphor-icons/react";
-import { toTitleCase, formatTagForDisplay } from "@/lib/utils";
+import { toTitleCase, formatTagForDisplay, cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { RentLocationConfirmDialog } from "./RentLocationConfirmDialog";
+import { rentLocationCityOf, setCatalogueMode, type CatalogueMode } from "../../-utils/catalogue-mode";
 import { useCartStore, CartItem } from "../../-stores/cart-store";
 import { toast } from "sonner";
 import { ShareButton } from "./ShareButton";
@@ -314,13 +318,49 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
 
   // Resolve level_name ("buy" / "rent") -> level_id via the open levels endpoint.
   // Cached long-term; levels rarely change and this is shared across mode toggles.
-  const { data: levelIdMap } = useQuery<LevelNameToIdMap>({
-    queryKey: ["open-levels", instituteId],
-    queryFn: async () => buildLevelNameToIdMap(await getOpenLevels(instituteId)),
+  const { data: openLevels } = useQuery<OpenLevel[]>({
+    queryKey: ["open-levels-list", instituteId],
+    queryFn: () => getOpenLevels(instituteId),
     enabled: !!instituteId,
     staleTime: 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
   });
+  const levelIdMap = useMemo<LevelNameToIdMap | undefined>(
+    () => (openLevels ? buildLevelNameToIdMap(openLevels) : undefined),
+    [openLevels]
+  );
+  // The institute's own name for each mode's level ("Buy", "rent"…): what the
+  // mode switch writes to the shared levelFilter.
+  const modeLevelNames = useMemo<Record<CatalogueMode, string>>(() => {
+    const nameOf = (mode: CatalogueMode) =>
+      (openLevels || [])
+        .map((level) => (level.level_name || "").trim())
+        .find((name) => name.toLowerCase() === mode) || "";
+    return { buy: nameOf("buy"), rent: nameOf("rent") };
+  }, [openLevels]);
+  // The Buy | Rent switch only makes sense when the institute sells both ways.
+  const canSwitchMode = !!(levelIdMap?.buy && levelIdMap?.rent);
+
+  // Switching to rent asks the location question first (RentLocationConfirmDialog), but only
+  // when the catalogue names its rent city; otherwise it switches straight away.
+  const rentCity = rentLocationCityOf(globalSettings);
+  const [rentConfirmOpen, setRentConfirmOpen] = useState(false);
+  const requestMode = (mode: CatalogueMode) => {
+    if (mode === cartMode) return;
+    if (mode === "rent" && rentCity) {
+      setRentConfirmOpen(true);
+      return;
+    }
+    setCatalogueMode(modeLevelNames[mode]);
+  };
+  const confirmRent = () => {
+    setRentConfirmOpen(false);
+    setCatalogueMode(modeLevelNames.rent);
+  };
+  const stayInBuy = () => {
+    setRentConfirmOpen(false);
+    if (cartMode !== "buy") setCatalogueMode(modeLevelNames.buy);
+  };
 
   const currentLevelId = levelIdMap?.[cartMode];
   const PAGE_SIZE = 30;
@@ -509,6 +549,39 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
     }
   };
 
+  const genreRowShown = showGenreFilter && genres.length > 0;
+  const modeSegmentClass = cn(
+    "h-7 min-w-0 rounded-full px-3 text-xs font-semibold text-primary-500",
+    "hover:bg-primary-100 hover:text-primary-500",
+    "data-[state=on]:bg-primary-500 data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm",
+    "focus-visible:ring-primary-400 focus-visible:ring-offset-1"
+  );
+  // Buy | Rent switch when the institute has both levels; else the plain mode pill.
+  const modeControl = canSwitchMode ? (
+    <ToggleGroup
+      type="single"
+      value={cartMode}
+      onValueChange={(value) => {
+        // Radix clears the value when the active segment is pressed again: a mode is always on.
+        if (value === "buy" || value === "rent") requestMode(value);
+      }}
+      aria-label={t("bookCatalogue.modeSwitchLabel")}
+      className="gap-0.5 rounded-full border border-primary-200 bg-primary-50 p-0.5 shadow-sm"
+    >
+      <ToggleGroupItem value="buy" className={modeSegmentClass}>
+        {t("bookCatalogue.modeBuy")}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="rent" className={modeSegmentClass}>
+        {t("bookCatalogue.modeRent")}
+      </ToggleGroupItem>
+    </ToggleGroup>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-500 border border-primary-200 shadow-sm">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+      {cartMode === 'rent' ? t("bookCatalogue.rentMode") : t("bookCatalogue.buyMode")}
+    </span>
+  );
+
   // Render
   return (
     <div className="w-full bg-gray-50 min-h-screen pb-20 pt-14">
@@ -634,18 +707,20 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
             </div>
           )}
 
+          {/* Mode switch on its own row when there is no genre row to sit in */}
+          {canSwitchMode && !genreRowShown && <div className="flex pt-3 pb-2">{modeControl}</div>}
+
           {/* 2. Enhanced Genres UI - Horizontal Scrollable Chips */}
-          {showGenreFilter && genres.length > 0 && (
+          {genreRowShown && (
             <div className="mt-0">
               <div className="flex font-bold flex-col gap-1">
                 <div className="flex items-center justify-between ">
-                  <h2 className="text-lg font-bold text-catalogue-text-primary tracking-tight flex items-center gap-2 flex-wrap">
-                    <span>{t("bookCatalogue.browseByGenre")}</span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-500 border border-primary-200 shadow-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-                      {cartMode === 'rent' ? t("bookCatalogue.rentMode") : t("bookCatalogue.buyMode")}
-                    </span>
-                  </h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-catalogue-text-primary tracking-tight">
+                      {t("bookCatalogue.browseByGenre")}
+                    </h2>
+                    {modeControl}
+                  </div>
                   {selectedGenres.length > 0 && (
                     <button
                       onClick={() => setSelectedGenres([])}
@@ -993,6 +1068,16 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
           </>
         )}
       </div>
+
+      {rentCity && (
+        <RentLocationConfirmDialog
+          open={rentConfirmOpen}
+          onCancel={() => setRentConfirmOpen(false)}
+          onContinue={confirmRent}
+          onBuyInstead={stayInBuy}
+          city={rentCity}
+        />
+      )}
     </div>
   );
 };

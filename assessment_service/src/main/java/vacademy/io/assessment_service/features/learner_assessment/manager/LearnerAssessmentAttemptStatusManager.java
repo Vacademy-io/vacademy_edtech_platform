@@ -62,6 +62,9 @@ public class LearnerAssessmentAttemptStatusManager {
         RestartAssessmentService restartAssessmentService;
 
         @Autowired
+        vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
+
+        @Autowired
         vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationSubmissionEnqueuer aiEvaluationSubmissionEnqueuer;
 
         @Autowired
@@ -574,6 +577,7 @@ public class LearnerAssessmentAttemptStatusManager {
                 learnerAssessmentStartPreviewResponse.setPreviewTotalTime(assessment.getPreviewTime());
                 learnerAssessmentStartPreviewResponse
                                 .setSectionDtos(learnerAssessmentAttemptStartManager.createSectionDtoList(assessment));
+                learnerAssessmentStartPreviewResponse.setExamInterface(examInterfaceService.read(assessment));
                 return learnerAssessmentStartPreviewResponse;
         }
 }

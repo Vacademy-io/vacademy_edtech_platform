@@ -6,6 +6,7 @@
         "spacing": "Spacing",
         "layoutWidth": "Layout & Width",
         "background": "Background",
+        "buttons": "Buttons",
         "borderShadow": "Border & Shadow",
         "premiumEffects": "Premium Effects",
         "decorations": "Decorations",
@@ -13,6 +14,15 @@
         "typography": "Typography",
         "animation": "Animation",
         "visibility": "Visibility"
+    },
+    "buttons": {
+        "hint": "Colour of this section's main buttons (hero buttons, course cards, Download, Sing Along…). Not set: the site's primary colour.",
+        "color": {
+            "label": "Button colour"
+        },
+        "textColor": {
+            "label": "Button text colour"
+        }
     },
     "presetRow": {
         "custom": "Custom ({{value}})"
@@ -83,7 +93,8 @@
     },
     "background": {
         "color": {
-            "label": "Background Color"
+            "label": "Background Color",
+            "sectionHint": "This is the section's own colour — picking here changes it too."
         },
         "image": {
             "label": "Background Image",

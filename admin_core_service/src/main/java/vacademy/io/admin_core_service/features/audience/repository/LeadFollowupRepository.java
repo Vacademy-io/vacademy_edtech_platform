@@ -263,6 +263,21 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
                                         @Param("reason") String reason,
                                         @Param("closedAt") Timestamp closedAt);
 
+    /**
+     * Moves the open follow-ups of one enquiry to another: a closed lead's repeat took its
+     * place in the lists, so its pending work goes with it. Closed ones stay as history.
+     * Only between two enquiries of the same person: follow-up access follows the lead's
+     * owner, and another person's lead can have another owner, so those stay where they are.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE lead_followup SET audience_response_id = :toResponseId " +
+           "WHERE audience_response_id = :fromResponseId AND is_closed = false " +
+           "AND EXISTS (SELECT 1 FROM audience_response a JOIN audience_response b ON b.user_id = a.user_id " +
+           "WHERE a.id = :fromResponseId AND b.id = :toResponseId)", nativeQuery = true)
+    int moveOpenToResponse(@Param("fromResponseId") String fromResponseId,
+                           @Param("toResponseId") String toResponseId);
+
     /** Overdue twin of {@link #releaseDueTransition}. */
     @Modifying
     @Transactional

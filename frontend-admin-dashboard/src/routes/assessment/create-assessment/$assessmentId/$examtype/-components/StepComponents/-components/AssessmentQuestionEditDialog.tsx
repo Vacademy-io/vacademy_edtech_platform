@@ -147,6 +147,7 @@ export const QuestionEditor = ({
     onSubmit,
     onSaved,
     extraFields,
+    serializeAs = 'updated',
 }: {
     source: QuestionResponse;
     examType?: string;
@@ -156,6 +157,9 @@ export const QuestionEditor = ({
     onSaved: (question: MyQuestion) => void;
     /** Rendered above the save buttons (the library puts its difficulty picker here). */
     extraFields?: ReactNode;
+    /** 'added' when the question is new (the library's "write a question"), so the
+     * serialiser emits it without existing ids; editing keeps the default 'updated'. */
+    serializeAs?: 'added' | 'updated';
 }) => {
     const { t } = useTranslation('assessmentStep2SectionInfo');
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -189,7 +193,7 @@ export const QuestionEditor = ({
             if (!question) throw new Error('no question');
             // The paper editor's own serialiser, so options/answer key/explanation
             // reach the backend in exactly the shape its update path expects.
-            await onSubmit(convertQuestionsDataToResponse([question], 'updated'));
+            await onSubmit(convertQuestionsDataToResponse([question], serializeAs));
             return question;
         },
         onSuccess: (question) => {

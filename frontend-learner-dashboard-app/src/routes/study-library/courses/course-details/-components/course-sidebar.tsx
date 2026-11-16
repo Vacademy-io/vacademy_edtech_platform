@@ -110,6 +110,12 @@ interface CourseSidebarProps {
   percentageCompleted?: number;
   onEnrollmentClick: () => void;
   onRatingsLoadingChange: (loading: boolean) => void;
+  /**
+   * Fun skin: leave out an overview row that has nothing to say (no author, a
+   * blank level, no course time) instead of drawing "—", and the card when no
+   * row is left. Other skins keep every row as before.
+   */
+  hideEmptyRows?: boolean;
 }
 
 export const CourseSidebar = ({
@@ -137,6 +143,7 @@ export const CourseSidebar = ({
   certificatesEnabled,
   onEnrollmentClick,
   onRatingsLoadingChange,
+  hideEmptyRows = false,
 }: CourseSidebarProps) => {
   const { t } = useTranslation("courseDetailsA");
   const teacher = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
@@ -240,12 +247,44 @@ export const CourseSidebar = ({
     </div>
   );
 
+  // Which overview rows have something to say (only consulted with hideEmptyRows).
+  const levelLabel =
+    levelOptions.find((option) => option.value === selectedLevel)?.label ?? "";
+  const showAuthorRow =
+    !hideAuthorName && (!hideEmptyRows || !!displayAuthorName);
+  const showLevelRow =
+    levelOptions.length > 0 &&
+    !!selectedLevel &&
+    levelLabel !== "default" &&
+    (!hideEmptyRows || levelLabel.trim() !== "");
+  const showTimeRow =
+    !hideEmptyRows ||
+    (!slideCountQuery.error &&
+      (slideCountQuery.isLoading ||
+        (!!totalDuration && totalDuration !== "0m")));
+  const statsRows = hideEmptyRows
+    ? [
+        (courseStructure >= 4 || moduleStats.totalModules > 1) &&
+          moduleStats.totalModules > 0,
+        (courseStructure >= 3 || moduleStats.totalChapters > 1) &&
+          moduleStats.totalChapters > 0,
+        courseStructure === 5 && currentSubjects.length > 0,
+        instructorsCount > 0,
+      ].some(Boolean)
+    : true;
+  const overviewHasRows =
+    !hideEmptyRows ||
+    showAuthorRow ||
+    showLevelRow ||
+    showTimeRow ||
+    (overviewVisible && statsRows);
+
   if (!hasRightSidebar) return null;
 
   return (
     <div className="space-y-3 pb-3">
       {/* Course Overview Card */}
-      {!hideOverviewCard && (
+      {!hideOverviewCard && (overviewHasRows || showEnrollCta) && (
         <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-md border-border/60">
           <CardHeader className="p-3 pb-2 border-b bg-muted/40">
             <div className="flex items-center space-x-2">
@@ -267,22 +306,19 @@ export const CourseSidebar = ({
           </CardHeader>
           <CardContent className="p-3 pt-2.5 space-y-2.5">
             {/* Author Name */}
-            {!hideAuthorName && (
+            {showAuthorRow && (
               <>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground font-medium">{t("sidebar.author")}</span>
                   <span className="font-semibold">{displayAuthorName || "—"}</span>
                 </div>
 
-                <Separator />
+                {(!hideEmptyRows || showLevelRow || showTimeRow) && <Separator />}
               </>
             )}
 
             {/* Level Badge */}
-            {levelOptions.length > 0 &&
-              selectedLevel &&
-              levelOptions.find((option) => option.value === selectedLevel)
-                ?.label !== "default" && (
+            {showLevelRow && (
                 <>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground font-medium flex items-center gap-1.5">
@@ -302,12 +338,12 @@ export const CourseSidebar = ({
                       )}
                     </span>
                   </div>
-                  <Separator />
+                  {(!hideEmptyRows || showTimeRow) && <Separator />}
                 </>
               )}
 
             {/* Course Time */}
-            {slideCountQuery.isLoading ? (
+            {!showTimeRow ? null : slideCountQuery.isLoading ? (
               <div className="flex justify-between items-center animate-pulse">
                 <div className="h-4 w-20 bg-muted rounded"></div>
                 <div className="h-4 w-12 bg-muted rounded"></div>

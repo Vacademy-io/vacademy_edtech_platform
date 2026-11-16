@@ -7,5 +7,6 @@
     "noResultsFound": "No results found",
     "searchPlaceholder": "Search tabs, features...",
     "settingsDomainHeading": "Settings · {{domain}}",
-    "tryDifferentSearchTerm": "Try a different search term"
+    "tryDifferentSearchTerm": "Try a different search term",
+    "categoryCommerce": "Commerce"
 }

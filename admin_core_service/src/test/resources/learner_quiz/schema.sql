@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS quiz_slide (
   "pass_percentage" double precision,
   "re_attempt_count" integer,
   "partial_marking" boolean DEFAULT false NOT NULL,
+  "show_answer_after_each_question" boolean DEFAULT false NOT NULL,
   PRIMARY KEY (id)
 );
 

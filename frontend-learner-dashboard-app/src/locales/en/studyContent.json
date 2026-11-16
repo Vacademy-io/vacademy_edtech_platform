@@ -30,7 +30,18 @@
         "assignment": "Assignment",
         "scormModule": "SCORM Module",
         "content": "Content",
-        "discussion": "Discussion"
+        "discussion": "Discussion",
+        "spreadsheet": "Spreadsheet"
+    },
+    "spreadsheet": {
+        "readOnly": "Read-only",
+        "download": "Download .{{ext}}",
+        "downloadFailed": "Couldn’t download the file. Please try again.",
+        "empty": "This spreadsheet is empty.",
+        "unavailable": "This spreadsheet can’t be shown right now.",
+        "loading": "Loading the spreadsheet…",
+        "loadFailed": "Couldn’t load this spreadsheet. Check your connection and try again.",
+        "retry": "Try again"
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",
@@ -170,6 +181,13 @@
         "left": "Left: {{content}}",
         "rightVideo": "Right: Video",
         "rightHtmlVideo": "Right: HTML Video"
+    },
+    "documentQuiz": {
+        "documentTab": "Document",
+        "questionsTab": "Questions",
+        "resize": "Resize the document and questions",
+        "loading": "Loading document…",
+        "loadFailed": "Couldn’t load the document. You can still answer the questions."
     },
     "liveClass": {
         "waitingRoom": "Waiting Room",

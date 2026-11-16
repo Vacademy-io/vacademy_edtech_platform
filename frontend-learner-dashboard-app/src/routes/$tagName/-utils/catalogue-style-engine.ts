@@ -167,6 +167,12 @@ export interface ComponentStyle {
     contentAlign?: 'start' | 'center' | 'end';
     // Section shell (see SectionLayoutStyle)
     layout?: SectionLayoutStyle;
+    // Buttons — the colour of this section's brand-filled buttons (hero CTAs,
+    // course-card "View Course", resource "Download"…), which otherwise follow
+    // the site's primary colour. Set as CSS variables on the section, read by
+    // .catalogue-btn-primary. Text colour defaults to black or white by contrast.
+    buttonColor?: string;
+    buttonTextColor?: string;
     // Typography
     typography?: TypographyStyle;
     // Animation
@@ -367,6 +373,9 @@ export function buildComponentStyle(style?: ComponentStyle): React.CSSProperties
             style.contentAlign === 'center' ? 'center' : style.contentAlign === 'end' ? 'flex-end' : 'flex-start';
     }
 
+    // Button colours — CSS variables, inherited by every brand button inside.
+    Object.assign(css, buildButtonColorVars(style));
+
     // Typography
     if (style.typography) {
         const t = style.typography;
@@ -381,6 +390,26 @@ export function buildComponentStyle(style?: ComponentStyle): React.CSSProperties
     }
 
     return css;
+}
+
+/** Black or white, whichever reads better on a #rrggbb fill (null otherwise). */
+function readableInkOn(color: string): string | null {
+    const raw = color.trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null;
+    const r = parseInt(raw.slice(0, 2), 16);
+    const g = parseInt(raw.slice(2, 4), 16);
+    const b = parseInt(raw.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.6 ? '#ffffff' : '#111827'; // design-lint-ignore: authored button ink
+}
+
+/** The section's button colours as CSS variables (empty when none are set). */
+export function buildButtonColorVars(style?: Pick<ComponentStyle, 'buttonColor' | 'buttonTextColor'>): React.CSSProperties {
+    const vars: Record<string, string> = {};
+    const bg = style?.buttonColor?.trim();
+    const ink = style?.buttonTextColor?.trim() || (bg ? readableInkOn(bg) : null);
+    if (bg) vars['--catalogue-btn-bg'] = bg;
+    if (ink) vars['--catalogue-btn-ink'] = ink;
+    return vars as React.CSSProperties;
 }
 
 /** True when the component opted into two-node section-shell rendering. */
@@ -445,6 +474,8 @@ export function buildSectionShellStyles(style: ComponentStyle): SectionShellStyl
         marginTop: layout.overlapTop ?? compiled.marginTop,
         marginBottom: compiled.marginBottom,
         zIndex: layout.zIndex,
+        // Button colour variables ride the canvas so the content inherits them.
+        ...buildButtonColorVars(style),
     };
 
     const width = layout.width ?? 'default';

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("react-i18next", () => ({ useTranslation: (ns: string) => ({ t: (key: string) => `${ns}:${key}` }) }));
 vi.mock("./use-quiz-place", () => ({
-  useQuizPlace: () => ({ courseId: "", colourClass: "", courseName: null, chapterName: null, chapterTerm: "Chapter", backToChapter: () => {} }),
+  useQuizPlace: () => ({ courseId: "", colourClass: "", courseName: null, chapterName: null, courseTerm: "Course", toCourse: () => {} }),
 }));
 // The Fun font stylesheet is the skin hook's business, not this test's.
 vi.mock("@/hooks/use-fun-theme", async () => {

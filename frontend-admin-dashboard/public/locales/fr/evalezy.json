@@ -1,4 +1,63 @@
 {
+    "demo": {
+        "title": "Essayez Evalezy gratuitement",
+        "subtitle": "{{days}} jours gratuits. Juste votre nom, e-mail et téléphone.",
+        "subtitleCredits": "{{days}} jours gratuits avec {{credits}} crédits IA (1 crédit = 1 page corrigée). Juste votre nom, e-mail et téléphone.",
+        "emailInvalid": "Saisissez une adresse e-mail valide",
+        "alreadyUsed": "Cet e-mail a déjà servi pour une démo. Connectez-vous avec les identifiants envoyés par e-mail.",
+        "note": "Aucune carte requise. Vos identifiants sont envoyés à cet e-mail.",
+        "start": "Démarrer ma démo",
+        "starting": "Ouverture de votre démo…"
+    },
+    "plan": {
+        "noPlans": "Les forfaits ne peuvent pas encore être achetés en ligne pour ce compte. Contactez-nous et nous le configurerons.",
+        "invoices": "Factures",
+        "pendingTitle": "Paiement en attente",
+        "pendingBody": "Votre compte est prêt. Payez votre forfait ci-dessous pour commencer à corriger des copies. Les crédits du forfait sont ajoutés dès le paiement.",
+        "pendingBodyIos": "Votre compte est prêt. Finalisez le paiement de votre forfait sur evalezy.vacademy.io dans un navigateur, puis revenez ici.",
+        "menu": "Forfait et enseignants",
+        "title": "Forfait et enseignants",
+        "loadFailed": "Impossible de charger votre forfait. Réessayez.",
+        "retry": "Réessayer",
+        "current": "Votre forfait",
+        "trialBadge": "Essai gratuit",
+        "trialEnded": "Essai terminé",
+        "freeTrial": "Essai gratuit",
+        "managed": "Forfait personnalisé",
+        "creditsIncluded": "{{credits}} crédits IA inclus",
+        "validTill": "Valable jusqu'au {{date}}",
+        "trialEndsOn": "L'essai se termine le {{date}}",
+        "trialEndedOn": "L'essai s'est terminé le {{date}}. Vos rapports sont conservés.",
+        "oneTeacher": "Pour un enseignant",
+        "upToUsers": "Jusqu'à {{count}} utilisateurs",
+        "year": "an",
+        "months": "{{count}} mois",
+        "bulletCredits": "{{credits}} pages corrigées, valables un {{period}}",
+        "bulletExtra": "Crédits supplémentaires à {{price}} (1 crédit = 1 page)",
+        "bulletOneTeacher": "Pour un enseignant",
+        "bulletTeachers": "Partagé par jusqu'à {{count}} enseignants",
+        "bulletEverything": "Tout ce qu'inclut {{plan}}",
+        "bulletBasics": "Copies corrigées, rapports et e-mails de résultats",
+        "otherPlans": "Passer au forfait supérieur",
+        "choose": "Choisissez un forfait",
+        "currentBadge": "Forfait actuel",
+        "buy": "Acheter {{plan}}",
+        "payNote": "Paiement sécurisé par Razorpay (UPI, cartes, virement). Les crédits du forfait sont ajoutés dès le paiement.",
+        "teachers": "Enseignants",
+        "seatsUsed": "{{used}} sur {{limit}} utilisateurs",
+        "you": "(vous)",
+        "remove": "Retirer l'enseignant",
+        "teacherRemoved": "Enseignant retiré",
+        "actionFailed": "Cela n'a pas fonctionné. Réessayez.",
+        "full": "Tous les utilisateurs de votre forfait sont utilisés. Retirez un enseignant pour en ajouter un autre.",
+        "addHint": "Les enseignants ont la même application Evalezy et partagent vos crédits IA. Leurs identifiants sont envoyés par e-mail.",
+        "teacherName": "Nom de l'enseignant",
+        "teacherEmail": "E-mail de l'enseignant",
+        "addTeacher": "Ajouter un enseignant",
+        "adding": "Ajout…",
+        "teacherAdded": "Enseignant ajouté. Identifiants envoyés par e-mail.",
+        "teacherAddedExisting": "Enseignant ajouté. Il peut se connecter avec son compte existant."
+    },
     "signup": {
         "closedTitle": "Les inscriptions sont fermées",
         "closedBody": "Connectez-vous ou contactez-nous pour obtenir un compte.",
@@ -34,6 +93,16 @@
         "city": "Ville",
         "state": "État",
         "noCard": "Sans carte bancaire. Vos rapports restent disponibles après l’essai.",
+        "buyTitle": "Créez votre compte pour acheter {{plan}}",
+        "buySubtitle": "Le paiement se fait à l’écran suivant. Les crédits de l’offre sont ajoutés dès que le paiement est validé.",
+        "buyDetailsSubtitle": "Plus qu’une étape, puis le paiement de {{plan}}.",
+        "buyStart": "Créer le compte et passer au paiement",
+        "buyNote": "Rien n’est débité avant le paiement à l’écran suivant.",
+        "steps": {
+            "plan": "Choisir l’offre",
+            "account": "Créer le compte",
+            "pay": "Payer"
+        },
         "start": "Démarrer l’essai de {{days}} jours",
         "creating": "Création de votre compte…",
         "createFailed": "Le compte n’a pas pu être créé. Réessayez.",
@@ -61,7 +130,7 @@
         "left_one": "Essai gratuit : {{count}} jour restant",
         "left_other": "Essai gratuit : {{count}} jours restants",
         "ended": "Votre essai gratuit est terminé. Vos rapports sont conservés.",
-        "upgrade": "Recharger"
+        "upgrade": "Acheter un forfait"
     },
     "profile": {
         "privacyPolicy": "Politique de confidentialité",
@@ -109,7 +178,10 @@
         "tabUsage": "Utilisation",
         "bills": "Factures",
         "loadError": "Impossible de charger les crédits.",
-        "retry": "Réessayer"
+        "retry": "Réessayer",
+        "plansTitle": "Offres",
+        "plansSubtitle": "Achetez une offre annuelle avec crédits IA inclus. Le paiement ici ajoute les crédits de l’offre à ce compte.",
+        "planUnavailable": "Les offres ne peuvent pas encore être achetées en ligne pour ce compte. Écrivez-nous et nous les mettrons en place."
     },
     "header": {
         "backToPortal": "Retour au tableau de bord",
@@ -133,7 +205,7 @@
         "error": "Impossible de charger vos évaluations.",
         "noMatch": "Aucune évaluation ne correspond à votre recherche.",
         "empty": "Aucune évaluation à corriger pour le moment",
-        "emptyHint": "Les évaluations corrigées à la main apparaissent ici une fois publiées.",
+        "emptyHint": "Créez votre première évaluation à partir du sujet. Nouveau ? Touchez ▶ en haut pour le tutoriel de 2 minutes.",
         "students_one": "{{count}} élève",
         "students_other": "{{count}} élèves"
     },
@@ -275,5 +347,69 @@
         "scanned_other": "{{count}} copies ajoutées",
         "started_one": "Correction d’1 copie en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin.",
         "started_other": "Correction de {{count}} copies en cours. Vous pouvez quitter cette page ; nous vous enverrons un e-mail à la fin."
+    },
+    "tutorials": {
+        "menu": "Mode d'emploi (vidéos)",
+        "title": "Comment utiliser Evalezy",
+        "subtitle": "De courtes vidéos commentées et sous-titrées pour chaque étape.",
+        "startHere": "Commencez ici",
+        "stepByStep": "Étape par étape",
+        "step": "Étape {{number}}",
+        "stuck": "Bloqué à une étape ?",
+        "faq": "Voir les réponses aux questions fréquentes",
+        "welcomeTitle": "Bienvenue sur Evalezy !",
+        "welcomeBody": "Regardez cette vidéo de {{time}} pour tout comprendre : créer une évaluation, ajouter les copies, les faire corriger par l'IA et télécharger les copies corrigées.",
+        "later": "Plus tard",
+        "seeAll": "Tous les tutoriels",
+        "watch": "Regarder",
+        "cardTitle": "Nouveau sur Evalezy ?",
+        "cardBody": "Regardez le tutoriel de {{time}}, ou une courte vidéo par étape.",
+        "hideCard": "Masquer",
+        "full": {
+            "title": "Evalezy du début à la fin",
+            "summary": "Tout le parcours en une vidéo"
+        },
+        "items": {
+            "full-tutorial": {
+                "title": "Evalezy du début à la fin",
+                "summary": "Tout le parcours en une vidéo"
+            },
+            "01-sign-up": {
+                "title": "S'inscrire et démarrer l'essai gratuit",
+                "summary": "Votre compte en une minute, sans carte"
+            },
+            "03-create-test": {
+                "title": "Créer une évaluation depuis le sujet",
+                "summary": "Importez le sujet une fois ; l'IA le lit"
+            },
+            "04-marks-criteria": {
+                "title": "Modifier les points et les critères",
+                "summary": "Dites à l'IA ce qu'elle doit chercher"
+            },
+            "05-upload-copies": {
+                "title": "Importer les copies",
+                "summary": "PDF ou photos"
+            },
+            "06-scan-camera": {
+                "title": "Scanner les copies avec le téléphone",
+                "summary": "Pas besoin de scanner"
+            },
+            "07-check-results": {
+                "title": "Lancer la correction IA et voir les résultats",
+                "summary": "Chaque copie corrigée et notée"
+            },
+            "08-download-zip": {
+                "title": "Télécharger les copies corrigées",
+                "summary": "Toutes les copies dans un ZIP"
+            },
+            "09-pen-handwriting": {
+                "title": "Changer la couleur du stylo et l'écriture",
+                "summary": "Une copie qui vous ressemble"
+            },
+            "10-checking-style": {
+                "title": "Commentaires, consignes et orthographe",
+                "summary": "Réglez la façon dont l'IA corrige"
+            }
+        }
     }
 }

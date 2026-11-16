@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ColorPickerField } from './ColorPickerField';
 import { ImageUploadField } from './ImageUploadField';
+import { OptionalColorField } from './chrome/chrome-controls';
 import { CATALOGUE_FONTS } from '../-utils/catalogue-fonts';
 import type {
     ComponentStyle,
@@ -29,6 +30,12 @@ import type { OrnamentConfig } from '../-utils/catalogue-decorations';
 interface StyleEditorProps {
     style: ComponentStyle;
     onChange: (style: ComponentStyle) => void;
+    /** The block's own section colour, which the site paints over the Style
+     *  colour — shown in the Background picker so it matches the site. */
+    sectionBackground?: string;
+    /** A Background colour pick (defaults to onChange) — lets the panel move
+     *  the block's own colour along with it. */
+    onBackgroundPick?: (style: ComponentStyle) => void;
 }
 
 /* ─── Collapsible Section ─────────────────────────────────────────────── */
@@ -244,7 +251,7 @@ const activeOrnamentId = (ornaments?: OrnamentConfig[]): string => {
 
 /* ─── Main StyleEditor ────────────────────────────────────────────────── */
 
-export const StyleEditor = ({ style, onChange }: StyleEditorProps) => {
+export const StyleEditor = ({ style, onChange, sectionBackground, onBackgroundPick }: StyleEditorProps) => {
     const { t } = useTranslation('managePagesStyleEditor');
 
     const update = (partial: Partial<ComponentStyle>) => {
@@ -428,9 +435,12 @@ export const StyleEditor = ({ style, onChange }: StyleEditorProps) => {
             <Section title={t('sections.background')}>
                 <ColorPickerField
                     label={t('background.color.label')}
-                    value={style.backgroundColor || '#ffffff'} // design-lint-ignore: color-editor default seed
-                    onChange={(c) => update({ backgroundColor: c })}
+                    value={sectionBackground || style.backgroundColor || '#ffffff'} // design-lint-ignore: color-editor default seed
+                    onChange={(c) => (onBackgroundPick ?? onChange)({ ...style, backgroundColor: c })}
                 />
+                {sectionBackground && (
+                    <p className="text-caption text-gray-400">{t('background.color.sectionHint')}</p>
+                )}
                 <ImageUploadField slot="background"
                     label={t('background.image.label')}
                     value={style.backgroundImage || ''}
@@ -554,6 +564,21 @@ export const StyleEditor = ({ style, onChange }: StyleEditorProps) => {
                         )}
                     </div>
                 )}
+            </Section>
+
+            {/* ─── Buttons (this section's brand buttons) ──────────── */}
+            <Section title={t('sections.buttons')}>
+                <p className="text-caption text-gray-400">{t('buttons.hint')}</p>
+                <OptionalColorField
+                    label={t('buttons.color.label')}
+                    value={style.buttonColor}
+                    onChange={(c) => update({ buttonColor: c })}
+                />
+                <OptionalColorField
+                    label={t('buttons.textColor.label')}
+                    value={style.buttonTextColor}
+                    onChange={(c) => update({ buttonTextColor: c })}
+                />
             </Section>
 
             {/* ─── Border & Shadow ─────────────────────────────────── */}

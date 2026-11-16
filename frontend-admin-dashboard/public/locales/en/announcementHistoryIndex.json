@@ -97,7 +97,10 @@
             "read": "Read",
             "failed": "Failed",
             "dismissed": "Dismissed",
-            "dismissRate": "Dismiss rate"
+            "dismissRate": "Dismiss rate",
+            "deliveriesSub_one": "{{count}} delivery across channels",
+            "deliveriesSub_other": "{{count}} deliveries across channels",
+            "pending": "Pending"
         },
         "emailEventsTitle": "Email events",
         "viaSes": "via SES",
@@ -109,7 +112,9 @@
             "bounced": "Bounced",
             "rejected": "Rejected",
             "complained": "Complained",
-            "awaitingEvents": "Awaiting events"
+            "awaitingEvents": "Awaiting events",
+            "failedToSend": "Failed to send",
+            "accepted": "Accepted by SES"
         },
         "pendingNote": "Emails were dispatched but no SES events have come back yet. If you're running locally, ensure the SES → SNS → notification_service webhook is configured.",
         "noEmails": "No emails were sent for this announcement.",
@@ -124,7 +129,10 @@
                 "status": "Status",
                 "seenAt": "Seen at",
                 "dismissedAt": "Dismissed at",
-                "deliveredAt": "Delivered at"
+                "deliveredAt": "Delivered at",
+                "channel": "Channel",
+                "emailActivity": "Email activity",
+                "reason": "Reason"
             },
             "pagePagination": "Page {{page}} of {{totalPages}}",
             "titleCount_one": "Recipients ({{count}})",
@@ -139,6 +147,44 @@
             "delivery": "Delivery rate",
             "read": "Read rate",
             "dismiss": "Dismiss rate"
+        },
+        "channels": {
+            "title": "Delivery by channel",
+            "delivered": "Delivered",
+            "failed": "Failed",
+            "pending": "Pending",
+            "summary": "{{delivered}} of {{total}}"
+        },
+        "funnelTitle": "Email funnel",
+        "emailStatus": {
+            "SENT": "Sent",
+            "DELIVERED": "Delivered",
+            "OPENED": "Opened",
+            "CLICKED": "Clicked",
+            "BOUNCED": "Bounced",
+            "COMPLAINED": "Marked spam",
+            "REJECTED": "Rejected",
+            "FAILED": "Not sent"
+        },
+        "filters": {
+            "allChannels": "All channels",
+            "allStatuses": "All statuses"
+        },
+        "csv": {
+            "export": "Export CSV",
+            "exporting": "Exporting...",
+            "failed": "Could not export the report",
+            "name": "Name",
+            "email": "Email",
+            "channel": "Channel",
+            "status": "Status",
+            "emailActivity": "Email activity",
+            "deliveredAt": "Delivered at",
+            "openedAt": "Opened at",
+            "clickedAt": "Clicked at",
+            "seenAt": "Seen at",
+            "dismissedAt": "Dismissed at",
+            "reason": "Reason"
         }
     },
     "rejectDialog": {

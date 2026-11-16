@@ -233,6 +233,11 @@ public class CopyCheckCallbackService {
             cancellationService.clearFlag(payload.getProcessId());
             return;
         }
+        if (fromAnotherRun(process, payload.getJobId())) {
+            log.info("[copy-check] ignoring complete callback of job {} for process {}: it now runs as job {}",
+                    payload.getJobId(), payload.getProcessId(), process.getAiServiceJobId());
+            return;
+        }
         process.setStatus(AiEvaluationStatusEnum.COMPLETED.name());
         process.setCompletedAt(new Date());
         try {
@@ -326,6 +331,13 @@ public class CopyCheckCallbackService {
                     payload.getProcessId());
             return;
         }
+        // An older run of a re-dispatched copy failing must not fail the run that
+        // replaced it (whose own complete callback would then be ignored as reaped).
+        if (fromAnotherRun(process, payload.getJobId())) {
+            log.info("[copy-check] ignoring failed callback of job {} for process {}: it now runs as job {}",
+                    payload.getJobId(), payload.getProcessId(), process.getAiServiceJobId());
+            return;
+        }
         process.setStatus(AiEvaluationStatusEnum.FAILED.name());
         process.setErrorMessage(withErrorCode(payload.getErrorCode(), payload.getErrorMessage()));
         process.setCompletedAt(new Date());
@@ -355,6 +367,18 @@ public class CopyCheckCallbackService {
             return code;
         }
         return message.startsWith(code + ":") ? message : code + ": " + message;
+    }
+
+    /**
+     * A terminal callback from an ai_service job this process no longer runs as: the
+     * copy was re-dispatched (sweeper requeue, a submit retry) and a different job was
+     * recorded for it. Unknown on either side (an older ai_service build sends no job id;
+     * no job recorded yet) = not provable, so the callback is accepted as before.
+     */
+    static boolean fromAnotherRun(AiEvaluationProcess process, String callbackJobId) {
+        String current = process.getAiServiceJobId();
+        return StringUtils.hasText(callbackJobId) && StringUtils.hasText(current)
+                && !callbackJobId.trim().equals(current.trim());
     }
 
     /** A process that has been reaped by the sweeper (FAILED) or the user (CANCELLED). */

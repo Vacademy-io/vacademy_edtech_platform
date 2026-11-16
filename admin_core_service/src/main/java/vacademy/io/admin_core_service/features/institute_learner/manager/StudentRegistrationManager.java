@@ -99,6 +99,9 @@ public class StudentRegistrationManager {
     @Autowired
     private vacademy.io.admin_core_service.features.learner_access.service.LearnerAccessService learnerAccessService;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.auth_service.service.AuthService authService;
+
     StudentRegistrationManager(InstituteCertificateController instituteCertificateController) {
         this.instituteCertificateController = instituteCertificateController;
     }
@@ -140,7 +143,9 @@ public class StudentRegistrationManager {
         instituteStudentDTO
                 .setInstituteStudentDetails(InstituteStudentDetails.builder().instituteId(instituteId).build());
 
-        Student student = checkAndCreateStudent(instituteStudentDTO);
+        // The open assessment link signs the learner in with an email OTP, so a username +
+        // password email here is noise (and arrived before they had even verified the address).
+        Student student = checkAndCreateStudent(instituteStudentDTO, false);
         InstituteStudentDetails details = instituteStudentDTO.getInstituteStudentDetails();
         if (details != null && StringUtils.hasText(details.getPackageSessionId())) {
             linkStudentToInstitute(student, details);
@@ -173,14 +178,81 @@ public class StudentRegistrationManager {
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(applicationName,
                     HttpMethod.POST.name(), authServerBaseUrl,
                     StudentConstants.addUserRoute + "?instituteId=" + instituteId + "&isNotify=" + isNotify, userDTO);
-            return objectMapper.readValue(response.getBody(), UserDTO.class);
+            return carryFirstTimePassword(objectMapper.readValue(response.getBody(), UserDTO.class), userDTO);
 
         } catch (Exception e) {
             throw new vacademy.io.common.exceptions.VacademyException(e.getMessage());
         }
     }
 
+    /**
+     * Enrolment workflows (welcome messages, LMS account set-up) read the learner from the
+     * workflow's user. That user is the account as auth-service holds it: its id, username,
+     * e-mail, mobile number and name, never contact details typed with the request. A password
+     * is passed on only when the enrolment already holds the account's own login (a new
+     * account's first-time password, or the login a staff flow read for this account itself);
+     * a stored password is never added here for an account that already existed. A copy is returned, so the
+     * caller's user, which may be returned in a response, is not changed.
+     */
+    private UserDTO workflowUser(UserDTO userDTO) {
+        if (userDTO == null || !StringUtils.hasText(userDTO.getId()) || authService == null) {
+            return userDTO;
+        }
+        UserDTO stored = null;
+        try {
+            stored = authService.getUsersFromAuthServiceWithPasswordByUserId(userDTO.getId());
+        } catch (Exception e) {
+            log.warn("Could not read the account of user {} for the enrollment workflow: {}",
+                    userDTO.getId(), e.getMessage());
+        }
+        return workflowUserFrom(userDTO, stored);
+    }
+
+    /** See {@link #workflowUser}; {@code stored} is null when the account could not be read. */
+    static UserDTO workflowUserFrom(UserDTO request, UserDTO stored) {
+        UserDTO copy = vacademy.io.admin_core_service.features.auth_service.util.UserDtoCopies.copyOf(request);
+        if (stored == null || !request.getId().equals(stored.getId())) {
+            copy.setPassword(null);
+            return copy;
+        }
+        copy.setUsername(stored.getUsername());
+        copy.setEmail(stored.getEmail());
+        copy.setMobileNumber(stored.getMobileNumber());
+        if (StringUtils.hasText(stored.getFullName())) {
+            copy.setFullName(stored.getFullName());
+        }
+        boolean holdsOwnLogin = StringUtils.hasText(request.getPassword())
+                && request.getPassword().equals(stored.getPassword());
+        copy.setPassword(holdsOwnLogin ? request.getPassword() : null);
+        return copy;
+    }
+
+    /**
+     * auth-service includes the password only for an account it created in that same call.
+     * Enrolment first resolves the learner (learner create-or-get, which creates a new account
+     * and answers with its first-time password) and then passes that resolved user, with its
+     * id, through this create-or-get again, which now finds the account. The first answer's
+     * password is carried on in that case so a new learner still sees their first-time
+     * credentials. Only a password the request already held for the same account id is used.
+     */
+    static UserDTO carryFirstTimePassword(UserDTO answer, UserDTO request) {
+        if (answer != null && !StringUtils.hasText(answer.getPassword())
+                && request != null && StringUtils.hasText(request.getPassword())
+                && StringUtils.hasText(request.getId()) && request.getId().equals(answer.getId())) {
+            answer.setPassword(request.getPassword());
+        }
+        return answer;
+    }
+
     private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO) {
+        return checkAndCreateStudent(instituteStudentDTO, true);
+    }
+
+    /**
+     * @param credentialEmailAllowed false for sign-ups that log in with an OTP and never use the
+     *                               generated password (the open assessment link).
+     */
+    private Student checkAndCreateStudent(InstituteStudentDTO instituteStudentDTO, boolean credentialEmailAllowed) {
         instituteStudentDTO.getUserDetails().setRoles(getStudentRoles());
         setRandomPasswordIfNull(instituteStudentDTO.getUserDetails());
         setRandomUserNameIfNull(instituteStudentDTO.getUserDetails());
@@ -199,8 +271,9 @@ public class StudentRegistrationManager {
         String instituteId = instituteStudentDTO.getInstituteStudentDetails().getInstituteId();
         boolean enrollmentWorkflowWillFire = LearnerSessionStatusEnum.ACTIVE.name()
                 .equalsIgnoreCase(instituteStudentDTO.getInstituteStudentDetails().getEnrollmentStatus());
-        boolean sendCredentials = !enrollmentWorkflowWillFire
-                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId);
+        boolean sendCredentials = credentialEmailAllowed
+                && (!enrollmentWorkflowWillFire
+                || enrollmentCredentialPolicyService.shouldSendCredentialEmail(instituteId));
         UserDTO createdUser = createUserFromAuthService(instituteStudentDTO.getUserDetails(),
                 instituteId, sendCredentials);
         instituteStudentDTO.getUserDetails().setId(createdUser.getId());
@@ -1268,7 +1341,7 @@ public class StudentRegistrationManager {
         var pkg = packageSession.get().getPackageEntity();
 
         final Map<String, Object> contextData = new HashMap<>();
-        contextData.put("user", userDTO);
+        contextData.put("user", workflowUser(userDTO));
         contextData.put("packageSessionIds", packageSessionId);
         contextData.put("subOrg", subOrg);
         contextData.put("packageId", pkg.getId());

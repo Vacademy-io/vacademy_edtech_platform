@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.packages.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,9 @@ public class PackageService {
 
     @Autowired
     private PackageRepository packageRepository;
+
+    @Autowired
+    private CommerceLegacyGuard commerceLegacyGuard;
 
     @Autowired
     private AuthService authService;
@@ -301,6 +305,8 @@ public class PackageService {
         } else {
             packageEntity = packageRepository.findById(addCourseDTO.getId())
                     .orElseThrow(() -> new VacademyException("Package not found"));
+            // Before any write: this method is not transactional.
+            commerceLegacyGuard.refuseProduct(packageEntity, "edit this in the course editor");
             updateCourse(addCourseDTO, packageEntity);
         }
         if (Boolean.TRUE.equals(addCourseDTO.getNewCourse())) {

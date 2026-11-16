@@ -68,6 +68,7 @@ const CATEGORY_LABEL_KEYS: Record<SidebarCategory, string> = {
     LMS: 'categoryLabels.lms',
     AI: 'categoryLabels.aiTools',
     ERP: 'categoryLabels.erp',
+    COMMERCE: 'categoryLabels.commerce',
 };
 
 /**

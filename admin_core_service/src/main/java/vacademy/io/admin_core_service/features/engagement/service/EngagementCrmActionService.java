@@ -232,6 +232,10 @@ public class EngagementCrmActionService {
         return null;
     }
 
+    /** The stamp on an AI call the kill switch held; cleared when autonomy comes back on. */
+    public static final String KILL_SWITCH_CALL_REASON =
+            "The kill switch is on: approve this call yourself if it should still go.";
+
     /**
      * Graduation applies to the AI calls already waiting, as it does to waiting message drafts: once an
      * engine set to auto has had first_n calls approved, the older tasks run too, a few each run. Every
@@ -559,7 +563,7 @@ public class EngagementCrmActionService {
                 // S6: the kill switch stops what the engine scheduled on its own; a person decides.
                 claimed.setKind("TASK");
                 claimed.setStatus("OPEN");
-                claimed.setErrorMessage("The kill switch is on: approve this call yourself if it should still go.");
+                claimed.setErrorMessage(KILL_SWITCH_CALL_REASON);
                 actionRepository.save(claimed);
                 return false;
             }

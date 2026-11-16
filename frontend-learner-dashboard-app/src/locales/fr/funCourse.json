@@ -4,17 +4,15 @@
     "count_many": "{{count}} {{courses}}",
     "count_other": "{{count}} {{courses}}",
     "searchLabel": "Rechercher dans vos {{courses}}",
-    "tabsLabel": "Listes de {{courses}}",
     "retry": "Réessayer"
   },
   "course": {
     "back": "Retour",
-    "progressLabel": "Progression du {{course}}",
-    "percentOfCourse": "{{percent}} % du {{course}}",
-    "sizeLabel": "Taille du {{course}}",
+    "progressLabel": "Progression : {{course}}",
+    "percentOfCourse": "{{course}} : {{percent}} %",
+    "sizeLabel": "Taille : {{course}}",
     "countChip": "{{count}} {{term}}",
-    "views": "Vues du {{course}}",
-    "doneOf": "{{done}} sur {{total}} {{slides}} terminés",
+    "doneOf": "Avancement : {{done}} sur {{total}} {{slides}}",
     "levelEyebrow": "{{level}} {{index}}",
     "levelDone": "{{count}} {{term}} · Terminé",
     "onlyUnfinished": "Non terminés seulement",
@@ -26,6 +24,7 @@
     "locked": "Verrouillé",
     "quizTag": "Quiz",
     "pickUpEyebrow": "Reprenez là où vous en étiez",
+    "nextUpEyebrow": "À suivre",
     "pickUpCta": "Continuer",
     "inProgress": "En cours",
     "stateLabel": "{{state}} : {{title}}"
@@ -33,10 +32,17 @@
   "lesson": {
     "position": "{{index}} sur {{total}}",
     "positionLabel": "{{slide}} {{index}} sur {{total}}",
-    "chapterProgress": "Progression du {{chapter}}",
+    "chapterProgress": "Progression : {{chapter}}",
     "upNext": "À suivre : {{title}}",
-    "chapterComplete": "{{chapter}} terminé",
+    "upNextShort": "À suivre",
+    "upNextLocked": "À suivre : {{title}} · Verrouillé",
+    "chapterComplete": "{{chapter}} : terminé",
     "dismiss": "Fermer",
-    "navLabel": "Navigation des {{slide}}"
+    "navLabel": "Navigation : {{slide}}",
+    "close": "Fermer : {{slide}}",
+    "outline": "Sommaire : {{chapter}}",
+    "prevShort": "Précédent",
+    "nextChapterShort": "Suivant : {{chapter}}",
+    "feedback": "Votre avis"
   }
 }

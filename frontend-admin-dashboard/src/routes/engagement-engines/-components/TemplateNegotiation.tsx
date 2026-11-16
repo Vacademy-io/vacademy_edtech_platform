@@ -430,7 +430,7 @@ function ProposalCard({
                         <PaperPlaneTilt className="me-1 size-3.5" /> {t('actions.submitToMeta')}
                     </MyButton>
                 )}
-                {['AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'QUEUED', 'META_REJECTED', 'META_RECATEGORISED'].includes(
+                {['AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'QUEUED', 'META_REJECTED', 'META_RECATEGORISED', 'META_APPROVED', 'META_DISABLED'].includes(
                     p.status
                 ) && (
                     <MyButton

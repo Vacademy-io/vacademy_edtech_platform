@@ -100,6 +100,24 @@ public class Assessment {
     @Column(name = "omr_config", columnDefinition = "jsonb")
     private String omrConfig;
 
+    /**
+     * Exam interface the learner test screen uses (V68), e.g.
+     * {"v":1,"preset":"jee-main","layout":"nta-mock","strict":true}. NULL means the
+     * default test screen. Read and written only through ExamInterfaceService.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "exam_interface", columnDefinition = "jsonb")
+    private String examInterface;
+
+    /**
+     * What a student's report shows per question (V69), e.g.
+     * {"show_correct_answer":false}. NULL = the institute default report profile.
+     * Read through ReportProfileService.reportOptions.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "report_options", columnDefinition = "jsonb")
+    private String reportOptions;
+
     @Column(name = "submission_type", nullable = false)
     private String submissionType;
 

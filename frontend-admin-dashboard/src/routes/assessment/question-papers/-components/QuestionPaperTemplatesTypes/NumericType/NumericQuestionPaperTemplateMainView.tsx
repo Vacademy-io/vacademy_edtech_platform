@@ -9,6 +9,7 @@ import { PopoverClose } from '@radix-ui/react-popover';
 import SelectField from '@/components/design-system/select-field';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { NumericAnswerInput, answerSlots } from '../../NumericAnswerInput';
+import { NumericToleranceField } from '../../NumericToleranceField';
 import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-template-form';
 import { formatStructure } from '../../../-utils/helper';
 import { QUESTION_TYPES, NUMERIC_TYPES } from '@/constants/dummy-data';
@@ -231,6 +232,10 @@ export const NumericQuestionPaperTemplateMainView = ({
                         </FormItem>
                     )}
                 />
+                    <NumericToleranceField
+                        control={control}
+                        name={`questions.${currentQuestionIndex}.numericTolerance`}
+                    />
             </div>
             )}
             <div className="mb-6 flex w-full flex-col !flex-nowrap items-start gap-1">

@@ -18,5 +18,6 @@
     "untitledQuestion": "Untitled Question",
     "noteLabel": "Note:",
     "noOptionsFound": "No options found for this {{type}} question",
-    "noTrueFalseOptionsFound": "No True/False options found for this question"
+    "noTrueFalseOptionsFound": "No True/False options found for this question",
+    "toleranceLabel": "Accepted within ± {{value}}"
 }

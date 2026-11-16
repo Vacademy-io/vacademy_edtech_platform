@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowCounterClockwise, CaretDown, CaretRight, ChatCircleText, Paperclip } from "@phosphor-icons/react";
 import { FunButton } from "@/components/design-system/fun/FunButton";
@@ -10,7 +10,11 @@ import { getPublicUrl } from "@/services/upload_file";
 import { formatDateTime, formatNumber } from "@/lib/formatters";
 import { cn, isRichTextEmpty, parseHtmlToString } from "@/lib/utils";
 import { RoleTerms, SystemTerms } from "@/types/naming-settings";
+import { useLessonNext } from "../lesson-next-context";
 import { useQuizPlace } from "./use-quiz-place";
+import { useFootPin } from "./foot-pin";
+import { FunQuizClose } from "./FunQuizClose";
+import { useOwnLessonScreen } from "../lesson-screen-context";
 import {
   joinPlace,
   marksText,
@@ -69,8 +73,6 @@ export interface FunQuizResultProps {
   maxAttempts?: number | null;
   canReattempt: boolean;
   onRestart: () => void;
-  /** The lesson viewer's Next, when the page passes one. Otherwise: back to the chapter. */
-  onNext?: () => void;
   rows: FunReviewRow[];
   showCorrectAnswers: boolean;
   pastAttempts: FunPastAttempt[];
@@ -97,7 +99,6 @@ export function FunQuizResult(props: FunQuizResultProps) {
     maxAttempts,
     canReattempt,
     onRestart,
-    onNext,
     rows,
     showCorrectAnswers,
     pastAttempts,
@@ -109,13 +110,19 @@ export function FunQuizResult(props: FunQuizResultProps) {
   } = props;
   const { t } = useTranslation("funQuiz");
   const place = useQuizPlace();
+  // The lesson viewer's Next while it is open; otherwise the way out is the course page.
+  const onNext = useLessonNext();
   const reviewId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useOwnLessonScreen();
+  useFootPin(rootRef, actionsRef);
   const verdict = verdictOf(passed, passPercentage);
   const hasScore = !!score && score.totalMarks > 0;
   const percent = scorePercent(score);
   const left = triesLeft(attemptNumber, maxAttempts);
   const actions = resultActions({ verdict, canRetry: canReattempt, hasNext: !!onNext });
-  const chapterWord = place.chapterTerm.toLocaleLowerCase();
+  const courseWord = place.courseTerm.toLocaleLowerCase();
   const heading = joinPlace(title, place.chapterName);
   // An earlier attempt on screen shows its own number; tries left belong to the latest.
   const shownAttempt = viewingPast ? pastAttempts.find((a) => a.active)?.number : attemptNumber;
@@ -148,21 +155,24 @@ export function FunQuizResult(props: FunQuizResultProps) {
     : null;
 
   const runAction = (action: ResultAction) =>
-    action === "retry" ? onRestart() : action === "next" ? onNext?.() : place.backToChapter();
+    action === "retry" ? onRestart() : action === "next" ? onNext?.() : place.toCourse();
 
   const actionLabel = (action: ResultAction) =>
     action === "retry"
       ? t("result.tryAgain")
       : action === "next"
         ? t("result.next")
-        : t("result.backToChapter", { chapter: chapterWord });
+        : t("result.backToCourse", { course: courseWord });
 
   const tiles = hasScore ? resultTiles(score!) : [];
   const stacked = verdict !== "notPassed";
 
   return (
-    <div className={cn("fun-quiz fun-quiz-result", place.colourClass)} data-verdict={verdict}>
-      {heading && <p className="fun-quiz-result__where">{heading}</p>}
+    <div ref={rootRef} className={cn("fun-quiz fun-quiz-result", place.colourClass)} data-verdict={verdict}>
+      <header className="fun-quiz-result__head">
+        <FunQuizClose onClose={place.toCourse} />
+        {heading && <p className="fun-quiz-result__where">{heading}</p>}
+      </header>
 
       {viewingPast && (
         <div className="fun-quiz-result__past-note" role="status">
@@ -190,7 +200,8 @@ export function FunQuizResult(props: FunQuizResultProps) {
             }
           />
         )}
-        <h2 className="fun-quiz-result__headline">{headline}</h2>
+        {/* The screen's one h1, as on A-Result. */}
+        <h1 className="fun-quiz-result__headline">{headline}</h1>
         {marksLine && <p className="fun-quiz-result__marks">{marksLine}</p>}
         {!stacked && attemptLabel && (
           <p className="fun-quiz-result__attempt-chip">
@@ -238,7 +249,7 @@ export function FunQuizResult(props: FunQuizResultProps) {
 
       {pastAttempts.length > 1 && <PastAttempts attempts={pastAttempts} onSelect={onSelectAttempt} />}
 
-      <div className="fun-quiz-result__actions">
+      <div ref={actionsRef} className="fun-quiz-result__actions">
         {actions.secondary && (
           <FunButton variant="outline" className="fun-quiz-result__secondary" onClick={() => runAction(actions.secondary!)}>
             {actionLabel(actions.secondary)}
@@ -322,11 +333,12 @@ function Sprinkles() {
 
 function Tile({ kind, count }: { kind: TileKind; count: number }) {
   const { t } = useTranslation("funQuiz");
+  // Counted, so a language can agree with the number ("1 Juste", "4 Fausses").
   const label = {
-    correct: t("result.tileCorrect"),
-    wrong: t("result.tileWrong"),
-    partial: t("result.tilePartial"),
-    skipped: t("result.tileSkipped"),
+    correct: t("result.tileCorrect", { count }),
+    wrong: t("result.tileWrong", { count }),
+    partial: t("result.tilePartial", { count }),
+    skipped: t("result.tileSkipped", { count }),
   }[kind];
   return (
     <div className="fun-quiz-result__tile" data-kind={kind}>

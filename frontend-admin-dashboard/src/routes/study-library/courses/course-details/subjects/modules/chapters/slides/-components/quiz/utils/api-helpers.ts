@@ -1,5 +1,6 @@
 import { UploadQuestionPaperFormType } from '@/routes/assessment/question-papers/-components/QuestionPaperUpload';
 import { QuizSlidePayload, QuizSlideQuestion } from '../../../-hooks/use-slides';
+import { toleranceEntry } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
 import { Slide } from '../types';
 
 // Helper function to create option structure
@@ -123,7 +124,12 @@ const createAutoEvaluationJson = (question: any, transformedOptions?: any[]): st
             return JSON.stringify({ correctAnswers: question.validAnswers });
         }
     } else if (question.validAnswers && question.validAnswers.length > 0) {
-        return JSON.stringify({ correctAnswers: question.validAnswers });
+        const isNumeric = question.questionType === 'NUMERIC' || question.questionType === 'CNUMERIC';
+        return JSON.stringify({
+            correctAnswers: question.validAnswers,
+            // Optional ± tolerance; left out when unset so other keys stay as they were.
+            ...(isNumeric ? toleranceEntry(question.numericTolerance) : {}),
+        });
     }
     return '';
 };
@@ -283,6 +289,7 @@ export interface QuizSettings {
     partialMarking?: boolean;
     passPercentage?: number | null;
     reAttemptCount?: number | null;
+    showAnswerAfterEachQuestion?: boolean;
 }
 
 // Helper function to create quiz slide payload for API
@@ -339,6 +346,11 @@ export const createQuizSlidePayload = (
                 settings?.reAttemptCount !== undefined
                     ? settings.reAttemptCount
                     : ((activeItem.quiz_slide as any)?.re_attempt_count ?? null),
+            // null = "unchanged": the server keeps the stored setting
+            show_answer_after_each_question:
+                settings?.showAnswerAfterEachQuestion !== undefined
+                    ? settings.showAnswerAfterEachQuestion
+                    : activeItem.quiz_slide?.show_answer_after_each_question ?? null,
             questions: transformedQuestions,
         },
         is_loaded: true,

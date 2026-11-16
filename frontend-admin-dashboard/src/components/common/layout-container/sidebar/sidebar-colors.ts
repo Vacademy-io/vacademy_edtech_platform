@@ -95,6 +95,20 @@ export const CATEGORY_COLORS: Record<SidebarCategory, CategoryColors> = {
         railIconActive: 'text-neutral-900',
         railIconInactive: 'text-white/70',
     },
+    // Commerce follows the institute's theme too, for the same reason as ERP.
+    COMMERCE: {
+        text: 'text-primary-600',
+        bg: 'bg-primary-500',
+        ring: 'ring-primary-200',
+        hoverText: 'hover:text-primary-600',
+        hoverBg: 'hover:bg-primary-50',
+        railActiveBg: 'bg-white',
+        pillBg: 'bg-primary-500',
+        pillText: 'text-white',
+        divider: 'border-primary-100',
+        railIconActive: 'text-neutral-900',
+        railIconInactive: 'text-white/70',
+    },
 };
 
 /** Get colors for a category, defaulting to CRM */

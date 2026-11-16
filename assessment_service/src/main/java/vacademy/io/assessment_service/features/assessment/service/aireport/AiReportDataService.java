@@ -310,16 +310,34 @@ public class AiReportDataService {
     private Map<String, StudentAnswer> loadAnswers(String attemptId) {
         Map<String, StudentAnswer> out = new HashMap<>();
         jdbcTemplate.query("""
-                SELECT question_id, section_id, marks::float8 AS marks, status, time_taken_in_seconds::bigint AS time_taken_in_seconds, response_json
+                SELECT question_id, section_id, marks::float8 AS marks, status, time_taken_in_seconds::bigint AS time_taken_in_seconds,
+                       response_json,
+                       ai_evaluation_details_json IS NOT NULL AS ai_checked,
+                       COALESCE(ai_evaluation_details_json ~ '"extracted_answer":"[^"]', FALSE) AS ai_read
                 FROM question_wise_marks WHERE attempt_id = ?
                 """, rs -> {
+            String status = rs.getString("status");
+            boolean answered = hasResponse(rs.getString("response_json"));
+            if (!answered && rs.getBoolean("ai_checked")
+                    && (status == null || "PENDING".equalsIgnoreCase(status))) {
+                // A scanned answer copy marked by an AI copy check: the check writes the marks
+                // but leaves the status PENDING, and a scan carries no typed response, so every
+                // question read as skipped. Judge it by its marks, and count it answered when
+                // the AI read something off the sheet ("" = unattempted). A typed answer (an
+                // online test's own AI marking) never comes here and reads exactly as before.
+                status = AI_CHECKED_STATUS;
+                answered = rs.getBoolean("ai_read");
+            }
             out.put(key(rs.getString("question_id"), rs.getString("section_id")), new StudentAnswer(
-                    rs.getDouble("marks"), rs.getString("status"),
+                    rs.getDouble("marks"), status,
                     (Long) rs.getObject("time_taken_in_seconds", Long.class),
-                    hasResponse(rs.getString("response_json"))));
+                    answered));
         }, attemptId);
         return out;
     }
+
+    /** Not a stored status: a scanned copy's AI-checked answer, judged by its marks (outcomeOf's default branch). */
+    static final String AI_CHECKED_STATUS = "AI_CHECKED";
 
     /** True when the stored response carries an actual answer (an option, text or number). */
     boolean hasResponse(String responseJson) {
@@ -402,7 +420,11 @@ public class AiReportDataService {
 
             jdbcTemplate.query(cohort + """
                     SELECT w.question_id, w.section_id, COUNT(*) AS n,
-                           COUNT(*) FILTER (WHERE w.status = 'CORRECT') AS correct,
+                           COUNT(*) FILTER (WHERE w.status = 'CORRECT'
+                               OR (w.status = 'PENDING' AND COALESCE(w.response_json, '') = ''
+                                   AND w.ai_evaluation_details_json IS NOT NULL AND w.marks > 0
+                                   AND w.marks >= COALESCE(CAST(substring(w.ai_evaluation_details_json
+                                       FROM '"max_marks":([0-9]+[.]?[0-9]*)') AS float8), 'Infinity'::float8))) AS correct,
                            AVG(w.time_taken_in_seconds)::float8 AS avg_t
                     FROM question_wise_marks w JOIN latest l ON l.attempt_id = w.attempt_id
                     GROUP BY w.question_id, w.section_id

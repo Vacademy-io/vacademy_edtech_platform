@@ -260,6 +260,23 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     List<EngagementAction> findDueAutoSends(@Param("now") Instant now, @Param("limit") int limit);
 
+    /**
+     * Autonomy is back on: the drafts and AI calls the kill switch parked in the inbox lose their stamp,
+     * so graduation promotes them again (promoteTasksToAutoSends and findWaitingCallTasks skip any row
+     * with an error). Only untouched OPEN tasks with exactly these stamps; anything a person acked, or
+     * that was held for another reason, stays as it is.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET error_message = NULL, updated_at = :now
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'OPEN'
+               AND error_message IN (:reasons)
+            """, nativeQuery = true)
+    int clearAutonomyStamps(@Param("engineId") String engineId, @Param("reasons") List<String> reasons,
+                            @Param("now") Instant now);
+
     /** Convert an autonomous SEND back to a human copilot TASK (kill switch / out of credits). */
     @Modifying
     @Transactional
@@ -452,6 +469,18 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     @Query(value = "SELECT count(*) FROM engagement_action WHERE member_id = :memberId AND " + TOUCH_PREDICATE,
             nativeQuery = true)
     long countTouches(@Param("memberId") String memberId);
+
+    /**
+     * Replies from this member still waiting for a person, raised since {@code since}. The email reply
+     * path alerts the team only when this is zero, so a second message in the same conversation lands
+     * in the inbox without another alert.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind = 'REPLY' AND status IN ('OPEN', 'ACKED')
+               AND created_at >= :since
+            """, nativeQuery = true)
+    long countOpenRepliesSince(@Param("memberId") String memberId, @Param("since") Instant since);
 
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
     long countByMemberIdAndStatus(String memberId, String status);

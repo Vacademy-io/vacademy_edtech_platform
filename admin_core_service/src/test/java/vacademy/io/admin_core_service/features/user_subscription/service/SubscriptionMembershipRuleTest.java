@@ -53,6 +53,7 @@ class SubscriptionMembershipRuleTest {
     @Mock private InstitutePaymentGatewayMappingService institutePaymentGatewayMappingService;
     @Mock private PaymentSettingService paymentSettingService;
     @Mock private InstituteRepository instituteRepository;
+    @Mock private vacademy.io.admin_core_service.features.commerce.common.CommercePlans commercePlans;
     @InjectMocks private SubscriptionService service;
 
     private final List<UserPlan> plans = new ArrayList<>();
@@ -136,6 +137,21 @@ class SubscriptionMembershipRuleTest {
 
         assertFalse(dto.isMembership());
         assertFalse(dto.isCanRenewManually());
+    }
+
+    @Test
+    void cancellingAShopOrderLineIsRefused() {
+        UserPlan product = plan("shirt", "ONE_TIME", "PRODUCT");
+        when(userPlanRepository.findById("shirt")).thenReturn(Optional.of(product));
+        org.mockito.Mockito.doThrow(new vacademy.io.common.exceptions.VacademyException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "shop order line"))
+                .when(commercePlans).refuseCommercePlan(product, "cancel the subscription");
+
+        assertThrows(vacademy.io.common.exceptions.VacademyException.class,
+                () -> service.cancelSubscription("learner", "inst", "shirt"));
+
+        assertEquals("ACTIVE", product.getStatus());
+        org.mockito.Mockito.verifyNoInteractions(mandateService);
     }
 
     @Test

@@ -12,6 +12,7 @@ import { TokenKey } from '@/constants/auth/tokens';
 import { QuestionType, QUESTION_TYPES } from '@/constants/dummy-data';
 import { getInstituteId } from '@/constants/helper';
 import { renderLatexDelimiters } from '@/lib/latex-delimiters';
+import { readNumericTolerance, toleranceEntry } from './numeric-tolerance';
 import {
     buildCbeEvaluationJson,
     CBE_RESPONSE_TYPE,
@@ -762,6 +763,8 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
             }));
         } else if (item.question_type === 'NUMERIC') {
             baseQuestion.validAnswers = validAnswers;
+            const tolerance = readNumericTolerance(item.auto_evaluation_json);
+            if (tolerance !== undefined) baseQuestion.numericTolerance = tolerance;
         }
         return baseQuestion;
     });
@@ -890,6 +893,8 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
         }));
     } else if (item.question_type === 'NUMERIC') {
         baseQuestion.validAnswers = validAnswers;
+        const tolerance = readNumericTolerance(item.auto_evaluation_json);
+        if (tolerance !== undefined) baseQuestion.numericTolerance = tolerance;
     }
     return baseQuestion;
 };
@@ -1044,6 +1049,7 @@ export function getEvaluationJSON(
                 type: 'NUMERIC',
                 data: {
                     validAnswers: usableNumericAnswers(validAnswers),
+                    ...toleranceEntry(question.numericTolerance),
                 },
             });
         case 'CNUMERIC':
@@ -1051,6 +1057,7 @@ export function getEvaluationJSON(
                 type: 'NUMERIC',
                 data: {
                     validAnswers: usableNumericAnswers(validAnswers),
+                    ...toleranceEntry(question.numericTolerance),
                 },
             });
         case 'ONE_WORD':

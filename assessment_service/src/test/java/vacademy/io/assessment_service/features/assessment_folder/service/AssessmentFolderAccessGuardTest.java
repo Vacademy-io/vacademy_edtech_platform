@@ -69,4 +69,14 @@ class AssessmentFolderAccessGuardTest {
     void learnersMayList() {
         assertDoesNotThrow(() -> guard.requireMember(principal("STUDENT"), "inst-1", "inst-1"));
     }
+
+    @Test
+    @DisplayName("shop-only staff (Commerce roles) cannot manage folders")
+    void shopOnlyStaffMayNotManage() {
+        assertThrows(ForbiddenException.class,
+                () -> guard.requireStaff(principal("COMMERCE_POS_CASHIER"), "inst-1", "inst-1"));
+        assertThrows(ForbiddenException.class,
+                () -> guard.requireStaff(principal("COMMERCE_STORE_MANAGER", "COMMERCE_ACCOUNTANT"), "inst-1", "inst-1"));
+        assertDoesNotThrow(() -> guard.requireStaff(principal("TEACHER", "COMMERCE_POS_CASHIER"), "inst-1", "inst-1"));
+    }
 }

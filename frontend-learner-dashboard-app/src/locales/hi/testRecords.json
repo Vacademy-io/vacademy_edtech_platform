@@ -19,6 +19,7 @@
     "average": "औसत",
     "low": "कम",
     "yourResponse": "आपकी प्रतिक्रिया",
+    "hiddenByInstitute": "इस रिपोर्ट में नहीं दिखाया जाता",
     "explanation": "व्याख्या",
     "resultReport": "परिणाम रिपोर्ट",
     "classAverageValue": "कक्षा का औसत: {{value}}",

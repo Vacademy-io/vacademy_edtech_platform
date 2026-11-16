@@ -43,6 +43,8 @@
         "dashboardLinkText": "{{vendor}} डैशबोर्ड",
         "findValuesSuffix": "में मिलेंगी।",
         "whereToFind": "ये वैल्यू कहां मिलेंगी",
+        "setupGuidePdf": "{{vendor}} सेटअप गाइड (PDF) — keys, webhook और टेस्टिंग, स्टेप-बाय-स्टेप",
+        "openGuide": "खोलें",
         "webhookUrlLabel": "वेबहुक URL — {{vendor}} डैशबोर्ड में पेस्ट करें",
         "copyUrl": "URL कॉपी करें",
         "hide": "छिपाएं",

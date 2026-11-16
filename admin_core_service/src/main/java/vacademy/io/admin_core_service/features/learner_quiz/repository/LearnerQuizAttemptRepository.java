@@ -57,7 +57,8 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
                    q.negative_marking AS negativeMarking,
                    q.pass_percentage AS passPercentage,
                    q.partial_marking AS partialMarking,
-                   q.re_attempt_count AS reAttemptCount
+                   q.re_attempt_count AS reAttemptCount,
+                   q.show_answer_after_each_question AS showAnswerAfterEachQuestion
             FROM slide s
             JOIN quiz_slide q ON q.id = s.source_id
             WHERE s.id = :slideId
@@ -265,6 +266,7 @@ public interface LearnerQuizAttemptRepository extends Repository<ActivityLog, St
         Double getPassPercentage();
         Boolean getPartialMarking();
         Integer getReAttemptCount();
+        Boolean getShowAnswerAfterEachQuestion();
     }
 
     interface QuizQuestionRow {

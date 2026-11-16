@@ -24,7 +24,8 @@ class InviteUserControllerResendGuardTest {
     private final InviteUserService service = mock(InviteUserService.class);
     private final UserAccountAccessGuard guard = mock(UserAccountAccessGuard.class);
     private final InviteUserController controller = new InviteUserController(service,
-            mock(AdminRoleGrantGuard.class), guard, mock(UserService.class));
+            mock(AdminRoleGrantGuard.class), guard, mock(UserService.class),
+            mock(vacademy.io.auth_service.feature.user.service.ProductSeatGuard.class));
     private final CustomUserDetails caller = caller();
 
     private static CustomUserDetails caller() {

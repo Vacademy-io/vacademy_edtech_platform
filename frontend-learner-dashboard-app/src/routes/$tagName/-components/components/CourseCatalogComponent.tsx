@@ -366,7 +366,8 @@ interface FilterSectionProps {
   counts?: Record<string, number>;
 }
 
-const FilterSection: React.FC<FilterSectionProps> = ({
+/** Exported for the column-layout tag filter (TagFilterCatalog), so both sidebars look the same. */
+export const FilterSection: React.FC<FilterSectionProps> = ({
   title,
   items,
   selectedItems,

@@ -250,6 +250,11 @@ public class SubOrgTeamService {
         // For non-admin callers, reject system roles.
         boolean callerIsSystemAdmin = hasSystemRole(caller, request.getInstituteId(), "ADMIN", "TEACHER");
         String roleName = request.getRoleName();
+        // Commerce roles are granted only from the team screen by an institute ADMIN, never
+        // through a sub-org team invite.
+        if (vacademy.io.admin_core_service.core.security.InstituteAccessValidator.isCommerceRoleName(roleName)) {
+            throw new VacademyException("Commerce roles cannot be assigned to a sub-org team member");
+        }
         if (!callerIsSystemAdmin) {
             if (!StringUtils.hasText(roleName) || SYSTEM_ROLES.contains(roleName.toUpperCase())) {
                 throw new VacademyException("Sub-org admins can only assign custom roles");

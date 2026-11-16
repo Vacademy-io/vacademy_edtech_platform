@@ -139,6 +139,49 @@ class PlatformProductServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void publicOfferShowsTheStorefrontPriceOverTheDashboardNumbers() throws Exception {
+        ProductSettingsDTO stored = valid();
+        stored.setProductKey("evalezy");
+        stored.setPlans(twoPlans());
+        stored.setPlanValidityMonths(12);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        // the storefront sells starter at a new price for 6 months; team is not on sale
+        doAnswer(inv -> {
+            java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+            when(rs.getString("plan_key")).thenReturn("evalezy_starter");
+            when(rs.getLong("price_minor")).thenReturn(600_000L);
+            when(rs.getBigDecimal("allowance_credits")).thenReturn(new java.math.BigDecimal("150.0000"));
+            when(rs.getInt("period_months")).thenReturn(6);
+            ((org.springframework.jdbc.core.RowCallbackHandler) inv.getArgument(1)).processRow(rs);
+            return null;
+        }).when(jdbcTemplate).query(contains("ai_plan_version"),
+                any(org.springframework.jdbc.core.RowCallbackHandler.class), eq("evalezy\\_%"), eq("product_evalezy"));
+        var offer = service.publicOffer("evalezy");
+        assertEquals(6000, offer.getPlans().get(0).getPriceInr());
+        assertEquals(150, offer.getPlans().get(0).getCredits());
+        assertEquals(1, offer.getPlans().get(0).getUsers());
+        assertEquals(20000, offer.getPlans().get(1).getPriceInr());
+        assertEquals(6, offer.getPlanValidityMonths());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publicOfferKeepsTheDashboardNumbersWhenTheStorefrontCannotBeRead() {
+        ProductSettingsDTO stored = valid();
+        stored.setProductKey("evalezy");
+        stored.setPlans(twoPlans());
+        stored.setPlanValidityMonths(12);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        doThrow(new org.springframework.jdbc.BadSqlGrammarException("x", "y", new java.sql.SQLException("no table")))
+                .when(jdbcTemplate).query(contains("ai_plan_version"),
+                        any(org.springframework.jdbc.core.RowCallbackHandler.class), anyString(), anyString());
+        var offer = service.publicOffer("evalezy");
+        assertEquals(5000, offer.getPlans().get(0).getPriceInr());
+        assertEquals(12, offer.getPlanValidityMonths());
+    }
+
+    @Test
     void publicOfferRefusesOddKeysWithoutAQuery() {
         assertThrows(VacademyException.class, () -> service.publicOffer("../x"));
         assertThrows(VacademyException.class, () -> service.publicOffer("a b"));

@@ -66,6 +66,10 @@ public class AutoEvaluationScorer {
             // Spreadsheet & Written Response: graded by AI, never by a key here.
             return Verdict.UNKNOWN;
         }
+        Verdict withinTolerance = evaluateWithTolerance(autoEvaluationJson, responseJson);
+        if (withinTolerance != null) {
+            return withinTolerance;
+        }
         Set<String> key = extractCorrectAnswers(autoEvaluationJson, optionIdsInOrder);
         if (key == null || key.isEmpty()) {
             return Verdict.UNKNOWN;
@@ -78,6 +82,32 @@ public class AutoEvaluationScorer {
             return Verdict.SKIPPED;
         }
         return key.equals(selected) ? Verdict.CORRECT : Verdict.WRONG;
+    }
+
+    /**
+     * A numeric key with a ± tolerance, read from the same {@code correctAnswers} key
+     * {@link #evaluate(String, String, Supplier)} reads, but compared as numbers within the
+     * tolerance and never resolved as option positions. Null - and the exact-set rule
+     * applies, exactly as before - when the key has no tolerance or is not all numbers.
+     */
+    private Verdict evaluateWithTolerance(String autoEvaluationJson, String responseJson) {
+        BigDecimal tolerance = numericTolerance(autoEvaluationJson);
+        if (tolerance == null) {
+            return null;
+        }
+        Set<String> key = extractCorrectAnswers(autoEvaluationJson, List::of);
+        if (key == null || key.isEmpty() || !key.stream().allMatch(k -> parseLenientDecimal(k) != null)) {
+            return null;
+        }
+        Set<String> selected = extractSelectedAnswers(responseJson);
+        if (selected == null) {
+            return null;
+        }
+        if (selected.isEmpty()) {
+            return Verdict.SKIPPED;
+        }
+        return selected.size() == 1 && numericMatch(key, selected.iterator().next(), tolerance)
+                ? Verdict.CORRECT : Verdict.WRONG;
     }
 
     /**
@@ -117,7 +147,8 @@ public class AutoEvaluationScorer {
             return Verdict.UNKNOWN;
         }
         if (numeric) {
-            return selected.size() == 1 && numericMatch(key, selected.iterator().next())
+            return selected.size() == 1
+                    && numericMatch(key, selected.iterator().next(), numericTolerance(autoEvaluationJson))
                     ? Verdict.CORRECT : Verdict.WRONG;
         }
         if (isMultiSelect(questionType)) {
@@ -192,18 +223,63 @@ public class AutoEvaluationScorer {
         return "LONG_ANSWER".equals(questionType) || "ONE_WORD".equals(questionType) || "TEXT".equals(questionType);
     }
 
-    private static boolean numericMatch(Set<String> key, String given) {
-        BigDecimal value = parseDecimal(given);
+    /**
+     * @param tolerance the question's ± tolerance, or null for the exact comparison numeric
+     *                  answers have always had
+     */
+    static boolean numericMatch(Set<String> key, String given, BigDecimal tolerance) {
+        if (tolerance == null) {
+            BigDecimal value = parseDecimal(given);
+            if (value == null) {
+                return false;
+            }
+            for (String candidate : key) {
+                BigDecimal expected = parseDecimal(candidate);
+                if (expected != null && expected.compareTo(value) == 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        BigDecimal value = parseLenientDecimal(given);
         if (value == null) {
             return false;
         }
         for (String candidate : key) {
-            BigDecimal expected = parseDecimal(candidate);
-            if (expected != null && expected.compareTo(value) == 0) {
+            BigDecimal expected = parseLenientDecimal(candidate);
+            if (expected != null && expected.subtract(value).abs().compareTo(tolerance) <= 0) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * The optional ± tolerance of a numeric answer key: {@code tolerance} beside a quiz
+     * slide's {@code correctAnswers}, or {@code data.tolerance} beside {@code validAnswers}.
+     * Null when absent, 0, negative or not a number - the exact match applies.
+     */
+    public BigDecimal numericTolerance(String autoEvaluationJson) {
+        if (autoEvaluationJson == null || autoEvaluationJson.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(autoEvaluationJson);
+            JsonNode node = root.path("tolerance");
+            if (node.isMissingNode() || node.isNull()) {
+                node = root.path("data").path("tolerance");
+            }
+            BigDecimal tolerance = node.isNumber() ? node.decimalValue()
+                    : node.isTextual() ? parseLenientDecimal(node.asText()) : null;
+            return tolerance != null && tolerance.signum() > 0 ? tolerance : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** As {@link #parseDecimal}, also ignoring spaces and thousands separators ("1,250"). */
+    private static BigDecimal parseLenientDecimal(String value) {
+        return value == null ? null : parseDecimal(value.replace(",", "").replaceAll("\\s+", ""));
     }
 
     private static BigDecimal parseDecimal(String value) {

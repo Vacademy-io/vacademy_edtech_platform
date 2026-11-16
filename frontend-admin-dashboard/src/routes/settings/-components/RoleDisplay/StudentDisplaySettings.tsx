@@ -78,6 +78,8 @@ import {
 import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     fetchStudentDisplaySettingsForEdit,
+    isCustomWidget,
+    newCustomWidgetId,
     saveStudentDisplaySettings,
 } from '@/services/student-display-settings';
 import MaxActiveSessionsSetting from './MaxActiveSessionsSetting';
@@ -433,9 +435,11 @@ export default function StudentDisplaySettings(): JSX.Element {
 
     const addCustomWidget = () => {
         if (!settings) return;
-        const nextOrder = (settings.dashboard.widgets?.length || 0) + 1;
+        const widgets = settings.dashboard.widgets ?? [];
+        // After the last row, even when earlier removals left gaps in the order.
+        const nextOrder = widgets.reduce((max, w) => Math.max(max, w.order || 0), 0) + 1;
         const custom = {
-            id: 'custom' as const,
+            id: newCustomWidgetId(widgets.map((w) => w.id)),
             title: t('widgets.defaultTitle'),
             subTitle: '',
             link: '/',
@@ -443,14 +447,14 @@ export default function StudentDisplaySettings(): JSX.Element {
             visible: true,
             isCustom: true,
         };
-        update('dashboard', { widgets: [...settings.dashboard.widgets, custom] });
+        update('dashboard', { widgets: [...widgets, custom] });
     };
 
     const removeWidgetAt = (index: number) => {
         if (!settings) return;
         const list = [...settings.dashboard.widgets];
         const item = list[index];
-        if (item?.id !== 'custom' && !item?.isCustom) return; // only custom widgets
+        if (!isCustomWidget(item)) return; // only custom widgets
         list.splice(index, 1);
         update('dashboard', { widgets: list });
     };
@@ -508,8 +512,8 @@ export default function StudentDisplaySettings(): JSX.Element {
         if (swapIdx < 0 || swapIdx >= sorted.length) return;
         const current = sorted[widgetIdx]!;
         const swap = sorted[swapIdx]!;
-        // Identity match: two custom widgets share id 'custom', so matching on
-        // id+order could swap the wrong pair.
+        // Identity match: rows are swapped by object, not by id+order, so two
+        // rows that happen to share an order cannot swap the wrong pair.
         const widgets = settings.dashboard.widgets.map((w) => {
             if (w === current) return { ...w, order: swap.order };
             if (w === swap) return { ...w, order: current.order };
@@ -750,7 +754,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                             const origIdx = settings.dashboard.widgets.indexOf(w);
                             return (
                                 <div
-                                    key={`${w.id}-${w.title ?? ''}-${origIdx}`}
+                                    key={w.id}
                                     className="flex items-center gap-2 rounded border p-2"
                                 >
                                     <div className="flex flex-col items-center gap-0.5">
@@ -764,10 +768,10 @@ export default function StudentDisplaySettings(): JSX.Element {
                                     </div>
                                     <div className="flex flex-1 flex-wrap items-center gap-2">
                                         <div className="grow text-xs font-medium">
-                                            {WIDGET_LABELS[w.id] ?? w.id}
+                                            {(isCustomWidget(w) ? WIDGET_LABELS.custom : WIDGET_LABELS[w.id]) ?? w.id}
                                             {w.isCustom && w.title ? `: ${w.title}` : ''}
                                         </div>
-                                        {w.id === 'custom' && (
+                                        {isCustomWidget(w) && (
                                             <>
                                                 <Label className="text-xs">{t('common.title')}</Label>
                                                 <Input className="h-8 w-40" value={w.title || ''} onChange={(e) => {
@@ -794,7 +798,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                                                 update('dashboard', { widgets });
                                             }}
                                         />
-                                        {(w.id === 'custom' || w.isCustom) && (
+                                        {isCustomWidget(w) && (
                                             <Button type="button" size="sm" variant="destructive" onClick={() => removeWidgetAt(origIdx)}>{t('common.remove')}</Button>
                                         )}
                                     </div>

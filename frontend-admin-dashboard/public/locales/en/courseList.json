@@ -21,5 +21,28 @@
     "cancel": "Cancel",
     "deleting": "Deleting...",
     "confirm": "Confirm",
-    "noCoursesFound": "No {{courses}} found."
+    "noCoursesFound": "No {{courses}} found.",
+    "duplicate": {
+        "action": "Duplicate {{course}}",
+        "title": "Duplicate {{course}}",
+        "copySuffix": "(Copy)",
+        "nameLabel": "New {{course}} name",
+        "copiedTitle": "What is copied",
+        "copiedDetails": "{{course}} details: description, images, tags and settings",
+        "copiedBatches": "The same {{batches}}",
+        "copiedContent": "All content, as a separate copy you can edit without changing this {{courseLower}}",
+        "notCopiedTitle": "What is not copied",
+        "notCopiedBody": "{{learners}} and enrolments, payment options, invite links, issued certificates and assigned teachers. The new {{courseLower}} is not added to the catalogue until you publish it.",
+        "confirm": "Duplicate",
+        "duplicating": "Duplicating…",
+        "progressTitle": "Copying your {{courseLower}}…",
+        "progressBody": "Large {{coursesLower}} can take a minute. Keep this window open.",
+        "doneTitle": "“{{name}}” is ready",
+        "doneCounts": "{{batchCount}} {{batches}}, {{chapterCount}} {{chapters}} and {{slideCount}} {{slides}} copied.",
+        "warningsTitle": "Some items need a look",
+        "openNew": "Open new {{courseLower}}",
+        "close": "Close",
+        "success": "{{course}} duplicated as “{{name}}”",
+        "failed": "Could not duplicate this {{courseLower}}. Please try again."
+    }
 }

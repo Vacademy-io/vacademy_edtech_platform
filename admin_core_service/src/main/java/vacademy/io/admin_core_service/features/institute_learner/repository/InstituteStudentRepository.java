@@ -227,6 +227,7 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
       "AND ps.status != 'DELETED' " +
       "AND ssigm.status != 'INACTIVE' " +
       "AND (p.package_type IS NULL OR p.package_type NOT IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT')) " +
+      "AND NOT EXISTS (SELECT 1 FROM commerce_product cm_cp WHERE cm_cp.package_id = p.id) " +
       "ORDER BY s.created_at DESC")
   List<Object[]> getStudentWithInstituteAndUserId(
       @Param("userId") String userId,

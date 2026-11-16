@@ -849,6 +849,14 @@ public class PaymentNotificatonService {
         private final String fromEmail;
         private final byte[] pdf;
         private final String pdfFileName;
+        /**
+         * A product workspace (Evalezy): sent as that product, from its own verified sender
+         * ({@code fromEmail}/{@code fromName}) with the PDF attached, and {@code tradeName} (the
+         * product's name) heads the subject and body.
+         */
+        private final boolean productBrand;
+        /** Product mails only: public https PNG shown above the product's name. */
+        private final String logoUrl;
     }
 
     /**
@@ -865,7 +873,8 @@ public class PaymentNotificatonService {
         if (to.isEmpty()) {
             return 0;
         }
-        boolean neutral = e.getBrandMode() != BrandMode.VACADEMY;
+        boolean product = e.isProductBrand() && StringUtils.hasText(e.getFromEmail());
+        boolean neutral = !product && e.getBrandMode() != BrandMode.VACADEMY;
         boolean namedSender = neutral && StringUtils.hasText(e.getFromName());
         boolean attach = !namedSender && e.getPdf() != null && e.getPdf().length > 0;
         String subject = platformBillingSubject(e);
@@ -873,6 +882,16 @@ public class PaymentNotificatonService {
         String source = e.getDocumentType() == PlatformDocumentType.CREDIT_NOTE
                 ? "AI_PLATFORM_CREDIT_NOTE" : "AI_PLATFORM_INVOICE";
         try {
+            if (product) {
+                // The product's own sender, with the PDF attached when there is one.
+                String fileName = StringUtils.hasText(e.getPdfFileName()) ? e.getPdfFileName()
+                        : e.getDocumentNumber().replace('/', '-') + ".pdf";
+                notificationService.sendEmailWithOptionalAttachmentViaUnified(to, subject, body,
+                        e.getInstituteId(), e.getFromEmail(), e.getFromName(), "UTILITY_EMAIL", source,
+                        e.getDocumentNumber(), attach ? fileName : null,
+                        attach ? Base64.getEncoder().encodeToString(e.getPdf()) : null);
+                return to.size();
+            }
             if (namedSender) {
                 for (String email : to) {
                     notificationService.sendHtmlEmailViaUnified(email, subject, body, e.getInstituteId(),
@@ -963,7 +982,7 @@ public class PaymentNotificatonService {
         } else {
             base = "Your AI credits are ready: tax invoice " + e.getDocumentNumber();
         }
-        boolean vacademyBrand = e.getBrandMode() == BrandMode.VACADEMY;
+        boolean vacademyBrand = e.getBrandMode() == BrandMode.VACADEMY || e.isProductBrand();
         if (vacademyBrand && StringUtils.hasText(e.getTradeName())) {
             return e.getTradeName().trim() + ": " + base;
         }
@@ -971,7 +990,7 @@ public class PaymentNotificatonService {
     }
 
     static String platformBillingBody(PlatformBillingEmail e, boolean attached) {
-        boolean vacademyBrand = e.getBrandMode() == BrandMode.VACADEMY
+        boolean vacademyBrand = (e.getBrandMode() == BrandMode.VACADEMY || e.isProductBrand())
                 && StringUtils.hasText(e.getTradeName());
         boolean creditNote = e.getDocumentType() == PlatformDocumentType.CREDIT_NOTE;
         boolean subscription = "AI_SUBSCRIPTION".equals(e.getItemKind());
@@ -981,7 +1000,13 @@ public class PaymentNotificatonService {
         StringBuilder sb = new StringBuilder(2_000);
         sb.append("<!DOCTYPE html><html><body style=\"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#111;\">")
           .append("<div style=\"max-width:560px;margin:24px auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;\">");
-        if (vacademyBrand) {
+        if (vacademyBrand && e.isProductBrand() && StringUtils.hasText(e.getLogoUrl())) {
+            sb.append("<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:12px;\">")
+              .append("<img src=\"").append(htmlEscape(e.getLogoUrl().trim()))
+              .append("\" width=\"32\" height=\"32\" alt=\"\" style=\"border-radius:6px;\">")
+              .append("<span style=\"font-size:15px;font-weight:700;color:#111827;\">")
+              .append(htmlEscape(e.getTradeName().trim())).append("</span></div>");
+        } else if (vacademyBrand) {
             sb.append("<div style=\"font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;\">")
               .append(htmlEscape(e.getTradeName().trim())).append("</div>");
         }
@@ -1012,7 +1037,12 @@ public class PaymentNotificatonService {
             sb.append("Your GST ").append(doc).append(" <strong>").append(htmlEscape(e.getDocumentNumber()))
               .append("</strong> is attached to this email as a PDF. ");
         }
-        if (StringUtils.hasText(e.getBillingLink())) {
+        if (e.isProductBrand() && StringUtils.hasText(e.getBillingLink())) {
+            sb.append("You can download it at any time from <a href=\"").append(htmlEscape(e.getBillingLink()))
+              .append("\">Plan &amp; teachers</a> in ")
+              .append(htmlEscape(StringUtils.hasText(e.getTradeName()) ? e.getTradeName().trim() : "the app"))
+              .append(".");
+        } else if (StringUtils.hasText(e.getBillingLink())) {
             sb.append("You can download it at any time from <a href=\"").append(htmlEscape(e.getBillingLink()))
               .append("\">Plan &amp; billing</a> in your admin dashboard.");
         } else {

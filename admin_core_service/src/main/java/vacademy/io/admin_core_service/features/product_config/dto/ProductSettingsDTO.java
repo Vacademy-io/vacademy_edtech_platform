@@ -28,6 +28,8 @@ public class ProductSettingsDTO {
     private String contactEmail;
     private String themeColor;
     private String logoUrl;
+    /** Public https PNG/JPG shown at the top of the product's mails (OTP). SVG does not show in Gmail. */
+    private String emailLogoUrl;
     private String appPath;
     private String loginUrl;
     private Integer trialDays;
@@ -36,6 +38,12 @@ public class ProductSettingsDTO {
 
     /** Credits a new institute of this product opens with. None keeps the platform's default. */
     private Integer demoCredits;
+    /** Credits the one-screen demo (name, email, phone, no code) opens with. None uses demoCredits. */
+    private Integer demoPortalCredits;
+    /** Institute whose CRM gets every instant-demo sign-up as a lead (our own admin institute). Empty: no lead. */
+    private String demoLeadsInstituteId;
+    /** Name of that lead list, used when it is created. Empty: "Product <name> ( Instant - Demo )". */
+    private String demoLeadsListName;
     /** Comma-separated: who gets the new sign-up mail. */
     private String signupAlertEmails;
     /** Comma-separated, digits with the country code: who gets the new sign-up WhatsApp. */

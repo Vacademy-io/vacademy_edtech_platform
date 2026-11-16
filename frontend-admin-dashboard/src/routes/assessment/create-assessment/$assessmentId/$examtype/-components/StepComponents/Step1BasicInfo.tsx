@@ -47,7 +47,7 @@ import { useBasicInfoStore } from '../../-utils/zustand-global-states/step1-basi
 import { toast } from 'sonner';
 import { reportApiError } from '@/lib/report-api-error';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
-import { CaretLeft } from '@phosphor-icons/react';
+import { CaretDown, CaretLeft, SlidersHorizontal } from '@phosphor-icons/react';
 import { useParams } from '@tanstack/react-router';
 import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
@@ -55,7 +55,17 @@ import { cn, convertCapitalToTitleCase } from '@/lib/utils';
 import { unresolvedSubjectIds, useSubjectNamesByIds } from '@/services/subject-names';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_PROCTORING_FORM, proctoringFormFromWire } from '@/types/assessments/proctoring';
+import {
+    DEFAULT_EXAM_INTERFACE_FORM,
+    examInterfaceFormFromWire,
+} from '@/types/assessments/exam-interface';
 import { ProctoringSettingsCard } from './-components/ProctoringSettingsCard';
+import { ExamInterfaceSettingsCard } from './-components/ExamInterfaceSettingsCard';
+import { ReportOptionsSettingsCard } from './-components/ReportOptionsSettingsCard';
+import {
+    DEFAULT_REPORT_OPTIONS_FORM,
+    reportOptionsFormFromWire,
+} from '@/types/assessments/report-options';
 import { isApiSourced } from '../../../../../assessment-list/-utils.ts/assessment-source';
 
 // convertDateFormat lives in -utils/helper; Step 3 still imports it from here.
@@ -644,6 +654,8 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             // `??` for the same reason: a stored `false` must stay off.
             omrMode: storeDataStep1.omrMode ?? false,
             proctoring: storeDataStep1.proctoring ?? DEFAULT_PROCTORING_FORM,
+            examInterface: storeDataStep1.examInterface ?? DEFAULT_EXAM_INTERFACE_FORM,
+            reportOptions: storeDataStep1.reportOptions ?? DEFAULT_REPORT_OPTIONS_FORM,
             switchSections: storeDataStep1.switchSections || true, // Default to false
             raiseReattemptRequest: storeDataStep1.raiseReattemptRequest || true, // Default to true
             raiseTimeIncreaseRequest: storeDataStep1.raiseTimeIncreaseRequest || true, // Default to false
@@ -652,6 +664,23 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
     });
 
     const { handleSubmit, control, watch } = form;
+
+    // AI evaluation, OMR mode, proctoring, exam interface, preview and section switching
+    // sit behind one "Advanced settings" row, so a first assessment is name, dates,
+    // attempts and result type. The row opens by itself whenever any of them is in use, and on a failed save.
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const proctoringTier = watch('proctoring')?.tier;
+    const advancedInUse =
+        watch('aiEvaluationEnabled') === true ||
+        watch('omrMode') === true ||
+        (proctoringTier !== undefined && proctoringTier !== 'NONE') ||
+        (watch('examInterface')?.choice ?? 'default') !== 'default' ||
+        watch('examInterface')?.passageBeside === true ||
+        watch('assessmentPreview.checked') === true ||
+        watch('switchSections') === false;
+    useEffect(() => {
+        if (advancedInUse) setShowAdvanced(true);
+    }, [advancedInUse]);
 
     // Watch form fields
     const selectedSubjectId = watch('testCreation.subject');
@@ -762,12 +791,17 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                 : t('validation.cannotSaveGeneric'),
             { className: 'error-toast', duration: 6000 }
         );
+        // The failing field may be inside the collapsed advanced settings.
+        setShowAdvanced(true);
         const firstPath = problems[0]?.path;
         if (firstPath) {
-            const target =
-                document.querySelector(`[name="${firstPath}"]`) ??
-                document.querySelector(`[name="${firstPath.split('.')[0]}"]`);
-            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Next tick, so a field that just became visible can be found.
+            setTimeout(() => {
+                const target =
+                    document.querySelector(`[name="${firstPath}"]`) ??
+                    document.querySelector(`[name="${firstPath.split('.')[0]}"]`);
+                target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 0);
         }
     };
 
@@ -887,6 +921,12 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
             aiEvaluationEnabled: savedData?.ai_evaluation_enabled ?? false,
             omrMode: savedData?.omr_mode === true,
             proctoring: proctoringFormFromWire(savedData?.proctoring_config),
+            // Step 0 saved_data.exam_interface: the stored object, or null for the
+            // standard screen (absent on an older backend, which reads the same).
+            examInterface: examInterfaceFormFromWire(savedData?.exam_interface),
+            // Step 0 saved_data.report_options: the assessment's own options, or
+            // null = the institute default.
+            reportOptions: reportOptionsFormFromWire(savedData?.report_options),
             // 27 older exams carry no result_type; they are all AUTO-evaluated,
             // and preselecting MANUAL for them (the old fallback) flipped a working
             // exam to teacher-checked on any Step 1 edit.
@@ -1302,8 +1342,37 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                             )}
                     </div>
                     )}
+                    {/* What the student's report shows per question. Surveys have no marked report. */}
+                    {showsResultReleaseSettings(examType) && (
+                        <ReportOptionsSettingsCard control={form.control} />
+                    )}
 
-                    <div className="flex flex-col gap-6" id="attempt-settings">
+                    <div className="flex flex-col gap-4" id="attempt-settings">
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="large"
+                            layoutVariant="default"
+                            className="w-full justify-between"
+                            aria-expanded={showAdvanced}
+                            onClick={() => setShowAdvanced((open) => !open)}
+                        >
+                            <span className="flex items-center gap-2">
+                                <SlidersHorizontal size={16} weight="bold" />
+                                {t('attemptSettingsSection.advanced.title')}
+                            </span>
+                            <CaretDown
+                                size={16}
+                                className={cn('transition-transform', showAdvanced && 'rotate-180')}
+                            />
+                        </MyButton>
+                        {!showAdvanced && (
+                            <p className="-mt-2 text-caption text-neutral-500">
+                                {t('attemptSettingsSection.advanced.summary')}
+                            </p>
+                        )}
+                        {showAdvanced && (
+                    <div className="flex flex-col gap-6">
                         {/*
                           * Automatic AI evaluation. Deliberately OFF by default and shown
                           * with its cost stated: every submission that this grades charges
@@ -1373,6 +1442,14 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                         )}
                         {/* Surveys have nothing to cheat on. */}
                         {examType !== 'SURVEY' && <ProctoringSettingsCard control={form.control} />}
+                        {/* The learner's test screen. Surveys and homework have no exam screen. */}
+                        {examType !== 'SURVEY' && examType !== 'HOMEWORK' && (
+                            <ExamInterfaceSettingsCard
+                                control={form.control}
+                                omrMode={watch('omrMode') === true}
+                                manualEvaluation={watch('resultType') === 'MANUAL'}
+                            />
+                        )}
                         {getStepKey({
                             assessmentDetails,
                             currentStep,
@@ -1552,6 +1629,8 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
                                 )}
                             />
                         )} */}
+                    </div>
+                        )}
                     </div>
                     </SectionCard>
                 </div>

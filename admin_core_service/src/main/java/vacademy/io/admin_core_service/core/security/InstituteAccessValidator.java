@@ -101,8 +101,7 @@ public class InstituteAccessValidator {
     /**
      * Institute ADMIN only, with NO root-user bypass -- for endpoints that mint credentials
      * or spend credits on the institute's behalf (e.g. AI-calling API keys). The root flag
-     * cannot be trusted here: learners and invited staff are created as root users, so the
-     * bypass in {@link #validateUserAccess} would let any learner act on any institute.
+     * is not consulted here.
      *
      * <p>Membership is the non-root test of {@code validateUserAccess} (a non-empty
      * authorities list with the clientId header equal to {@code instituteId}); on top of
@@ -189,6 +188,10 @@ public class InstituteAccessValidator {
      * </ol>
      */
     public void requireStaffAccess(CustomUserDetails user, String instituteId) {
+        // Checked first: a shop-only account is never general staff, whatever flags it carries.
+        if (isCommerceOnly(user)) {
+            throw new ForbiddenException("Access denied: staff role required");
+        }
         if (user != null && user.isRootUser()) {
             return;
         }
@@ -214,10 +217,41 @@ public class InstituteAccessValidator {
         if (authorities.stream().anyMatch(STAFF_ROLE_NAMES::contains)) {
             return;
         }
+        // A principal whose only names are commerce roles is shop staff, not general staff:
+        // those roles are checked by CommerceAccessGuard on /commerce/v1 and open nothing else.
+        // The seeded commerce roles carry no permission names, so "nothing left" means exactly that.
+        authorities.removeAll(COMMERCE_ROLE_NAMES);
         if (!authorities.isEmpty()) {
             return;
         }
         throw new ForbiddenException("Access denied: staff role required");
+    }
+
+    /** Same names as CommerceRole.authority() in features/commerce/security. */
+    private static final Set<String> COMMERCE_ROLE_NAMES = Set.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
+    /** For guards that sort authorities into "learner" and "everything else is staff". */
+    public static boolean isCommerceRoleName(String authority) {
+        return authority != null && COMMERCE_ROLE_NAMES.contains(authority.trim().toUpperCase());
+    }
+
+    /** At least one authority, and every one of them a commerce role name. */
+    private static boolean isCommerceOnly(CustomUserDetails user) {
+        if (user == null || user.getAuthorities() == null || user.getAuthorities().isEmpty()) {
+            return false;
+        }
+        boolean any = false;
+        for (GrantedAuthority authority : user.getAuthorities()) {
+            if (authority == null || authority.getAuthority() == null || authority.getAuthority().isBlank()) {
+                continue;
+            }
+            if (!isCommerceRoleName(authority.getAuthority())) {
+                return false;
+            }
+            any = true;
+        }
+        return any;
     }
 
     /**

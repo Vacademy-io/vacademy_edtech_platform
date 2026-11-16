@@ -153,6 +153,8 @@ export interface QuizSlide {
     negative_marking?: number;
     partial_marking?: boolean | null;
     pass_percentage?: number | null;
+    /** Study mode: the learner checks each answer and sees the key before moving on. */
+    show_answer_after_each_question?: boolean | null;
 }
 
 // Audio slide interface

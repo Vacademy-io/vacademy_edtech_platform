@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { AdmissionReport, AdmissionRow } from '../../-services/get-admission-reports';
+import type {
+    AdmissionReport,
+    AdmissionRow,
+    AdmissionStudents,
+} from '../../-services/get-admission-reports';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -68,9 +72,39 @@ const report: AdmissionReport = {
     by_field: [],
 };
 
+const students: AdmissionStudents = {
+    currency: 'INR',
+    field_name: null,
+    truncated: false,
+    rows: [
+        {
+            user_id: 'u1',
+            name: 'Asha Patil',
+            phone: '9000000000',
+            email: null,
+            month: '2026-07',
+            admission_date: '2026-07-04',
+            courses: 'BB Glow, PG Diploma',
+            course_count: 2,
+            main_course: 'PG Diploma',
+            course_tag: 'Doctor',
+            source: 'Reference',
+            counsellor_id: null,
+            counsellor_name: null,
+            field_value: null,
+            fees: 100000,
+            paid: 80000,
+            due: 20000,
+        },
+    ],
+};
+const fetchStudents = vi.fn(() => Promise.resolve(students));
+
 vi.mock('../../-services/get-admission-reports', () => ({
     admissionsQueryKey: () => ['admissions-test'],
     fetchAdmissions: () => Promise.resolve(report),
+    admissionStudentsQueryKey: () => ['admission-students-test'],
+    fetchAdmissionStudents: () => fetchStudents(),
 }));
 
 import { AdmissionsTab } from '../admissions-tab';
@@ -96,6 +130,19 @@ describe('AdmissionsTab', () => {
         expect(within(table).getByText('labels.noEnquiry')).toBeTruthy();
         const totalRow = within(table).getByText('column.total').closest('tr') as HTMLElement;
         expect(within(totalRow).getByText('3')).toBeTruthy();
+    });
+
+    it('loads the student list only when opened, one row per admission', async () => {
+        renderTab();
+        const button = await screen.findByText('students.show');
+        expect(fetchStudents).not.toHaveBeenCalled();
+        fireEvent.click(button);
+        expect(await screen.findByText('BB Glow, PG Diploma')).toBeTruthy();
+        expect(fetchStudents).toHaveBeenCalledTimes(1);
+        const row = screen.getByText('BB Glow, PG Diploma').closest('tr') as HTMLElement;
+        // A course package is one row, with its course count and the admission's money.
+        expect(within(row).getByText('students.courseCount')).toBeTruthy();
+        expect(within(row).getByText('labels.unassigned')).toBeTruthy();
     });
 
     it('asks for the breakdown field when none is configured', async () => {

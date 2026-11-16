@@ -81,6 +81,18 @@ public class CatalogApiAuth {
      * ({@value #READS_PER_MINUTE}/min per key). Throws {@link CatalogApiException} with the public error code.
      */
     public Principal authenticate(HttpServletRequest request, String requiredScope) {
+        Principal p = authenticateUnmetered(request, requiredScope);
+        hit("read:" + p.keyId(), READS_PER_MINUTE,
+                "Too many requests for this API key (limit " + READS_PER_MINUTE + " per minute).");
+        return p;
+    }
+
+    /**
+     * Key, scope and the origin lock, without counting the call against the key's read limit.
+     * Only for a route family that brings limits of its own through {@link #rateLimit} right
+     * after (the shop's cart and pincode routes): a caller must then call {@link #rateLimit}.
+     */
+    public Principal authenticateUnmetered(HttpServletRequest request, String requiredScope) {
         String key = presentedKey(request);
         if (key == null) {
             throw new CatalogApiException(HttpStatus.UNAUTHORIZED, "missing_api_key",
@@ -94,8 +106,6 @@ public class CatalogApiAuth {
         }
         // Origin first: a call from a site that is not the institute's must not use up its quota.
         checkOrigin(p, request.getHeader("Origin"));
-        hit("read:" + p.keyId(), READS_PER_MINUTE,
-                "Too many requests for this API key (limit " + READS_PER_MINUTE + " per minute).");
         return p;
     }
 
@@ -115,6 +125,48 @@ public class CatalogApiAuth {
                     "Too many enquiries from this visitor (limit " + LEADS_PER_MINUTE_PER_CLIENT
                             + " per minute). Try again shortly.");
         }
+    }
+
+    /**
+     * The limits of one family of calls ({@code family} names the buckets, for example
+     * {@code cart}), used with {@link #authenticateUnmetered}. In memory, per pod.
+     *
+     * <p>The publishable key is in page source, so one client holding it must not be able to
+     * use up the allowance of every shopper of the shop:
+     * <ul>
+     *   <li><b>The visitor is tested first</b> ({@code perClient} a minute), and a request
+     *       refused there is not counted against the key. The visitor of a browser call (Origin
+     *       present) is the network address; of a server-side call it is {@code X-Client-IP},
+     *       else the network address of the caller. No call is without a visitor.</li>
+     *   <li><b>Browser calls and server-side calls have separate allowances for the key</b>
+     *       ({@code perKey} a minute each). A flood without an Origin header can only use up
+     *       the server-side one; shoppers in a browser are not touched by it.</li>
+     *   <li>A server-side caller chooses its own {@code X-Client-IP}, so one network address
+     *       may use at most half of the server-side allowance.</li>
+     * </ul>
+     */
+    public void rateLimit(Principal p, HttpServletRequest request, String family, int perKey, int perClient) {
+        boolean browser = request.getHeader("Origin") != null;
+        String network = networkClientIp(request);
+        if (network == null) {
+            network = clean(request.getRemoteAddr());
+        }
+        String visitor = browser ? network : clean(request.getHeader("X-Client-IP"));
+        if (visitor == null) {
+            visitor = network;
+        }
+        String channel = browser ? "browser" : "server";
+        if (visitor != null) {
+            hit(family + "-ip:" + p.keyId() + "|" + channel + "|" + visitor, perClient,
+                    "Too many requests from this visitor (limit " + perClient + " per minute). Try again shortly.");
+        }
+        if (!browser && network != null) {
+            int perCaller = Math.max(perClient, perKey / 2);
+            hit(family + "-caller:" + p.keyId() + "|" + network, perCaller,
+                    "Too many requests from this server (limit " + perCaller + " per minute).");
+        }
+        hit(family + ":" + p.keyId() + ":" + channel, perKey,
+                "Too many requests for this API key (limit " + perKey + " per minute).");
     }
 
     // ── Key ──────────────────────────────────────────────────────────────────

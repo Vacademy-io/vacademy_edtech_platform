@@ -31,7 +31,9 @@ import java.util.Map;
  *   <li>The answer key is written the way the import manager expects it: option labels as
  *       {@code previewId}s in {@code correctOptionIds}, mapped to the new option ids on save.</li>
  *   <li>Marking JSON on the section mapping:
- *       {@code {"type":T,"data":{"totalMark":m,"negativeMark":n,"negativeMarkingPercentage":0}}}.</li>
+ *       {@code {"type":T,"data":{"totalMark":m,"negativeMark":n,"negativeMarkingPercentage":p}}},
+ *       where p is 100 for a NUMERIC question with a penalty and 0 otherwise (see
+ *       {@link #negativeMarkingPercentage}).</li>
  * </ul>
  */
 public final class QuestionMapper {
@@ -190,15 +192,27 @@ public final class QuestionMapper {
         return byLabel;
     }
 
-    /** {@code {"type":T,"data":{"totalMark":m,"negativeMark":n,"negativeMarkingPercentage":0}}}. */
+    /** {@code {"type":T,"data":{"totalMark":m,"negativeMark":n,"negativeMarkingPercentage":p}}}. */
     public static String markingJson(String internalType, BigDecimal maxMarks, BigDecimal negativeMarks) {
         ObjectNode root = MAPPER.createObjectNode();
         root.put("type", internalType);
         ObjectNode data = root.putObject("data");
+        double negative = negativeMarks == null ? 0.0 : negativeMarks.doubleValue();
         data.put("totalMark", maxMarks.doubleValue());
-        data.put("negativeMark", negativeMarks == null ? 0.0 : negativeMarks.doubleValue());
-        data.put("negativeMarkingPercentage", 0);
+        data.put("negativeMark", negative);
+        data.put("negativeMarkingPercentage", negativeMarkingPercentage(internalType, negative));
         return root.toString();
+    }
+
+    /**
+     * Value for {@code data.negativeMarkingPercentage}. The NUMERIC grader deducts
+     * {@code negativeMark * negativeMarkingPercentage / 100} for a wrong answer, so a
+     * NUMERIC question with a penalty needs 100 for the full {@code negativeMark} to be
+     * deducted; 0 would silently drop the penalty. The MCQ graders ignore this field and
+     * deduct {@code negativeMark} directly, so every other type keeps 0.
+     */
+    static int negativeMarkingPercentage(String type, double negativeMark) {
+        return "NUMERIC".equals(type) && negativeMark > 0 ? 100 : 0;
     }
 
     /** {@code data.totalMark} of a marking JSON; null when absent or unreadable. */
@@ -224,11 +238,14 @@ public final class QuestionMapper {
         if (maxMarks != null) {
             d.put("totalMark", maxMarks.doubleValue());
         }
+        String type = root.path("type").asText(internalType);
         if (negativeMarks != null) {
             d.put("negativeMark", negativeMarks.doubleValue());
-        }
-        if (!d.has("negativeMarkingPercentage")) {
-            d.put("negativeMarkingPercentage", 0);
+            // The penalty was (re)set here, so the percentage must match it.
+            d.put("negativeMarkingPercentage", negativeMarkingPercentage(type, negativeMarks.doubleValue()));
+        } else if (!d.has("negativeMarkingPercentage")) {
+            JsonNode stored = d.path("negativeMark");
+            d.put("negativeMarkingPercentage", negativeMarkingPercentage(type, stored.isNumber() ? stored.asDouble() : 0.0));
         }
         return root.toString();
     }

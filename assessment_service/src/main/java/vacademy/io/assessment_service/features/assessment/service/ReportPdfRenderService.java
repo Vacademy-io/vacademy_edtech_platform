@@ -111,6 +111,10 @@ public class ReportPdfRenderService {
                 ? assessmentRepository.findById(ctx.getAssessmentId()).orElse(null)
                 : null;
         String evaluationType = assessment != null ? assessment.getEvaluationType() : null;
+        vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options =
+                ctx.getAssessmentId() != null && ctx.getInstituteId() != null
+                        ? reportProfileService.reportOptions(ctx.getAssessmentId(), ctx.getInstituteId())
+                        : vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.ALL;
         boolean autoEvaluated = !"MANUAL".equalsIgnoreCase(evaluationType);
 
         String attemptId = detail != null && detail.getQuestionOverallDetailDto() != null
@@ -150,8 +154,10 @@ public class ReportPdfRenderService {
                 .fullLeaderboard(ctx.getFullLeaderboard())
                 .sections(ctx.getSections())
                 .analytics(analytics)
-                .hideQuestionWise(ctx.getAssessmentId() != null && ctx.getInstituteId() != null
-                        && reportProfileService.hideQuestionWise(ctx.getAssessmentId(), ctx.getInstituteId()))
+                .hideQuestionWise(!options.showQuestionWise())
+                .hideYourAnswer(!options.showYourAnswer())
+                .hideCorrectAnswer(!options.showCorrectAnswer())
+                .hideExplanation(!options.showExplanation())
                 .build());
     }
 

@@ -17,6 +17,9 @@ const lowerTerm = (term: string) => term.toLocaleLowerCase();
 
 /** Slide terms as the institute names them, lower-cased for running text. */
 export const slidesWord = () => lowerTerm(getTerminologyPlural(ContentTerms.Slides, SystemTerms.Slides));
+/** The singular or plural slide term for a count ("1 of 1 slide", "2 of 5 slides"). */
+export const slidesWordFor = (count: number) =>
+  count === 1 ? lowerTerm(getTerminology(ContentTerms.Slides, SystemTerms.Slides)) : slidesWord();
 
 /** Icons for the kinds of slide. Stroke-only, 24px grid, drawn in currentColor. */
 export function FunTypeIcon({ kind, className }: { kind: SlideKind; className?: string }) {
@@ -291,6 +294,8 @@ export function FunChapterHead({
   unlockMessage,
   doneCount,
   percent,
+  hideProgress = false,
+  slideCount = null,
   trailing,
 }: {
   index: number;
@@ -302,14 +307,25 @@ export function FunChapterHead({
   doneCount: { done: number; total: number } | null;
   /** The server's chapter percent, for a chapter whose slides are not loaded. */
   percent: number | null | undefined;
+  /**
+   * The institute hides progress: no percent, "Done" or "X of Y done". The card says
+   * how many slides it holds once they are loaded, and nothing before that.
+   */
+  hideProgress?: boolean;
+  /** The chapter's slide count once its slides are loaded; else null. */
+  slideCount?: number | null;
   trailing?: ReactNode;
 }) {
   const { t } = useTranslation("funCourse");
   const { t: tc } = useTranslation("funCommon");
   const progress = serverProgress(percent);
-  const subtitle = doneCount
+  const subtitle: { text: string; done: boolean } | null = hideProgress
+    ? slideCount !== null && slideCount > 0
+      ? { text: t("course.countChip", { count: slideCount, term: slidesWordFor(slideCount) }), done: false }
+      : null
+    : doneCount
     ? {
-        text: t("course.doneOf", { done: doneCount.done, total: doneCount.total, slides: slidesWord() }),
+        text: t("course.doneOf", { done: doneCount.done, total: doneCount.total, slides: slidesWordFor(doneCount.total) }),
         done: doneCount.done === doneCount.total,
       }
     : progress.kind === "done"
@@ -326,9 +342,9 @@ export function FunChapterHead({
         <span className="fun-ch__title">{name}</span>
         {locked && unlockMessage ? (
           <span className="fun-ch__sub">{unlockMessage}</span>
-        ) : (
+        ) : subtitle ? (
           <span className={cn("fun-ch__sub", subtitle.done && "fun-ch__sub--done")}>{subtitle.text}</span>
-        )}
+        ) : null}
       </span>
       {trailing ? <span className="fun-ch__end">{trailing}</span> : null}
       {!locked && <Chevron open={open} />}
@@ -347,6 +363,7 @@ export function FunLevelHead({
   percent,
   childCount,
   childTerm,
+  hideProgress = false,
   trailing,
 }: {
   level: "subject" | "module";
@@ -358,6 +375,8 @@ export function FunLevelHead({
   percent: number | null | undefined;
   childCount: number;
   childTerm: "modules" | "chapters";
+  /** The institute hides progress: the head says how many it holds, never a percent or "Done". */
+  hideProgress?: boolean;
   trailing?: ReactNode;
 }) {
   const { t } = useTranslation("funCourse");
@@ -389,6 +408,8 @@ export function FunLevelHead({
       </span>
       {locked ? (
         <span className="fun-lv__locked">{t("course.locked")}</span>
+      ) : hideProgress ? (
+        <span className="fun-lv__muted">{t("course.countChip", { count: childCount, term: lowerTerm(childWord) })}</span>
       ) : progress.kind === "done" ? (
         <span className="fun-lv__done">{t("course.levelDone", { count: childCount, term: lowerTerm(childWord) })}</span>
       ) : progress.kind === "percent" ? (

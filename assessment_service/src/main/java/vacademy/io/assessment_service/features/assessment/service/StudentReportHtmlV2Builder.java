@@ -147,6 +147,10 @@ public class StudentReportHtmlV2Builder {
         private final StudentReportAnalyticsService.StudentReportAnalytics analytics;
         /** Report option: leave out easy misses, expertise, answer review and question-wise detail. */
         private final boolean hideQuestionWise;
+        /** Report options (assessment.report_options): leave these out of every question card. */
+        private final boolean hideYourAnswer;
+        private final boolean hideCorrectAnswer;
+        private final boolean hideExplanation;
     }
 
     // ------------------------------------------------------------------ entry
@@ -1003,7 +1007,7 @@ public class StudentReportHtmlV2Builder {
                     continue;
                 }
                 Integer number = row.getQuestionOrder();
-                appendQuestionCard(body, row, number != null ? number : fallbackNumber, manual);
+                appendQuestionCard(body, row, number != null ? number : fallbackNumber, manual, in);
                 fallbackNumber++;
                 anyRendered = true;
             }
@@ -1019,7 +1023,7 @@ public class StudentReportHtmlV2Builder {
         sb.append("</div>");
     }
 
-    private void appendQuestionCard(StringBuilder sb, StudentReportAnswerReviewDto row, int number, boolean manual) {
+    private void appendQuestionCard(StringBuilder sb, StudentReportAnswerReviewDto row, int number, boolean manual, Input in) {
         String status = row.getAnswerStatus();
         String color = statusColor(status);
 
@@ -1039,8 +1043,12 @@ public class StudentReportHtmlV2Builder {
             sb.append("<div class=\"qtext\">").append(esc(truncate(questionText))).append("</div>");
         }
 
-        appendStudentAnswer(sb, row, status);
-        appendCorrectAnswer(sb, row, status);
+        if (!in.isHideYourAnswer()) {
+            appendStudentAnswer(sb, row, status);
+        }
+        if (!in.isHideCorrectAnswer()) {
+            appendCorrectAnswer(sb, row, status);
+        }
 
         // Evaluator remark / AI copy-check feedback — the same per-question
         // feedback the learner dashboard's answer review shows.
@@ -1062,7 +1070,7 @@ public class StudentReportHtmlV2Builder {
         }
         sb.append("<div class=\"qfoot\">").append(foot).append("</div>");
 
-        String explanation = HtmlBuilderService.stripHtmlTags(row.getExplanation());
+        String explanation = in.isHideExplanation() ? "" : HtmlBuilderService.stripHtmlTags(row.getExplanation());
         if (!explanation.isBlank()) {
             sb.append("<div class=\"qexp\"><b>Explanation:</b> ").append(esc(truncate(explanation))).append("</div>");
         }

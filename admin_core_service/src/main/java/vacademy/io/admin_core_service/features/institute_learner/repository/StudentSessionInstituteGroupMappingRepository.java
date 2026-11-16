@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.institute_learner.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -409,6 +410,7 @@ public interface StudentSessionInstituteGroupMappingRepository
                                             AND CURRENT_DATE - CAST(:minAgeDays AS int)
         AND s.mobile_number IS NOT NULL
         AND s.mobile_number <> ''
+        AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
         AND NOT EXISTS (
               SELECT 1 FROM user_plan act
               WHERE act.user_id = up.user_id

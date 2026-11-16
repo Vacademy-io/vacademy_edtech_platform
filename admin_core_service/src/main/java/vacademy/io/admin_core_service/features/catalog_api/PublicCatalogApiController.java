@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.catalog_api;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +11,9 @@ import vacademy.io.admin_core_service.features.catalog_api.auth.CatalogApiAuth;
 import vacademy.io.admin_core_service.features.catalog_api.service.CatalogApiService;
 import vacademy.io.admin_core_service.features.catalog_api.service.CatalogLeadService;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -34,11 +37,19 @@ public class PublicCatalogApiController {
 
     /** Every route of this API, for telling a wrong method (405) from an unknown path (404). */
     private static final Pattern KNOWN_PATHS = Pattern.compile(
-            "^/(site|courses(/[^/]+(/outline)?)?|streams|learning-paths(/[^/]+)?|sitemap|leads)$");
+            "^/(site|courses(/[^/]+(/outline)?)?|streams|learning-paths(/[^/]+)?|sitemap|leads"
+                    + "|products(/[^/]+)?|categories)$");
 
     private final CatalogApiAuth auth;
     private final CatalogApiService service;
     private final CatalogLeadService leads;
+
+    /**
+     * Beans that add rows to the sitemap (shop products and collections). Set by Spring; empty
+     * where none exists, so the course sitemap is what it was.
+     */
+    @Autowired(required = false)
+    private List<CatalogSitemapContributor> sitemapContributors = List.of();
 
     @GetMapping("/site")
     public ResponseEntity<Map<String, Object>> site(HttpServletRequest http) {
@@ -105,7 +116,18 @@ public class PublicCatalogApiController {
     @GetMapping("/sitemap")
     public ResponseEntity<Map<String, Object>> sitemap(HttpServletRequest http) {
         var p = auth.authenticate(http, CatalogApiAuth.SCOPE_READ);
-        return cacheable(service.sitemap(p.instituteId()));
+        Map<String, Object> body = service.sitemap(p.instituteId());
+        if (sitemapContributors == null || sitemapContributors.isEmpty()) {
+            return cacheable(body);
+        }
+        List<Object> data = new ArrayList<>();
+        if (body.get("data") instanceof List<?> courses) data.addAll(courses);
+        for (CatalogSitemapContributor contributor : sitemapContributors) {
+            data.addAll(contributor.sitemapEntries(p.instituteId()));
+        }
+        Map<String, Object> out = new LinkedHashMap<>(body);
+        out.put("data", data);
+        return cacheable(out);
     }
 
     @PostMapping("/leads")

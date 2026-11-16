@@ -24,6 +24,7 @@ import {
   type InstituteBranding,
 } from "@/components/common/institute-branding";
 import { useInstituteDetails } from "../live-class/-hooks/useInstituteDetails";
+import { notifyRegistrationVerified } from "../-services/open-registration-services";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -149,6 +150,8 @@ const PostRegistrationOTPVerify = ({
 
       await setTokenInStorage(TokenKey.accessToken, accessToken);
       await setTokenInStorage(TokenKey.refreshToken, refreshToken);
+      // Email verified: now the "You're registered" email may go out.
+      notifyRegistrationVerified(assessmentId);
 
       const decoded = await getTokenDecodedData(accessToken);
       const authorities = decoded?.authorities ?? {};

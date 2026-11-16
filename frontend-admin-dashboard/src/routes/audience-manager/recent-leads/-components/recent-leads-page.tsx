@@ -374,6 +374,9 @@ const RecentLeadsContent = ({
     // (`duplicates=exclude` on All Leads) or are the whole list (`duplicates=only`).
     const duplicatesRef = useRef(urlSearch.duplicates);
     const routeDuplicateFilter = toDuplicateFilter(duplicatesRef.current);
+    // Route-owned too: enquiryDates=latest opts this tab into latest-enquiry dates.
+    const enquiryDatesRef = useRef(urlSearch.enquiryDates);
+    const latestEnquiryDates = enquiryDatesRef.current?.trim().toLowerCase() === 'latest';
     // The user's Duplicates filter is offered only where the list shows duplicate enquiries:
     // the route says `include`, or says nothing while Lead Settings marks duplicates and does
     // not keep them on the Duplicate Leads tab (the backend's default). So it never fights a
@@ -490,6 +493,23 @@ const RecentLeadsContent = ({
         ? startOfDayIso(workedRange.from)
         : workedWindowFromIso(workedWindow);
     const workedToIso = workedIsCustom ? endOfDayIso(workedRange.to) : undefined;
+    // "Disposition marked": leads MOVED TO one of these statuses inside the window,
+    // read from the status history. Unlike the Status filter (what the lead is now),
+    // a lead marked Sales Won in October still matches after it moves on.
+    const [markedStatuses, setMarkedStatuses] = useState<string[]>(() =>
+        urlSearch.marked ? urlSearch.marked.split(',').filter(Boolean) : []
+    );
+    const [markedWindow, setMarkedWindow] = useState(urlSearch.markedWithin ?? '');
+    const [markedRange, setMarkedRange] = useState({
+        from: urlSearch.markedFrom ?? '',
+        to: urlSearch.markedTo ?? '',
+    });
+    const markedIsCustom = markedWindow === WORKED_WINDOW_CUSTOM;
+    const markedFromIso = markedIsCustom
+        ? startOfDayIso(markedRange.from)
+        : workedWindowFromIso(markedWindow);
+    const markedToIso = markedIsCustom ? endOfDayIso(markedRange.to) : undefined;
+    const markedKeysParam = markedStatuses.length > 0 ? markedStatuses.join(',') : undefined;
     const appliedRange = useMemo(
         () =>
             rangeDays === CUSTOM_DATE_VALUE
@@ -619,6 +639,7 @@ const RecentLeadsContent = ({
             // Carried through untouched: the route owns it, not the user.
             lock: lockRef.current || undefined,
             duplicates: duplicatesRef.current || undefined,
+            enquiryDates: enquiryDatesRef.current || undefined,
             duplicateView: duplicateView || undefined,
             status: leadStatusFilters.length > 0 ? leadStatusFilters.join(',') : undefined,
             statusExclude: statusExclude ? '1' : undefined,
@@ -641,6 +662,10 @@ const RecentLeadsContent = ({
             workedWithin: workedWindow || undefined,
             workedFrom: workedIsCustom && workedRange.from ? workedRange.from : undefined,
             workedTo: workedIsCustom && workedRange.to ? workedRange.to : undefined,
+            marked: markedKeysParam,
+            markedWithin: markedWindow || undefined,
+            markedFrom: markedIsCustom && markedRange.from ? markedRange.from : undefined,
+            markedTo: markedIsCustom && markedRange.to ? markedRange.to : undefined,
             utmSource: utmFilters.source?.length ? utmFilters.source.join(',') : undefined,
             utmMedium: utmFilters.medium?.length ? utmFilters.medium.join(',') : undefined,
             utmCampaign: utmFilters.campaign?.length ? utmFilters.campaign.join(',') : undefined,
@@ -678,6 +703,10 @@ const RecentLeadsContent = ({
         workedIsCustom,
         calledRange,
         workedRange,
+        markedKeysParam,
+        markedWindow,
+        markedIsCustom,
+        markedRange,
         utmFilters,
     ]);
     // Filter options — hierarchy scoped: a manager sees themselves + their
@@ -881,6 +910,7 @@ const RecentLeadsContent = ({
             'recent-leads',
             instituteId,
             duplicateFilter,
+            latestEnquiryDates,
             appliedRange.from,
             appliedRange.to,
             (resolvedAudienceIds ?? []).join(','),
@@ -908,6 +938,10 @@ const RecentLeadsContent = ({
             calledRange.to,
             workedRange.from,
             workedRange.to,
+            markedKeysParam,
+            markedWindow,
+            markedRange.from,
+            markedRange.to,
             customFieldFiltersKey,
             utmFiltersKey,
             page,
@@ -926,6 +960,7 @@ const RecentLeadsContent = ({
                 lead_status_id: leadStatusId,
                 lead_status_exclude_id: leadStatusExcludeId,
                 duplicate_filter: duplicateFilter,
+                latest_enquiry_dates: latestEnquiryDates || undefined,
                 conversion_status_filter: conversionFilter,
                 audience_status_filter: audienceStatusFilter,
                 sla_filter: slaFilters.length > 0 ? (slaFilters.join(',') as SlaFilter) : undefined,
@@ -941,6 +976,9 @@ const RecentLeadsContent = ({
                 called_to_local: calledToIso,
                 activity_from_local: workedFromIso,
                 activity_to_local: workedToIso,
+                status_marked_keys: markedKeysParam,
+                status_marked_from_local: markedFromIso,
+                status_marked_to_local: markedToIso,
                 custom_field_filters: customFieldFiltersPayload.length
                     ? customFieldFiltersPayload
                     : undefined,
@@ -1116,6 +1154,7 @@ const RecentLeadsContent = ({
                 lead_status_id: leadStatusId,
                 lead_status_exclude_id: leadStatusExcludeId,
                 duplicate_filter: duplicateFilter,
+                latest_enquiry_dates: latestEnquiryDates || undefined,
                 conversion_status_filter: conversionFilter,
                 audience_status_filter: audienceStatusFilter,
                 sla_filter: slaFilters.length > 0 ? (slaFilters.join(',') as SlaFilter) : undefined,
@@ -1131,6 +1170,9 @@ const RecentLeadsContent = ({
                 called_to_local: calledToIso,
                 activity_from_local: workedFromIso,
                 activity_to_local: workedToIso,
+                status_marked_keys: markedKeysParam,
+                status_marked_from_local: markedFromIso,
+                status_marked_to_local: markedToIso,
                 custom_field_filters: customFieldFiltersPayload.length
                     ? customFieldFiltersPayload
                     : undefined,
@@ -1184,7 +1226,29 @@ const RecentLeadsContent = ({
         setCustomTo(entryOr('to', ''));
         setCalledWindow(clearedOr('calledWithin', ''));
         setWorkedWindow(clearedOr('workedWithin', ''));
+        setMarkedStatuses([]);
+        setMarkedWindow('');
+        setMarkedRange({ from: '', to: '' });
         setPage(0);
+    };
+    /**
+     * The arrival-date range defaults to the last 30 days, which would silently drop
+     * every lead that came in earlier but was marked inside the window (most Sales Won
+     * leads). So the first time a disposition filter is set, an untouched date range
+     * moves to All time. The date chip shows it, and the user can narrow it again.
+     */
+    const widenDateRangeForMarked = () => {
+        if (rangeDays === DEFAULT_RANGE_DAYS && !isLocked('range')) setRangeDays(ALL_DATE_VALUE);
+    };
+    const handleMarkedStatusesChange = (values: string[]) => {
+        setPage(0);
+        setMarkedStatuses(values);
+        if (values.length > 0) widenDateRangeForMarked();
+    };
+    const handleMarkedWindowChange = (value: string) => {
+        setPage(0);
+        setMarkedWindow(value);
+        if (value) widenDateRangeForMarked();
     };
     const setDateRange = (value: string) => {
         if (isLocked('range')) return;
@@ -1261,6 +1325,8 @@ const RecentLeadsContent = ({
         !!callHistoryFilter ||
         !!calledWindow ||
         !!workedWindow ||
+        markedStatuses.length > 0 ||
+        !!markedWindow ||
         customFieldFiltersPayload.length > 0 ||
         hasUtmSelection(utmFilters);
 
@@ -1503,6 +1569,7 @@ const RecentLeadsContent = ({
                     lead_status_id: leadStatusId,
                     lead_status_exclude_id: leadStatusExcludeId,
                     duplicate_filter: duplicateFilter,
+                    latest_enquiry_dates: latestEnquiryDates || undefined,
                     conversion_status_filter: conversionFilter,
                     audience_status_filter: audienceStatusFilter,
                     sla_filter:
@@ -1519,6 +1586,9 @@ const RecentLeadsContent = ({
                     called_to_local: calledToIso,
                     activity_from_local: workedFromIso,
                     activity_to_local: workedToIso,
+                    status_marked_keys: markedKeysParam,
+                    status_marked_from_local: markedFromIso,
+                    status_marked_to_local: markedToIso,
                     custom_field_filters: customFieldFiltersPayload.length
                         ? customFieldFiltersPayload
                         : undefined,
@@ -1716,6 +1786,29 @@ const RecentLeadsContent = ({
             onRemove: () => {
                 setWorkedWindow('');
                 setWorkedRange({ from: '', to: '' });
+                setPage(0);
+            },
+        });
+    }
+    if (markedStatuses.length > 0 || markedWindow) {
+        const markedLabels = markedStatuses.map(
+            (v) => leadStatusCatalog.find((s) => s.status_key === v)?.label ?? v
+        );
+        chips.push({
+            label: t('chips.statusMarked', {
+                statuses:
+                    markedLabels.length > 0
+                        ? markedLabels.join(', ')
+                        : t('chips.statusMarkedAnyStatus'),
+                window: markedWindow
+                    ? windowChipLabel(markedWindow, markedRange)
+                    : t('chips.statusMarkedAnyTime'),
+            }),
+            param: 'marked',
+            onRemove: () => {
+                setMarkedStatuses([]);
+                setMarkedWindow('');
+                setMarkedRange({ from: '', to: '' });
                 setPage(0);
             },
         });
@@ -2218,6 +2311,49 @@ const RecentLeadsContent = ({
                                 to: workedRange.to,
                                 onChange: (from, to) => {
                                     setWorkedRange({ from, to });
+                                    setPage(0);
+                                },
+                                labels: customRangeLabels,
+                            }}
+                        />
+                    </LeadFilterSection>
+                    <LeadFilterSection
+                        title={t('filtersPanel.sections.statusMarked', {
+                            defaultValue: 'Disposition marked',
+                        })}
+                        icon={CheckCircle}
+                        activeCount={(markedStatuses.length > 0 ? 1 : 0) + (markedWindow ? 1 : 0)}
+                    >
+                        <MultiSelectFilter
+                            label={t('filters.statusMarked.label', { defaultValue: 'Marked as' })}
+                            icon={<CheckCircle className="size-4 shrink-0 text-neutral-400" />}
+                            options={leadStatusFilterOptions.map((s) => ({
+                                value: s.status_key,
+                                label: s.label,
+                            }))}
+                            selected={markedStatuses}
+                            onChange={handleMarkedStatusesChange}
+                            widthClass="w-44"
+                        />
+                        <WorkedWindowFilter
+                            kind="ACTIVITY"
+                            value={markedWindow}
+                            onValueChange={handleMarkedWindowChange}
+                            labels={{
+                                anyLabel: t('filters.statusMarked.any', {
+                                    defaultValue: 'Marked: any time',
+                                }),
+                                placeholder: t('filters.statusMarked.placeholder', {
+                                    defaultValue: 'Marked within',
+                                }),
+                                optionLabel: (hours) => workedWindowLabel(String(hours)),
+                                customLabel: t('dateRangeOptions.customRange'),
+                            }}
+                            custom={{
+                                from: markedRange.from,
+                                to: markedRange.to,
+                                onChange: (from, to) => {
+                                    setMarkedRange({ from, to });
                                     setPage(0);
                                 },
                                 labels: customRangeLabels,

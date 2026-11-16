@@ -114,7 +114,7 @@ class AssessmentPublicPageVisibilityFlowTest {
         GetAssessmentPublicResponseDto body = page(assessment("PUBLIC", opensTomorrow, null));
 
         assertThat(body.getCanRegister()).isFalse();
-        assertThat(body.getErrorMessage()).isEqualTo("Assessment is closed");
+        assertThat(body.getErrorMessage()).isEqualTo("Registration not open yet");
     }
 
     @Test

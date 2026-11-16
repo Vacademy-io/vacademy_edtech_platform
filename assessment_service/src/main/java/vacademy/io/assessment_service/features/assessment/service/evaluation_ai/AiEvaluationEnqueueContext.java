@@ -31,6 +31,16 @@ public record AiEvaluationEnqueueContext(boolean apiTraffic, String apiKeyId, Bi
                 return DASHBOARD;
         }
 
+        /**
+         * A dashboard check quoted with a known charge (a bulk-upload copy priced by its
+         * uploaded page count instead of the one-page minimum). Only the quote changes:
+         * the row's page count stays unset, so what ai_service bills is unchanged.
+         */
+        public static AiEvaluationEnqueueContext dashboard(AiEvaluationCharge charge) {
+                return charge == null ? DASHBOARD
+                                : new AiEvaluationEnqueueContext(false, null, BigDecimal.ZERO, null, charge, null);
+        }
+
         public static AiEvaluationEnqueueContext api(String apiKeyId, BigDecimal creditLimit, Integer pageCount,
                         AiEvaluationCharge charge) {
                 return new AiEvaluationEnqueueContext(true, apiKeyId, creditLimit, pageCount, charge, null);

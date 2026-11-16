@@ -97,7 +97,10 @@
             "read": "पढ़ा गया",
             "failed": "विफल",
             "dismissed": "खारिज",
-            "dismissRate": "खारिज दर"
+            "dismissRate": "खारिज दर",
+            "deliveriesSub_one": "सभी चैनलों पर {{count}} डिलीवरी",
+            "deliveriesSub_other": "सभी चैनलों पर {{count}} डिलीवरी",
+            "pending": "लंबित"
         },
         "emailEventsTitle": "ईमेल इवेंट",
         "viaSes": "SES के माध्यम से",
@@ -109,7 +112,9 @@
             "bounced": "बाउंस हुए",
             "rejected": "अस्वीकृत",
             "complained": "शिकायत की गई",
-            "awaitingEvents": "इवेंट की प्रतीक्षा"
+            "awaitingEvents": "इवेंट की प्रतीक्षा",
+            "failedToSend": "भेजा नहीं जा सका",
+            "accepted": "SES द्वारा स्वीकृत"
         },
         "pendingNote": "ईमेल भेजे जा चुके हैं लेकिन अभी तक कोई SES इवेंट वापस नहीं आया है। यदि आप स्थानीय रूप से चला रहे हैं, तो सुनिश्चित करें कि SES → SNS → notification_service वेबहुक कॉन्फ़िगर किया गया है।",
         "noEmails": "इस घोषणा के लिए कोई ईमेल नहीं भेजा गया।",
@@ -124,7 +129,10 @@
                 "status": "स्थिति",
                 "seenAt": "देखा गया",
                 "dismissedAt": "खारिज किया गया",
-                "deliveredAt": "डिलीवर हुआ"
+                "deliveredAt": "डिलीवर हुआ",
+                "channel": "चैनल",
+                "emailActivity": "ईमेल गतिविधि",
+                "reason": "कारण"
             },
             "pagePagination": "पृष्ठ {{page}} में से {{totalPages}}",
             "titleCount_one": "प्राप्तकर्ता ({{count}})",
@@ -139,6 +147,44 @@
             "delivery": "डिलीवरी दर",
             "read": "पढ़ने की दर",
             "dismiss": "खारिज दर"
+        },
+        "channels": {
+            "title": "चैनल के अनुसार डिलीवरी",
+            "delivered": "डिलीवर हुआ",
+            "failed": "विफल",
+            "pending": "लंबित",
+            "summary": "{{total}} में से {{delivered}}"
+        },
+        "funnelTitle": "ईमेल फ़नल",
+        "emailStatus": {
+            "SENT": "भेजा गया",
+            "DELIVERED": "डिलीवर हुआ",
+            "OPENED": "खोला गया",
+            "CLICKED": "क्लिक किया",
+            "BOUNCED": "बाउंस",
+            "COMPLAINED": "स्पैम चिह्नित",
+            "REJECTED": "अस्वीकृत",
+            "FAILED": "नहीं भेजा गया"
+        },
+        "filters": {
+            "allChannels": "सभी चैनल",
+            "allStatuses": "सभी स्थितियाँ"
+        },
+        "csv": {
+            "export": "CSV निर्यात करें",
+            "exporting": "निर्यात हो रहा है...",
+            "failed": "रिपोर्ट निर्यात नहीं हो सकी",
+            "name": "नाम",
+            "email": "ईमेल",
+            "channel": "चैनल",
+            "status": "स्थिति",
+            "emailActivity": "ईमेल गतिविधि",
+            "deliveredAt": "डिलीवरी समय",
+            "openedAt": "खोलने का समय",
+            "clickedAt": "क्लिक का समय",
+            "seenAt": "देखने का समय",
+            "dismissedAt": "खारिज करने का समय",
+            "reason": "कारण"
         }
     },
     "rejectDialog": {

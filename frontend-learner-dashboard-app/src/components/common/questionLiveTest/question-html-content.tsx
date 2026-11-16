@@ -31,10 +31,31 @@ const decodeHtml = (input: string): string => {
   return once;
 };
 
-const LATEX_PATTERN = /(\\\[(.+?)\\\]|\\\((.+?)\\\)|\$\$(.+?)\$\$|\$(.+?)\$)/gs;
+// A `$…$` pair is maths only when it looks like maths — the same rule the
+// admin app uses (frontend-admin-dashboard/src/lib/latex-delimiters.ts), so a
+// question reads the same in the admin preview and in the learner's exam.
+// Without it, money text such as "were $300,000. At 31 December … were
+// $2,000,000" was typeset as one italic formula with its spaces dropped.
+//
+// The opening `$` must be followed by a non-space, the closing `$` must follow
+// a non-space and must not be followed by a digit (so "of$1,000" never closes),
+// and the body must carry a LaTeX marker, be a short word-bearing fragment, or
+// be a bracketed / operator expression. A bare amount never qualifies.
+const LATEX_SIGNAL = /[\\^_{}]/;
+const SHORT_MATH_FRAGMENT = /^(?=.{1,30}$).*[a-zA-Z].*$/s;
+const NUMERIC_EXPRESSION = /^[([].*[)\]]$|[=+×÷<>≤≥]/;
+
+const looksLikeMath = (body: string) =>
+  LATEX_SIGNAL.test(body) ||
+  SHORT_MATH_FRAGMENT.test(body) ||
+  NUMERIC_EXPRESSION.test(body);
+
+// \[…\] | \(…\) | $$…$$ | $…$ (no space just inside, no digit right after)
+const LATEX_PATTERN =
+  /(\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$\$([\s\S]+?)\$\$|\$(\S|\S[^$\n]*\S)\$(?!\d))/g;
 // Same five groups (the replacer reads them by position) but the dollar
-// alternative can never match: `(?!)` always fails.
-const LATEX_PATTERN_NO_DOLLAR = /(\\\[(.+?)\\\]|\\\((.+?)\\\)|(?!)()())/gs;
+// alternatives can never match: `(?!)` always fails.
+const LATEX_PATTERN_NO_DOLLAR = /(\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?!)()())/g;
 
 const renderLatexDelimiters = (text: string, dollarMath = true): string => {
   const pattern = dollarMath ? LATEX_PATTERN : LATEX_PATTERN_NO_DOLLAR;
@@ -42,6 +63,9 @@ const renderLatexDelimiters = (text: string, dollarMath = true): string => {
   return text.replace(
     pattern,
     (match, _full, bracket, paren, displayDollar, inlineDollar) => {
+      if (inlineDollar !== undefined && !looksLikeMath(inlineDollar)) {
+        return match;
+      }
       const latex = (
         bracket ||
         paren ||

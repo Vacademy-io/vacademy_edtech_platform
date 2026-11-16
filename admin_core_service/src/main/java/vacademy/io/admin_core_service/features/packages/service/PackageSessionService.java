@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.packages.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -46,6 +47,7 @@ public class PackageSessionService {
     private final DefaultEnrollInviteService defaultEnrollInviteService;
     private final StudentSessionInstituteGroupMappingRepository studentSessionRepository;
     private final StockHoldService stockHoldService;
+    private final CommerceLegacyGuard commerceLegacyGuard;
 
     public void createPackageSession(Level level, Session session, PackageEntity packageEntity, Group group,
             Date startTime, String instituteId, CustomUserDetails userDetails,
@@ -90,6 +92,8 @@ public class PackageSessionService {
     @Transactional
     public PackageSession updateInventory(String packageSessionId, Integer maxSeats, Integer availableSlots) {
         PackageSession packageSession = findById(packageSessionId);
+        // A product's sellable quantity is derived from its stock ledger, never typed in here.
+        commerceLegacyGuard.refuseProduct(packageSession.getPackageEntity(), "change stock here");
 
         Integer currentMax = packageSession.getMaxSeats();
         Integer currentAvailable = packageSession.getAvailableSlots();
@@ -145,12 +149,13 @@ public class PackageSessionService {
 
     @Transactional
     public void reserveSlot(String packageSessionId) {
+        refuseProductStock(packageSessionId, "reserve a slot");
         if (packageRepository.takeAvailableSlots(packageSessionId, 1) == 1) {
             return;
         }
         PackageSessionRepository.StockInfoProjection stock = stockInfo(packageSessionId);
-        if (stock.getMaxSeats() == null) {
-            return; // Unlimited
+        if (stock.getMaxSeats() == null || !StockHoldService.isStockPackageType(stock.getPackageType())) {
+            return; // Unlimited, or not stock (a membership's books per period, a charge)
         }
         throw new ConflictException("No slots available");
     }
@@ -158,6 +163,7 @@ public class PackageSessionService {
     @Transactional
     public void releaseSlot(String packageSessionId) {
         PackageSessionRepository.StockInfoProjection stock = stockInfo(packageSessionId); // not found -> same error as before
+        commerceLegacyGuard.refuseVariantSession(packageSessionId, stock.getPackageType(), "release a slot");
         if (stock.getMaxSeats() == null || stock.getAvailableSlots() == null) {
             return; // Unlimited, or no count kept yet: nothing to give back, as before
         }
@@ -190,8 +196,13 @@ public class PackageSessionService {
             log.warn("Inventory decrement skipped — packageSession {} not found", packageSessionId);
             return;
         }
-        if (stock.getMaxSeats() == null) {
-            log.debug("Skipping inventory decrement for packageSession {} — unlimited seats", packageSessionId);
+        if (stock.getMaxSeats() == null || !StockHoldService.isStockPackageType(stock.getPackageType())) {
+            log.debug("Skipping inventory decrement for packageSession {} — unlimited seats, or not stock",
+                    packageSessionId);
+            return;
+        }
+        if (commerceLegacyGuard.isVariantSession(packageSessionId, stock.getPackageType())) {
+            log.warn("Inventory decrement skipped — packageSession {} is a shop product", packageSessionId);
             return;
         }
         log.warn("Inventory decrement skipped for packageSession {} — availableSlots is {} but enrollment proceeding",
@@ -211,6 +222,12 @@ public class PackageSessionService {
         if (count <= 0) {
             return;
         }
+        // Skipped, not thrown: see decrementAvailability. A product's stock moves through Commerce.
+        PackageSessionRepository.StockInfoProjection product = findStockInfo(packageSessionId);
+        if (product != null && commerceLegacyGuard.isVariantSession(packageSessionId, product.getPackageType())) {
+            log.warn("Inventory increment skipped — packageSession {} is a shop product", packageSessionId);
+            return;
+        }
         if (packageRepository.giveBackAvailableSlots(packageSessionId, count) == 1) {
             log.info("Incremented inventory for packageSession {} by {} (capped at maxSeats)", packageSessionId, count);
             return;
@@ -220,6 +237,13 @@ public class PackageSessionService {
             return;
         }
         log.debug("Skipping inventory increment for packageSession {} — unlimited seats", packageSessionId);
+    }
+
+    private void refuseProductStock(String packageSessionId, String action) {
+        PackageSessionRepository.StockInfoProjection stock = findStockInfo(packageSessionId);
+        if (stock != null) {
+            commerceLegacyGuard.refuseVariantSession(packageSessionId, stock.getPackageType(), action);
+        }
     }
 
     /** Fresh stock read (never a stale entity); throws like {@link #findById} when the session is missing. */

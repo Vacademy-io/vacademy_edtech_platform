@@ -5,6 +5,8 @@ import { retainSiteLanguage } from "../-utils/catalogue-route-search";
 import { CourseDetailsPage } from "./-components/CourseDetailsPage";
 import { CourseSubPage } from "../-components/CourseSubPage";
 import { RootMountedSegment } from "../-components/RootMountedSegment";
+import { CommerceRouteGate } from "../-components/commerce/route-gate";
+import { parseCommerceRoute } from "../-components/commerce/routes";
 import { getCachedRootCatalogueTag } from "@/services/domain-routing";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -95,6 +97,54 @@ function RouteComponent() {
     return <Navigate to={`/${resolvedCourseId}` as never} search={true} replace />;
   }
 
+  const usual: UsualPageArgs = {
+    t,
+    domainRouting,
+    resolvedTagName,
+    resolvedCourseId,
+    search: { enrollInviteId, packageSessionId, bannerImage, level, price, available_slots, productPageCode },
+  };
+
+  // Root-mounted shop: "/p/<slug>", "/c/<slug>" and "/q/<code>" reach THIS route (it outranks
+  // $pageSlug), so the shop's gate runs here too. A site without a shop gets exactly the page
+  // this route rendered before (the gate's fallback); any other address skips the gate.
+  const shopRootTag = getCachedRootCatalogueTag();
+  if (shopRootTag && !RouteMatcher.isRootMounted(resolvedTagName) && parseCommerceRoute([resolvedTagName, resolvedCourseId])) {
+    if (domainRouting.isLoading) return <DashboardLoader />;
+    if (!domainRouting.instituteId) return renderUsualPage(usual);
+    return (
+      <CommerceRouteGate
+        instituteId={domainRouting.instituteId}
+        siteName={domainRouting.instituteName}
+        tagName={shopRootTag}
+        segments={[resolvedTagName, resolvedCourseId]}
+        fallback={renderUsualPage(usual)}
+      />
+    );
+  }
+
+  return renderUsualPage(usual);
+}
+
+interface UsualPageArgs {
+  t: ReturnType<typeof useTranslation>["t"];
+  domainRouting: ReturnType<typeof useDomainRouting>;
+  resolvedTagName: string;
+  resolvedCourseId: string;
+  search: {
+    enrollInviteId?: string;
+    packageSessionId?: string;
+    bannerImage?: string;
+    level?: string;
+    price?: string;
+    available_slots?: number;
+    productPageCode?: string;
+  };
+}
+
+/** This route's page apart from the shop: a course, a sub-page, or another catalogue's page. */
+function renderUsualPage({ t, domainRouting, resolvedTagName, resolvedCourseId, search }: UsualPageArgs) {
+  const { enrollInviteId, packageSessionId, bannerImage, level, price, available_slots, productPageCode } = search;
   // Check if courseId looks like a course ID (numeric or UUID)
   const isNumeric = /^\d+$/.test(resolvedCourseId);
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedCourseId);

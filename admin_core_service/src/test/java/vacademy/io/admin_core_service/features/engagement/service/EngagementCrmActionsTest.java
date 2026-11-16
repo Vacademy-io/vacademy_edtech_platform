@@ -283,6 +283,28 @@ class EngagementCrmActionsTest {
         }
 
         @Test
+        @DisplayName("a number whose last AI call reached a recorded phone menu is not called again")
+        void noCallAfterPhoneMenu() {
+            ScheduleAiCallActionHandler h = callHandler(mock(AiCallQueueService.class));
+            String before = h.validate(ctx(engine, "9876543210"), Map.of());
+            assertTrue(before == null || !before.contains("recorded phone menu"), "a normal lead is not held for this");
+            when(coordination.reachedPhoneMenu(INST, "ar1")).thenReturn(true);
+            assertTrue(h.validate(ctx(engine, "9876543210"), Map.of()).contains("recorded phone menu"));
+        }
+
+        @Test
+        @DisplayName("the phone-menu pattern matches real menus and not ordinary talk")
+        void phoneMenuPattern() {
+            var p = java.util.regex.Pattern.compile(EngagementCoordinationDao.PHONE_MENU_PATTERN,
+                    java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE);
+            assertTrue(p.matcher("user: Welcome to Flex Nest. user: Press one for sales.").find());
+            assertTrue(p.matcher("user: हिंदी के लिए दो दबाएं।").find());
+            assertTrue(p.matcher("user: You have entered invalid option.").find());
+            assertFalse(p.matcher("user: Hello? user: Who is this? assistant: Vaani, Telleo se.").find());
+            assertFalse(p.matcher("user: Your call has been forwarded to voicemail.").find());
+        }
+
+        @Test
         @DisplayName("C4_maxAttempts: 3 AI calls this week from any system is the limit")
         void C4_maxAttempts() {
             ScheduleAiCallActionHandler h = callHandler(mock(AiCallQueueService.class));

@@ -62,13 +62,8 @@ public class AssessmentAttemptEndTaskExecutor implements TaskExecutor {
             }
         });
         createTaskExecutionAuditFromAttemptsAndUpdateAttemptStatus(activityLog, attempts, source);
-
-        // Auto-release results for ended assessments with result_type = AUTO_AFTER_ASSESSMENT_END
-        try {
-            studentAttemptService.releaseResultsForEndedAutoReleaseAssessments();
-        } catch (Exception e) {
-            log.error("[AUTO-RELEASE] Failed to release results for ended assessments: {}", e.getMessage());
-        }
+        // "Release after the assessment ends" is AutoResultReleaseJob (every two minutes,
+        // with the report email), no longer this hourly sweep.
     }
 
 

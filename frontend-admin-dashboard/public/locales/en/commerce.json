@@ -1,0 +1,1079 @@
+{
+    "meta": {
+        "pageTitle": "{{title}} · Shop"
+    },
+    "common": {
+        "retry": "Try again",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "unknown": "Unknown"
+    },
+    "noAccess": {
+        "title": "You do not have access to this",
+        "description": "Your role does not open this shop screen. Ask your institute admin if you need it."
+    },
+    "comingSoon": {
+        "badge": "Coming soon",
+        "description": "This part of the shop is being built. Nothing is needed from you yet.",
+        "screenTitle": "{{screen}} is coming soon"
+    },
+    "roles": {
+        "admin": "Institute admin",
+        "storeManager": "Store manager",
+        "warehouseStaff": "Warehouse staff",
+        "posCashier": "Cashier",
+        "accountant": "Shop accountant"
+    },
+    "status": {
+        "product": {
+            "DRAFT": "Draft",
+            "ACTIVE": "Active",
+            "ARCHIVED": "Archived"
+        },
+        "collection": {
+            "ACTIVE": "Active",
+            "ARCHIVED": "Archived"
+        },
+        "location": {
+            "ACTIVE": "Active",
+            "INACTIVE": "Inactive"
+        },
+        "taxClass": {
+            "ACTIVE": "Active",
+            "ARCHIVED": "Archived"
+        },
+        "taxMode": {
+            "REGULAR": "Regular (GST registered)",
+            "COMPOSITION": "Composition",
+            "UNREGISTERED": "Unregistered"
+        },
+        "setup": {
+            "DONE": "Done",
+            "TODO": "To do",
+            "NOT_NEEDED": "Not needed",
+            "COMING_SOON": "Coming soon",
+            "UNKNOWN": "Could not check"
+        },
+        "pin": {
+            "SET": "PIN is set",
+            "NOT_SET": "PIN not set"
+        },
+        "importJob": {
+            "QUEUED": "Waiting",
+            "RUNNING": "Running",
+            "COMPLETED": "Finished",
+            "FAILED": "Failed",
+            "COMPLETED_WITH_ERRORS": "Finished, some left out"
+        },
+        "importSeverity": {
+            "ERROR": "Error",
+            "WARNING": "Warning"
+        },
+        "mediaRendition": {
+            "PENDING": "Waiting",
+            "PROCESSING": "Processing",
+            "READY": "Ready",
+            "FAILED": "Failed"
+        }
+    },
+    "home": {
+        "description": "Set up your shop and open the screens you work in.",
+        "screensTitle": "Your shop screens",
+        "noScreens": "No other shop screen is open for your role.",
+        "screens": {
+            "commerce-orders": "Online and counter orders, packing, returns and refunds.",
+            "commerce-products": "Products, variants, photos and prices.",
+            "commerce-collections": "Categories and collections that group products.",
+            "commerce-inventory": "Stock by location, receipts, transfers, counts and labels.",
+            "commerce-pos": "Bill customers at the counter.",
+            "commerce-customers": "People who bought from the shop.",
+            "commerce-discounts": "Coupons and offers.",
+            "commerce-reports": "Sales, GST and day book reports.",
+            "commerce-settings": "Business, tax, locations and staff."
+        }
+    },
+    "checklist": {
+        "title": "Set up your shop",
+        "checking": "Checking what is done…",
+        "progress": "{{done}} of {{total}} steps done",
+        "blocking": "The shop cannot take an order until these are complete: {{items}}.",
+        "items": {
+            "business": {
+                "title": "Business details",
+                "description": "Legal name, state, tax mode and GSTIN."
+            },
+            "locations": {
+                "title": "Locations",
+                "description": "Your stores, warehouses and the places goods come from."
+            },
+            "onlineFulfilment": {
+                "title": "Online fulfilment",
+                "description": "The one location that ships website orders."
+            },
+            "taxClasses": {
+                "title": "Tax classes",
+                "description": "HSN codes and rate slabs, as confirmed by your CA."
+            },
+            "shipping": {
+                "title": "Shipping rule",
+                "description": "Delivery charge, free-shipping limit and dispatch promise."
+            },
+            "payments": {
+                "title": "Payment methods",
+                "description": "Online payments, cash on delivery and counter tenders."
+            },
+            "documentSeries": {
+                "title": "Document series",
+                "description": "Invoice, credit note and challan numbering, and paper bill books."
+            },
+            "labels": {
+                "title": "Labels and receipts",
+                "description": "Label size, what is printed and receipt width."
+            },
+            "staff": {
+                "title": "Staff",
+                "description": "Your approval PIN and the locations each person may work at."
+            }
+        }
+    },
+    "pinDialog": {
+        "heading": "Manager approval",
+        "description": "A manager must approve this. Pick your name and type your PIN. The PIN is checked on the server and is not kept on this device.",
+        "checking": "Checking…",
+        "approve": "Approve",
+        "noManagers": "No manager found. An institute admin can add one in Teams.",
+        "fields": {
+            "manager": "Manager",
+            "managerPlaceholder": "Pick your name",
+            "pin": "PIN",
+            "pinPlaceholder": "6 to 8 digits",
+            "reason": "Reason",
+            "reasonPlaceholder": "Why is this needed?"
+        },
+        "validation": {
+            "managerRequired": "Pick the manager who is approving.",
+            "pinFormat": "The PIN is 6 to 8 digits.",
+            "reasonRequired": "Write the reason.",
+            "reasonMax": "Keep the reason within {{max}} characters."
+        },
+        "errors": {
+            "failed": "The approval did not go through. Try again.",
+            "managersFailed": "Could not load the managers."
+        }
+    },
+    "setPin": {
+        "headingSet": "Set my PIN",
+        "headingChange": "Change my PIN",
+        "description": "You type this PIN to approve actions such as a void, a large discount or a cash refund. Only you can set it. Do not share it.",
+        "save": "Save PIN",
+        "fields": {
+            "pin": "New PIN",
+            "pinHint": "{{min}} to {{max}} digits. Not one repeated digit and not a run such as 123456.",
+            "confirm": "Type the PIN again"
+        },
+        "validation": {
+            "format": "The PIN must be {{min}} to {{max}} digits.",
+            "trivial": "This PIN is too easy to guess. Avoid one repeated digit and runs such as 123456.",
+            "mismatch": "The two PINs do not match."
+        },
+        "toast": {
+            "set": "Your PIN is set.",
+            "changed": "Your PIN is changed."
+        },
+        "errors": {
+            "failed": "The PIN was not saved. Try again."
+        }
+    },
+    "settings": {
+        "description": "Everything that sets the shop up. Each card opens its page.",
+        "back": "Shop settings",
+        "featureOffBadge": "Not in your plan",
+        "cards": {
+            "business": {
+                "title": "Business and tax",
+                "description": "Seller details, tax mode, GSTIN and how tax is worked out."
+            },
+            "taxClasses": {
+                "title": "Tax classes",
+                "description": "HSN codes, units and rate slabs by price."
+            },
+            "locations": {
+                "title": "Locations and registers",
+                "description": "Stores, warehouses, source places and exhibitions."
+            },
+            "staff": {
+                "title": "Staff and roles",
+                "description": "Allowed locations for each person and your approval PIN."
+            },
+            "registers": {
+                "title": "POS registers",
+                "description": "Billing counters at each location."
+            },
+            "shipping": {
+                "title": "Shipping and COD",
+                "description": "Delivery charges, free-shipping limit and cash-on-delivery rules."
+            },
+            "payments": {
+                "title": "Payments",
+                "description": "Online payment gateway and counter tenders."
+            },
+            "documents": {
+                "title": "Documents and numbering",
+                "description": "Invoice and credit note series, and paper bill books."
+            },
+            "returns": {
+                "title": "Returns",
+                "description": "Return window, allowed reasons and policy text."
+            },
+            "labels": {
+                "title": "Labels and receipts",
+                "description": "Label sizes, what is printed and receipt width."
+            },
+            "notifications": {
+                "title": "Notifications",
+                "description": "WhatsApp and email messages for order events."
+            },
+            "storefront": {
+                "title": "Storefront",
+                "description": "Store languages, photo tags, content blocks and redirects."
+            }
+        }
+    },
+    "states": {
+        "01": "Jammu and Kashmir",
+        "02": "Himachal Pradesh",
+        "03": "Punjab",
+        "04": "Chandigarh",
+        "05": "Uttarakhand",
+        "06": "Haryana",
+        "07": "Delhi",
+        "08": "Rajasthan",
+        "09": "Uttar Pradesh",
+        "10": "Bihar",
+        "11": "Sikkim",
+        "12": "Arunachal Pradesh",
+        "13": "Nagaland",
+        "14": "Manipur",
+        "15": "Mizoram",
+        "16": "Tripura",
+        "17": "Meghalaya",
+        "18": "Assam",
+        "19": "West Bengal",
+        "20": "Jharkhand",
+        "21": "Odisha",
+        "22": "Chhattisgarh",
+        "23": "Madhya Pradesh",
+        "24": "Gujarat",
+        "26": "Dadra and Nagar Haveli and Daman and Diu",
+        "27": "Maharashtra",
+        "29": "Karnataka",
+        "30": "Goa",
+        "31": "Lakshadweep",
+        "32": "Kerala",
+        "33": "Tamil Nadu",
+        "34": "Puducherry",
+        "35": "Andaman and Nicobar Islands",
+        "36": "Telangana",
+        "37": "Andhra Pradesh",
+        "38": "Ladakh"
+    },
+    "business": {
+        "description": "Who the seller is for tax, and how tax is worked out on every bill.",
+        "caBanner": "Confirm the tax mode, GSTIN and slab basis with your CA. Nothing here is pre-filled as fact.",
+        "manageTaxClasses": "Manage tax classes",
+        "noTaxClassesNeeded": "Tax classes are used only in tax mode Regular.",
+        "sections": {
+            "seller": {
+                "title": "Seller details",
+                "description": "Printed on invoices when a location has no details of its own."
+            },
+            "tax": {
+                "title": "Tax",
+                "description": "Prices are entered with tax included. The server works the tax out; this app never does."
+            }
+        },
+        "fields": {
+            "legalName": "Legal name",
+            "legalNamePlaceholder": "As on the GST certificate",
+            "state": "State",
+            "statePlaceholder": "Pick a state",
+            "address": "Address",
+            "addressPlaceholder": "Street, area, city and pincode",
+            "taxMode": "Tax mode",
+            "taxModePlaceholder": "Pick a tax mode",
+            "gstin": "GSTIN",
+            "gstinPlaceholder": "15 characters",
+            "gstinHintRegular": "Required in tax mode Regular. Checked as you type.",
+            "gstinHintOptional": "Optional in this tax mode.",
+            "slabBasis": "Slab basis",
+            "slabBasisHint": "Which unit price decides the rate slab.",
+            "slabCompare": "Compare the slab limit",
+            "slabCompareHint": "Whether that price is compared with or without tax. Ask your CA.",
+            "roundTotalTo": "Round the bill total",
+            "choose": "Pick one"
+        },
+        "taxModeHelp": {
+            "REGULAR": "GSTIN required. Bills are tax invoices with tax lines.",
+            "COMPOSITION": "Bills are bills of supply with no tax lines.",
+            "UNREGISTERED": "Plain invoices: no GSTIN and no tax lines."
+        },
+        "slabBasis": {
+            "NET_UNIT_PRICE": "Unit price after every discount",
+            "LIST_UNIT_PRICE": "Unit price before any discount"
+        },
+        "slabCompare": {
+            "TAX_EXCLUSIVE": "Price without tax",
+            "TAX_INCLUSIVE": "Price with tax"
+        },
+        "roundTotalTo": {
+            "NONE": "Do not round",
+            "RUPEE": "To the nearest rupee"
+        },
+        "validation": {
+            "taxModeRequired": "Pick a tax mode.",
+            "nameMax": "Keep the name within 200 characters.",
+            "addressMax": "Keep the address within 500 characters.",
+            "stateRequired": "Pick the state.",
+            "gstinRequired": "A GSTIN is required in tax mode Regular.",
+            "gstin": {
+                "length": "A GSTIN has 15 characters.",
+                "shape": "This does not look like a GSTIN. Check each character.",
+                "state": "The first two digits do not match the state.",
+                "checksum": "The last character does not match. Check for a typing mistake."
+            }
+        },
+        "toast": {
+            "saved": "Business and tax details saved."
+        },
+        "errors": {
+            "load": "Could not load the business and tax details.",
+            "save": "The details were not saved. Try again."
+        }
+    },
+    "locations": {
+        "description": "Every place of yours: stores, warehouses, the places goods come from, and exhibitions.",
+        "add": "Add location",
+        "edit": "Edit {{name}}",
+        "registersNote": "POS registers for each location are coming soon.",
+        "columns": {
+            "name": "Location",
+            "type": "Type",
+            "place": "City and state",
+            "gstin": "GSTIN",
+            "uses": "Used for",
+            "status": "Status"
+        },
+        "types": {
+            "store": "Store",
+            "storeHint": "Customers buy here.",
+            "warehouse": "Warehouse",
+            "warehouseHint": "Stock is kept here.",
+            "source": "Source",
+            "sourceHint": "A place of your own where goods are made or come from. Not a supplier.",
+            "temporary": "Temporary"
+        },
+        "uses": {
+            "pos": "Billing counter",
+            "online": "Ships online orders"
+        },
+        "empty": {
+            "title": "No locations yet",
+            "description": "Add your first store or warehouse. Stock, bills and staff are all tied to a location."
+        },
+        "errors": {
+            "load": "Could not load the locations.",
+            "save": "The location was not saved. Try again."
+        },
+        "toast": {
+            "created": "Location added.",
+            "updated": "Location updated."
+        },
+        "dialog": {
+            "addHeading": "Add location",
+            "editHeading": "Edit location",
+            "add": "Add location"
+        },
+        "fields": {
+            "name": "Name",
+            "namePlaceholder": "For example, Main store",
+            "code": "Code",
+            "codePlaceholder": "For example, MAIN",
+            "codeHint": "Short and unique: capital letters, digits, dash and underscore.",
+            "addressLine1": "Address line 1",
+            "addressLine2": "Address line 2",
+            "city": "City",
+            "pincode": "Pincode",
+            "state": "State",
+            "gstin": "GSTIN of this location",
+            "gstinHint": "Only if this location has its own. Otherwise the business GSTIN is used.",
+            "typeLegend": "What is this place?",
+            "posEnabled": "Has a billing counter",
+            "posEnabledHint": "Bills can be made at this location.",
+            "temporary": "Temporary (exhibition)",
+            "temporaryHint": "Open only between two dates.",
+            "startsOn": "Starts on",
+            "endsOn": "Ends on"
+        },
+        "validation": {
+            "nameRequired": "Write the name.",
+            "codeFormat": "Use 2 to 30 capital letters, digits, dashes or underscores.",
+            "codeClash": "Another location already uses this code.",
+            "pincode": "A pincode has 6 digits.",
+            "stateRequired": "Pick the state.",
+            "typeRequired": "Tick at least one: store, warehouse or source.",
+            "datesRequired": "Pick the date.",
+            "endBeforeStart": "The end date is before the start date."
+        }
+    },
+    "staff": {
+        "description": "Your approval PIN, and the locations each person may work at.",
+        "allowedLocations": "Allowed locations",
+        "locationsNeedStock": "Needs the Stock feature",
+        "limitsNote": "Limits for cashier discount, cash refund, stock adjustment and cash variance are coming soon.",
+        "pin": {
+            "title": "My approval PIN",
+            "description": "Managers approve voids, large discounts and cash refunds with their own PIN.",
+            "loadFailed": "Could not check your PIN.",
+            "set": "Set my PIN",
+            "change": "Change my PIN"
+        },
+        "list": {
+            "title": "Shop staff",
+            "description": "People with a shop role, and institute admins. An institute admin gives and removes shop roles in Teams.",
+            "openTeams": "Open Teams",
+            "loadFailed": "Could not load the staff.",
+            "emptyTitle": "No shop staff yet",
+            "emptyDescription": "Ask an institute admin to give someone a shop role in Teams."
+        },
+        "columns": {
+            "name": "Name",
+            "roles": "Roles",
+            "locations": "Locations"
+        },
+        "locationsDialog": {
+            "heading": "Locations for {{name}}",
+            "description": "Tick every location this person may work at. They cannot act anywhere else.",
+            "adminNote": "An institute admin can work at every location; this list does not limit them.",
+            "saved": "Locations saved for {{name}}.",
+            "saveFailed": "The locations were not saved. Try again.",
+            "loadFailed": "Could not load the locations.",
+            "noLocations": "There are no locations yet",
+            "addLocations": "Add a location first"
+        }
+    },
+    "taxClasses": {
+        "description": "What each kind of product is for tax: its HSN code, unit and rate slabs.",
+        "add": "Add tax class",
+        "edit": "Edit {{name}}",
+        "caBanner": "Rates must be confirmed by your CA. Nothing here is pre-filled as fact.",
+        "notRegular": "Your tax mode is not Regular, so bills carry no tax lines and tax classes are not used.",
+        "noSlabs": "No rate slab yet",
+        "columns": {
+            "name": "Tax class",
+            "hsn": "HSN",
+            "unit": "Unit",
+            "slabs": "Rate slabs",
+            "status": "Status"
+        },
+        "slabLine": {
+            "from": "{{min}} and above",
+            "range": "{{min}} to {{max}}",
+            "cess": " + {{cess}}% cess",
+            "full": "{{rate}}%{{cess}} · {{range}} · from {{date}}"
+        },
+        "empty": {
+            "title": "No tax classes yet",
+            "description": "Add the tax classes your CA gave you. A product cannot be made active without one."
+        },
+        "errors": {
+            "load": "Could not load the tax classes.",
+            "save": "The tax class was not saved. Try again."
+        },
+        "toast": {
+            "created": "Tax class added.",
+            "updated": "Tax class updated."
+        },
+        "dialog": {
+            "addHeading": "Add tax class",
+            "editHeading": "Edit tax class",
+            "add": "Add tax class"
+        },
+        "fields": {
+            "name": "Name",
+            "namePlaceholder": "For example, Cotton fabric",
+            "code": "Code",
+            "codeHint": "Short and unique: capital letters, digits, dash and underscore.",
+            "hsn": "HSN code",
+            "hsnHint": "4, 6 or 8 digits.",
+            "unit": "Unit",
+            "unitHint": "The unit code printed on invoices, for example PCS or MTR.",
+            "minPrice": "From unit price (₹)",
+            "maxPrice": "Up to unit price (₹)",
+            "maxPriceHint": "Leave empty for no upper limit.",
+            "rate": "GST rate (%)",
+            "cess": "Cess (%)",
+            "effectiveFrom": "In force from",
+            "effectiveTo": "In force until",
+            "effectiveToHint": "Leave empty if it is still in force."
+        },
+        "slabs": {
+            "title": "Rate slabs",
+            "description": "One row per rate. Slabs in force on the same date must not cover the same price.",
+            "rowLabel": "Slab {{number}}",
+            "remove": "Remove slab {{number}}",
+            "removeShort": "Remove",
+            "add": "Add slab"
+        },
+        "validation": {
+            "nameRequired": "Write the name.",
+            "codeFormat": "Use 2 to 30 capital letters, digits, dashes or underscores.",
+            "codeClash": "Another tax class already uses this code.",
+            "hsn": "An HSN code has 4, 6 or 8 digits.",
+            "unit": "Keep the unit within 10 characters.",
+            "amount": "Type an amount, with up to two decimals.",
+            "rate": "Type a rate between 0 and 100, with up to two decimals.",
+            "fromRequired": "Pick the date it comes into force.",
+            "date": "Pick a date.",
+            "maxAboveMin": "The upper price must be above the lower price.",
+            "toBeforeFrom": "The end date is before the start date.",
+            "oneSlab": "Add at least one rate slab.",
+            "overlap": "Two slabs in force on the same date cover the same price. Change the price range or the dates."
+        }
+    },
+    "products": {
+        "title": "Products",
+        "description": "Everything the shop sells: names in Hindi and English, photos, variants and prices.",
+        "add": "Add product",
+        "import": "Import",
+        "export": "Export",
+        "exporting": "Exporting…",
+        "exportFileName": "products-export.csv",
+        "untitled": "Product without a name",
+        "searchPlaceholder": "Search by name, SKU or barcode",
+        "select": "Select {{name}}",
+        "selectAll": "Select all on this page",
+        "edit": "Edit {{name}}",
+        "rowActions": "More actions for {{name}}",
+        "variantCount": "{{count}} variants",
+        "languages": {
+            "hi": "हिन्दी (Hindi)",
+            "en": "English"
+        },
+        "columns": {
+            "name": "Product",
+            "status": "Status",
+            "variants": "Variants",
+            "price": "Price",
+            "updated": "Updated"
+        },
+        "filters": {
+            "all": "All",
+            "status": "Status",
+            "collection": "Collection",
+            "stockState": "Stock",
+            "taxClassMissing": "No tax class",
+            "notOnServer": "This filter is not available from the server yet, so all products are shown: {{filters}}."
+        },
+        "stockState": {
+            "OUT_OF_STOCK": "Out of stock",
+            "LOW_STOCK": "Low stock",
+            "IN_STOCK": "In stock"
+        },
+        "warnings": {
+            "missingHindi": "Hindi name missing",
+            "missingEnglish": "English name missing",
+            "missingTaxClass": "No tax class"
+        },
+        "setStatus": {
+            "DRAFT": "Move to draft",
+            "ACTIVE": "Publish",
+            "ARCHIVED": "Archive"
+        },
+        "empty": {
+            "title": "No products yet",
+            "description": "Add the first product, or import a file with many.",
+            "filteredTitle": "No product matches",
+            "filteredDescription": "Change the search or the filters."
+        },
+        "errors": {
+            "load": "Could not load the products.",
+            "loadOne": "Could not load this product.",
+            "save": "Could not save the product.",
+            "publish": "The draft is saved, but it could not be published.",
+            "status": "Could not change the status.",
+            "export": "Could not export the products.",
+            "collection": "Could not add the products to the collection."
+        },
+        "toast": {
+            "saved": "Product saved",
+            "published": "Product published",
+            "status": {
+                "DRAFT": "{{name}} moved to draft",
+                "ACTIVE": "{{name}} published",
+                "ARCHIVED": "{{name}} archived"
+            },
+            "statusChanged": {
+                "DRAFT": "Moved to draft",
+                "ACTIVE": "Published",
+                "ARCHIVED": "Archived"
+            }
+        },
+        "bulk": {
+            "label": "Actions for the selected products",
+            "selected": "{{count}} selected",
+            "working": "Working: {{done}} of {{total}}",
+            "clear": "Clear selection",
+            "export": "Export selected",
+            "collection": "Choose a collection",
+            "addToCollection": "Add to collection",
+            "addedToCollection": "{{count}} products added to the collection",
+            "failed": "{{count}} could not be changed. They are still selected, with the reason below.",
+            "done": {
+                "ACTIVE": "{{count}} published",
+                "ARCHIVED": "{{count}} archived"
+            },
+            "exportTooMany": "At most {{max}} products can be exported by selection. Use Export for more."
+        },
+        "editor": {
+            "title": "Product",
+            "newTitle": "New product",
+            "back": "Back to products",
+            "saveDraft": "Save draft",
+            "publish": "Publish",
+            "publishing": "Publishing…",
+            "unsaved": "You have changes that are not saved.",
+            "allSaved": "Everything is saved.",
+            "fixFields": "Some fields need fixing. They are marked in red.",
+            "publishBlocked": "This product cannot be published yet. See the list at the top.",
+            "leaveConfirm": "You have changes that are not saved. Leave this page?",
+            "statusWithUnsaved": "Changes that are not saved will be lost. Continue?",
+            "statusTitle": "Status",
+            "statusHelp": {
+                "DRAFT": "Not visible in the shop.",
+                "ACTIVE": "On sale in the shop.",
+                "ARCHIVED": "Retired. Kept for old orders."
+            }
+        },
+        "blockers": {
+            "title": "Fix these before publishing",
+            "goToField": "Go to field",
+            "taxClassMissing": "Choose a tax class. A GST-registered shop cannot publish a product without one.",
+            "noActiveVariant": "At least one variant must be active.",
+            "priceMissing": "Every active variant needs a price.",
+            "nameMissing": "Give the product a name."
+        },
+        "details": {
+            "title": "Details",
+            "description": "Write the product in Hindi and in English. The dot on each tab turns green when that language has a name and a description.",
+            "languageComplete": "Complete",
+            "languageIncomplete": "Not complete",
+            "languageInvalid": "Needs fixing",
+            "copyFrom": "Copy from {{language}}",
+            "copyNothing": "The other language has no text yet.",
+            "copied": "Empty fields were filled from the other language.",
+            "name": "Name",
+            "shortDescription": "Short description",
+            "descriptionField": "Description",
+            "blocksTitle": "Extra sections",
+            "blocksHint": "Sections shown on the product page, such as care or story. Each has a short code.",
+            "blockCode": "Code of the new section",
+            "blockCodePlaceholder": "care",
+            "addBlock": "Add section",
+            "removeBlock": "Remove",
+            "seoTitle": "Search result title",
+            "seoDescription": "Search result description",
+            "seoHint": "Shown by Google. Leave empty to use the product name.",
+            "slug": "Web address",
+            "slugHint": "Letters, digits and hyphens. Leave empty and it is made from the name.",
+            "brand": "Brand"
+        },
+        "media": {
+            "title": "Photos",
+            "description": "The first photo is the cover. Each change here is saved at once.",
+            "saveFirst": "Save the draft first, then add photos.",
+            "upload": "Upload photos",
+            "uploading": "Uploading {{done}} of {{total}}…",
+            "uploadHint": "JPG, PNG or WebP, up to 10 MB each.",
+            "onlyImages": "Only image files can be added.",
+            "tooLarge": "The file is larger than 10 MB.",
+            "empty": "No photos yet.",
+            "cover": "Cover",
+            "size": "{{width}} × {{height}} px",
+            "moveEarlier": "Move earlier",
+            "moveLater": "Move later",
+            "remove": "Remove photo",
+            "removeConfirm": "Remove this photo from the product?",
+            "tag": "What the photo is",
+            "tags": {
+                "none": "No tag",
+                "HERO": "Main photo",
+                "SWATCH": "Colour swatch",
+                "SIZE_CHART": "Size chart",
+                "REAL": "Real photo",
+                "RENDER": "Styled render"
+            },
+            "variant": "Shown for",
+            "allVariants": "All variants",
+            "alt": "Description for screen readers ({{language}})",
+            "saveAlt": "Save descriptions",
+            "toast": {
+                "uploaded": "{{count}} photos added",
+                "removed": "Photo removed",
+                "saved": "Photo saved"
+            },
+            "errors": {
+                "load": "Could not load the photos.",
+                "upload": "The upload failed.",
+                "file": "{{file}}: {{reason}}",
+                "reorder": "Could not change the order.",
+                "remove": "Could not remove the photo.",
+                "save": "Could not save the photo.",
+                "retry": "Could not start another try."
+            },
+            "renditionFailed": "The smaller copies of this photo could not be made.",
+            "retry": "Try again",
+            "retrying": "Trying…",
+            "leadTag": "shown first in the shop"
+        },
+        "selling": {
+            "title": "How it is sold",
+            "description": "Choose once. It cannot be changed after the product has been published.",
+            "locked": "This product has been published, so this choice can no longer change.",
+            "options": {
+                "QUANTITY": {
+                    "title": "Stocked by quantity",
+                    "description": "Many identical units, counted."
+                },
+                "PIECE": {
+                    "title": "One-of-a-kind piece",
+                    "description": "Each piece is tracked by itself."
+                },
+                "MEASURED": {
+                    "title": "Sold by length",
+                    "description": "Cut from a roll, such as fabric by the metre."
+                }
+            },
+            "unit": "Unit",
+            "unitHint": "For example MTR for metres.",
+            "scale": "Parts in one unit",
+            "scaleHint": "10 means stock and price count in tenths of the unit.",
+            "step": "Smallest step",
+            "stepHint": "In parts. With 10 parts in a unit, 5 means half a unit.",
+            "smallestCut": "Customers can buy in steps of {{amount}} {{unit}}."
+        },
+        "variants": {
+            "title": "Options and variants",
+            "description": "Pick up to three things that vary, such as size or colour, tick the values, then make the variants.",
+            "addOption": "Add an option",
+            "chooseAttribute": "Choose an attribute",
+            "loadingAttributes": "Loading attributes…",
+            "removeOption": "Remove option",
+            "noValues": "This attribute has no values yet. Add them in \"Manage attributes\".",
+            "make": "Make variants ({{count}})",
+            "backToOne": "Back to a single variant",
+            "tickValues": "Tick at least one value for every option.",
+            "tooMany": "That would make more than {{max}} variants. Tick fewer values.",
+            "made": "{{added}} added, {{archived}} archived, {{restored}} brought back",
+            "defaultVariant": "Single variant",
+            "scanCode": "Scan code {{code}}",
+            "removeRow": "Remove the row {{name}}",
+            "addRow": "Add variant",
+            "applyAllHint": "Type a value to set it on every variant.",
+            "applyAll": "Apply to all",
+            "sku": "SKU",
+            "barcode": "Barcode",
+            "price": "Price (₹, with tax)",
+            "mrp": "MRP (₹)",
+            "weight": "Weight (grams)",
+            "stockPolicy": "Stock",
+            "policy": {
+                "TRACKED": "Track stock",
+                "UNTRACKED": "Do not track (made to order)"
+            },
+            "leadTime": "Days to make",
+            "status": "Status",
+            "priceHint": "Prices include tax. The tax split is worked out by the server on the invoice. A saved variant is never deleted; archive it instead.",
+            "pricePerUnit": "Price per {{unit}} (₹, with tax)",
+            "mrpPerUnit": "MRP per {{unit}} (₹)"
+        },
+        "tax": {
+            "title": "Tax",
+            "taxClass": "Tax class",
+            "choose": "Choose a tax class",
+            "none": "No tax class",
+            "optionWithHsn": "{{name}} · HSN {{hsn}}",
+            "rates": "Rates: {{rates}}",
+            "neededToPublish": "The shop is GST-registered, so this product cannot be published without a tax class.",
+            "notNeeded": "The shop does not charge GST, so a tax class is not needed.",
+            "noClasses": "No tax class has been set up yet.",
+            "manage": "Manage tax classes"
+        },
+        "organise": {
+            "title": "Organise",
+            "manageAttributes": "Manage attributes",
+            "collections": "Category and collections",
+            "collectionsPlaceholder": "Choose collections",
+            "facetPlaceholder": "Choose values",
+            "origin": "Made at",
+            "originNone": "Not set",
+            "originHint": "Only locations marked as a source are listed."
+        },
+        "validation": {
+            "nameRequired": "Give the product a name in Hindi or English.",
+            "nameForLanguage": "This language has text but no name. Add the name.",
+            "slug": "Use letters, digits and single hyphens only.",
+            "tooLong": "This is too long.",
+            "maxOptions": "A product can have at most three options.",
+            "skuRequired": "Every variant needs a SKU.",
+            "skuTwice": "This SKU is used on two rows.",
+            "money": "Enter an amount with at most two decimals.",
+            "wholeNumber": "Enter a whole number.",
+            "positiveWhole": "Enter a whole number of 1 or more.",
+            "mrpBelowPrice": "MRP cannot be below the price.",
+            "optionValues": "This row repeats another row or is missing an option value. Press \"Make variants\" again.",
+            "pieceTracked": "One-of-a-kind pieces are always tracked.",
+            "noVariant": "A product needs at least one variant.",
+            "noLiveVariant": "At least one variant must not be archived.",
+            "blockCode": "Use a short code in lower-case letters, digits and underscores, once per language.",
+            "priceNotDivisible": "For goods sold by measure the price is for one unit and must split into {{scale}} equal parts to the paisa."
+        },
+        "serverErrors": {
+            "taxClassMissing": "Choose a tax class before publishing. A GST-registered shop needs one on every product.",
+            "taxClassNoRate": "The tax class has no rate in force today. Add a rate in Settings, Tax classes.",
+            "slugTaken": "Another product already uses the web address {{slug}}.",
+            "slugFormat": "The web address may hold letters, digits and single hyphens only.",
+            "measureLocked": "How the product is sold cannot change after it has been published.",
+            "originNotSource": "\"Made at\" must be a location marked as a source.",
+            "nameMissing": "Give the product a name.",
+            "skuTaken": "The SKU {{sku}} is already used by another variant.",
+            "barcodeTaken": "The barcode {{barcode}} is already used by another variant.",
+            "sameOptionValues": "The variants {{first}} and {{second}} have the same option values.",
+            "priceMissing": "The variant {{sku}} needs a price before the product is published.",
+            "pieceTracked": "The variant {{sku}} must track stock: the product is a one-of-a-kind piece.",
+            "optionValues": "The variant {{sku}} needs exactly one value for each option.",
+            "noActiveVariant": "A product needs at least one active variant before it is published.",
+            "mrpBelowPrice": "MRP cannot be below the price.",
+            "policyLocked": "Whether stock is tracked cannot be changed on a saved variant yet.",
+            "skuRequired": "Every variant needs a SKU of at most 100 characters."
+        },
+        "exportIgnoresSearch": "The export does not follow the search or the collection filter, only the status."
+    },
+    "attributes": {
+        "title": "Attributes",
+        "description": "Things that describe a product: size, colour, fabric. Each has values, with a Hindi and an English name.",
+        "add": "Add attribute",
+        "addValue": "Add value",
+        "edit": "Edit {{name}}",
+        "delete": "Delete {{name}}",
+        "deleteConfirm": "Delete {{name}}?",
+        "kinds": {
+            "TEXT": "Text",
+            "SWATCH": "Colour swatch",
+            "SIZE": "Size"
+        },
+        "fields": {
+            "name": "Name ({{language}})",
+            "code": "Code",
+            "codeHint": "Lower-case letters, digits and underscores. It cannot be changed later.",
+            "kind": "Shown as",
+            "filterable": "Customers can filter by this",
+            "swatch": "Colour code",
+            "swatchPlaceholder": "#RRGGBB"
+        },
+        "empty": {
+            "title": "No attributes yet",
+            "description": "Add size or colour to make variants, or fabric to describe products."
+        },
+        "validation": {
+            "name": "Give a name in Hindi or English.",
+            "code": "The code may hold lower-case letters, digits and single underscores only.",
+            "swatch": "The colour code must look like #RRGGBB."
+        },
+        "toast": {
+            "saved": "Saved",
+            "deleted": "Deleted"
+        },
+        "errors": {
+            "load": "Could not load the attributes.",
+            "save": "Could not save.",
+            "delete": "Could not delete."
+        }
+    },
+    "collections": {
+        "title": "Collections",
+        "description": "The category tree and the collections that group products in the shop.",
+        "add": "Add collection",
+        "addInside": "Add inside",
+        "edit": "Edit {{name}}",
+        "products": "Products",
+        "moveUp": "Move {{name}} up",
+        "moveDown": "Move {{name}} down",
+        "kinds": {
+            "CATEGORY": "Category",
+            "COLLECTION": "Collection"
+        },
+        "empty": {
+            "title": "No collections yet",
+            "description": "Add a category such as Sarees, then put products in it."
+        },
+        "dialog": {
+            "addHeading": "Add collection",
+            "editHeading": "Edit collection",
+            "add": "Add collection"
+        },
+        "fields": {
+            "nameHi": "Name in Hindi",
+            "nameEn": "Name in English",
+            "parent": "Inside",
+            "topLevel": "Top level",
+            "kind": "Kind",
+            "kindHint": "A category is a place in the tree. A collection is a hand-picked group.",
+            "slug": "Web address",
+            "slugHint": "Leave empty and it is made from the name.",
+            "returnWindow": "Return window (days)",
+            "returnWindowHint": "Leave empty to use the shop setting.",
+            "status": "Status",
+            "descriptionHi": "Description in Hindi",
+            "descriptionEn": "Description in English",
+            "descriptionHint": "A line or two shown at the top of the collection page.",
+            "image": "Picture",
+            "imageHint": "Shown on the home page tiles and on the collection page.",
+            "imageUpload": "Upload a picture",
+            "imageReplace": "Replace",
+            "imageRemove": "Remove the picture",
+            "imageUploading": "Uploading…",
+            "imageAlt": "Picture of the collection"
+        },
+        "validation": {
+            "name": "Give a name in Hindi or English.",
+            "slug": "Use letters, digits and single hyphens only.",
+            "returnWindow": "Enter a number of days."
+        },
+        "toast": {
+            "created": "Collection added",
+            "updated": "Collection saved"
+        },
+        "errors": {
+            "load": "Could not load the collections.",
+            "save": "Could not save the collection.",
+            "reorder": "Could not change the order.",
+            "products": "Could not load or save the products of this collection.",
+            "imageUpload": "The picture could not be uploaded.",
+            "imageType": "Choose an image file of at most 10 MB."
+        },
+        "productsDialog": {
+            "heading": "Products in {{name}}",
+            "search": "Search products to add",
+            "noMatch": "No other product matches.",
+            "add": "Add",
+            "remove": "Take {{name}} out",
+            "inCollection": "In this collection ({{count}})",
+            "empty": "No products in this collection yet.",
+            "saved": "Products of the collection saved"
+        }
+    },
+    "import": {
+        "title": "Import products",
+        "description": "Add or update many products from one file. The file is checked first; nothing is written until you import.",
+        "exportAll": "Export all products",
+        "noFile": "No file chosen",
+        "chooseFile": "Choose file",
+        "changeFile": "Change file",
+        "rules": {
+            "oneRow": "One row is one variant. Rows with the same product handle make one product.",
+            "externalRef": "A row whose reference already exists updates that product instead of adding a copy.",
+            "noStock": "Stock is never changed by an import. Use receipts and adjustments.",
+            "images": "Photos are not downloaded by the import. Their addresses are kept for the migration tool."
+        },
+        "steps": {
+            "upload": {
+                "title": "1. Choose the file",
+                "description": "Use the template, or export the products, edit the file and bring it back."
+            },
+            "validate": {
+                "title": "2. Check the file",
+                "description": "The server reads every row and writes nothing."
+            },
+            "commit": {
+                "title": "3. Import",
+                "description": "Runs in the background. You can stay on this page to watch it."
+            }
+        },
+        "validate": "Check file",
+        "validateAgain": "Check again",
+        "validating": "Checking…",
+        "notValidated": "Choose a file, then check it.",
+        "validateFirst": "Check the file first.",
+        "readyToImport": "No errors. The file is ready to import.",
+        "starting": "Starting…",
+        "jobId": "Job {{id}}",
+        "progressLabel": "Import progress",
+        "progress": "{{done}} of {{total}} rows",
+        "waiting": "Waiting to start…",
+        "viewProducts": "See the products",
+        "issuesTitle": "Rows with problems",
+        "columns": {
+            "row": "Row",
+            "handle": "Handle",
+            "field": "Column",
+            "severity": "Kind",
+            "message": "Problem"
+        },
+        "errors": {
+            "template": "Could not download the template.",
+            "validate": "Could not check the file.",
+            "commit": "The import could not run.",
+            "progress": "Could not read the progress of the import.",
+            "tooLarge": "The file is larger than 5 MB. Split it into smaller files.",
+            "errorRows": "Could not download the rows to fix."
+        },
+        "downloadTemplateXlsx": "Template (Excel)",
+        "downloadTemplateCsv": "Template (CSV)",
+        "templateFileNameXlsx": "product-import-template.xlsx",
+        "templateFileNameCsv": "product-import-template.csv",
+        "errorRowsFileName": "product-import-error-rows.csv",
+        "downloadErrorRows": "Download the rows to fix",
+        "fileHint": "CSV or Excel (.xlsx) in the template, up to 5 MB and {{rows}} rows.",
+        "commit": "Import {{count}} products",
+        "commitWithErrorsConfirm": "{{count}} products have errors and will be left out. Import the others?",
+        "someLeftOut": "{{count}} products have errors and will be left out. The other {{writable}} can be imported.",
+        "allHaveErrors": "Every product in the file has an error. Fix the file and check it again.",
+        "blankRows": "{{count}} blank rows were skipped.",
+        "noRows": "The file has no rows to import.",
+        "createdTitle": "New products",
+        "createdLink": "Open product {{number}}",
+        "moreIssues": "Showing the first {{shown}}. The downloaded file has every row to fix.",
+        "summary": {
+            "rows": "Rows read",
+            "productsToCreate": "Products to add",
+            "productsToUpdate": "Products to update",
+            "variantsToCreate": "Variants to add",
+            "variantsToUpdate": "Variants to update",
+            "productsWithErrors": "Products with errors",
+            "warnings": "Warnings",
+            "productsCreated": "Products added",
+            "productsUpdated": "Products updated",
+            "productsFailed": "Products left out",
+            "variantsCreated": "Variants added",
+            "variantsUpdated": "Variants updated",
+            "imagesQueued": "Photo addresses kept"
+        },
+        "guide": {
+            "title": "Columns of the template ({{count}})",
+            "column": "Column",
+            "level": "Filled on",
+            "required": "Needed",
+            "description": "What it holds",
+            "example": "Example",
+            "requiredYes": "Yes",
+            "requiredNo": "No",
+            "levels": {
+                "KEY": "Every row",
+                "PRODUCT": "First row of the product",
+                "VARIANT": "Each variant row"
+            }
+        }
+    }
+}

@@ -17,6 +17,7 @@ import { RouteAccessGuard } from './route-access-guard';
 import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
 import { useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
 import { PLANS_SETTINGS_PATH } from '@/services/ai-plans/storefront';
+import { isIOS } from '@/native/platform';
 
 /**
  * New sidebar dimensions (Gmail-style two-bar):
@@ -158,11 +159,17 @@ export const LayoutContainer = ({
                 <TrialBanner
                     ns="telleoSetup"
                     enabled={allowListOnly}
-                    renderUpgrade={(label) => (
-                        <a href={PLANS_SETTINGS_PATH} className="shrink-0 font-semibold underline">
-                            {label}
-                        </a>
-                    )}
+                    renderUpgrade={(label) =>
+                        // Apple Guideline 3.1.1: no purchase link in the iPhone app.
+                        isIOS() ? null : (
+                            <a
+                                href={PLANS_SETTINGS_PATH}
+                                className="shrink-0 font-semibold underline"
+                            >
+                                {label}
+                            </a>
+                        )
+                    }
                 />
                 <StudentSidebarProvider>
                     <div

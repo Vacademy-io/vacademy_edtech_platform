@@ -19,6 +19,7 @@
     "average": "Average",
     "low": "Low",
     "yourResponse": "Your Response",
+    "hiddenByInstitute": "Not shown in this report",
     "explanation": "Explanation",
     "resultReport": "Result report",
     "classAverageValue": "Class average: {{value}}",

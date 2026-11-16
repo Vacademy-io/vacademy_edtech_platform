@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.user_subscription.repository;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -323,6 +324,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                     SELECT ps.id FROM package_session ps
                     JOIN package pe ON ps.package_id = pe.id
                     WHERE pe.package_type IN ('DELIVERY_CHARGE', 'SECURITY_DEPOSIT')))
+          AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
         UNION
         SELECT pl.id, pl.created_at, 'PAYMENT_LOG' AS row_type,
                CASE
@@ -376,6 +378,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
                       WHERE psg2.user_plan_id = iup.id
                         AND psg2.package_session_id IN (:packageSessionIds)))
           AND i.institute_id = :instituteId
+          AND""" + CommercePlans.NOT_COMMERCE_LOG_PL + """
           AND """ + PAID_AT + """
             >= :startDate
           AND """ + PAID_AT + """
@@ -731,6 +734,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
         AND """ + PAID_AT + """
           <= :endDate
         AND pl.payment_status = 'PAID'
+        AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
         AND (:noSubOrg = true OR ei.sub_org_id = :subOrgId)
       GROUP BY 1
       ORDER BY day
@@ -892,6 +896,7 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
       JOIN user_plan up ON up.plan_id = pp.id
       JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
       WHERE ei.institute_id = :instituteId AND pp.name IS NOT NULL
+        AND""" + CommercePlans.NOT_COMMERCE_PLAN + """
       ORDER BY pp.name
       """, nativeQuery = true)
   List<String> findDistinctPaymentPlanNames(@Param("instituteId") String instituteId);
@@ -947,4 +952,14 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, String> 
   long countRecentUnfailedForPlan(@Param("userPlanId") String userPlanId,
       @Param("since") LocalDateTime since,
       @Param("failedStatus") String failedStatus);
+
+  /**
+   * Commerce (WP-04): takes the row locks on an order's payment logs, in id order, until the
+   * transaction ends. CommerceInvoiceService calls it before it looks for the order's live
+   * document, so two issuers of one order run one after the other and the second finds the
+   * first one's invoice. Nothing else calls it; it writes nothing.
+   */
+  @Query(value = "SELECT pl.id FROM payment_log pl WHERE pl.id IN (:ids) ORDER BY pl.id FOR UPDATE",
+      nativeQuery = true)
+  List<String> lockIdsInOrder(@Param("ids") java.util.Collection<String> ids);
 }

@@ -1,4 +1,6 @@
 import { DEFAULT_PROCTORING_FORM, proctoringWireFromForm } from '@/types/assessments/proctoring';
+import { examInterfaceWireFromForm } from '@/types/assessments/exam-interface';
+import { reportOptionsWireFromForm } from '@/types/assessments/report-options';
 import {
     GET_ASSESSMENT_DETAILS,
     PUBLISH_ASSESSMENT_URL,
@@ -220,6 +222,21 @@ export const handlePostStep1Data = async (
         // Always sent as a full object: tier NONE clears the stored config, so a
         // save from this build can never leave a stale tier behind.
         proctoring_config: proctoringWireFromForm(data.proctoring ?? DEFAULT_PROCTORING_FORM),
+        // Always sent: the backend keeps the stored value when the key is absent,
+        // so null is how "Standard" clears it. Surveys, homework and OMR sheet exams
+        // have no exam screen and always save null; teacher-checked (MANUAL) papers
+        // need the standard screen's answer-sheet upload, so they save null too.
+        exam_interface:
+            type === 'SURVEY' || type === 'HOMEWORK'
+                ? null
+                : examInterfaceWireFromForm(data.examInterface, {
+                      omrMode: data.omrMode ?? false,
+                      manualEvaluation: data.resultType === 'MANUAL',
+                  }),
+        // Always sent: null = follow the institute's report settings (clears a
+        // stored value). Surveys have no marked report.
+        report_options:
+            type === 'SURVEY' ? null : reportOptionsWireFromForm(data.reportOptions),
     };
     const response = await authenticatedAxiosInstance({
         method: 'POST',

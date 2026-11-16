@@ -16,6 +16,9 @@ import {
     type TelleoAnswers,
     type TelleoOnboardingStatus,
 } from './-services/telleo-onboarding';
+import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
+import { isIOS } from '@/native/platform';
+import { PLANS_SETTINGS_PATH } from '@/services/ai-plans/storefront';
 
 /**
  * Where a new Telleo sign-up lands (the product's app_path): a few business questions, then the
@@ -47,6 +50,9 @@ const QUERY_KEY = 'TELLEO_ONBOARDING';
 function TelleoSetupPage() {
     const { t } = useTranslation('telleoSetup');
     const instituteId = getInstituteId() ?? '';
+    // "Buy <plan>" on the website: such an account starts with no trial and no credits, so point
+    // it at the plans (no purchase link in the iPhone app: Apple Guideline 3.1.1).
+    const [buyPlan] = useState(() => (isIOS() ? null : takePlanBuyIntent('telleo')));
     const status = useQuery({
         queryKey: [QUERY_KEY, instituteId],
         queryFn: () => fetchOnboarding(instituteId),
@@ -73,10 +79,36 @@ function TelleoSetupPage() {
     }
 
     const data = status.data;
-    if (data.status === 'NEW') return <QuestionsStep status={data} />;
-    if (data.status === 'RUNNING') return <BuildingStep status={data} />;
-    if (data.status === 'FAILED') return <FailedStep status={data} />;
-    return <ReadyStep status={data} />;
+    const step =
+        data.status === 'NEW' ? (
+            <QuestionsStep status={data} />
+        ) : data.status === 'RUNNING' ? (
+            <BuildingStep status={data} />
+        ) : data.status === 'FAILED' ? (
+            <FailedStep status={data} />
+        ) : (
+            <ReadyStep status={data} />
+        );
+    if (!buyPlan) return step;
+    return (
+        <>
+            <div className="border-b border-warning-200 bg-warning-50 px-4 py-2 text-caption text-warning-700">
+                <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-3">
+                    <span>
+                        {t('buy.notice', {
+                            plan: buyPlan.charAt(0).toUpperCase() + buyPlan.slice(1),
+                            defaultValue:
+                                'You chose the {{plan}} plan. Pay for it to start making calls.',
+                        })}
+                    </span>
+                    <a href={PLANS_SETTINGS_PATH} className="shrink-0 font-semibold underline">
+                        {t('buy.pay', 'Pay now')}
+                    </a>
+                </div>
+            </div>
+            {step}
+        </>
+    );
 }
 
 const Shell = ({

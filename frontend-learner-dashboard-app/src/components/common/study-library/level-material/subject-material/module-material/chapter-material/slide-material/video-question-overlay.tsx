@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { getUserId } from "@/constants/getUserId";
 import { processHtmlString } from "@/lib/utils";
 import { MyButton } from "@/components/design-system/button";
+import { numericToleranceVerdict, readNumericToleranceKey } from "./numeric-answer-match";
 
 interface VideoQuestionProps {
     question: {
@@ -289,7 +290,21 @@ const VideoQuestionOverlay = ({
                     });
                 }
             } else if (isOneWord || isLongAnswer || isNumeric) {
-                if (correctAnswer) {
+                // A numeric question with a ± tolerance is judged on that; without one
+                // (null) it keeps the rule below.
+                const toleranceKey = isNumeric
+                    ? readNumericToleranceKey(question.auto_evaluation_json)
+                    : null;
+                if (toleranceKey) {
+                    isCorrect =
+                        numericToleranceVerdict(questionType, question.auto_evaluation_json, userAnswer) === true;
+                    explanation = isCorrect
+                        ? t("videoQuestionOverlay.evaluation.correctWellDone")
+                        : t("videoQuestionOverlay.evaluation.incorrectAnswerWithin", {
+                              answer: toleranceKey.answers.join(", "),
+                              tolerance: toleranceKey.tolerance,
+                          });
+                } else if (correctAnswer) {
                     isCorrect =
                         String(userAnswer).toLowerCase().trim() ===
                         String(correctAnswer).toLowerCase().trim();

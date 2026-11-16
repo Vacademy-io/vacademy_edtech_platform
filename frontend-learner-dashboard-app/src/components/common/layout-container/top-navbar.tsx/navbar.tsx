@@ -22,6 +22,10 @@ import { useStudentLayout } from "@/hooks/use-student-layout";
 import { AchievementsPill } from "@/routes/dashboard/-components/AchievementsPill";
 import { TutorialsHelpButton } from "@/components/tutorials/TutorialsHelpButton";
 import { UserMenu } from "./UserMenu";
+import { useFunTheme } from "@/hooks/use-fun-theme";
+import { offerFunHeaderSlot, useFunHeaderSlotClaimed } from "@/hooks/use-fun-header-slot";
+import { funAddsBottomBar, funHidesAppBar } from "../fun-bottom-bar";
+import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
 import { handleGetPublicInstituteDetails } from "../services/navbar-services";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, House } from "@phosphor-icons/react";
@@ -34,6 +38,7 @@ import { useQueryDialogStore } from "@/stores/useQueryDialogStore";
 import { useDoubtManagementSetting } from "@/services/doubt-management-settings";
 import { QueryDialog } from "@/components/common/queries/QueryDialog";
 import { LanguageDropdown } from "@/components/common/localization/language-dropdown";
+import { useSyncLanguage } from "@/hooks/useSyncLanguage";
 import { useLanguageStore } from "@/stores/localization/useLanguageStore";
 import {
   getEnabledLocales,
@@ -109,6 +114,15 @@ export function Navbar() {
   const [canGoBack, setCanGoBack] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isDashboard = pathname.startsWith("/dashboard");
+  // Fun skin, home only: this bar offers a slot for the home's greeting row, and
+  // takes the Fun look while the row is in it (see use-fun-header-slot.ts). Every
+  // other skin and page gets the bar exactly as before.
+  const isFunTheme = useFunTheme();
+  const funHome = isFunTheme && isDashboard;
+  const funHeaderClaimed = useFunHeaderSlotClaimed();
+  const funBar = funHome && funHeaderClaimed;
+  // The lesson viewer's feedback screen replaces the viewer and its bar.
+  const feedbackOpen = useContentStore((state) => state.activeItem?.id === "feedback-slide");
 
   // Deep link into Help & Queries → My queries: `?openQueries=1` (the AI
   // tutor's "Sent to your teacher" card) and `?doubtId=…` (the doubt email
@@ -248,6 +262,36 @@ export function Navbar() {
   const sidebarControls =
     showSidebarControls && !(hideSidebar && !hasCustomSidebar);
   const showLanguageInHeader = showLanguageSwitcher && header.showLanguage;
+  // The Fun home draws no sidebar button, as on the boards: on a laptop the sidebar
+  // is already open beside the page, and on a phone with the bottom bar that bar is
+  // the navigation, ending with a More that opens this same sidebar (PlayBottomNav,
+  // opensAppMenu). A phone whose institute chose the sidebar keeps its button.
+  const funNavButton = !(
+    funBar &&
+    (!isMobile || studentLayout.showBottomBar || funAddsBottomBar(isFunTheme, studentLayout))
+  );
+  // Fun course list, course page and lesson viewer draw their own header at the top,
+  // as on the boards, so this bar is not drawn there (fun-bottom-bar.ts says when).
+  // Its dialog stays mounted for the deep links handled above.
+  const funAway = funHidesAppBar(isFunTheme, pathname, {
+    navElsewhere: isMobile
+      ? studentLayout.showBottomBar || studentLayout.showRail || funAddsBottomBar(isFunTheme, studentLayout)
+      : (showSidebarControls && !hideSidebar) || studentLayout.showRail || studentLayout.showBottomBar,
+    lessonBarShown: !feedbackOpen,
+  });
+
+  if (funAway) {
+    return (
+      <>
+        {/* iOS app: the room this bar keeps under the status bar. */}
+        {isIOS && <div className="h-10 shrink-0" aria-hidden="true" />}
+        <QueryDialog />
+        {/* The bar's language switcher keeps <html lang> in step with the chosen
+            language; with the bar not drawn, this does the same. */}
+        {showLanguageInHeader && <LanguageSync />}
+      </>
+    );
+  }
 
   if (isLoading) return <DashboardLoader />;
 
@@ -424,11 +468,11 @@ export function Navbar() {
 
   return (
     <div
-      className={`navbar sticky ${isChildViewActive() ? "top-10" : "top-0"} z-50 border-b border-primary-200/40 dark:border-neutral-800 flex h-12 md:h-14 items-center justify-between bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm px-2 md:px-5 py-1.5 md:py-2 transition-all duration-300 w-full overflow-x-auto flex-nowrap [.ui-play_&]:border-b [.ui-play_&]:border-border [.ui-play_&]:bg-white [.ui-play_&]:backdrop-blur-none ${isIOS ? "mt-10" : ""}`}
+      className={`navbar sticky ${isChildViewActive() ? "top-10" : "top-0"} z-50 border-b border-primary-200/40 dark:border-neutral-800 flex h-12 md:h-14 items-center justify-between bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm px-2 md:px-5 py-1.5 md:py-2 transition-all duration-300 w-full overflow-x-auto flex-nowrap [.ui-play_&]:border-b [.ui-play_&]:border-border [.ui-play_&]:bg-white [.ui-play_&]:backdrop-blur-none ${isIOS ? "mt-10" : ""}${funBar ? " fun-navbar" : ""}`}
     >
       {/* Left Section */}
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-        {sidebarControls && (
+        {sidebarControls && funNavButton && (
           <SidebarTrigger>
             <div
               onClick={() => {}}
@@ -469,7 +513,7 @@ export function Navbar() {
           </Tooltip>
         )}
 
-        {header.showLogo && !(
+        {header.showLogo && !funBar && !(
           (sidebarControls && (isMobile ? openMobile : true)) ||
           hasCustomSidebar
         ) && (
@@ -506,11 +550,13 @@ export function Navbar() {
 
         {/* Page title: identity + location. Dropped on phones on the dashboard,
             where the greeting already says where you are and the bar is full. */}
-        {navHeading && header.showPageTitle ? (
+        {navHeading && header.showPageTitle && !funBar ? (
           <h1 className={`min-w-0 truncate text-sm md:text-base font-semibold leading-tight text-neutral-900 dark:text-neutral-100 [.ui-play_&]:font-bold${isDashboard ? " hidden sm:block" : ""}`}>
             {navHeading}
           </h1>
         ) : null}
+        {/* Fun home: the greeting row goes here (empty, and hidden, until it does). */}
+        {funHome && <div ref={offerFunHeaderSlot} className="fun-navbar__slot" />}
       </div>
 
       {/* Right Section: one aligned cluster of ghost icon buttons */}
@@ -543,11 +589,13 @@ export function Navbar() {
         {/* Achievements — badge count + points, opens the achievements popup */}
         {header.showAchievements && <AchievementsPill className="hidden xs:flex" />}
         {/* Language switcher — only when the institute enabled >1 language */}
-        {showLanguageInHeader && <LanguageDropdown className="relative hidden sm:block" />}
+        {showLanguageInHeader && (
+          <LanguageDropdown className={funBar ? "relative hidden sm:block fun-navbar__lang" : "relative hidden sm:block"} />
+        )}
         {/* Help & tutorials */}
-        {header.showHelp && <TutorialsHelpButton className="h-9 w-9" />}
+        {header.showHelp && <TutorialsHelpButton className={funBar ? "h-9 w-9 fun-navbar__icon" : "h-9 w-9"} />}
         {/* Notifications */}
-        {header.showNotifications && <NotificationsBell className="h-9 w-9" />}
+        {header.showNotifications && <NotificationsBell className={funBar ? "h-9 w-9 fun-navbar__icon" : "h-9 w-9"} />}
 
         {showTopbarIcon && header.showHelp && (
           <Tooltip delayDuration={0}>
@@ -556,7 +604,7 @@ export function Navbar() {
                 type="button"
                 aria-label={t("navbar.raiseQuery")}
                 onClick={() => openQueryDialog()}
-                className="hidden h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors sm:flex duration-200 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 dark:text-primary-400 dark:hover:bg-neutral-700 dark:hover:text-primary-300 [.ui-play_&]:rounded-full [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-primary/10"
+                className={`${funBar ? "fun-navbar__icon " : ""}hidden h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors sm:flex duration-200 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 dark:text-primary-400 dark:hover:bg-neutral-700 dark:hover:text-primary-300 [.ui-play_&]:rounded-full [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-primary/10`}
               >
                 <Question className="h-4 w-4 md:h-5 md:w-5" />
               </button>
@@ -571,6 +619,7 @@ export function Navbar() {
         <UserMenu
           showLanguage={showLanguageSwitcher}
           onRaiseQuery={showTopbarIcon ? () => openQueryDialog() : undefined}
+          className={funBar ? "fun-navbar__account" : undefined}
         />
       </div>
 
@@ -578,4 +627,10 @@ export function Navbar() {
       <QueryDialog />
     </div>
   );
+}
+
+/** Keeps the document's language in step with the chosen one (useSyncLanguage), drawing nothing. */
+function LanguageSync() {
+  useSyncLanguage();
+  return null;
 }

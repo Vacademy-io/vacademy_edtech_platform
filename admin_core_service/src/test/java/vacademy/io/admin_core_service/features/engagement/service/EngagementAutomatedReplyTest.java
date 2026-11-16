@@ -104,6 +104,51 @@ class EngagementAutomatedReplyTest {
             assertFalse(EngagementAutomatedReply.isAutomatedEmail("a@abc.in", "Re: Your offer",
                     "Yes interested. On Tue you wrote: our team will get back to you. We are closed on Sunday."));
         }
+
+        @Test
+        @DisplayName("helpdesk ticket notices are not a person replying")
+        void helpdeskNotices() {
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("ops@lender.in", "Ticket received - #85661", "x"));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("ops@lender.in",
+                    "Ticket Closed - Calling every new loan enquiry in 60 seconds-#85661", "x"));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("help@abc.in", "[ABC Support] Ticket #4411 has been created", "x"));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("ops@lender.in", "Re: Calling every new loan enquiry",
+                    "Dear Manshu From,\n\nWe are pleased to inform you that your service request with Ticket ID\n#85661 has\nbeen successfully closed."));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("info@acad.in", "Re: Your offer",
+                    "Dear Shreyash from Vacademy,\n\nWe would like to acknowledge that we have received your request and a ticket has been created."));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("ops@lender.in", "Re: Your offer",
+                    "Dear Manshu From , We wanted to let you know that we have received your request outside of business hours."));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("help@abc.in", "Re: Your offer",
+                    "Hello, your ticket #A-2231 has been resolved. Rate us below."));
+        }
+
+        @Test
+        @DisplayName("a bank's system-generated ticket notice, even one that mentions the spam folder")
+        void bankTicketNotice() {
+            String bank = "CRM_ECS_Charges_Denied_New Ticket Created Dear Customer, Thank you for reaching out to us. "
+                    + "Please note that for security and verification purposes, we can only process queries received "
+                    + "from your registered email ID.\n\nFor a faster response, ensure you email us from your registered "
+                    + "email and check your SPAM or JUNK folders.\n\nThis is a\n\tsystem-generated response.";
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("customercare@bank.in", "Re: Handling loan enquiry calls", bank));
+            assertTrue(EngagementAutomatedReply.isAutomatedEmail("a@abc.in", "Re: Your offer",
+                    "Hello.\n\nThis is an automatically generated email, please do not reply to this email."));
+            // Someone who calls us spam still gets read.
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("a@abc.in", "Re: Your offer",
+                    "This is spam. A new ticket created by your team? Remove us."));
+        }
+
+        @Test
+        @DisplayName("a person mentioning a ticket, or writing from inside a helpdesk, is still a person")
+        void ticketWordsFromPeople() {
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("ravi@abc.in", "[Ticket #4411] Re: Your offer",
+                    "Hi Shreyash, yes please share a time for a demo next week."));
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("ravi@abc.in", "Re: Your offer",
+                    "Thanks. We had a ticketing problem last term, tell me how you handle doubts."));
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("ravi@abc.in", "Re: Ticket booking for our event",
+                    "Can your platform sell event tickets?"));
+            assertFalse(EngagementAutomatedReply.isAutomatedEmail("ravi@abc.in", "Re: Your offer",
+                    "We have received your email and would like a call on Monday."));
+        }
     }
 
     @Test

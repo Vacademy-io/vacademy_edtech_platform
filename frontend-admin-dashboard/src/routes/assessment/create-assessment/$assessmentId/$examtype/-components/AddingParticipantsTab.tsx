@@ -82,7 +82,11 @@ export function AddingParticipantsTab({
                     <CardTitle className="text-subtitle font-semibold">
                         {t('header.title')}
                     </CardTitle>
-                    <CardDescription>{t('header.description')}</CardDescription>
+                    <CardDescription>
+                        {form.watch('open_test.checked')
+                            ? t('header.descriptionOpenTest')
+                            : t('header.description')}
+                    </CardDescription>
                 </div>
             </CardHeader>
             <CardContent>

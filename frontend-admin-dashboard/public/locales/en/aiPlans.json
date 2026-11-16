@@ -3,6 +3,10 @@
     "heading": "AI plan & billing",
     "subheadingCatalog": "A fixed monthly price for everyday AI use. Anything a plan doesn't cover keeps using your credits.",
     "subheadingManage": "Your AI plan, renewals, autopay and tax invoices.",
+    "buyLink": {
+        "current": "You are already on the {{plan}} plan.",
+        "notAvailable": "That plan can't be bought online for your account yet. Write to us and we'll set it up."
+    },
     "brand": {
         "neutral": "your platform team",
         "neutralTitle": "Your platform team",

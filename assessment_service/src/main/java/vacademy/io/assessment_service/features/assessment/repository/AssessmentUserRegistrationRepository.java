@@ -60,6 +60,16 @@ public interface AssessmentUserRegistrationRepository extends JpaRepository<Asse
     @Query(value = "SELECT * FROM assessment_user_registration a WHERE a.user_id = :userId AND a.assessment_id = :assessmentId ORDER BY a.created_at DESC", nativeQuery = true)
     Optional<AssessmentUserRegistration> findTopByUserIdAndAssessmentId(@Param("userId") String userId, @Param("assessmentId") String assessmentId);
 
+    /**
+     * Marks the "You're registered" email as sent for this registration. Returns 1 only for the
+     * first caller, so the email goes out once however often the learner page asks for it.
+     */
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE assessment_user_registration SET confirmation_email_sent_at = now()"
+            + " WHERE id = :id AND confirmation_email_sent_at IS NULL", nativeQuery = true)
+    int claimConfirmationEmail(@Param("id") String id);
+
     @Query(value = """
             select aur.id as registrationId, sa.id as attemptId, aur.participant_name as studentName, sa.start_time as attemptDate, sa.submit_time as endTime, sa.total_time_in_seconds as duration, sa.result_marks as score, aur.user_id as userId, aur.user_email as userEmail, aur.phone_number as phoneNumber, aur.username as username, aur.source_id as batchId,
              sa.report_release_status as reportReleaseResultStatus,

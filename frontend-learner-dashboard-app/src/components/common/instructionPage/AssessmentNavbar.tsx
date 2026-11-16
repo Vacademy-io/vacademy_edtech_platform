@@ -10,6 +10,24 @@ interface AssessmentNavbarProps {
 }
 
 /**
+ * Leaves the brief: back to wherever the learner came from (usually the
+ * assessment list). Direct / public-link entries have no in-app history to
+ * pop, so they fall back to the assessment tab.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useLeaveBrief(): () => void {
+  const router = useRouter();
+  const navigate = useNavigate();
+  return () => {
+    if (window.history.length > 1) {
+      router.history.back();
+    } else {
+      navigate({ to: "/assessment/examination" });
+    }
+  };
+}
+
+/**
  * Slim header for the assessment brief.
  *
  * Deliberately does not repeat the paper's name: the name is the page's H1
@@ -18,23 +36,11 @@ interface AssessmentNavbarProps {
  */
 const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
   const { t } = useTranslation("layoutCommonB");
-  const router = useRouter();
-  const navigate = useNavigate();
+  const handleBack = useLeaveBrief();
   // The brief is a full-bleed fixed screen, so this bar carries the status-bar
   // clearance itself — see `topSafeAreaInset`.
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
   const inset = topSafeAreaInset(immersiveActive);
-
-  // Return to wherever the learner came from (usually the assessment list).
-  // Direct / public-link entries have no in-app history to pop, so fall back to
-  // the assessment tab.
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      router.history.back();
-    } else {
-      navigate({ to: "/assessment/examination" });
-    }
-  };
 
   return (
     <div

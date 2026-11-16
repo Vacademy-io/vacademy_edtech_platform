@@ -69,11 +69,24 @@ export interface AnnouncementRecipientRow {
     userId: string;
     userName: string | null;
     modeType: ModeType;
+    /** EMAIL / WHATSAPP / PUSH_NOTIFICATION; null for in-app delivery. */
+    mediumType: string | null;
     status: string;
+    /** Why the delivery failed (unsubscribed, no address, provider error). */
+    errorMessage: string | null;
     deliveredAt: string | null;
     readAt: string | null;
     dismissedAt: string | null;
+    // Email rows only
+    email: string | null;
+    /** FAILED, BOUNCED, REJECTED, COMPLAINED, CLICKED, OPENED, DELIVERED or SENT. */
+    emailStatus: string | null;
+    emailOpenedAt: string | null;
+    emailClickedAt: string | null;
 }
+
+/** Report filters: a channel from stats.channels, and DELIVERED / FAILED / PENDING. */
+export type RecipientOutcome = 'DELIVERED' | 'FAILED' | 'PENDING';
 
 // Spring Page envelope returned by the /recipients endpoint.
 export interface AnnouncementRecipientsPage {
@@ -230,10 +243,18 @@ export const AnnouncementService = {
 
     recipients: async (
         announcementId: string,
-        params: { modeType?: ModeType; page?: number; size?: number }
+        params: {
+            modeType?: ModeType;
+            channel?: string;
+            status?: RecipientOutcome;
+            page?: number;
+            size?: number;
+        }
     ): Promise<AnnouncementRecipientsPage> => {
         const search = new URLSearchParams();
         if (params.modeType) search.set('modeType', params.modeType);
+        if (params.channel) search.set('channel', params.channel);
+        if (params.status) search.set('status', params.status);
         if (params.page !== undefined) search.set('page', String(params.page));
         if (params.size !== undefined) search.set('size', String(params.size));
         const { data } = await authenticatedAxiosInstance.get(

@@ -373,7 +373,19 @@ public class PaymentDeletionService {
         return rows;
     }
 
+    /**
+     * Commerce (WP-04). A payment or an invoice of a shop order is never hard-deleted: the
+     * invoice is a GST document (reversed by a credit note) and its payment-log links cascade
+     * on delete. Field-injected and null-safe so tests that build this service by hand are
+     * unaffected.
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    private vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentGuard commerceDocumentGuard;
+
     private void assertDeletable(PaymentLog paymentLog) {
+        if (commerceDocumentGuard != null) {
+            commerceDocumentGuard.refuseCommerceLog(paymentLog, "delete this payment");
+        }
         String vendor = paymentLog.getVendor() != null ? paymentLog.getVendor().trim().toUpperCase() : "";
         if (!DELETABLE_VENDORS.contains(vendor)) {
             throw new VacademyException("Only offline or manually recorded payments can be deleted. "
@@ -417,6 +429,8 @@ public class PaymentDeletionService {
         if (!instituteId.equals(invoice.getInstituteId())) {
             throw new VacademyException("Invoice does not belong to this institute");
         }
+        // Commerce (WP-04): a shop tax document is cancelled or credited, never deleted.
+        vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentGuard.refuseCommerceDocument(invoice, "delete this invoice");
         if ("LIVE_SESSION".equals(invoice.getSource())
                 || countReferences("session_guest_registrations", "invoice_id", invoiceId) > 0) {
             throw new VacademyException("A live-class invoice is tied to a registration and cannot be deleted. "

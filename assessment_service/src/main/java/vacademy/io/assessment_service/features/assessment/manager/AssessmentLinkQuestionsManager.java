@@ -44,6 +44,9 @@ import static org.hibernate.resource.transaction.spi.TransactionStatus.ACTIVE;
 public class AssessmentLinkQuestionsManager {
 
     @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService reportProfileService;
+
+    @Autowired
     SectionRepository sectionRepository;
 
     @Autowired
@@ -256,16 +259,52 @@ public class AssessmentLinkQuestionsManager {
         return authorities.stream().anyMatch(a -> !LEARNER_AUTHORITIES.contains(a));
     }
 
+    /**
+     * Internal callers (question insights, survey overview) compute from the full answer
+     * key, so they never get the learner report-options filter: unchanged behaviour.
+     */
     public Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSection(CustomUserDetails user, String assessmentId, String sectionIds) {
+        return getQuestionsOfSection(user, assessmentId, sectionIds, null, false);
+    }
+
+    /**
+     * The questions-of-sections endpoint. A learner (non-staff) also gets only what the
+     * assessment's report options allow.
+     *
+     * @param instituteId the caller's institute (the learner app sends it), so a learner gets
+     *                    that institute's report settings; null = the assessment's own institute
+     */
+    public Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSectionForCaller(CustomUserDetails user, String assessmentId,
+                                                                                          String sectionIds, String instituteId) {
+        return getQuestionsOfSection(user, assessmentId, sectionIds, instituteId, true);
+    }
+
+    private Map<String, List<AssessmentQuestionPreviewDto>> getQuestionsOfSection(CustomUserDetails user, String assessmentId,
+                                                                                  String sectionIds, String instituteId,
+                                                                                  boolean applyReportOptions) {
         Map<String, List<AssessmentQuestionPreviewDto>> response = new HashMap<>();
         List<String> sectionIdList = Arrays.asList(sectionIds.split(","));
         List<QuestionAssessmentSectionMapping> mappings = questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIdList);
         // The learner app calls this endpoint too (test report, comparison): a CBE
         // solution / marking scheme goes to staff only.
         boolean staff = hasStaffAuthority(user);
+        // A learner also gets only what the assessment's report options allow: this
+        // payload carries the answer key (evaluation_json) and option explanations,
+        // which the report screens would otherwise hide only visually.
+        Map<String, vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions> optionsByAssessment = new HashMap<>();
 
         for (QuestionAssessmentSectionMapping mapping : mappings) {
             String sectionId = mapping.getSection().getId();
+            vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options = null;
+            if (!staff && applyReportOptions) {
+                String ownerId = mapping.getSection().getAssessment() != null
+                        ? mapping.getSection().getAssessment().getId() : assessmentId;
+                options = optionsByAssessment.computeIfAbsent(String.valueOf(ownerId),
+                        id -> instituteId != null && !instituteId.isBlank()
+                                ? reportProfileService.reportOptions(ownerId, instituteId)
+                                : reportProfileService.reportOptions(ownerId));
+                if (!options.showQuestionWise()) continue;
+            }
             if (!response.containsKey(sectionId)) {
                 response.put(sectionId, new ArrayList<>());
             }
@@ -276,10 +315,21 @@ public class AssessmentLinkQuestionsManager {
                 fillOptionsExplanationsOfQuestion.setEvaluationJson(CbeConfigRedactor.redact(
                         fillOptionsExplanationsOfQuestion.getEvaluationJson(),
                         fillOptionsExplanationsOfQuestion.getQuestionType()));
+                applyLearnerReportOptions(fillOptionsExplanationsOfQuestion, options);
             }
             response.get(sectionId).add(fillOptionsExplanationsOfQuestion);
         }
         return response;
+    }
+
+    /** Drops the answer key and/or the option explanations a learner's report may not show. */
+    static void applyLearnerReportOptions(AssessmentQuestionPreviewDto dto,
+                                          vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions options) {
+        if (options == null) return;
+        if (!options.showCorrectAnswer()) dto.setEvaluationJson(null);
+        if (!options.showExplanation() && dto.getOptionsWithExplanation() != null) {
+            dto.getOptionsWithExplanation().forEach(o -> o.setExplanationText(null));
+        }
     }
 
     /**

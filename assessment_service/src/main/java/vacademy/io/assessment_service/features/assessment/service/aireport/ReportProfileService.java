@@ -24,7 +24,10 @@ import java.util.UUID;
  *                                           "round": "DOWN" } },
  *   "result_date": "17 October 2026",
  *   "qr_url": "https://...",
- *   "report_options": { "question_wise": "SHOW" | "HIDE" } }      // HIDE drops per-question pages/items
+ *   "report_options": { "question_wise": "SHOW" | "HIDE",          // HIDE drops per-question pages/items
+ *                       "show_your_answer": true, "show_correct_answer": true, "show_explanation": true } }
+ *                                                                // institute default; an assessment's own
+ *                                                                // assessment.report_options wins (see ReportOptions)
  * page = {"type":"TEMPLATE","html":"..."} | {"type":"PDF","file_id":"..."} | {"type":"IMAGE","file_id":"..."|"data_uri":"..."}
  * </pre>
  */
@@ -62,8 +65,62 @@ public class ReportProfileService {
 
     /** Whether reports for this assessment leave out per-question items. Never throws. */
     public boolean hideQuestionWise(String assessmentId, String instituteId) {
-        Profile p = resolve(assessmentId, instituteId);
-        return p != null && p.hideQuestionWise();
+        return !reportOptions(assessmentId, instituteId).showQuestionWise();
+    }
+
+    /**
+     * What this assessment's reports show per question: the assessment's own
+     * report_options (V69), else the applicable profile's report_options, else
+     * everything. Never throws - a lookup failure shows everything, as before.
+     */
+    /** Same as {@link #reportOptions(String, String)}, with the assessment's own institute. */
+    public ReportOptions reportOptions(String assessmentId) {
+        if (assessmentId == null || "null".equals(assessmentId)) return ReportOptions.ALL;
+        String instituteId = null;
+        try {
+            List<String> ids = jdbc.queryForList(
+                    "SELECT institute_id FROM assessment_institute_mapping WHERE assessment_id = ? LIMIT 1",
+                    String.class, assessmentId);
+            instituteId = ids.isEmpty() ? null : ids.get(0);
+        } catch (Exception e) {
+            log.warn("[report-options] could not find the institute of assessment {}: {}", assessmentId, e.getMessage());
+        }
+        return reportOptions(assessmentId, instituteId);
+    }
+
+    public ReportOptions reportOptions(String assessmentId, String instituteId) {
+        ReportOptions own = ownReportOptions(assessmentId);
+        if (own != null) return own;
+        return fromProfile(resolve(assessmentId, instituteId));
+    }
+
+    /**
+     * Same rule with the profile already chosen (the report-profile preview passes one
+     * explicitly): the assessment's own options win, else that profile's.
+     */
+    public ReportOptions reportOptions(String assessmentId, Profile profile) {
+        ReportOptions own = ownReportOptions(assessmentId);
+        return own != null ? own : fromProfile(profile);
+    }
+
+    private static ReportOptions fromProfile(Profile p) {
+        return p == null ? ReportOptions.ALL : ReportOptions.fromJson(p.config().path("report_options"));
+    }
+
+    /** assessment.report_options (V69), or null when unset or unreadable. */
+    private ReportOptions ownReportOptions(String assessmentId) {
+        if (assessmentId == null) return null;
+        try {
+            List<String> own = jdbc.queryForList(
+                    "SELECT report_options::text FROM assessment WHERE id = ? AND report_options IS NOT NULL",
+                    String.class, assessmentId);
+            if (!own.isEmpty() && own.get(0) != null) {
+                return ReportOptions.fromJson(objectMapper.readTree(own.get(0)));
+            }
+        } catch (Exception e) {
+            log.warn("[report-options] could not read report_options of assessment {}: {}", assessmentId, e.getMessage());
+        }
+        return null;
     }
 
     /** The profile that applies to this assessment, or null for "no extra pages". Never throws. */
@@ -180,6 +237,8 @@ public class ReportProfileService {
         if (!qw.equalsIgnoreCase("SHOW") && !qw.equalsIgnoreCase("HIDE")) {
             throw new IllegalArgumentException("report_options.question_wise must be SHOW or HIDE");
         }
+        // Only an object is checked: profiles saved before V69 may carry anything here.
+        if (config.path("report_options").isObject()) ReportOptions.validate(config.path("report_options"));
         for (String side : new String[]{"before", "after"}) {
             JsonNode pages = config.path(side);
             if (pages.isMissingNode()) continue;

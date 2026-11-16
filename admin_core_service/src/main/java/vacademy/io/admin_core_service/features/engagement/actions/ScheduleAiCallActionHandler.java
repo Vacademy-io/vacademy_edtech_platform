@@ -37,6 +37,8 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
 
     static final String QUEUE_SOURCE = "ENGAGEMENT_ENGINE";
     static final int MAX_HOURS = 24 * 14;
+    static final String PHONE_MENU = "The last AI call to this number reached a recorded phone menu, not a person. "
+            + "An AI call cannot get past it: reach them another way, or add a direct number.";
     static final String NO_AGENT = "This engine has no AI agent to call with. Add one to its AI call pool.";
 
     private final AiCallQueueService queueService;
@@ -54,6 +56,9 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
         if (ctx.phone() == null || ctx.phone().isBlank()) return "There is no phone number for this lead.";
         if (coordinationDao.doNotCall(ctx.instituteId(), ctx.leadRowId())) {
             return "A call to this lead ended as wrong number or do-not-disturb: no more AI calls.";
+        }
+        if (coordinationDao.reachedPhoneMenu(ctx.instituteId(), ctx.leadRowId())) {
+            return PHONE_MENU;
         }
         long recent = coordinationDao.aiCallCounts(ctx.instituteId(), List.of(ctx.leadRowId()),
                 ctx.now().minus(Duration.ofDays(7))).getOrDefault(ctx.leadRowId(), 0L);

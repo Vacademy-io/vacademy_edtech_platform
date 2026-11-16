@@ -47,7 +47,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
                      + "WHERE i.instituteId = :instituteId AND i.seqScopeKey = :scopeKey")
        long highestSeqNo(@Param("instituteId") String instituteId, @Param("scopeKey") String scopeKey);
 
-       List<Invoice> findByUserIdOrderByCreatedAtDesc(String userId);
+       // Commerce (WP-04): the four reads below serve course invoices only. A shop document
+       // (document_type set) is served only through /commerce/v1, so it is left out here.
+       // Every course invoice has a NULL document_type and is returned as before.
+       @Query("SELECT i FROM Invoice i WHERE i.userId = :userId AND i.documentType IS NULL ORDER BY i.createdAt DESC")
+       List<Invoice> findByUserIdOrderByCreatedAtDesc(@Param("userId") String userId);
 
        List<Invoice> findByInstituteIdOrderByCreatedAtDesc(String instituteId);
 
@@ -63,7 +67,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
                      "ORDER BY i.createdAt DESC")
        List<Invoice> findByUserPlanIdOrderByCreatedAtDesc(@Param("userPlanId") String userPlanId);
 
-       @Query("SELECT i FROM Invoice i WHERE i.userId = :userId AND i.instituteId = :instituteId ORDER BY i.createdAt DESC")
+       @Query("SELECT i FROM Invoice i WHERE i.userId = :userId AND i.instituteId = :instituteId "
+                     + "AND i.documentType IS NULL ORDER BY i.createdAt DESC")
        List<Invoice> findByUserIdAndInstituteIdOrderByCreatedAtDesc(@Param("userId") String userId,
                      @Param("instituteId") String instituteId);
 
@@ -116,6 +121,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
                      "i.userId AS userId, i.status AS status, i.source AS source, " +
                      "i.totalAmount AS totalAmount, i.currency AS currency, i.createdAt AS createdAt " +
                      "FROM Invoice i WHERE i.instituteId = :instituteId " +
+                     "AND i.documentType IS NULL " +
                      "AND i.status <> 'REJECTED' " +
                      "AND i.invoiceDate >= :startDate AND i.invoiceDate <= :endDate " +
                      "ORDER BY i.invoiceDate ASC, i.createdAt ASC")
@@ -126,6 +132,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
                      Pageable pageable);
 
        @Query("SELECT i FROM Invoice i WHERE i.instituteId = :instituteId " +
+                     "AND i.documentType IS NULL " +
                      "AND (:userId IS NULL OR i.userId = :userId) " +
                      "AND (:status IS NULL OR i.status = :status) " +
                      "AND (:startDate IS NULL OR i.invoiceDate >= :startDate) " +
@@ -138,4 +145,28 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
                      @Param("startDate") LocalDateTime startDate,
                      @Param("endDate") LocalDateTime endDate,
                      Pageable pageable);
+
+       // ---------------------------------------------------------------- commerce (WP-04)
+
+       /** Whether any invoice number of the institute starts with the text: a new commerce series must not collide. */
+       boolean existsByInstituteIdAndInvoiceNumberStartingWith(String instituteId, String numberStart);
+
+       /**
+        * Takes the row lock on one invoice until the transaction ends, so two credit notes
+        * against it are worked out one after the other. Returns the id, or null when the
+        * invoice is not of the institute.
+        */
+       @Query(value = "SELECT id FROM invoice WHERE id = :invoiceId AND institute_id = :instituteId FOR UPDATE",
+                     nativeQuery = true)
+       String lockForCredit(@Param("instituteId") String instituteId, @Param("invoiceId") String invoiceId);
+
+       /** Commerce documents whose PDF was never stored, for the retry job. Reads by invoice date (indexed). */
+       @Query("SELECT i FROM Invoice i WHERE i.documentType IS NOT NULL AND i.pdfFileId IS NULL "
+                     + "AND i.invoiceDate >= :since AND i.invoiceDate <= :until ORDER BY i.invoiceDate ASC")
+       List<Invoice> findCommerceDocumentsWithoutPdf(@Param("since") LocalDateTime since,
+                     @Param("until") LocalDateTime until, Pageable pageable);
+
+       @org.springframework.data.jpa.repository.Modifying
+       @Query("UPDATE Invoice i SET i.pdfFileId = :pdfFileId WHERE i.id = :id AND i.pdfFileId IS NULL")
+       int setPdfFileIdIfMissing(@Param("id") String id, @Param("pdfFileId") String pdfFileId);
 }

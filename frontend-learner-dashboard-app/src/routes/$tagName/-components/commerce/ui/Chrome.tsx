@@ -1,0 +1,345 @@
+/**
+ * The shop's part of the site chrome: search and cart buttons with
+ * a count and the language text switch for the site header, the search overlay with
+ * suggestions, the cart drawer, and the category bar fed by /categories.
+ */
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { CaretDown, MagnifyingGlass, ShoppingBagOpen, WhatsappLogo, X } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import type { Category } from '../api/types';
+import { cartCount } from '../state/cart-logic';
+import { useCommerceCart } from '../state/cart-store';
+import { localeLabel } from '../i18n';
+import { apiPathTo, withQuery } from '../routes';
+import { thumbUrl } from '../logic/media';
+import { CartDrawer } from './Cart';
+import { Layer, PriceText, useCommerceThemeVars } from './primitives';
+import { menuCategories, useCategoryTree, useSuggestions } from './queries';
+import { ShopLink, useCommerceSite, useShopNavigate, whatsappLink } from './site';
+
+const OPEN_SEARCH_EVENT = 'commerce:open-search';
+
+/** Opens the search overlay from anywhere on the page (a hero button, the no-results page). */
+export const openCommerceSearch = (): void => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT));
+};
+
+/** "हिं | EN": text, never a flag. Hidden on a shop with one language. */
+export const LanguageSwitch: React.FC<{ className?: string }> = ({ className }) => {
+    const { locales, locale, setLocale, t } = useCommerceSite();
+    if (locales.length < 2) return null;
+    return (
+        <div className={cn('cmx-lang', className)} role="group" aria-label={t('nav.language')}>
+            {locales.map((code, index) => (
+                <React.Fragment key={code}>
+                    {index > 0 && <span aria-hidden="true">|</span>}
+                    <button type="button" lang={code} aria-pressed={code === locale} onClick={() => code !== locale && setLocale(code)}>
+                        {localeLabel(code)}
+                    </button>
+                </React.Fragment>
+            ))}
+        </div>
+    );
+};
+
+/* ── search overlay ───────────────────────────────────────────────── */
+
+export const SearchOverlay: React.FC<{ open: boolean; onClose(): void }> = ({ open, onClose }) => {
+    const { t, siteT, config } = useCommerceSite();
+    const navigate = useShopNavigate();
+    const inputRef = useRef<HTMLInputElement>(null);
+    const listId = useId();
+    const [text, setText] = useState('');
+    const [active, setActive] = useState(-1);
+    const q = text.trim();
+    const { data, isFetching } = useSuggestions(open ? text : '');
+    const tree = useCategoryTree(open);
+    const categories = useMemo(() => menuCategories(tree.data?.data, config.minInStock).slice(0, 8), [tree.data, config.minInStock]);
+
+    useEffect(() => {
+        if (!open) {
+            setText('');
+            setActive(-1);
+        }
+    }, [open]);
+
+    const products = q.length >= 2 ? (data?.products || []).slice(0, 6) : [];
+    const collections = q.length >= 2 ? (data?.collections || []).slice(0, 3) : [];
+    // Arrow keys walk one flat list: collections, then products, then "see all".
+    const rows = [
+        ...collections.map((c) => ({ key: `c:${c.slug}`, to: apiPathTo(c.path) || `c/${c.slug}` })),
+        ...products.map((p) => ({ key: `p:${p.id}`, to: apiPathTo(p.path) || `p/${p.slug}` })),
+        ...(q.length >= 2 ? [{ key: 'all', to: withQuery('search', { q }) }] : []),
+    ];
+    const go = (to: string) => {
+        onClose();
+        void navigate(to);
+    };
+    const submit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const row = active >= 0 ? rows[active] : undefined;
+        if (row) go(row.to);
+        else if (q) go(withQuery('search', { q }));
+    };
+    const onKeyDown = (event: React.KeyboardEvent) => {
+        if (!rows.length) return;
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setActive((i) => (i + 1) % rows.length);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setActive((i) => (i <= 0 ? rows.length - 1 : i - 1));
+        }
+    };
+    const rowId = (index: number) => `${listId}-row-${index}`;
+    const noResults = q.length >= 2 && !isFetching && !!data && products.length === 0 && collections.length === 0;
+    const whatsapp = whatsappLink(config.whatsappNumber, t('search.whatsappText', { q }));
+    let rowIndex = -1;
+
+    return (
+        <Layer open={open} onClose={onClose} side="top" title={t('search.label')} initialFocus={inputRef}
+            header={
+                <form role="search" className="flex flex-1 items-center gap-2" onSubmit={submit}>
+                    <label className="cmx-search__field">
+                        <MagnifyingGlass size={20} aria-hidden="true" className="shrink-0" />
+                        <span className="cmx-sr">{t('search.label')}</span>
+                        <input
+                            ref={inputRef}
+                            className="cmx-search__input"
+                            type="search"
+                            inputMode="search"
+                            enterKeyHint="search"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
+                            maxLength={120}
+                            placeholder={t('search.placeholder')}
+                            value={text}
+                            onChange={(e) => {
+                                setText(e.target.value);
+                                setActive(-1);
+                            }}
+                            onKeyDown={onKeyDown}
+                            role="combobox"
+                            aria-expanded={rows.length > 0}
+                            aria-controls={listId}
+                            aria-autocomplete="list"
+                            aria-activedescendant={active >= 0 ? rowId(active) : undefined}
+                        />
+                        {text && (
+                            <button type="button" className="cmx-icon-btn -me-2" onClick={() => { setText(''); inputRef.current?.focus(); }} aria-label={t('search.clear')}>
+                                <X size={16} aria-hidden="true" />
+                            </button>
+                        )}
+                    </label>
+                </form>
+            }
+        >
+            <div className="cmx-layer__body">
+                <div className="cmx-shell flex flex-col gap-6 px-0">
+                    <p className="cmx-sr" role="status" aria-live="polite">
+                        {q.length >= 2 ? (isFetching ? t('search.suggesting') : t('search.suggestCount', { count: products.length + collections.length })) : ''}
+                    </p>
+                    {q.length < 2 && (
+                        <>
+                            {config.popularSearches.length > 0 && (
+                                <section aria-label={t('search.popular')}>
+                                    <h2 className="cmx-eyebrow mb-3">{t('search.popular')}</h2>
+                                    <ul className="cmx-pills">
+                                        {config.popularSearches.map((term) => (
+                                            <li key={term}>
+                                                <button type="button" className="cmx-chip" onClick={() => go(withQuery('search', { q: siteT(term) }))}>
+                                                    {siteT(term)}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
+                            {categories.length > 0 && (
+                                <section aria-label={t('nav.categories')}>
+                                    <h2 className="cmx-eyebrow mb-3">{t('nav.categories')}</h2>
+                                    <ul className="cmx-pills">
+                                        {categories.map((c) => (
+                                            <li key={c.slug}>
+                                                <ShopLink to={`c/${c.slug}`} className="cmx-chip" onClick={onClose}>
+                                                    {c.name || c.slug}
+                                                </ShopLink>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
+                            {config.popularSearches.length === 0 && categories.length === 0 && (
+                                <p className="cmx-muted">{t('search.prompt')}</p>
+                            )}
+                        </>
+                    )}
+                    {rows.length > 0 && (
+                        <ul id={listId} role="listbox" aria-label={t('search.label')} className="cmx-search__list">
+                            {collections.map((c) => {
+                                rowIndex += 1;
+                                const index = rowIndex;
+                                return (
+                                    <li key={`c:${c.slug}`} id={rowId(index)} role="option" aria-selected={active === index}>
+                                        <ShopLink to={rows[index]!.to} className="cmx-search__row" onClick={onClose} tabIndex={-1}>
+                                            <span className="cmx-eyebrow">{t('search.collections')}</span>
+                                            <span className="font-medium">{c.name || c.slug}</span>
+                                        </ShopLink>
+                                    </li>
+                                );
+                            })}
+                            {products.map((p) => {
+                                rowIndex += 1;
+                                const index = rowIndex;
+                                const thumb = thumbUrl(p.image);
+                                return (
+                                    <li key={`p:${p.id}`} id={rowId(index)} role="option" aria-selected={active === index}>
+                                        <ShopLink to={rows[index]!.to} className="cmx-search__row" onClick={onClose} tabIndex={-1}>
+                                            <span className="cmx-img cmx-search__thumb">
+                                                {thumb && <img src={thumb} alt="" loading="lazy" decoding="async" width={44} height={55} />}
+                                            </span>
+                                            <span className="flex min-w-0 flex-1 flex-col">
+                                                <span className="cmx-small truncate font-medium">{p.name}</span>
+                                                <PriceText price={p.price} scale={p.qty_scale} unit={p.unit} className="cmx-small" />
+                                            </span>
+                                        </ShopLink>
+                                    </li>
+                                );
+                            })}
+                            {q.length >= 2 && (
+                                <li id={rowId(rows.length - 1)} role="option" aria-selected={active === rows.length - 1}>
+                                    <ShopLink to={rows[rows.length - 1]!.to} className="cmx-search__row cmx-link" onClick={onClose} tabIndex={-1}>
+                                        {t('search.seeAll', { q })}
+                                    </ShopLink>
+                                </li>
+                            )}
+                        </ul>
+                    )}
+                    {noResults && (
+                        <div className="flex flex-col items-start gap-3">
+                            <p className="font-medium">{t('search.none.title', { q })}</p>
+                            <p className="cmx-small cmx-muted">{t('search.none.body')}</p>
+                            {whatsapp && (
+                                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="cmx-btn cmx-btn--outline">
+                                    <WhatsappLogo size={18} aria-hidden="true" />
+                                    {t('search.askWhatsapp')}
+                                </a>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Layer>
+    );
+};
+
+/* ── header slot ──────────────────────────────────────────────────── */
+
+/**
+ * What the shop adds to the site header: search, the language switch (only when the header
+ * does not show the site's own) and the cart button with its count. It also owns the search
+ * overlay and the cart drawer, so they exist on every page that has the header.
+ */
+export const HeaderSlot: React.FC<{ showLanguage?: boolean; className?: string }> = ({ showLanguage = true, className }) => {
+    const { t, locale } = useCommerceSite();
+    const themeVars = useCommerceThemeVars();
+    const cart = useCommerceCart((s) => s.cart);
+    const hydrated = useCommerceCart((s) => s.hydrated);
+    const openDrawer = useCommerceCart((s) => s.openDrawer);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const count = hydrated ? cartCount(cart) : 0;
+    const [bump, setBump] = useState(false);
+    const previous = useRef(count);
+    useEffect(() => {
+        if (count > previous.current) {
+            setBump(true);
+            const timer = setTimeout(() => setBump(false), 450);
+            previous.current = count;
+            return () => clearTimeout(timer);
+        }
+        previous.current = count;
+    }, [count]);
+    useEffect(() => {
+        const open = () => setSearchOpen(true);
+        window.addEventListener(OPEN_SEARCH_EVENT, open);
+        return () => window.removeEventListener(OPEN_SEARCH_EVENT, open);
+    }, []);
+    return (
+        <span className={cn('cmx cmx-slot', className)} lang={locale} style={themeVars}>
+            <button type="button" className="cmx-icon-btn" onClick={() => setSearchOpen(true)} aria-label={t('nav.search')} aria-haspopup="dialog">
+                <MagnifyingGlass size={22} aria-hidden="true" />
+            </button>
+            {showLanguage && <LanguageSwitch />}
+            <button
+                type="button"
+                className="cmx-icon-btn"
+                onClick={openDrawer}
+                aria-haspopup="dialog"
+                aria-label={count > 0 ? t('nav.cartCount', { count }) : t('nav.cart')}
+            >
+                <ShoppingBagOpen size={22} aria-hidden="true" />
+                {count > 0 && (
+                    <span className={cn('cmx-count', bump && 'cmx-count--bump')} aria-hidden="true">
+                        {count > 99 ? '99+' : count}
+                    </span>
+                )}
+            </button>
+            <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+            <CartDrawer />
+        </span>
+    );
+};
+
+/* ── category bar ─────────────────────────────────────────────────── */
+
+const CategoryItem: React.FC<{ node: Category; current: string | null }> = ({ node, current }) => {
+    const { t } = useCommerceSite();
+    const children = node.children || [];
+    return (
+        <li className="cmx-catbar__item">
+            <ShopLink to={`c/${node.slug}`} className="cmx-catbar__link" aria-current={current === node.slug ? 'page' : undefined}>
+                {node.name || node.slug}
+                {children.length > 0 && <CaretDown size={12} aria-hidden="true" className="hidden lg:inline" />}
+            </ShopLink>
+            {children.length > 0 && (
+                <ul className="cmx-catbar__menu" aria-label={t('nav.more', { name: node.name || node.slug })}>
+                    {children.map((child) => (
+                        <li key={child.slug}>
+                            <ShopLink to={`c/${child.slug}`} aria-current={current === child.slug ? 'page' : undefined}>
+                                {child.name || child.slug}
+                            </ShopLink>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+};
+
+/**
+ * The category menu of a shop: categories with enough products in stock, two levels. A row
+ * that scrolls sideways on a phone; on a desktop the second level opens on hover and on
+ * keyboard focus. Its height is reserved while the tree loads.
+ */
+export const CategoryBar: React.FC<{ current?: string | null }> = ({ current = null }) => {
+    const { t, config } = useCommerceSite();
+    const { data, isLoading } = useCategoryTree();
+    const categories = useMemo(() => menuCategories(data?.data, config.minInStock), [data, config.minInStock]);
+    if (!isLoading && categories.length === 0) return null;
+    return (
+        <nav className="cmx-catbar" aria-label={t('nav.categories')}>
+            <div className="cmx-shell">
+                <ul className="cmx-catbar__row">
+                    {isLoading
+                        ? Array.from({ length: 5 }, (_, i) => (
+                              <li key={i} className="cmx-catbar__link" aria-hidden="true">
+                                  <span className="cmx-skel h-4 w-16" />
+                              </li>
+                          ))
+                        : categories.map((node) => <CategoryItem key={node.slug} node={node} current={current} />)}
+                </ul>
+            </div>
+        </nav>
+    );
+};

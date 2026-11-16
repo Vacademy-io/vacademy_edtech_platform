@@ -6,6 +6,7 @@ import { HeaderProps } from "../../-types/course-catalogue-types";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { RouteMatcher } from "../../-services/route-matcher";
+import { catalogueListingPath } from "../../-utils/catalogue-page-routes";
 import { CourseCatalogueData } from "../../-types/course-catalogue-types";
 import { createElement, useState, useEffect, useRef } from "react";
 import { MagnifyingGlass, ShoppingCart } from "@phosphor-icons/react";
@@ -34,6 +35,8 @@ import { MegaMenuNavItem } from "../header/MegaMenuNavItem";
 import { MobileMegaMenu } from "../header/MobileMegaMenu";
 import { HeaderSearch } from "../header/HeaderSearch";
 import { HeaderLanguageSwitcher } from "../header/HeaderLanguageSwitcher";
+import { CommerceHeaderSlot } from "../commerce/lazy";
+import { isCommerceEnabled } from "../commerce/config";
 import { DesktopNavDropdown, MobileNavDropdown } from "./header/NavDropdown";
 import { dropdownHasActive } from "./header/nav-dropdown";
 import {
@@ -214,7 +217,11 @@ export const HeaderComponent: React.FC<HeaderProps & {
     const showSearchButton = showSearch === true;
     const showSwitcher = showLanguageSwitcher === true && siteLocale.enabled && siteLocale.locales.length > 1;
     const showSiteCart = isSiteCartEnabled(resolvedGlobalSettings?.siteCart);
-    const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart;
+    // A site with a shop (globalSettings.commerce): its search, language switch
+    // and cart button join the bar and replace the book-store icons. False on
+    // every other site, which renders exactly as before.
+    const showCommerce = isCommerceEnabled(resolvedGlobalSettings);
+    const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart || showCommerce;
     // Opt-in looks of the design (site-chrome-types.ts); all off when absent.
     const chrome = resolveHeaderChrome({
       barSize,
@@ -506,7 +513,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
       }
 
       if (normalizedRoute === 'courses') {
-        navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
+        // The catalogue's own page when it has one (e.g. "library"); the root otherwise.
+        navigate({ to: catalogueListingPath(effectiveTagName, catalogueData?.pages) });
         return;
       }
 
@@ -601,9 +609,10 @@ export const HeaderComponent: React.FC<HeaderProps & {
           const pageRouteLower = (page.route || '').toLowerCase();
           const pageIdLower = (page.id || '').toLowerCase();
 
+          // The root ("") is the home page, whatever route it is stored under.
           const isCurrentPage = pageRouteLower === pageRoute.toLowerCase() ||
             pageIdLower === pageRoute.toLowerCase() ||
-            (pageRoute === '' && pageRouteLower === '');
+            (pageRoute === '' && (pageRouteLower === '' || pageRouteLower === 'homepage' || pageRouteLower === '/' || pageIdLower === 'home'));
 
           if (isCurrentPage && page.components) {
             const hasBuyRentSection = page.components.some(
@@ -838,7 +847,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
               {isCourseCatalogeTypeEnabled && (
                 <div className="flex items-center gap-1">
                   {/* Search Icon — replaced by the site search when the author turns that on */}
-                  {!hideSearch && !showSearchButton && (
+                  {!hideSearch && !showSearchButton && !showCommerce && (
                   <button
                     onClick={() => {
                       const newToggleState = !togle;
@@ -859,7 +868,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   )}
 
                   {/* Cart Icon — the book-store cart; a site cart (below) replaces it. */}
-                  {!hideCart && !showSiteCart && (
+                  {!hideCart && !showSiteCart && !showCommerce && (
                   <button
                     onClick={() => {
                       navigate({ to: `${RouteMatcher.basePath(effectiveTagName)}/cart` });
@@ -909,6 +918,17 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       : undefined
                   }
                   hideWhenEmpty={chrome.cartWhenNotEmpty || undefined}
+                />
+              )}
+
+              {showCommerce && resolvedInstituteId && (
+                <CommerceHeaderSlot
+                  instituteId={resolvedInstituteId}
+                  tagName={effectiveTagName}
+                  globalSettings={resolvedGlobalSettings}
+                  // The site's own switch, when the header shows it, is the one switch.
+                  showLanguage={!showSwitcher}
+                  className="flex-shrink-0 text-catalogue-text-secondary"
                 />
               )}
 
@@ -1148,8 +1168,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
                             setIsGenreDropdownOpen(false);
                             // Set genre filter in sessionStorage
                             sessionStorage.setItem('genreFilter', genre.toLowerCase());
-                            // Navigate to homepage with genre filter
-                            navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
+                            // Navigate to the catalogue with genre filter
+                            navigate({ to: catalogueListingPath(effectiveTagName, catalogueData?.pages) });
                           }}
                           className="group w-full text-left px-6 py-3 text-sm font-medium text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-bg-subtle border-b border-catalogue-border-subtle last:border-b-0 transition-all duration-200 ease-in-out transform hover:translate-x-1"
                         >

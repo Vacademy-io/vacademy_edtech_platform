@@ -142,6 +142,14 @@ jobs:
                 --from=secret/ai-navana-tts --keys=NAVANA_API_KEY
             fi
 
+            # OpenRouter management key: read-only use, for the account balance on the
+            # portal's Balance tab. Only when the secret is present; without it the tab
+            # falls back to the per-key limit.
+            if [ -n "${{ secrets.OPENROUTER_MANAGEMENT_KEY }}" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                OPENROUTER_MANAGEMENT_KEY=${{ secrets.OPENROUTER_MANAGEMENT_KEY }} >/dev/null
+            fi
+
             # Spatius (premium teacher avatar). Same rule: only when the secret is
             # present; the feature stays dark without SPATIUS_API_KEY + SPATIUS_APP_ID.
             if [ -n "${{ secrets.SPATIUS_API_KEY }}" ] && [ -n "${{ secrets.SPATIUS_APP_ID }}" ]; then

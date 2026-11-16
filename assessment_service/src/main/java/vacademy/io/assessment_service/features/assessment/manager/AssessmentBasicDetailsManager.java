@@ -47,10 +47,16 @@ public class AssessmentBasicDetailsManager {
     vacademy.io.assessment_service.features.assessment.service.AssessmentWorkflowEventPublisher assessmentWorkflowEventPublisher;
 
     @Autowired
+    vacademy.io.assessment_service.features.notification.service.LearnerAssessmentNoticeService learnerAssessmentNoticeService;
+
+    @Autowired
     vacademy.io.assessment_service.features.proctoring.service.ProctoringConfigService proctoringConfigService;
 
     @Autowired
     OmrPaperLoader omrPaperLoader;
+
+    @Autowired
+    vacademy.io.assessment_service.features.exam_interface.service.ExamInterfaceService examInterfaceService;
 
     public ResponseEntity<AssessmentSaveResponseDto> saveBasicAssessmentDetails(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, String assessmentId, String instituteId, String type) {
 
@@ -65,6 +71,9 @@ public class AssessmentBasicDetailsManager {
 
     private ResponseEntity<AssessmentSaveResponseDto> handleExistingAssessment(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, Assessment assessment, String instituteId, String type) {
         if (!assessment.getPlayMode().equals(type)) throw new VacademyException("Assessment type cannot be changed");
+        // First, so an invalid value is refused before any other field is touched.
+        applyExamInterface(assessment, basicAssessmentDetailsDTO);
+        applyReportOptions(assessment, basicAssessmentDetailsDTO);
 
         Optional.ofNullable(basicAssessmentDetailsDTO.getAssessmentPreviewTime()).ifPresent(assessment::setPreviewTime);
         Optional.ofNullable(basicAssessmentDetailsDTO.getSwitchSections()).ifPresent(assessment::setCanSwitchSection);
@@ -148,6 +157,9 @@ public class AssessmentBasicDetailsManager {
     private ResponseEntity<AssessmentSaveResponseDto> handleNewAssessment(CustomUserDetails user, BasicAssessmentDetailsDTO basicAssessmentDetailsDTO, String assessmentId, String instituteId, String type, String source, String sourceId) {
 
         Assessment assessment = new Assessment();
+        // First, so an invalid value is refused before anything is created.
+        applyExamInterface(assessment, basicAssessmentDetailsDTO);
+        applyReportOptions(assessment, basicAssessmentDetailsDTO);
         if (source != null) {
             assessment.setSource(source);
             assessment.setSourceId(sourceId);
@@ -201,6 +213,38 @@ public class AssessmentBasicDetailsManager {
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.DRAFT.name()));
     }
 
+
+    /**
+     * Exam interface (V68). Absent (Java null) leaves the stored value alone, like
+     * proctoring_config; an explicit JSON null (NullNode) or preset "default" clears it.
+     * Invalid input is a 400, raised before anything is saved.
+     */
+    private void applyExamInterface(Assessment assessment, BasicAssessmentDetailsDTO dto) {
+        if (dto.getExamInterface() == null) return;
+        assessment.setExamInterface(examInterfaceService.toStoredJson(dto.getExamInterface()));
+    }
+
+    /**
+     * Report options (V69). Absent (Java null) leaves the stored value alone; an
+     * explicit JSON null clears it back to the institute default. Anything but an
+     * object of booleans is a 400, raised before anything is saved.
+     */
+    static void applyReportOptions(Assessment assessment, BasicAssessmentDetailsDTO dto) {
+        com.fasterxml.jackson.databind.JsonNode options = dto.getReportOptions();
+        if (options == null) return;
+        if (options.isNull()) {
+            assessment.setReportOptions(null);
+            return;
+        }
+        try {
+            vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions.validate(options);
+        } catch (IllegalArgumentException e) {
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+        // Stored normalised (all four keys) so a reader never has to guess a default.
+        assessment.setReportOptions(vacademy.io.assessment_service.features.assessment.service.aireport.ReportOptions
+                .fromJson(options).toJson().toString());
+    }
 
     /** Result type every API exam keeps (spec 3.2): AI marks are a draft until released. */
     static final String API_RESULT_TYPE = "MANUAL";
@@ -282,6 +326,8 @@ public class AssessmentBasicDetailsManager {
         if (wasUnpublished) {
             assessmentWorkflowEventPublisher.publishAssessmentPublished(assessment, instituteId,
                     user != null ? user.getUserId() : null);
+            // "When Assessment is created" email to learners the admin registered one by one.
+            learnerAssessmentNoticeService.sendAssignedOnPublish(assessment.getId());
         }
 
         return ResponseEntity.ok(new AssessmentSaveResponseDto(assessment.getId(), AssessmentStatus.PUBLISHED.name()));

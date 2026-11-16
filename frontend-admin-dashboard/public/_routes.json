@@ -6,6 +6,7 @@
     "/badge-library/*",
     "/classroom",
     "/email-editor/*",
+    "/guides/*",
     "/locales/*",
     "/sw.js",
     "/service-worker.js",

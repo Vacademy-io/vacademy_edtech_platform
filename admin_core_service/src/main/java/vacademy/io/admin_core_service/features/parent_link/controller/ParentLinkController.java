@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.parent_link.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.parent_link.dto.BackfillSummaryDTO;
 import vacademy.io.admin_core_service.features.parent_link.dto.CredentialTemplateConfigDTO;
@@ -18,7 +19,8 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import java.util.List;
 
 /**
- * Guardian (parent-student) linking — surfaced to users as "Guardian".
+ * Guardian (parent-student) linking — surfaced to users as "Guardian". Every route keyed by an
+ * institute is for staff of that institute.
  * Deliberately separate from {@code AdmissionService}'s existing
  * parent/child creation (which powers the enquiry/application admission
  * form) so that flow is left untouched.
@@ -29,6 +31,9 @@ public class ParentLinkController {
 
     @Autowired
     private ParentLinkService parentLinkService;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
 
     @GetMapping("/parent")
     public ResponseEntity<UserDTO> getParent(@RequestAttribute("user") CustomUserDetails userDetails,
@@ -50,6 +55,8 @@ public class ParentLinkController {
             descriptionExpr = "'linked guardian and student (' + #request.direction + ', ' + #request.mode + ')'")
     public ResponseEntity<ParentLinkActionResponseDTO> link(@RequestAttribute("user") CustomUserDetails userDetails,
             @RequestBody ParentLinkActionRequestDTO request) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, request == null ? null : request.getInstituteId());
+        parentLinkService.requireCanLink(userDetails, request);
         return ResponseEntity.ok(parentLinkService.link(request));
     }
 
@@ -62,6 +69,8 @@ public class ParentLinkController {
     public ResponseEntity<ParentLinkActionResponseDTO> linkNewGuardian(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestBody NewGuardianLinkRequestDTO request) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, request == null ? null : request.getInstituteId());
+        parentLinkService.requireCanLinkNewGuardian(userDetails, request);
         return ResponseEntity.ok(parentLinkService.linkNewGuardian(request));
     }
 
@@ -69,6 +78,7 @@ public class ParentLinkController {
     public ResponseEntity<List<PendingGuardianStudentDTO>> getPendingGuardianStudents(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(parentLinkService.previewPendingGuardians(instituteId));
     }
 
@@ -80,6 +90,7 @@ public class ParentLinkController {
             descriptionExpr = "'ran guardian backfill for institute'")
     public ResponseEntity<BackfillSummaryDTO> backfill(@RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(parentLinkService.backfillGuardians(instituteId));
     }
 
@@ -87,6 +98,7 @@ public class ParentLinkController {
     public ResponseEntity<List<PendingGuardianStudentDTO>> getPendingLeadGuardianStudents(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(parentLinkService.previewPendingLeadGuardians(instituteId));
     }
 
@@ -98,6 +110,7 @@ public class ParentLinkController {
             descriptionExpr = "'ran guardian backfill for institute leads'")
     public ResponseEntity<BackfillSummaryDTO> backfillLeads(@RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(parentLinkService.backfillLeadGuardians(instituteId));
     }
 
@@ -118,6 +131,7 @@ public class ParentLinkController {
             @RequestParam("instituteId") String instituteId,
             @RequestParam("studentUserId") String studentUserId,
             @RequestParam(name = "recipient", required = false) String recipient) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(
                 parentLinkService.shareGuardianCredentials(instituteId, studentUserId, recipient));
     }
@@ -135,6 +149,7 @@ public class ParentLinkController {
             descriptionExpr = "'exported guardian credentials'")
     public ResponseEntity<byte[]> exportCredentials(@RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         byte[] body = parentLinkService.exportGuardianCredentialsCsv(instituteId)
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8);
         return ResponseEntity.ok()
@@ -147,6 +162,7 @@ public class ParentLinkController {
     public ResponseEntity<CredentialTemplateConfigDTO> getCredentialTemplate(
             @RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         return ResponseEntity.ok(parentLinkService.getCredentialTemplateConfig(instituteId));
     }
 
@@ -158,6 +174,7 @@ public class ParentLinkController {
             descriptionExpr = "'set guardian credential email template'")
     public ResponseEntity<Void> setCredentialTemplate(@RequestAttribute("user") CustomUserDetails userDetails,
             @RequestParam("instituteId") String instituteId, @RequestParam("templateId") String templateId) {
+        instituteAccessValidator.requireInstituteStaff(userDetails, instituteId);
         parentLinkService.setCredentialTemplate(instituteId, templateId);
         return ResponseEntity.ok().build();
     }

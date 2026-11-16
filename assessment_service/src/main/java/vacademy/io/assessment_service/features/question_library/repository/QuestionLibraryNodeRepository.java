@@ -63,6 +63,36 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             """, nativeQuery = true)
     List<Object[]> countQuestionsPerNode(@Param("instituteId") String instituteId);
 
+    /**
+     * Same counts as countQuestionsPerNode, walking only the given topics: a reader's count
+     * for a topic it sees must leave out a topic below it that is hidden from it.
+     */
+    @Query(value = """
+            WITH RECURSIVE sub AS (
+                SELECT n.id AS root_id, n.id AS node_id
+                  FROM question_library_node n
+                 WHERE n.institute_id = :instituteId AND n.status = 'ACTIVE'
+                   AND n.id = ANY(string_to_array(:nodeIdsCsv, ','))
+                UNION ALL
+                SELECT s.root_id, c.id
+                  FROM sub s
+                  JOIN question_library_node c ON c.parent_id = s.node_id AND c.status = 'ACTIVE'
+                   AND c.id = ANY(string_to_array(:nodeIdsCsv, ','))
+            )
+            SELECT s.root_id,
+                   COUNT(DISTINCT q.id) AS total,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'EASY') AS easy,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'MEDIUM') AS medium,
+                   COUNT(DISTINCT q.id) FILTER (WHERE q.difficulty = 'HARD') AS hard
+              FROM sub s
+              JOIN question_library_mapping m ON m.node_id = s.node_id
+              JOIN question q ON q.id = m.question_id AND q.status = 'ACTIVE'
+             WHERE NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+             GROUP BY s.root_id
+            """, nativeQuery = true)
+    List<Object[]> countQuestionsPerVisibleNode(@Param("instituteId") String instituteId,
+                                                @Param("nodeIdsCsv") String nodeIdsCsv);
+
     /** Live questions of the institute grouped by difficulty and type. Columns are difficulty, question_type, count. */
     @Query(value = """
             SELECT q.difficulty, q.question_type, COUNT(*)
@@ -122,7 +152,10 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             """, nativeQuery = true)
     long countPlacedQuestionsAddedLastWeek(@Param("instituteId") String instituteId);
 
-    /** Those of the given questions that the library offers: live, and placed on an active topic. */
+    /**
+     * Those of the given questions that the library offers: live, and placed on an active
+     * topic. With nodeIdsCsv, only on one of those topics (what one institute sees).
+     */
     @Query(value = """
             SELECT q.id
               FROM question q
@@ -131,10 +164,12 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
                AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
                AND EXISTS (SELECT 1 FROM question_library_mapping m
                              JOIN question_library_node n ON n.id = m.node_id AND n.status = 'ACTIVE'
-                            WHERE m.question_id = q.id)
+                            WHERE m.question_id = q.id
+                              AND (CAST(:nodeIdsCsv AS text) IS NULL OR m.node_id = ANY(string_to_array(CAST(:nodeIdsCsv AS text), ','))))
             """, nativeQuery = true)
     List<String> findPlacedLiveQuestionIds(@Param("instituteId") String instituteId,
-                                           @Param("questionIdsCsv") String questionIdsCsv);
+                                           @Param("questionIdsCsv") String questionIdsCsv,
+                                           @Param("nodeIdsCsv") String nodeIdsCsv);
 
     /**
      * What random pick can offer, per difficulty. Columns are difficulty, count. Passage
@@ -237,15 +272,17 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
     List<Object[]> findPapersOnNodes(@Param("instituteId") String instituteId,
                                      @Param("nodeIdsCsv") String nodeIdsCsv);
 
-    /** Whether a paper sits on an active topic of the library. */
+    /** Whether a paper sits on an active topic of the library, or on one of the given topics. */
     @Query(value = """
             SELECT COUNT(*)
               FROM question_library_paper lp
               JOIN question_library_node n ON n.id = lp.node_id AND n.status = 'ACTIVE'
              WHERE lp.institute_id = :instituteId AND lp.question_paper_id = :questionPaperId
+               AND (CAST(:nodeIdsCsv AS text) IS NULL OR lp.node_id = ANY(string_to_array(CAST(:nodeIdsCsv AS text), ',')))
             """, nativeQuery = true)
     long countPaperInLibrary(@Param("instituteId") String instituteId,
-                             @Param("questionPaperId") String questionPaperId);
+                             @Param("questionPaperId") String questionPaperId,
+                             @Param("nodeIdsCsv") String nodeIdsCsv);
 
     /** Puts the given questions on a node. Only ACTIVE questions of this institute are written. */
     @Modifying
@@ -391,4 +428,173 @@ public interface QuestionLibraryNodeRepository extends JpaRepository<QuestionLib
             """, nativeQuery = true)
     int copyNonSubjectTags(@Param("oldQuestionId") String oldQuestionId,
                            @Param("newQuestionId") String newQuestionId);
+
+    // ---------------------------------------------------------------- scoped counts
+
+    /** What one institute sees: live questions on the given topics. Columns are difficulty, question_type, count. */
+    @Query(value = """
+            SELECT q.difficulty, q.question_type, COUNT(*)
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+             GROUP BY q.difficulty, q.question_type
+            """, nativeQuery = true)
+    List<Object[]> countQuestionsOnNodesByDifficultyAndType(@Param("instituteId") String instituteId,
+                                                           @Param("nodeIdsCsv") String nodeIdsCsv);
+
+    /** Live questions on the given topics created in the last 7 days. */
+    @Query(value = """
+            SELECT COUNT(*)
+              FROM question q
+             WHERE q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND q.created_at >= NOW() - INTERVAL '7 days'
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND EXISTS (SELECT 1 FROM question_library_mapping m
+                            WHERE m.question_id = q.id AND m.node_id = ANY(string_to_array(:nodeIdsCsv, ',')))
+            """, nativeQuery = true)
+    long countQuestionsOnNodesAddedLastWeek(@Param("instituteId") String instituteId,
+                                            @Param("nodeIdsCsv") String nodeIdsCsv);
+
+    // ---------------------------------------------------------------- hidden topics
+    // A row in question_library_access hides one topic, and everything below it, from one
+    // institute. With no row an institute sees the whole library.
+
+    /** Active topics of the library hidden from one institute. */
+    @Query(value = """
+            SELECT a.node_id
+              FROM question_library_access a
+              JOIN question_library_node n ON n.id = a.node_id AND n.status = 'ACTIVE'
+             WHERE n.institute_id = :ownerId AND a.institute_id = :instituteId
+            """, nativeQuery = true)
+    List<String> findHiddenNodeIds(@Param("ownerId") String ownerId,
+                                   @Param("instituteId") String instituteId);
+
+    /** Institutes one topic is hidden from, newest first. Columns are institute_id, institute_name, created_at. */
+    @Query(value = """
+            SELECT a.institute_id, a.institute_name, a.created_at
+              FROM question_library_access a
+             WHERE a.node_id = :nodeId
+             ORDER BY a.created_at DESC
+            """, nativeQuery = true)
+    List<Object[]> findHiddenOfNode(@Param("nodeId") String nodeId);
+
+    /** How many institutes each active topic is hidden from. Columns are node_id, count. */
+    @Query(value = """
+            SELECT a.node_id, COUNT(*)
+              FROM question_library_access a
+              JOIN question_library_node n ON n.id = a.node_id AND n.status = 'ACTIVE'
+             WHERE n.institute_id = :ownerId
+             GROUP BY a.node_id
+            """, nativeQuery = true)
+    List<Object[]> countHiddenPerNode(@Param("ownerId") String ownerId);
+
+    @Modifying
+    @Query(value = """
+            INSERT INTO question_library_access (node_id, institute_id, institute_name, created_by)
+            VALUES (:nodeId, :instituteId, :instituteName, :createdBy)
+            ON CONFLICT (node_id, institute_id) DO UPDATE SET institute_name = EXCLUDED.institute_name
+            """, nativeQuery = true)
+    int hideNode(@Param("nodeId") String nodeId,
+                 @Param("instituteId") String instituteId,
+                 @Param("instituteName") String instituteName,
+                 @Param("createdBy") String createdBy);
+
+    @Modifying
+    @Query(value = """
+            DELETE FROM question_library_access
+             WHERE node_id = :nodeId AND institute_id = :instituteId
+            """, nativeQuery = true)
+    int unhideNode(@Param("nodeId") String nodeId, @Param("instituteId") String instituteId);
+
+    // ---------------------------------------------------------------- library tags
+
+    /**
+     * Library tags (CONCEPT, PYQ, SOURCE) on live questions of the institute, with how many
+     * questions carry each. With placedOnly set, only questions placed on an active topic,
+     * and with nodeIdsCsv, only on those topics. Columns are tag_id, tag_name, tag_source, count.
+     */
+    @Query(value = """
+            SELECT t.tag_id, t.tag_name, et.tag_source, COUNT(DISTINCT q.id)
+              FROM entity_tags et
+              JOIN tags t ON t.tag_id = et.tag_id
+              JOIN question q ON q.id = et.entity_id
+             WHERE et.entity_name = 'QUESTION'
+               AND et.tag_source IN ('CONCEPT', 'PYQ', 'SOURCE')
+               AND q.institute_id = :instituteId AND q.status = 'ACTIVE'
+               AND NOT EXISTS (SELECT 1 FROM question_library_version v WHERE v.old_question_id = q.id)
+               AND (CAST(:placedOnly AS text) IS NULL OR EXISTS (
+                    SELECT 1 FROM question_library_mapping m
+                      JOIN question_library_node n ON n.id = m.node_id AND n.status = 'ACTIVE'
+                     WHERE m.question_id = q.id
+                       AND (CAST(:nodeIdsCsv AS text) IS NULL OR m.node_id = ANY(string_to_array(CAST(:nodeIdsCsv AS text), ',')))))
+             GROUP BY t.tag_id, t.tag_name, et.tag_source
+             ORDER BY et.tag_source, t.tag_name
+            """, nativeQuery = true)
+    List<Object[]> findLibraryTagsWithCounts(@Param("instituteId") String instituteId,
+                                             @Param("placedOnly") String placedOnly,
+                                             @Param("nodeIdsCsv") String nodeIdsCsv);
+
+    /** Library tags of the given questions. Columns are question_id, tag_id, tag_name, tag_source. */
+    @Query(value = """
+            SELECT et.entity_id, t.tag_id, t.tag_name, et.tag_source
+              FROM entity_tags et
+              JOIN tags t ON t.tag_id = et.tag_id
+             WHERE et.entity_name = 'QUESTION'
+               AND et.tag_source IN ('CONCEPT', 'PYQ', 'SOURCE')
+               AND et.entity_id = ANY(string_to_array(:questionIdsCsv, ','))
+             ORDER BY t.tag_name
+            """, nativeQuery = true)
+    List<Object[]> findLibraryTagsOfQuestions(@Param("questionIdsCsv") String questionIdsCsv);
+
+    /** An existing tag of the institute with this name, any case. */
+    @Query(value = """
+            SELECT t.tag_id
+              FROM tags t
+             WHERE t.institute_id = :instituteId AND LOWER(t.tag_name) = LOWER(:tagName)
+             ORDER BY t.created_at
+             LIMIT 1
+            """, nativeQuery = true)
+    String findTagIdByName(@Param("instituteId") String instituteId, @Param("tagName") String tagName);
+
+    /** Links a tag to the given questions. Only ACTIVE questions of this institute are written. */
+    @Modifying
+    @Query(value = """
+            INSERT INTO entity_tags (entity_id, entity_name, tag_id, tag_source, created_at, updated_at)
+            SELECT q.id, 'QUESTION', CAST(:tagId AS varchar), CAST(:tagSource AS varchar), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+              FROM question q
+             WHERE q.id = ANY(string_to_array(:questionIdsCsv, ','))
+               AND q.institute_id = :instituteId AND q.status = 'ACTIVE'
+            ON CONFLICT DO NOTHING
+            """, nativeQuery = true)
+    int addLibraryTag(@Param("instituteId") String instituteId,
+                      @Param("questionIdsCsv") String questionIdsCsv,
+                      @Param("tagId") String tagId,
+                      @Param("tagSource") String tagSource);
+
+    /** Takes a library tag off the given questions. SUBJECT and AI tags are never touched. */
+    @Modifying
+    @Query(value = """
+            DELETE FROM entity_tags et
+             WHERE et.entity_name = 'QUESTION' AND et.tag_id = :tagId
+               AND et.tag_source IN ('CONCEPT', 'PYQ', 'SOURCE')
+               AND et.entity_id = ANY(string_to_array(:questionIdsCsv, ','))
+               AND EXISTS (SELECT 1 FROM question q WHERE q.id = et.entity_id AND q.institute_id = :instituteId)
+            """, nativeQuery = true)
+    int removeLibraryTag(@Param("instituteId") String instituteId,
+                         @Param("questionIdsCsv") String questionIdsCsv,
+                         @Param("tagId") String tagId);
+
+    // ---------------------------------------------------------------- difficulty
+
+    @Modifying
+    @Query(value = """
+            UPDATE question SET difficulty = :difficulty, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ANY(string_to_array(:questionIdsCsv, ','))
+               AND institute_id = :instituteId AND status = 'ACTIVE'
+            """, nativeQuery = true)
+    int setDifficulty(@Param("instituteId") String instituteId,
+                      @Param("questionIdsCsv") String questionIdsCsv,
+                      @Param("difficulty") String difficulty);
 }

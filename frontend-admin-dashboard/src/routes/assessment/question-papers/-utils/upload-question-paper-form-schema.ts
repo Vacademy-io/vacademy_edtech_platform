@@ -359,6 +359,8 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                 parentRichTextContent: z.union([z.string(), z.null()]).optional(),
                 decimals: z.number().optional(),
                 numericType: z.string().optional(),
+                // Optional ± tolerance of a numeric answer; empty/0 = exact match.
+                numericTolerance: z.union([z.number(), z.null()]).optional(),
                 // An answer box left empty is null in the form; drop it before validating.
                 validAnswers: z
                     .preprocess(

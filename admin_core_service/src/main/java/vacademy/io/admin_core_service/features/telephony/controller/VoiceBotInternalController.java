@@ -76,6 +76,8 @@ public class VoiceBotInternalController {
     @Autowired private vacademy.io.admin_core_service.features.telephony.persistence.repository
             .AiAgentTestCallRepository testCallRepo;
 
+    @Autowired private vacademy.io.admin_core_service.features.telephony.demo.AiDemoCallService aiDemoCallService;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     /** The public-API call behind this call-log row, or null for every other call. */
@@ -92,6 +94,14 @@ public class VoiceBotInternalController {
             if ("institute_name".equals(k)) out.putIfAbsent("institute name", e.getValue());
             if ("booked_slot".equals(k)) out.putIfAbsent("booked slot", e.getValue());
         }
+        return out;
+    }
+
+    /** The demo lead's own form fields plus the placeholder spellings the bot reads. */
+    private Map<String, String> mergedDemoFields(
+            vacademy.io.admin_core_service.features.telephony.demo.AiDemoCallService.Binding demo) {
+        Map<String, String> out = new LinkedHashMap<>(audienceService.getLeadCustomFields(demo.leadId()));
+        out.putAll(demo.leadFields());
         return out;
     }
 
@@ -132,6 +142,12 @@ public class VoiceBotInternalController {
 
         String instituteName = instituteRepository.findById(instituteId)
                 .map(i -> i.getInstituteName()).orElse("our institute");
+        // "Try the AI call" demo: an inbound call from a number that just filled the demo form
+        // (a lead in an audience marked tryAiCall) is answered by that audience's agent, in the
+        // lead's language, as the admission counsellor of the lead's organisation. The call is
+        // attributed to the lead. Empty for every other call, and never throws.
+        var demo = aiDemoCallService.bindInbound(row).orElse(null);
+        String effectiveAgentId = demo != null && demo.agentId() != null ? demo.agentId() : agentId;
         // A call placed through the public AI calling API: the client sent the contact's
         // name and template variables with the request. Its user id is a pseudo id that
         // exists nowhere, so the auth-service lookups below would only find nothing.
@@ -140,7 +156,8 @@ public class VoiceBotInternalController {
         // a pseudo id too.
         boolean agentTest = vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
                 .AGENT_TEST.name().equals(row.getSubjectType());
-        String leadName = apiCall != null ? apiCall.getContactName()
+        String leadName = demo != null && demo.visitorName() != null ? demo.visitorName()
+                : apiCall != null ? apiCall.getContactName()
                 : agentTest ? testCallName(row)
                 : row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
                 ? null
@@ -148,7 +165,7 @@ public class VoiceBotInternalController {
         // Gender for how the bot addresses the lead (honorific + Hindi second-person):
         // the stored record gender wins; else a conservative name guess (null when
         // unknown, so the bot uses gender-neutral address instead of defaulting to "sir").
-        String leadGender = (apiCall != null || agentTest || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
+        String leadGender = (demo != null || apiCall != null || agentTest || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
                 ? vacademy.io.admin_core_service.features.telephony.core.NameGender.of(leadName)
                 : userMobileResolver.findGender(row.getUserId())
                         .orElseGet(() -> vacademy.io.admin_core_service.features.telephony.core
@@ -158,14 +175,22 @@ public class VoiceBotInternalController {
 
         // Registry agent first (agentId = ai_agent.id, minted by the settings
         // bridge as the VACADEMY_AI campaignId); built-in template as fallback.
-        var registryAgent = agentId == null ? java.util.Optional.<vacademy.io.admin_core_service
+        var registryAgent = effectiveAgentId == null ? java.util.Optional.<vacademy.io.admin_core_service
                 .features.telephony.persistence.entity.AiAgent>empty()
-                : aiAgentService.find(agentId, instituteId)
+                : aiAgentService.find(effectiveAgentId, instituteId)
                         .filter(a -> Boolean.TRUE.equals(a.getEnabled()));
         Map<String, Object> agent = registryAgent
                 .map(a -> registryAgentMap(a, instituteName, settings))
-                .orElseGet(() -> defaultAgent(agentId, instituteName, settings));
-        if (apiCall != null || agentTest) {
+                .orElseGet(() -> defaultAgent(effectiveAgentId, instituteName, settings));
+        if (demo != null) {
+            // The visitor's language decides STT, script rule, voice and the first line.
+            var lang = demo.language();
+            agent.put("language", lang.code());
+            agent.put("tts_model", lang.ttsModel());
+            agent.put("voice", lang.voice());
+            agent.put("openingLine", lang.openingLine());
+        }
+        if (apiCall != null || agentTest || demo != null) {
             // The contact belongs to the client's CRM, not ours: there is no lead to send a
             // WhatsApp/email to or to book against, so the agent must not offer either.
             // A test call has no lead either.
@@ -203,7 +228,9 @@ public class VoiceBotInternalController {
         // reference what it already knows instead of re-asking. Empty for unknown callers.
         // For an API call, the client's variables play this part: they fill the agent's
         // {{placeholders}} and are listed to the model as what it already knows.
-        Map<String, String> leadFields = apiCall != null
+        Map<String, String> leadFields = demo != null
+                ? mergedDemoFields(demo)
+                : apiCall != null
                 ? apiVariablesForBot(apiCall.getVariables())
                 : row.getResponseId() == null
                 ? Map.of() : audienceService.getLeadCustomFields(row.getResponseId());
@@ -212,8 +239,10 @@ public class VoiceBotInternalController {
         // with the real date instead of a stock line repeated three times (call 6313b454).
         Map<String, Object> leadEnquiry = leadEnquiry(row.getResponseId());
         if (leadEnquiry != null) out.put("leadEnquiry", leadEnquiry);
-        out.put("responseId", row.getResponseId());
-        out.put("userId", row.getUserId());
+        // A demo call was attributed to its lead inside bindInbound, after this row was read.
+        out.put("responseId", demo != null && row.getResponseId() == null ? demo.leadId() : row.getResponseId());
+        out.put("userId", demo != null && row.getResponseId() == null && demo.userId() != null
+                ? demo.userId() : row.getUserId());
         out.put("agent", agent);
         out.put("handoff", Map.of(
                 "enabled", !handoffNumbers.isEmpty(),

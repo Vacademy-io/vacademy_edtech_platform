@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { openInBrowser } from "@/lib/open-in-browser";
 import { formatDate } from "@/lib/formatters";
@@ -66,7 +66,11 @@ import {
   writeEngagementPlanFlag,
 } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
-import { getStudentDisplaySettings } from "@/services/student-display-settings";
+import {
+  customWidgetLinkAction,
+  getStudentDisplaySettings,
+  visibleCustomWidgets,
+} from "@/services/student-display-settings";
 import { useWeeklyAttendanceQuery } from "@/services/attendance/getWeeklyAttendance";
 import type { StudentDashboardWidgetConfig } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
@@ -104,6 +108,9 @@ import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import { useFunTheme } from "@/hooks/use-fun-theme";
 import { FunHomeTop } from "./-components/fun/FunHomeTop";
 import { FunTodayCards, type FunTodayInput } from "./-components/fun/FunTodayCards";
+import { FunCustomCard } from "./-components/fun/FunCustomCard";
+import { FunPinsCard } from "./-components/fun/FunPinsCard";
+import { funHomeKeeps } from "./-components/fun/home-widgets";
 import { usePlayGamificationStore } from "@/stores/play-gamification-store";
 import {
   applyServerPoints,
@@ -140,6 +147,9 @@ import type { DailyTaskProgress } from "./-components/play/useDashboardHeroData"
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { fetchPointsSummary, pointsMeKey, useCurrentInstituteId } from "@/services/points";
 import { StudyCompanionsShelf } from "./-components/StudyCompanionsShelf";
+import { FunCompanionsShelf } from "./-components/fun/FunCompanionsShelf";
+import { FunQueryRow } from "./-components/fun/FunQueryRow";
+import { FunButton } from "@/components/design-system/fun/FunButton";
 import { TncModal } from "@/components/Dashboards/LearnerDashboard/TncModal";
 import type { BatchForSessionType } from "@/stores/study-library/institute-schema";
 import {
@@ -269,6 +279,29 @@ function DashboardOnboardingGate() {
 }
 
 const ENROLLED_PROGRESS_MAX_WAIT_MS = 8000;
+
+// The Explore Memberships / Explore Books buttons: the classic pill, or under Fun the
+// skin's own outline lip button (FunButton, styles/fun/base.css) with none of the
+// classic button's classes, so the classic look is unchanged.
+const CLASSIC_EXPLORE_BUTTON =
+  "rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold";
+
+function ExploreButton({ fun, onClick, children }: { fun: boolean; onClick: () => void; children: ReactNode }) {
+  if (fun) {
+    return (
+      <FunButton variant="outline" compact className="fun-explore__button" onClick={onClick}>
+        {children}
+        <CaretRight weight="bold" />
+      </FunButton>
+    );
+  }
+  return (
+    <Button className={CLASSIC_EXPLORE_BUTTON} onClick={onClick}>
+      {children}
+      <CaretRight size={14} />
+    </Button>
+  );
+}
 
 export function DashboardComponent() {
   const { t } = useTranslation("dashboard");
@@ -579,9 +612,16 @@ export function DashboardComponent() {
   // on it (isWidgetVisible is re-created every render and can't go in deps).
   const showGamification = isWidgetVisible("gamification");
 
-  const customWidget = widgetConfigs?.find(
-    (w) => w.id === "custom" && w.visible !== false
-  );
+  // Every visible institute-authored card, in order (each has its own id).
+  const customWidgets = visibleCustomWidgets(widgetConfigs);
+  const openCustomWidgetLink = (link: string | undefined) => {
+    const action = customWidgetLinkAction(link);
+    if (!action) return;
+    if (action.kind === "external") void openInBrowser(action.url);
+    else if (action.kind === "assign") window.location.assign(action.url);
+    else if (action.kind === "href") navigate({ href: action.href });
+    else navigate({ to: action.to as never });
+  };
 
   // ── Today's daily tasks (engagement plan) ──────────────────────────────────
   const showTodayTasks =
@@ -1145,6 +1185,13 @@ export function DashboardComponent() {
   const railRef = useRef<HTMLDivElement>(null);
   const [railHasContent, setRailHasContent] = useState(true);
 
+  // Fun: the classic widgets its home leaves out (one list, in home-widgets.ts).
+  const funLeavesOut = (id: string) =>
+    isFunTheme && !showForInstitutes([HOLISTIC_INSTITUTE_ID]) && !funHomeKeeps(id);
+  const showExploreMemberships =
+    isWidgetVisible("exploreMemberships") && !funLeavesOut("exploreMemberships");
+  const showExploreBooks = isWidgetVisible("exploreBooks") && !funLeavesOut("exploreBooks");
+
   // MAIN column (lg:col-span-2): continue learning, stats row, progress
   // insights, custom widget, commerce. Commerce is hidden for the play
   // (K-12) audience.
@@ -1167,6 +1214,7 @@ export function DashboardComponent() {
           isLoading={isLoading || stillAskingOtherBatches}
           hasAnyProgress={hasAnyProgress}
           heroOffersResume={Boolean(isPlayTheme || isCleanerPlayTheme || isFunTheme ? resumeTarget : bandTarget)}
+          heroSlideId={isFunTheme ? (resumeTarget?.slideId ?? null) : undefined}
         />
       ),
     },
@@ -1174,15 +1222,30 @@ export function DashboardComponent() {
       id: "enrolledCourses" as const,
       order: getWidgetOrder("enrolledCourses"),
       visible: isWidgetVisible("enrolledCourses"),
-      render: <EnrolledCoursesWidget />,
+      render: (
+        <EnrolledCoursesWidget
+          funServerSlides={isFunTheme ? data?.slides : undefined}
+          funHero={
+            isFunTheme
+              ? {
+                  hasResume: Boolean(resumeTarget),
+                  resumeResolving,
+                  firstRunKnown: studyLibraryLoaded,
+                  hasAnyProgress,
+                  dashboardLoading: isLoading,
+                  dashboardAnswered: Boolean(data),
+                }
+              : undefined
+          }
+        />
+      ),
     },
     {
       id: "statsRow" as const,
       order: statCards.length
         ? Math.min(...statCards.map((w) => getWidgetOrder(w.id)))
         : Number.MAX_SAFE_INTEGER,
-      // Fun: the open-tests count is a Today card and the courses are tiles.
-      visible: statCards.length > 0 && !isFunTheme,
+      visible: statCards.length > 0,
       render: (
         <div
           className={cn(
@@ -1206,11 +1269,20 @@ export function DashboardComponent() {
       visible: isWidgetVisible("learningAnalytics"),
       render: <PastLearningInsights />,
     },
-    {
-      id: "custom" as const,
-      order: getWidgetOrder("custom"),
-      visible: Boolean(customWidget),
-      render: customWidget ? (
+    ...customWidgets.map((customWidget) => ({
+      id: customWidget.id,
+      order: customWidget.order ?? 0,
+      visible: true,
+      render: isFunTheme ? (
+        <FunCustomCard
+          title={customWidget.title || t("dashboardPage.customWidgetFallbackTitle")}
+          subTitle={customWidget.subTitle}
+          openLabel={t("dashboardPage.openButton")}
+          onOpen={
+            customWidget.link ? () => openCustomWidgetLink(customWidget.link) : undefined
+          }
+        />
+      ) : (
         <Card
           className={cn(
             "transition-shadow",
@@ -1231,14 +1303,7 @@ export function DashboardComponent() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  const link = customWidget.link as string;
-                  if (/^https?:\/\//.test(link)) {
-                    window.open(link, "_blank");
-                  } else {
-                    navigate({ to: link as never });
-                  }
-                }}
+                onClick={() => openCustomWidgetLink(customWidget.link)}
                 className="w-full justify-between"
               >
                 {t("dashboardPage.openButton")} <CaretRight size={14} />
@@ -1246,8 +1311,8 @@ export function DashboardComponent() {
             )}
           </CardContent>
         </Card>
-      ) : null,
-    },
+      ),
+    })),
     {
       id: "myMembership" as const,
       order: getWidgetOrder("myMembership"),
@@ -1267,16 +1332,18 @@ export function DashboardComponent() {
       render: <MyOrdersWidget />,
     },
   ]
-    .filter((w) => w.visible && w.render)
+    .filter((w) => w.visible && w.render && !funLeavesOut(w.id))
     .sort((a, b) => a.order - b.order);
+  // Fun: the companions shelf follows the course tiles (see the main column below).
+  const funShelfAfterTiles = isFunTheme && mainColumnWidgets.some((w) => w.id === "enrolledCourses");
 
   // The Fun skin's Today cards: which widgets they stand for, in their saved order.
   const funToday: FunTodayInput = {
     liveSessions: mergedLiveSessions,
     showClass: isWidgetVisible("upcomingLiveClasses"),
-    showGoal: showGamification && showTodayTasks,
+    showGoal: showTodayTasks,
+    showRing: showGamification,
     taskProgress: dailyTaskProgress,
-    nextTaskTitle: engagementFeed?.items?.[0]?.title ?? null,
     showTests: isWidgetVisible("evaluationStat"),
     testCount: testAssignedCount,
     order: {
@@ -1295,6 +1362,14 @@ export function DashboardComponent() {
       order: Number.MIN_SAFE_INTEGER,
       visible: isFunTheme && isLgScreen && !showForInstitutes([HOLISTIC_INSTITUTE_ID]),
       render: <FunTodayCards {...funToday} variant="rail" />,
+    },
+    {
+      // Fun, lg and up: the announcements follow the Today cards (the classic panel
+      // that leads the rail is not drawn in this skin).
+      id: "funPins" as const,
+      order: Number.MIN_SAFE_INTEGER + 1,
+      visible: isFunTheme && isLgScreen && !showForInstitutes([HOLISTIC_INSTITUTE_ID]),
+      render: <FunPinsCard />,
     },
     {
       // lg and up: first in the rail (default order 0.5).
@@ -1337,7 +1412,7 @@ export function DashboardComponent() {
       render: <GetAppWidget />,
     },
   ]
-    .filter((w) => w.visible)
+    .filter((w) => w.visible && !funLeavesOut(w.id))
     .sort((a, b) => a.order - b.order);
 
   // With every rail widget switched off there is nothing to reserve a third of
@@ -1509,18 +1584,27 @@ export function DashboardComponent() {
                       todayBelow={!isLgScreen}
                       headerSlot={funHeaderSlot}
                     />
-                    <NotebookReviewLine />
+                    {/* Under lg the announcements follow the Today cards. */}
+                    {!isLgScreen && <FunPinsCard />}
+                    {/* The classic link, drawn as a Fun row by its wrapper (styles/fun/home.css). */}
+                    <div className="fun-notebook-line">
+                      <NotebookReviewLine />
+                    </div>
                   </>
                 )}
-                {/* Without a rail, announcements lead the main column */}
-                {!hasRail && <DashboardPinsPanel maxPins={3} />}
+                {/* Without a rail, announcements lead the main column (Fun draws its own) */}
+                {!hasRail && !isFunTheme && <DashboardPinsPanel maxPins={3} />}
                 {/* Knowledge-base study companions. Renders null when the learner
-                    has none, so the layout is unchanged for everyone else. */}
-                <StudyCompanionsShelf />
+                    has none, so the layout is unchanged for everyone else. Fun
+                    draws the same shelf as its own tiles, after the course tiles
+                    when they are on the page, so the courses stay on the first
+                    screen of a laptop. */}
+                {isFunTheme ? !funShelfAfterTiles && <FunCompanionsShelf /> : <StudyCompanionsShelf />}
                 {mainColumnWidgets.map((w) => (
-                  <div key={w.id} className="empty:hidden">
-                    {w.render}
-                  </div>
+                  <Fragment key={w.id}>
+                    <div className="empty:hidden">{w.render}</div>
+                    {funShelfAfterTiles && w.id === "enrolledCourses" && <FunCompanionsShelf />}
+                  </Fragment>
                 ))}
               </div>
 
@@ -1531,8 +1615,8 @@ export function DashboardComponent() {
                   ref={railRef}
                   className={cn("space-y-4 lg:col-span-1 lg:space-y-6", !railHasContent && "hidden")}
                 >
-                  {/* Institute announcements pin to the top of the rail */}
-                  <DashboardPinsPanel maxPins={3} />
+                  {/* Institute announcements pin to the top of the rail (Fun: after its Today cards) */}
+                  {!isFunTheme && <DashboardPinsPanel maxPins={3} />}
                   {railWidgets.map((w) => (
                     <div key={w.id} className="empty:hidden">
                       {w.render}
@@ -1546,7 +1630,7 @@ export function DashboardComponent() {
                 Play theme keeps its vibrant play-token widgets; every other theme
                 gets the standard design-token panel. Both sides sit behind the
                 one "gamification" flag so hiding it is skin-independent. */}
-            {showGamification &&
+            {showGamification && !funLeavesOut("gamification") &&
               (isPlayTheme ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
                   <StreakCounterWidget />
@@ -1558,7 +1642,7 @@ export function DashboardComponent() {
               ))}
 
             {/* General query intake — only when the institute enabled the dashboard card */}
-            <RaiseQueryCard />
+            {isFunTheme ? <FunQueryRow /> : <RaiseQueryCard />}
 
             {/* Developer Test Section - Only in development */}
             {process.env.NODE_ENV === "development" && (
@@ -1590,32 +1674,29 @@ export function DashboardComponent() {
                 its padding even when both buttons were hidden. */}
             {!isPlayTheme &&
               !shouldHidePaidPurchaseUI() &&
-              (isWidgetVisible("exploreMemberships") ||
-                isWidgetVisible("exploreBooks")) && (
+              (showExploreMemberships || showExploreBooks) && (
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-4 pb-12 px-4">
-                  {isWidgetVisible("exploreMemberships") && (
-                    <Button
-                      className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold"
+                  {showExploreMemberships && (
+                    <ExploreButton
+                      fun={isFunTheme}
                       onClick={() => {
                         sessionStorage.setItem("levelFilter", "rent");
                         navigate({ to: "/collections" as never });
                       }}
                     >
                       {t("dashboardPage.exploreMembershipsButton")}
-                      <CaretRight size={14} />
-                    </Button>
+                    </ExploreButton>
                   )}
-                  {isWidgetVisible("exploreBooks") && (
-                    <Button
-                      className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 py-2 px-6 h-9 text-xs font-bold"
+                  {showExploreBooks && (
+                    <ExploreButton
+                      fun={isFunTheme}
                       onClick={() => {
                         sessionStorage.setItem("levelFilter", "buy");
                         navigate({ to: "/collections" as never });
                       }}
                     >
                       {t("dashboardPage.exploreBooksButton")}
-                      <CaretRight size={14} />
-                    </Button>
+                    </ExploreButton>
                   )}
                 </div>
               )}

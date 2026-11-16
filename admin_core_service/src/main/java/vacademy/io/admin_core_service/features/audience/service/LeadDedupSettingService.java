@@ -44,6 +44,8 @@ import java.util.List;
  *       "markDuplicate": false,       // flag the new enquiry as a duplicate of the lead it repeats
  *       "duplicateOpenOnly": true,    // ...only while that lead is open (not converted / LOST);
  *                                     // a repeat of a closed lead comes in as a new lead
+ *       "closedRepeatTakesOver": false, // with duplicateOpenOnly: a closed lead's repeat becomes
+ *                                     // the lead, the old one is flagged its duplicate
  *       "duplicatesTabOnly": false,   // duplicates only on the Duplicate Leads tab; other lists
  *                                     // show the lead once, badged (route duplicates= still wins)
  *       "journeyEntry": false,        // write a "Reattempt" entry in that lead's journey
@@ -107,13 +109,26 @@ public class LeadDedupSettingService {
      * new lead. {@code duplicatesTabOnly} (default off) keeps duplicate enquiries out of every
      * lead list whose route does not ask for them, so they show only on the Duplicate Leads
      * tab, and badges the lead they repeat instead. Off = lists behave exactly as before.
+     * {@code closedRepeatTakesOver} (default off, acts with markDuplicate + duplicateOpenOnly):
+     * a repeat of a closed lead becomes the lead and the old one, with its duplicates, is
+     * flagged a duplicate of it, so the lists show the person once, as the new enquiry; the
+     * reattempt follow-up goes to the new one, and so do the old lead's open follow-ups when
+     * both are the same person. Off = the repeat comes in as a second lead, as before.
      */
     public record ReattemptSettings(boolean markDuplicate, boolean journeyEntry, boolean notifyOwner,
             boolean showBadge, boolean followUp, String tier, boolean duplicateOpenOnly,
-            boolean duplicatesTabOnly) {
+            boolean duplicatesTabOnly, boolean closedRepeatTakesOver) {
 
         public static final ReattemptSettings OFF =
-                new ReattemptSettings(false, false, false, false, false, null, true, false);
+                new ReattemptSettings(false, false, false, false, false, null, true, false, false);
+
+        /** {@code closedRepeatTakesOver} off, its default. */
+        public ReattemptSettings(boolean markDuplicate, boolean journeyEntry, boolean notifyOwner,
+                boolean showBadge, boolean followUp, String tier, boolean duplicateOpenOnly,
+                boolean duplicatesTabOnly) {
+            this(markDuplicate, journeyEntry, notifyOwner, showBadge, followUp, tier, duplicateOpenOnly,
+                    duplicatesTabOnly, false);
+        }
 
         /** {@code duplicatesTabOnly} off, its default. */
         public ReattemptSettings(boolean markDuplicate, boolean journeyEntry, boolean notifyOwner,
@@ -347,6 +362,7 @@ public class LeadDedupSettingService {
                 node.path("followUp").asBoolean(false),
                 node.path("tier").isTextual() ? node.path("tier").asText() : null,
                 node.path("duplicateOpenOnly").asBoolean(true),
-                node.path("duplicatesTabOnly").asBoolean(false));
+                node.path("duplicatesTabOnly").asBoolean(false),
+                node.path("closedRepeatTakesOver").asBoolean(false));
     }
 }

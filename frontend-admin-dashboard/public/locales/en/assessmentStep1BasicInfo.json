@@ -39,6 +39,10 @@
     "attemptSettingsSection": {
         "title": "Attempt Settings",
         "description": "Control how participants take this assessment.",
+        "advanced": {
+            "title": "Advanced settings",
+            "summary": "AI evaluation, OMR sheet mode, proctoring, exam interface, preview and section switching. The defaults suit most assessments."
+        },
         "reattemptCountPlaceholder": "Reattempt Count",
         "reattemptCountLabel": "Reattempt Count",
         "resultEvaluationType": {
@@ -198,6 +202,61 @@
                 "never": "Never",
                 "after": "{{count}} flags"
             }
+        }
+    },
+    "reportOptions": {
+        "title": "Student report",
+        "description": "What the student's report shows for each question.",
+        "instituteDefault": {
+            "label": "Use institute report settings",
+            "description": "Turn off to choose for this assessment only."
+        },
+        "questionWise": {
+            "label": "Question-wise section",
+            "description": "Each question with its result. Off hides the whole section."
+        },
+        "yourAnswer": {
+            "label": "Student's answer",
+            "description": "What the student answered."
+        },
+        "correctAnswer": {
+            "label": "Correct answer",
+            "description": "The right answer for questions the student missed."
+        },
+        "explanation": {
+            "label": "Explanation",
+            "description": "The solution written for each question."
+        },
+        "appliesTo": "Applies to the downloaded report (the same file for students and admins), the AI report, the result email and the answer review in the learner app."
+    },
+    "examInterface": {
+        "title": "Exam interface",
+        "description": "How the test screen looks and behaves for learners. Pick an exam style so practice feels like the real computer-based test.",
+        "pickerLabel": "Test screen style",
+        "options": {
+            "standard": "Standard",
+            "jeeMainNta": "JEE Main style (web mock layout)",
+            "jeeMainTcs": "JEE Main style (console layout)",
+            "jeeAdvanced": "JEE Advanced style",
+            "gate": "GATE style",
+            "rrbJe": "Railway JE (RRB) style",
+            "custom": "Other style ({{id}})"
+        },
+        "strict": {
+            "label": "Strict saving like the real exam",
+            "description": "On: an answer counts only after the learner presses Save & Next, as in the real exam. Off (practice-friendly): every click is saved straight away and Submit is always available."
+        },
+        "disclaimer": "This copies the exam screen’s layout and behaviour only. It is not affiliated with or endorsed by the body that conducts the exam. Exam names are trademarks of their owners.",
+        "omrDisabled": "Not available in OMR sheet mode: learners answer on paper, so the standard screen is saved.",
+        "manualDisabled": "Not available when a teacher checks the answers: learners upload their answer sheet on the standard screen, so the standard screen is saved.",
+        "previewHint": "Preview: save, then open this test from a learner account to see the exam screen.",
+        "calculator": {
+            "label": "On-screen calculator",
+            "description": "On, as in the real exam: learners get the scientific calculator in the test, even if the institute’s calculator setting is off."
+        },
+        "passageBeside": {
+            "label": "Show passage beside the question",
+            "description": "For questions with a passage, the passage sits on the left and the question on the right, each scrolling on its own. Learners can drag the divider. Phones keep the passage above the question."
         }
     }
 }

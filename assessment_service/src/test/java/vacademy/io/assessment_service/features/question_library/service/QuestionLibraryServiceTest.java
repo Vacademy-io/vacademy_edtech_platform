@@ -23,12 +23,13 @@ class QuestionLibraryServiceTest {
 
     private static final String INSTITUTE = "inst-1";
 
-    // physics > mechanics > laws > friction (4 levels), chemistry (1 level)
+    // physics > mechanics > laws > friction > static friction (5 levels, the limit), chemistry (1 level)
     private static final List<QuestionLibraryNode> TREE = List.of(
             node("physics", null, "Physics"),
             node("mechanics", "physics", "Mechanics"),
             node("laws", "mechanics", "Laws of motion"),
             node("friction", "laws", "Friction"),
+            node("static", "friction", "Static friction"),
             node("chemistry", null, "Chemistry"));
 
     private QuestionLibraryNodeRepository repository;
@@ -57,15 +58,16 @@ class QuestionLibraryServiceTest {
 
         assertThat(QuestionLibraryTreeResolver.depthOf("physics", byId)).isEqualTo(1);
         assertThat(QuestionLibraryTreeResolver.depthOf("friction", byId)).isEqualTo(4);
-        assertThat(QuestionLibraryTreeResolver.heightOf("physics", children)).isEqualTo(4);
+        assertThat(QuestionLibraryTreeResolver.depthOf("static", byId)).isEqualTo(5);
+        assertThat(QuestionLibraryTreeResolver.heightOf("physics", children)).isEqualTo(5);
         assertThat(QuestionLibraryTreeResolver.heightOf("chemistry", children)).isEqualTo(1);
         assertThat(QuestionLibraryTreeResolver.subtreeIds(children, List.of("mechanics")))
-                .containsExactlyInAnyOrder("mechanics", "laws", "friction");
+                .containsExactlyInAnyOrder("mechanics", "laws", "friction", "static");
     }
 
     @Test
-    void cannotCreateBelowTheFourthLevel() {
-        LibraryNodeRequest request = LibraryNodeRequest.builder().name("Rolling").parentId("friction").build();
+    void cannotCreateBelowTheFifthLevel() {
+        LibraryNodeRequest request = LibraryNodeRequest.builder().name("Rolling").parentId("static").build();
 
         assertThatThrownBy(() -> service.createNode(null, INSTITUTE, request))
                 .isInstanceOf(VacademyException.class)
@@ -93,7 +95,7 @@ class QuestionLibraryServiceTest {
 
     @Test
     void moveThatWouldExceedTheDepthLimitIsRefused() {
-        // physics subtree is 4 levels tall, so it cannot go under chemistry.
+        // physics subtree is 5 levels tall, so it cannot go under chemistry.
         MoveLibraryNodeRequest request = MoveLibraryNodeRequest.builder().nodeId("physics").parentId("chemistry").build();
 
         assertThatThrownBy(() -> service.moveNode(INSTITUTE, request))
@@ -104,7 +106,7 @@ class QuestionLibraryServiceTest {
     @Test
     void moveModeTakesQuestionsOffTheSourceTopicFirst() {
         when(repository.findByInstituteIdAndStatusAndIdIn(INSTITUTE, "ACTIVE", List.of("chemistry")))
-                .thenReturn(List.of(TREE.get(4)));
+                .thenReturn(List.of(TREE.get(5)));
         when(repository.addQuestionsToNode(INSTITUTE, "chemistry", "q1,q2")).thenReturn(2);
         AssignLibraryQuestionsRequest request = AssignLibraryQuestionsRequest.builder()
                 .questionIds(List.of("q1", "q2", "q1", " ", "bad,id"))

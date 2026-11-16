@@ -25,5 +25,32 @@
             "title": "Written Paper (Copy Check)",
             "description": "Upload the question paper (and the answer key / marking scheme). Students solve on paper and upload their copies; the AI or a teacher checks them."
         }
+    },
+    "typePicker": {
+        "onlineGroup": "Students answer online",
+        "paperGroup": "Students write on paper",
+        "columns": {
+            "opens": "Opens",
+            "timer": "Timer",
+            "marks": "Marks"
+        },
+        "values": {
+            "setDateTime": "Set date & time",
+            "anytime": "Anytime",
+            "anytimeOrDates": "Anytime or set dates",
+            "fixed": "Fixed",
+            "optional": "Optional",
+            "scored": "Scored",
+            "notScored": "Not scored"
+        },
+        "bestFor": {
+            "examination": "Class tests, term exams and finals everyone takes together",
+            "mock": "Full-length exam rehearsal students can retake anytime",
+            "practice": "Homework and self-paced revision, retake anytime",
+            "survey": "Feedback forms, polls and opinions",
+            "manualUploadExam": "Board-style papers checked from students’ answer copies"
+        },
+        "paperFlow": "Upload the paper, students upload their copies, then AI or a teacher checks them",
+        "notSure": "Not sure? Use Examination for a test the whole class takes at one time, and Practice for homework."
     }
 }

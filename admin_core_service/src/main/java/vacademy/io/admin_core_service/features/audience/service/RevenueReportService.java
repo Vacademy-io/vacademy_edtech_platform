@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.RowCallbackHandler;
@@ -122,7 +123,7 @@ public class RevenueReportService {
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
-                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + "AND" + CommercePlans.NOT_COMMERCE_LOG_PL + """
                   AND """ + ReportPaymentSql.inWindow("pl") + """
 
             )
@@ -273,7 +274,7 @@ public class RevenueReportService {
                 JOIN conv c ON c.user_id = pl.user_id
                 WHERE pl.payment_status = 'PAID'
                   AND pl.payment_amount IS NOT NULL
-                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + "AND" + CommercePlans.NOT_COMMERCE_LOG_PL + """
                   AND """ + ReportPaymentSql.inWindow("pl") + """
 
             ),
@@ -417,7 +418,7 @@ public class RevenueReportService {
                 SELECT pl.user_id, SUM(pl.payment_amount) AS revenue
                 FROM payment_log pl
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
-                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+                  AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + "AND" + CommercePlans.NOT_COMMERCE_LOG_PL + """
                 GROUP BY pl.user_id
             )
             SELECT to_char((l.acq AT TIME ZONE 'UTC' AT TIME ZONE :tz), 'YYYY-MM') AS cohort,

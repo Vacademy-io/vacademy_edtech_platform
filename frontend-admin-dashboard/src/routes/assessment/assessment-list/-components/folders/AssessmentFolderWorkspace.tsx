@@ -29,6 +29,7 @@ import {
     UNFILED_FOLDER_ID,
     assessmentFolderRoute,
     deleteAssessmentFolder,
+    fetchFolderLinks,
     reorderAssessmentFolders,
     useAssessmentFolders,
     useInvalidateAssessmentFolders,
@@ -45,6 +46,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getInstituteId } from '@/constants/helper';
 import { ASSESSMENT_FOLDERS_QUERY_KEY } from '@/services/assessment-folders';
 import { getAssessmentListWithFilters } from '../../-services/assessment-services';
+import type { SelectedQuestionPaperFilters } from '../ScheduleTestMainComponent';
 import {
     AssessmentFolderUi,
     AssessmentFolderUiContext,
@@ -68,6 +70,33 @@ const readView = (): FolderViewMode => {
     }
 };
 
+/** Published + draft tests of the institute, optionally only one batch's. */
+const listFilters = (
+    instituteId: string | undefined,
+    batchId: string | undefined,
+    extra: Partial<SelectedQuestionPaperFilters> = {}
+): SelectedQuestionPaperFilters => ({
+    name: '',
+    batch_ids: batchId ? [{ id: batchId, name: '' }] : [],
+    subjects_ids: [],
+    tag_ids: [],
+    get_live_assessments: false,
+    get_passed_assessments: false,
+    get_upcoming_assessments: false,
+    institute_ids: instituteId ? [instituteId] : [],
+    assessment_statuses: [
+        { id: '0', name: 'PUBLISHED' },
+        { id: '1', name: 'DRAFT' },
+    ],
+    assessment_modes: [],
+    access_statuses: [],
+    evaluation_types: [],
+    ...extra,
+});
+
+const BATCH_COUNT_PAGE_SIZE = 500;
+const BATCH_COUNT_MAX_PAGES = 4;
+
 /** Pointer-first so a card dropped on a folder tile lands where the cursor is. */
 const collision: CollisionDetection = (args) => {
     const hits = pointerWithin(args);
@@ -90,8 +119,20 @@ const collision: CollisionDetection = (args) => {
 export const AssessmentFolderWorkspace = ({
     folderKey,
     renderList,
+    onSelectFolder,
+    batchId,
 }: {
     folderKey: string;
+    /**
+     * Opens a folder ('all' = top level). Defaults to `?folderId=` on the assessment
+     * list route; the course Assessment tab keeps it in state so it stays on the course.
+     */
+    onSelectFolder?: (key: string) => void;
+    /**
+     * Course Assessment tab: folder counts and "not in a folder" are only this
+     * batch's tests, and the after-publish "Add to a folder" step stays for the list page.
+     */
+    batchId?: string;
     /** `toolbar` (folder cards / breadcrumb) goes between the list's page header and its tabs. */
     renderList: (props: {
         key: string;
@@ -155,6 +196,10 @@ export const AssessmentFolderWorkspace = ({
 
     const selectFolder = useCallback(
         (key: string) => {
+            if (onSelectFolder) {
+                onSelectFolder(key);
+                return;
+            }
             navigate({
                 to: '/assessment/assessment-list',
                 search: (prev: Record<string, unknown>) => ({
@@ -163,7 +208,7 @@ export const AssessmentFolderWorkspace = ({
                 }),
             });
         },
-        [navigate]
+        [navigate, onSelectFolder]
     );
 
     const atTop = effectiveKey === 'all';
@@ -179,31 +224,62 @@ export const AssessmentFolderWorkspace = ({
     // queries so every move / create / delete refreshes it.
     const instituteId = getInstituteId();
     const { data: unfiledCount, isError: unfiledCountFailed } = useQuery({
-        queryKey: [...ASSESSMENT_FOLDERS_QUERY_KEY, 'unfiled-count', instituteId],
+        queryKey: [...ASSESSMENT_FOLDERS_QUERY_KEY, 'unfiled-count', instituteId, batchId ?? null],
         queryFn: async () => {
-            const page = await getAssessmentListWithFilters(0, 1, instituteId, {
-                name: '',
-                batch_ids: [],
-                subjects_ids: [],
-                tag_ids: [],
-                get_live_assessments: false,
-                get_passed_assessments: false,
-                get_upcoming_assessments: false,
-                institute_ids: instituteId ? [instituteId] : [],
-                assessment_statuses: [
-                    { id: '0', name: 'PUBLISHED' },
-                    { id: '1', name: 'DRAFT' },
-                ],
-                assessment_modes: [],
-                access_statuses: [],
-                evaluation_types: [],
-                unfiled_only: true,
-            });
+            const page = await getAssessmentListWithFilters(
+                0,
+                1,
+                instituteId,
+                listFilters(instituteId, batchId, { unfiled_only: true })
+            );
             return (page?.total_elements as number | undefined) ?? 0;
         },
         enabled: atTop && view === 'folders',
         staleTime: 0,
     });
+
+    // Course tab: a folder's count is how many of THIS batch's tests it holds (the
+    // folder list itself counts the whole institute). Keyed under the folder queries
+    // so every move / create / delete refreshes it.
+    const { data: batchFolderCounts } = useQuery({
+        queryKey: [...ASSESSMENT_FOLDERS_QUERY_KEY, 'batch-counts', instituteId, batchId],
+        queryFn: async () => {
+            const ids: string[] = [];
+            for (let pageNo = 0; pageNo < BATCH_COUNT_MAX_PAGES; pageNo++) {
+                const page = await getAssessmentListWithFilters(
+                    pageNo,
+                    BATCH_COUNT_PAGE_SIZE,
+                    instituteId,
+                    listFilters(instituteId, batchId)
+                );
+                const content = (page?.content ?? []) as { assessment_id?: string }[];
+                content.forEach((item) => item.assessment_id && ids.push(item.assessment_id));
+                if (content.length < BATCH_COUNT_PAGE_SIZE) break;
+            }
+            const links = await fetchFolderLinks(ids);
+            const counts: Record<string, number> = {};
+            links.forEach((link) => {
+                counts[link.folder_id] = (counts[link.folder_id] ?? 0) + 1;
+            });
+            return counts;
+        },
+        // Only the folder cards and the breadcrumb show counts, not the flat list.
+        enabled: Boolean(batchId) && !(atTop && view === 'list'),
+        staleTime: 0,
+    });
+    // Until the batch counts arrive (or if they fail) keep the institute count, so a
+    // folder is never shown as empty when it is not.
+    const withBatchCount = useCallback(
+        (folder: AssessmentFolder): AssessmentFolder =>
+            batchId && batchFolderCounts
+                ? { ...folder, assessment_count: batchFolderCounts[folder.id] ?? 0 }
+                : folder,
+        [batchId, batchFolderCounts]
+    );
+    const gridFolders = useMemo(
+        () => orderedFolders.map(withBatchCount),
+        [orderedFolders, withBatchCount]
+    );
     // Folders view with every test in a folder: show the folders only — no empty
     // "Not in a folder" tabs. Still loading counts as none, so the tabs never flash;
     // a failed count shows them (fail open), so no test can be hidden by an error.
@@ -333,14 +409,14 @@ export const AssessmentFolderWorkspace = ({
     };
     const toolbar = !atTop ? (
         <FolderBreadcrumb
-            folder={selectedFolder}
+            folder={selectedFolder ? withBatchCount(selectedFolder) : undefined}
             unfiled={effectiveKey === UNFILED_FOLDER_ID}
             onBack={() => selectFolder('all')}
             {...folderActions}
         />
     ) : view === 'folders' ? (
         <FolderGrid
-            folders={orderedFolders}
+            folders={gridFolders}
             loading={isLoading}
             showUnfiledHeading={!hideUnfiled}
             view={view}
@@ -388,7 +464,7 @@ export const AssessmentFolderWorkspace = ({
             />
             {/* Step after publishing a new assessment (set by the create wizard). */}
             <MoveToFolderDialog
-                open={!!pendingPrompt && canManageFolders}
+                open={!!pendingPrompt && canManageFolders && batchId === undefined}
                 onOpenChange={(open) => !open && clearPendingPrompt()}
                 assessmentIds={pendingPrompt ? [pendingPrompt.assessmentId] : []}
                 assessmentName={pendingPrompt?.name || undefined}
@@ -438,7 +514,10 @@ export const AssessmentFolderWorkspace = ({
                 <p className="text-sm text-neutral-600">
                     {t('delete.body', {
                         name: deleteFolder?.name ?? '',
-                        count: deleteFolder?.assessment_count ?? 0,
+                        // Deleting empties the folder for every course, so the institute count.
+                        count: deleteFolder
+                            ? foldersById[deleteFolder.id]?.assessment_count ?? 0
+                            : 0,
                     })}
                 </p>
             </MyDialog>

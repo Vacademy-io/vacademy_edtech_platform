@@ -50,6 +50,8 @@ export interface TransformedQuestion {
     reattemptCount?: string;
     decimals?: number;
     numericType?: string;
+    /** Optional ± tolerance of a numeric answer; empty/0 = exact match. */
+    numericTolerance?: number | null;
     parentRichTextContent?: string | null;
     singleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;
     multipleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;
@@ -90,6 +92,7 @@ export interface Slide {
         marks_per_question?: number;
         negative_marking?: number;
         partial_marking?: boolean | null;
+        show_answer_after_each_question?: boolean | null;
         questions?: BackendQuestion[];
     } | null;
     is_loaded: boolean;

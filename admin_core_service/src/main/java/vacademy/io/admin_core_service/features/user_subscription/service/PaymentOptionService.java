@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.user_subscription.service;
 
 import lombok.extern.slf4j.Slf4j;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -70,6 +71,21 @@ public class PaymentOptionService {
     @Autowired
     private RegionalPriceService regionalPriceService;
 
+    @Autowired
+    private CommerceLegacyGuard commerceLegacyGuard;
+
+    private static final String SOURCE_PACKAGE_SESSION = "PACKAGE_SESSION";
+
+    /**
+     * A variant's payment option carries its shop price. Only the Commerce catalogue may write
+     * it, so these endpoints refuse it.
+     */
+    private void refuseVariantOption(String source, String sourceId, String action) {
+        if (SOURCE_PACKAGE_SESSION.equalsIgnoreCase(source)) {
+            commerceLegacyGuard.refuseVariantSession(sourceId, action);
+        }
+    }
+
     /**
      * Creates a payment option, or — when the DTO carries the id of an existing row —
      * edits it in place (the Settings page edits through this same POST). Returns the
@@ -87,6 +103,7 @@ public class PaymentOptionService {
             return editPaymentOption(paymentOptionDTO, true);
         }
 
+        refuseVariantOption(paymentOptionDTO.getSource(), paymentOptionDTO.getSourceId(), "add a payment option");
         PaymentOption paymentOption = new PaymentOption(paymentOptionDTO);
         // Any id that reached here is a client placeholder (the invite flow sends
         // "plan_<timestamp>"). Clear it so the generator mints the real one and the
@@ -279,6 +296,9 @@ public class PaymentOptionService {
     }
 
     public String makeDefaultPaymentOption(String paymentOptionId, String source, String sourceId) {
+        refuseVariantOption(source, sourceId, "change the default payment option");
+        PaymentOption target = findById(paymentOptionId);
+        refuseVariantOption(target.getSource(), target.getSourceId(), "change the default payment option");
         changeDefaultPaymentOption(source, sourceId);
         makeDefaultPaymentOption(paymentOptionId);
         return "success";
@@ -295,6 +315,9 @@ public class PaymentOptionService {
 
     public String deletePaymentOption(List<String> paymentOptionIds, CustomUserDetails userDetails) {
         List<PaymentOption> paymentOptions = paymentOptionRepository.findAllById(paymentOptionIds);
+        for (PaymentOption paymentOption : paymentOptions) {
+            refuseVariantOption(paymentOption.getSource(), paymentOption.getSourceId(), "delete the payment option");
+        }
         for (PaymentOption paymentOption : paymentOptions) {
             paymentOption.setStatus(StatusEnum.DELETED.name());
         }
@@ -313,6 +336,7 @@ public class PaymentOptionService {
      */
     private PaymentOptionDTO editPaymentOption(PaymentOptionDTO paymentOptionDTO, boolean fullPayload) {
         PaymentOption paymentOption = findById(paymentOptionDTO.getId());
+        refuseVariantOption(paymentOption.getSource(), paymentOption.getSourceId(), "edit the payment option");
         paymentOption.setName(paymentOptionDTO.getName());
         paymentOption.setType(paymentOptionDTO.getType());
         paymentOption.setPaymentOptionMetadataJson(paymentOptionDTO.getPaymentOptionMetadataJson());

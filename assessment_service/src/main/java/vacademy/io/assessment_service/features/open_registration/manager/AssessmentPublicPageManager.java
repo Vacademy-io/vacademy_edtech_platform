@@ -41,6 +41,15 @@ public class AssessmentPublicPageManager {
     @Autowired
     AssessmentRepository assessmentRepository;
 
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.service.OpenAssessmentLeadPublisher openAssessmentLeadPublisher;
+
+    @Autowired
+    vacademy.io.assessment_service.features.notification.service.LearnerAssessmentNoticeService learnerAssessmentNoticeService;
+
+    /** error_message when the registration window has not opened yet. */
+    static final String REGISTRATION_NOT_OPEN_YET = "Registration not open yet";
+
     public ResponseEntity<GetAssessmentPublicResponseDto> getAssessmentPage(String code) {
         Optional<AssessmentInstituteMapping> assessmentInstituteMapping = assessmentInstituteMappingRepository.findTopByAssessmentUrl(code);
 
@@ -80,8 +89,10 @@ public class AssessmentPublicPageManager {
         // precondition: an unset bound simply means "no limit on that side".
         // bound_end_time is already enforced above.
         Date now = new Date();
+        // Not open YET is a different state from closed: the learner page shows a countdown to
+        // the opening time for it, not "Registration Closed".
         if (assessment.getRegistrationOpenDate() != null && assessment.getRegistrationOpenDate().after(now)) {
-            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
+            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage(REGISTRATION_NOT_OPEN_YET).build());
         }
         if (assessment.getRegistrationCloseDate() != null && assessment.getRegistrationCloseDate().before(now)) {
             return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
@@ -221,6 +232,7 @@ public class AssessmentPublicPageManager {
                 // A reactivated soft-deleted row is still a fresh form submission from the
                 // registrant's point of view; only the "already active" case below is a no-op.
                 assessmentWorkflowEventPublisher.publishFormSubmission(reactivated, assessment.get());
+                publishOpenAssessmentLead(reactivated, assessment.get(), registerOpenAssessmentRequestDto);
                 return ResponseEntity.ok("Registered successfully");
             }
             // An active registration already exists — treat a repeat submission as idempotent.
@@ -244,7 +256,39 @@ public class AssessmentPublicPageManager {
         // Emitted outside the try above so a failure in here can never be caught and
         // reported to the registrant as a duplicate-registration conflict.
         assessmentWorkflowEventPublisher.publishFormSubmission(registration, assessment.get());
+        publishOpenAssessmentLead(registration, assessment.get(), registerOpenAssessmentRequestDto);
         return ResponseEntity.ok("Registered successfully");
+    }
+
+    /** The registrant becomes a lead in the test's own "&lt;title&gt; - Open Assessment" list. */
+    private void publishOpenAssessmentLead(AssessmentUserRegistration registration, Assessment assessment,
+                                           RegisterOpenAssessmentRequestDto request) {
+        if (openAssessmentLeadPublisher == null) return;
+        openAssessmentLeadPublisher.registered(registration, assessment, request.getCustomFieldRequestList());
+    }
+
+    /**
+     * Called by the learner page once the registrant has verified their email with the OTP —
+     * the "You're registered" email waits for that, so nobody is confirmed for an address they
+     * do not own. Only the signed-in learner's own open-link registration counts, and it is
+     * claimed so the email goes out once.
+     */
+    public ResponseEntity<String> confirmVerifiedRegistration(String userId, String assessmentId) {
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(assessmentId)) {
+            return ResponseEntity.ok("Nothing to confirm");
+        }
+        Optional<AssessmentUserRegistration> registration =
+                assessmentUserRegistrationRepository.findTopByUserIdAndAssessmentId(userId, assessmentId);
+        if (registration.isEmpty()
+                || !ACTIVE.name().equals(registration.get().getStatus())
+                || !UserRegistrationSources.OPEN_REGISTRATION.name().equals(registration.get().getSource())) {
+            return ResponseEntity.ok("Nothing to confirm");
+        }
+        if (assessmentUserRegistrationRepository.claimConfirmationEmail(registration.get().getId()) == 1) {
+            learnerAssessmentNoticeService.sendRegistrationConfirmation(assessmentId, registration.get().getId());
+            return ResponseEntity.ok("Confirmation sent");
+        }
+        return ResponseEntity.ok("Already confirmed");
     }
 
     AssessmentUserRegistration addUserToAssessment(BasicParticipantDTO basicParticipantDTO, String userId, String instituteId, Assessment assessment, List<AssessmentRegistrationCustomFieldRequest> customFieldRequestList) {

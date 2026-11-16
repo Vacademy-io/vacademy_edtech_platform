@@ -413,6 +413,30 @@ class EngagementLeadExitsTest {
         }
 
         @Test
+        @DisplayName("a second email while the first still waits joins the inbox without another alert")
+        void secondEmailNoSecondAlert() {
+            EngagementTeamAlertService alerts = mock(EngagementTeamAlertService.class);
+            ReflectionTestUtils.setField(responder, "teamAlertService", alerts);
+            EngagementEngine engine = new EngagementEngine();
+            engine.setId(LEAD_ENGINE);
+            EngagementMember member = new EngagementMember();
+            member.setId("m1");
+            when(engines.findById(LEAD_ENGINE)).thenReturn(java.util.Optional.of(engine));
+            when(members.findById("m1")).thenReturn(java.util.Optional.of(member));
+            List<LiveMember> found = List.of(live("m1", LEAD_ENGINE, null, "ar1"));
+            when(replyQueries.findLiveMembersByEmail(INST, "asha@example.com")).thenReturn(found);
+            when(actions.countOpenRepliesSince(eq("m1"), any())).thenReturn(1L);
+
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "One more thing", "<a2@mail>"));
+            verify(actions).save(argThat((EngagementAction a) -> "REPLY".equals(a.getKind())));
+            verify(alerts, never()).notifyEscalated(any(), any(), any(), any(), any());
+
+            // A callback request still alerts: someone asked to be phoned.
+            assertTrue(responder.handleEmailReply(INST, "asha@example.com", "Re: Course", "Please call me tomorrow", "<a3@mail>"));
+            verify(alerts).notifyEscalated(eq(engine), eq(member), any(), org.mockito.ArgumentMatchers.contains("callback"), any());
+        }
+
+        @Test
         @DisplayName("our own unsubscribe line in a quoted thread is not an opt-out; their own word still is")
         void ownFooterIsNotAnOptOut() {
             List<LiveMember> found = List.of(live("m1", LEAD_ENGINE, null, "ar1"));

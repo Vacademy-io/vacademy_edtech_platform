@@ -46,6 +46,7 @@ import { ScormUploadField } from './ScormUploadField';
 import { VariantSwitcher } from './VariantSwitcher';
 import { RichTextField } from './RichTextField';
 import { StyleEditor } from './StyleEditor';
+import { ownSectionBackground, styleBackgroundUpdate } from '../-utils/section-background-sync';
 import { useToast } from '@/hooks/use-toast';
 import { HTML_PAGE_AI_PROMPT } from '../-utils/html-page-prompt';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -413,6 +414,10 @@ export const PropertyPanel = () => {
                         style={component.style || {}}
                         onChange={(newStyle: ComponentStyle) =>
                             updateComponent(pageId, component!.id, { style: newStyle })
+                        }
+                        sectionBackground={ownSectionBackground(component)}
+                        onBackgroundPick={(newStyle: ComponentStyle) =>
+                            updateComponent(pageId, component!.id, styleBackgroundUpdate(component!, newStyle))
                         }
                     />
                 </div>
@@ -1847,10 +1852,167 @@ const GlobalSettingsEditor = ({
 };
 
 // ── Column Layout Editor ──────────────────────────────────────────────────────
+/** One column's filter tags: a string[] or comma text, trimmed, de-duplicated (case-insensitive). */
+const splitFilterTags = (value: unknown): string[] => {
+    const raw = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+    const seen = new Set<string>();
+    return raw
+        .map((v) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : ''))
+        .filter((tag) => {
+            const key = tag.toLowerCase();
+            if (!tag || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
+
+/** Every filter tag on a page's column layouts, first-seen order (the site's chip order). */
+const collectFilterTags = (components: any[] | undefined): string[] => {
+    const seen = new Map<string, string>();
+    for (const c of components ?? []) {
+        if (c?.type !== 'columnLayout' || c.enabled === false) continue;
+        const slots = Array.isArray(c.props?.slots) ? c.props.slots : [];
+        slots.forEach((_: unknown, i: number) => {
+            for (const tag of splitFilterTags(c.props?.columnTags?.[i])) {
+                if (!seen.has(tag.toLowerCase())) seen.set(tag.toLowerCase(), tag);
+            }
+        });
+    }
+    return [...seen.values()];
+};
+
+/**
+ * Sidebar filter groups (Category, Age, Subject…): each group has a name and
+ * the page tags it holds. A tag sits in one group at most; tags in no group
+ * show under "Tags" on the site. OR inside a group, AND across groups.
+ */
+const TagFilterGroupsEditor = ({
+    pageTags,
+    groups: raw,
+    onChange,
+}: {
+    pageTags: string[];
+    groups: unknown;
+    onChange: (next: { label: string; tags: string[] }[]) => void;
+}) => {
+    const { t } = useTranslation('managePagesPropertyPanel');
+    const groups: { label: string; tags: string[] }[] = Array.isArray(raw)
+        ? raw
+              .filter((g) => g && typeof g === 'object')
+              .map((g: any) => ({ label: typeof g.label === 'string' ? g.label : '', tags: splitFilterTags(g.tags) }))
+        : [];
+    const key = (tag: string) => tag.trim().toLowerCase();
+    const owner = (tag: string) => groups.findIndex((g) => g.tags.some((x) => key(x) === key(tag)));
+    const toggleTag = (gi: number, tag: string) => {
+        const inThis = owner(tag) === gi;
+        onChange(
+            groups.map((g, i) => ({
+                ...g,
+                tags:
+                    i === gi
+                        ? inThis
+                            ? g.tags.filter((x) => key(x) !== key(tag))
+                            : [...g.tags, tag]
+                        : g.tags.filter((x) => key(x) !== key(tag)),
+            }))
+        );
+    };
+    const move = (gi: number, delta: number) => {
+        const next = [...groups];
+        const [g] = next.splice(gi, 1);
+        next.splice(gi + delta, 0, g!);
+        onChange(next);
+    };
+    const ungrouped = pageTags.filter((tag) => owner(tag) < 0);
+    return (
+        <div className="space-y-2">
+            <Label className="text-xs">{t('columnLayout.groups')}</Label>
+            <p className="text-caption text-gray-400">{t('columnLayout.groupsHint')}</p>
+            {groups.map((g, gi) => (
+                <div key={gi} className="space-y-2 rounded border border-gray-200 p-2">
+                    <div className="flex items-center gap-1">
+                        <Input
+                            aria-label={t('columnLayout.groupLabel')}
+                            value={g.label}
+                            onChange={(e) => onChange(groups.map((x, i) => (i === gi ? { ...x, label: e.target.value } : x)))}
+                            placeholder={t('columnLayout.groupLabelPlaceholder')}
+                            className="h-8 text-xs"
+                        />
+                        <RowActions
+                            index={gi}
+                            count={groups.length}
+                            item={g.label || t('columnLayout.groupLabel')}
+                            onMove={(d) => move(gi, d)}
+                            onRemove={() => onChange(groups.filter((_, i) => i !== gi))}
+                        />
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                        {pageTags.map((tag) => {
+                            const o = owner(tag);
+                            return (
+                                <button
+                                    key={tag}
+                                    type="button"
+                                    aria-pressed={o === gi}
+                                    onClick={() => toggleTag(gi, tag)}
+                                    className={`rounded-full border px-2 py-0.5 text-caption transition-colors ${o === gi ? 'border-teal-500 bg-teal-50 text-teal-700' : o >= 0 ? 'border-gray-100 text-gray-300' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full text-xs" onClick={() => onChange([...groups, { label: '', tags: [] }])}>
+                <Plus className="me-1 size-3" /> {t('columnLayout.addGroup')}
+            </Button>
+            {ungrouped.length > 0 && (
+                <p className="text-caption text-gray-400">{t('columnLayout.ungroupedHint', { tags: ungrouped.join(', ') })}</p>
+            )}
+        </div>
+    );
+};
+
+/** A column's filter tags as comma text, saved when the box loses focus (so typing ", " is kept). */
+const ColumnTagsField = ({ id, value, onCommit }: { id: string; value: string[]; onCommit: (next: string[]) => void }) => {
+    const { t } = useTranslation('managePagesPropertyPanel');
+    const [text, setText] = useState<string | null>(null);
+    const commit = () => {
+        if (text !== null) onCommit(splitFilterTags(text));
+        setText(null);
+    };
+    return (
+        <div className="space-y-1">
+            <Label htmlFor={id} className="text-xs">{t('columnLayout.columnTags')}</Label>
+            <Input
+                id={id}
+                value={text ?? value.join(', ')}
+                onChange={(e) => setText(e.target.value)}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') commit();
+                }}
+                placeholder={t('columnLayout.columnTagsPlaceholder')}
+                className="h-8 text-xs"
+            />
+            <p className="text-caption text-gray-400">{t('columnLayout.columnTagsHint')}</p>
+        </div>
+    );
+};
+
 const ColumnLayoutEditor = ({ component, pageId, updateComponent }: any) => {
     const { t } = useTranslation('managePagesPropertyPanel');
-    const { selectComponent, deleteFromSlot } = useEditorStore();
+    const { selectComponent, deleteFromSlot, config } = useEditorStore();
     const { slots = [] as any[][], columnWidths = [] as string[], gap = 'md', align = 'top', stackOnMobile = true } = component.props;
+    // Tag filter: each column's tags (same index as slots) and the chips the
+    // learner builds from every column layout on this page.
+    const columnTags: string[][] = slots.map((_: any, i: number) => splitFilterTags(component.props.columnTags?.[i]));
+    const pageFilterTags = collectFilterTags(config?.pages?.find((p) => p.id === pageId)?.components);
+    const setColumnTags = (slotIdx: number, next: string[]) => {
+        const all = columnTags.map((tags, i) => (i === slotIdx ? next : tags));
+        updateProp('columnTags', all.some((tags) => tags.length > 0) ? all : undefined);
+    };
 
     const updateProp = (key: string, value: any) =>
         updateComponent(pageId, component.id, { props: { ...component.props, [key]: value } });
@@ -1867,7 +2029,17 @@ const ColumnLayoutEditor = ({ component, pageId, updateComponent }: any) => {
         updateComponent(pageId, component.id, {
             // columnFr is a per-count precise ratio — clear it on count change or a
             // stale 2-column ratio silently re-activates when switching back to 2.
-            props: { ...component.props, columns: newCount, slots: newSlots, columnWidths: newWidths, columnFr: undefined },
+            // columnTags follows the slots so a column keeps its own tags.
+            props: {
+                ...component.props,
+                columns: newCount,
+                slots: newSlots,
+                columnWidths: newWidths,
+                columnFr: undefined,
+                ...(Array.isArray(component.props.columnTags)
+                    ? { columnTags: Array.from({ length: newCount }, (_, i) => component.props.columnTags[i] ?? []) }
+                    : {}),
+            },
         });
     };
 
@@ -2021,6 +2193,88 @@ const ColumnLayoutEditor = ({ component, pageId, updateComponent }: any) => {
                 )}
             </div>
 
+            {/* Tag filter — chips above this layout that filter every tagged
+                column on the page (one book per column on a Books page). */}
+            <div className="space-y-3 rounded-lg border p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">{t('columnLayout.tagFilter')}</p>
+                <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor={`${component.id}-tag-filter`} className="text-xs">{t('columnLayout.showTagFilter')}</Label>
+                    <Switch
+                        id={`${component.id}-tag-filter`}
+                        checked={!!component.props.showTagFilter}
+                        onCheckedChange={(v) => updateProp('showTagFilter', v || undefined)}
+                    />
+                </div>
+                {component.props.showTagFilter && (
+                    <>
+                        <p className="text-caption text-gray-400">{t('columnLayout.tagFilterHint')}</p>
+                        <p className="text-caption text-gray-400">{t('columnLayout.mergedHint')}</p>
+                        <div>
+                            <Label className="text-xs">{t('columnLayout.filterStyle')}</Label>
+                            <div className="mt-1 flex gap-1.5">
+                                {(['chips', 'sidebar'] as const).map((v) => {
+                                    const active = (component.props.tagFilterStyle === 'sidebar' ? 'sidebar' : 'chips') === v;
+                                    return (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            onClick={() => updateProp('tagFilterStyle', v === 'chips' ? undefined : v)}
+                                            className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${active ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        >
+                                            {t(v === 'chips' ? 'columnLayout.styleChips' : 'columnLayout.styleSidebar')}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="text-xs">{t('columnLayout.perRow')}</Label>
+                            <div className="mt-1 flex gap-1.5">
+                                {([undefined, 2, 3, 4] as const).map((n) => (
+                                    <button
+                                        key={n ?? 'auto'}
+                                        type="button"
+                                        onClick={() => updateProp('tagFilterColumns', n)}
+                                        className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${(component.props.tagFilterColumns ?? undefined) === n ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                    >
+                                        {n ?? t('columnLayout.perRowAuto')}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {pageFilterTags.length === 0 ? (
+                            <p className="text-caption text-warning-600">{t('columnLayout.noTagsYet')}</p>
+                        ) : component.props.tagFilterStyle === 'sidebar' ? (
+                            <TagFilterGroupsEditor
+                                pageTags={pageFilterTags}
+                                groups={component.props.tagFilterGroups}
+                                onChange={(next) => updateProp('tagFilterGroups', next.length ? next : undefined)}
+                            />
+                        ) : (
+                            <>
+                                <div className="space-y-1">
+                                    <Label htmlFor={`${component.id}-tag-all`} className="text-xs">{t('columnLayout.allLabel')}</Label>
+                                    <Input
+                                        id={`${component.id}-tag-all`}
+                                        value={component.props.tagFilterAllLabel || ''}
+                                        onChange={(e) => updateProp('tagFilterAllLabel', e.target.value || undefined)}
+                                        placeholder={t('columnLayout.allPlaceholder')}
+                                        className="h-8 text-xs"
+                                    />
+                                </div>
+                                <FilterOptionOrder
+                                    label={t('columnLayout.chipsGroup')}
+                                    names={pageFilterTags}
+                                    order={component.props.tagOrder}
+                                    onChange={(next) => updateProp('tagOrder', next)}
+                                    keepOrder
+                                />
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
+
             {/* Slot Contents */}
             {slots.map((slotComps: any[], slotIdx: number) => (
                 <div key={slotIdx} className="rounded-lg border p-3 space-y-2">
@@ -2030,6 +2284,11 @@ const ColumnLayoutEditor = ({ component, pageId, updateComponent }: any) => {
                             {t('columnLayout.componentCount', { count: slotComps.length })}
                         </span>
                     </p>
+                    <ColumnTagsField
+                        id={`${component.id}-tags-${slotIdx}`}
+                        value={columnTags[slotIdx] ?? []}
+                        onCommit={(next) => setColumnTags(slotIdx, next)}
+                    />
                     {slotComps.length === 0 ? (
                         <p className="text-xs text-gray-300">{t('columnLayout.slotEmpty')}</p>
                     ) : (
@@ -2549,11 +2808,14 @@ const FilterOptionOrder = ({
     names,
     order,
     onChange,
+    keepOrder = false,
 }: {
     label: string;
     names: string[];
     order: unknown;
     onChange: (next: string[] | undefined) => void;
+    /** Unlisted names keep their given order instead of A–Z (the site's own fallback). */
+    keepOrder?: boolean;
 }) => {
     const { t } = useTranslation('managePagesPropertyPanel');
     const saved = Array.isArray(order) ? order.map(String) : [];
@@ -2561,9 +2823,10 @@ const FilterOptionOrder = ({
     const known = new Set(names.map(key));
     const listed = saved.filter((n) => known.has(key(n)));
     const listedKeys = new Set(listed.map(key));
-    const rest = names
-        .filter((n) => !listedKeys.has(key(n)))
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    const unlisted = names.filter((n) => !listedKeys.has(key(n)));
+    const rest = keepOrder
+        ? unlisted
+        : unlisted.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
     const effective = [...listed, ...rest];
     if (effective.length < 2) return null;
     const move = (index: number, delta: number) => {

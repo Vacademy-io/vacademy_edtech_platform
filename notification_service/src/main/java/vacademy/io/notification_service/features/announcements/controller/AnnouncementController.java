@@ -599,13 +599,19 @@ public class AnnouncementController {
             @RequestHeader(value = "clientId", required = false) String clientId,
             @PathVariable String announcementId,
             @RequestParam(required = false) String modeType,
+            // Report filters: channel = EMAIL / WHATSAPP / PUSH_NOTIFICATION or an in-app mode,
+            // status = DELIVERED / FAILED / PENDING.
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
         try {
             ModeType mode = modeType != null ? ModeType.valueOf(modeType.toUpperCase()) : null;
-            Pageable pageable = PageRequest.of(page, size);
-            return ResponseEntity.ok(announcementService.getRecipientInteractions(announcementId, mode, pageable));
+            // CSV export pages through this endpoint, so allow larger pages but keep a ceiling.
+            Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 500));
+            return ResponseEntity.ok(announcementService.getRecipientInteractions(
+                    announcementId, mode, channel, status, pageable));
         } catch (Exception e) {
             log.error("Error getting recipient interactions for announcement: {}", announcementId, e);
             return ResponseEntity.badRequest().build();

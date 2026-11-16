@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils';
 import { filterTree, type LibraryTreeNode } from '../-services/question-library-services';
 import { ALL_QUESTIONS, UNSORTED } from './library-constants';
 
-/** Indent per tree level (depth 1..4). */
-const INDENT = ['pl-0', 'pl-4', 'pl-8', 'pl-12'];
+/** Indent per tree level (depth 1..5). */
+const INDENT = ['pl-0', 'pl-4', 'pl-8', 'pl-12', 'pl-16'];
 
 export type TopicAction = 'addChild' | 'rename' | 'move' | 'up' | 'down' | 'delete';
 

@@ -170,7 +170,10 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             for (byte b : hash) {
                 hex.append(String.format("%02x", b));
             }
-            if (!hex.toString().equals(rr.getRazorpaySignature())) {
+            // Compared in constant time: the time taken must not tell how much of a guess is right.
+            String presented = rr.getRazorpaySignature() == null ? "" : rr.getRazorpaySignature();
+            if (!java.security.MessageDigest.isEqual(hex.toString().getBytes(StandardCharsets.UTF_8),
+                    presented.getBytes(StandardCharsets.UTF_8))) {
                 throw new VacademyException("Razorpay payment signature verification failed");
             }
             return rr.getRazorpayOrderId();
@@ -425,6 +428,77 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
         }
     }
 
+    /**
+     * {@code GET /v1/orders/:id/payments}: every payment made on one Razorpay order, as maps
+     * (id, order_id, status, amount, currency, created_at, ...). Used by the shop's lost-webhook
+     * fetch. The exception message never carries a credential.
+     */
+    public List<Map<String, Object>> fetchOrderPayments(String razorpayOrderId,
+                                                        Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayOrderId)) {
+            throw new VacademyException("Cannot fetch Razorpay order payments: missing order id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            List<Payment> payments = razorpayClient.orders.fetchPayments(razorpayOrderId);
+            List<Map<String, Object>> out = new java.util.ArrayList<>();
+            if (payments != null) {
+                for (Payment payment : payments) {
+                    out.add(jsonToMap(payment.toJson()));
+                }
+            }
+            return out;
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching the payments of Razorpay order " + razorpayOrderId);
+        }
+    }
+
+    /**
+     * {@code GET /v1/payments/:id/refunds}: the refunds of one payment (at most 100), as maps
+     * (id, payment_id, amount, currency, status, receipt, acquirer_data, created_at, ...). Used by
+     * the shop's refund poll to find a refund whose create answer was lost. The exception message
+     * never carries a credential.
+     */
+    public List<Map<String, Object>> fetchPaymentRefunds(String razorpayPaymentId,
+                                                         Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId)) {
+            throw new VacademyException("Cannot fetch Razorpay refunds: missing payment id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            JSONObject request = new JSONObject();
+            request.put("count", 100);
+            List<com.razorpay.Refund> refunds = razorpayClient.payments.fetchAllRefunds(razorpayPaymentId, request);
+            List<Map<String, Object>> out = new java.util.ArrayList<>();
+            if (refunds != null) {
+                for (com.razorpay.Refund refund : refunds) {
+                    out.add(jsonToMap(refund.toJson()));
+                }
+            }
+            return out;
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching the refunds of Razorpay payment " + razorpayPaymentId);
+        }
+    }
+
+    /**
+     * {@code GET /v1/payments/:id/refunds/:refund_id}: one refund of a payment, as a map. The
+     * exception message never carries a credential.
+     */
+    public Map<String, Object> fetchPaymentRefund(String razorpayPaymentId, String razorpayRefundId,
+                                                  Map<String, Object> paymentGatewaySpecificData) {
+        if (!StringUtils.hasText(razorpayPaymentId) || !StringUtils.hasText(razorpayRefundId)) {
+            throw new VacademyException("Cannot fetch a Razorpay refund: missing payment or refund id");
+        }
+        try {
+            RazorpayClient razorpayClient = createRazorpayClient(paymentGatewaySpecificData);
+            com.razorpay.Refund refund = razorpayClient.payments.fetchRefund(razorpayPaymentId, razorpayRefundId);
+            return jsonToMap(refund.toJson());
+        } catch (RazorpayException e) {
+            throw new VacademyException("Error fetching Razorpay refund " + razorpayRefundId);
+        }
+    }
+
     private RazorpayClient createRazorpayClient(Map<String, Object> paymentGatewaySpecificData)
             throws RazorpayException {
         String keyId = extractApiKey(paymentGatewaySpecificData);
@@ -432,14 +506,32 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
         return new RazorpayClient(keyId, keySecret);
     }
 
+    /**
+     * The description of a gateway order made for a shop order starts with this (Commerce
+     * writes it, see RazorpayCommercePaymentGateway). Only such an order asks for automatic
+     * capture below; every other order is created exactly as before.
+     */
+    public static final String COMMERCE_ORDER_DESCRIPTION_PREFIX = "commerce_order_id=";
+
     private Order createRazorpayOrder(RazorpayClient razorpayClient,
             PaymentInitiationRequestDTO request,
             long amountInPaise) throws RazorpayException {
+        return razorpayClient.orders.create(orderRequestOf(request, amountInPaise));
+    }
 
+    /** The body of the plain order create. Package-visible for the test. */
+    static JSONObject orderRequestOf(PaymentInitiationRequestDTO request, long amountInPaise) {
         JSONObject orderRequest = new JSONObject();
         orderRequest.put("amount", amountInPaise);
         orderRequest.put("currency", request.getCurrency().toUpperCase());
         orderRequest.put("receipt", request.getOrderId());
+        if (request.getDescription() != null
+                && request.getDescription().startsWith(COMMERCE_ORDER_DESCRIPTION_PREFIX)) {
+            // A shop order is confirmed by the captured event alone. On an account set to
+            // manual capture an authorised payment would otherwise never be captured, and the
+            // buyer would get the money back after the order had lapsed.
+            orderRequest.put("payment_capture", 1);
+        }
 
         JSONObject notes = new JSONObject();
         notes.put("orderId", request.getOrderId());
@@ -464,7 +556,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
 
         orderRequest.put("notes", notes);
 
-        return razorpayClient.orders.create(orderRequest);
+        return orderRequest;
     }
 
     private PaymentResponseDTO buildPaymentResponseFromOrder(Order order, PaymentInitiationRequestDTO request,

@@ -103,4 +103,71 @@ class AdminRoleGrantGuardTest {
         assertDoesNotThrow(() -> guard.requireAdminToRemoveAdmin(caller("admin", false), INSTITUTE,
                 List.of("ADMIN")));
     }
+
+    // ---- commerce roles ---------------------------------------------------------------
+
+    private static final List<String> COMMERCE_ROLES = List.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
+    @Test
+    void nonAdminCannotGrantAnyCommerceRole() {
+        when(userRoleRepository.findFirstByUserIdAndInstituteIdAndRoleNamesAndStatuses(
+                any(), any(), anyList(), anyList())).thenReturn(Optional.empty());
+        for (String role : COMMERCE_ROLES) {
+            // Neither a cashier nor a teacher is an admin of this institute.
+            assertThrows(VacademyException.class,
+                    () -> guard.requireAdminToGrantAdmin(caller("cashier", true), INSTITUTE, List.of(role)), role);
+            assertThrows(VacademyException.class,
+                    () -> guard.requireAdminToGrantAdmin(caller("teacher", false), INSTITUTE,
+                            List.of("TEACHER", " " + role.toLowerCase() + " ")), role);
+        }
+    }
+
+    @Test
+    void nonAdminCannotRemoveACommerceRole() {
+        when(userRoleRepository.findFirstByUserIdAndInstituteIdAndRoleNamesAndStatuses(
+                any(), any(), anyList(), anyList())).thenReturn(Optional.empty());
+        for (String role : COMMERCE_ROLES) {
+            assertThrows(VacademyException.class,
+                    () -> guard.requireAdminToRemoveAdmin(caller("teacher", false), INSTITUTE, List.of(role)), role);
+        }
+    }
+
+    @Test
+    void adminOfInstituteMayGrantAndRemoveCommerceRoles() {
+        adminRowFor("admin");
+        assertDoesNotThrow(() -> guard.requireAdminToGrantAdmin(caller("admin", false), INSTITUTE, COMMERCE_ROLES));
+        assertDoesNotThrow(() -> guard.requireAdminToRemoveAdmin(caller("admin", false), INSTITUTE, COMMERCE_ROLES));
+    }
+
+    @Test
+    void theAdminRowIsLookedUpInTheTargetInstituteWithAdminNamesOnly() {
+        adminRowFor("admin");
+        // Admin of inst-a, granting in another institute: no row there, refused.
+        assertThrows(VacademyException.class,
+                () -> guard.requireAdminToGrantAdmin(caller("admin", true), "inst-b",
+                        List.of("COMMERCE_POS_CASHIER")));
+        verify(userRoleRepository).findFirstByUserIdAndInstituteIdAndRoleNamesAndStatuses(
+                eq("admin"), eq("inst-b"), eq(List.of("ADMIN", "Admin")), anyList());
+    }
+
+    @Test
+    void namesThatOnlyLookLikeCommerceRolesNeedNoCheck() {
+        assertDoesNotThrow(() -> guard.requireAdminToGrantAdmin(caller("teacher", false), INSTITUTE,
+                List.of("COMMERCE", "COMMERCE_POS_CASHIER_2", "HR_ADMIN")));
+        verify(userRoleRepository, never()).findFirstByUserIdAndInstituteIdAndRoleNamesAndStatuses(
+                anyString(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void internalRoutesRefuseACommerceRoleOutright() {
+        // No signed-in caller on an HMAC route, so nothing can prove an admin made the grant.
+        for (String role : List.of("COMMERCE_STORE_MANAGER", "commerce_pos_cashier", " COMMERCE_ACCOUNTANT ")) {
+            VacademyException refused = assertThrows(VacademyException.class,
+                    () -> AdminRoleGrantGuard.refuseCommerceRolesWithoutCaller(List.of("STUDENT", role)), role);
+            org.junit.jupiter.api.Assertions.assertEquals(403, refused.getStatus().value());
+        }
+        assertDoesNotThrow(() -> AdminRoleGrantGuard.refuseCommerceRolesWithoutCaller(List.of("STUDENT", "TEACHER", "ADMIN")));
+        assertDoesNotThrow(() -> AdminRoleGrantGuard.refuseCommerceRolesWithoutCaller(null));
+    }
 }

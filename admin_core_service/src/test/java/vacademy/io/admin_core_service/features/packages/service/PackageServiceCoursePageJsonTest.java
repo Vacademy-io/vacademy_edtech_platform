@@ -32,6 +32,7 @@ class PackageServiceCoursePageJsonTest {
     @Mock private PackageRepository packageRepository;
     @Mock private SessionService sessionService;
     @Mock private PackagePageContentService packagePageContentService;
+    @Mock private vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
 
     @InjectMocks
     private PackageService service;

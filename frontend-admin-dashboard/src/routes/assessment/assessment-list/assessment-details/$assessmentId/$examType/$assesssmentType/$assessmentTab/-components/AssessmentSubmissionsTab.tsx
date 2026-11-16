@@ -279,6 +279,15 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         sort_columns: {},
     });
 
+    // The exact filter behind the rows on screen: tab (attempt type), participant source,
+    // and only the search / batch / status filters that were actually applied.
+    // `selectedFilter` can't stand in for it — tab handlers override source and attempt
+    // type on the request only, and batch picks land there before Apply. The report-card
+    // ZIP resolves its selection from this, so it exports what the table lists.
+    const [listedFilter, setListedFilter] = useState<SelectedSubmissionsFilterInterface>(
+        () => selectedFilter
+    );
+
     const [searchText, setSearchText] = useState('');
     const [participantsData, setParticipantsData] = useState({
         content: [],
@@ -401,7 +410,11 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
             pageSize: number;
             selectedFilter: SelectedSubmissionsFilterInterface;
         }) => getAdminParticipants(assessmentId, instituteId, pageNo, pageSize, selectedFilter),
-        onMutate: () => ({ requestToken: participantsRequestGuard.begin() }),
+        onMutate: ({ selectedFilter: requestFilter }) => {
+            // Last request wins, so the newest request's filter is what the table shows.
+            setListedFilter(requestFilter);
+            return { requestToken: participantsRequestGuard.begin() };
+        },
         onSuccess: async (data, _variables, context) => {
             console.log('submissions data', data);
             // For manual-evaluation assessments, batch-fetch which attempts on
@@ -1268,6 +1281,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         selectedFilter
                     );
                     if (participantsRequestGuard.isLatest(requestToken)) {
+                        setListedFilter(selectedFilter);
                         setParticipantsData(attemptedData);
                     }
                 } catch (error) {
@@ -1653,7 +1667,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         onOpenChange={setReportZipOpen}
                         assessmentId={assessmentId}
                         instituteId={instituteId}
-                        selectedFilter={selectedFilter}
+                        selectedFilter={listedFilter}
                     />
                     <Dialog open={aiReportOpen} onOpenChange={setAiReportOpen}>
                         {aiReportOpen && (
@@ -1889,7 +1903,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         <AssessmentReportZipExportDialog
                             assessmentId={assessmentId}
                             instituteId={instituteId}
-                            selectedFilter={selectedFilter}
+                            selectedFilter={listedFilter}
                             attemptIds={getSelectedStudents()
                                 .map((student) => student.attempt_id)
                                 .filter((id): id is string => !!id)}

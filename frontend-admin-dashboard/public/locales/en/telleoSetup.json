@@ -4,6 +4,10 @@
         "body": "This workspace was not created through Telleo sign-up."
     },
     "goToDashboard": "Go to your dashboard",
+    "buy": {
+        "notice": "You chose the {{plan}} plan. Pay for it to start making calls.",
+        "pay": "Pay now"
+    },
     "submitFailed": "That did not save. Try again.",
     "questions": {
         "title": "Let's build your first AI agent",

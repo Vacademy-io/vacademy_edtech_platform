@@ -180,7 +180,7 @@ public class PipelineReportService {
             WHERE pl.payment_status = 'PAID'
               AND pl.payment_amount IS NOT NULL
               AND ulp.conversion_status = 'CONVERTED'
-              AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + """
+              AND""" + PaymentGroupSql.NOT_ORDER_PARENT_PL + "AND" + vacademy.io.admin_core_service.features.commerce.common.CommercePlans.NOT_COMMERCE_LOG_PL + """
               AND """ + ReportPaymentSql.inWindow("pl") + """
 
               AND (:scopeCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))

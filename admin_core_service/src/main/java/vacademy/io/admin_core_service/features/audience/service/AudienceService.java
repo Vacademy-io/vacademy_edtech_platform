@@ -96,6 +96,9 @@ public class AudienceService {
 
     private static final Logger logger = LoggerFactory.getLogger(AudienceService.class);
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Autowired
     private AudienceRepository audienceRepository;
 
@@ -149,6 +152,9 @@ public class AudienceService {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.learner.service.LearnerProfileEditGuard learnerProfileEditGuard;
 
     @Autowired
     private CustomFieldRepository customFieldRepository;
@@ -874,11 +880,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName(), dto.getEmail(), dto.getMobileNumber());
-        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 dto.getEmail(), dto.getMobileNumber(),
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
-                dto.getEmail(), dto.getMobileNumber());
+                dto.getEmail(), dto.getMobileNumber(), closedLeadTakenOver);
 
         return savedResponse.getId();
     }
@@ -907,8 +913,15 @@ public class AudienceService {
                 });
     }
 
-    /** Campaign name for the auto-provisioned per-institute live-class / webinar lead audience. */
+    /**
+     * Campaign name of the old single per-institute webinar list. Every session now gets its
+     * own list (see {@link AutoLeadListProvisioner}); this one is only the fallback for a
+     * registration that arrives without a session id.
+     */
     private static final String LIVE_CLASS_AUDIENCE_NAME = "Public Webinar - Live Session";
+
+    @Autowired
+    private AutoLeadListProvisioner autoLeadListProvisioner;
 
     /**
      * Capture a lead from a public live-class (webinar) guest registration.
@@ -916,9 +929,9 @@ public class AudienceService {
      * <p>Live-session guest registration ({@code RegistrationService.saveGuestUserDetails})
      * writes only {@code session_guest_registrations} + EXTERNAL_PARTICIPANT custom field
      * values and never created an {@code audience_response}, so webinar registrants were
-     * invisible in the CRM lead list. This routes them into a single per-institute
-     * "Public Webinar - Live Session" audience so they show up in Audience Manager →
-     * Recent Leads, exactly like {@link #submitCatalogueLead} does for catalogue leads.
+     * invisible in the CRM lead list. This routes them into the session's own list,
+     * "&lt;Session title&gt; - Public Live Session" (campaign type "Public Live Session"),
+     * created on the first registration, so they show up in Audience Manager → Recent Leads.
      *
      * <p>Mirrors submitCatalogueLead deliberately: NOT {@code @Transactional} (its
      * best-effort sub-calls must not mark a surrounding tx rollback-only), and it does
@@ -931,12 +944,39 @@ public class AudienceService {
      */
     public String submitLiveClassLead(String instituteId, String fullName, String email,
                                       String mobileNumber, Map<String, String> extraCustomFieldValues,
-                                      String sourceId) {
+                                      String sourceId, String sessionTitle) {
         if (!StringUtils.hasText(instituteId) || !StringUtils.hasText(email)) {
             return null;
         }
-        return submitLiveClassLeadToAudience(getOrCreateLiveClassAudience(instituteId),
-                fullName, email, mobileNumber, extraCustomFieldValues, sourceId);
+        Audience audience = StringUtils.hasText(sourceId)
+                ? autoLeadListProvisioner.getOrCreate(instituteId, AutoLeadListProvisioner.PUBLIC_LIVE_SESSION,
+                        sourceId, sessionTitle)
+                : getOrCreateLiveClassAudience(instituteId);
+        if (StringUtils.hasText(audience.getStatus()) && !"ACTIVE".equalsIgnoreCase(audience.getStatus())) {
+            logger.info("Live-class lead: list {} is {} — not capturing", audience.getId(), audience.getStatus());
+            return null;
+        }
+        return submitLiveClassLeadToAudience(audience,
+                fullName, email, mobileNumber, extraCustomFieldValues, sourceId, "LIVE_SESSION");
+    }
+
+    /**
+     * Capture a lead into a list the platform created for one source (a public live
+     * session or an open assessment — see {@link AutoLeadListProvisioner}). Same pipeline as
+     * the live-class capture: dedup, auth user, field values, score, counsellor pool.
+     * {@code extraCustomFieldValues} must be keyed by custom_field_id. Does not fire the
+     * AUDIENCE_LEAD_SUBMISSION workflow — the source already sends its own confirmation.
+     *
+     * @return the new lead's id, or null / a "why not" message when no lead was created
+     */
+    public String submitLeadToAutoList(Audience audience, String fullName, String email, String mobileNumber,
+                                       Map<String, String> extraCustomFieldValues,
+                                       String sourceType, String sourceId) {
+        if (audience == null || !StringUtils.hasText(email)) {
+            return null;
+        }
+        return submitLiveClassLeadToAudience(audience, fullName, email, mobileNumber,
+                extraCustomFieldValues, sourceId, sourceType);
     }
 
     /**
@@ -965,13 +1005,13 @@ public class AudienceService {
             return null;
         }
         return submitLiveClassLeadToAudience(audience, fullName, email, mobileNumber,
-                extraCustomFieldValues, sourceId);
+                extraCustomFieldValues, sourceId, "LIVE_SESSION");
     }
 
-    /** Shared body of the live-class lead capture, parameterized by target audience. */
+    /** Shared body of the live-class lead capture, parameterized by target audience and lead source. */
     private String submitLiveClassLeadToAudience(Audience audience, String fullName, String email,
                                                  String mobileNumber, Map<String, String> extraCustomFieldValues,
-                                                 String sourceId) {
+                                                 String sourceId, String sourceType) {
         final String instituteId = audience.getInstituteId();
 
         UserDTO userDTO = UserDTO.builder()
@@ -1022,7 +1062,7 @@ public class AudienceService {
         if (StringUtils.hasText(userId)
                 && audienceResponseRepository.existsByAudienceIdAndUserId(audience.getId(), userId)) {
             if (resolved.joinedByPhone()) {
-                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, "LIVE_SESSION",
+                String repeatedLeadId = applySameListRepeat(repeatLeadSettings, audience, userId, sourceType,
                         email, mobileNumber, null, null, null, createdUser.getFullName());
                 if (repeatedLeadId != null) {
                     return repeatedLeadId;
@@ -1035,7 +1075,7 @@ public class AudienceService {
         // 3. Persist the lead — this is what Audience Manager → Recent Leads reads.
         AudienceResponse savedResponse = audienceResponseRepository.save(AudienceResponse.builder()
                 .audienceId(audience.getId())
-                .sourceType("LIVE_SESSION")
+                .sourceType(sourceType)
                 .sourceId(src)
                 .userId(userId)
                 .parentName(fullName)
@@ -1095,11 +1135,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName(), email, mobileNumber);
-        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 email, mobileNumber,
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
-                email, mobileNumber);
+                email, mobileNumber, closedLeadTakenOver);
 
         return savedResponse.getId();
     }
@@ -1116,7 +1156,7 @@ public class AudienceService {
                             .id(UUID.randomUUID().toString())
                             .instituteId(instituteId)
                             .campaignName(LIVE_CLASS_AUDIENCE_NAME)
-                            .campaignType("WEBSITE")
+                            .campaignType(AutoLeadListProvisioner.PUBLIC_LIVE_SESSION)
                             .campaignObjective("LEAD_GENERATION")
                             .description("Leads captured from public live-class / webinar registrations")
                             .status("ACTIVE")
@@ -1651,11 +1691,11 @@ public class AudienceService {
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         userForNotification.getFullName(), audience.getCampaignName(),
                         userDTO.getEmail(), userDTO.getMobileNumber());
-                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         userForNotification.getFullName(), audience.getCampaignName());
                 applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                        userDTO.getEmail(), userDTO.getMobileNumber());
+                        userDTO.getEmail(), userDTO.getMobileNumber(), closedLeadTakenOver);
 
                 // 4. Build custom field map for email
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -2039,8 +2079,13 @@ public class AudienceService {
             String requestManualCounsellorId, String requestManualCounsellorName,
             String leadFullName, String campaignName, String email, String phone) {
         if (StringUtils.hasText(requestManualCounsellorId)) {
+            Set<String> discardedLeadOwners = repeatLeadSettings != null && repeatLeadSettings.discardedToNewCounsellor()
+                    ? ownersOfDiscardedEarlierLead(savedResponse, leadUserId, instituteId, email, phone)
+                    : Set.of();
             autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId,
                     requestManualCounsellorId, requestManualCounsellorName, leadFullName, campaignName);
+            closeFollowUpsIfMovedToNewOwner(savedResponse, leadUserId, instituteId, discardedLeadOwners,
+                    requestManualCounsellorId);
             return;
         }
         if (repeatLeadSettings == null) {
@@ -2125,6 +2170,65 @@ public class AudienceService {
         }
     }
 
+    /**
+     * For a repeat that names its own counsellor (a counsellor's manual add, a CSV owner
+     * column): the owners of the earlier lead when that lead is discarded (LOST), read
+     * before the new counsellor is assigned. Empty when the earlier lead is open, converted,
+     * unowned, or the lookup fails.
+     */
+    private Set<String> ownersOfDiscardedEarlierLead(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, String email, String phone) {
+        if (savedResponse == null || savedResponse.getId() == null) {
+            return Set.of();
+        }
+        try {
+            AudienceResponseRepository.PrimaryLeadRow primary = leadDeduplicationService.findPrimaryLead(
+                    instituteId, savedResponse.getAudienceId(), email, phone, savedResponse.getId()).orElse(null);
+            if (primary == null || !isLostLeadStatus(primary.getStatusKey())) {
+                return Set.of();
+            }
+            Set<String> owners = new HashSet<>();
+            if (StringUtils.hasText(primary.getCounsellorId())) {
+                owners.add(primary.getCounsellorId());
+            }
+            userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> p.getAssignedCounselorId())
+                    .filter(StringUtils::hasText)
+                    .ifPresent(owners::add);
+            return owners;
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: earlier owner lookup for the discarded lead failed: {}",
+                    savedResponse.getId(), e.getMessage());
+            return Set.of();
+        }
+    }
+
+    /**
+     * Closes the earlier owners' open follow-ups on a discarded lead once it really moved to
+     * {@code newOwner}, as {@link #assignNewCounsellorForDiscardedRepeat} does for a pool pick.
+     * Nothing is closed when the new owner is one of the earlier owners or the assignment
+     * did not take.
+     */
+    private void closeFollowUpsIfMovedToNewOwner(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, Set<String> earlierOwners, String newOwner) {
+        if (earlierOwners.isEmpty() || earlierOwners.contains(newOwner)) {
+            return;
+        }
+        try {
+            String ownerNow = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> p.getAssignedCounselorId())
+                    .orElse(null);
+            if (!newOwner.equals(ownerNow)) {
+                return;
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: could not confirm the new owner, follow-ups left open: {}",
+                    savedResponse.getId(), e.getMessage());
+            return;
+        }
+        closeEarlierOwnersFollowUps(savedResponse.getId(), instituteId, leadUserId, earlierOwners);
+    }
+
     private void closeEarlierOwnersFollowUps(String repeatResponseId, String instituteId, String leadUserId,
             Set<String> earlierOwners) {
         try {
@@ -2194,6 +2298,9 @@ public class AudienceService {
                         audienceId, e.getMessage());
             }
         }
+        // A lead form needs no login and its body is passed on to auth-service, which saves
+        // the role names it carries. A lead is a contact: no staff role is ever granted here.
+        vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(userDTO);
         return new ResolvedLeadUser(authService.createUserFromAuthService(userDTO, instituteId, false), false);
     }
 
@@ -2405,6 +2512,17 @@ public class AudienceService {
      */
     private void applyRepeatLeadStatus(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
             String leadUserId, String instituteId, AudienceResponse savedResponse, String email, String phone) {
+        applyRepeatLeadStatus(repeatLeadSettings, leadUserId, instituteId, savedResponse, email, phone, false);
+    }
+
+    /**
+     * @param closedLeadTakenOver the repeat just took a closed lead's place (recordReattempt
+     *        returned true): that lead was closed, so RESET_CLOSED_TO_NEW resets without the
+     *        lookup, which no longer finds it now that it is flagged a duplicate
+     */
+    private void applyRepeatLeadStatus(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+            String leadUserId, String instituteId, AudienceResponse savedResponse, String email, String phone,
+            boolean closedLeadTakenOver) {
         if (repeatLeadSettings == null) {
             return;
         }
@@ -2413,18 +2531,20 @@ public class AudienceService {
             if (savedResponse == null || savedResponse.getId() == null) {
                 return;
             }
-            try {
-                boolean earlierLeadOpen = leadDeduplicationService.findPrimaryLead(instituteId,
-                                savedResponse.getAudienceId(), email, phone, savedResponse.getId())
-                        .map(p -> isOpenLeadStatus(p.getStatusKey()))
-                        .orElse(false);
-                if (earlierLeadOpen) {
+            if (!closedLeadTakenOver) {
+                try {
+                    boolean earlierLeadOpen = leadDeduplicationService.findPrimaryLead(instituteId,
+                                    savedResponse.getAudienceId(), email, phone, savedResponse.getId())
+                            .map(p -> isOpenLeadStatus(p.getStatusKey()))
+                            .orElse(false);
+                    if (earlierLeadOpen) {
+                        return;
+                    }
+                } catch (Exception e) {
+                    logger.error("Repeat lead {}: could not tell whether the earlier lead is open, status kept: {}",
+                            savedResponse.getId(), e.getMessage());
                     return;
                 }
-            } catch (Exception e) {
-                logger.error("Repeat lead {}: could not tell whether the earlier lead is open, status kept: {}",
-                        savedResponse.getId(), e.getMessage());
-                return;
             }
         } else if (mode != LeadDedupSettingService.StatusMode.RESET_TO_NEW) {
             return;
@@ -2450,16 +2570,18 @@ public class AudienceService {
      *
      * @param email the submission's email, as passed to the dedup check
      * @param phone the submission's phone, as passed to the dedup check
+     * @return true when the repeat took a closed lead's place (reattempt.closedRepeatTakesOver),
+     *         for the status reset that follows
      */
-    private void recordReattempt(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+    private boolean recordReattempt(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
             AudienceResponse savedResponse, String leadUserId, String instituteId, String email,
             String phone, String leadName, String campaignName) {
         if (repeatLeadSettings == null || savedResponse == null || savedResponse.getId() == null) {
-            return;
+            return false;
         }
         LeadDedupSettingService.ReattemptSettings reattempt = repeatLeadSettings.reattempt();
         if (!reattempt.anyIntakeAction()) {
-            return;
+            return false;
         }
         AudienceResponseRepository.PrimaryLeadRow primary;
         try {
@@ -2468,23 +2590,31 @@ public class AudienceService {
         } catch (Exception e) {
             logger.error("Repeat lead {}: lookup of the lead it repeats failed: {}",
                     savedResponse.getId(), e.getMessage());
-            return;
+            return false;
         }
         if (primary == null || !StringUtils.hasText(primary.getResponseId())) {
-            return;
+            return false;
         }
         String sourceLabel = reattemptSourceLabel(savedResponse.getSourceType());
 
         // A same-list repeat adds no row to flag, and applySameListRepeat writes its journey
         // entry on the lead it repeats in that list.
         boolean sameListRepeat = isSameListRepeat(savedResponse);
-        if (!sameListRepeat && reattempt.markDuplicate()
-                && (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey()))) {
-            try {
-                audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
-            } catch (Exception e) {
-                logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
-                        savedResponse.getId(), primary.getResponseId(), e.getMessage());
+        // The enquiry the lists show for this person after the repeat: the lead it repeats,
+        // or the repeat itself when it took a closed lead's place (closedRepeatTakesOver).
+        String leadResponseId = primary.getResponseId();
+        if (!sameListRepeat && reattempt.markDuplicate()) {
+            if (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey())) {
+                try {
+                    audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
+                    refreshEnquiryDates(primary.getResponseId());
+                } catch (Exception e) {
+                    logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
+                            savedResponse.getId(), primary.getResponseId(), e.getMessage());
+                }
+            } else if (reattempt.closedRepeatTakesOver()
+                    && foldClosedLeadUnderRepeat(primary.getResponseId(), savedResponse.getId())) {
+                leadResponseId = savedResponse.getId();
             }
         }
         if (reattempt.journeyEntry() && !sameListRepeat) {
@@ -2517,7 +2647,7 @@ public class AudienceService {
         }
 
         if (reattempt.followUp()) {
-            openReattemptFollowUp(primary.getResponseId(), instituteId, ownerId, sourceLabel, campaignName,
+            openReattemptFollowUp(leadResponseId, instituteId, ownerId, sourceLabel, campaignName,
                     savedResponse.getId());
         }
 
@@ -2533,6 +2663,7 @@ public class AudienceService {
 
         emitLeadReattempt(savedResponse, primary, leadUserId, instituteId, ownerId, email, phone,
                 sourceLabel, campaignName, sameListRepeat);
+        return !leadResponseId.equals(primary.getResponseId());
     }
 
     /**
@@ -2562,6 +2693,36 @@ public class AudienceService {
         } catch (Exception e) {
             logger.error("Repeat lead {}: failed to emit LEAD_REATTEMPT: {}", savedResponse.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * A repeat of a closed lead takes its place (reattempt.closedRepeatTakesOver): the old lead
+     * and its duplicates become duplicates of the repeat, and the old lead's open follow-ups
+     * move to it when both are the same person. Best-effort like the other intake steps.
+     *
+     * @return true when the old lead was flagged, so the repeat is now the lead
+     */
+    private boolean foldClosedLeadUnderRepeat(String oldLeadId, String repeatId) {
+        try {
+            if (audienceResponseRepository.foldLeadUnderRepeat(oldLeadId, repeatId) == 0) {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to take the place of closed lead {}: {}",
+                    repeatId, oldLeadId, e.getMessage());
+            return false;
+        }
+        // The repeat now repeats the old lead (first_enquiry_at), and the old lead, a duplicate
+        // with no duplicates left, drops its own dates.
+        refreshEnquiryDates(repeatId);
+        refreshEnquiryDates(oldLeadId);
+        try {
+            leadFollowupRepository.moveOpenToResponse(oldLeadId, repeatId);
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to move the open follow-ups of {}: {}",
+                    repeatId, oldLeadId, e.getMessage());
+        }
+        return true;
     }
 
     /** A lead still being worked: not converted and not LOST (Discarded). */
@@ -2649,6 +2810,86 @@ public class AudienceService {
         if (explicit != null) return explicit;
         if (includesDuplicates(duplicateFilter)) return null;
         return duplicatesTabOnly.getAsBoolean() ? "EXCLUDE" : null;
+    }
+
+    /**
+     * A list whose route hides duplicates (EXCLUDE) or lists only them (ONLY), with "Show
+     * duplicates only in Duplicate Leads" on, places each lead at its latest enquiry: a lead that
+     * enquired again sorts and date-filters on that date, and Duplicate Leads also lists a closed
+     * lead's repeat that took its place (V676 last/first_enquiry_at). Follow-up queues keep their
+     * own order.
+     *
+     * @param routeDuplicateFilter the filter the request named (normalized), not the setting's
+     *        fallback, so exports and reports that send none keep submitted_at
+     */
+    static boolean usesRepeatDates(String routeDuplicateFilter, Boolean followUpPending,
+                                   java.util.function.BooleanSupplier duplicatesTabOnly) {
+        if (routeDuplicateFilter == null || Boolean.TRUE.equals(followUpPending)) return false;
+        return duplicatesTabOnly.getAsBoolean();
+    }
+
+    /**
+     * Opt-in per tab: the route says enquiryDates=latest AND names a duplicate filter. Every
+     * other list, export and report keeps submitted_at.
+     */
+    static boolean usesRepeatDates(LeadFilterDTO filter, java.util.function.BooleanSupplier duplicatesTabOnly) {
+        return Boolean.TRUE.equals(filter.getLatestEnquiryDates())
+                && usesRepeatDates(normalizeDuplicateFilter(filter.getDuplicateFilter()),
+                        filter.getFollowUpPending(), duplicatesTabOnly);
+    }
+
+    /** With repeat dates on, the default and Submitted sorts order by the latest enquiry. */
+    static String repeatDatesSortBy(String sortBy, boolean repeatDates) {
+        if (!repeatDates) return sortBy;
+        return !StringUtils.hasText(sortBy) || "SUBMITTED_AT".equals(sortBy) ? "LATEST_ENQUIRY" : sortBy;
+    }
+
+    /**
+     * No sort named = newest first, whatever direction came with it (the query's final
+     * submitted_at DESC). Keeps that when the default sort becomes LATEST_ENQUIRY.
+     */
+    static String repeatDatesSortDirection(String sortBy, String sortDirection, boolean repeatDates) {
+        return repeatDates && !StringUtils.hasText(sortBy) ? "DESC" : sortDirection;
+    }
+
+    /**
+     * A duplicate was deleted or restored: the lead it repeats must re-read its enquiry dates.
+     * Collected so a bulk change refreshes each lead once.
+     */
+    private static void collectRepeatedLead(AudienceResponse response, Set<String> repeatedLeadIds) {
+        if (Boolean.TRUE.equals(response.getIsDuplicate()) && StringUtils.hasText(response.getPrimaryResponseId())) {
+            repeatedLeadIds.add(response.getPrimaryResponseId());
+        }
+    }
+
+    /**
+     * Re-reads a lead's enquiry dates after a duplicate was flagged or moved under it.
+     * Runs after the intake transaction commits (its own transaction, see the repository
+     * method), so intake never holds a lock on the lead it repeats and a rolled-back intake
+     * changes nothing. Immediately when there is no transaction. Best-effort: a failure only
+     * leaves the list order stale, never fails intake.
+     */
+    private void refreshEnquiryDates(String responseId) {
+        if (!StringUtils.hasText(responseId)) return;
+        Runnable refresh = () -> {
+            try {
+                audienceResponseRepository.refreshEnquiryDates(responseId);
+                audienceResponseRepository.refreshDuplicateOrder(responseId);
+            } catch (Exception e) {
+                logger.error("Lead {}: failed to refresh enquiry dates: {}", responseId, e.getMessage());
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            refresh.run();
+                        }
+                    });
+        } else {
+            refresh.run();
+        }
     }
 
     /** Readable channel name for a lead's source_type, for reattempt journey and bell text. */
@@ -2796,11 +3037,11 @@ public class AudienceService {
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         createdUser.getFullName(), audience.getCampaignName(),
                         userDTO.getEmail(), userDTO.getMobileNumber());
-                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         createdUser.getFullName(), audience.getCampaignName());
                 applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                        userDTO.getEmail(), userDTO.getMobileNumber());
+                        userDTO.getEmail(), userDTO.getMobileNumber(), closedLeadTakenOver);
 
                 // 4. Build custom field map for email (to pass to workflow)
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -3215,6 +3456,9 @@ public class AudienceService {
                     requestDTO.getChildUserDTO(),
                     requestDTO.getParentUserDTO());
 
+            // Same rule as resolveLeadUser: an enquiry form grants no staff role.
+            vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(requestDTO.getParentUserDTO());
+            vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard.keepLearnerRoleOnly(preparedChildDTO);
             List<UserDTO> userDTOs = List.of(requestDTO.getParentUserDTO(), preparedChildDTO);
             List<UserDTO> createdUsers = authService.createMultipleUsers(userDTOs, audience.getInstituteId(), false);
 
@@ -3319,6 +3563,9 @@ public class AudienceService {
         AudienceResponse savedResponse = audienceResponseRepository.save(response);
         logger.info("Saved audience response with ID: {} linked to enquiry: {} with parent user_id: {}",
                 savedResponse.getId(), enquiryId, parentUserId);
+        if (Boolean.TRUE.equals(savedResponse.getIsDuplicate())) {
+            refreshEnquiryDates(savedResponse.getPrimaryResponseId());
+        }
         logLeadSubmitted(savedResponse);
 
         // STEP 4b: Calculate initial lead score (real-time)
@@ -3816,6 +4063,23 @@ public class AudienceService {
                 || (mobile != null && mobile.toLowerCase().contains(qLower));
     }
 
+    /**
+     * Per-call planning for the rest of the current transaction. Through pgbouncer the lead
+     * queries are named prepared statements, and the generic plan Postgres switches to after five
+     * executions keeps every optional-filter guard. For the institute lead list that means the
+     * follow-up id list is checked against every lead of the institute instead of fetching those
+     * leads by id (7-45 s instead of under 0.4 s for I2CAN). SET LOCAL ends with the transaction,
+     * so nothing leaks to other clients on the pooled connection. The connection is the one the
+     * lead query then uses (lazy routing, so the replica in a read-only transaction).
+     */
+    private void forceCustomPlansForThisTransaction() {
+        entityManager.unwrap(org.hibernate.Session.class).doWork(connection -> {
+            try (java.sql.Statement statement = connection.createStatement()) {
+                statement.execute("SET LOCAL plan_cache_mode = force_custom_plan");
+            }
+        });
+    }
+
     @Transactional(readOnly = true)
     public Page<LeadDetailDTO> getLeads(LeadFilterDTO filterDTO, CustomUserDetails user) {
         Pageable pageable = PageRequest.of(
@@ -4028,6 +4292,9 @@ public class AudienceService {
             // Leads" (Lead Settings) hides them here; off = no filter, as before.
             String duplicateFilter = resolveListDuplicateFilter(filterDTO.getDuplicateFilter(),
                     () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
+            boolean repeatDates = usesRepeatDates(filterDTO,
+                    () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
+            forceCustomPlansForThisTransaction();
             Page<AudienceResponse> all = audienceResponseRepository.findInstituteLeadsWithFilters(
                     filterDTO.getInstituteId(),
                     filterDTO.getLeadStatusId(),
@@ -4056,16 +4323,20 @@ public class AudienceService {
                     customFieldExcludedIdsCsv,
                     filterDTO.getCallHistoryFilter(),
                     filterDTO.getCallCountValue(),
-                    filterDTO.getSortBy(),
-                    filterDTO.getSortDirection(),
+                    repeatDatesSortBy(filterDTO.getSortBy(), repeatDates),
+                    repeatDatesSortDirection(filterDTO.getSortBy(), filterDTO.getSortDirection(), repeatDates),
                     filterDTO.getSortCustomFieldId(),
                     filterDTO.getCalledFromLocal(),
                     filterDTO.getCalledToLocal(),
                     filterDTO.getActivityFromLocal(),
                     filterDTO.getActivityToLocal(),
+                    filterDTO.getStatusMarkedKeys(),
+                    filterDTO.getStatusMarkedFromLocal(),
+                    filterDTO.getStatusMarkedToLocal(),
+                    repeatDates,
                     pageable);
             return mapResponsesToLeadDetails(all, filterDTO.getInstituteId(),
-                    !includesDuplicates(filterDTO.getDuplicateFilter()));
+                    !includesDuplicates(filterDTO.getDuplicateFilter()), repeatDates);
         }
 
         Page<AudienceResponse> responses = audienceResponseRepository.findLeadsWithFilters(
@@ -4107,6 +4378,9 @@ public class AudienceService {
                 filterDTO.getCalledToLocal(),
                 filterDTO.getActivityFromLocal(),
                 filterDTO.getActivityToLocal(),
+                filterDTO.getStatusMarkedKeys(),
+                filterDTO.getStatusMarkedFromLocal(),
+                filterDTO.getStatusMarkedToLocal(),
                 pageable);
 
         // Resolve the institute for SLA-deadline computation: the filter usually
@@ -4120,7 +4394,7 @@ public class AudienceService {
                     .map(Audience::getInstituteId).orElse(null);
         }
         return mapResponsesToLeadDetails(responses, campaignInstituteId,
-                !includesDuplicates(filterDTO.getDuplicateFilter()));
+                !includesDuplicates(filterDTO.getDuplicateFilter()), false);
     }
 
     /**
@@ -4187,9 +4461,11 @@ public class AudienceService {
     /**
      * @param badgeRepeatedLeads false when the list shows duplicate enquiries as their own
      *        rows (route duplicates=include), so the lead they repeat is not badged as well
+     * @param latestEnquiryDates the list places leads at their latest enquiry (route
+     *        enquiryDates=latest), so each row says when that was
      */
     private Page<LeadDetailDTO> mapResponsesToLeadDetails(Page<AudienceResponse> responses, String instituteId,
-                                                          boolean badgeRepeatedLeads) {
+                                                          boolean badgeRepeatedLeads, boolean latestEnquiryDates) {
         List<AudienceResponse> content = responses.getContent();
 
         // Batch fetch UserDTOs
@@ -4493,6 +4769,10 @@ public class AudienceService {
                     .isDuplicate(response.getIsDuplicate())
                     .primaryResponseId(response.getPrimaryResponseId())
                     .duplicateCount(duplicateCountByResponseId.get(response.getId()))
+                    // Only lists that place leads at their latest enquiry, and only while the
+                    // lead still has live duplicates.
+                    .lastEnquiryAtLocal(latestEnquiryDates && duplicateCountByResponseId.containsKey(response.getId())
+                            ? response.getLastEnquiryAt() : null)
                     .followUpPriority(priorityFollowupResponseIds.contains(response.getId()))
                     .overallStatus(response.getOverallStatus())
                     .conversionStatus(response.getConversionStatus())
@@ -4666,16 +4946,19 @@ public class AudienceService {
         }
 
         int deleted = 0;
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         for (AudienceResponse response : targets) {
             if (AudienceStatusEnum.INACTIVE.name().equalsIgnoreCase(response.getAudienceStatus())) {
                 continue; // already deleted — idempotent
             }
             response.setAudienceStatus(AudienceStatusEnum.INACTIVE.name());
             audienceResponseRepository.save(response);
+            collectRepeatedLead(response, repeatedLeadIds);
             logLeadCurationEvent(response, actor, LeadJourneyActionType.LEAD_DELETED,
                     "Lead deleted", "Lead removed from the CRM", request.getScope(), request.getInstituteId());
             deleted++;
         }
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         logger.info("Soft-deleted {} lead(s) (scope={}) by user {}",
                 deleted, resolveScope(request), actor.getUserId());
         return deleted;
@@ -4691,16 +4974,19 @@ public class AudienceService {
         List<AudienceResponse> targets = resolveDeleteTargets(request, actor);
 
         int restored = 0;
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         for (AudienceResponse response : targets) {
             if (!AudienceStatusEnum.INACTIVE.name().equalsIgnoreCase(response.getAudienceStatus())) {
                 continue; // already active — idempotent
             }
             response.setAudienceStatus(AudienceStatusEnum.ACTIVE.name());
             audienceResponseRepository.save(response);
+            collectRepeatedLead(response, repeatedLeadIds);
             logLeadCurationEvent(response, actor, LeadJourneyActionType.LEAD_RESTORED,
                     "Lead restored", "Lead restored to the CRM", request.getScope(), request.getInstituteId());
             restored++;
         }
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         logger.info("Restored {} lead(s) (scope={}) by user {}",
                 restored, resolveScope(request), actor.getUserId());
         return restored;
@@ -4731,11 +5017,14 @@ public class AudienceService {
         if (CollectionUtils.isEmpty(hidden)) {
             return false;
         }
+        Set<String> repeatedLeadIds = new LinkedHashSet<>();
         hidden.forEach(lead -> {
             lead.setAudienceStatus(AudienceStatusEnum.ACTIVE.name());
             audienceResponseRepository.save(lead);
+            collectRepeatedLead(lead, repeatedLeadIds);
             logger.info("Reactivated soft-deleted lead {} on re-submission", lead.getId());
         });
+        repeatedLeadIds.forEach(this::refreshEnquiryDates);
         return true;
     }
 
@@ -5243,6 +5532,17 @@ public class AudienceService {
     }
 
     /**
+     * The institute whose lead list holds this lead (404 when the lead does not exist, null when
+     * its list is gone), for access checks on routes that take a lead id.
+     */
+    public String getInstituteIdOfLead(String responseId) {
+        AudienceResponse response = audienceResponseRepository.findById(responseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
+        return response.getAudienceId() == null ? null
+                : audienceRepository.findById(response.getAudienceId()).map(Audience::getInstituteId).orElse(null);
+    }
+
+    /**
      * Edit a lead's profile from the CRM.
      *
      * <p>Writes only where a lead is actually read from — the auth user
@@ -5256,9 +5556,13 @@ public class AudienceService {
      * same campaign already owns, it is rejected (409) so two leads cannot
      * collide on one {@code dedupe_key}. Only a value that actually changes is
      * checked — the unchanged half would match this person's own repeat leads.</p>
+     *
+     * <p>The e-mail and mobile number are the sign-in identifiers of the lead's whole account,
+     * which may also be used in other institutes. A change to either is allowed only as
+     * {@code LearnerProfileEditGuard.requireCanChangeAccountFrom} allows for {@code caller}.</p>
      */
     @Transactional
-    public void updateLeadProfile(String responseId, LeadProfileEditRequestDTO request) {
+    public void updateLeadProfile(String responseId, LeadProfileEditRequestDTO request, CustomUserDetails caller) {
         if (request == null) {
             throw new InvalidRequestException("Request body is required");
         }
@@ -5288,6 +5592,8 @@ public class AudienceService {
                     && (existing == null || !sameLast10Digits(newPhone, existing.getMobileNumber()))
                     ? newPhone : null;
             if (changedEmail != null || changedPhone != null) {
+                learnerProfileEditGuard.requireCanChangeAccountFrom(caller, leadUserId, getInstituteIdOfLead(responseId),
+                        "Only an admin of every institute this person belongs to can change their email or mobile number");
                 // Institute-configured dedup (LEAD_SETTING.data.dedup) — the same check used
                 // at lead creation, so editing a lead's contact info can't silently collide
                 // with another lead the admin's field/scope setting is supposed to catch.
@@ -6235,11 +6541,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                 null, null, createdUser.getFullName(), audience.getCampaignName(),
                 processedData.getEmail(), processedData.getPhone());
-        recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+        boolean closedLeadTakenOver = recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                 processedData.getEmail(), processedData.getPhone(),
                 createdUser.getFullName(), audience.getCampaignName());
         applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
-                processedData.getEmail(), processedData.getPhone());
+                processedData.getEmail(), processedData.getPhone(), closedLeadTakenOver);
 
         // 4. Build custom field map for workflow
         Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -6827,18 +7133,22 @@ public class AudienceService {
                 UserDTO existingParent = parentWithChild.getParent();
                 UserDTO existingChild = parentWithChild.getChild();
 
-                // Update Parent User
+                // Update Parent User. The account's sign-in identifiers (e-mail, mobile number)
+                // are kept as they are; a typed e-mail or mobile is kept on the lead row instead
+                // (parent_email / parent_mobile).
                 if (requestDTO.getParentUserDTO() != null) {
-                    UserDTO mergedParent = mergeUserDTO(existingParent, requestDTO.getParentUserDTO());
+                    UserDTO mergedParent = mergeProfileKeepingSignInIdentifiers(existingParent,
+                            requestDTO.getParentUserDTO());
                     authService.updateUser(mergedParent, parentUserId);
+                    List<String> leadContactUpdates = keepTypedContactOnLead(response, requestDTO);
+                    if (!leadContactUpdates.isEmpty()) {
+                        audienceResponseRepository.save(response);
+                        audienceResponseUpdates.addAll(leadContactUpdates);
+                    }
 
                     // Track which fields were updated
                     if (requestDTO.getParentUserDTO().getFullName() != null)
                         parentUserUpdates.add("full_name");
-                    if (requestDTO.getParentUserDTO().getEmail() != null)
-                        parentUserUpdates.add("email");
-                    if (requestDTO.getParentUserDTO().getMobileNumber() != null)
-                        parentUserUpdates.add("mobile_number");
                     if (requestDTO.getParentUserDTO().getAddressLine() != null)
                         parentUserUpdates.add("address_line");
                     if (requestDTO.getParentUserDTO().getCity() != null)
@@ -6855,15 +7165,14 @@ public class AudienceService {
 
                 // Update Child User (if exists)
                 if (requestDTO.getChildUserDTO() != null && existingChild != null) {
-                    UserDTO mergedChild = mergeUserDTO(existingChild, requestDTO.getChildUserDTO());
+                    UserDTO mergedChild = mergeProfileKeepingSignInIdentifiers(existingChild,
+                            requestDTO.getChildUserDTO());
                     authService.updateUser(mergedChild, existingChild.getId());
                     childUserId = existingChild.getId();
 
                     // Track which fields were updated
                     if (requestDTO.getChildUserDTO().getFullName() != null)
                         childUserUpdates.add("full_name");
-                    if (requestDTO.getChildUserDTO().getEmail() != null)
-                        childUserUpdates.add("email");
                     if (requestDTO.getChildUserDTO().getDateOfBirth() != null)
                         childUserUpdates.add("date_of_birth");
                     if (requestDTO.getChildUserDTO().getGender() != null)
@@ -7042,6 +7351,62 @@ public class AudienceService {
                 .isParent(existing.getIsParent())
                 .linkedParentId(existing.getLinkedParentId())
                 .build();
+    }
+
+    /**
+     * Same merge as {@link #mergeUserDTO}, for the public lead update: profile fields take the
+     * new values, while the account's sign-in identifiers (e-mail, mobile number) keep their
+     * stored values. Those are only set by flows that verify them or by staff.
+     */
+    static UserDTO mergeProfileKeepingSignInIdentifiers(UserDTO existing, UserDTO updates) {
+        return UserDTO.builder()
+                .id(existing.getId())
+                .username(existing.getUsername())
+                .email(existing.getEmail())
+                .fullName(updates.getFullName() != null ? updates.getFullName() : existing.getFullName())
+                .addressLine(updates.getAddressLine() != null ? updates.getAddressLine() : existing.getAddressLine())
+                .city(updates.getCity() != null ? updates.getCity() : existing.getCity())
+                .region(updates.getRegion() != null ? updates.getRegion() : existing.getRegion())
+                .pinCode(updates.getPinCode() != null ? updates.getPinCode() : existing.getPinCode())
+                .mobileNumber(existing.getMobileNumber())
+                .dateOfBirth(updates.getDateOfBirth() != null ? updates.getDateOfBirth() : existing.getDateOfBirth())
+                .gender(updates.getGender() != null ? updates.getGender() : existing.getGender())
+                .isRootUser(existing.isRootUser())
+                .profilePicFileId(updates.getProfilePicFileId() != null ? updates.getProfilePicFileId()
+                        : existing.getProfilePicFileId())
+                .roles(existing.getRoles())
+                .lastLoginTime(existing.getLastLoginTime())
+                .isParent(existing.getIsParent())
+                .linkedParentId(existing.getLinkedParentId())
+                .build();
+    }
+
+    /**
+     * Public lead update: an e-mail or mobile typed for the parent goes on the lead row
+     * (parent_email / parent_mobile), unless the request already set those columns itself.
+     * Returns the lead columns that changed.
+     */
+    static List<String> keepTypedContactOnLead(AudienceResponse response, UpdateLeadWithEnquiryRequestDTO requestDTO) {
+        List<String> changed = new ArrayList<>();
+        UserDTO parent = requestDTO.getParentUserDTO();
+        if (parent == null) {
+            return changed;
+        }
+        if (requestDTO.getParentEmail() == null && StringUtils.hasText(parent.getEmail())
+                && !parent.getEmail().equals(response.getParentEmail())) {
+            response.setParentEmail(parent.getEmail());
+            changed.add("parent_email");
+        }
+        if (requestDTO.getParentMobile() == null && StringUtils.hasText(parent.getMobileNumber())) {
+            String mobile = parent.getMobileNumber().length() > 20
+                    ? parent.getMobileNumber().substring(0, 20)
+                    : parent.getMobileNumber();
+            if (!mobile.equals(response.getParentMobile())) {
+                response.setParentMobile(mobile);
+                changed.add("parent_mobile");
+            }
+        }
+        return changed;
     }
 
     /**

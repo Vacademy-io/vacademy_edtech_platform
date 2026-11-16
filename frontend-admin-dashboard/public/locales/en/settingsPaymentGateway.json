@@ -43,6 +43,8 @@
         "dashboardLinkText": "{{vendor}} dashboard",
         "findValuesSuffix": ".",
         "whereToFind": "Where to find these values",
+        "setupGuidePdf": "Step-by-step {{vendor}} setup guide (PDF) — keys, webhook and testing",
+        "openGuide": "Open",
         "webhookUrlLabel": "Webhook URL — paste into the {{vendor}} dashboard",
         "copyUrl": "Copy URL",
         "hide": "Hide",

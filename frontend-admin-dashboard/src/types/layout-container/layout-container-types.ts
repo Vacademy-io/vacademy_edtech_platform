@@ -8,8 +8,11 @@ import { IconProps } from '@phosphor-icons/react';
  * here once rather than in every literal that used to spell it out.
  *
  * ERP is the operations world (HR & Payroll today; accounting/inventory next).
+ * COMMERCE is the shop (products, orders, stock, POS). Its tabs are gated by the
+ * commerce module and the four commerce roles (lib/commerce/commerce-access.ts),
+ * so the rail icon appears only for institutes that have the module.
  */
-export type SidebarCategory = 'CRM' | 'LMS' | 'AI' | 'ERP';
+export type SidebarCategory = 'CRM' | 'LMS' | 'AI' | 'ERP' | 'COMMERCE';
 
 export interface subItemsType {
     subItem: string | undefined;

@@ -164,7 +164,7 @@ class CopyIntakeCheckOnlyTest {
         attempt.setStatus("ENDED");
         when(attempts.getStudentAttemptById("att-1")).thenReturn(Optional.of(attempt));
         when(attempts.updateStudentAttempt(any(StudentAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(evaluation.initiateEvaluationForAttempt(any(StudentAttempt.class), eq("m-1"), anyBoolean()))
+        when(evaluation.initiateEvaluationForAttempt(any(StudentAttempt.class), eq("m-1"), anyBoolean(), any(), any()))
                 .thenReturn("proc-1");
         return attempt;
     }
@@ -322,11 +322,28 @@ class CopyIntakeCheckOnlyTest {
 
         service.retry(admin, "item-1");
 
-        verify(evaluation).initiateEvaluationForAttempt(eq(attempt), eq("m-1"), anyBoolean());
+        verify(evaluation).initiateEvaluationForAttempt(eq(attempt), eq("m-1"), anyBoolean(), any(), any());
         verify(registrations, never()).save(any());
         verify(offline, never()).createOfflineAttempt(any(), anyString(), anyString(), anyString(), any());
         assertThat(item.getStatus()).isEqualTo(AiCopyIntakeItem.QUEUED);
         assertThat(item.getErrorMessage()).isNull();
+    }
+
+    @Test
+    void aCopyIsQuotedForEveryPageItHasNotTheOnePageMinimum() {
+        checkOnlyBatch();
+        AiCopyIntakeItem item = AiCopyIntakeItem.builder().id("item-1").batchId("batch-1").fileId("f1")
+                .status(AiCopyIntakeItem.FAILED).attemptId("att-1").registrationId("reg-1").pageCount(4)
+                .errorMessage("the AI check failed").build();
+        when(items.findById("item-1")).thenReturn(Optional.of(item));
+        StudentAttempt attempt = offlineAttemptIsCreated();
+
+        service.retry(admin, "item-1");
+
+        verify(evaluation).initiateEvaluationForAttempt(eq(attempt), eq("m-1"), anyBoolean(), isNull(),
+                argThat((vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationEnqueueContext ctx) ->
+                        ctx != null && !ctx.apiTraffic() && ctx.pageCount() == null && ctx.charge() != null
+                                && Integer.valueOf(4).equals(ctx.charge().params().get("num_pages"))));
     }
 
     @Test
@@ -338,7 +355,7 @@ class CopyIntakeCheckOnlyTest {
                 .build();
         when(items.findById("item-1")).thenReturn(Optional.of(item));
         StudentAttempt attempt = offlineAttemptIsCreated();
-        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean())).thenReturn("proc-2");
+        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean(), any(), any())).thenReturn("proc-2");
         vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess run =
                 new vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess();
         when(processes.findById("proc-2")).thenReturn(Optional.of(run));
@@ -358,7 +375,7 @@ class CopyIntakeCheckOnlyTest {
                 .status(AiCopyIntakeItem.FAILED).attemptId("att-1").registrationId("reg-1").build();
         when(items.findById("item-1")).thenReturn(Optional.of(item));
         StudentAttempt attempt = offlineAttemptIsCreated();
-        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean())).thenReturn("proc-2");
+        when(evaluation.initiateEvaluationForAttempt(eq(attempt), anyString(), anyBoolean(), any(), any())).thenReturn("proc-2");
 
         service.retry(admin, "item-1", "klingon");
 

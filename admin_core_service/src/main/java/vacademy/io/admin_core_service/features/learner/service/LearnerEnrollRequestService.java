@@ -70,6 +70,7 @@ import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.institute.entity.session.PackageSession;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowEngineService;
 import vacademy.io.common.logging.SentryLogger;
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 
 import java.text.SimpleDateFormat;
 
@@ -95,6 +96,13 @@ public class LearnerEnrollRequestService {
 
     @Autowired
     private EnrollInviteService enrollInviteService;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
+
+    /** Commerce payments (WP-12). Not present in tests that build this class by hand; null-safe. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentHooks commercePaymentHooks;
 
     @Autowired
     private RegionalPriceResolver regionalPriceResolver;
@@ -241,6 +249,14 @@ public class LearnerEnrollRequestService {
             Map<String, Object> extraData) {
         LearnerPackageSessionsEnrollDTO enrollDTO = learnerEnrollRequestDTO.getLearnerPackageSessionEnroll();
 
+        // A shop variant has an ACTIVE invite and a package session, but it is not a course:
+        // nobody enrols in it. Commerce writes its own plans and never comes through here, so
+        // every caller is refused before a user, a plan or an enrolment row is written.
+        if (StringUtils.hasText(enrollDTO.getEnrollInviteId())) {
+            commerceLegacyGuard.refuseCommerceInvites(List.of(enrollDTO.getEnrollInviteId()), "enrol through this link");
+        }
+        commerceLegacyGuard.refuseVariantSessions(enrollDTO.getPackageSessionIds(), "enrol in it");
+
         // ── Institute integrity guard (root-cause fix) ────────────────────────────
         // The enroll invite is the single source of truth for which institute this
         // enrollment belongs to. The FE supplies instituteId separately (derived from
@@ -262,6 +278,10 @@ public class LearnerEnrollRequestService {
                         learnerEnrollRequestDTO.getInstituteId(), integrityInvite.getId(),
                         integrityInvite.getInstituteId());
                 learnerEnrollRequestDTO.setInstituteId(integrityInvite.getInstituteId());
+                // The public door allowed TEACHER on the strength of the request's institute;
+                // the role is written in the invite's, so that institute's setting decides.
+                PublicEnrollRoleGuard.dropTeacherUnlessInstituteAllows(learnerEnrollRequestDTO.getUser(),
+                        integrityInvite.getInstituteId(), instituteRepository);
             }
         }
 
@@ -374,8 +394,21 @@ public class LearnerEnrollRequestService {
                 learnerEnrollRequestDTO.getUser().setUsernameFieldValues(
                         CustomFieldValueDTO.toValueMap(enrollDTO.getCustomFieldValues()));
             }
+            List<String> askedRoles = learnerEnrollRequestDTO.getUser().getRoles();
+            String typedMobile = learnerEnrollRequestDTO.getUser().getMobileNumber();
             UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(learnerEnrollRequestDTO.getUser(),
                     learnerEnrollRequestDTO.getInstituteId(), sendCredentials, learndashBaseUrl);
+            // An existing account without a mobile number does not take the typed one. The
+            // payment gateway still gets it as the customer contact (GatewayCustomerContact);
+            // the user carried on below, and the account, keep what the account holds.
+            if (!StringUtils.hasText(user.getMobileNumber()) && StringUtils.hasText(typedMobile)) {
+                extraData = new HashMap<>(extraData == null ? Map.of() : extraData);
+                extraData.put(GatewayCustomerContact.CHECKOUT_MOBILE_NUMBER, typedMobile);
+            }
+            // The answer lists the account's roles in every institute, and this user is posted
+            // to auth-service again further on: only what was asked for goes with it.
+            user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(),
+                    learnerEnrollRequestDTO.getInstituteId()));
             learnerEnrollRequestDTO.setUser(user);
             EnrollInvite enrollInvite = getValidatedEnrollInvite(enrollDTO.getEnrollInviteId());
             // Generate coupon code for new learner enrollment
@@ -988,6 +1021,21 @@ public class LearnerEnrollRequestService {
     }
 
     /**
+     * Whether this request is a gateway's "phase 2" payment confirmation of an enrollment the
+     * first call already created ({@link #recordLearnerRequest} completes it and enrolls nothing
+     * new). Read-only; lets the public endpoint skip its pre-enrollment checks for a payment
+     * that was already taken.
+     */
+    public boolean isClientPaymentConfirmation(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
+        LearnerPackageSessionsEnrollDTO enrollDTO = learnerEnrollRequestDTO != null
+                ? learnerEnrollRequestDTO.getLearnerPackageSessionEnroll()
+                : null;
+        PaymentServiceStrategy gatewayStrategy = resolvePaymentStrategy(enrollDTO);
+        return gatewayStrategy != null
+                && gatewayStrategy.isClientPaymentConfirmation(enrollDTO.getPaymentInitiationRequest());
+    }
+
+    /**
      * Resolves the {@link PaymentServiceStrategy} for the request's payment
      * vendor, or null when the request has no payment initiation / an unknown
      * vendor (e.g. MANUAL) — callers then proceed with the normal enrollment
@@ -1039,6 +1087,17 @@ public class LearnerEnrollRequestService {
                         .orElseThrow(() -> new VacademyException(
                                 "Payment received but the originating enrollment was not found for " + vendor
                                         + " order " + gatewayOrderRef));
+
+        // Commerce: a payment of a shop order is confirmed only by the shop's own routes, which
+        // tie it to the order by the gateway-order row; it gets no answer here. A course log has
+        // no payment group, or a group that is no commerce order: no query, or one key read,
+        // and nothing changes.
+        if (commercePaymentHooks != null && StringUtils.hasText(paymentLog.getPaymentGroupId())
+                && commercePaymentHooks.isCommerceLog(paymentLog)) {
+            log.warn("{} payment confirmation refused: order {} is a shop order", vendor, gatewayOrderRef);
+            throw new VacademyException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "This payment belongs to a shop order and is confirmed by the shop.");
+        }
 
         log.info("{} payment confirmation: verified order {} -> paymentLog={}, userPlan={}",
                 vendor, gatewayOrderRef, paymentLog.getId(), paymentLog.getUserPlan().getId());

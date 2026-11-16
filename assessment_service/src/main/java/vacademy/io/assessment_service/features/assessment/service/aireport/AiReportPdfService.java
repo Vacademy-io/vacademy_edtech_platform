@@ -88,7 +88,15 @@ public class AiReportPdfService {
             try {
                 model = dataService.load(userId, assessmentId, attemptId, instituteId,
                         objectMapper.readTree(processed), branding(instituteId), detail);
-                if (profile != null && profile.hideQuestionWise()) model = model.toBuilder().hideQuestionWise(true).build();
+                // The profile this render uses (resolved, or chosen for a preview); the
+                // assessment's own report_options win over it.
+                ReportOptions opts = profileService.reportOptions(assessmentId, profile);
+                model = model.toBuilder()
+                        .hideQuestionWise(!opts.showQuestionWise())
+                        .hideYourAnswer(!opts.showYourAnswer())
+                        .hideCorrectAnswer(!opts.showCorrectAnswer())
+                        .hideExplanation(!opts.showExplanation())
+                        .build();
                 core = toPdf(builder.build(model));
             } catch (Exception e) {
                 if (normal == null) throw e;

@@ -35,6 +35,10 @@ export interface ProductOffer {
     trial_days: number;
     /** AI credits a new sign-up opens with; null = the platform's default. */
     demo_credits: number | null;
+    /** What the one-screen demo (/demo) opens with; falls back to demo_credits. */
+    demo_portal_credits?: number | null;
+    /** Paid plans shown on the product website (key = the website's ?plan=). */
+    plans?: { key: string; name: string }[] | null;
 }
 
 export const fetchProductOffer = async (product: string): Promise<ProductOffer> => {
@@ -55,6 +59,8 @@ export interface SelfSignupDetails {
     city: string;
     state: string;
     teachers?: number;
+    /** "Buy <plan>" sign-up: no free trial, the app opens on that plan's payment. */
+    buy?: string;
 }
 
 /** Sends a WhatsApp code to the phone; needs the email proof from the step before. */
@@ -119,12 +125,34 @@ export const completeSignup = async (
     return data;
 };
 
+export interface DemoDetails {
+    full_name: string;
+    email: string;
+    phone: string;
+}
+
+/** The one-screen demo: name, email and phone, no code. Signs the visitor straight in. */
+export const startDemo = async (
+    context: SignupContext,
+    details: DemoDetails
+): Promise<SignupTokens> => {
+    const { data } = await axios.post<SignupTokens>(`${API}/demo`, {
+        product: context.product,
+        source: context.source,
+        campaign: context.campaign,
+        ...details,
+    });
+    return data;
+};
+
 /** Google comes back to this same page, carrying the proof of the email or the login tokens. */
-export const startGoogleSignup = (context: SignupContext) => {
+export const startGoogleSignup = (context: SignupContext, buy?: string | null) => {
     const back = new URL(`${window.location.origin}/signup/start`);
     Object.entries(context).forEach(([key, value]) => {
         if (value) back.searchParams.set(key, value);
     });
+    // A "Buy <plan>" sign-up stays one after Google.
+    if (buy) back.searchParams.set('buy', buy);
     const state = btoa(
         JSON.stringify({
             from: back.toString(),

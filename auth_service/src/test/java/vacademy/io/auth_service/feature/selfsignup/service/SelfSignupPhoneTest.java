@@ -172,6 +172,34 @@ class SelfSignupPhoneTest {
     }
 
     @Test
+    void aBuyerGetsNoTrialSoNeedsNoProvenPhone() {
+        // Already had a trial on this phone, and no phone in the proof: buying is still allowed.
+        when(claims.get("phone", String.class)).thenReturn("");
+        when(rulesClient.isTrialPhoneAvailable(eq("telleo"), anyString())).thenReturn(false);
+        SelfSignupRequest r = signup();
+        r.setBuy("growth");
+        manager.signup(r, "1.1.1.1");
+        ArgumentCaptor<RegisterRequest> reg = ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(authManager).registerRootUser(reg.capture(), any());
+        assertEquals("911111111111", reg.getValue().getInstitute().getPhone());
+        assertNull(reg.getValue().getInstitute().getDemoExpiresAt());
+        assertEquals(List.of(SelfSignupManager.BUY_TAG), reg.getValue().getInstitute().getTags());
+        verify(rulesClient, never()).isTrialPhoneAvailable(anyString(), anyString());
+    }
+
+    @Test
+    void theCodeLessDemoIsRefusedWhenTheTrialNeedsAPhone() {
+        vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest r =
+                new vacademy.io.auth_service.feature.selfsignup.dto.SelfSignupDemoRequest();
+        r.setProduct("telleo");
+        r.setFullName("A Owner");
+        r.setEmail("owner@biz.in");
+        r.setPhone("9876543210");
+        assertThrows(VacademyException.class, () -> manager.demoSignup(r, "1.1.1.1"));
+        verify(authManager, never()).registerRootUser(any(), any());
+    }
+
+    @Test
     void institutesTypesAreNotOfferedToTelleo() {
         SelfSignupRequest r = signup();
         r.setInstituteType("school");

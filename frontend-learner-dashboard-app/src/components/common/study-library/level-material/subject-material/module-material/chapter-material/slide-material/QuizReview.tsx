@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScoreCard } from "./quiz-viewer";
 import { isMultiSelectQuestion, partialCreditFraction } from "./quiz-scoring";
+import { numericToleranceVerdict } from "./numeric-answer-match";
 import type { QuizAttemptLog, QuizSideEntry } from "@/services/study-library/tracking-api/get-quiz-slide-activity-logs";
 import { getPublicUrl } from "@/services/upload_file";
 import { isRichTextEmpty, parseHtmlToString } from "@/lib/utils";
@@ -66,8 +67,6 @@ interface QuizReviewProps {
   attemptLogs?: QuizAttemptLog[];
   /** Fun skin only: the quiz's title, shown above its result. */
   title?: string;
-  /** Fun skin only: the lesson viewer's Next; without it the result offers a way back to the chapter. */
-  onNext?: () => void;
 }
 
 const getQuestionText = (q: Question) => {
@@ -195,6 +194,9 @@ const isAnswerMatch = (
   correctAnswers: (string | number)[],
 ): boolean => {
   if (correctAnswers.length === 0) return false;
+  // A numeric question with a ± tolerance is judged on that (null = no tolerance, old rule).
+  const withinTolerance = numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answer);
+  if (withinTolerance !== null) return withinTolerance;
   const correct = correctAnswers.map(String);
   if (Array.isArray(answer)) {
     const ans = new Set(answer.map(String));
@@ -209,7 +211,7 @@ const isAnswerMatch = (
 // Up to two decimals, no trailing zeros: 1, 0.5, 0.33.
 const formatMarks = (value: number): string => String(Math.round(value * 100) / 100);
 
-export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title, onNext }) => {
+export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, onRestart, scoreCard, showCorrectAnswers = true, passed, passPercentage, partialMarking = false, marksPerQuestion = 1, defaultNegativeMarking = 0, attemptNumber, maxAttempts, canReattempt = true, attemptLogs, title }) => {
   const { t } = useTranslation("libraryCommonA");
   const isFun = useFunTheme();
   const [showFullPassageIdx, setShowFullPassageIdx] = useState<number | null>(null);
@@ -332,8 +334,9 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
         const correctIds = getCorrectAnswers(q).map(String);
         if (correctIds.length === 0) return;
         const isCorrect =
-          answerIds.length === correctIds.length &&
-          correctIds.every((c) => answerIds.includes(c));
+          numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answerIds[0]) ??
+          (answerIds.length === correctIds.length &&
+            correctIds.every((c) => answerIds.includes(c)));
         if (isCorrect) earned += 1;
       });
       const pct = total > 0 ? Math.round((earned / total) * 100) : 0;
@@ -589,7 +592,6 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
         maxAttempts={maxAttempts}
         canReattempt={canReattempt}
         onRestart={onRestart}
-        onNext={onNext}
         rows={rows}
         showCorrectAnswers={showCorrectAnswers}
         pastAttempts={(attemptLogs ?? []).map((log, i) => ({

@@ -112,7 +112,7 @@
     "blog": "المدونة",
     "provisions": "المخصصات",
     "questionsBanksAndPapers": "بنوك الأسئلة والأوراق الامتحانية",
-    "questionLibrary": "مكتبة الأسئلة",
+    "questionLibrary": "مكتبة المحتوى",
     "leadAgent": "وكيل العملاء المحتملين",
     "recentLeads": "العملاء المحتملون الأخيرون",
     "regularizations": "التسويات",
@@ -151,5 +151,15 @@
     "leadLookup": "التحقق من العميل",
     "contactsDashboard": "لوحة جهات الاتصال",
     "automationDashboard": "لوحة الأتمتة",
-    "engagementDashboard": "لوحة التفاعل"
+    "engagementDashboard": "لوحة التفاعل",
+    "commerceHome": "الرئيسية للمتجر",
+    "commerceOrders": "الطلبات",
+    "commerceProducts": "المنتجات",
+    "commerceCollections": "المجموعات",
+    "commerceInventory": "المخزون",
+    "commercePos": "نقطة البيع",
+    "commerceCustomers": "العملاء",
+    "commerceDiscounts": "الخصومات",
+    "commerceReports": "تقارير المتجر",
+    "commerceSettings": "إعدادات المتجر"
 }

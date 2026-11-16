@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { DEFAULT_PROCTORING_FORM } from '@/types/assessments/proctoring';
+import { DEFAULT_EXAM_INTERFACE_FORM } from '@/types/assessments/exam-interface';
+import { DEFAULT_REPORT_OPTIONS_FORM } from '@/types/assessments/report-options';
 
 export const BasicInfoFormSchema = z.object({
     status: z.string(),
@@ -68,6 +70,29 @@ export const BasicInfoFormSchema = z.object({
             showSelfView: z.boolean(),
         })
         .default(DEFAULT_PROCTORING_FORM),
+    // Exam interface (the learner's test screen drawn like a known exam).
+    // 'default' = the standard screen, saved as exam_interface null.
+    examInterface: z
+        .object({
+            choice: z.string(),
+            strict: z.boolean(),
+            calculator: z.boolean().default(true),
+            // Standard screen: passage beside the question (passage_beside_question).
+            passageBeside: z.boolean().default(false),
+            stored: z.record(z.unknown()).nullable(),
+        })
+        .default(DEFAULT_EXAM_INTERFACE_FORM),
+    // What the student's report shows per question; saved as report_options
+    // (null while useInstituteDefault is on).
+    reportOptions: z
+        .object({
+            useInstituteDefault: z.boolean(),
+            showQuestionWise: z.boolean(),
+            showYourAnswer: z.boolean(),
+            showCorrectAnswer: z.boolean(),
+            showExplanation: z.boolean(),
+        })
+        .default(DEFAULT_REPORT_OPTIONS_FORM),
     switchSections: z.boolean(),
     raiseReattemptRequest: z.boolean(),
     raiseTimeIncreaseRequest: z.boolean(),

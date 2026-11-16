@@ -30,7 +30,8 @@ import java.util.Optional;
  * and {@code repeatLead.blockOwnedManualAdd} switched on. Only the authenticated single
  * add-lead form ({@code POST .../v1/audience/lead/submit}) calls this. Admins and non-
  * counsellor staff may still add; a counsellor may re-add their own lead; a lead whose owner
- * is no longer a counsellor is free to take. A phone too short to match, or a failed
+ * is no longer a counsellor is free to take, and so is a discarded (LOST) lead, which still
+ * carries the counsellor who discarded it. A phone too short to match, or a failed
  * lookup, lets the add through unchanged.
  *
  * <p>With {@code repeatLead.blockOpenLeadManualAdd} on (any dedup field), a counsellor also

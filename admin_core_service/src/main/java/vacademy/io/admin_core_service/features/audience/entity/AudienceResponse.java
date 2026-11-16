@@ -130,6 +130,13 @@ public class AudienceResponse {
     @Column(name = "primary_response_id")
     private String primaryResponseId;
 
+    /**
+     * When this lead last enquired again (newest later live duplicate), else null. Written only
+     * by AudienceResponseRepository.refreshEnquiryDates, never by an entity save.
+     */
+    @Column(name = "last_enquiry_at", insertable = false, updatable = false)
+    private Timestamp lastEnquiryAt;
+
     // ── TAT / Follow-up SLA reminder dedup state ──────────────
     // Linear stage machine: BEFORE_* -> OVERDUE -> FOLLOW_UP_DUE -> FOLLOW_UP_OVERDUE.
     // The scheduler only EMITS workflow triggers; these columns guarantee one emit per stage.

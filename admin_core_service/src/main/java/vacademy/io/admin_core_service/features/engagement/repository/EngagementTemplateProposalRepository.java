@@ -208,6 +208,21 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
             """, nativeQuery = true)
     int withdraw(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
 
+    /**
+     * A person retires a template that is live: the engine stops choosing it (findApproved drops it).
+     * Kept apart from {@link #withdraw}, which callers also use on rows that may have gone live
+     * meanwhile and must then be left alone. The template stays approved at Meta.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'WITHDRAWN', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId
+               AND status IN ('META_APPROVED', 'META_DISABLED')
+            """, nativeQuery = true)
+    int retireLive(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+
     /** Highest round used for an engine so far (0 if none) — the next batch is round+1. */
     @Query(value = "SELECT COALESCE(MAX(round), 0) FROM engagement_template_proposal WHERE engine_id = :engineId",
             nativeQuery = true)

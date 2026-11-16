@@ -5,6 +5,9 @@
  * into a course whose "count enrolment as conversion" setting is on, dated by the enrolment. KPI
  * strip, a per-counsellor summary, and the lead-level rows behind it. Clicking a counsellor narrows
  * the lead list to their leads; both tables export to CSV.
+ *
+ * The lead list shows admissions, not enrolments: a student's courses of one month (a course
+ * package) are one row with the fees added up, as the Admissions tab counts them.
  */
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -17,8 +20,8 @@ import {
     conversionsQueryKey,
     fetchConversions,
     type ConversionCounsellorRow,
-    type ConversionLeadRow,
 } from '../-services/get-conversion-reports';
+import { groupConversionAdmissions } from './conversion-admissions';
 import {
     EmptyHint,
     ExportWithColumnPickerButton,
@@ -41,7 +44,7 @@ import {
     feeCsvValues,
 } from './conversion-fee-cells';
 
-type CounsellorSortKey = 'name' | 'converted_leads' | 'enrolments';
+type CounsellorSortKey = 'name' | 'converted_leads' | 'admissions' | 'enrolments';
 type LeadSortKey =
     | 'lead_name'
     | 'course_name'
@@ -105,14 +108,19 @@ export function ConversionsTab({
         const all = query.data?.leads ?? [];
         const filtered =
             selected == null ? all : all.filter((r) => counsellorKey(r.counsellor_id) === selected);
-        return sortRows(filtered, leadSort, leadDir);
+        return sortRows(groupConversionAdmissions(filtered), leadSort, leadDir);
     }, [query.data, selected, leadSort, leadDir]);
+    // An API without the admissions count (older backend): count the admission rows instead.
+    const admissionRowCount = useMemo(
+        () => groupConversionAdmissions(query.data?.leads ?? []).length,
+        [query.data]
+    );
 
     if (query.isLoading) return <ReportTabSkeleton />;
     if (query.isError)
         return <ReportErrorState error={query.error} onRetry={() => query.refetch()} />;
 
-    const totals = query.data?.totals ?? { converted_leads: 0, enrolments: 0 };
+    const totals = query.data?.totals ?? { converted_leads: 0, admissions: 0, enrolments: 0 };
     const truncated = query.data?.leads_truncated ?? false;
     const currency = query.data?.currency ?? 'INR';
     const credited = counsellors.filter((r) => r.user_id != null).length;
@@ -154,11 +162,11 @@ export function ConversionsTab({
                     sub={t('kpi.convertedSub')}
                 />
                 <KpiCard
-                    label={t('column.enrolments')}
-                    value={fmtNumber(totals.enrolments)}
+                    label={t('column.admissions')}
+                    value={fmtNumber(totals.admissions ?? admissionRowCount)}
                     icon={<GraduationCap size={18} />}
                     tone="primary"
-                    sub={t('kpi.enrolmentsSub')}
+                    sub={t('kpi.admissionsSub', { count: totals.enrolments })}
                 />
                 <KpiCard
                     label={t('kpi.counsellors')}
@@ -179,12 +187,14 @@ export function ConversionsTab({
                             headers: [
                                 t('column.counsellor'),
                                 t('column.convertedLeads'),
+                                t('column.admissions'),
                                 t('column.enrolments'),
                                 t('column.share'),
                             ],
                             rows: counsellors.map((r) => [
                                 r.name,
                                 r.converted_leads,
+                                r.admissions,
                                 r.enrolments,
                                 share(r.converted_leads, totals.converted_leads),
                             ]),
@@ -210,6 +220,13 @@ export function ConversionsTab({
                                     <SortableHeader
                                         label={t('column.convertedLeads')}
                                         sortKey="converted_leads"
+                                        current={cslSort}
+                                        dir={cslDir}
+                                        onClick={toggleCsl}
+                                    />
+                                    <SortableHeader
+                                        label={t('column.admissions')}
+                                        sortKey="admissions"
                                         current={cslSort}
                                         dir={cslDir}
                                         onClick={toggleCsl}
@@ -251,6 +268,9 @@ export function ConversionsTab({
                                                 {fmtNumber(r.converted_leads)}
                                             </td>
                                             <td className="py-3 pr-3 text-right text-neutral-800">
+                                                {fmtNumber(r.admissions)}
+                                            </td>
+                                            <td className="py-3 pr-3 text-right text-neutral-800">
                                                 {fmtNumber(r.enrolments)}
                                             </td>
                                             <td className="py-3 pr-3 text-right text-neutral-800">
@@ -278,7 +298,7 @@ export function ConversionsTab({
                                     t('column.lead'),
                                     t('column.phone'),
                                     t('column.email'),
-                                    t('column.course'),
+                                    t('column.courses'),
                                     t('column.enrolledAt'),
                                     t('column.enrolmentStatus'),
                                     t('column.counsellor'),
@@ -296,7 +316,7 @@ export function ConversionsTab({
                                     r.counsellor_id == null ? unassignedLabel : r.counsellor_name,
                                     r.campaign_name,
                                     r.source_type,
-                                    ...feeCsvValues(r),
+                                    ...feeCsvValues(r.money),
                                 ]),
                             })}
                         />
@@ -337,7 +357,7 @@ export function ConversionsTab({
                                                 align="left"
                                             />
                                             <SortableHeader
-                                                label={t('column.course')}
+                                                label={t('column.courses')}
                                                 sortKey="course_name"
                                                 current={leadSort}
                                                 dir={leadDir}
@@ -403,9 +423,9 @@ export function ConversionsTab({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {leads.slice(0, visible).map((r: ConversionLeadRow) => (
+                                        {leads.slice(0, visible).map((r) => (
                                             <tr
-                                                key={r.enrolment_id}
+                                                key={r.key}
                                                 className="border-b border-neutral-100 align-top last:border-0 hover:bg-neutral-50"
                                             >
                                                 <td className="min-w-48 py-3 pr-3">
@@ -421,6 +441,13 @@ export function ConversionsTab({
                                                 </td>
                                                 <td className="min-w-56 py-3 pr-3 text-neutral-800">
                                                     {r.course_name ?? '—'}
+                                                    {r.course_count > 1 && (
+                                                        <div className="text-xs text-neutral-500">
+                                                            {t('leads.courseCount', {
+                                                                count: r.course_count,
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 pr-3 text-neutral-800">
                                                     {fmtDateTime(r.enrolled_at)}
@@ -444,16 +471,19 @@ export function ConversionsTab({
                                                     {r.source_type ?? '—'}
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 pr-3 text-right">
-                                                    <FeeCell fee={r} currency={currency} />
+                                                    <FeeCell fee={r.money} currency={currency} />
                                                 </td>
                                                 <td className="whitespace-nowrap py-3 pr-3 text-right">
-                                                    <PaidCell fee={r} currency={currency} />
+                                                    <PaidCell fee={r.money} currency={currency} />
                                                 </td>
                                                 <td className="py-3 pr-3 text-right">
-                                                    <InstallmentsCell fee={r} />
+                                                    <InstallmentsCell fee={r.money} />
                                                 </td>
                                                 <td className="py-3 pr-3 text-right">
-                                                    <NextInstallmentCell fee={r} currency={currency} />
+                                                    <NextInstallmentCell
+                                                        fee={r.money}
+                                                        currency={currency}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -471,7 +501,9 @@ export function ConversionsTab({
                             )}
                         </>
                     )}
-                    <p className="text-xs text-neutral-400">{t('leads.footnote')}</p>
+                    <p className="text-xs text-neutral-400">
+                        {t('leads.grouped')} {t('leads.footnote')}
+                    </p>
                 </ReportSection>
             </div>
         </div>

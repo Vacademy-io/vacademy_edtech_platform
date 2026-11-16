@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.product_page.service;
 
+import vacademy.io.admin_core_service.features.payments.util.GatewayCustomerContact;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessi
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.manager.StudentRegistrationManager;
 import vacademy.io.admin_core_service.features.institute_learner.service.LearnerEnrollmentEntryService;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 import vacademy.io.admin_core_service.features.learner.service.LearnerCouponService;
 import vacademy.io.admin_core_service.features.learner_payment_option_operation.service.ComplexPaymentOptionOperation;
 import vacademy.io.admin_core_service.features.learner_payment_option_operation.service.OneTimePaymentOptionOperation;
@@ -506,9 +508,16 @@ public class ProductPageEnrollmentService {
         if (request.getUser().getRoles() == null || request.getUser().getRoles().isEmpty()) {
             request.getUser().setRoles(java.util.List.of("STUDENT"));
         }
+        List<String> askedRoles = request.getUser().getRoles();
         UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(
                 request.getUser(), request.getInstituteId(), false);
+        // The answer lists the account's roles in every institute, and this user is posted to
+        // auth-service again below: only what was asked for goes with it.
+        user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(), request.getInstituteId()));
         payReq.setEmail(user.getEmail());
+        // The gateway gets the phone typed at checkout when the account has none; the account
+        // itself is not changed.
+        UserDTO gatewayCustomer = GatewayCustomerContact.withCheckoutPhone(user, request.getUser());
 
         // ── Razorpay Phase 1: order creation ──────────────────────────────────
         // (isRazorpay / isRazorpayPhase2 are settled above, before pricing.)
@@ -533,7 +542,7 @@ public class ProductPageEnrollmentService {
             // own. The Phase 2 callback stays the fast path, but it is no longer the only
             // path, so a lost browser can no longer cost a learner their course.
             PaymentResponseDTO gatewayResponse = paymentService.handlePaymentWithUser(
-                    payReq, request.getInstituteId(), user, null);
+                    payReq, request.getInstituteId(), gatewayCustomer, null);
 
             String paymentLogId = payReq.getOrderId();
             log.info("Razorpay Phase 1: order created, paymentLogId={}", paymentLogId);
@@ -657,7 +666,7 @@ public class ProductPageEnrollmentService {
         } else {
             // Online paid gateway (Cashfree/PhonePe redirect, Stripe, Eway, etc.)
             PaymentResponseDTO gatewayResponse = paymentService.handlePaymentWithUser(
-                    payReq, request.getInstituteId(), user, null);
+                    payReq, request.getInstituteId(), gatewayCustomer, null);
             parentPaymentLogId = payReq.getOrderId();
             log.info("Combined payment initiated, parentPaymentLogId={}", parentPaymentLogId);
 
@@ -842,8 +851,11 @@ public class ProductPageEnrollmentService {
         if (request.getUserDetails().getRoles() == null || request.getUserDetails().getRoles().isEmpty()) {
             request.getUserDetails().setRoles(java.util.List.of("STUDENT"));
         }
+        List<String> askedRoles = request.getUserDetails().getRoles();
         UserDTO user = authService.createUserFromAuthServiceForLearnerEnrollment(
                 request.getUserDetails(), request.getInstituteId(), false);
+        // As in enrollForProductPage: the roles the account holds elsewhere are not posted again.
+        user.setRoles(PublicEnrollRoleGuard.askedRolesOnly(askedRoles, user.getRoles(), request.getInstituteId()));
 
         studentRegistrationManager.createStudentFromRequest(
                 user, mapToStudentExtraDetails(request.getLearnerExtraDetails()));

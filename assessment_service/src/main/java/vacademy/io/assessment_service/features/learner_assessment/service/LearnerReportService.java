@@ -175,7 +175,8 @@ public class LearnerReportService {
         // release to anyone who calls them directly. AUTO result types are
         // deliberately NOT gated here: the card offers "Show report" for them
         // regardless of release status, and refusing would break that button -
-        // unless the attempt is explicitly held (PENDING) for a teacher.
+        // unless the attempt is explicitly held (PENDING) for a teacher, or the
+        // result type is AUTO_AFTER_ASSESSMENT_END and the end date is still ahead.
         if (isHeldManualResult(registration.get().getAssessment(), attempt.get())) {
             throw new VacademyException(HttpStatus.FORBIDDEN, "Result has not been released yet");
         }
@@ -190,10 +191,31 @@ public class LearnerReportService {
             return true;
         }
         // NO_AUTO_RELEASE is auto-marked but released by hand, so it is held like MANUAL.
-        return assessment != null
+        boolean heldForRelease = assessment != null
                 && (ResultTypeEnum.MANUAL.name().equals(assessment.getResultType())
                         || "NO_AUTO_RELEASE".equals(assessment.getResultType()))
                 && !ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        return heldForRelease || isHeldUntilAssessmentEnd(assessment, attempt, new Date());
+    }
+
+    /**
+     * AUTO_AFTER_ASSESSMENT_END: an attempt submitted before the end date keeps a NULL
+     * release status until the hourly job marks it RELEASED after the end, so the end
+     * date itself is the gate. Without it the report opened the moment the learner
+     * submitted. Mock and practice tests are released on submission (they never end),
+     * and a missing or 9999 end date holds nothing. Same rule as the learner card
+     * (survey-card-state.ts isHeldUntilAssessmentEnd).
+     */
+    static boolean isHeldUntilAssessmentEnd(Assessment assessment, StudentAttempt attempt, Date now) {
+        if (assessment == null || !ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(assessment.getResultType())) {
+            return false;
+        }
+        if (ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) return false;
+        String playMode = assessment.getPlayMode() == null ? "" : assessment.getPlayMode().toUpperCase();
+        if (vacademy.io.assessment_service.features.assessment.service.StudentAttemptService.OPEN_ENDED_PLAY_MODES.contains(playMode)) return false;
+        Date end = assessment.getBoundEndTime();
+        if (end == null || end.toInstant().atZone(java.time.ZoneOffset.UTC).getYear() >= 9000) return false;
+        return !now.after(end);
     }
 
     /**
@@ -230,6 +252,9 @@ public class LearnerReportService {
 
         StudentReportOverallDetailDto reportDetail = assessmentParticipantsManager
                 .createStudentReportDetailResponse(assessmentId, attemptId, instituteId);
+        // The assessment's report options decide what leaves the server, not just
+        // what the app draws: a hidden correct answer must not be in the payload.
+        reportProfileService.reportOptions(assessmentId, instituteId).stripFrom(reportDetail);
 
         return ResponseEntity.ok(reportDetail);
     }
@@ -512,7 +537,7 @@ public class LearnerReportService {
         try {
             pdfBytes = aiReportPdfService.renderStudentReport(user.getUserId(), assessmentId, attemptId, instituteId,
                     reportDetail, null, () -> reportPdfRenderService.render(reportDetail,
-                            self.buildComparisonData(user.getUserId(), assessmentId, attemptId, instituteId),
+                            comparisonOrNull(user.getUserId(), assessmentId, attemptId, instituteId),
                             loadClassContext(assessmentId, instituteId)));
         } catch (Exception e) {
             log.error("Error generating student report PDF for attempt {}", attemptId, e);
@@ -522,6 +547,21 @@ public class LearnerReportService {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=studentReport.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    /**
+     * Class comparison for the downloaded PDF, or null when it cannot be built. The admin
+     * download (AdminExportManager.getStudentReportPdf) already renders without it in that
+     * case; the learner download threw instead, so the student got "Failed to generate
+     * report PDF" for the same attempt the admin could download.
+     */
+    private StudentComparisonDto comparisonOrNull(String userId, String assessmentId, String attemptId, String instituteId) {
+        try {
+            return self.buildComparisonData(userId, assessmentId, attemptId, instituteId);
+        } catch (Exception e) {
+            log.warn("[report-pdf] class comparison unavailable for attempt {}: {}", attemptId, e.getMessage());
+            return null;
+        }
     }
 
     /** The normal report's per-question review, which the AI report also renders; null on failure. */
@@ -798,7 +838,9 @@ public class LearnerReportService {
             }
 
             // Build HTML and convert to PDF
-            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison);
+            // The assessment's report options apply to this older layout too.
+            String html = aiReportHtmlBuilder.generateAiReportHtml(assessmentName, processedJson, branding, comparison,
+                    reportProfileService.reportOptions(assessmentId, instituteId));
 
             java.io.ByteArrayOutputStream pdfOutputStream = new java.io.ByteArrayOutputStream();
             com.itextpdf.html2pdf.ConverterProperties converterProperties = new com.itextpdf.html2pdf.ConverterProperties();

@@ -470,7 +470,8 @@ public class AudienceController {
      * a lead: it resolves the caller against the {@code student} table, and a lead
      * that never enrolled has no row there. This writes only where a lead is actually
      * read from — the auth user, the {@code audience_response} parent/guardian fields,
-     * and the lead's custom field values. It never touches {@code student}.
+     * and the lead's custom field values. It never touches {@code student}. The caller must be
+     * staff of the lead's institute.
      */
     @PutMapping("/lead/{responseId}/profile")
     @Auditable(
@@ -479,8 +480,11 @@ public class AudienceController {
             entityIdExpr = "#responseId",
             descriptionExpr = "'updated lead ' + @crmAuditNarrator.leadFor(#responseId)")
     public ResponseEntity<String> updateLeadProfile(@PathVariable String responseId,
-                                                    @RequestBody LeadProfileEditRequestDTO request) {
-        audienceService.updateLeadProfile(responseId, request);
+                                                    @RequestBody LeadProfileEditRequestDTO request,
+                                                    @RequestAttribute("user") CustomUserDetails user) {
+        // Staff of the institute whose lead list holds this lead.
+        instituteAccessValidator.requireInstituteStaff(user, audienceService.getInstituteIdOfLead(responseId));
+        audienceService.updateLeadProfile(responseId, request, user);
         return ResponseEntity.ok("Lead profile updated");
     }
 

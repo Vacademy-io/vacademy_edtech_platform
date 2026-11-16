@@ -9,6 +9,7 @@ import { NewChip } from "@/components/design-system/fun/chips";
 import { courseColourClass } from "@/components/design-system/fun/course-palette";
 import { firstGrapheme } from "@/components/design-system/fun/CourseArt";
 import { brandNearLiveRed } from "@/components/design-system/fun/brand-colours";
+import { courseIdsNeedingBatchNames, useBatchNames } from "@/components/design-system/fun/batch-names";
 import { useHideProgress } from "@/hooks/use-hide-progress";
 import { useEnrolledFurthestPercent, useEnrolledStanding } from "@/hooks/use-enrolled-standing";
 import { countWorthShowing, NEARLY_DONE_PERCENT, shownCoursePercent } from "@/lib/learner-state/course-progress";
@@ -19,11 +20,22 @@ import type { EnrolledCourse } from "@/services/enrolled-courses";
 import type { SessionDetails } from "@/routes/study-library/live-class/-types/types";
 import LocalStorageUtils from "@/utils/localstorage";
 import { formatMinutesHuman } from "@/utils/courseTime";
+import { useClaimFunHeaderSlot, useFunHeaderSlot } from "@/hooks/use-fun-header-slot";
 import type { ResumeTarget } from "../../-lib/resume-target";
 import type { DashboardSlide } from "../../-types/dashboard-data-types";
 import { useDashboardHeroData, type DailyTaskProgress } from "../play/useDashboardHeroData";
 import { bannerClassOf } from "./live-timing";
-import { funHeroKind, headerFirstName, initialsOf, START_NAME_MAX, startCourseOf, type FunHeroKind } from "./home-state";
+import {
+  funHeroKind,
+  headerFirstName,
+  heroBarPercent,
+  initialsOf,
+  START_NAME_MAX,
+  startCourseOf,
+  tileSublines,
+  withTileBatchNames,
+  type FunHeroKind,
+} from "./home-state";
 import { courseIdOfResume } from "./resume-course";
 import { useFunEnrolledCourses } from "./use-fun-enrolled-courses";
 import { readBrandHex, useCourseImages, useNow, useStoredNames } from "./use-fun-home-bits";
@@ -50,7 +62,10 @@ export interface FunHomeTopProps {
   /** The Today cards' inputs; `todayBelow` puts them under the hero (a phone). */
   today: FunTodayInput;
   todayBelow: boolean;
-  /** Where the greeting row goes: full width above the columns. Null: drawn here. */
+  /**
+   * Where the greeting row goes when the top bar offers no slot: full width above the
+   * columns. Null: drawn here.
+   */
   headerSlot: HTMLElement | null;
 }
 
@@ -113,6 +128,10 @@ export function FunHomeTop(props: FunHomeTopProps) {
   const enrolled = useFunEnrolledCourses();
   const scope = useResumeScope();
   const { fullName, instituteName } = useStoredNames();
+  // The top bar's slot: the greeting row goes there, so the page has one bar and one
+  // account button. Without it (the bar still loading) the row sits above the columns.
+  const barSlot = useFunHeaderSlot();
+  useClaimFunHeaderSlot(Boolean(barSlot));
 
   const course = getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase();
   const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase();
@@ -142,6 +161,15 @@ export function FunHomeTop(props: FunHomeTopProps) {
   const heroCourseId = resumeCourseId ?? startCourse?.id;
   const heroEnrolled = heroCourseId ? enrolled.courses?.find((c) => c.id === heroCourseId) : undefined;
   const images = useCourseImages([heroEnrolled?.previewImageId]);
+  // The course to start shares its name with another tile (one course in two batches):
+  // its card names the batch as that tile does (FunCourseTiles, same lookup and cache).
+  const batchNames = useBatchNames(
+    courseIdsNeedingBatchNames((enrolled.courses ?? []).map((c) => ({ courseId: c.id, name: c.name, session: c.sessionName }))),
+  );
+  const startNamed = startCourse ? withTileBatchNames(startCourse, batchNames) : null;
+  const startSubline = startNamed
+    ? tileSublines((enrolled.courses ?? []).map((c) => (c === startCourse ? startNamed : withTileBatchNames(c, batchNames)))).get(startNamed)
+    : undefined;
   const heroImage = heroEnrolled?.previewImageId ? images[heroEnrolled.previewImageId] : undefined;
 
   const firstName = headerFirstName(hero.firstName);
@@ -164,8 +192,8 @@ export function FunHomeTop(props: FunHomeTopProps) {
         standing,
         lessonsListed,
       });
-      const showPercent = hideProgress === false && typeof percent === "number";
-      const shown = showPercent ? Math.round(percent) : null;
+      // No bar at 0%: the card says Continue, and an empty bar beside it reads as nothing done.
+      const shown = heroBarPercent(percent, hideProgress);
       const listed = props.serverSlides?.find((s) => s.slide_id === resume.slideId);
       const typeKey = listed?.source_type ? `hero.type.${listed.source_type}` : null;
       const typeLabel = typeKey && t(typeKey) !== typeKey ? t(typeKey) : null;
@@ -223,7 +251,8 @@ export function FunHomeTop(props: FunHomeTopProps) {
     }
     case "start": {
       const c = startCourse!;
-      const meta = [c.levelName, c.readTimeInMinutes > 0 ? formatMinutesHuman(c.readTimeInMinutes) : ""].filter(Boolean).join(" · ");
+      const level = startSubline?.disambiguates ? startSubline.text : c.levelName;
+      const meta = [level, c.readTimeInMinutes > 0 ? formatMinutesHuman(c.readTimeInMinutes) : ""].filter(Boolean).join(" · ");
       const shortName = Array.from(c.name.trim()).length <= START_NAME_MAX;
       card = (
         <section aria-label={t("hero.startLabel", { course })} className={cn("fun-hero fun-hero--course fun-on-colour", courseColourClass(c.id))}>
@@ -243,7 +272,7 @@ export function FunHomeTop(props: FunHomeTopProps) {
             onClick={() => openCourseDetails(navigate, c)}
           >
             <PlayIcon />
-            <span className="fun-hero__cta-label">{shortName ? t("hero.start", { name: c.name.trim() }) : t("hero.startPlain")}</span>
+            <span className="fun-hero__cta-label">{t("hero.start", { name: shortName ? c.name.trim() : course })}</span>
           </FunButton>
         </section>
       );
@@ -279,8 +308,13 @@ export function FunHomeTop(props: FunHomeTopProps) {
             {kind === "done" ? t("done.title", { course }) : t("done.caughtUpTitle")}
           </h2>
           <p className="fun-hero__done-text">
-            {kind === "done" && total > 0 ? t("done.body", { done, total, courses }) : t("done.caughtUpBody")}
+            {kind === "done" && total > 0 ? t("done.body", { done, total, courses }) : t("done.caughtUpBody", { course, courses })}
           </p>
+          {kind === "caughtUp" && (
+            <FunButton asChild variant={liveNow ? "outline" : "onColour"} block className={cn("fun-hero__cta fun-hero__cta--done", liveNow && "fun-hero__cta--quiet")}>
+              <Link to="/study-library/courses">{t("hero.coursesCta", { courses })}</Link>
+            </FunButton>
+          )}
         </section>
       );
       break;
@@ -297,10 +331,16 @@ export function FunHomeTop(props: FunHomeTopProps) {
           className={cn("fun-hero fun-hero--brand", brandQuiet ? "fun-hero--brand-quiet" : "fun-on-colour")}
         >
           <h2 id="fun-courses-title" className="fun-hero__title">
-            {t("hero.coursesTitle")}
+            {/* Nothing started yet (the enrolled list could not say which course to
+                offer): no "where you left off". */}
+            {props.hasAnyProgress ? t("hero.coursesTitle") : t("hero.coursesTitleNew")}
           </h2>
           <p className="fun-hero__count">
-            {percent !== null ? t("hero.nearlyThere", { percent }) : t("hero.coursesBody", { courses })}
+            {percent !== null
+              ? t("hero.nearlyThere", { percent })
+              : props.hasAnyProgress
+                ? t("hero.coursesBody", { courses })
+                : t("hero.coursesBodyNew", { courses, course })}
           </p>
           <FunButton
             asChild
@@ -386,6 +426,7 @@ export function FunHomeTop(props: FunHomeTopProps) {
 
   const header = (
       <FunHomeHeader
+        inBar={Boolean(barSlot)}
         plainGreeting={hero.plainGreeting}
         greetingWithName={greetingWithName}
         firstName={firstName}
@@ -399,7 +440,7 @@ export function FunHomeTop(props: FunHomeTopProps) {
 
   return (
     <div className="fun-home-top" data-fun-hero={kind}>
-      {props.headerSlot ? createPortal(header, props.headerSlot) : header}
+      {barSlot ? createPortal(header, barSlot) : props.headerSlot ? createPortal(header, props.headerSlot) : header}
       {banner && <FunLiveCard banner={banner} nowMs={now} onJoin={props.onJoinSession} />}
       {card}
       {below}

@@ -1536,4 +1536,120 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             """, nativeQuery = true)
     java.util.List<DeliveryFailureRow> findWhatsAppDeliveryFailuresSince(@Param("instituteId") String instituteId,
                                                                           @Param("since") java.time.Instant since);
+
+    // ==================== Announcement email report ====================
+    //
+    // Each announcement EMAIL row collects every SES event linked to it (source = row id). The
+    // counts are cumulative over ALL of those events: an email that was delivered, opened and
+    // then clicked counts as delivered, opened AND clicked. Counting only the latest event per
+    // email under-reported every earlier stage. An open or click also implies delivery, since
+    // SES does not always report the delivery event.
+    //
+    // The event name is the first line of the body (Email Event: DELIVERY and so on); left(body, 30)
+    // matches the idx_nl_email_event_window expression. The LATERAL keeps the event lookup an
+    // index probe per email on idx_nl_source_type instead of a merge join over every event.
+
+    interface AnnouncementEmailFunnelRow {
+        Number getLogged();
+        Number getFailedToSend();
+        Number getAccepted();
+        Number getDelivered();
+        Number getOpened();
+        Number getClicked();
+        Number getBounced();
+        Number getRejected();
+        Number getComplained();
+        Number getAwaiting();
+    }
+
+    @Query(value = """
+            SELECT COUNT(*) AS "logged",
+                   COUNT(*) FILTER (WHERE e.failed_to_send) AS "failedToSend",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.accepted) AS "accepted",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.delivered) AS "delivered",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.opened) AS "opened",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.clicked) AS "clicked",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.bounced) AS "bounced",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.rejected) AS "rejected",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send AND e.complained) AS "complained",
+                   COUNT(*) FILTER (WHERE NOT e.failed_to_send
+                                    AND NOT COALESCE(e.delivered OR e.bounced OR e.rejected OR e.complained, false)) AS "awaiting"
+            FROM (
+                SELECT COALESCE(l.delivery_status = 'FAILED', false) AS failed_to_send,
+                       ev.accepted, ev.delivered, ev.opened, ev.clicked,
+                       ev.bounced, ev.rejected, ev.complained
+                FROM notification_log l
+                CROSS JOIN LATERAL (
+                    SELECT BOOL_OR(x.t = 'SEND') AS accepted,
+                           BOOL_OR(x.t IN ('DELIVERY', 'OPEN', 'CLICK')) AS delivered,
+                           BOOL_OR(x.t IN ('OPEN', 'CLICK')) AS opened,
+                           BOOL_OR(x.t = 'CLICK') AS clicked,
+                           BOOL_OR(x.t = 'BOUNCE') AS bounced,
+                           BOOL_OR(x.t = 'REJECT') AS rejected,
+                           BOOL_OR(x.t = 'COMPLAINT') AS complained
+                    FROM (
+                        SELECT upper(trim(substr(split_part(left(ev0.body, 30), chr(10), 1), 14))) AS t
+                        FROM notification_log ev0
+                        WHERE ev0.source = l.id
+                          AND ev0.notification_type = 'EMAIL_EVENT'
+                    ) x
+                ) ev
+                WHERE l.source_id = :announcementId
+                  AND l.notification_type = 'EMAIL'
+            ) e
+            """, nativeQuery = true)
+    AnnouncementEmailFunnelRow summarizeAnnouncementEmails(@Param("announcementId") String announcementId);
+
+    /** Latest announcement email per user on one report page, with what SES reported for it. */
+    interface AnnouncementRecipientEmailRow {
+        String getUserId();
+        String getEmail();
+        String getSendStatus();
+        String getSendError();
+        java.sql.Timestamp getSentAt();
+        Boolean getDelivered();
+        java.sql.Timestamp getOpenedAt();
+        java.sql.Timestamp getClickedAt();
+        Boolean getBounced();
+        Boolean getRejected();
+        Boolean getComplained();
+    }
+
+    @Query(value = """
+            SELECT DISTINCT ON (l.user_id)
+                   l.user_id AS "userId",
+                   l.channel_id AS "email",
+                   l.delivery_status AS "sendStatus",
+                   l.delivery_error_message AS "sendError",
+                   l.notification_date AS "sentAt",
+                   ev.delivered AS "delivered",
+                   ev.opened_at AS "openedAt",
+                   ev.clicked_at AS "clickedAt",
+                   ev.bounced AS "bounced",
+                   ev.rejected AS "rejected",
+                   ev.complained AS "complained"
+            FROM notification_log l
+            CROSS JOIN LATERAL (
+                SELECT BOOL_OR(x.t IN ('DELIVERY', 'OPEN', 'CLICK')) AS delivered,
+                       MIN(x.event_at) FILTER (WHERE x.t IN ('OPEN', 'CLICK')) AS opened_at,
+                       MIN(x.event_at) FILTER (WHERE x.t = 'CLICK') AS clicked_at,
+                       BOOL_OR(x.t = 'BOUNCE') AS bounced,
+                       BOOL_OR(x.t = 'REJECT') AS rejected,
+                       BOOL_OR(x.t = 'COMPLAINT') AS complained
+                FROM (
+                    SELECT upper(trim(substr(split_part(left(ev0.body, 30), chr(10), 1), 14))) AS t,
+                           ev0.notification_date AS event_at
+                    FROM notification_log ev0
+                    WHERE ev0.source = l.id
+                      AND ev0.notification_type = 'EMAIL_EVENT'
+                ) x
+            ) ev
+            WHERE l.source_id = :announcementId
+              AND l.notification_type = 'EMAIL'
+              AND l.user_id = ANY(CAST(:userIds AS text[]))
+            ORDER BY l.user_id, l.notification_date DESC
+            """, nativeQuery = true)
+    java.util.List<AnnouncementRecipientEmailRow> findAnnouncementEmailsForUsers(
+            @Param("announcementId") String announcementId,
+            @Param("userIds") String[] userIds);
 }

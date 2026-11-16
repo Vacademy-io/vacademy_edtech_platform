@@ -34,7 +34,11 @@ public class ProductSignupService {
     private static final String TRIAL_TAG = "FREE_TRIAL";
     private static final String PURCHASED = "EXISTS (SELECT 1 FROM credit_transactions t WHERE t.institute_id = i.id "
             + "AND t.transaction_type IN ('PURCHASE', 'ADMIN_GRANT'))";
-    private static final String STATUS = "CASE WHEN COALESCE(i.lead_tag, '') <> '" + TRIAL_TAG
+    /** A "Buy <plan>" sign-up (lead tag LEAD): paid once its plan is live, else waiting for payment. */
+    private static final String LIVE_PLAN = "EXISTS (SELECT 1 FROM institute_ai_subscription s WHERE s.institute_id = i.id "
+            + "AND s.status IN ('TRIAL', 'ACTIVE', 'GRACE'))";
+    private static final String STATUS = "CASE WHEN COALESCE(i.lead_tag, '') = 'LEAD' THEN (CASE WHEN " + LIVE_PLAN
+            + " THEN 'PAID' ELSE 'PAYMENT_PENDING' END) WHEN COALESCE(i.lead_tag, '') <> '" + TRIAL_TAG
             + "' OR i.demo_expires_at IS NULL THEN 'NOT_ON_TRIAL' WHEN " + PURCHASED
             + " THEN 'PAID' WHEN i.demo_expires_at < (now() AT TIME ZONE 'UTC') THEN 'EXPIRED' ELSE 'ON_TRIAL' END";
     private static final String FROM = " FROM institutes i LEFT JOIN institute_credits c ON c.institute_id = i.id "

@@ -43,6 +43,8 @@ SELECT 'product.telleo',
            'website_url', 'https://telleo.ai',
            'contact_email', 'hello@telleo.ai',
            'logo_url', 'https://telleo.ai/icon-192.png',
+           -- PNG over https: the code and invoice mails show it (Gmail drops SVG).
+           'email_logo_url', 'https://telleo.ai/icon-192.png',
            'app_path', '/telleo/setup',
            'login_url', 'https://dash.vacademy.io/login',
            'trial_days', 7,

@@ -4,7 +4,8 @@
  * Students enrolled in the range and the fee they booked (GET /v1/reports/admissions): KPI strip,
  * a month table, and breakdowns by source, course group (course tag), course, counsellor and the
  * custom field picked in Settings → Reports (e.g. Branch). Source / counsellor / field tables also
- * split admissions by course group, the way a front-office admission register is read.
+ * split admissions by course group, the way a front-office admission register is read. The student
+ * list below them (opened on demand) shows every admission with its fee, paid and due.
  */
 import { useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -43,6 +44,7 @@ import {
     fmtPct,
     type ReportTabProps,
 } from './report-shared';
+import { AdmissionStudentsSection } from './admission-students-section';
 
 /** Source of a student with no enquiry (see the backend's ReportSourceSql). */
 const UNKNOWN_SOURCE = 'UNKNOWN';
@@ -273,6 +275,14 @@ export function AdmissionsTab({
                     <EmptyHint message={t('footnotes.fieldHint')} />
                 </ReportSection>
             )}
+
+            <AdmissionStudentsSection
+                instituteId={instituteId}
+                fromDate={fromDate}
+                toDate={toDate}
+                teamId={teamId}
+                counsellorUserId={counsellorUserId}
+            />
 
             <p className="text-xs text-neutral-400">{t('footnotes.definitions')}</p>
         </div>

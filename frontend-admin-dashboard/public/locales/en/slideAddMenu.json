@@ -34,7 +34,9 @@
         "jupyterNotebook": { "label": "Jupyter Notebook", "description": "Interactive coding notebooks" },
         "scratchProject": { "label": "Scratch Project", "description": "Visual programming blocks" },
         "discussion": { "label": "Discussion", "description": "Ask a question; learners reply and support each other" },
+        "spreadsheet": { "label": "Spreadsheet (Excel)", "description": "Upload .xlsx; learners see a read-only grid" },
         "quiz": { "label": "Quiz", "description": "Timed quiz slide" },
+        "documentQuiz": { "label": "Document + Quiz", "description": "PDF or PowerPoint beside quiz questions" },
         "audio": { "label": "Audio", "description": "Audio slide with playback" },
         "codeEditor": { "label": "Code Editor", "description": "Interactive code environment" },
         "scorm": { "label": "SCORM Package", "description": "Import SCORM 1.2/2004 modules" },
@@ -56,6 +58,8 @@
         "uploadPpt": "Upload PPT Presentation",
         "importScorm": "Import SCORM Package",
         "linkAssessment": "Link an Assessment",
-        "addVimeoVideo": "Add Vimeo Video"
+        "addVimeoVideo": "Add Vimeo Video",
+        "uploadSpreadsheet": "Add Spreadsheet (Excel)",
+        "addDocumentQuiz": "Add Document + Quiz"
     }
 }

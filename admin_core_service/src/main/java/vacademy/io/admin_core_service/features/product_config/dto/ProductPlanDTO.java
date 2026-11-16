@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 /** One paid plan of a product, as the health dashboard sets it and the product's website shows it. */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

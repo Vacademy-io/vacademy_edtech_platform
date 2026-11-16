@@ -1,12 +1,17 @@
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Prohibit } from '@phosphor-icons/react';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
+import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
+import { isIOS } from '@/native';
 import { EvalezyHeader } from './-components/EvalezyHeader';
 import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
+import { WelcomeTutorialDialog } from './-components/Tutorials';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
+import { isPaymentPending, PAYMENT_PENDING_PATHS, usePlanAccess } from './-hooks/usePlanAccess';
 
 export const Route = createFileRoute('/evalezy')({
     component: EvalezyLayout,
@@ -22,6 +27,24 @@ function EvalezyLayout() {
     // Also sets the institute store, naming and theme the screens below rely on.
     useQuery(useInstituteQuery());
     const { settings, isLoading } = useEvalezySettings();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const planAccess = usePlanAccess();
+    // Signed up through "Buy <plan>" and not paid yet: only the plan, its checkout and the profile.
+    const lockedOut =
+        isPaymentPending(planAccess.data) &&
+        !PAYMENT_PENDING_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+    useEffect(() => {
+        if (lockedOut) void navigate({ to: '/evalezy/plan', replace: true });
+    }, [lockedOut, navigate]);
+
+    // "Buy <plan>" on the website, then sign-up or log-in: go straight to that plan's checkout.
+    useEffect(() => {
+        if (isIOS()) return;
+        const plan = takePlanBuyIntent('evalezy');
+        if (plan) void navigate({ to: '/evalezy/credits', search: { buy: plan } });
+    }, [navigate]);
 
     return (
         // The native body already pads the safe-area insets, so the shell only fills
@@ -32,13 +55,14 @@ function EvalezyLayout() {
             <TrialBanner
                 ns="evalezy"
                 renderUpgrade={(label) => (
-                    <Link to="/evalezy/credits" className="shrink-0 font-semibold underline">
-                        {label}
+                    <Link to="/evalezy/plan" className="shrink-0 font-semibold underline">
+                        {/* No purchase wording in the iPhone app (App Store rules). */}
+                        {isIOS() ? t('plan.menu') : label}
                     </Link>
                 )}
             />
             <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
-                {isLoading ? (
+                {isLoading || lockedOut ? (
                     <DashboardLoader />
                 ) : settings.enabled ? (
                     <Outlet />
@@ -50,6 +74,8 @@ function EvalezyLayout() {
                     </div>
                 )}
             </main>
+            {/* Right after a sign-up (trial, demo or buy): the 2-minute tutorial, once. */}
+            {!isLoading && !lockedOut && settings.enabled && <WelcomeTutorialDialog />}
         </div>
     );
 }

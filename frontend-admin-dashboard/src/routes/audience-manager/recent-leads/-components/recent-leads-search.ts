@@ -100,11 +100,24 @@ export const RecentLeadsSearchSchema = z.object({
     /** The user's Duplicates filter ('only' | 'exclude'), offered only where the list shows
      *  duplicates (see `duplicates`). Absent = every enquiry. */
     duplicateView: looseString.optional(),
+    /** Route-owned, opt-in per tab: 'latest' places each lead at its latest enquiry (a lead
+     *  that enquired again sorts and date-filters on that date, and Duplicate Leads also lists
+     *  a closed lead's repeat that took its place). Needs `duplicates` and the Lead Settings
+     *  "Show duplicates only in Duplicate Leads". Absent = submitted date, as before. */
+    enquiryDates: looseString.optional(),
     lock: looseString.optional(),
     calledFrom: looseString.optional(),
     calledTo: looseString.optional(),
     workedFrom: looseString.optional(),
     workedTo: looseString.optional(),
+    /** "Disposition marked" — comma-separated status_keys the lead was MOVED TO
+     *  (from its status history), whatever its status is now. */
+    marked: looseString.optional(),
+    /** Window for `marked` — same presets as workedWithin, or 'CUSTOM' with
+     *  markedFrom / markedTo (yyyy-mm-dd, inclusive calendar days). */
+    markedWithin: looseString.optional(),
+    markedFrom: looseString.optional(),
+    markedTo: looseString.optional(),
     /** Campaign (UTM) filters — comma-separated values per dimension. Only
      *  honoured while the institute's UTM setting is on (the controls that
      *  read them render nothing otherwise). The Reports Center's UTM tab

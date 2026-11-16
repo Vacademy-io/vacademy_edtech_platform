@@ -21,4 +21,6 @@ public class InstituteInfoDTO {
     private String websiteUrl;
     private String learnerPortalUrl;
     private String adminPortalUrl;
+    /** Permanent public logo URL, resolved by admin-core; null when there is none. */
+    private String instituteLogoUrl;
 }

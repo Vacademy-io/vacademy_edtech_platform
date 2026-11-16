@@ -315,6 +315,7 @@ final class EngagementDailyReportSql {
             WHERE pl.payment_status = 'PAID' AND pl.payment_amount > 0
               AND"""
             + vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql.NOT_ORDER_PARENT_PL
+            + "AND" + vacademy.io.admin_core_service.features.commerce.common.CommercePlans.NOT_COMMERCE_LOG_PL
             + """
               AND pl.created_at >= :from AND pl.created_at < :to
               AND EXISTS (SELECT 1 FROM user_lead_profile ulp

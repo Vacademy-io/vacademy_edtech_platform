@@ -552,6 +552,9 @@ public class EngagementReplyResponder {
         }
     }
 
+    /** An email reply raises one alert per conversation in this window; later ones only join the inbox. */
+    static final long REPLY_ALERT_QUIET_HOURS = 24;
+
     /** The task is the durable record; people are told now, as for an escalated WhatsApp reply. */
     private void alertReplyWaiting(EngagementReplyMemberQueries.LiveMember target, EngagementAction task,
                                    String reason, String body) {
@@ -649,6 +652,9 @@ public class EngagementReplyResponder {
         String label = STOP_MENTION.matcher(body).find() || NOT_INTERESTED_CLEAR.matcher(body).find() ? "stop-mention"
                 : isCallRequest(body) ? "callback"
                 : ESCALATE_TRIPWIRE.matcher(body).find() ? "money/complaint" : null;
+        // A second message while the first still waits for a person: inbox only, no second alert.
+        boolean alreadyWaiting = actionRepository.countOpenRepliesSince(target.getMemberId(),
+                now.minus(Duration.ofHours(REPLY_ALERT_QUIET_HOURS))) > 0;
         note.setEngineId(target.getEngineId());
         note.setMemberId(target.getMemberId());
         note.setPriority(BigDecimal.valueOf(label != null ? 85 : 75));
@@ -661,8 +667,10 @@ public class EngagementReplyResponder {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
-        alertReplyWaiting(target, savedNote != null ? savedNote : note,
-                "they replied by email" + (label != null ? " (" + label + ")" : ""), body);
+        if (!alreadyWaiting || label != null) {
+            alertReplyWaiting(target, savedNote != null ? savedNote : note,
+                    "they replied by email" + (label != null ? " (" + label + ")" : ""), body);
+        }
         return true;
     }
 

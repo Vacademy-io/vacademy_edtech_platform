@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionReportDTO;
+import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionStudentsDTO;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
 
@@ -49,7 +50,14 @@ public class AdmissionReportService {
     private final LeadReportSettingService settingService;
     private final AuthService authService;
 
-    /** The student's enrolments in the window, with the course and its tags. */
+    /**
+     * The student's enrolments in the window, with the course and its tags. An enrolment's day is
+     * its enrolled_date, else its created_at day in the institute's zone. The window is checked on
+     * the plain columns (fromTs/toTs are the window's local midnights as UTC wall clock), which
+     * selects the same rows as comparing that day but lets Postgres estimate the row count; the
+     * estimate on the day expression was ~0.5% of the rows, which turned every join below into a
+     * nested loop on long ranges.
+     */
     private static final String ENR_CTE = """
             enr AS (
                 SELECT s.id, s.user_id, s.user_plan_id, s.created_at, ps.package_id, p.package_name,
@@ -63,8 +71,9 @@ public class AdmissionReportService {
                 WHERE s.institute_id = :instituteId
                   AND s.status IN ('ACTIVE', 'COMPLETED', 'INVITED')
                   AND NOT (s.status = 'INVITED' AND COALESCE(s.source, '') = 'TERMINATED')
-                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) >= :fromDay
-                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) <  :toDay
+                  AND ((s.enrolled_date >= :fromDay AND s.enrolled_date < :toDay)
+                       OR (s.enrolled_date IS NULL
+                           AND s.created_at >= CAST(:fromTs AS timestamp) AND s.created_at < CAST(:toTs AS timestamp)))
             )
             """;
 
@@ -96,7 +105,8 @@ public class AdmissionReportService {
                 ORDER BY user_id, month, COALESCE(tag_rank, 2000000), created_at, package_name
             ),
             courses AS (
-                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses, MIN(enr_day) AS first_day
+                SELECT user_id, month, COUNT(DISTINCT package_id) AS n_courses, MIN(enr_day) AS first_day,
+                       STRING_AGG(DISTINCT package_name, ', ' ORDER BY package_name) AS course_names
                 FROM enr GROUP BY user_id, month
             ),
             plans AS (
@@ -133,35 +143,60 @@ public class AdmissionReportService {
                   AND ulp.merged_into_user_id IS NULL
                   AND ulp.user_id IN (SELECT user_id FROM main)
             )
+            """ + "%FIELD_CTE%" + """
             SELECT m.user_id, m.month, to_char(c.first_day, 'YYYY-MM-DD') AS first_day,
-                   m.package_id, m.package_name, m.tag, c.n_courses,
+                   m.package_id, m.package_name, m.tag, c.n_courses, c.course_names,
                    COALESCE(mo.fee, 0)  AS fee,
                    COALESCE(mo.paid, 0) AS paid,
                    ld.source_type, ld.from_campaign, ld.first_audience_id, ld.counsellor_id,
-                   """ + "%FIELD_VALUE%" + """
-                       AS field_value
+                   fv.value AS field_value
             FROM main m
             JOIN courses c ON c.user_id = m.user_id AND c.month = m.month
             LEFT JOIN money mo ON mo.user_id = m.user_id AND mo.month = m.month
             LEFT JOIN ld ON ld.user_id = m.user_id
+            LEFT JOIN fv ON fv.user_id = m.user_id AND fv.month = m.month
             WHERE (:scopeCsv IS NULL OR ld.counsellor_id = ANY(STRING_TO_ARRAY(:scopeCsv, ',')))
             """;
 
     /**
-     * The admission's value of the chosen field: pinned on one of the month's enrolments first,
-     * else the latest on the student's profile or any of their enquiries.
+     * The admission's value of the chosen field, one row per student and month: pinned on one of
+     * the month's enrolments first, else the latest on the student's profile or any of their
+     * enquiries. Built once for the whole range and joined, not looked up per admission: the
+     * per-row lookup read every enquiry value of the field each time and took minutes on a
+     * multi-year range.
      */
-    private static final String FIELD_VALUE_SQL = """
-            (SELECT v.value FROM custom_field_values v
-                WHERE v.custom_field_id = :fieldId AND v.value <> ''
-                  AND ((v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING'
-                        AND v.source_id IN (SELECT e2.id FROM enr e2 WHERE e2.user_id = m.user_id AND e2.month = m.month))
-                    OR (v.source_type = 'USER' AND v.source_id = m.user_id)
-                    OR (v.source_type = 'AUDIENCE_RESPONSE'
-                        AND v.source_id IN (SELECT r.id FROM audience_response r WHERE r.user_id = m.user_id)))
-                ORDER BY CASE WHEN v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING' THEN 0 ELSE 1 END,
-                         COALESCE(v.updated_at, v.created_at) DESC
-                LIMIT 1)""";
+    private static final String FIELD_VALUE_CTE = """
+            , fv AS (
+                SELECT DISTINCT ON (k.user_id, k.month) k.user_id, k.month, k.value
+                FROM (
+                    SELECT e.user_id, e.month, v.value, 0 AS pri, COALESCE(v.updated_at, v.created_at) AS ts
+                    FROM enr e
+                    JOIN custom_field_values v
+                      ON v.source_type = 'STUDENT_SESSION_INSTITUTE_GROUP_MAPPING' AND v.source_id = e.id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                    UNION ALL
+                    SELECT c.user_id, c.month, v.value, 1, COALESCE(v.updated_at, v.created_at)
+                    FROM courses c
+                    JOIN custom_field_values v ON v.source_type = 'USER' AND v.source_id = c.user_id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                    UNION ALL
+                    SELECT c.user_id, c.month, v.value, 1, COALESCE(v.updated_at, v.created_at)
+                    FROM courses c
+                    JOIN audience_response r ON r.user_id = c.user_id
+                    JOIN custom_field_values v ON v.source_type = 'AUDIENCE_RESPONSE' AND v.source_id = r.id
+                    WHERE v.custom_field_id = :fieldId AND v.value <> ''
+                ) k
+                ORDER BY k.user_id, k.month, k.pri, k.ts DESC
+            )
+            """;
+
+    /** No field picked: an empty {@code fv} so the main query stays the same. */
+    private static final String NO_FIELD_VALUE_CTE = """
+            , fv AS (
+                SELECT CAST(NULL AS varchar) AS user_id, CAST(NULL AS text) AS month, CAST(NULL AS text) AS value
+                WHERE false
+            )
+            """;
 
     private static final String CURRENCY_SQL = """
             SELECT pl.currency
@@ -201,13 +236,13 @@ public class AdmissionReportService {
     record AdmissionRow(String userId, String month, String packageId, String packageName,
                                 String tag, int courses, double fee, double paid,
                                 String source, boolean fromCampaign, String counsellorId, String fieldValue,
-                                String firstAudienceId, String day) {
+                                String firstAudienceId, String day, String courseNames) {
 
         AdmissionRow(String userId, String month, String packageId, String packageName,
                      String tag, int courses, double fee, double paid,
                      String source, boolean fromCampaign, String counsellorId, String fieldValue) {
             this(userId, month, packageId, packageName, tag, courses, fee, paid, source, fromCampaign,
-                    counsellorId, fieldValue, null, null);
+                    counsellorId, fieldValue, null, null, null);
         }
     }
 
@@ -263,6 +298,92 @@ public class AdmissionReportService {
                 .byCounsellor(byCounsellor)
                 .byField(byField)
                 .build();
+    }
+
+    /** Most admissions the student list returns; student details are fetched for each one. */
+    static final int MAX_STUDENT_ROWS = 5000;
+    private static final int AUTH_BATCH_SIZE = 500;
+
+    /**
+     * The students behind {@link #getAdmissions}: one row per admission, from the very same rows,
+     * newest admission first, with the student's name and contact. Asked for separately (only when
+     * the list is opened) because it fetches every student's details from the auth service.
+     */
+    @Transactional(readOnly = true)
+    public AdmissionStudentsDTO getAdmissionStudents(String instituteId, String fromDate, String toDate,
+                                                     String teamId, String counsellorUserId, String callerUserId) {
+        LeadReportSettingService.ReportSettings settings = settingService.get(instituteId);
+        String scopeCsv = scopeResolver.resolveScopeUsersCsv(
+                instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
+        String fieldId = settings.admissionFieldId();
+
+        List<AdmissionRow> rows = new ArrayList<>(
+                queryRows(instituteId, fromDate, toDate, scopeCsv, settings, fieldId));
+        rows.sort(newestFirst());
+        boolean truncated = rows.size() > MAX_STUDENT_ROWS;
+        if (truncated) {
+            rows = new ArrayList<>(rows.subList(0, MAX_STUDENT_ROWS));
+        }
+
+        Map<String, UserDTO> students = resolveUsers(rows.stream().map(AdmissionRow::userId).toList());
+        Map<String, String> counsellors = resolveNames(rows.stream().map(AdmissionRow::counsellorId).toList());
+
+        List<AdmissionStudentsDTO.Row> out = rows.stream().map(r -> {
+            UserDTO u = students.get(r.userId());
+            return AdmissionStudentsDTO.Row.builder()
+                    .userId(r.userId())
+                    .name(u != null ? u.getFullName() : null)
+                    .phone(u != null ? u.getMobileNumber() : null)
+                    .email(u != null ? u.getEmail() : null)
+                    .month(r.month())
+                    .admissionDate(r.day())
+                    .courses(r.courseNames() != null ? r.courseNames() : r.packageName())
+                    .courseCount(r.courses())
+                    .mainCourse(r.packageName())
+                    .courseTag(r.tag())
+                    .source(r.source())
+                    .counsellorId(r.counsellorId())
+                    .counsellorName(r.counsellorId() == null ? null
+                            : counsellors.getOrDefault(r.counsellorId(), r.counsellorId()))
+                    .fieldValue(r.fieldValue())
+                    .fees(round2(r.fee()))
+                    .paid(round2(r.paid()))
+                    .due(round2(r.fee() - r.paid()))
+                    .build();
+        }).toList();
+
+        return AdmissionStudentsDTO.builder()
+                .currency(resolveCurrency(instituteId))
+                .fieldName(fieldId == null ? null : fieldName(fieldId))
+                .rows(out)
+                .truncated(truncated)
+                .build();
+    }
+
+    /** Latest admission day first, then month, then student, so the order is stable. */
+    static Comparator<AdmissionRow> newestFirst() {
+        return Comparator.comparing(AdmissionRow::day, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AdmissionRow::month, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AdmissionRow::userId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    /** Student details in batches, so one call never carries thousands of ids. */
+    private Map<String, UserDTO> resolveUsers(Collection<String> userIds) {
+        List<String> ids = userIds.stream()
+                .filter(s -> s != null && !s.isBlank()).distinct().collect(Collectors.toList());
+        Map<String, UserDTO> out = new LinkedHashMap<>();
+        for (int from = 0; from < ids.size(); from += AUTH_BATCH_SIZE) {
+            List<String> batch = ids.subList(from, Math.min(from + AUTH_BATCH_SIZE, ids.size()));
+            try {
+                List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(batch);
+                if (users == null) continue;
+                users.stream().filter(u -> u != null && u.getId() != null)
+                        .forEach(u -> out.putIfAbsent(u.getId(), u));
+            } catch (Exception e) {
+                log.warn("[AdmissionReport] student details failed for a batch of {}: {}", batch.size(), e.getMessage());
+            }
+        }
+        return out;
     }
 
     /** The course tags and custom fields an admin can pick in the report settings. */
@@ -390,10 +511,12 @@ public class AdmissionReportService {
                 .addValue("tz", zone.getId())
                 .addValue("fromDay", java.sql.Date.valueOf(from), Types.DATE)
                 .addValue("toDay", java.sql.Date.valueOf(to.plusDays(1)), Types.DATE)
+                .addValue("fromTs", utcWallClock(from, zone), Types.VARCHAR)
+                .addValue("toTs", utcWallClock(to.plusDays(1), zone), Types.VARCHAR)
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
                 .addValue("tagOrderCsv", String.join(",", tagOrder), Types.VARCHAR)
                 .addValue("fieldId", fieldId, Types.VARCHAR);
-        String sql = ADMISSIONS_SQL.replace("%FIELD_VALUE%", fieldId != null ? FIELD_VALUE_SQL : "CAST(NULL AS text)");
+        String sql = ADMISSIONS_SQL.replace("%FIELD_CTE%", fieldId != null ? FIELD_VALUE_CTE : NO_FIELD_VALUE_CTE);
 
         return jdbc.query(sql, p, (rs, i) -> new AdmissionRow(
                 rs.getString("user_id"),
@@ -409,7 +532,13 @@ public class AdmissionReportService {
                 rs.getString("counsellor_id"),
                 trimToNull(rs.getString("field_value")),
                 rs.getString("first_audience_id"),
-                rs.getString("first_day")));
+                rs.getString("first_day"),
+                rs.getString("course_names")));
+    }
+
+    /** The day's local midnight in {@code zone}, as the UTC wall clock created_at is stored in. */
+    static String utcWallClock(LocalDate day, ZoneId zone) {
+        return day.atStartOfDay(zone).withZoneSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime().toString();
     }
 
     private ZoneId safeZone(String tz) {

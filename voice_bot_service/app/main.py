@@ -136,7 +136,17 @@ async def health():
         "activeCalls": _active_calls,
         "maxConcurrentCalls": s.max_concurrent_calls,
         "ws": s.wss_url("corr=<corr>"),
+        # Per Sarvam STT key: rest left after a refusal. Numbers only, no key text.
+        "sarvamSttKeys": _sarvam_key_status(),
     }
+
+
+def _sarvam_key_status() -> list:
+    try:
+        from .providers import SARVAM_KEYS
+        return SARVAM_KEYS.status()
+    except Exception:
+        return []
 
 
 _SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"

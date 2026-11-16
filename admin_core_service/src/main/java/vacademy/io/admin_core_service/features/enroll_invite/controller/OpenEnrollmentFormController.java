@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollmentFormSubmitDTO;
 import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollmentFormSubmitResponseDTO;
 import vacademy.io.admin_core_service.features.enroll_invite.service.EnrollmentFormService;
+import vacademy.io.admin_core_service.features.learner.service.PublicEnrollRoleGuard;
 
 @Slf4j
 @RestController
@@ -18,6 +19,9 @@ public class OpenEnrollmentFormController {
 
     @Autowired
     private EnrollmentFormService enrollmentFormService;
+
+    @Autowired
+    private PublicEnrollRoleGuard publicEnrollRoleGuard;
 
     /**
      * Submit enrollment form - Step 1 of enrollment process.
@@ -32,6 +36,8 @@ public class OpenEnrollmentFormController {
             @RequestBody EnrollmentFormSubmitDTO request) {
         log.info("Received enrollment form submission for institute: {}", request.getInstituteId());
         
+        // No login on this route: the body's role names never reach auth-service as written.
+        publicEnrollRoleGuard.restrictToLearnerRoles(request.getUserDetails(), request.getInstituteId());
         EnrollmentFormSubmitResponseDTO response = enrollmentFormService.submitEnrollmentForm(request);
         
         return ResponseEntity.ok(response);

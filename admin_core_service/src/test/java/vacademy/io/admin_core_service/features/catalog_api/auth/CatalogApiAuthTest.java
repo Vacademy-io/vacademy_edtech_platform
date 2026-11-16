@@ -220,4 +220,73 @@ class CatalogApiAuthTest {
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, e.getStatus());
         assertEquals(CatalogApiAuth.LEADS_PER_MINUTE, e.getDetails().get("limit_per_minute"));
     }
+
+    // ── family limits (shop cart and pincode) ────────────────────────────────
+
+    private static MockHttpServletRequest from(String origin, String networkIp, String clientIp) {
+        MockHttpServletRequest r = request(origin);
+        if (networkIp != null) r.addHeader("CF-Connecting-IP", networkIp);
+        if (clientIp != null) r.addHeader("X-Client-IP", clientIp);
+        return r;
+    }
+
+    private String family(MockHttpServletRequest r) {
+        CatalogApiAuth.Principal p = auth.authenticateUnmetered(r, CatalogApiAuth.SCOPE_READ);
+        try {
+            auth.rateLimit(p, r, "cart", 100, 10);
+            return "ok";
+        } catch (CatalogApiException e) {
+            return e.getCode();
+        }
+    }
+
+    @Test
+    void aFloodWithoutAnOriginCannotLockTheCartOfShoppersInABrowser() {
+        // Someone holding the publishable key sends call after call with no Origin and no X-Client-IP.
+        MockHttpServletRequest attacker = from(null, "203.0.113.9", null);
+        int accepted = 0;
+        for (int i = 0; i < 1_000; i++) {
+            if ("ok".equals(family(attacker))) accepted++;
+        }
+        // Without a visitor header the caller's network address is the visitor: 10 a minute.
+        assertEquals(10, accepted);
+
+        // The same with a new X-Client-IP on every call: half of the server-side allowance, no more.
+        accepted = 0;
+        for (int i = 0; i < 1_000; i++) {
+            if ("ok".equals(family(from(null, "203.0.113.10", "10.0." + (i / 250) + "." + (i % 250))))) accepted++;
+        }
+        assertEquals(50, accepted);
+
+        // Every real shopper in a browser is still served.
+        for (int shopper = 0; shopper < 20; shopper++) {
+            assertEquals("ok", family(from("https://x.com", "198.51.100." + shopper, null)));
+        }
+        // And a second server (the shop's own) still has the rest of the server-side allowance.
+        assertEquals("ok", family(from(null, "192.0.2.1", "10.9.9.9")));
+    }
+
+    @Test
+    void aVisitorOverTheLimitDoesNotUseUpTheAllowanceOfTheKey() {
+        MockHttpServletRequest greedy = from("https://x.com", "198.51.100.1", null);
+        for (int i = 0; i < 500; i++) family(greedy);
+        assertEquals("rate_limited", family(greedy));
+
+        // 500 calls were sent, 10 were let through: 90 of the key's 100 are left for other visitors.
+        int served = 0;
+        for (int visitor = 2; visitor < 200 && "ok".equals(family(from("https://x.com", "198.51.100." + visitor, null))); visitor++) {
+            served++;
+        }
+        assertEquals(90, served);
+    }
+
+    @Test
+    void theFamilyLimitsDoNotDrawOnTheReadLimitOfTheCatalogueRoutes() {
+        MockHttpServletRequest r = from("https://x.com", "198.51.100.7", null);
+        for (int i = 0; i < CatalogApiAuth.READS_PER_MINUTE + 50; i++) {
+            auth.authenticateUnmetered(r, CatalogApiAuth.SCOPE_READ);
+        }
+        // The catalogue routes of the same key still answer.
+        auth.authenticate(r, CatalogApiAuth.SCOPE_READ);
+    }
 }

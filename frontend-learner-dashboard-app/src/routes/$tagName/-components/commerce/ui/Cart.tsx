@@ -1,0 +1,465 @@
+/**
+ * The mini cart drawer and the cart page. The cart is held in the
+ * browser; every number a shopper reads as money comes from /cart/price: line totals,
+ * discounts, delivery, the amount left for free delivery, tax inside the total. While the
+ * server has not answered, a line shows its remembered unit price and no total is drawn.
+ */
+import React, { useEffect, useRef } from 'react';
+import { CheckCircle, Trash, WarningCircle, WhatsappLogo } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import type { CartPrice, CartPriceLine, CartUnavailableLine } from '../api/types';
+import { sendCommerceEvent } from '../logic/events';
+import { formatMoney, formatUnits } from '../logic/format';
+import { isMeasured } from '../logic/stock';
+import type { CartLine } from '../state/cart-logic';
+import { useCommerceCart } from '../state/cart-store';
+import type { MessageKey } from '../i18n';
+import { useOnline } from './hooks';
+import { EmptyState, ErrorState, Layer, QuantityStepper, unitLabel } from './primitives';
+import { ProductRail } from './ProductCard';
+import { useCartPrice, useProductRail } from './queries';
+import { ShopLink, useCommerceSite, whatsappLink } from './site';
+
+const quantityText = (
+    line: Pick<CartLine, 'quantity' | 'qtyScale' | 'unit'>,
+    unit: (code: string | null, short: boolean) => string
+): string =>
+    isMeasured(line.qtyScale) ? `${formatUnits(line.quantity, line.qtyScale)} ${unit(line.unit, true)}` : String(line.quantity);
+
+const useUnavailableText = () => {
+    const { t } = useCommerceSite();
+    return (problem: CartUnavailableLine, line: CartLine): string => {
+        const count =
+            typeof problem.available_quantity === 'number' ? formatUnits(problem.available_quantity, line.qtyScale) : null;
+        switch (problem.reason) {
+            case 'INSUFFICIENT_STOCK':
+                return count !== null
+                    ? t('cart.unavailable.INSUFFICIENT_STOCK', { count })
+                    : t('cart.unavailable.INSUFFICIENT_STOCK_PLAIN');
+            case 'QUANTITY_STEP':
+                return t('cart.unavailable.QUANTITY_STEP', {
+                    step: formatUnits(problem.qty_step || line.qtyStep, line.qtyScale),
+                });
+            case 'QUANTITY_ABOVE_MAX':
+                return typeof problem.max_quantity === 'number'
+                    ? t('cart.unavailable.QUANTITY_ABOVE_MAX', { max: formatUnits(problem.max_quantity, line.qtyScale) })
+                    : t('cart.unavailable.QUANTITY_INVALID');
+            case 'NOT_FOUND':
+            case 'NO_PRICE':
+            case 'OUT_OF_STOCK':
+            case 'QUANTITY_INVALID':
+                return t(`cart.unavailable.${problem.reason}` as MessageKey);
+            default:
+                return t('cart.unavailable.generic');
+        }
+    };
+};
+
+const CartLineRow: React.FC<{
+    line: CartLine;
+    priced: CartPriceLine | undefined;
+    problem: CartUnavailableLine | undefined;
+    currency: string | null | undefined;
+    onNavigate?: () => void;
+}> = ({ line, priced, problem, currency, onNavigate }) => {
+    const { t } = useCommerceSite();
+    const setQuantity = useCommerceCart((s) => s.setQuantity);
+    const remove = useCommerceCart((s) => s.remove);
+    const unavailableText = useUnavailableText();
+    const unit = (code: string | null, short: boolean) => unitLabel(t, code, short);
+    const measured = isMeasured(line.qtyScale);
+    // The server's line total when it has priced the line; else only the remembered unit price.
+    const amount = priced ? formatMoney(priced.net ?? priced.gross, currency) : null;
+    const unitPrice = formatMoney(
+        (priced?.unit_price ?? line.unitPrice) !== null ? (priced?.unit_price ?? line.unitPrice)! * (measured ? line.qtyScale : 1) : null,
+        currency
+    );
+    const fixTo =
+        problem && typeof problem.available_quantity === 'number' && problem.available_quantity >= line.qtyStep
+            ? Math.floor(problem.available_quantity / line.qtyStep) * line.qtyStep
+            : problem && typeof problem.max_quantity === 'number' && problem.max_quantity >= line.qtyStep
+              ? problem.max_quantity
+              : null;
+    return (
+        <li className={cn('cmx-line', problem && 'cmx-line--off')}>
+            <div className="cmx-img cmx-line__thumb">
+                {line.imageUrl && <img src={line.imageUrl} alt="" loading="lazy" decoding="async" width={72} height={90} />}
+            </div>
+            <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex items-start justify-between gap-2">
+                    <ShopLink to={`p/${line.slug}`} className="cmx-small font-medium" onClick={onNavigate}>
+                        {priced?.name || line.name}
+                    </ShopLink>
+                    <button
+                        type="button"
+                        className="cmx-icon-btn -me-2 -mt-2 shrink-0"
+                        onClick={() => {
+                            sendCommerceEvent({
+                                name: 'remove_from_cart',
+                                item: { id: priced?.sku || line.variantId, name: line.name, unitPrice: priced?.unit_price ?? line.unitPrice, quantity: line.quantity, qtyScale: line.qtyScale, variant: line.variantLabel },
+                                currency,
+                            });
+                            remove(line.variantId);
+                        }}
+                        aria-label={t('cart.remove', { name: line.name })}
+                    >
+                        <Trash size={18} aria-hidden="true" />
+                    </button>
+                </div>
+                {(priced?.variant_label || line.variantLabel) && (
+                    <p className="cmx-small cmx-muted">{priced?.variant_label || line.variantLabel}</p>
+                )}
+                {unitPrice && (
+                    <p className="cmx-small cmx-muted">
+                        {measured ? t('price.perUnit', { price: unitPrice, unit: unit(line.unit, false) }) : unitPrice}
+                    </p>
+                )}
+                {problem && (
+                    <p className="cmx-small cmx-bad flex flex-wrap items-center gap-2" role="status">
+                        <span>
+                            {unavailableText(problem, line)} · {t('cart.notInTotal')}
+                        </span>
+                        {fixTo !== null && (
+                            <button type="button" className="cmx-link" onClick={() => setQuantity(line.variantId, fixTo)}>
+                                {t('cart.fix.setTo', { count: formatUnits(fixTo, line.qtyScale) })}
+                            </button>
+                        )}
+                    </p>
+                )}
+                <div className="mt-1 flex items-center justify-between gap-2">
+                    {line.piece ? (
+                        <span className="cmx-badge">{t('badge.ONE_OF_ONE')}</span>
+                    ) : (
+                        <QuantityStepper
+                            small
+                            label={t('product.qty')}
+                            value={line.quantity}
+                            step={line.qtyStep}
+                            min={line.qtyStep}
+                            max={null}
+                            display={quantityText(line, unit)}
+                            onChange={(next) => setQuantity(line.variantId, next)}
+                        />
+                    )}
+                    {/* Never a guessed total: only the server's number is shown as the line amount. */}
+                    <span className="font-semibold tabular-nums" aria-live="polite">
+                        {amount ?? ''}
+                    </span>
+                </div>
+            </div>
+        </li>
+    );
+};
+
+/** The server's totals of a priced cart (cart drawer, cart page, checkout). */
+export const CartTotals: React.FC<{ price: CartPrice }> = ({ price }) => {
+    const { t } = useCommerceSite();
+    const totals = price.totals;
+    const shipping = price.shipping;
+    const money = (value: number | null | undefined) => formatMoney(value, price.currency);
+    if (!totals) return null;
+    const discount = typeof totals.discount === 'number' && totals.discount > 0 ? money(totals.discount) : null;
+    const tax = typeof price.tax?.tax_amount === 'number' && price.tax.tax_amount > 0 ? money(price.tax.tax_amount) : null;
+    // CGST + SGST inside the seller's state, IGST outside it: named once the server knows the place of supply.
+    const positive = (value: number | null | undefined) => (typeof value === 'number' && value > 0 ? money(value) : null);
+    const [cgst, sgst, igst] = [positive(price.tax?.cgst), positive(price.tax?.sgst), positive(price.tax?.igst)];
+    const split = !price.tax?.place_of_supply_known
+        ? null
+        : igst
+          ? t('cart.taxSplit.inter', { igst })
+          : cgst && sgst
+            ? t('cart.taxSplit.intra', { cgst, sgst })
+            : null;
+    return (
+        <dl className="cmx-totals" aria-label={t('cart.totalsLabel')}>
+            <div>
+                <dt>{t('cart.subtotal')}</dt>
+                <dd>{money(totals.subtotal)}</dd>
+            </div>
+            {discount && (
+                <div>
+                    <dt>{t('cart.discount')}</dt>
+                    <dd className="cmx-ok">-{discount}</dd>
+                </div>
+            )}
+            <div>
+                <dt>{t('cart.delivery')}</dt>
+                <dd>{shipping?.free || !totals.shipping ? t('cart.free') : money(totals.shipping)}</dd>
+            </div>
+            {typeof totals.cod_charge === 'number' && totals.cod_charge > 0 && (
+                <div>
+                    <dt>{t('checkout.codCharge')}</dt>
+                    <dd>{money(totals.cod_charge)}</dd>
+                </div>
+            )}
+            <div className="cmx-totals__total">
+                <dt>{t('cart.total')}</dt>
+                <dd>{money(totals.total)}</dd>
+            </div>
+            <p className="cmx-small cmx-muted">{split || (tax ? t('cart.inclTax', { tax }) : t('price.inclTax'))}</p>
+        </dl>
+    );
+};
+
+/** "Add ₹X more for free delivery", hidden when the seller sets no free-delivery amount. */
+const FreeDeliveryBar: React.FC<{ price: CartPrice }> = ({ price }) => {
+    const { t } = useCommerceSite();
+    const shipping = price.shipping;
+    if (!shipping || typeof shipping.free_above !== 'number' || shipping.free_above <= 0) return null;
+    const remaining = typeof shipping.remaining_for_free === 'number' ? shipping.remaining_for_free : 0;
+    const reached = shipping.free || remaining <= 0;
+    const percent = reached ? 100 : Math.max(4, Math.min(100, Math.round((1 - remaining / shipping.free_above) * 100)));
+    return (
+        <div className="cmx-note flex-col" role="status">
+            <span>
+                {reached
+                    ? t('cart.freeDelivery.reached')
+                    : t('cart.freeDelivery.remaining', { amount: formatMoney(remaining, price.currency) })}
+            </span>
+            <span className="cmx-meter w-full" aria-hidden="true" style={{ ['--cmx-meter' as string]: String(percent) }}>
+                <span />
+            </span>
+        </div>
+    );
+};
+
+/** Lines, what changed, and the server's totals: the body shared by the drawer and the page. */
+export const useCartView = (active: boolean) => {
+    const cart = useCommerceCart((s) => s.cart);
+    const hydrated = useCommerceCart((s) => s.hydrated);
+    const { price, pending, error, refetch } = useCartPrice(active);
+    return { cart, hydrated, price, pending, error, refetch };
+};
+
+export const CartLines: React.FC<{
+    view: ReturnType<typeof useCartView>;
+    onNavigate?: () => void;
+}> = ({ view, onNavigate }) => {
+    const { t } = useCommerceSite();
+    const lastAdded = useCommerceCart((s) => s.lastAdded);
+    const { cart, price, error, refetch } = view;
+    const priced = new Map((price?.lines || []).map((l) => [l.line_ref, l]));
+    const problems = new Map((price?.unavailable || []).map((l) => [l.line_ref, l]));
+    const priceChanges = (price?.changes || []).filter(
+        (c) => c.type === 'PRICE_CHANGED' && c.old_unit_price !== null && c.new_unit_price !== null
+    );
+    return (
+        <div className="flex flex-col gap-3">
+            {lastAdded && cart.lines.some((l) => l.variantId === lastAdded) && (
+                <p className="cmx-note cmx-ok items-center" role="status">
+                    <CheckCircle size={18} weight="fill" aria-hidden="true" />
+                    {t('cart.added')}
+                </p>
+            )}
+            {price && <FreeDeliveryBar price={price} />}
+            {priceChanges.map((change) => {
+                const line = cart.lines.find((l) => l.variantId === change.line_ref);
+                if (!line) return null;
+                const scale = isMeasured(line.qtyScale) ? line.qtyScale : 1;
+                return (
+                    <p key={change.line_ref} className="cmx-note cmx-note--warn" role="status">
+                        <WarningCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+                        {t('cart.change.price', {
+                            name: line.name,
+                            old: formatMoney((change.old_unit_price as number) * scale, price?.currency),
+                            new: formatMoney((change.new_unit_price as number) * scale, price?.currency),
+                        })}
+                    </p>
+                );
+            })}
+            {error && !price ? <ErrorState compact error={error} onRetry={() => void refetch()} /> : null}
+            <ul className="cmx-rows">
+                {cart.lines.map((line) => (
+                    <CartLineRow
+                        key={line.variantId}
+                        line={line}
+                        priced={priced.get(line.variantId)}
+                        problem={problems.get(line.variantId)}
+                        currency={price?.currency}
+                        onNavigate={onNavigate}
+                    />
+                ))}
+            </ul>
+        </div>
+    );
+};
+
+/**
+ * Totals and the way forward. Checkout is a later package: until the site turns it on
+ * (globalSettings.commerce.checkout), the cart offers an order over WhatsApp when the seller
+ * has a number, and says that online checkout opens soon otherwise.
+ */
+export const CartSummary: React.FC<{ view: ReturnType<typeof useCartView>; onNavigate?: () => void; page?: boolean }> = ({
+    view,
+    onNavigate,
+    page,
+}) => {
+    const { t, config, absoluteUrl } = useCommerceSite();
+    const { cart, price, pending, error, refetch } = view;
+    const unit = (code: string | null, short: boolean) => unitLabel(t, code, short);
+    const total = formatMoney(price?.totals?.total, price?.currency);
+    const orderText = [
+        t('cart.whatsappText'),
+        ...cart.lines.map((l) => `• ${l.name}${l.variantLabel ? ` (${l.variantLabel})` : ''} × ${quantityText(l, unit)} — ${absoluteUrl(`p/${l.slug}`)}`),
+    ].join('\n');
+    const whatsapp = whatsappLink(config.whatsappNumber, orderText);
+    const online = useOnline();
+    // Checkout needs the server: with no connection the button waits instead of failing later.
+    const payable = !!price && (price.lines || []).length > 0 && online;
+    return (
+        <div className="flex flex-col gap-3" aria-busy={pending}>
+            {price ? (
+                <CartTotals price={price} />
+            ) : error ? null : (
+                <div className="flex flex-col gap-2" aria-hidden="true">
+                    <div className="cmx-skel h-4 w-full" />
+                    <div className="cmx-skel h-4 w-full" />
+                    <div className="cmx-skel h-6 w-full" />
+                </div>
+            )}
+            {pending && (
+                <p className="cmx-small cmx-muted" role="status">
+                    {t('cart.pricing')}
+                </p>
+            )}
+            {error && price ? (
+                <p className="cmx-small cmx-bad" role="alert">
+                    {t('cart.priceError')}{' '}
+                    <button type="button" className="cmx-link" onClick={() => void refetch()}>
+                        {t('common.retry')}
+                    </button>
+                </p>
+            ) : null}
+            {!online && (
+                <p className="cmx-note" role="status">
+                    {t('cart.offline')}
+                </p>
+            )}
+            {config.checkout ? (
+                <ShopLink
+                    to="checkout"
+                    className="cmx-btn cmx-btn--primary cmx-btn--lg cmx-btn--block"
+                    aria-disabled={!payable || pending}
+                    onClick={(event) => {
+                        if (!payable || pending) event.preventDefault();
+                        else onNavigate?.();
+                    }}
+                >
+                    {total ? t('cart.checkout', { total }) : t('cart.pricing')}
+                </ShopLink>
+            ) : whatsapp ? (
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="cmx-btn cmx-btn--primary cmx-btn--lg cmx-btn--block">
+                    <WhatsappLogo size={20} aria-hidden="true" />
+                    {t('cart.orderWhatsapp')}
+                </a>
+            ) : (
+                <p className="cmx-note">{t('cart.checkoutSoon')}</p>
+            )}
+            {!page && (
+                <ShopLink to="cart" className="cmx-btn cmx-btn--ghost cmx-btn--block" onClick={onNavigate}>
+                    {t('cart.viewCart')}
+                </ShopLink>
+            )}
+        </div>
+    );
+};
+
+/** Something to buy on an empty cart page: the newest products in stock. */
+const EmptyCartRail: React.FC = () => {
+    const { t } = useCommerceSite();
+    const { data } = useProductRail({ sort: 'newest', inStock: true, pageSize: 4 });
+    const products = data?.data || [];
+    if (products.length === 0) return null;
+    return (
+        <section className="cmx-section" aria-labelledby="cmx-cart-rail">
+            <div className="cmx-head">
+                <h2 className="cmx-h2" id="cmx-cart-rail">
+                    {t('cart.empty.rail')}
+                </h2>
+            </div>
+            <ProductRail products={products} listId="cart-empty" />
+        </section>
+    );
+};
+
+export const CartEmpty: React.FC<{ onNavigate?: () => void }> = ({ onNavigate }) => {
+    const { t } = useCommerceSite();
+    return (
+        <EmptyState title={t('cart.empty.title')} body={t('cart.empty.body')}>
+            <ShopLink to="" className="cmx-btn cmx-btn--primary" onClick={onNavigate}>
+                {t('cart.continue')}
+            </ShopLink>
+        </EmptyState>
+    );
+};
+
+/** view_cart once per opening, with the server's total, when the cart has been priced. */
+const useViewCartEvent = (view: ReturnType<typeof useCartView>, shown: boolean): void => {
+    const sent = useRef(false);
+    const { cart, price } = view;
+    useEffect(() => {
+        if (!shown) {
+            sent.current = false;
+            return;
+        }
+        if (sent.current || !price || cart.lines.length === 0) return;
+        sent.current = true;
+        sendCommerceEvent({
+            name: 'view_cart',
+            items: cart.lines.map((l) => ({ id: l.variantId, name: l.name, unitPrice: l.unitPrice, quantity: l.quantity, qtyScale: l.qtyScale, variant: l.variantLabel })),
+            value: price.totals?.total,
+            currency: price.currency,
+        });
+    }, [shown, price, cart.lines]);
+};
+
+/** commerceCartDrawer: opened by the header's cart button and after every "Add to cart". */
+export const CartDrawer: React.FC = () => {
+    const { t } = useCommerceSite();
+    const open = useCommerceCart((s) => s.drawerOpen);
+    const close = useCommerceCart((s) => s.closeDrawer);
+    const view = useCartView(open);
+    useViewCartEvent(view, open);
+    const empty = view.cart.lines.length === 0;
+    return (
+        <Layer
+            open={open}
+            onClose={close}
+            side="right"
+            title={t('cart.title')}
+            footer={empty ? undefined : <CartSummary view={view} onNavigate={close} />}
+        >
+            <div className="cmx-layer__body">
+                {empty ? <CartEmpty onNavigate={close} /> : <CartLines view={view} onNavigate={close} />}
+            </div>
+        </Layer>
+    );
+};
+
+/** The `cart` template: the same cart on a page of its own. */
+export const CartPage: React.FC = () => {
+    const { t } = useCommerceSite();
+    const view = useCartView(true);
+    useViewCartEvent(view, true);
+    const count = view.cart.lines.length;
+    return (
+        <div className="cmx-shell cmx-section">
+            <h1 className="cmx-h1 mb-6">{t('cart.title')}</h1>
+            {!view.hydrated ? null : count === 0 ? (
+                <>
+                    <CartEmpty />
+                    <EmptyCartRail />
+                </>
+            ) : (
+                <div className="cmx-cartpage">
+                    <section aria-label={t('cart.lines', { count })}>
+                        <CartLines view={view} />
+                    </section>
+                    <aside className="cmx-panel">
+                        <CartSummary view={view} page />
+                    </aside>
+                </div>
+            )}
+        </div>
+    );
+};

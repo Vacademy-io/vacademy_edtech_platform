@@ -27,7 +27,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TelleoTrialService {
 
-    /** A Telleo self sign-up. {@code trialEndsAt} is institutes.demo_expires_at. */
+    /**
+     * A Telleo workspace. {@code phoneE164} is the phone proven at a trial sign-up, else (a "Buy
+     * &lt;plan&gt;" sign-up, which proves none) the phone the owner typed. {@code trialEndsAt} is
+     * institutes.demo_expires_at, null when there is no trial.
+     */
     public record TrialInfo(String instituteId, String phoneE164, Instant trialEndsAt) {}
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -35,13 +39,15 @@ public class TelleoTrialService {
     public Optional<TrialInfo> find(String instituteId) {
         if (instituteId == null || instituteId.isBlank()) return Optional.empty();
         List<TrialInfo> rows = jdbc.query("""
-                SELECT p.institute_id, p.phone_e164, i.demo_expires_at
-                  FROM telleo_trial_phone p
-                  LEFT JOIN institutes i ON i.id = p.institute_id
-                 WHERE p.institute_id = :id
+                SELECT i.id, p.phone_e164, i.phone, i.demo_expires_at
+                  FROM institutes i
+                  LEFT JOIN telleo_trial_phone p ON p.institute_id = i.id
+                 WHERE i.id = :id AND i.product = 'telleo'
                 """, new MapSqlParameterSource("id", instituteId), (rs, n) -> {
             Timestamp ends = rs.getTimestamp("demo_expires_at");
-            return new TrialInfo(rs.getString("institute_id"), rs.getString("phone_e164"),
+            String phone = rs.getString("phone_e164");
+            return new TrialInfo(rs.getString("id"),
+                    phone != null ? phone : PhoneNumbers.toE164(rs.getString("phone")),
                     ends == null ? null : ends.toInstant());
         });
         return rows.stream().findFirst();

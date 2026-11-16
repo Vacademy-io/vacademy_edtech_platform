@@ -48,6 +48,13 @@ export interface AdditionalCharge {
   amount?: number;
   refundable?: boolean;
   description?: string;
+  /**
+   * Charge it on a user's first order in this mode only (e.g. a refundable security deposit).
+   * The server decides whether it is due — it skips the charge for a user who has paid it
+   * before, or who held a plan of this mode before it existed — so the cart treats the line as
+   * expected-but-confirmed-at-payment.
+   */
+  oncePerUser?: boolean;
 }
 
 export interface GlobalSettings {
@@ -169,6 +176,12 @@ export interface GlobalSettings {
   };
   communityJoinLink?: string;
   /**
+   * The one city this storefront rents books in. When set (non-empty), every way into rent mode
+   * (the Buy/Rent section, the catalogue's Buy | Rent switch, a membership plan card) first asks
+   * "We only rent in <city>. Continue?". Absent or empty = no question: rent mode opens directly.
+   */
+  rentLocationCity?: string;
+  /**
    * Site content languages (हिन्दी / EN switcher). The site is authored in
    * `defaultLocale`; every other language is a dictionary of translations
    * keyed by the source text — see -utils/catalogue-i18n.ts. Absent = a
@@ -252,6 +265,12 @@ export interface Page {
   route: string;
   title?: string;
   components: Component[];
+  /**
+   * Former routes of this page (e.g. ["buy-rent"] after it moved to "homepage").
+   * A visit to "<base>/<alias>" redirects here, so old links keep working.
+   * A page that still has the route wins over an alias.
+   */
+  aliases?: string[];
 }
 
 export type { VisibleWhenRule };

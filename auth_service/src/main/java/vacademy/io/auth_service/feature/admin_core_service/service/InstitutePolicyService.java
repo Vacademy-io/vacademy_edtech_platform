@@ -35,41 +35,86 @@ public class InstitutePolicyService {
 
     private static final long POLICY_CACHE_TTL_MS = 5 * 60 * 1000L;
 
-    private record CachedPolicy(InstituteSignupPolicy policy, long fetchedAt) {
+    /** How long an answer is reused when admin-core could not be asked (down, restarting, slow). */
+    private static final long POLICY_FAILURE_TTL_MS = 10 * 1000L;
+
+    private record CachedPolicy(InstituteSignupPolicy policy, long fetchedAt, long ttlMs) {
+    }
+
+    /** admin-core did not answer; distinct from an institute that has no settings. */
+    private static final class PolicyUnavailableException extends RuntimeException {
+        PolicyUnavailableException(Throwable cause) {
+            super(cause);
+        }
     }
 
     private final Map<String, CachedPolicy> policyCache = new ConcurrentHashMap<>();
 
+    /** The time source; replaced in tests. */
+    private java.util.function.LongSupplier clock = System::currentTimeMillis;
+
     /**
      * Same as {@link #fetchSignupPolicy} but reuses the answer for five minutes. User
      * creation calls this once per new learner, and a CSV of hundreds of rows must not
-     * turn into hundreds of calls to admin-core. A failed fetch (null) is cached too.
+     * turn into hundreds of calls to admin-core. "This institute has no settings" (null) is
+     * an answer and is cached like any other.
+     *
+     * <p>When admin-core cannot be reached there is no answer. The last good one, if any, is
+     * kept, and the question is asked again after ten seconds rather than five minutes: public
+     * learner sign-up reads "learners may create courses" from here, and a restart of
+     * admin-core must not cost an institute's new learner-authors their TEACHER role for minutes.
      */
     public InstituteSignupPolicy fetchSignupPolicyCached(String instituteId) {
         if (!StringUtils.hasText(instituteId))
             return null;
-        long now = System.currentTimeMillis();
+        long now = clock.getAsLong();
         CachedPolicy cached = policyCache.get(instituteId);
-        if (cached != null && now - cached.fetchedAt() < POLICY_CACHE_TTL_MS) {
+        if (cached != null && now - cached.fetchedAt() < cached.ttlMs()) {
             return cached.policy();
         }
-        InstituteSignupPolicy policy = fetchSignupPolicy(instituteId);
-        policyCache.put(instituteId, new CachedPolicy(policy, now));
-        return policy;
+        try {
+            InstituteSignupPolicy policy = requestSignupPolicy(instituteId);
+            policyCache.put(instituteId, new CachedPolicy(policy, now, POLICY_CACHE_TTL_MS));
+            return policy;
+        } catch (PolicyUnavailableException e) {
+            InstituteSignupPolicy lastKnown = cached == null ? null : cached.policy();
+            log.warn("Signup policy for institute {} could not be fetched; {} for {} ms: {}", instituteId,
+                    lastKnown == null ? "treating as unknown" : "reusing the last answer", POLICY_FAILURE_TTL_MS,
+                    e.getCause() == null ? "no response" : e.getCause().getMessage());
+            policyCache.put(instituteId, new CachedPolicy(lastKnown, now, POLICY_FAILURE_TTL_MS));
+            return lastKnown;
+        }
     }
 
     public InstituteSignupPolicy fetchSignupPolicy(String instituteId) {
+        try {
+            return requestSignupPolicy(instituteId);
+        } catch (PolicyUnavailableException e) {
+            return null;
+        }
+    }
+
+    /**
+     * @return the policy, or null when the institute has no usable settings
+     * @throws PolicyUnavailableException when admin-core did not give an answer
+     */
+    private InstituteSignupPolicy requestSignupPolicy(String instituteId) {
         if (!StringUtils.hasText(instituteId))
             return null;
+        ResponseEntity<String> resp;
         try {
-            ResponseEntity<String> resp = internalClientUtils.makeHmacRequest(
+            resp = internalClientUtils.makeHmacRequest(
                     applicationName,
                     HttpMethod.GET.name(),
                     adminCoreServiceBaseUrl,
                     "/admin-core-service/public/institute/v1/details/" + instituteId,
                     null);
-            if (resp == null || resp.getBody() == null)
-                return null;
+        } catch (Exception e) {
+            throw new PolicyUnavailableException(e);
+        }
+        if (resp == null || resp.getBody() == null)
+            throw new PolicyUnavailableException(null);
+        try {
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode institute = mapper.readTree(resp.getBody());

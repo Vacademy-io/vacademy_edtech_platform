@@ -17,6 +17,7 @@ public class CorsConfig implements WebMvcConfigurer {
                 // RESPONSE headers are a separate list and Spring does NOT
                 // wildcard it. Without this, the browser hides Server-Timing
                 // from JS on cross-origin calls — silently, with no error.
-                .exposedHeaders("Server-Timing");
+                // Retry-After: the shop reads it on a 429 of the public commerce routes.
+                .exposedHeaders("Server-Timing", "Retry-After");
     }
 }

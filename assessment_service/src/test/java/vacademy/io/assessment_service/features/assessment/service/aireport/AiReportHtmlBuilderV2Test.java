@@ -72,6 +72,30 @@ class AiReportHtmlBuilderV2Test {
     }
 
     @Test
+    void withEveryOptionOnTheQuestionPagesReadExactlyAsBefore() {
+        String html = new AiReportHtmlBuilderV2().build(model("Riya Verma", null, ai()));
+        assertThat(html).contains("All 15 questions, with your answers</div><div class=\"lede\">"
+                + "What you answered, the right answer where you missed it, how the class did, and the explanation.</div>");
+        assertThat(html).contains("<td colspan=\"2\" class=\"fix-h\">", "<td colspan=\"2\" class=\"fix-w\">");
+    }
+
+    @Test
+    void reportOptionsHideTheRightAnswerAndExplanationButKeepTheQuestions() throws Exception {
+        AiReportModel m = model("Riya Verma", null, ai()).toBuilder()
+                .hideCorrectAnswer(true).hideExplanation(true).build();
+        String html = new AiReportHtmlBuilderV2().build(m);
+        assertThat(html).contains("Question by question", "Your answer", "Mistakes explained", "You answered");
+        assertThat(html).doesNotContain("Right answer", "-10 cm", "Because 2θ doubles the angle.", "Explanation:");
+        assertThat(pdfText(html)).isNotBlank();
+
+        AiReportModel noOwn = model("Riya Verma", null, ai()).toBuilder().hideYourAnswer(true).hideCorrectAnswer(true).build();
+        String bare = new AiReportHtmlBuilderV2().build(noOwn);
+        assertThat(bare).contains("Question by question", "Sign convention mixed up.");
+        assertThat(bare).doesNotContain("Your answer", "You answered", "+10 cm", "Right answer");
+        assertThat(pdfText(bare)).isNotBlank();
+    }
+
+    @Test
     void topicAnalysisHasARadarWhenThereAreThreeOrMoreTopics() throws Exception {
         String three = new AiReportHtmlBuilderV2().build(model("Riya Verma", null, OM.readTree("""
                 {"topic_analysis":[{"topic":"Algebra and linear equations in two variables","questions_count":6,"correct":5,"accuracy":83},

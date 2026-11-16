@@ -125,6 +125,7 @@
         "skip": "Ignorer",
         "retry": "Réessayer",
         "openResult": "Ouvrir",
+        "viewProgress": "Voir la progression",
         "aiReport": "Rapport IA",
         "classReport": "Rapport IA de la classe"
     },

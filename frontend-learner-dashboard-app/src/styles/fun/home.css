@@ -132,6 +132,66 @@ html.ui-fun .fun-avatar {
 }
 html.ui-fun .fun-avatar__icon { width: 22px; height: 22px; }
 
+/* The greeting row inside the app's top bar (the home only, see use-fun-header-slot):
+   one bar, as on the boards, with the bar's own account button as the profile button.
+   The bar keeps its place in the page but not its look: no fill, no line, not pinned,
+   and the boards' 18px above the row and 20px gutter. */
+html.ui-fun .fun-navbar__slot { flex: 1 1 auto; min-width: 0; }
+html.ui-fun .fun-navbar__slot:empty { display: none; }
+html.ui-fun .navbar.fun-navbar {
+  position: relative;
+  top: auto;
+  height: auto;
+  align-items: center;
+  column-gap: var(--fun-space-3);
+  padding: 18px var(--fun-home-gutter) 0;
+  border-bottom: 0;
+  background: var(--fun-ground);
+  backdrop-filter: none;
+  overflow: visible;
+  font-family: var(--fun-font-family);
+  color: var(--fun-ink);
+}
+html.ui-fun .fun-navbar .fun-home-header { flex: 1 1 auto; min-width: 0; }
+html.ui-fun .fun-navbar [data-sidebar="trigger"] { width: var(--fun-touch); height: var(--fun-touch); }
+html.ui-fun .fun-navbar .fun-navbar__icon {
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border-radius: 50%;
+  color: var(--fun-ink-2);
+}
+html.ui-fun .fun-navbar .fun-navbar__icon > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-navbar .fun-navbar__account {
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font-size: 0.9375rem;
+  font-weight: 900;
+}
+html.ui-fun .fun-navbar .fun-navbar__account > span { width: var(--fun-touch); height: var(--fun-touch); }
+html.ui-fun .fun-navbar .fun-navbar__account > span > span {
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font: inherit;
+}
+html.ui-fun .fun-navbar .fun-navbar__lang > button {
+  min-height: var(--fun-touch);
+  gap: 6px;
+  padding: 0 14px;
+  border: 2px solid var(--fun-line-button);
+  border-radius: calc(var(--fun-touch) / 2);
+  background: var(--fun-ground);
+  color: var(--fun-ink-2);
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+html.ui-fun .fun-navbar :is(a, button):focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; box-shadow: none; }
+/* The bar already gives the row its top space; the page under it keeps the 16px. */
+html.ui-fun .fun-home__header-slot:empty { display: none; }
+html.ui-fun .fun-home__inner > .fun-home__header-slot:empty + * { margin-top: 0; }
+html.ui-fun .fun-home__inner:has(> .fun-home__header-slot:empty) { padding-top: 0; }
+
 /* ── Hero cards ──────────────────────────────────────────────────────── */
 html.ui-fun .fun-hero {
   position: relative;
@@ -185,14 +245,21 @@ html.ui-fun .fun-hero__art--image {
   background: var(--fc-tint);
 }
 html.ui-fun .fun-hero__image { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Course and chapter wrap to two lines beside the picture (A-LiveNow, A-HideProgress)
+   rather than cutting the chapter off; past two lines the end is clipped. */
 html.ui-fun .fun-hero__eyebrow {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   margin: 0;
-  max-width: calc(100% - 120px);
+  /* Up to the drawn shape, which starts 62px in from the card's inner edge (Main:
+     one line); a course picture takes 76px and a 12px gap. */
+  max-width: calc(100% - 66px);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   color: var(--fc-on-band);
 }
+html.ui-fun .fun-hero:has(> .fun-hero__art--image) .fun-hero__eyebrow { max-width: calc(100% - 88px); }
 html.ui-fun .fun-hero__eyebrow-row { display: flex; align-items: center; gap: var(--fun-space-2); }
 html.ui-fun .fun-hero__eyebrow-row .fun-hero__eyebrow { max-width: none; }
 html.ui-fun .fun-hero__eyebrow-row .fun-chip--new { min-height: 22px; padding: 0 9px; }
@@ -268,7 +335,7 @@ html.ui-fun .fun-hero--brand .fun-hero__title { max-width: none; margin-top: 0; 
 html.ui-fun .fun-hero--brand-quiet { --fc-on-band: var(--fun-ink-2); background: var(--fun-brand-tint); color: var(--fun-brand); }
 
 /* Every course finished, or all caught up (A-Done). */
-html.ui-fun .fun-hero--done { background: var(--fun-success-strong); color: var(--fun-ground); }
+html.ui-fun .fun-hero--done { --fc-text: var(--fun-success-strong); --fc-lip: var(--fun-success-text-strong); background: var(--fun-success-strong); color: var(--fun-ground); }
 html.ui-fun .fun-hero__done-deco {
   position: absolute;
   inset-block-start: -30px;
@@ -403,6 +470,16 @@ html.ui-fun .fun-today__card {
 html.ui-fun .fun-today__card--stack { flex-direction: column; align-items: flex-start; gap: 6px; }
 html.ui-fun .fun-today--grid .fun-today__card--class { gap: var(--fun-space-1); }
 html.ui-fun .fun-today__card--goal { background: var(--fun-success-tint); }
+/* The goal card opens the plan's next task: a button that looks like the card. */
+html.ui-fun .fun-today__card--button {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
 html.ui-fun .fun-today__card--class { background: var(--fun-live-tint); }
 html.ui-fun .fun-today__card--tests { background: var(--fun-test-tint); padding: var(--fun-space-3); gap: 10px; }
 html.ui-fun .fun-ring { flex: none; display: block; }
@@ -444,6 +521,21 @@ html.ui-fun .fun-next__tests-head { display: flex; align-items: center; gap: var
 html.ui-fun .fun-next__tests-title { margin: 0; font-size: 1.25rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; color: var(--fun-test-text-strong); }
 html.ui-fun .fun-next__tests-body { margin-top: 2px; font-size: 0.875rem; line-height: calc(1.125rem * var(--fun-leading)); font-weight: 700; color: var(--fun-test-text-2); }
 html.ui-fun .fun-next .fun-today__card--class { padding: 14px var(--fun-space-4); border-radius: var(--fun-radius-card); }
+html.ui-fun .fun-next .fun-today__card--goal { padding: 14px var(--fun-space-4); border-radius: var(--fun-radius-card); }
+/* The class chip's time is set in capitals, like every chip (12/16 900 caps). */
+html.ui-fun .fun-home .fun-chip--calendar { text-transform: uppercase; }
+
+/* The institute's own card (the custom widget). */
+html.ui-fun .fun-custom {
+  padding: var(--fun-space-4);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-custom__title { margin: 0; font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); overflow-wrap: anywhere; }
+html.ui-fun .fun-custom__text { margin: var(--fun-space-1) 0 0; font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); overflow-wrap: anywhere; }
+html.ui-fun .fun-custom__cta { margin-top: var(--fun-space-3); gap: var(--fun-space-1); }
+html.ui-fun .fun-custom__chevron { width: 16px; height: 16px; }
 html.ui-fun .fun-next .fun-today__card--class .fun-today__title { font-size: 1rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 900; }
 
 /* ── Course tiles ────────────────────────────────────────────────────── */
@@ -493,7 +585,9 @@ html.ui-fun .fun-tile__track { flex: none; margin-top: 8px; }
 html.ui-fun .fun-tile__meta { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
 html.ui-fun .fun-tile__review { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); }
 html.ui-fun .fun-tile__held { display: block; height: 1.6875rem; }
-html.ui-fun .fun-tile__level { margin-top: 2px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+/* The line that tells two tiles of one course apart: up to two lines, so the part that differs
+   (it comes first) is not cut on a phone tile. */
+html.ui-fun .fun-tile__level { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 2px; min-width: 0; overflow: hidden; overflow-wrap: anywhere; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
 html.ui-fun .fun-tile__go { flex: none; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-inline-start: auto; border-radius: 50%; background: var(--fc-tint); color: var(--fc-solid); }
 html.ui-fun .fun-tile__go > svg { width: 14px; height: 14px; }
 /* The course's own colour shows on the art; with no image the first letter sits in a white square. */
@@ -535,6 +629,108 @@ html.ui-fun .fun-home .cp-card {
   box-shadow: none;
 }
 
+/* ── Announcements (the institute's pinned messages) ─────────────────── */
+html.ui-fun .fun-pins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fun-space-3);
+  padding: var(--fun-space-4);
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-card);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-pins__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: var(--fun-space-3); }
+html.ui-fun .fun-pins__head .fun-section-title { font-size: 1.125rem; line-height: calc(1.5rem * var(--fun-leading)); }
+html.ui-fun .fun-pins__actions { display: flex; flex-wrap: wrap; gap: var(--fun-space-1); margin-inline-end: -8px; }
+html.ui-fun .fun-home .fun-pins__action { padding: 0 8px; border: 0; border-radius: var(--fun-radius-control); background: transparent; font-family: inherit; cursor: pointer; }
+html.ui-fun .fun-home .fun-pins__action--clear { color: var(--fun-live-text); }
+html.ui-fun .fun-home .fun-pins__action:disabled { cursor: default; opacity: 0.6; }
+html.ui-fun .fun-pins__error { margin: 0; padding: var(--fun-space-3); border-radius: var(--fun-radius-control); background: var(--fun-live-tint); color: var(--fun-live-tint-text); font-size: 0.875rem; font-weight: 700; }
+html.ui-fun .fun-pins__list { display: flex; flex-direction: column; gap: var(--fun-space-3); margin: 0; padding: 0; list-style: none; }
+html.ui-fun .fun-pins__item {
+  display: flex;
+  align-items: flex-start;
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-ground);
+}
+html.ui-fun .fun-pins__item--unread { border-color: var(--fun-brand-tint); }
+html.ui-fun .fun-pins__open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fun-space-1);
+  min-width: 0;
+  min-height: var(--fun-touch);
+  padding-block: 14px;
+  padding-inline: 16px 4px;
+  border: 0;
+  border-radius: var(--fun-radius-tile);
+  background: transparent;
+  color: var(--fun-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+html.ui-fun .fun-pins__top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fun-space-2); }
+html.ui-fun .fun-pins__top:empty { display: none; }
+html.ui-fun .fun-pins__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  line-height: calc(1rem * var(--fun-leading));
+  font-weight: 900;
+}
+html.ui-fun .fun-pins__chip--high { background: var(--fun-live-tint); color: var(--fun-live-tint-text); }
+html.ui-fun .fun-pins__chip--medium { background: var(--fun-test-tint); color: var(--fun-test-text); }
+html.ui-fun .fun-pins__chip--low { background: var(--fun-info-tint); color: var(--fun-info-text); }
+html.ui-fun .fun-pins__chip--normal { background: var(--fun-home-note-bg); color: var(--fun-home-note-text); }
+html.ui-fun .fun-pins__new { display: inline-flex; align-items: center; gap: 5px; color: var(--fun-brand); font-size: 0.75rem; font-weight: 900; }
+html.ui-fun .fun-pins__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fun-brand); }
+html.ui-fun .fun-pins__title { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__body { margin: 0; font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 700; color: var(--fun-ink-2); overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__body :is(p, ul, ol) { margin: 0; }
+html.ui-fun .fun-pins__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--fun-space-2); margin: 0; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-pins__left { color: var(--fun-streak-text); }
+html.ui-fun .fun-pins__dismiss {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  margin: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fun-muted);
+  cursor: pointer;
+}
+html.ui-fun .fun-pins__dismiss > svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+html.ui-fun .fun-pins__dismiss:hover { background: var(--fun-home-note-bg); color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-pins__more { align-self: flex-start; padding: 0; border: 0; background: transparent; font-family: inherit; cursor: pointer; }
+/* The full message opens in a dialog, portalled outside the home. */
+html.ui-fun .fun-pins__dialog { border: 2px solid var(--fun-line-card); border-radius: var(--fun-radius-card); color: var(--fun-ink); font-family: var(--fun-font-family); }
+html.ui-fun .fun-pins__dialog-title { margin: 0; padding-inline-end: 40px; font-size: 1.25rem; line-height: calc(1.625rem * var(--fun-leading)); font-weight: 900; overflow-wrap: anywhere; }
+html.ui-fun .fun-pins__expires { margin: 0; padding: var(--fun-space-3); border-radius: var(--fun-radius-control); background: var(--fun-streak-bg); color: var(--fun-streak-text); font-size: 0.875rem; font-weight: 700; }
+html.ui-fun .fun-pins__dialog > button:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  border-radius: 50%;
+  color: var(--fun-muted);
+  opacity: 1;
+}
+html.ui-fun .fun-pins__dialog :is(a, button):focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; box-shadow: none; }
+
 /* ── Bottom nav (phone) ──────────────────────────────────────────────── */
 html.ui-fun nav.fun-nav {
   min-height: 84px;
@@ -562,9 +758,13 @@ html.ui-fun .fun-nav .fun-nav__item--active > span { font-weight: 900; }
 html.ui-fun .fun-nav .fun-nav__item:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: 2px; }
 
 /* ── Laptop sidebar ──────────────────────────────────────────────────── */
-/* The boards' sidebar is 220 to 260 wide; the app's is 17rem (272). */
-html.ui-fun .group\/sidebar-wrapper { --sidebar-width: 15rem !important; }
-html.ui-fun .fun-sidebar { background: var(--fun-ground); border-inline-end: 2px solid var(--fun-line-nav); }
+/* A-Laptop's sidebar is 221 wide (the app's is 17rem, 272): white, with the 2px nav
+   line. The fill goes on the whole panel (its footer sits outside the content box)
+   and the line on the fixed frame, in place of its 1px border. */
+html.ui-fun .group\/sidebar-wrapper { --sidebar-width: 13.8125rem !important; }
+html.ui-fun .fun-sidebar { background: var(--fun-ground); }
+html.ui-fun [data-sidebar="sidebar"]:has(> .fun-sidebar) { background: var(--fun-ground); }
+html.ui-fun .group\/sidebar-wrapper .fixed:has(> [data-sidebar="sidebar"] > .fun-sidebar) { border-inline-end: 2px solid var(--fun-line-nav); }
 html.ui-fun .fun-sidebar [data-sidebar="header"] { border-bottom: 0; padding: var(--fun-space-6) var(--fun-space-3) var(--fun-space-3); }
 html.ui-fun .fun-sidebar [data-sidebar="menu"] { gap: 6px; }
 html.ui-fun .fun-sidebar [data-sidebar="menu-button"] {
@@ -592,15 +792,20 @@ html.ui-fun .fun-sidebar [data-sidebar="header"] .size-8.bg-primary-50 {
   font-weight: 900;
 }
 
+/* ── Tablet: the page sits 28px in (the layout's 24 and the home's 4); so does the row. ── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  html.ui-fun .navbar.fun-navbar { padding-inline: 28px; }
+}
+
 /* ── Laptop (the boards' 1280: sidebar, main column and the Today rail) ── */
 @media (min-width: 1024px) {
   html.ui-fun .fun-home__inner { padding: 4px 6px 40px; }
   html.ui-fun .fun-home__inner > .fun-home__header-slot + * { margin-top: var(--fun-space-6); }
+  html.ui-fun .fun-home__inner > .fun-home__header-slot:empty + * { margin-top: 0; }
+  /* The bar's row lines up with the page under it (the layout's 32px, the home's 6px,
+     centred once the page reaches its widest). */
+  html.ui-fun .navbar.fun-navbar { padding: 28px max(38px, calc((100% - 1280px) / 2 + 38px)) 0; }
   html.ui-fun .fun-home__inner > .grid > div { gap: var(--fun-space-6); }
-  /* The Today rail is the boards' 280 wide; the main column takes the rest. */
-  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 { grid-template-columns: minmax(0, 1fr) 280px; }
-  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:first-child { grid-column: 1; }
-  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:last-child { grid-column: 2; }
   html.ui-fun .fun-home .fun-home-top { gap: var(--fun-space-6); }
   html.ui-fun .fun-home .fun-section-title { font-size: 1.375rem; }
   html.ui-fun .fun-home-header__row { flex-wrap: wrap; }
@@ -612,11 +817,6 @@ html.ui-fun .fun-sidebar [data-sidebar="header"] .size-8.bg-primary-50 {
   html.ui-fun .fun-streak__unit { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
 
   html.ui-fun .fun-hero { border-radius: var(--fun-radius-band); padding: 28px; }
-  html.ui-fun .fun-hero--course { min-height: 246px; padding-inline-end: 268px; }
-  html.ui-fun .fun-hero--course .fun-hero__art { inset-block-start: 50%; inset-inline-end: 28px; width: 220px; height: 190px; transform: translateY(-50%); }
-  html.ui-fun .fun-hero--course .fun-hero__deco { inset-block-start: 15px; inset-inline-end: 10px; width: 160px; height: 160px; }
-  html.ui-fun .fun-hero--course .fun-hero__mark { inset-block-start: 55px; inset-inline-end: 60px; width: 80px; height: 80px; border-radius: 22px; font-size: 2.5rem; }
-  html.ui-fun .fun-hero--course .fun-hero__art--image { width: 190px; height: 190px; inset-inline-end: 43px; border-radius: 28px; }
   html.ui-fun .fun-hero__eyebrow { max-width: none; font-size: 0.8125rem; }
   html.ui-fun .fun-hero__title { max-width: none; font-size: 2.125rem; line-height: calc(2.5rem * var(--fun-leading)); }
   html.ui-fun .fun-hero__count { font-size: 1rem; }
@@ -658,14 +858,40 @@ html.ui-fun .fun-sidebar [data-sidebar="header"] .size-8.bg-primary-50 {
   html.ui-fun .fun-tile__name { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); }
 }
 
+/* ── Laptop at the usual text size: the 280 rail beside the main column, and the course
+   picture beside the hero's words. Both are in px, so with a large text size (the screen
+   under 64em) they would leave the words a sliver: there the rail goes under the main
+   column and the hero keeps its phone layout, picture in the corner. ── */
+@media (min-width: 1024px) and (min-width: 64em) {
+  /* The Today rail is the boards' 280 wide; the main column takes the rest. */
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 { grid-template-columns: minmax(0, 1fr) 280px; }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:first-child { grid-column: 1; }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div:last-child { grid-column: 2; }
+  html.ui-fun .fun-hero--course { min-height: 246px; padding-inline-end: 268px; }
+  html.ui-fun .fun-hero--course .fun-hero__art { inset-block-start: 50%; inset-inline-end: 28px; width: 220px; height: 190px; transform: translateY(-50%); }
+  html.ui-fun .fun-hero--course .fun-hero__deco { inset-block-start: 15px; inset-inline-end: 10px; width: 160px; height: 160px; }
+  html.ui-fun .fun-hero--course .fun-hero__mark { inset-block-start: 55px; inset-inline-end: 60px; width: 80px; height: 80px; border-radius: 22px; font-size: 2.5rem; }
+  html.ui-fun .fun-hero--course .fun-hero__art--image { width: 190px; height: 190px; inset-inline-end: 43px; border-radius: 28px; }
+}
+@media (min-width: 1024px) and (max-width: 63.99em) {
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 { grid-template-columns: minmax(0, 1fr); }
+  html.ui-fun .fun-home__inner > .grid.lg\:grid-cols-3 > div { grid-column: 1; }
+}
+
 /* ── Big text (the reader's text size makes the phone under 18em wide: A-BigText) ── */
 @media (max-width: 18em) {
   /* The layout's 1rem gutter doubles with the text; the board keeps 20px. */
   html.ui-fun .fun-home__inner { width: auto; padding-inline: 0; margin-inline: calc(var(--fun-home-gutter) - 1rem); }
+  /* Likewise its 1rem top padding: the board keeps 16px between the row and the hero. */
+  html.ui-fun .fun-home__inner { margin-top: calc(var(--fun-space-4) - 1rem); }
   html.ui-fun .fun-home-header__row { flex-wrap: wrap; align-items: flex-start; }
   html.ui-fun .fun-home-header__words { flex: 1 1 60%; }
   html.ui-fun .fun-home-header__words + .fun-streak { order: 3; }
   html.ui-fun .fun-avatar { width: 64px; height: 64px; font-size: 26px; }
+  /* In the bar: the row's top, and the board's 64px profile button. */
+  html.ui-fun .navbar.fun-navbar { align-items: flex-start; }
+  html.ui-fun .fun-navbar .fun-navbar__account,
+  html.ui-fun .fun-navbar .fun-navbar__account > span { width: 64px; height: 64px; font-size: 26px; }
   html.ui-fun .fun-streak { min-height: 56px; padding: 6px 18px; border-radius: 28px; }
   html.ui-fun .fun-streak__flame { width: 28px; height: 32px; }
   html.ui-fun .fun-streak__unit { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
@@ -733,3 +959,164 @@ html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-tile__meta { font-size: 
 html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-nav .fun-nav__item { gap: 0; }
 html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-nav .fun-nav__item > span { line-height: 1.25rem; font-weight: 700; }
 html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-hero__percent { line-height: 1.1875rem; }
+
+/* The app sidebar's footer (laptop): the learner's initials on the brand tint in the
+   brand solid, as on the Fun top bar, not the raw brand on its 50 shade. */
+html.ui-fun [data-sidebar="footer"] {
+  border-top: 2px solid var(--fun-line-nav);
+}
+html.ui-fun [data-sidebar="footer"] span.bg-primary-50.text-primary-500 {
+  background: var(--fun-brand-tint);
+  color: var(--fun-brand);
+  font-weight: 900;
+}
+/* The learner's name beside it in the skin's ink, not the classic zinc. */
+html.ui-fun [data-sidebar="footer"] button > span.flex-1.truncate { color: var(--fun-ink); font-weight: 800; }
+
+/* ── Study companions (the classic shelf, drawn as Fun tiles) ────────── */
+/* Each companion in a palette colour (course-palette.ts rule on its own id): the
+   course art, the name, the knowledge base, the mastery bar, and one lip button in
+   the companion's colour. Phone: a row that scrolls like the course tiles; one
+   companion takes the full width. Laptop: a grid. */
+html.ui-fun .fun-companions { display: flex; flex-direction: column; gap: 6px; }
+html.ui-fun .fun-companions__list {
+  display: flex;
+  gap: var(--fun-home-tile-gap);
+  margin: 0 calc(-1 * var(--fun-home-gutter));
+  padding: 0 var(--fun-home-gutter) 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--fun-home-gutter);
+  scrollbar-width: none;
+}
+html.ui-fun .fun-companions__list::-webkit-scrollbar { display: none; }
+html.ui-fun .fun-companions__item { flex: none; width: 248px; scroll-snap-align: start; }
+html.ui-fun .fun-companions--single .fun-companions__list { margin-inline: 0; padding-inline: 0; overflow: visible; }
+html.ui-fun .fun-companions--single .fun-companions__item { flex: 1 1 0; min-width: 0; width: auto; }
+html.ui-fun .fun-home .fun-companion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--fun-line-card);
+  border-radius: var(--fun-radius-tile);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html.ui-fun .fun-companion__art { flex: none; display: block; width: 100%; height: 84px; }
+html.ui-fun .fun-companion__art .fun-course-art__mark { font-size: 1.375rem; }
+html.ui-fun .fun-companion__body { display: flex; flex: 1; flex-direction: column; min-width: 0; padding: 10px 12px 14px; }
+html.ui-fun .fun-companion__name { font-size: 1rem; line-height: calc(1.3125rem * var(--fun-leading)); font-weight: 900; color: var(--fun-ink); }
+html.ui-fun .fun-companion__kb {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  line-height: calc(1.0625rem * var(--fun-leading));
+  font-weight: 700;
+  color: var(--fun-muted);
+}
+html.ui-fun .fun-companion__progress { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+html.ui-fun .fun-companion__bar { flex: none; }
+html.ui-fun .fun-companion__stats { margin-top: 6px; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
+html.ui-fun .fun-companion__progress .fun-companion__stats { margin-top: 0; }
+/* One filled button: the companion's colour (white on every palette colour is 4.99:1
+   or more) with its lip, pressed with the card. */
+html.ui-fun .fun-companion .fun-companion__cta {
+  --fun-btn-lip: var(--fc-lip);
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding-inline: 14px;
+  background: var(--fc-solid);
+  color: var(--fun-ground);
+  font-size: 0.9375rem;
+}
+html.ui-fun .fun-companion__body > :nth-last-child(2) { margin-bottom: 14px; }
+html.ui-fun .fun-companion .fun-companion__cta > svg { width: 0.875rem; height: 0.875rem; }
+html.ui-fun .fun-companion__cta-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.ui-fun .fun-companion:active .fun-companion__cta { transform: translateY(var(--fun-lip)); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  html.ui-fun .fun-companion .fun-companion__cta { transition: none; }
+}
+
+/* ── Notes to revise (the classic link inside .fun-notebook-line) ────── */
+/* The app's global .bg-white.border.rounded-lg rule sets its border with !important,
+   so the Fun line has to as well. */
+html.ui-fun .fun-notebook-line:empty { display: none; }
+html.ui-fun .fun-home .fun-notebook-line > a {
+  min-height: 48px;
+  gap: var(--fun-space-3);
+  padding: var(--fun-space-2) var(--fun-space-4);
+  border-style: solid;
+  border-width: 2px !important;
+  border-color: var(--fun-line-card) !important;
+  border-radius: var(--fun-radius-control);
+  background: var(--fun-ground);
+  color: var(--fun-ink);
+  box-shadow: none;
+}
+html.ui-fun .fun-home .fun-notebook-line > a:hover { background: var(--fun-ground); border-color: var(--fun-line-button) !important; }
+html.ui-fun .fun-home .fun-notebook-line > a > span { font-size: 0.9375rem; line-height: calc(1.25rem * var(--fun-leading)); font-weight: 800; color: var(--fun-ink); }
+html.ui-fun .fun-home .fun-notebook-line > a > svg:first-child { width: 20px; height: 20px; color: var(--fun-brand); }
+html.ui-fun .fun-home .fun-notebook-line > a > svg:last-child { width: 18px; height: 18px; color: var(--fun-muted); }
+
+/* ── Raise a query (FunQueryRow) ─────────────────────────────────────── */
+html.ui-fun .fun-home .fun-row--query { width: 100%; background: var(--fun-ground); font-family: inherit; text-align: start; cursor: pointer; }
+html.ui-fun .fun-row__icon--query { background: var(--fun-info-tint); color: var(--fun-info-text); }
+html.ui-fun .fun-row__count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  background: var(--fun-test-tint);
+  color: var(--fun-test-text);
+  font-size: 0.8125rem;
+  font-weight: 900;
+}
+
+@media (min-width: 1024px) {
+  html.ui-fun .fun-companions__list,
+  html.ui-fun .fun-companions--single .fun-companions__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--fun-space-4);
+    margin: var(--fun-space-2) 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-companions--single .fun-companions__list { grid-template-columns: minmax(0, 1fr); }
+  html.ui-fun .fun-companions__item { width: auto; }
+  html.ui-fun .fun-companion__art { height: 96px; }
+  html.ui-fun .fun-companion__body { padding: var(--fun-space-3) 14px 14px; }
+}
+@media (max-width: 18em) {
+  html.ui-fun .fun-companions__list {
+    flex-direction: column;
+    gap: var(--fun-space-3);
+    margin: 4px 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html.ui-fun .fun-companions__item { width: auto; }
+  html.ui-fun .fun-companion__name.fun-clamp-2 { display: block; -webkit-line-clamp: unset; }
+  html.ui-fun .fun-companion__kb { white-space: normal; overflow-wrap: anywhere; }
+  html.ui-fun .fun-companion .fun-companion__cta { min-height: 76px; padding-block: 12px; }
+  html.ui-fun .fun-companion__cta-label { white-space: normal; overflow-wrap: anywhere; }
+}
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-companion__name { line-height: 1.5rem; font-weight: 800; }
+html.ui-fun:is([lang="hi"], [lang="mr"]) .fun-home .fun-companion__stats { font-size: 0.875rem; line-height: 1.375rem; }

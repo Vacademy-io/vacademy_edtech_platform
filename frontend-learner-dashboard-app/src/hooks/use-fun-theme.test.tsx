@@ -100,7 +100,7 @@ describe("useFunTheme and the skin runtime", () => {
     return reactRoot;
   }
 
-  it("follows the class on <html> and loads the fonts only once Fun is on", async () => {
+  it("follows the class on <html>, loads the fonts only once Fun is on and drops them when it goes", async () => {
     const seen: boolean[] = [];
     const reactRoot = await render(() => {
       seen.push(useFunTheme());
@@ -129,6 +129,18 @@ describe("useFunTheme and the skin runtime", () => {
       root.classList.remove("ui-fun");
     });
     expect(seen.at(-1)).toBe(false);
+    expect(fontLink()).toBeNull();
+
+    // Back on (a second switch) adds it once again.
+    await act(async () => {
+      root.classList.add("ui-fun");
+    });
+    expect(document.querySelectorAll(`#${FUN_FONTS_LINK_ID}`)).toHaveLength(1);
+    await act(async () => {
+      root.classList.replace("ui-fun", "ui-cleaner-play");
+    });
+    expect(fontLink()).toBeNull();
+    root.classList.remove("ui-cleaner-play");
     await act(async () => reactRoot.unmount());
   });
 

@@ -8,6 +8,7 @@ import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { Trash, Plus, Minus, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { getMembershipPlans, MembershipPlan } from "../../-services/membership-plan-service";
+import { refreshSelectedMembershipPlan, toCartMembershipPlan } from "./membership-plans-utils";
 import { INSTITUTE_ID } from "@/constants/urls";
 import { toast } from "sonner";
 import { CheckoutForm } from "./CheckoutForm";
@@ -18,9 +19,14 @@ import { Preferences } from "@capacitor/preferences";
 import { PriceWithMrp } from "@/components/common/price-with-mrp";
 import {
   resolveAdditionalCharges,
+  resolveRentModeChargeLines,
   sumChargeAmounts,
+  ChargeLine,
   ResolvedCharge,
 } from "../../-utils/additional-charges-util";
+import { waivedKeysFromStatus } from "../../-utils/rent-checkout-payload";
+import { SECURITY_DEPOSIT_STATUS } from "@/constants/urls";
+import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import {
   PENDING_ORDER_CHECK_WINDOW_MS,
   isPendingOrderStale,
@@ -221,15 +227,8 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
 
   const handleSelectPlan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMembershipPlan({
-      id: plan.enroll_invite_id || plan.id,
-      title: plan.package_name,
-      price: plan.min_plan_actual_price,
-      numberOfBooks: plan.available_slots ?? undefined,
-      maxSeats: plan.max_seats ?? undefined,
-      packageSessionId: plan.package_session_id,
-      enrollInviteId: plan.enroll_invite_id,
-    });
+    // The same shape the plan cards store and refreshSelectedMembershipPlan compares against.
+    setMembershipPlan(toCartMembershipPlan(plan));
   };
 
   // Extract fields - handle various possible field names
@@ -392,11 +391,14 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const resolvedEmptyStateMessage = emptyStateMessage || t("cart.emptyDefault");
-  const { items, removeItem, updateQuantity, clearCart, membershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart, membershipPlan, setMembershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [isRentMode, setIsRentMode] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  // True while the plan list on screen is one that loaded (a failed fetch leaves it false):
+  // only such a list may refresh or drop the plan the cart remembers.
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [isCheckoutFormOpen, setIsCheckoutFormOpen] = useState(false);
   const [isCheckingStock, setIsCheckingStock] = useState(false);
   const [stockShortages, setStockShortages] = useState<StockShortages>({});
@@ -603,9 +605,11 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         console.log("[CartComponent] Fetched membership plans:", plans);
         console.log("[CartComponent] Number of plans:", plans.length);
         setMembershipPlans(plans);
+        setPlansLoaded(true);
       } catch (error) {
         console.error("[CartComponent] Error fetching membership plans:", error);
         setMembershipPlans([]);
+        setPlansLoaded(false);
       } finally {
         setIsLoadingPlans(false);
         console.log("[CartComponent] Finished fetching membership plans");
@@ -614,6 +618,15 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
     fetchMembershipPlans();
   }, [isRentMode, instituteId]);
+
+  // The cart remembers the picked plan (title, price…) as it was when picked. Once the plan list
+  // loads, bring it up to date from the list (same plan), or drop it when that plan is gone, so
+  // the total shown is today's. Not from the editor's preview or the hidden payment-check cart.
+  useEffect(() => {
+    if (!isRentMode || !plansLoaded || onlyLogic || isPreviewMode) return;
+    const refreshed = refreshSelectedMembershipPlan(membershipPlan, membershipPlans);
+    if (refreshed !== undefined) setMembershipPlan(refreshed);
+  }, [isRentMode, plansLoaded, onlyLogic, isPreviewMode, membershipPlan, membershipPlans, setMembershipPlan]);
 
   // Cache for fetched images to prevent repeated API calls
   const fetchedImagesRef = useRef<Set<string>>(new Set());
@@ -690,8 +703,8 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   const roundedEdges = styles.roundedEdges ? "rounded-catalogue-md" : "";
   const backgroundColor = styles.backgroundColor || "white";
 
-  // Buy-mode additional charges (shipping). Rent mode is intentionally excluded —
-  // security deposit / rent-mode shipping is a separate piece of work.
+  // Buy-mode additional charges (shipping). Rent-mode charges (the security deposit) are
+  // resolved separately below.
   const buyModeItemQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const resolvedAdditionalCharges = useMemo<ResolvedCharge[]>(() => {
     if (isRentMode) return [];
@@ -700,6 +713,93 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   const additionalChargesTotal = sumChargeAmounts(resolvedAdditionalCharges);
   const buyModeSubtotal = getTotal();
   const buyModeGrandTotal = buyModeSubtotal + additionalChargesTotal;
+
+  // Rent-mode charges (e.g. the refundable security deposit): flat, one per order, added to
+  // the membership plan like shipping is to bought books. Empty until the catalogue links one,
+  // and then the rent cart looks and checks out exactly as before.
+  const rentChargeLines = useMemo<ChargeLine[]>(
+    () => resolveRentModeChargeLines(globalSettings),
+    [globalSettings],
+  );
+  const rentChargesLinked = rentChargeLines.length > 0;
+  const oncePerUserRentKeys = useMemo(
+    () => rentChargeLines.filter((charge) => charge.oncePerUser).map((charge) => charge.key),
+    [rentChargeLines],
+  );
+  const oncePerUserRentKeysSignature = oncePerUserRentKeys.join(",");
+  // Once-per-user charges this learner no longer owes: from the deposit status (signed-in
+  // learners), or from a checkout the server answered "not due". The server decides at payment.
+  const [waivedRentChargeKeys, setWaivedRentChargeKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Not from the editor's preview, nor from the hidden payment-check cart (it shows nothing).
+    if (!isRentMode || isPreviewMode || onlyLogic || oncePerUserRentKeys.length === 0) return;
+    let cancelled = false;
+    const effectiveInstituteId = instituteId || INSTITUTE_ID;
+    const checkDepositStatus = async () => {
+      let waived: string[] = [];
+      try {
+        // Guests owe it: only a signed-in learner can have paid it before.
+        const accessToken = await getTokenFromStorage(TokenKey.accessToken);
+        if (accessToken) {
+          const { data } = await authenticatedAxiosInstance.get(SECURITY_DEPOSIT_STATUS, {
+            params: {
+              instituteId: effectiveInstituteId,
+              ...(tagName ? { catalogueTag: tagName } : {}),
+            },
+          });
+          waived = waivedKeysFromStatus(data, oncePerUserRentKeys);
+        }
+      } catch (error) {
+        // Any failure: show it as due; the server drops it at checkout if it isn't.
+        console.warn("[CartComponent] Security deposit status check failed:", error);
+      }
+      if (!cancelled) setWaivedRentChargeKeys(waived);
+    };
+    void checkDepositStatus();
+    return () => {
+      cancelled = true;
+    };
+    // oncePerUserRentKeys is read through its signature, so a new settings object with the
+    // same charges doesn't check again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRentMode, isPreviewMode, onlyLogic, oncePerUserRentKeysSignature, instituteId, tagName]);
+
+  const dueRentCharges = useMemo(
+    () => rentChargeLines.filter((charge) => !waivedRentChargeKeys.includes(charge.key)),
+    [rentChargeLines, waivedRentChargeKeys],
+  );
+  const handleRentChargesWaived = (chargeKeys: string[]) =>
+    setWaivedRentChargeKeys((prev) => [...new Set([...prev, ...chargeKeys])]);
+  // The server says the learner still owes these after all (checkout added them back).
+  const handleRentChargesDue = (chargeKeys: string[]) =>
+    setWaivedRentChargeKeys((prev) => prev.filter((key) => !chargeKeys.includes(key)));
+  // The plan's price, plus the charges once a plan is picked (no plan, no order to charge).
+  const rentPlanPrice = getTotal();
+  const rentGrandTotal = membershipPlan
+    ? rentPlanPrice + sumChargeAmounts(dueRentCharges)
+    : rentPlanPrice;
+  const rentChargeLabel = (charge: ChargeLine) =>
+    charge.refundable ? t("cart.rentCharge.refundableLabel", { label: charge.label }) : charge.label;
+  const formatChargeAmount = (amount: number) =>
+    `₹${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
+  // The note above the plans: today's fixed copy until a charge is linked, then one line per
+  // charge saying whether checkout adds it or it's already on file.
+  const rentChargeNotes: { key: string; text: string }[] = rentChargesLinked
+    ? rentChargeLines.map((charge) => {
+        if (waivedRentChargeKeys.includes(charge.key)) {
+          return { key: charge.key, text: t("cart.rentCharge.onFile", { label: charge.label }) };
+        }
+        const values = { label: charge.label, amount: formatChargeAmount(charge.amount) };
+        return {
+          key: charge.key,
+          text:
+            charge.oncePerUser && charge.refundable
+              ? t("cart.rentCharge.noteOnceRefundable", values)
+              : t("cart.rentCharge.note", values),
+        };
+      })
+    : [{ key: "securityDeposit", text: t("cart.securityDeposit") }];
 
   const paymentBanner = paymentMessage ? (
     <div className={`w-full p-4 mb-4 rounded-catalogue-md flex items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300 ${paymentMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
@@ -810,6 +910,15 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
           {/* Membership Plans Section */}
           <div className="mt-5">
+            {/* Security Deposit / rent charges notice */}
+            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-catalogue-md space-y-1">
+              {rentChargeNotes.map((note) => (
+                <p key={note.key} className="text-xs sm:text-sm text-blue-700">
+                  {note.text}
+                </p>
+              ))}
+            </div>
+
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">{t("cart.subscriptionPlans")}</h2>
 
             {isLoadingPlans ? (
@@ -829,22 +938,31 @@ export const CartComponent: React.FC<CartComponentProps> = ({
                 <p className="text-sm">{t("cart.noPlansAvailable")}</p>
               </div>
             )}
-
-            {/* Security Deposit Notice */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-catalogue-md">
-              <p className="text-xs sm:text-sm text-blue-700">
-                {t("cart.securityDeposit")}
-              </p>
-            </div>
           </div>
 
           {/* Subtotal, Total and Checkout Button Section */}
           {items.length > 0 && (
             <div className="mt-5 bg-gray-50 rounded-catalogue-md p-3 sm:p-4 border border-gray-200 space-y-stack">
 
+              {/* Plan + charges breakdown, as buy mode shows books + shipping */}
+              {rentChargesLinked && membershipPlan && (
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between items-center gap-2 text-sm text-gray-700">
+                    <span className="min-w-0 truncate">{membershipPlan.title}</span>
+                    <span className="font-medium">₹{rentPlanPrice.toFixed(2)}</span>
+                  </div>
+                  {dueRentCharges.map((charge) => (
+                    <div key={charge.key} className="flex justify-between items-center gap-2 text-sm text-gray-700">
+                      <span className="min-w-0 truncate">{rentChargeLabel(charge)}</span>
+                      <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                 <span className="text-base sm:text-lg font-semibold text-gray-900">{t("cart.total")}</span>
-                <span className="text-base sm:text-lg font-bold text-gray-900">₹{getTotal().toFixed(2)}</span>
+                <span className="text-base sm:text-lg font-bold text-gray-900">₹{rentGrandTotal.toFixed(2)}</span>
               </div>
 
               <Button
@@ -885,11 +1003,17 @@ export const CartComponent: React.FC<CartComponentProps> = ({
           open={isCheckoutFormOpen}
           onOpenChange={setIsCheckoutFormOpen}
           instituteId={instituteId || INSTITUTE_ID}
-          totalAmount={getTotal()}
+          totalAmount={rentGrandTotal}
           items={items}
           membershipPlan={membershipPlan}
           isPreviewMode={isPreviewMode}
           isRentMode={true}
+          additionalCharges={membershipPlan ? dueRentCharges : []}
+          rentChargesLinked={rentChargesLinked}
+          linkedRentCharges={rentChargeLines}
+          onRentChargesWaived={handleRentChargesWaived}
+          onRentChargesDue={handleRentChargesDue}
+          catalogueTag={tagName}
         />
       </>
     );

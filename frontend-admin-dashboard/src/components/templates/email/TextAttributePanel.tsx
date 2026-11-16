@@ -22,14 +22,13 @@ import {
     FontStyle,
     FontWeight,
     Height,
-    InputWithUnitField,
     LetterSpacing,
     LineHeight,
     Padding,
     ShadowDom,
     TextDecoration,
-    TextField,
 } from 'easy-email-extensions';
+import { BorderControls } from './BorderControls';
 
 /**
  * Attribute panel for the Text block: the library's own panel plus a "Border" section.
@@ -40,27 +39,11 @@ import {
  * wrapped. The rendering side of the border lives in textBorderFrame.ts.
  */
 
-// Same widget as the Image block's Border section, so admins meet one convention.
+// Width / style / colour per side (or all at once) plus corner radius; see BorderControls.
 function BorderSection() {
-    const { focusIdx } = useFocusIdx();
     return (
         <Space direction="vertical" style={{ width: '100%' }}>
-            <Grid.Row>
-                <Grid.Col span={11}>
-                    <TextField
-                        label="Border"
-                        name={`${focusIdx}.attributes.border`}
-                        helpText="e.g. 1px solid #cccccc"
-                    />
-                </Grid.Col>
-                <Grid.Col offset={1} span={11}>
-                    <InputWithUnitField
-                        label="Border radius"
-                        name={`${focusIdx}.attributes.border-radius`}
-                        unitOptions="percent"
-                    />
-                </Grid.Col>
-            </Grid.Row>
+            <BorderControls />
             {/* Space between the border and the text; the block's Padding stays outside the border. */}
             <Padding title="Inner padding" attributeName="inner-padding" />
         </Space>

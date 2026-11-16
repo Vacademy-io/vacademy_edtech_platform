@@ -13,6 +13,29 @@ import {
   seoLocaleContext,
   withHtmlLang,
 } from "../src/routes/$tagName/-utils/catalogue-seo";
+// The shop: pure helpers, no React and no DOM. A site without
+// globalSettings.commerce never reaches any of them.
+import {
+  collectionHead,
+  edgeLocale,
+  edgeShopOf,
+  edgeTargetOf,
+  findCategory,
+  firstGalleryImage,
+  injectHead,
+  leadImageUrl,
+  looksLikeCommercePath,
+  normalizeRedirectPath,
+  preloadImageTag,
+  productHead,
+  redirectDecision,
+  seedTag,
+  type EdgeHead,
+  type EdgeShop,
+} from "../src/routes/$tagName/-components/commerce/edge/commerce-edge";
+import { IMAGE_SIZES } from "../src/routes/$tagName/-components/commerce/logic/media";
+import { isCommerceReservedSegment } from "../src/routes/$tagName/-components/commerce/routes";
+import type { Category, ProductDetail, ProductList } from "../src/routes/$tagName/-components/commerce/api/types";
 
 // Search Console's URL-inspection and site-verification fetchers do not call
 // themselves Googlebot; without them here a verification meta tag we inject
@@ -76,12 +99,15 @@ async function resolveLogoUrl(fileId: string, backendBase: string): Promise<stri
 async function fetchBrandingOnce(
   domain: string,
   subdomain: string,
-  backendBase: string
+  backendBase: string,
+  signal?: AbortSignal
 ): Promise<DomainRoutingResponse | null> {
   try {
     const url = `${getDomainRoutingUrl(backendBase)}?domain=${encodeURIComponent(domain)}&subdomain=${encodeURIComponent(subdomain)}`;
     const res = await fetch(url, {
       headers: { accept: "application/json" },
+      // Only the shop branch passes a signal (a deadline); every other caller is unchanged.
+      ...(signal ? { signal } : {}),
       // Edge-cache the resolve: crawlers arrive in bursts and every manifest
       // request now goes through here too. Branding changes rarely.
       cf: { cacheTtl: 300, cacheEverything: true },
@@ -98,16 +124,17 @@ async function fetchBrandingOnce(
 async function fetchBranding(
   domain: string,
   subdomain: string,
-  backendBase: string
+  backendBase: string,
+  signal?: AbortSignal
 ): Promise<DomainRoutingResponse | null> {
-  const direct = await fetchBrandingOnce(domain, subdomain, backendBase);
+  const direct = await fetchBrandingOnce(domain, subdomain, backendBase, signal);
   if (direct) return direct;
   // Apex domains (no subdomain) are stored with the wildcard subdomain "*" —
   // that is what the app itself sends (see getCurrentDomainInfo). Without this
   // retry, every two-part white-label host resolved to nothing and fell back to
   // Vacademy branding.
   if (!subdomain) {
-    return await fetchBrandingOnce(domain, "*", backendBase);
+    return await fetchBrandingOnce(domain, "*", backendBase, signal);
   }
   return null;
 }
@@ -172,6 +199,8 @@ interface CatalogueConfig {
   socials: string[];
   /** globalSettings.i18n — the site's languages and translations, when it has any. */
   i18n?: CatalogueI18nSettings;
+  /** globalSettings.commerce — set only for a site with a shop (and a publishable key). */
+  shop?: EdgeShop;
 }
 
 /**
@@ -181,7 +210,8 @@ interface CatalogueConfig {
 async function fetchCatalogue(
   backendBase: string,
   instituteId: string,
-  tagName: string
+  tagName: string,
+  signal?: AbortSignal
 ): Promise<CatalogueConfig | null> {
   try {
     const url =
@@ -189,6 +219,8 @@ async function fetchCatalogue(
       `?instituteId=${encodeURIComponent(instituteId)}&tagName=${encodeURIComponent(tagName)}`;
     const res = await fetch(url, {
       headers: { accept: "application/json" },
+      // Only the shop branch passes a signal (a deadline); every other caller is unchanged.
+      ...(signal ? { signal } : {}),
       cf: { cacheTtl: 300, cacheEverything: true },
     } as RequestInit);
     if (!res.ok) return null;
@@ -223,11 +255,14 @@ async function fetchCatalogue(
       hasBlog: (p.components || []).some((c) => c?.type === "blog" && c.enabled !== false),
     }));
     const i18n = cfg?.globalSettings?.i18n;
+    // null for every site without a shop, so nothing below changes for them.
+    const shop = edgeShopOf(cfg?.globalSettings);
     return {
       pages,
       seo: cfg?.globalSettings?.seo || {},
       socials,
       ...(i18n && typeof i18n === "object" ? { i18n } : {}),
+      ...(shop ? { shop } : {}),
     };
   } catch {
     return null;
@@ -530,6 +565,11 @@ async function serveSitemap(
         });
       }
     }
+  }
+  // A shop's product and collection pages, in every language it offers. Only
+  // on the site's own root: the API reports them under the site's address.
+  if (catalogue.shop && rootMounted) {
+    entries.push(...(await shopSitemapEntries(backendBase, branding.instituteId, catalogue.shop, url.origin)));
   }
   const body =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
@@ -941,7 +981,306 @@ async function serveAudienceFormShell(
   }
 }
 
+/* ── Shop (commerce) ─────────────────────────────────────────────────── */
+
+const COMMERCE_TIMEOUT_MS = 2500;
+/**
+ * Learner routes that APP_ROUTE_SEGMENTS does not list. Kept apart from that set, which the
+ * crawler branch also reads, so nothing changes there: the shop branch alone skips them.
+ */
+const COMMERCE_SKIP_SEGMENTS = new Set(["go", "companion", "engagement", "notebook"]);
+/**
+ * The most a visitor's page load waits for the two lookups that only establish whether the
+ * site has a shop (domain routing and the catalogue JSON). Past it the shell is served as if
+ * the shop did not exist: a slow backend must never hold up a page.
+ */
+const COMMERCE_LOOKUP_TIMEOUT_MS = 1500;
+
+/**
+ * Hosts the edge treats as shops (product and collection heads, old-site redirects): the Pages
+ * variable COMMERCE_SHOP_HOSTS, a comma- or space-separated list ("shop.example.org"). Empty by
+ * default, so no host pays a backend lookup for a path that is simply not a shop page.
+ */
+function commerceShopHosts(env: unknown): Set<string> {
+  const raw = (env as { COMMERCE_SHOP_HOSTS?: unknown } | null | undefined)?.COMMERCE_SHOP_HOSTS;
+  if (typeof raw !== "string" || !raw.trim()) return new Set();
+  return new Set(
+    raw
+      .split(/[\s,]+/)
+      .map((h) => h.trim().toLowerCase().replace(/^www\./, ""))
+      .filter(Boolean)
+  );
+}
+
+/**
+ * One GET on the public shop API with the site's publishable key. Server-side
+ * (no Origin header), so the key's origin lock does not apply. Edge-cached by
+ * URL; the URL carries the institute id because the cache key does not include
+ * the key header and every institute shares one backend host.
+ */
+async function shopApiGet<T>(
+  backendBase: string,
+  instituteId: string,
+  shop: EdgeShop,
+  path: string,
+  params: Record<string, string>,
+  cacheTtl: number
+): Promise<{ status: number; body: T | null }> {
+  const search = new URLSearchParams({ ...params, _site: instituteId });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), COMMERCE_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${backendBase}/admin-core-service/open${path}?${search.toString()}`, {
+      headers: { accept: "application/json", "X-API-Key": shop.publishableKey },
+      signal: controller.signal,
+      cf: {
+        cacheEverything: true,
+        cacheTtlByStatus: { "200-299": cacheTtl, "404": Math.min(cacheTtl, 30), "500-599": 0 },
+      },
+    } as RequestInit);
+    let body: T | null = null;
+    try {
+      body = (await res.json()) as T;
+    } catch {
+      // not JSON
+    }
+    return { status: res.status, body: res.ok ? body : null };
+  } catch {
+    return { status: 0, body: null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Product and collection URLs for the sitemap, one per language the shop offers. */
+async function shopSitemapEntries(
+  backendBase: string,
+  instituteId: string,
+  shop: EdgeShop,
+  origin: string
+): Promise<Array<{ loc: string; freq: string; priority: string; lastmod?: string }>> {
+  const { body } = await shopApiGet<{ data?: Array<{ url?: string; lastmod?: string }> }>(
+    backendBase, instituteId, shop, "/catalog/v1/sitemap", {}, 600
+  );
+  const out: Array<{ loc: string; freq: string; priority: string; lastmod?: string }> = [];
+  for (const row of Array.isArray(body?.data) ? body!.data! : []) {
+    const loc = nonEmpty(row?.url);
+    // Only this site's own shop pages; course rows are already listed as pages.
+    if (!loc.startsWith(`${origin}/`) || !/\/(?:p|c)\/[^/?#]+$/.test(loc)) continue;
+    const lastmod = nonEmpty(row?.lastmod);
+    const stamp = lastmod && !Number.isNaN(Date.parse(lastmod)) ? { lastmod: new Date(lastmod).toISOString() } : {};
+    for (const locale of shop.locales) {
+      out.push({
+        loc: locale === shop.baseLocale ? loc : `${loc}?lang=${encodeURIComponent(locale)}`,
+        freq: "daily",
+        priority: /\/c\//.test(loc) ? "0.8" : "0.7",
+        ...stamp,
+      });
+    }
+  }
+  return out;
+}
+
+/** The SPA shell with a shop page's head written in. Any failure returns the shell untouched. */
+async function withCommerceHead(
+  context: Parameters<PagesFunction>[0],
+  head: EdgeHead,
+  status: number
+): Promise<Response> {
+  const response = await context.next();
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("text/html")) return response;
+  let html: string;
+  try {
+    html = injectHead(await response.clone().text(), head, { noindex: status === 404 });
+  } catch {
+    return response;
+  }
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+  return new Response(html, { status, headers });
+}
+
+/**
+ * The shop's part of a request, before anything else looks at it:
+ *
+ *  - "/p/<slug>" and "/c/<slug>" (or "/<tag>/p/<slug>"): the SPA shell with title,
+ *    description, canonical, hreflang, Open Graph and JSON-LD for EVERY visitor,
+ *    not only crawlers, from the product response the page itself reads
+ *    (edge-cached for 60 s). A product or collection the API does not know
+ *    answers 404 with the same shell.
+ *  - any other path on a shop's own domain that is not one of its pages: the
+ *    old site's redirects (site_redirect), 301 to the new address or 410 Gone.
+ *
+ * Only on a host listed in COMMERCE_SHOP_HOSTS. Returns null whenever this is
+ * not a shop's business — a host not listed, no shop on the site, an app route,
+ * an asset, a lookup that failed — and the request goes on
+ * exactly as it did before the shop existed.
+ */
+async function commerceResponse(
+  context: Parameters<PagesFunction>[0],
+  url: URL
+): Promise<Response | null> {
+  // One deadline for the lookups that only tell whether this site has a shop.
+  const lookup = new AbortController();
+  const lookupTimer = setTimeout(() => lookup.abort(), COMMERCE_LOOKUP_TIMEOUT_MS);
+  try {
+    const segs = url.pathname.split("/").filter(Boolean);
+    if (segs.length === 0 || segs.length > 6) return null;
+    const first = segs[0].toLowerCase();
+    if (APP_ROUTE_SEGMENTS.has(first) || COMMERCE_SKIP_SEGMENTS.has(first)) return null;
+    // An asset (a file extension on the last segment), a dot folder (/.well-known/…) and the
+    // iOS association file are never pages.
+    if (/\.[a-z0-9]{2,12}$/i.test(segs[segs.length - 1])) return null;
+    if (first.startsWith(".") || first === "apple-app-site-association") return null;
+
+    const hostname = url.hostname;
+    // Only a host the deployment names (COMMERCE_SHOP_HOSTS) is ever looked up, for product
+    // and collection heads and for old-site redirects. Every other host returns here, before
+    // any call, exactly as it did before the shop existed.
+    if (
+      isVacademyHost(hostname) ||
+      !commerceShopHosts(context.env).has(hostname.toLowerCase().replace(/^www\./, ""))
+    ) {
+      return null;
+    }
+    const productLike = looksLikeCommercePath(segs);
+
+    const backendBase = getBackendBase(hostname);
+    const { domain, subdomain } = parseDomainParts(hostname);
+    const branding = await fetchBranding(domain, subdomain, backendBase, lookup.signal);
+    if (!branding) return null;
+    const rootTag = nonEmpty(branding.rootCatalogueTag);
+
+    if (productLike) {
+      const target = edgeTargetOf(segs, rootTag);
+      if (!target) return null;
+      const catalogue = await fetchCatalogue(backendBase, branding.instituteId, target.tag, lookup.signal);
+      clearTimeout(lookupTimer);
+      const shop = catalogue?.shop;
+      if (!shop) return null;
+      const locale = edgeLocale(shop, url.searchParams.get(LOCALE_PARAM));
+      const page = {
+        origin: url.origin,
+        pathname: url.pathname.replace(/\/+$/, ""),
+        basePath: target.rootMounted ? "" : `/${target.tag}`,
+        shop,
+        locale,
+        siteName: nonEmpty(branding.instituteName) || nonEmpty(branding.tabText),
+      };
+      const notFound = (): Promise<Response> =>
+        withCommerceHead(
+          context,
+          { title: page.siteName, description: page.siteName, lang: locale, tags: [], resources: [] },
+          404
+        );
+      if (target.route.kind === "product") {
+        const { status, body: product } = await shopApiGet<ProductDetail>(
+          backendBase, branding.instituteId, shop,
+          `/catalog/v1/products/${encodeURIComponent(target.route.slug)}`, { locale }, 60
+        );
+        if (status === 404) return notFound();
+        if (!product || !product.slug) return null;
+        const lead = leadImageUrl(product.media, shop.leadTag);
+        const ogImage = lead ? (await resizedImageUrl(url.origin, lead)) || lead : "";
+        const head = productHead({ ...page, ogImage }, product);
+        // The page's largest image starts with the document, and the product the edge
+        // already holds is handed to the page so it does not ask for it again.
+        const preload = preloadImageTag(
+          firstGalleryImage(product, shop.leadTag, url.searchParams.get("v")),
+          IMAGE_SIZES.gallery
+        );
+        head.resources.push(
+          ...(preload ? [preload] : []),
+          seedTag({ kind: "product", slug: product.slug, locale, data: product })
+        );
+        return withCommerceHead(context, head, 200);
+      }
+      if (target.route.kind === "collection") {
+        const slug = target.route.slug;
+        const [tree, list] = await Promise.all([
+          shopApiGet<{ data?: Category[] }>(backendBase, branding.instituteId, shop, "/catalog/v1/categories", { locale }, 60),
+          shopApiGet<ProductList>(
+            backendBase, branding.instituteId, shop, "/catalog/v1/products",
+            { locale, collection: slug, in_stock: "true", page_size: "24" }, 60
+          ),
+        ]);
+        if (list.status === 404) return notFound();
+        const found = findCategory(tree.body?.data, slug);
+        if (!found) return null;
+        const image = nonEmpty(found.node.image_url);
+        const ogImage = image ? (await resizedImageUrl(url.origin, image)) || image : "";
+        const head = collectionHead({ ...page, ogImage }, found, list.body?.data || []);
+        // The first card's picture, when the address carries no filter or sort of its own
+        // (a filtered view may open on another product).
+        const plain = Array.from(url.searchParams.keys()).every((key) => key === LOCALE_PARAM || key.startsWith("utm_"));
+        const preload = plain ? preloadImageTag(list.body?.data?.[0]?.image, IMAGE_SIZES.card) : null;
+        if (preload) head.resources.push(preload);
+        return withCommerceHead(context, head, 200);
+      }
+      return null;
+    }
+
+    // Old-site redirects: only for a shop that has them, on its root-mounted site.
+    if (!rootTag) return null;
+    const catalogue = await fetchCatalogue(backendBase, branding.instituteId, rootTag, lookup.signal);
+    clearTimeout(lookupTimer);
+    const shop = catalogue?.shop;
+    if (!catalogue || !shop || !shop.redirects) return null;
+    // One of the site's own pages (or a path under one, such as a blog post),
+    // a course, a shop route or the root tag itself is never looked up.
+    if (
+      findPage(catalogue.pages, segs[0]) ||
+      COURSE_ID_SEGMENT.test(segs[0]) ||
+      isCommerceReservedSegment(segs[0]) ||
+      normRoute(segs[0]) === normRoute(rootTag)
+    ) {
+      return null;
+    }
+    const path = normalizeRedirectPath(url.pathname, url.search);
+    const { body } = await shopApiGet<unknown>(
+      backendBase, branding.instituteId, shop, "/commerce/v1/redirects/resolve", { path }, 300
+    );
+    const decision = redirectDecision(body, url.pathname);
+    if (!decision) return null;
+    if (decision.status === 301) {
+      return new Response(null, {
+        status: 301,
+        headers: { location: `${url.origin}${decision.location}`, "cache-control": "public, max-age=3600" },
+      });
+    }
+    const hindi = shop.baseLocale.startsWith("hi");
+    return new Response(
+      `<!doctype html><html lang="${escapeHtml(shop.baseLocale)}"><head><meta charset="utf-8" />` +
+        '<meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />' +
+        `<title>${hindi ? "यह पेज अब उपलब्ध नहीं है" : "This page is no longer available"}</title></head><body><p>${
+          hindi ? "यह पेज अब उपलब्ध नहीं है।" : "This page is no longer available."
+        } <a href="/">${escapeHtml(nonEmpty(branding.instituteName) || (hindi ? "होम" : "Home"))}</a></p></body></html>`,
+      {
+        status: 410,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "public, max-age=3600",
+          "x-robots-tag": "noindex",
+        },
+      }
+    );
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(lookupTimer);
+  }
+}
+
 export const onRequest: PagesFunction = async (context) => {
+  // An uncaught fault or a CPU-limit kill in this worker serves the static asset instead of
+  // an error page. (Absent in tests and in older runtimes, hence the guard.)
+  try {
+    (context as { passThroughOnException?: () => void }).passThroughOnException?.();
+  } catch {
+    // not available: nothing to do
+  }
   const { request } = context;
   const ua = request.headers.get("user-agent") || "";
   const url = new URL(request.url);
@@ -967,6 +1306,14 @@ export const onRequest: PagesFunction = async (context) => {
   const sitemapMatch = url.pathname.match(/^\/(?:([^/]+)\/)?sitemap\.xml$/);
   if (sitemapMatch) {
     return serveSitemap(context, url, sitemapMatch[1]);
+  }
+
+  // A shop's product and collection pages (head tags for every visitor) and
+  // the old site's redirects. null for everything that is not a shop's
+  // business, which then continues below untouched.
+  if (request.method === "GET") {
+    const commerce = await commerceResponse(context, url);
+    if (commerce) return commerce;
   }
 
   // Only intercept for crawlers

@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { CalendarChip, LiveChip } from "@/components/design-system/fun/chips";
-import { formatSessionTimeInUserTimezone } from "@/utils/timezone";
 import type { SessionDetails } from "@/routes/study-library/live-class/-types/types";
-import type { BannerClass } from "./live-timing";
+import { formatClassTime, lastEntryMs, type BannerClass } from "./live-timing";
 import { VideoIcon } from "./fun-icons";
 import { useClassWhen } from "./FunTodayCards";
 
@@ -23,17 +22,10 @@ export function FunLiveCard({
   nowMs: number;
   onJoin: (session: SessionDetails) => void;
 }) {
-  const { t } = useTranslation("funHome");
+  const { t, i18n } = useTranslation("funHome");
   const classWhen = useClassWhen();
   const { session, isLive } = banner;
-  let joinBy: string | null = null;
-  try {
-    joinBy = session.last_entry_time
-      ? formatSessionTimeInUserTimezone(session.meeting_date, session.last_entry_time, session.timezone)
-      : null;
-  } catch {
-    joinBy = null;
-  }
+  const joinBy = formatClassTime(lastEntryMs(session), i18n.language);
   const titleId = `fun-live-${session.schedule_id || session.session_id}`;
 
   return (

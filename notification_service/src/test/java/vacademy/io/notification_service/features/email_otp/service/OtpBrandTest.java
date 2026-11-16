@@ -15,4 +15,14 @@ class OtpBrandTest {
         assertEquals("new@evalezy.com", brand.contactEmail());
         assertEquals("#111111", brand.theme());
     }
+
+    @Test
+    void anHttpsPngIsTheMailLogoAndAnSvgOrRelativePathIsNot() {
+        org.junit.jupiter.api.Assertions.assertEquals("https://evalezy.com/icon-192.png",
+                OtpBrand.emailLogo(" https://evalezy.com/icon-192.png "));
+        org.junit.jupiter.api.Assertions.assertNull(OtpBrand.emailLogo("/evalezy-logo.svg"));
+        org.junit.jupiter.api.Assertions.assertNull(OtpBrand.emailLogo("https://evalezy.com/logo.svg"));
+        org.junit.jupiter.api.Assertions.assertNull(OtpBrand.emailLogo("http://evalezy.com/logo.png"));
+        org.junit.jupiter.api.Assertions.assertNull(OtpBrand.emailLogo(null));
+    }
 }

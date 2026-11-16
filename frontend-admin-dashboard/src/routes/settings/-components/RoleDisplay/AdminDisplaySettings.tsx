@@ -1731,11 +1731,24 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                         onValueChange={(v) => setActiveCategory(v as SidebarCategory)}
                         className="w-full"
                     >
-                        <TabsList className="mb-4 grid w-full grid-cols-4">
+                        <TabsList
+                            className={
+                                planRows.category('COMMERCE', settings.sidebar)
+                                    ? 'mb-4 grid w-full grid-cols-5'
+                                    : 'mb-4 grid w-full grid-cols-4'
+                            }
+                        >
                             <TabsTrigger value="LMS">{t('sidebarCategories.lms')}</TabsTrigger>
                             <TabsTrigger value="CRM">{t('sidebarCategories.crm')}</TabsTrigger>
                             <TabsTrigger value="AI">{t('sidebarCategories.aiTools')}</TabsTrigger>
                             <TabsTrigger value="ERP">ERP</TabsTrigger>
+                            {planRows.category('COMMERCE', settings.sidebar) && (
+                                <TabsTrigger value="COMMERCE">
+                                    {t('categoryRail:categories.commerce', {
+                                        defaultValue: 'Commerce',
+                                    })}
+                                </TabsTrigger>
+                            )}
                         </TabsList>
 
                         {(() => {

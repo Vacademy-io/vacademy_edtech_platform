@@ -1,6 +1,7 @@
 package vacademy.io.auth_service.feature.auth.constants;
 
 import java.util.List;
+import java.util.Locale;
 
 public class AuthConstants {
 
@@ -12,7 +13,21 @@ public class AuthConstants {
 
     public static final String LEARNER_ENROLL_PATH = "/admin-core-service/v1/learner/enroll";
 
-    public static final List<String> VALID_ROLES_FOR_ADMIN_PORTAL = List.of("ADMIN","TEACHER","EVALUATOR");
+    /**
+     * Shop staff roles of the commerce module (seeded by V28). Only an institute ADMIN may grant
+     * or remove them, and a user holding nothing else is not general institute staff.
+     */
+    public static final List<String> COMMERCE_ROLES = List.of("COMMERCE_STORE_MANAGER",
+            "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
+
+    /** True for a commerce role name in any case, with or without padding. Null-safe. */
+    public static boolean isCommerceRole(String roleName) {
+        return roleName != null && COMMERCE_ROLES.contains(roleName.strip().toUpperCase(Locale.ROOT));
+    }
+
+    // The commerce roles are listed so shop staff can sign in to the admin portal.
+    public static final List<String> VALID_ROLES_FOR_ADMIN_PORTAL = List.of("ADMIN", "TEACHER", "EVALUATOR",
+            "COMMERCE_STORE_MANAGER", "COMMERCE_WAREHOUSE_STAFF", "COMMERCE_POS_CASHIER", "COMMERCE_ACCOUNTANT");
 
     public  static final List<String> VALID_ROLES_FOR_STUDENT_PORTAL = List.of("STUDENT", "PARENT");
 

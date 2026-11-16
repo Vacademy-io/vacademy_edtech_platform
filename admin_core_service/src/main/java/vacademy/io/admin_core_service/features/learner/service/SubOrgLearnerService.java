@@ -449,18 +449,18 @@ public class SubOrgLearnerService {
         ManualPaymentResult paymentResult = recordOfflinePaymentIfRequested(
                 request, user.getId(), learnerUserPlanId, admin.getUserId(), resolvedLearnerOption, offlinePaidVia);
 
-        // Hydrate password back from auth-service so the LMS create-user webhook
-        // (workflow node referencing #ctx['member']['password']) receives the real
-        // stored credential instead of null. createUserFromAuthService strips
-        // passwords from its response, so the UserDTO held above has no password
-        // even though one was generated and persisted. Mirrors the bulk-assign
-        // workaround in BulkAssignmentService. Best-effort: a fetch blip leaves
-        // password=null and downstream workflow nodes must branch on it; we don't
-        // want a credential read-back to abort an otherwise-successful enrollment.
+        // The LMS create-user webhook (workflow node referencing #ctx['member']['password'])
+        // needs the stored login, and create-or-get answers with a password only for an
+        // account it created. The stored login is read onto a copy that only the workflow
+        // gets; the user returned in the response keeps what create-or-get answered.
+        // Best-effort: a fetch blip leaves the workflow's password null and downstream nodes
+        // must branch on it; a credential read must not abort an otherwise-successful enrollment.
+        UserDTO workflowUser = user;
         try {
             UserDTO userWithPwd = authService.getUsersFromAuthServiceWithPasswordByUserId(user.getId());
             if (userWithPwd != null && StringUtils.hasText(userWithPwd.getPassword())) {
-                user.setPassword(userWithPwd.getPassword());
+                workflowUser = vacademy.io.admin_core_service.features.auth_service.util.UserDtoCopies.copyOf(user);
+                workflowUser.setPassword(userWithPwd.getPassword());
             }
         } catch (Exception e) {
             log.warn("Could not fetch stored password for sub-org learner userId={}: {}",
@@ -469,7 +469,7 @@ public class SubOrgLearnerService {
 
         // Trigger workflow for each PS (existing per-PS contract).
         for (String psId : psIds) {
-            triggerEnrollmentWorkflow(request.getInstituteId(), user, psId, request.getSubOrgId(), adminDTO);
+            triggerEnrollmentWorkflow(request.getInstituteId(), workflowUser, psId, request.getSubOrgId(), adminDTO);
         }
 
         return SubOrgEnrollResponseDTO.builder()
@@ -1032,6 +1032,22 @@ public class SubOrgLearnerService {
             log.warn("Ignoring unparseable access_till_date '{}': {}", raw, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Whether the user holds an active admin mapping of this sub-organization under
+     * {@code instituteId} (the sub-org admins who manage their team from the learner portal).
+     */
+    @Transactional(readOnly = true)
+    public boolean isActiveAdminOfSubOrg(String userId, String subOrgId, String instituteId) {
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(subOrgId) || !StringUtils.hasText(instituteId)) {
+            return false;
+        }
+        List<StudentSessionInstituteGroupMapping> adminMappings = mappingRepository
+                .findActiveAdminMappingsByUserId(userId, SubOrgRoles.ADMIN.name());
+        return adminMappings != null && adminMappings.stream().anyMatch(m -> m != null
+                && m.getSubOrg() != null && subOrgId.equals(m.getSubOrg().getId())
+                && m.getInstitute() != null && instituteId.equals(m.getInstitute().getId()));
     }
 
     @Transactional(readOnly = true)

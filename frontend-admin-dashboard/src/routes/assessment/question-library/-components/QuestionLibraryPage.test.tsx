@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuestionLibraryPage } from './QuestionLibraryPage';
 
@@ -6,6 +6,8 @@ const state = vi.hoisted(() => ({
     tree: undefined as unknown,
     questions: [] as unknown[],
     papers: [] as unknown[],
+    tags: [] as unknown[],
+    lastFilters: undefined as Record<string, unknown> | undefined,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -36,6 +38,14 @@ vi.mock('./ImportDialogs', () => ({
 
 vi.mock('./LibraryQuestionEditDialog', () => ({ LibraryQuestionEditDialog: () => null }));
 
+vi.mock('./AddQuestionsDialog', () => ({
+    AddQuestionsDialog: () => <div>add-questions-dialog</div>,
+}));
+
+vi.mock('./ImportExcelDialog', () => ({
+    ImportExcelDialog: () => <div>import-excel-dialog</div>,
+}));
+
 vi.mock('../-services/question-library-services', async (original) => {
     const actual = await original<Record<string, unknown>>();
     return {
@@ -46,17 +56,21 @@ vi.mock('../-services/question-library-services', async (original) => {
             isError: false,
             refetch: () => undefined,
         }),
-        useLibraryQuestions: () => ({
-            data: {
-                content: state.questions,
-                total_elements: state.questions.length,
-                total_pages: 1,
-            },
-            isLoading: false,
-            isError: false,
-            isFetching: false,
-            refetch: () => undefined,
-        }),
+        useLibraryQuestions: (_institute: string, filters: Record<string, unknown>) => {
+            state.lastFilters = filters;
+            return {
+                data: {
+                    content: state.questions,
+                    total_elements: state.questions.length,
+                    total_pages: 1,
+                },
+                isLoading: false,
+                isError: false,
+                isFetching: false,
+                refetch: () => undefined,
+            };
+        },
+        useLibraryTags: () => ({ data: state.tags, isLoading: false, isError: false }),
         useLibraryPapers: () => ({
             data: state.papers,
             isLoading: false,
@@ -98,6 +112,8 @@ describe('QuestionLibraryPage', () => {
     beforeEach(() => {
         state.questions = [];
         state.papers = [];
+        state.tags = [];
+        state.lastFilters = undefined;
     });
 
     it('shows one message, no zero stats or filters, when a reader finds the library empty', () => {
@@ -123,8 +139,10 @@ describe('QuestionLibraryPage', () => {
         for (const write of [
             'header.newTopic',
             'header.importPaper',
-            'tree.addTopic',
-            'tree.unsorted',
+            'browse.addCourse',
+            'browse.noInstitutes',
+            'header.importExcel',
+            'browse.addQuestions',
             'bulk.selectPage',
         ]) {
             expect(screen.queryByText(write)).toBeNull();
@@ -141,7 +159,8 @@ describe('QuestionLibraryPage', () => {
         render(<QuestionLibraryPage />);
 
         expect(screen.getByText('header.newTopic')).toBeTruthy();
-        expect(screen.getByText('tree.addTopic')).toBeTruthy();
+        expect(screen.getByText('browse.addCourse')).toBeTruthy();
+        expect(screen.getByText('browse.noInstitutes')).toBeTruthy();
         expect(screen.getByLabelText('list.edit')).toBeTruthy();
     });
 
@@ -152,5 +171,67 @@ describe('QuestionLibraryPage', () => {
 
         expect(screen.queryByText('comingSoon.title')).toBeNull();
         expect(screen.getByText('header.newTopic')).toBeTruthy();
+    });
+
+    it('opens a course card, shows where you are and lists only that course', () => {
+        const polity = { ...topic, id: 'polity', parent_id: 'upsc', name: 'Polity', depth: 2 };
+        const upsc = { ...topic, id: 'upsc', name: 'UPSC', question_count: 3 };
+        state.tree = {
+            nodes: [upsc, polity],
+            summary: summary(3),
+            max_depth: 5,
+            can_manage: false,
+        };
+
+        render(<QuestionLibraryPage />);
+
+        expect(screen.getByText('browse.courses')).toBeTruthy();
+        expect(state.lastFilters?.library_node_ids).toBeUndefined();
+        fireEvent.click(screen.getByText('UPSC'));
+
+        expect(screen.getByText('browse.insideTopic')).toBeTruthy();
+        expect(screen.getByText('Polity')).toBeTruthy();
+        expect(screen.getByText('browse.allCourses')).toBeTruthy();
+        expect(state.lastFilters?.library_node_ids).toEqual(['upsc']);
+
+        fireEvent.click(screen.getByText('browse.allCourses'));
+        expect(state.lastFilters?.library_node_ids).toBeUndefined();
+    });
+
+    it('filters by one tag at a time and by difficulty', () => {
+        state.tree = { nodes: [topic], summary: summary(1), max_depth: 5, can_manage: false };
+        state.questions = [question];
+        state.tags = [
+            { tag_id: 't1', tag_name: 'Article 21', kind: 'CONCEPT', question_count: 4 },
+            { tag_id: 't2', tag_name: 'UPSC 2023', kind: 'PYQ', question_count: 2 },
+        ];
+
+        render(<QuestionLibraryPage />);
+
+        expect(screen.getByText('tags.kind.CONCEPT')).toBeTruthy();
+        fireEvent.click(screen.getByText('Article 21'));
+        expect(state.lastFilters?.tag_ids).toEqual(['t1']);
+        fireEvent.click(screen.getByText('UPSC 2023'));
+        expect(state.lastFilters?.tag_ids).toEqual(['t2']);
+        fireEvent.click(screen.getByText('UPSC 2023'));
+        expect(state.lastFilters?.tag_ids).toBeUndefined();
+
+        fireEvent.mouseDown(screen.getByRole('tab', { name: /difficulty.HARD/ }));
+        expect(state.lastFilters?.difficulties).toEqual(['HARD']);
+    });
+
+    it('lets the owner import from Excel and add questions inside an open topic', () => {
+        state.tree = { nodes: [topic], summary: summary(1), max_depth: 5, can_manage: true };
+
+        render(<QuestionLibraryPage />);
+
+        fireEvent.click(screen.getByText('header.importExcel'));
+        expect(screen.getByText('import-excel-dialog')).toBeTruthy();
+        // Adding questions needs a topic to put them in.
+        expect(screen.queryByText('browse.addQuestions')).toBeNull();
+
+        fireEvent.click(screen.getByText('Chemical Reactions'));
+        fireEvent.click(screen.getAllByText('browse.addQuestions')[0]!);
+        expect(screen.getByText('add-questions-dialog')).toBeTruthy();
     });
 });

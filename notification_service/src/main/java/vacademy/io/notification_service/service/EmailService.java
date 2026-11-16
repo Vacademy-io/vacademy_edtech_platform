@@ -1,6 +1,7 @@
 package vacademy.io.notification_service.service;
 
 import vacademy.io.notification_service.features.email_otp.service.OtpBrand;
+import vacademy.io.notification_service.features.email_otp.service.OtpEmailBody;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.activation.DataHandler;
@@ -144,6 +145,12 @@ public class EmailService {
      * @return true if the email should be blocked, false otherwise
      */
     private boolean isEmailBlocked(String email) {
+        // A reserved .invalid address has no mailbox (an account known only by phone). Its
+        // address is not logged: one count line per skipped recipient.
+        if (EmailDomainBlocklistUtil.isReservedUndeliverable(email)) {
+            logger.info("Email blocked - 1 recipient under the reserved .invalid domain skipped");
+            return true;
+        }
         // Check domain blocklist first (faster, static check)
         if (EmailDomainBlocklistUtil.isEmailDomainBlocked(email)) {
             logger.info("Email blocked - domain is in blocklist: {}", email);
@@ -672,21 +679,26 @@ public class EmailService {
             if (brand == null && instituteId != null && StringUtils.hasText(instituteId))
                 instituteInfoDTO = internalService.getInstituteByInstituteIdCached(instituteId);
 
-            // default vacademy theme
-            name = name == null ? "User" : name;
-            String instituteTheme = brand != null ? brand.theme() : "#ED7424";
+            // No institute (platform OTP) keeps the platform's own name and site. With an
+            // institute, every visible value is the institute's: no website means no website
+            // line, never the platform's dashboard URL.
+            String themeCode = brand != null ? brand.theme() : null;
             String instituteName = brand != null ? brand.name() : "Vacademy";
-            String instituteUrl = brand != null ? brand.url() : "https://dash.vacademy.io";
+            String websiteUrl = brand != null ? brand.url()
+                    : instituteInfoDTO == null ? "https://dash.vacademy.io" : null;
+            // A branded product's logo comes from its settings (email_logo_url); none keeps the tile.
+            String logoUrl = brand != null ? brand.logo() : null;
             if (instituteInfoDTO != null) {
-
-                instituteTheme = instituteInfoDTO.getInstituteThemeCode() != null
-                        ? instituteInfoDTO.getInstituteThemeCode()
-                        : instituteTheme;
-                instituteName = instituteInfoDTO.getInstituteName() != null ? instituteInfoDTO.getInstituteName()
+                // Preset codes ("primary", "blue", …) and blanks are resolved to the colour the
+                // institute's own portal shows; raw, they left the OTP invisible.
+                themeCode = instituteInfoDTO.getInstituteThemeCode();
+                instituteName = StringUtils.hasText(instituteInfoDTO.getInstituteName())
+                        ? instituteInfoDTO.getInstituteName()
                         : instituteName;
-                instituteUrl = StringUtils.hasText(instituteInfoDTO.getWebsiteUrl())
-                        ? instituteInfoDTO.getWebsiteUrl()
-                        : instituteUrl;
+                if (StringUtils.hasText(instituteInfoDTO.getWebsiteUrl())) {
+                    websiteUrl = instituteInfoDTO.getWebsiteUrl();
+                }
+                logoUrl = instituteInfoDTO.getInstituteLogoUrl();
             }
 
             // Prefer the institute's real contact email for the footer; fall back to the
@@ -695,18 +707,13 @@ public class EmailService {
             String footerEmail = (instituteInfoDTO != null && StringUtils.hasText(instituteInfoDTO.getEmail()))
                     ? instituteInfoDTO.getEmail().trim()
                     : normalizeFromAddress(fromToUse);
-            if (footerEmail == null) {
-                footerEmail = "";
-            }
-            final String instituteEmailForBody = footerEmail;
 
             final String emailSubject = StringUtils.hasText(subject)
                     ? subject
                     : "Your One-Time Password (OTP) for " + instituteName + " Access | " + otp;
 
-            // Build the HTML body for the OTP email
-            final String emailBody = createEmailBody(name, otp, instituteTheme, instituteName, instituteUrl,
-                    instituteEmailForBody);
+            final String emailBody = OtpEmailBody.build(instituteName, themeCode, otp, logoUrl, footerEmail,
+                    websiteUrl);
 
             final boolean includeSesHeader = shouldIncludeSesConfigurationHeader(instituteId);
 
@@ -771,93 +778,6 @@ public class EmailService {
                     .send();
             throw new RuntimeException("An error occurred while preparing the OTP email", e);
         }
-    }
-
-    // Method to create the email body
-    // Method to create the email body with placeholders {{service}}, {{name}},
-    // {{otp}}
-    private String createEmailBody(String name, String otp, String theme, String instituteName, String instituteWebsite,
-            String instituteEmail) {
-        String template = """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Confirm Email</title>
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            margin: 0;
-                            padding: 0;
-                            background-color: #FFF7E1;
-                        }
-                        .container {
-                            max-width: 600px;
-                            margin: 40px auto;
-                            padding: 20px;
-                            background-color: #FFFFFF;
-                            border: 2px solid {{theme}};
-                            border-radius: 10px;
-                            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                        }
-                        .content {
-                            padding: 20px;
-                            font-size: 16px;
-                            color: black;
-                            line-height: 1.6;
-                        }
-                        .otp {
-                            font-size: 22px;
-                            font-weight: bold;
-                            color: white;
-                            text-align: center;
-                            padding: 10px;
-                            background-color: {{theme}};
-                            border: 2px solid {{theme}};
-                            border-radius: 5px;
-                            margin: 15px 0;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="content">
-                            <p>Dear User,</p>
-                            <p>Your One-Time Password (OTP) to access <b>{{instituteName}}</b> is:</p>
-
-                            <div class="otp">{{otp}}</div>
-
-                            <p>This OTP is valid for <b>10 minutes</b> and can be used only once.</p>
-                            <p>Please do not share this code with anyone for security reasons.</p>
-
-                            <p>If you did not request this code, please ignore this message or
-                            contact our support team immediately.</p>
-
-                            <p>Thank you,</p>
-                            <p><b>{{instituteName}} Support Team</b></p>
-                            <p>Email: {{instituteEmail}}</p>
-                            <p>Web: <a href="{{instituteWebsiteHref}}" target="_blank">{{instituteWebsite}}</a></p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """;
-
-        // Display text keeps the stored value; the href gets an https:// scheme when
-        // the stored URL lacks one so the link is not treated as relative.
-        String instituteWebsiteHref = instituteWebsite;
-        if (StringUtils.hasText(instituteWebsiteHref)
-                && !instituteWebsiteHref.matches("(?i)^[a-z][a-z0-9+.\\-]*://.*")) {
-            instituteWebsiteHref = "https://" + instituteWebsiteHref;
-        }
-
-        return template
-                .replace("{{name}}", name)
-                .replace("{{otp}}", otp)
-                .replace("{{theme}}", theme)
-                .replace("{{instituteEmail}}", instituteEmail)
-                .replace("{{instituteName}}", instituteName)
-                .replace("{{instituteWebsiteHref}}", instituteWebsiteHref)
-                .replace("{{instituteWebsite}}", instituteWebsite);
     }
 
     public void sendHtmlEmail(String to, String subject, String service, String body, String instituteId) {
@@ -1159,6 +1079,18 @@ public class EmailService {
     public SendOutcome sendAttachmentEmail(String to, String subject, String service, String body,
             Map<String, byte[]> attachments, String instituteId, String emailType,
             List<String> cc, String ccMode, EmailBillingClass requestedBillingClass) {
+        return sendAttachmentEmail(to, subject, service, body, attachments, instituteId, emailType, cc, ccMode,
+                requestedBillingClass, null, null);
+    }
+
+    /**
+     * Same, from {@code customFromEmail} when set (a product's own verified sender, e.g. its invoice
+     * mail); null keeps the institute's configured sender exactly as before.
+     */
+    public SendOutcome sendAttachmentEmail(String to, String subject, String service, String body,
+            Map<String, byte[]> attachments, String instituteId, String emailType,
+            List<String> cc, String ccMode, EmailBillingClass requestedBillingClass,
+            String customFromEmail, String customFromName) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -1197,7 +1129,14 @@ public class EmailService {
 
                     message.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
                     applyCopyRecipients(message, cc, ccMode);
-                    message.setFrom(new InternetAddress(fromToUse));
+                    if (StringUtils.hasText(customFromEmail)) {
+                        String name = resolveFromName(customFromEmail, customFromName, fromToUse);
+                        message.setFrom(StringUtils.hasText(name)
+                                ? new InternetAddress(customFromEmail.trim(), name)
+                                : new InternetAddress(customFromEmail.trim()));
+                    } else {
+                        message.setFrom(new InternetAddress(fromToUse));
+                    }
                     message.setSubject(emailSubject);
 
                     // Add SES configuration set header for event tracking
@@ -1238,7 +1177,7 @@ public class EmailService {
                     saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "ATTACHMENT_EMAIL_SERVICE", messageId, null, fromToUse, instituteId);
                     emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
-                } catch (MessagingException e) {
+                } catch (MessagingException | java.io.UnsupportedEncodingException e) {
                     logger.error("Error while preparing or sending the email", e);
                     SentryLogger.SentryEventBuilder.error(e)
                             .withMessage("Failed to send email with attachments")

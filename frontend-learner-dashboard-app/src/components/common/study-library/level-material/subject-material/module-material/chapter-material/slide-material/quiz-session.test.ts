@@ -46,6 +46,13 @@ describe("quiz session storage", () => {
     expect(readQuizSession("s2", storage)).toBeNull();
   });
 
+  it("keeps the questions a study-mode quiz has checked, and only their ids", () => {
+    writeQuizSession("s1", { ...session, checked: ["q1"] }, storage);
+    expect(readQuizSession("s1", storage)?.checked).toEqual(["q1"]);
+    storage.map.set("quiz_session_s1", JSON.stringify({ ...session, checked: ["q2", 7, null] }));
+    expect(readQuizSession("s1", storage)?.checked).toEqual(["q2"]);
+  });
+
   it("is gone once cleared", () => {
     writeQuizSession("s1", session, storage);
     clearQuizSession("s1", storage);

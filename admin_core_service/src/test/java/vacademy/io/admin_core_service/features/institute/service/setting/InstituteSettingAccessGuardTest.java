@@ -174,6 +174,18 @@ class InstituteSettingAccessGuardTest {
     }
 
     @Test
+    @DisplayName("COMMERCE_SETTING is written only through the commerce routes, never the generic save")
+    void commerceSettingOnlyThroughItsOwnRoute() {
+        assertEquals(InstituteSettingAccessGuard.Level.SUPER_ADMIN,
+                InstituteSettingAccessGuard.requiredLevel(" commerce_setting "));
+        assertThrows(ForbiddenException.class, () -> guard.requireCanWrite(admin(), INSTITUTE, "COMMERCE_SETTING"));
+        assertThrows(ForbiddenException.class, () -> guard.requireCanWrite(teacher(), INSTITUTE, "COMMERCE_SETTING"));
+        assertThrows(ForbiddenException.class,
+                () -> guard.requireCanWrite(customRole(), INSTITUTE, "commerce_setting"));
+        assertThrows(ForbiddenException.class, () -> guard.requireCanWrite(learner(), INSTITUTE, "COMMERCE_SETTING"));
+    }
+
+    @Test
     @DisplayName("a platform super-admin may write any key of any institute, with no role there")
     void superAdminBypass() {
         clientIdHeader(null);

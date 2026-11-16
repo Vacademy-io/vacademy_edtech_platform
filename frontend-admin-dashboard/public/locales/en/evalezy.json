@@ -1,4 +1,63 @@
 {
+    "demo": {
+        "title": "Try Evalezy free",
+        "subtitle": "{{days}} days free. Just your name, email and phone.",
+        "subtitleCredits": "{{days}} days free with {{credits}} AI credits (1 credit = 1 page checked). Just your name, email and phone.",
+        "emailInvalid": "Enter a valid email address",
+        "alreadyUsed": "This email has already been used for a demo. Log in with the details we emailed you.",
+        "note": "No card needed. Your login details are sent to this email.",
+        "start": "Start my demo",
+        "starting": "Opening your demo…"
+    },
+    "plan": {
+        "noPlans": "Plans can't be bought online for this account yet. Contact us and we'll set it up.",
+        "invoices": "Invoices",
+        "pendingTitle": "Payment pending",
+        "pendingBody": "Your account is ready. Pay for your plan below to start checking copies. The plan's credits are added as soon as you pay.",
+        "pendingBodyIos": "Your account is ready. Complete the payment for your plan on evalezy.vacademy.io in a browser, then come back here.",
+        "menu": "Plan & teachers",
+        "title": "Plan & teachers",
+        "loadFailed": "Could not load your plan. Try again.",
+        "retry": "Try again",
+        "current": "Your plan",
+        "trialBadge": "Free trial",
+        "trialEnded": "Trial ended",
+        "freeTrial": "Free trial",
+        "managed": "Custom plan",
+        "creditsIncluded": "{{credits}} AI credits included",
+        "validTill": "Valid till {{date}}",
+        "trialEndsOn": "Trial ends on {{date}}",
+        "trialEndedOn": "Trial ended on {{date}}. Your reports are safe.",
+        "oneTeacher": "For one teacher",
+        "upToUsers": "Up to {{count}} users",
+        "year": "year",
+        "months": "{{count}} months",
+        "bulletCredits": "{{credits}} pages checked, valid for a {{period}}",
+        "bulletExtra": "Extra credits {{price}} each (1 credit = 1 page)",
+        "bulletOneTeacher": "For one teacher",
+        "bulletTeachers": "Shared by up to {{count}} teachers",
+        "bulletEverything": "Everything in {{plan}}",
+        "bulletBasics": "Checked copies, reports and result emails",
+        "otherPlans": "Upgrade",
+        "choose": "Choose a plan",
+        "currentBadge": "Current plan",
+        "buy": "Buy {{plan}}",
+        "payNote": "Secure payment by Razorpay (UPI, cards, net banking). The plan's credits are added as soon as you pay.",
+        "teachers": "Teachers",
+        "seatsUsed": "{{used}} of {{limit}} users",
+        "you": "(you)",
+        "remove": "Remove teacher",
+        "teacherRemoved": "Teacher removed",
+        "actionFailed": "That did not work. Try again.",
+        "full": "All users on your plan are in use. Remove a teacher to add another.",
+        "addHint": "Teachers get the same Evalezy app and share your AI credits. Their login details go to their email.",
+        "teacherName": "Teacher's name",
+        "teacherEmail": "Teacher's email",
+        "addTeacher": "Add teacher",
+        "adding": "Adding…",
+        "teacherAdded": "Teacher added. Login details sent to their email.",
+        "teacherAddedExisting": "Teacher added. They can log in with their existing account."
+    },
     "signup": {
         "closedTitle": "Sign-up is closed right now",
         "closedBody": "Please log in, or contact us to get an account.",
@@ -34,6 +93,16 @@
         "city": "City",
         "state": "State",
         "noCard": "No card needed. You keep your reports after the trial ends.",
+        "buyTitle": "Create your account to buy {{plan}}",
+        "buySubtitle": "You pay on the next screen. The plan's credits are added as soon as the payment goes through.",
+        "buyDetailsSubtitle": "One step left, then you pay for {{plan}}.",
+        "buyStart": "Create account and continue to payment",
+        "buyNote": "Nothing is charged until you pay on the next screen.",
+        "steps": {
+            "plan": "Choose plan",
+            "account": "Create account",
+            "pay": "Pay"
+        },
         "start": "Start {{days}}-day trial",
         "creating": "Setting up your account…",
         "createFailed": "Your account could not be created. Try again.",
@@ -85,7 +154,7 @@
         "left_one": "Free trial: {{count}} day left",
         "left_other": "Free trial: {{count}} days left",
         "ended": "Your free trial has ended. Your reports are safe.",
-        "upgrade": "Recharge"
+        "upgrade": "Buy a plan"
     },
     "profile": {
         "privacyPolicy": "Privacy policy",
@@ -133,7 +202,10 @@
         "tabUsage": "Usage",
         "bills": "Bills",
         "loadError": "The credits could not be loaded.",
-        "retry": "Try again"
+        "retry": "Try again",
+        "plansTitle": "Plans",
+        "plansSubtitle": "Buy a yearly plan with AI credits included. Paying here adds the plan's credits to this account.",
+        "planUnavailable": "Plans can't be bought online for this account yet. Write to us and we'll set it up."
     },
     "header": {
         "backToPortal": "Back to dashboard",
@@ -157,7 +229,7 @@
         "error": "Couldn't load your assessments.",
         "noMatch": "No assessment matches your search.",
         "empty": "No assessments to check yet",
-        "emptyHint": "Assessments that are checked by hand show up here once they are published.",
+        "emptyHint": "Create your first test from the question paper. New here? Tap ▶ at the top for the 2-minute tutorial.",
         "students_one": "{{count}} student",
         "students_other": "{{count}} students"
     },
@@ -299,5 +371,138 @@
         "scanned_other": "{{count}} copies added",
         "started_one": "Checking 1 copy. You can leave this page; we'll email you when it's done.",
         "started_other": "Checking {{count}} copies. You can leave this page; we'll email you when they're done."
+    },
+    "tutorials": {
+        "menu": "How to use (videos)",
+        "title": "How to use Evalezy",
+        "subtitle": "Short videos with voice and captions for every step.",
+        "startHere": "Start here",
+        "stepByStep": "Step by step",
+        "step": "Step {{number}}",
+        "stuck": "Stuck on a step?",
+        "faq": "See the answers to common questions",
+        "welcomeTitle": "Welcome to Evalezy!",
+        "welcomeBody": "Watch this {{time}} video to learn the whole flow: create a test, add the copies, let the AI check them and download the checked copies.",
+        "later": "I'll watch later",
+        "seeAll": "All tutorials",
+        "watch": "Watch",
+        "cardTitle": "New to Evalezy?",
+        "cardBody": "Watch the {{time}} tutorial, or one short video for each step.",
+        "hideCard": "Hide",
+        "full": {
+            "title": "How to use Evalezy, start to finish",
+            "summary": "The whole flow in one video"
+        },
+        "items": {
+            "full-tutorial": {
+                "title": "How to use Evalezy, start to finish",
+                "summary": "The whole flow in one video",
+                "steps": [
+                    "Sign up with your email and start the free trial.",
+                    "Tap New, type the test name and total marks, and add the question paper.",
+                    "The AI reads every question, its marks and the checking criteria. Edit anything.",
+                    "Scan the answer copies with your camera, or upload PDFs.",
+                    "Tap Check. The AI checks every copy and reads each student's name.",
+                    "Download all the checked copies as one ZIP.",
+                    "Set your pen, handwriting, comments and spelling check in Evaluation settings."
+                ]
+            },
+            "01-sign-up": {
+                "title": "Sign up and start your free trial",
+                "summary": "Your account in a minute, no card needed",
+                "steps": [
+                    "On evalezy.com, tap Start free trial (or open the Evalezy app).",
+                    "Enter your work email and tap Email me a code.",
+                    "Type the 6-digit code from your inbox and tap Verify email.",
+                    "Add your name, phone and a password, then your institute, its type, how many teachers, city and state.",
+                    "Tap Start trial. You land in the app with free AI credits (1 credit checks 1 page)."
+                ]
+            },
+            "03-create-test": {
+                "title": "Create a test from the question paper",
+                "summary": "Upload the paper once; the AI reads it",
+                "steps": [
+                    "On the home screen, tap New.",
+                    "Type the test name and the paper's total marks.",
+                    "Take photos of the paper, or tap Upload PDF or photos (page 1 first).",
+                    "Check the page order and tap Use this page. The credits for reading the paper are shown first.",
+                    "Tap Create & read the paper. The questions are ready in a few minutes."
+                ]
+            },
+            "04-marks-criteria": {
+                "title": "Edit marks and checking criteria",
+                "summary": "Tell the AI what to look for",
+                "steps": [
+                    "Open your test and tap Question paper.",
+                    "Each question shows its marks and its evaluation criteria.",
+                    "To change a question's marks, tap Edit marks, type the marks and Save.",
+                    "To change the criteria, tap Edit under Evaluation criteria.",
+                    "Add or edit a point: its name, what to look for, and its marks. Tap Save criteria."
+                ]
+            },
+            "05-upload-copies": {
+                "title": "Upload answer copies",
+                "summary": "PDFs or photos",
+                "steps": [
+                    "Open your test and scroll to Add copies.",
+                    "Tap Upload files. Each PDF is one copy; photos picked together make one copy.",
+                    "Remove a copy with the bin icon. Pages and credits are shown before you start.",
+                    "Open Checking settings and add the subject and class / board.",
+                    "Tap Check copies."
+                ]
+            },
+            "06-scan-camera": {
+                "title": "Scan copies with your phone camera",
+                "summary": "No scanner needed",
+                "steps": [
+                    "Open your test and tap Scan with camera.",
+                    "Hold the page flat, fill the frame and tap the round button.",
+                    "More pages in the same copy? Take another photo.",
+                    "Tap Next student, then scan the next copy.",
+                    "After the last copy, tap Done. Each copy is saved as a PDF."
+                ]
+            },
+            "07-check-results": {
+                "title": "Start the AI check and see the results",
+                "summary": "Every copy checked, with marks",
+                "steps": [
+                    "With your copies ready, tap Check copies.",
+                    "The AI reads the handwriting, checks every answer against your criteria and gives marks.",
+                    "Each student's name and roll number are read from the copy.",
+                    "Tap Open or AI report for a student, or AI class report for the whole class."
+                ]
+            },
+            "08-download-zip": {
+                "title": "Download the checked copies",
+                "summary": "All copies in one ZIP",
+                "steps": [
+                    "When the check is done, open the results of your test.",
+                    "Tap Download checked copies. The ZIP is saved to your phone or computer.",
+                    "Inside: one checked PDF per student, named by the student. Share or print them."
+                ]
+            },
+            "09-pen-handwriting": {
+                "title": "Change the pen colour and handwriting",
+                "summary": "Make the copy look like yours",
+                "steps": [
+                    "Tap the menu (⋮) and open Evaluation settings.",
+                    "Under Pen on the checked copy, pick the ink colour: red, blue, green, black or custom.",
+                    "Use How dark to make the ink lighter or darker.",
+                    "Pick a handwriting (Teacher, Natural, Scrawled, Quick, Cursive or Classic) and a size.",
+                    "Tap See how it will look for a real sample page, then Save settings."
+                ]
+            },
+            "10-checking-style": {
+                "title": "Comments, instructions and spelling check",
+                "summary": "Set how the AI checks",
+                "steps": [
+                    "Open Evaluation settings from the menu.",
+                    "Choose where comments go: inside the copy, or outside in a Teacher comments panel.",
+                    "Write your own instructions for the AI checker, e.g. follow the CBSE marking scheme.",
+                    "Turn on Highlight spelling and grammar errors: each mistake is underlined with its correction; no marks are cut.",
+                    "Choose how copies are matched to students, set camera / upload / email options, and tap Save settings."
+                ]
+            }
+        }
     }
 }

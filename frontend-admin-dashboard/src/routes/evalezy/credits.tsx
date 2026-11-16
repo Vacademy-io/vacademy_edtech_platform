@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -20,9 +20,18 @@ import { isIOS } from '@/native';
 import { consumeTopUpReturnId } from '@/services/ai-credits/credit-pack-services';
 import { useAiCreditsQuery } from '@/services/ai-credits/get-ai-credits';
 import { useUsageConfigQuery } from '@/services/ai-credits/usage-v2';
+import { useStorefrontQuery } from '@/services/ai-plans/storefront';
+import { AiPlanBilling } from '@/routes/settings/-components/ai-plan/AiPlanBilling';
 import { formatCredits } from './-lib/format-credits';
 
 export const Route = createFileRoute('/evalezy/credits')({
+    // buy=<plan>: a "Buy" link from the website, carried through sign-up; opens that plan's checkout.
+    // Passthrough: payment returns (topup_pp, plan_pp, razorpay_*) are read from the URL by their own code.
+    // (Typed as { buy } only: an index-signature type would widen every route's search type.)
+    validateSearch: (search: Record<string, unknown>): { buy?: string } => ({
+        ...search,
+        buy: typeof search.buy === 'string' && search.buy ? search.buy : undefined,
+    }),
     component: EvalezyCredits,
 });
 
@@ -40,6 +49,16 @@ function EvalezyCredits() {
     const usageConfig = useUsageConfigQuery(instituteId, true);
     const [topUpOpen, setTopUpOpen] = useState(false);
     const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
+    const { buy } = Route.useSearch();
+    const navigate = Route.useNavigate();
+    // Plans are offered when the storefront answers for this admin (never on iOS).
+    const storefront = useStorefrontQuery(instituteId);
+    const showPlans = !!storefront.data;
+    const buyUnavailable = !!buy && !storefront.data && !storefront.isLoading;
+    const dropBuy = useCallback(
+        () => void navigate({ search: (prev) => ({ ...prev, buy: undefined }), replace: true }),
+        [navigate]
+    );
 
     // Only an admin may buy (the backend enforces it); an unanswered config keeps the button.
     const canRecharge = !isIOS() && usageConfig.data?.is_admin !== false;
@@ -121,6 +140,27 @@ function EvalezyCredits() {
                     </MyButton>
                 )}
             </section>
+
+            {buyUnavailable && (
+                <p className="flex items-start gap-1 rounded-md bg-warning-50 p-2 text-caption text-warning-700">
+                    <Warning size={14} className="mt-px shrink-0" weight="fill" />
+                    {t('credits.planUnavailable')}
+                </p>
+            )}
+
+            {showPlans && (
+                <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-4">
+                    <div className="flex flex-col gap-1">
+                        <h2 className="text-subtitle font-semibold text-neutral-800">
+                            {t('credits.plansTitle')}
+                        </h2>
+                        <p className="text-caption text-neutral-500">
+                            {t('credits.plansSubtitle')}
+                        </p>
+                    </div>
+                    <AiPlanBilling buyPlanKey={buy} onBuyHandled={dropBuy} hideHeading />
+                </section>
+            )}
 
             <Tabs defaultValue="overview" className="flex w-full flex-col gap-3">
                 <TabsList className="grid h-auto w-full grid-cols-3 bg-neutral-100 sm:w-fit">

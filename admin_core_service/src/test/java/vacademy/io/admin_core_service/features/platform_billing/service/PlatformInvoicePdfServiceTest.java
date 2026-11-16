@@ -253,4 +253,21 @@ class PlatformInvoicePdfServiceTest {
         assertNull(pdf.logoDataUri(null));
         assertNull(pdf.logoDataUri("file:///etc/passwd"));
     }
+
+    @Test
+    void aProductWorkspaceInvoiceCarriesTheProductNameAndTheLegalSupplier() throws Exception {
+        vacademy.io.admin_core_service.features.product_config.service.PlatformProductService products =
+                mock(vacademy.io.admin_core_service.features.product_config.service.PlatformProductService.class);
+        when(products.productOfInstitute("inst-1")).thenReturn(Optional.of(
+                vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO.builder()
+                        .productKey("evalezy").displayName("Evalezy").fromEmail("hello@evalezy.com").build()));
+        org.springframework.test.util.ReflectionTestUtils.setField(pdf, "productService", products);
+        PlatformInvoice inv = subscriptionInvoice();
+        inv.setBrandMode("VACADEMY");
+        String t = text(pdf.renderPdf(inv));
+        assertTrue(t.contains("Evalezy"), t);
+        assertTrue(t.contains("Vidyayatan Technologies LLP"));
+        assertTrue(t.contains("23AAYFV8247N1Z3"));
+        assertFalse(BRAND.matcher(t).find(), "the platform brand leaked into a product invoice:\n" + t);
+    }
 }

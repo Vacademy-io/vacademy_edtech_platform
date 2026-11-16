@@ -21,6 +21,7 @@ from ..core.security import get_current_user
 from ..db import db_dependency
 from ..schemas.auth import CustomUserDetails
 from ..services import external_api_keys as keys
+from ..services import vendor_balances as balances
 from ..services.external_api_log import AUTO_CAPTURE_SETTING
 from ..services.platform_settings_service import get_platform_setting, set_platform_setting
 from .super_admin import _require_super_admin
@@ -192,6 +193,16 @@ def save_key_details(
         raise HTTPException(status_code=422, detail=str(exc))
     logger.info("External API key details for %s saved by %s", body.details_key, current_user.user_id)
     return {"details_key": body.details_key}
+
+
+@router.get("/balances", summary="Live balances from the vendors that report one")
+def vendor_balances(
+    refresh: bool = Query(False, description="Ask the vendors again instead of using the cached result"),
+    current_user: CustomUserDetails = Depends(get_current_user),
+):
+    """Each key goes only to its own vendor. Cached per replica; see services/vendor_balances.py."""
+    _require_super_admin(current_user)
+    return {"balances": balances.balance_cache.get(refresh=refresh)}
 
 
 @router.post("/key-accounts/openrouter-check", summary="Ask OpenRouter who created one of our keys")

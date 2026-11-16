@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.learner.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,6 +64,8 @@ public class LearnerDashBoardService {
     private static final List<String> VALID_SLIDE_STATUSES = List.of(SlideStatus.PUBLISHED.name(), SlideStatus.UNSYNC.name());
     @Autowired
     private SlideRepository slideRepository;
+    @Autowired
+    private CommerceLegacyGuard commerceLegacyGuard;
     @Autowired
     private PackageRepository packageRepository;
     @Autowired
@@ -143,7 +146,7 @@ public class LearnerDashBoardService {
         // Count of accessible packages — restricted to ACTIVE package / ACTIVE|HIDDEN
         // package_session / ACTIVE mapping so the tile matches the "My Courses" cards
         // (a learner removed from every batch counts 0). Also excludes internal types
-        // (DELIVERY_CHARGE, SECURITY_DEPOSIT); that filter stays here (not in the repo)
+        // (DELIVERY_CHARGE, SECURITY_DEPOSIT) and shop products; that filter stays here (not in the repo)
         // to keep the underlying query reusable by callers that need internal types.
         int visiblePackagesCount = packageRepository
                 .findDistinctPackagesByUserIdAndInstituteId(
@@ -155,7 +158,8 @@ public class LearnerDashBoardService {
                 .stream()
                 .filter(p -> {
                     String t = p.getPackageType();
-                    return t == null || (!"DELIVERY_CHARGE".equals(t) && !"SECURITY_DEPOSIT".equals(t));
+                    return t == null || (!"DELIVERY_CHARGE".equals(t) && !"SECURITY_DEPOSIT".equals(t)
+                            && !commerceLegacyGuard.isProduct(p));
                 })
                 .toList()
                 .size();

@@ -17,8 +17,13 @@ import java.util.Map;
  */
 public record CapabilityCatalog(int version, List<Module> modules, JsonNode raw) {
 
+    /**
+     * @param optIn {@code opt_in} in the file (absent = false). An opt-in module is never
+     *              switched on by LEGACY mode: it and its features are on only through their
+     *              entitlement rows, in every mode.
+     */
     public record Module(String key, String label, String description, String rail, boolean core,
-                         List<Feature> features) {
+                         boolean optIn, List<Feature> features) {
     }
 
     public record Feature(String key, String moduleKey, String label, String description, boolean defaultOn,

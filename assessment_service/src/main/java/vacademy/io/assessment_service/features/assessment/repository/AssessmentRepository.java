@@ -358,27 +358,6 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                                       @Param("unfiledOnly") Boolean unfiledOnly,
                                       Pageable pageable);
 
-    @Query("SELECT a FROM Assessment a " +
-            "WHERE TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP, a.boundStartTime) > 0 " +
-            "AND TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP, a.boundStartTime) <= :timeFrameInMinutes " +
-            "AND a.status IN :statuses " +
-            // Partner-API exams have no learners to remind (spec 12 item 4). IS NULL first:
-            // a plain <> would also drop every dashboard exam, whose source is NULL.
-            "AND (a.source IS NULL OR a.source <> 'API')")
-    List<Assessment> findAssessmentsStartingWithinTimeFrame(
-            @Param("timeFrameInMinutes") Integer timeFrameInMinutes,
-            @Param("statuses") List<String> statuses
-    );
-
-    @Query("SELECT a FROM Assessment a " +
-            "WHERE TIMESTAMPDIFF(MINUTE, a.boundStartTime, CURRENT_TIMESTAMP) > 0 " +
-            "AND TIMESTAMPDIFF(MINUTE, a.boundStartTime, CURRENT_TIMESTAMP) <= :timeFrameInMinutes " +
-            "AND a.status IN :statusList " +
-            "AND (a.source IS NULL OR a.source <> 'API')")
-    List<Assessment> findRecentlyStartedAssessments(
-            @Param("timeFrameInMinutes") Integer timeFrameInMinutes,
-            @Param("statusList") List<String> statusList);
-
 
     @Query(value = """
             SELECT

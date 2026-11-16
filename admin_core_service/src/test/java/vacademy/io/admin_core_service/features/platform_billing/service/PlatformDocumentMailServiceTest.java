@@ -204,4 +204,45 @@ class PlatformDocumentMailServiceTest {
         }
         throw new NoSuchMethodException(name);
     }
+
+    @Test
+    void aProductWorkspaceGetsTheMailAsTheProductWithThePdf() {
+        vacademy.io.admin_core_service.features.product_config.service.PlatformProductService products =
+                mock(vacademy.io.admin_core_service.features.product_config.service.PlatformProductService.class);
+        when(products.productOfInstitute("inst-1")).thenReturn(Optional.of(
+                vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO.builder()
+                        .productKey("evalezy").displayName("Evalezy").fromEmail("hello@evalezy.com").fromName("Evalezy")
+                        .loginUrl("https://evalezy.vacademy.io/login").appPath("/evalezy")
+                        .emailLogoUrl("https://evalezy.com/icon-192.png").build()));
+        ReflectionTestUtils.setField(mail, "productService", products);
+        institute.setId("inst-1");
+        institute.setProduct("evalezy");
+
+        assertTrue(mail.sendInvoiceEmail(invoice("VACADEMY")));
+
+        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> file = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> pdfB64 = ArgumentCaptor.forClass(String.class);
+        verify(notificationService).sendEmailWithOptionalAttachmentViaUnified(any(), subject.capture(), body.capture(),
+                eq("inst-1"), eq("hello@evalezy.com"), eq("Evalezy"), eq("UTILITY_EMAIL"), eq("AI_PLATFORM_INVOICE"),
+                eq("VT/2627/I00042"), file.capture(), pdfB64.capture());
+        assertTrue(subject.getValue().startsWith("Evalezy: "), subject.getValue());
+        // The app's own host is evalezy.vacademy.io; no brand word in the words themselves.
+        assertFalse(BRAND.matcher(subject.getValue() + body.getValue().replace("evalezy.vacademy.io", "")).find(),
+                body.getValue());
+        assertTrue(body.getValue().contains("https://evalezy.vacademy.io/evalezy/plan"));
+        assertTrue(body.getValue().contains("https://evalezy.com/icon-192.png"));
+        assertTrue(body.getValue().contains("attached"));
+        assertEquals("VT-2627-I00042.pdf", file.getValue());
+        assertEquals(java.util.Base64.getEncoder().encodeToString(new byte[] { 1, 2, 3 }), pdfB64.getValue());
+        verify(notificationService, never()).sendAttachmentEmailViaUnified(any(), any());
+    }
+
+    @Test
+    void productBillingLinkIsThePlanPageOnTheProductHost() {
+        assertEquals("https://evalezy.vacademy.io/evalezy/plan",
+                PlatformDocumentMailService.productBillingLink("https://evalezy.vacademy.io/login", "/evalezy"));
+        assertNull(PlatformDocumentMailService.productBillingLink(null, "/evalezy"));
+    }
 }

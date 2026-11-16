@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.learner_management.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.features.commerce.common.CommercePlans;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentDeletionService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
 import vacademy.io.common.exceptions.VacademyException;
@@ -25,6 +26,7 @@ public class CourseRemovalHistoryService {
 
     private final UserPlanService userPlanService;
     private final PaymentDeletionService paymentDeletionService;
+    private final CommercePlans commercePlans;
 
     /** @return what was deleted, per enrolment plan */
     @Transactional
@@ -33,6 +35,7 @@ public class CourseRemovalHistoryService {
         // Refuse BEFORE terminating: cancelUserPlan fires the SUBSCRIPTION_TERMINATED workflow in its
         // own (REQUIRES_NEW) transaction, which a later rollback here would not take back.
         for (String userPlanId : userPlanIds) {
+            commercePlans.refuseCommercePlan(userPlanService.findById(userPlanId), "remove the course");
             String blocker = paymentDeletionService.previewPlanHistory(userPlanId, instituteId, userPlanIds).blocker();
             if (blocker != null) {
                 throw new VacademyException(blocker);

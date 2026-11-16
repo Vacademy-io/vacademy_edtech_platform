@@ -66,6 +66,7 @@ public interface CrmIncentiveRevenueRepository extends Repository<PayrollAdjustm
                   AND pl.payment_amount IS NOT NULL
                   AND"""
             + vacademy.io.admin_core_service.features.user_subscription.repository.PaymentGroupSql.NOT_ORDER_PARENT_PL
+            + "AND" + vacademy.io.admin_core_service.features.commerce.common.CommercePlans.NOT_COMMERCE_LOG_PL
             + """
                   AND pl.created_at >= :fromTs AND pl.created_at < :toTs
             )

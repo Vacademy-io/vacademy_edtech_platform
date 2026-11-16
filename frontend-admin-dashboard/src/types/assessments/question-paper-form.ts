@@ -39,6 +39,8 @@ export interface MyQuestion {
     validAnswers?: number[];
     decimals?: number;
     numericType?: string;
+    /** Optional ± tolerance of a numeric answer; empty/0 = exact match. */
+    numericTolerance?: number | null;
     parentRichTextContent?: string | null;
     subjectiveAnswerText?: string;
     timestamp?: string;

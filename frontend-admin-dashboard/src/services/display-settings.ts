@@ -1078,6 +1078,10 @@ export function mergeDisplayWithDefaults(
         // ERP ships hidden: its modules are opt-in per institute (see
         // OPT_IN_TAB_IDS), so the rail category would otherwise show up empty.
         { id: 'ERP', visible: false, default: false, order: 3 },
+        // Commerce ships visible: the gate is the commerce module and the commerce
+        // roles (lib/commerce/commerce-access.ts), which leave the category empty,
+        // and the rail hides an empty Commerce category, for everyone else.
+        { id: 'COMMERCE', visible: true, default: false, order: 4 },
     ];
 
     const mergedSidebarCategories = mergeArrayById(
@@ -1477,7 +1481,13 @@ export function resolveEffectivePostLoginRoute(
     if (reachableViaVisibleTab) return candidate;
 
     // Candidate lands in a hidden category — pick the default visible one.
-    const sortedCats = cats.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // COMMERCE is never the fallback: it ships visible for every institute but shows nothing
+    // without the commerce module, so a role with the four other categories hidden would
+    // land on the locked Commerce page instead of the route it asked for. Shop staff are
+    // routed by commerceStaffLandingRoute, not from here.
+    const sortedCats = cats
+        .filter((c) => c.id !== 'COMMERCE')
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const defaultCat =
         sortedCats.find((c) => c.default && c.visible !== false) ||
         sortedCats.find((c) => c.visible !== false);

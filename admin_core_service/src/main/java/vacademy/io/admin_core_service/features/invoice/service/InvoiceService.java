@@ -124,6 +124,25 @@ public class InvoiceService {
     @Lazy
     private InvoiceService self;
 
+    // Commerce (WP-04). A shop order gets its GST document from CommerceInvoiceService, with a
+    // number from commerce_document_series; nothing in this class issues, redraws or groups one.
+    // For a course payment the guard answers false and every path below runs as before.
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentGuard commerceDocumentGuard;
+
+    /** True when the payment belongs to a shop order (decided by the commerce rows, never by the package type). */
+    private boolean isCommercePaymentLog(PaymentLog paymentLog) {
+        // Null only in unit tests that build this service by hand.
+        return commerceDocumentGuard != null && commerceDocumentGuard.isCommerceLog(paymentLog);
+    }
+
+    /** The commerce document that covers the log, or null when none has been issued yet. */
+    private Invoice findCommerceDocumentForLog(PaymentLog paymentLog) {
+        List<Invoice> documents = invoicePaymentLogMappingRepository
+                .findCommerceDocumentsByPaymentLogIds(List.of(paymentLog.getId()));
+        return documents.isEmpty() ? null : documents.get(0);
+    }
+
     @Autowired
     private AuthService authService;
 
@@ -495,6 +514,11 @@ public class InvoiceService {
         if (invoiceId == null || invoiceId.isBlank()) return null;
         Invoice invoice = invoiceRepository.findById(invoiceId).orElse(null);
         if (invoice == null) return null;
+        // Commerce (WP-04): a shop document is not served here; its PDF comes from /commerce/v1
+        // only. Every other invoice has no document type and takes the path below.
+        if (invoice.getDocumentType() != null) {
+            return null;
+        }
         if (StringUtils.hasText(invoice.getPdfFileId())) {
             String url = mediaService.getFilePublicUrlById(invoice.getPdfFileId());
             if (StringUtils.hasText(url)) return url;
@@ -673,6 +697,15 @@ public class InvoiceService {
     @Transactional
     public InvoiceGenerationResult generateInvoiceWithResult(UserPlan userPlan, PaymentLog paymentLog,
             String instituteId, boolean sendEmail) {
+        // Commerce (WP-04): an online prepaid order has no invoice at PAID time (it comes at
+        // PACKED), so the existsByPaymentLogId guard below would not stop a course-series invoice.
+        // Return the commerce document, or none; always a result object, because
+        // generateInvoice() dereferences it.
+        if (isCommercePaymentLog(paymentLog)) {
+            log.info("Payment log {} belongs to a shop order; its document comes from Commerce. "
+                    + "Skipping invoice generation.", paymentLog.getId());
+            return new InvoiceGenerationResult(findCommerceDocumentForLog(paymentLog), null, true);
+        }
         try {
             log.info("Starting invoice generation for userPlanId: {}, paymentLogId: {}, instituteId: {}",
                     userPlan.getId(), paymentLog.getId(), instituteId);
@@ -2749,6 +2782,9 @@ public class InvoiceService {
         filled = filled.replace("{{plan_price}}",
                 invoiceData.getPlanPrice() != null ? currencySymbol + money(invoiceData.getPlanPrice())
                         : "");
+        if (!hasDiscount) {
+            filled = dropEmptyDiscountLine(filled);
+        }
         filled = filled.replace("{{discount_amount}}",
                 hasDiscount ? currencySymbol + money(invoiceDiscount) : "");
         filled = filled.replace("{{discount_row}}",
@@ -3644,6 +3680,47 @@ public class InvoiceService {
         return out.toString();
     }
 
+    /** The totals line the "Generate sample" invoice writes: {@code Discount: {{discount_amount}}<br/>}. */
+    private static final java.util.regex.Pattern EMPTY_DISCOUNT_LINE = java.util.regex.Pattern.compile(
+            "Discount\\s*:\\s*\\{\\{discount_amount\\}\\}\\s*<br\\s*/?>",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Drop the sample template's "Discount: {{discount_amount}}" line when nothing was
+     * discounted. {{discount_amount}} is empty then, so the line printed a bare "Discount:"
+     * label. Only that exact label + placeholder + line break is removed; a discount cell in a
+     * table, or any other wording, is left to the template.
+     */
+    static String dropEmptyDiscountLine(String html) {
+        if (html == null || !html.contains("{{discount_amount}}")) {
+            return html;
+        }
+        return EMPTY_DISCOUNT_LINE.matcher(html).replaceAll("");
+    }
+
+    /** MJML's per-section wrapper: {@code <div style="margin:0px auto;max-width:600px;">}. */
+    private static final java.util.regex.Pattern MJML_SECTION_MAX_WIDTH = java.util.regex.Pattern.compile(
+            "(margin:\\s*0(?:px)?\\s+auto;\\s*max-width:\\s*)\\d+(?:\\.\\d+)?px",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Let an MJML-built template fill the PDF page. MJML caps every section at the email body
+     * width (600px by default) so it reads well in a mail client, but an A4 page is wider than
+     * that, so the whole invoice sat in the left part of the page with a blank strip on the
+     * right. Columns inside a section are percentages, so widening the section wrapper is all a
+     * template needs. Only MJML output is touched (hand-written HTML templates keep their own
+     * widths), and only the PDF: the preview and the invoice email still use the original HTML.
+     * A template with fixed-pixel columns ({@code mj-column-px-*}) is left alone: its columns
+     * add up to the old width, so a wider section would only move them off their edges.
+     */
+    static String widenMjmlSectionsForPdf(String html) {
+        if (html == null || !(html.contains("mj-column-per") || html.contains("mj-outlook-group-fix"))
+                || html.contains("mj-column-px")) {
+            return html;
+        }
+        return MJML_SECTION_MAX_WIDTH.matcher(html).replaceAll("$1100%");
+    }
+
     /**
      * Generate PDF from HTML
      */
@@ -3672,6 +3749,7 @@ public class InvoiceService {
             // only the PDF path is touched; the preview HTML returned to the frontend is
             // unaffected.
             htmlWithCss = unwrapScreenMediaQueries(htmlWithCss);
+            htmlWithCss = widenMjmlSectionsForPdf(htmlWithCss);
 
             // Force the embedded Unicode font everywhere so glyphs like ₹ always render,
             // regardless of the template's own font-family (an unmatched family would fall
@@ -4004,7 +4082,9 @@ public class InvoiceService {
         for (String id : paymentLogIds) {
             PaymentLog pl = paymentLogRepository.findById(id).orElse(null);
             if (pl == null || pl.getUserPlan() == null || !"PAID".equals(pl.getPaymentStatus())
-                    || invoicePaymentLogMappingRepository.existsByPaymentLogId(pl.getId())) {
+                    || invoicePaymentLogMappingRepository.existsByPaymentLogId(pl.getId())
+                    // Commerce (WP-04): shop payments are never part of a course receipt.
+                    || isCommercePaymentLog(pl)) {
                 continue;
             }
             logs.add(pl);
@@ -4427,6 +4507,11 @@ public class InvoiceService {
     public InvoiceDTO getInvoiceById(String invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));
+        // Commerce (WP-04): a shop document is answered like an id that does not exist here;
+        // it is read through /commerce/v1.
+        if (invoice.getDocumentType() != null) {
+            throw new VacademyException("Invoice not found: " + invoiceId);
+        }
         return mapToDTO(invoice);
     }
 
@@ -4861,6 +4946,11 @@ public class InvoiceService {
                 throw new VacademyException("Payment log has no associated user plan");
             }
 
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            if (isCommercePaymentLog(paymentLog)) {
+                throw new VacademyException("This payment belongs to a shop order; its invoice is issued in Commerce");
+            }
+
             if (paymentLog.getPaymentStatus() == null || !paymentLog.getPaymentStatus().equals("PAID")) {
                 throw new VacademyException("Payment log status must be PAID. Current status: " +
                         paymentLog.getPaymentStatus());
@@ -4921,6 +5011,14 @@ public class InvoiceService {
             if (eligibleLogs.isEmpty()) {
                 return "No eligible payment logs found (must be PAID and not already invoiced) for order ID: "
                         + orderId;
+            }
+
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            for (PaymentLog eligibleLog : eligibleLogs) {
+                if (isCommercePaymentLog(eligibleLog)) {
+                    throw new VacademyException(
+                            "This order is a shop order; its invoice is issued in Commerce");
+                }
             }
 
             log.info("Found {} eligible payment logs for multi-package invoice", eligibleLogs.size());
@@ -4999,6 +5097,11 @@ public class InvoiceService {
 
             if (paymentLog.getUserPlan() == null) {
                 throw new VacademyException("Payment log has no associated user plan");
+            }
+
+            // Commerce (WP-04): a shop payment never gets a document from the course series.
+            if (isCommercePaymentLog(paymentLog)) {
+                throw new VacademyException("This payment belongs to a shop order; its invoice is issued in Commerce");
             }
 
             if (paymentLog.getPaymentStatus() == null || !paymentLog.getPaymentStatus().equals("PAID")) {

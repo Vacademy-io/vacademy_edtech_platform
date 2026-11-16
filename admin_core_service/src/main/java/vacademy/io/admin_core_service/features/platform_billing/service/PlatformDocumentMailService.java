@@ -63,6 +63,10 @@ public class PlatformDocumentMailService {
     private final PlatformPaymentRepository paymentRepository;
     private final JdbcTemplate jdbcTemplate;
 
+    /** A product workspace (Evalezy) gets its documents mailed as that product. Optional so tests need not wire it. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.product_config.service.PlatformProductService productService;
+
     public PlatformDocumentMailService(
             InstituteRepository instituteRepository,
             PlatformPaymentConfigService configService,
@@ -145,6 +149,26 @@ public class PlatformDocumentMailService {
         } catch (Exception e) {
             log.debug("platform_payment_config unavailable: {}", e.getMessage());
         }
+        // A product workspace (Evalezy): the mail comes from the product, with its name and the PDF.
+        vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO product = productOf(institute);
+        if (product != null) {
+            PlatformBillingEmail email = b
+                    .instituteId(instituteId)
+                    .instituteName(institute.getInstituteName())
+                    .recipients(recipients)
+                    .brandMode(mode)
+                    .billingLink(productBillingLink(product.getLoginUrl(), product.getAppPath()))
+                    .tradeName(product.getDisplayName().trim())
+                    .supportEmail(StringUtils.hasText(product.getContactEmail()) ? product.getContactEmail().trim()
+                            : product.getFromEmail().trim())
+                    .fromName(StringUtils.hasText(product.getFromName()) ? product.getFromName().trim()
+                            : product.getDisplayName().trim())
+                    .fromEmail(product.getFromEmail().trim())
+                    .productBrand(true)
+                    .logoUrl(StringUtils.hasText(product.getEmailLogoUrl()) ? product.getEmailLogoUrl().trim() : null)
+                    .build();
+            return notificationService.sendPlatformBillingEmail(email) > 0;
+        }
         boolean vacademy = mode == BrandMode.VACADEMY;
         NeutralSender.Sender sender = null;
         if (!vacademy) {
@@ -176,6 +200,33 @@ public class PlatformDocumentMailService {
                 .fromEmail(sender == null ? null : sender.fromEmail())
                 .build();
         return notificationService.sendPlatformBillingEmail(email) > 0;
+    }
+
+    /** The product's settings when the institute belongs to one with its own sender; null otherwise. */
+    vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO productOf(Institute institute) {
+        if (productService == null || institute == null || !StringUtils.hasText(institute.getProduct())
+                || "vacademy".equalsIgnoreCase(institute.getProduct().trim())) {
+            return null;
+        }
+        return productService.productOfInstitute(institute.getId()).orElse(null);
+    }
+
+    /** The product app's plan page: login_url's host + app_path + "/plan"; null without a login URL. */
+    static String productBillingLink(String loginUrl, String appPath) {
+        if (!StringUtils.hasText(loginUrl) || !StringUtils.hasText(appPath)) {
+            return null;
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(loginUrl.trim());
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return null;
+            }
+            String path = appPath.trim().startsWith("/") ? appPath.trim() : "/" + appPath.trim();
+            return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "")
+                    + path + "/plan";
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** A NEUTRAL email never shows a Vacademy-domain support address. */

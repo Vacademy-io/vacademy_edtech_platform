@@ -57,6 +57,8 @@ export const RESTART_ASSESSMENT = `${BASE_URL}/assessment-service/assessment/lea
 // Proctoring (assessment_service V48): per-assessment config, batched device events.
 export const PROCTORING_CONFIG = `${BASE_URL}/assessment-service/assessment/learner/proctoring/config`;
 export const PROCTORING_EVENTS = `${BASE_URL}/assessment-service/assessment/learner/proctoring/events`;
+// Exam screen chosen for an assessment (V68), read before the attempt starts.
+export const EXAM_INTERFACE = `${BASE_URL}/assessment-service/assessment/learner/exam-interface`;
 // Learner-raised reattempt / time-extension requests, reviewed by an admin.
 export const REATTEMPT_REQUEST = `${BASE_URL}/assessment-service/learner/reattempt-request/v1`;
 export const REATTEMPT_REQUEST_MINE = `${BASE_URL}/assessment-service/learner/reattempt-request/v1/mine`;
@@ -185,6 +187,7 @@ export const GET_NOTIFCATIONS = `${BASE_URL}/`;
 export const GET_ANNOUNCEMENTS = `${BASE_URL}/`;
 export const GET_OPEN_REGISTRATION_DETAILS = `${BASE_URL}/assessment-service/open-registrations/v1/assessment-page`;
 export const GET_PARTICIPANTS_STATUS = `${BASE_URL}/assessment-service/open-registrations/v1/participant-status`;
+export const REGISTRATION_VERIFIED_URL = `${BASE_URL}/assessment-service/open-registrations/v1/registration-verified`;
 export const REGISTER_PARTICIPANT_URL = `${BASE_URL}/assessment-service/open-registrations/register/v1/`;
 export const GET_USERID_URL = `${BASE_URL}/admin-core-service/institute/open_learner/v1/add-institute_learner`;
 export const GET_LAST_7_DAYS_PROGRESS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/learner/v1/daily-time-spent`;
@@ -271,6 +274,8 @@ export const urlInstructor = `${BASE_URL}/admin-core-service/open/institute/v1/f
 export const FEEDBACK_URL = `${BASE_URL}/admin-core-service/rating`;
 
 export const SUBMIT_QUIZ_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/add-or-update-quiz-slide-activity-log`;
+// One quiz answer checked without recording anything (study-mode quizzes return the key and explanation).
+export const QUIZ_CHECK_ANSWER = `${BASE_URL}/admin-core-service/learner-tracking/quiz-attempt/v1/check-answer`;
 export const GET_QUIZ_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/quiz-slide-activity-logs`;
 export const SUBMIT_ASSESSMENT_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assessment-slide/add-or-update-assessment-slide-activity-log`;
 export const CODING_SUBMISSIONS = `${BASE_URL}/admin-core-service/coding/submissions`;
@@ -291,6 +296,9 @@ export const ENROLLMENT_PAYMENT_GATEWAY_DETAILS = `${BASE_URL}/admin-core-servic
 export const ENROLLMENT_INVITE_DETAILS = `${BASE_URL}/admin-core-service/v1/enroll-invite`;
 export const ENROLLMENT_PAYMENT_INITIATION = `${BASE_URL}/admin-core-service/v1/learner/enroll`;
 export const ENROLLMENT_PAYMENT_INITIATION_V2 = `${BASE_URL}/admin-core-service/v2/learner/enroll`;
+// Whether the signed-in learner still owes a once-per-user rent charge (the refundable
+// security deposit): GET ?instituteId=&catalogueTag= → { due, charge_key, amount }.
+export const SECURITY_DEPOSIT_STATUS = `${BASE_URL}/admin-core-service/learner/v1/security-deposit/status`;
 export const PAYMENT_LOGS_URL = `${BASE_URL}/admin-core-service/v1/user-plan/payment-logs`;
 export const COLLECT_PUBLIC_USER_DATA = `${BASE_URL}/admin-core-service/v1/learner/enroll/detail`;
 

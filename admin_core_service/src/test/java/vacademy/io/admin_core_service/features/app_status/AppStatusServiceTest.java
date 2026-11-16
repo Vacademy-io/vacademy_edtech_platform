@@ -18,13 +18,14 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import vacademy.io.admin_core_service.features.ota_update.entity.OtaBundleVersion;
 import vacademy.io.admin_core_service.features.ota_update.service.OtaUpdateService;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,7 +58,7 @@ class AppStatusServiceTest {
     private InstituteRepository instituteRepository;
 
     @Mock
-    private UserRoleRepository userRoleRepository;
+    private InstituteRoleUserClient instituteRoleUserClient;
 
     @Mock
     private OtaUpdateService otaUpdateService;
@@ -98,7 +99,7 @@ class AppStatusServiceTest {
     void blankInstituteIdIsRefused(String instituteId) {
         assertThrows(VacademyException.class, () -> service.getStatus(user, instituteId));
 
-        verifyNoInteractions(communityAppRegistryClient, userRoleRepository, instituteRepository);
+        verifyNoInteractions(communityAppRegistryClient, instituteRoleUserClient, instituteRepository);
     }
 
     @Test
@@ -127,8 +128,8 @@ class AppStatusServiceTest {
     void instituteAdminPasses() {
         when(user.isRootUser()).thenReturn(false);
         when(user.getUserId()).thenReturn("u1");
-        when(userRoleRepository.existsByUserIdAndInstituteIdAndRoleName("u1", "inst-1", "ADMIN"))
-                .thenReturn(true);
+        when(instituteRoleUserClient.findRolesOfUser("inst-1", "u1"))
+                .thenReturn(Optional.of(Set.of("ADMIN")));
         when(communityAppRegistryClient.fetchByInstitute("inst-1")).thenReturn(List.of());
 
         assertTrue(service.getStatus(user, "inst-1").getApps().isEmpty());
@@ -139,8 +140,8 @@ class AppStatusServiceTest {
     void legacyStaffPasses() {
         when(user.isRootUser()).thenReturn(false);
         when(user.getUserId()).thenReturn("u1");
-        when(userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(anyString(), anyString(), anyString()))
-                .thenReturn(false);
+        when(instituteRoleUserClient.findRolesOfUser(anyString(), anyString()))
+                .thenReturn(Optional.of(Set.of()));
         Institute own = institute("inst-1");
         when(instituteRepository.findInstitutesByUserId("u1")).thenReturn(List.of(own));
         when(communityAppRegistryClient.fetchByInstitute("inst-1")).thenReturn(List.of());
@@ -153,8 +154,8 @@ class AppStatusServiceTest {
     void otherInstitutesAdminIsRefused() {
         when(user.isRootUser()).thenReturn(false);
         when(user.getUserId()).thenReturn("u1");
-        when(userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(anyString(), anyString(), anyString()))
-                .thenReturn(false);
+        when(instituteRoleUserClient.findRolesOfUser(anyString(), anyString()))
+                .thenReturn(Optional.of(Set.of()));
         Institute other = institute("inst-OTHER");
         when(instituteRepository.findInstitutesByUserId("u1")).thenReturn(List.of(other));
 

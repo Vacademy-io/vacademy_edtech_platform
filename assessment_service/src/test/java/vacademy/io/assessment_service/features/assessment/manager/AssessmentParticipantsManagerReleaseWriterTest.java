@@ -98,4 +98,45 @@ class AssessmentParticipantsManagerReleaseWriterTest {
         // no checked copies → empty report map, the email service is still called as before
         verify(reports).sendAssessmentReportsToLearners(anyMap(), any(), any());
     }
+
+    private StudentAttempt checkedCopyAttempt(String id, Assessment exam) {
+        StudentAttempt a = attempt(id, exam);
+        a.setEvaluatedFileId("file-" + id);
+        return a;
+    }
+
+    @Test
+    void automatic_release_after_end_emails_and_fires_the_workflow() {
+        vacademy.io.common.media.service.FileService files = mock(vacademy.io.common.media.service.FileService.class);
+        when(files.getFileFromFileId(anyString())).thenReturn(new byte[] {1});
+        ReflectionTestUtils.setField(manager, "fileService", files);
+        Assessment dashboard = exam(null, "MANUAL");
+        StudentAttempt a1 = checkedCopyAttempt("m1", dashboard);
+
+        manager.releaseAutomatically(List.of(a1), dashboard, "inst-1", true);
+
+        verify(writer).release(a1);
+        verify(reports).sendAssessmentReportsToLearners(anyMap(), any(), any());
+        verify(events).publishResultReleased(anyList());
+    }
+
+    @Test
+    void automatic_release_of_a_submit_time_release_does_not_fire_the_workflow_twice() {
+        vacademy.io.common.media.service.FileService files = mock(vacademy.io.common.media.service.FileService.class);
+        when(files.getFileFromFileId(anyString())).thenReturn(new byte[] {1});
+        ReflectionTestUtils.setField(manager, "fileService", files);
+        Assessment dashboard = exam(null, "MANUAL");
+        StudentAttempt a1 = checkedCopyAttempt("m1", dashboard);
+
+        manager.releaseAutomatically(List.of(a1), dashboard, "inst-1", false);
+
+        verify(reports).sendAssessmentReportsToLearners(anyMap(), any(), any());
+        verify(events, never()).publishResultReleased(anyList());
+    }
+
+    @Test
+    void automatic_release_with_nothing_claimed_does_nothing() {
+        manager.releaseAutomatically(List.of(), exam(null, "AUTO"), "inst-1", true);
+        verifyNoInteractions(writer, reports, events);
+    }
 }

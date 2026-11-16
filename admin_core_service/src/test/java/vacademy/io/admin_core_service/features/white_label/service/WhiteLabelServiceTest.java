@@ -16,7 +16,7 @@ import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupRe
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupResponse;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelStatusResponse;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.institute.entity.Institute;
 
 import java.util.ArrayList;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,7 +56,7 @@ class WhiteLabelServiceTest {
     private InstituteDomainRoutingRepository routingRepository;
     private DomainRoutingAdminService domainRoutingAdminService;
     private CloudflareService cloudflareService;
-    private UserRoleRepository userRoleRepository;
+    private InstituteRoleUserClient instituteRoleUserClient;
     private PortalUrlReconciler reconciler;
     private WhiteLabelService service;
 
@@ -116,9 +117,9 @@ class WhiteLabelServiceTest {
             return created;
         });
 
-        userRoleRepository = Mockito.mock(UserRoleRepository.class);
-        when(userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(USER_ID, INSTITUTE_ID, "ADMIN"))
-                .thenReturn(true);
+        instituteRoleUserClient = Mockito.mock(InstituteRoleUserClient.class);
+        when(instituteRoleUserClient.findRolesOfUser(INSTITUTE_ID, USER_ID))
+                .thenReturn(Optional.of(Set.of("ADMIN")));
 
         reconciler = new PortalUrlReconciler(cloudflareService);
         ReflectionTestUtils.setField(reconciler, "learnerCnameTarget", "learner.vacademy.io");
@@ -129,7 +130,7 @@ class WhiteLabelServiceTest {
         ReflectionTestUtils.setField(reconciler, "vacademyBaseDomain", "vacademy.io");
 
         service = new WhiteLabelService(instituteRepository, routingRepository,
-                domainRoutingAdminService, cloudflareService, userRoleRepository, reconciler);
+                domainRoutingAdminService, cloudflareService, instituteRoleUserClient, reconciler);
         ReflectionTestUtils.setField(service, "learnerCnameTarget", "learner.vacademy.io");
         ReflectionTestUtils.setField(service, "adminCnameTarget", "dash.vacademy.io");
         ReflectionTestUtils.setField(service, "teacherCnameTarget", "teacher.vacademy.io");

@@ -209,7 +209,8 @@ public class RegistrationService {
 
             liveSessionWorkflowAsyncHelper.createLiveClassLeadAsync(
                     instituteId, identity.fullName, identity.email, identity.mobileNumber,
-                    identity.extraById, session.getId(), resolveConfiguredAudienceIds(session));
+                    identity.extraById, session.getId(), session.getTitle(),
+                    resolveConfiguredAudienceIds(session));
         } catch (Exception e) {
             log.warn("Failed to capture live-class lead for sessionId={}: {}",
                     requestDto.getSessionId(), e.getMessage(), e);

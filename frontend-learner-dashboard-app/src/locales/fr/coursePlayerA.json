@@ -187,6 +187,11 @@
   },
   "jsonRenderer": {
     "hiddenBlock": "Masqué : {{label}}",
+    "tagFilterAll": "Tous",
+    "tagFilterLabel": "Filtrer par étiquette",
+    "tagFilterOtherGroup": "Étiquettes",
+    "tagFilterNoMatch": "Aucun résultat pour ces filtres.",
+    "tagFilterMerged": "Affiché dans la grille du filtre ci-dessus",
     "video": "Vidéo",
     "noVideoUrlConfigured": "Aucune URL vidéo configurée",
     "play": "Lecture",

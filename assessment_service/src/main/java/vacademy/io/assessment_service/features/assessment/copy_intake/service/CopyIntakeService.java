@@ -41,6 +41,7 @@ import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckConfig;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCommentPlacement;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.billing.AiEvaluationCreditGate;
+import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.billing.AiEvaluationCharge;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.service.StudentAttemptService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -172,9 +173,11 @@ public class CopyIntakeService {
                     ? "One of the files was not uploaded for this institute; upload it again from this page"
                     : foreign.size() + " of the files were not uploaded for this institute; upload them again from this page");
         }
-        // Every copy must fit the institute's AI credits before any work starts (10.6);
-        // each is checked again, under the institute lock, when it is queued.
-        aiEvaluationService.requireCreditsForCopies(assessment, instituteId, usable.size());
+        // Every copy must fit the institute's AI credits before any work starts (10.6),
+        // priced by its uploaded page count (a copy is billed per page); each is checked
+        // again, under the institute lock, when it is queued.
+        aiEvaluationService.requireCreditsForCopies(assessment, instituteId,
+                usable.stream().map(CopyIntakeDtos.UploadedFile::getPageCount).toList());
         rememberCommentPlacement(assessment, request.getCommentPlacement());
         rememberCopyCheckConfig(assessment, request.getCopyCheckConfig());
         boolean checkOnly = Boolean.FALSE.equals(request.getMapStudents());
@@ -692,9 +695,17 @@ public class CopyIntakeService {
         return label.length() > 255 ? label.substring(0, 255) : label;
     }
 
-    /** Queue the AI check for an attempt and mark the copy QUEUED. */
+    /**
+     * Queue the AI check for an attempt and mark the copy QUEUED. The credit check
+     * prices the copy by its page count (uploaded, or read by the identify step), not
+     * the one-page minimum, so a batch cannot queue far more pages than the balance
+     * covers and drive it negative.
+     */
     private void queue(AiCopyIntakeItem item, StudentAttempt attempt, String model) {
-        String processId = aiEvaluationService.initiateEvaluationForAttempt(attempt, model, true);
+        AiEvaluationEnqueueContext context = item.getPageCount() != null && item.getPageCount() > 0
+                ? AiEvaluationEnqueueContext.dashboard(AiEvaluationCharge.dashboardHandwritten(item.getPageCount()))
+                : AiEvaluationEnqueueContext.dashboard();
+        String processId = aiEvaluationService.initiateEvaluationForAttempt(attempt, model, true, null, context);
         item.setProcessId(processId);
         item.setStatus(AiCopyIntakeItem.QUEUED);
         item.setErrorMessage(null);

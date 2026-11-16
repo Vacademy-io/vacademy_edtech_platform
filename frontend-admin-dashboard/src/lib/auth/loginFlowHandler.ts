@@ -29,6 +29,7 @@ import {
 import type { QueryClient } from '@tanstack/react-query';
 import { getCachedInstituteBranding, resolveInstituteForCurrentHost } from '@/services/domain-routing';
 import { getCourseSettings } from '@/services/course-settings';
+import { commerceStaffLandingRoute } from '@/lib/commerce/commerce-access';
 import {
     hasFacultyAssignedPermission,
     fetchUserAccessDetails,
@@ -507,6 +508,12 @@ export const handleLoginFlow = async (options: LoginFlowOptions): Promise<LoginF
             // (e.g. /dashboard for a role with CRM hidden), reroute to the default visible
             // category's first visible tab so the sidebar and content stay in sync.
             redirectUrl = resolveEffectivePostLoginRoute(redirectUrl, ds);
+            // Shop-only staff (commerce roles and nothing else) start in the shop:
+            // a cashier at POS, everyone else at Commerce Home.
+            redirectUrl = commerceStaffLandingRoute(
+                instituteResult.selectedInstitute?.roles,
+                redirectUrl
+            );
             console.log('🔍 LOGIN DEBUG: Determined redirect URL:', {
                 postLoginRedirectRoute: ds?.postLoginRedirectRoute,
                 domainAfterLoginRoute: cachedBrandingOverride?.afterLoginRoute,
@@ -795,6 +802,8 @@ export const handleInstituteSelection = async (instituteId: string): Promise<Log
             ds?.postLoginRedirectRoute || cached?.afterLoginRoute || '/dashboard';
         // Reroute away from hidden sidebar categories so the sidebar and page content match.
         redirectUrl = resolveEffectivePostLoginRoute(redirectUrl, ds);
+        // Shop-only staff start in the shop (see the same call in the login flow).
+        redirectUrl = commerceStaffLandingRoute(selectedInstitute.roles, redirectUrl);
 
         // Preserve learner tab hint if user also has STUDENT role and route points to dashboard
         if (

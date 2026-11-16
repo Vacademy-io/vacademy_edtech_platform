@@ -1,6 +1,9 @@
 import { Check, WarningCircle } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  displayedAnswerFor,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 import {
@@ -17,6 +20,8 @@ import { CodingQuestionDisplay } from "./otherQuestionTypes/CodingQuestionDispla
 import { CbeQuestionDisplay } from "./otherQuestionTypes/CbeQuestionDisplay";
 import { QuestionHtmlContent } from "./question-html-content";
 import { QuestionPassage } from "./question-passage";
+import { PassageSplitView } from "./passage-split-view";
+import { shouldSplitPassage } from "./passage-beside";
 import { useLiveTestUi } from "./live-test-ui-context";
 import { questionTypeLabel } from "./question-type-label";
 
@@ -49,19 +54,16 @@ function MetaChip({
 
 export function QuestionDisplay() {
   const { t } = useTranslation("questionTest");
-  const { settings } = useLiveTestUi();
+  const { settings, isCompact } = useLiveTestUi();
   const {
     currentQuestion,
     currentSection,
     answers,
+    draftAnswers,
     setAnswer,
     sectionTimers,
     questionTimers,
     assessment,
-    updateQuestionTimer,
-    moveToNextQuestion,
-    initializeQuestionTime,
-    incrementQuestionTime,
   } = useAssessmentStore();
 
   const [playMode, setPlayMode] = useState<string | null>(null);
@@ -85,41 +87,8 @@ export function QuestionDisplay() {
   const isTimeUp = sectionTimers[currentSection]?.timeLeft === 0;
   const isPracticeMode = playMode === "PRACTICE" || playMode === "SURVEY";
 
-  useEffect(() => {
-    if (!currentQuestion?.question_id) return;
-    initializeQuestionTime(currentQuestion.question_id);
-
-    const interval = setInterval(() => {
-      incrementQuestionTime(currentQuestion.question_id);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentQuestion, initializeQuestionTime, incrementQuestionTime]);
-
-  useEffect(() => {
-    if (
-      isPracticeMode ||
-      !currentQuestion ||
-      assessment?.distribution_duration !== distribution_duration_types.QUESTION
-    )
-      return;
-
-    const timer = setInterval(() => {
-      const timeLeft = questionTimers[currentQuestion.question_id] || 0;
-      if (timeLeft > 0) {
-        updateQuestionTimer(currentQuestion.question_id, timeLeft - 1000);
-      } else {
-        moveToNextQuestion();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [
-    currentQuestion,
-    assessment?.distribution_duration,
-    questionTimers,
-    isPracticeMode,
-  ]);
+  // The per-question clock and the time-spent counter tick in the engine
+  // (engine/use-exam-clock.ts); this view only draws them.
 
   if (!currentQuestion) {
     return (
@@ -140,7 +109,11 @@ export function QuestionDisplay() {
     );
   }
 
-  const currentAnswer = answers[currentQuestion.question_id] || [];
+  // An unsaved pick (explicit-commit themes) shows until it is saved or the
+  // learner leaves; in auto mode there are no drafts.
+  const currentAnswer =
+    displayedAnswerFor({ answers, draftAnswers }, currentQuestion.question_id) ||
+    [];
 
   const sectionQuestions =
     assessment?.section_dtos?.[currentSection]?.question_preview_dto_list ?? [];
@@ -245,7 +218,18 @@ export function QuestionDisplay() {
     );
   }
 
-  return (
+  // "Show passage beside the question" (per test, default off): passage on the
+  // left, this column on the right (md and wider; phones keep it stacked).
+  const passageHtml = currentQuestion.parent_rich_text?.content;
+  const splitPassage = shouldSplitPassage({
+    examInterface: assessment?.exam_interface,
+    isCompact,
+    isCbe,
+    passageHtml,
+  });
+
+  // The question column; `withPassage` = today's collapsible passage above the stem.
+  const renderColumn = (withPassage: boolean) => (
     <div className="mx-auto w-full max-w-4xl">
       {header}
 
@@ -254,7 +238,7 @@ export function QuestionDisplay() {
       {/* Comprehension passage for this question (backend: parent_rich_text).
           ExpandableParagraph above is a different thing — the assessment-wide
           "about" text fetched once from about_id — so it never showed passages. */}
-      <QuestionPassage html={currentQuestion.parent_rich_text?.content} />
+      {withPassage && <QuestionPassage html={passageHtml} />}
 
       {/* Tailwind's reset strips <p> margins — a multi-paragraph stem would
           otherwise render as one block with no breaks. */}
@@ -396,4 +380,17 @@ export function QuestionDisplay() {
       })()}
     </div>
   );
+
+  if (splitPassage && passageHtml) {
+    return (
+      <PassageSplitView
+        passageHtml={passageHtml}
+        questionId={currentQuestion.question_id}
+        stacked={renderColumn(true)}
+      >
+        {renderColumn(false)}
+      </PassageSplitView>
+    );
+  }
+  return renderColumn(true);
 }

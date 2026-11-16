@@ -51,6 +51,9 @@ public class AdminDirectEnrollService {
     private EnrollInviteService enrollInviteService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
+
+    @Autowired
     private PaymentOptionService paymentOptionService;
 
     @Autowired
@@ -86,6 +89,14 @@ public class AdminDirectEnrollService {
 
     @Transactional
     public LearnerEnrollResponseDTO adminEnrollLearner(LearnerEnrollRequestDTO request, CustomUserDetails admin) {
+        // A shop variant is not a course: an admin cannot enrol a learner in it or through its invite.
+        if (request.getLearnerPackageSessionEnroll() != null) {
+            String inviteId = request.getLearnerPackageSessionEnroll().getEnrollInviteId();
+            if (StringUtils.hasText(inviteId)) {
+                commerceLegacyGuard.refuseCommerceInvites(java.util.List.of(inviteId), "enrol through this link");
+            }
+            commerceLegacyGuard.refuseVariantSessions(request.getLearnerPackageSessionEnroll().getPackageSessionIds(), "enrol in it");
+        }
         // If subOrgId is present, delegate to SubOrgLearnerService for each package session
         if (StringUtils.hasText(request.getSubOrgId())) {
             if (request.getLearnerPackageSessionEnroll() != null

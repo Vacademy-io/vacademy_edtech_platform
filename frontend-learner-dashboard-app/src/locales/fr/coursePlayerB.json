@@ -100,7 +100,11 @@
             "checkoutFailedDefault": "Échec du paiement. Veuillez réessayer.",
             "confirmingPayment": "Confirmation de votre paiement en cours...",
             "paymentFailed": "Votre paiement n'a pas pu être finalisé. Votre panier n'a pas changé, vous pouvez donc réessayer.",
-            "paymentPending": "Votre paiement est en cours de confirmation. Votre panier sera vidé dès qu'il sera confirmé."
+            "paymentPending": "Votre paiement est en cours de confirmation. Votre panier sera vidé dès qu'il sera confirmé.",
+            "chargeNotDue": "Votre {{label}} est déjà chez nous, il n'est donc pas facturé à nouveau. Nouveau total : {{total}}.",
+            "chargeMissing": "Votre panier n'est plus à jour. Veuillez recharger la page et relancer le paiement.",
+            "chargeAddedRefundable": "Un(e) {{label}} remboursable de {{amount}} a été ajouté(e) à cette commande. Nouveau total : {{total}}.",
+            "chargeAdded": "{{label}} de {{amount}} a été ajouté(e) à cette commande. Nouveau total : {{total}}."
         },
         "razorpayDescription": "Inscription au {{course}}",
         "errors": {
@@ -176,6 +180,12 @@
         "dismiss": "Fermer",
         "subtotalCount_one": "Sous-total ({{count}} livre)",
         "subtotalCount_other": "Sous-total ({{count}} livres)",
+        "rentCharge": {
+            "noteOnceRefundable": "{{label}} de {{amount}}, unique et remboursable, ajouté lors du paiement.",
+            "note": "{{label}} de {{amount}} ajouté lors du paiement.",
+            "onFile": "Votre {{label}} est déjà enregistré, il n'est donc pas facturé à nouveau.",
+            "refundableLabel": "{{label}} (remboursable)"
+        },
         "crossStore": {
             "multiple": "Votre panier contient des articles de {{count}} boutiques différentes ({{stores}}). Chaque boutique gère sa propre livraison, vous devrez donc peut-être payer séparément.",
             "mismatch": "Les articles de votre panier proviennent de {{store}}, mais votre boutique active est différente. Changez de boutique ou retirez ces articles pour rester cohérent."
@@ -296,6 +306,9 @@
         "browseByGenre": "Parcourir par genre",
         "rentMode": "Mode location",
         "buyMode": "Mode achat",
+        "modeSwitchLabel": "Acheter ou louer",
+        "modeBuy": "Acheter",
+        "modeRent": "Louer",
         "clearAll": "Tout effacer",
         "pickStoreTitle": "Choisissez une boutique pour parcourir les locations",
         "pickStoreDescription": "Les livres en location sont récupérés dans une boutique, le stock dépend donc de la boutique. Choisissez une boutique ci-dessus pour voir ce qui est disponible.",
@@ -369,6 +382,21 @@
         "locationRestrictionMessage": "Nous n'autorisons la location de livres qu'à {{city}}. Voulez-vous continuer ?",
         "buyInstead": "Acheter à la place",
         "continue": "Continuer"
+    },
+    "membershipPlans": {
+        "defaultHeading": "Formules d'abonnement",
+        "defaultName": "Formule",
+        "booksAtOnce": "Livres à la fois",
+        "booksPerPeriod": "Livres sur la période de la formule",
+        "unlimited": "Illimité",
+        "choosePlan": "Choisir la formule",
+        "loadError": "Impossible de charger les formules pour le moment.",
+        "retry": "Réessayer",
+        "emptyPreview": "Aucune formule d'abonnement pour l'instant. Cette section reste masquée aux visiteurs jusqu'à la publication d'un forfait d'abonnement.",
+        "depositNote": "+ {{amount}} {{label}}, ajouté au paiement",
+        "depositNoteOneTime": "+ {{amount}} {{label}} (unique), ajouté au paiement",
+        "depositNoteRefundable": "+ {{amount}} {{label}} (remboursable), ajouté au paiement",
+        "depositNoteRefundableOneTime": "+ {{amount}} {{label}} (remboursable, unique), ajouté au paiement"
     },
     "header": {
         "toggleMenu": "Basculer le menu",

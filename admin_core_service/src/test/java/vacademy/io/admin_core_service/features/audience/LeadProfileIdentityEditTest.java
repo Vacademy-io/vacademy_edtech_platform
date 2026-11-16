@@ -20,6 +20,7 @@ import vacademy.io.admin_core_service.features.audience.service.LeadDeduplicatio
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
 import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
+import vacademy.io.admin_core_service.features.learner.service.LearnerProfileEditGuard;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.util.List;
@@ -54,6 +55,7 @@ class LeadProfileIdentityEditTest {
     @Mock private LeadDeduplicationService leadDeduplicationService;
     @Mock private AuthService authService;
     @Mock private InstituteStudentRepository instituteStudentRepository;
+    @Mock private LearnerProfileEditGuard learnerProfileEditGuard;
     @InjectMocks private AudienceService audienceService;
 
     private AudienceResponse response;
@@ -95,7 +97,7 @@ class LeadProfileIdentityEditTest {
     @Test
     @DisplayName("a phone change is dedup-checked alone; the unchanged email is not")
     void onlyChangedHalfIsChecked() {
-        audienceService.updateLeadProfile(RESPONSE_ID, edit("asha@example.com", "919900011122"));
+        audienceService.updateLeadProfile(RESPONSE_ID, edit("asha@example.com", "919900011122"), null);
 
         verify(leadDeduplicationService).checkDuplicate(
                 eq(INSTITUTE_ID), eq(AUDIENCE_ID), isNull(), eq("919900011122"), eq(RESPONSE_ID));
@@ -107,7 +109,7 @@ class LeadProfileIdentityEditTest {
     void unchangedIdentitySkipsDedup() {
         response.setDedupeKey("original");
 
-        audienceService.updateLeadProfile(RESPONSE_ID, edit("ASHA@example.com ", "+91 98123 45678"));
+        audienceService.updateLeadProfile(RESPONSE_ID, edit("ASHA@example.com ", "+91 98123 45678"), null);
 
         verify(leadDeduplicationService, never()).checkDuplicate(any(), any(), any(), any(), any());
         assertThat(response.getDedupeKey()).isEqualTo("original");
@@ -116,7 +118,7 @@ class LeadProfileIdentityEditTest {
     @Test
     @DisplayName("an email-only edit keys on the stored phone, not a blank one")
     void keyFallsBackToStoredHalf() {
-        audienceService.updateLeadProfile(RESPONSE_ID, edit("asha.v@example.com", null));
+        audienceService.updateLeadProfile(RESPONSE_ID, edit("asha.v@example.com", null), null);
 
         assertThat(response.getDedupeKey()).isEqualTo("asha.v@example.com|919812345678");
     }
@@ -133,7 +135,7 @@ class LeadProfileIdentityEditTest {
 
         LeadProfileEditRequestDTO request = edit("asha@example.com", "919900011122");
         request.getUserDetails().setFullName("");
-        audienceService.updateLeadProfile(RESPONSE_ID, request);
+        audienceService.updateLeadProfile(RESPONSE_ID, request, null);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Student>> saved = ArgumentCaptor.forClass(List.class);
@@ -147,7 +149,7 @@ class LeadProfileIdentityEditTest {
     @Test
     @DisplayName("an answer-only edit leaves the auth user and student rows alone")
     void answerOnlyEditTouchesNoIdentity() {
-        audienceService.updateLeadProfile(RESPONSE_ID, new LeadProfileEditRequestDTO());
+        audienceService.updateLeadProfile(RESPONSE_ID, new LeadProfileEditRequestDTO(), null);
 
         verify(authService, never()).updateUser(any(), anyString());
         verify(instituteStudentRepository, never()).saveAll(anyList());

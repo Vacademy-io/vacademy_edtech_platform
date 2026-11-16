@@ -33,6 +33,29 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
     List<Object[]> findIdNameAndMobileByIds(@Param("ids") java.util.Collection<String> ids);
 
     /**
+     * Claims the oldest unclaimed lead submitted since the given instant in an ACTIVE audience
+     * of the institute marked as a Try the AI call demo list (its setting_json carries a
+     * tryAiCall object). Unclaimed means no call log is attributed to it yet. The demo form
+     * asks for no phone, so an inbound call is matched to the oldest waiting form. FOR UPDATE
+     * SKIP LOCKED makes two simultaneous calls take two different forms. Must run in a
+     * transaction that also attributes the call, so the claim is visible once committed.
+     */
+    @Query(value = "SELECT ar.* FROM audience_response ar JOIN audience a ON a.id = ar.audience_id "
+            + "WHERE a.institute_id = :instituteId AND a.status = 'ACTIVE' "
+            + "AND a.setting_json LIKE '%\"tryAiCall\"%' "
+            + "AND ar.submitted_at > :since "
+            + "AND NOT EXISTS (SELECT 1 FROM telephony_call_log c WHERE c.response_id = ar.id) "
+            + "ORDER BY ar.submitted_at ASC LIMIT 1 FOR UPDATE OF ar SKIP LOCKED", nativeQuery = true)
+    Optional<AudienceResponse> claimOldestTryAiCallLead(@Param("instituteId") String instituteId,
+                                                        @Param("since") Timestamp since);
+
+    /** Fills the lead parent mobile only when it is still blank. */
+    @Modifying
+    @Query(value = "UPDATE audience_response SET parent_mobile = :mobile "
+            + "WHERE id = :id AND COALESCE(parent_mobile, '') = ''", nativeQuery = true)
+    int fillParentMobileIfBlank(@Param("id") String id, @Param("mobile") String mobile);
+
+    /**
      * Leads in one campaign stamped between two instants. A CSV import or migration stamps
      * hundreds of rows within a minute, while real form traffic peaks near ten a minute, so
      * the AI voice bot uses this to tell a genuine enquiry date from an import date.
@@ -372,6 +395,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE ar.audience_id = :audienceId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (COALESCE(:sourceType, '') = '' OR ar.source_type = :sourceType)
@@ -758,6 +792,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE ar.audience_id = :audienceId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
                               AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
                               AND (COALESCE(:sourceType, '') = '' OR ar.source_type = :sourceType)
@@ -1051,6 +1096,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("calledTo") Timestamp calledTo,
                         @Param("activityFrom") Timestamp activityFrom,
                         @Param("activityTo") Timestamp activityTo,
+                        @Param("statusMarkedKeys") String statusMarkedKeys,
+                        @Param("statusMarkedFrom") Timestamp statusMarkedFrom,
+                        @Param("statusMarkedTo") Timestamp statusMarkedTo,
                         Pageable pageable);
 
         /**
@@ -1159,10 +1207,46 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
-                              AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
-                              AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
+                              -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
+                              -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
+                              -- leads are fetched by primary key from the open follow-ups of the institute (about 20k at
+                              -- most) instead of probing lead_followup once per lead of the institute (185k for I2CAN).
+                              -- Needs per-call planning (AudienceService.getLeads sets it): a generic plan keeps the OR
+                              -- and checks the whole id array for every lead.
+                              AND (COALESCE(:followUpPending, FALSE) = FALSE
+                                   OR ar.id = ANY(ARRAY(SELECT lf0.audience_response_id FROM lead_followup lf0
+                                                        WHERE lf0.institute_id = :instituteId
+                                                          AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
+                                                          AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
+                                                          AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE
+                                       -- With repeatDates on, a duplicate that came before its lead is the earlier
+                                       -- enquiry, not a repeat. Its lead is listed below instead (V677 precedes_lead).
+                                       AND (COALESCE(:repeatDates, FALSE) = FALSE OR COALESCE(ar.precedes_lead, FALSE) = FALSE))
+                                   -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
+                                   -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
+                                       AND ar.first_enquiry_at IS NOT NULL AND COALESCE(ar.is_duplicate, FALSE) = FALSE))
+                              AND (((CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
+                                    AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp)))
+                                   -- With repeatDates on, a lead also matches when it enquired again inside the window
+                                   -- (V676 last_enquiry_at, the newest later duplicate). Off = folds away, as before.
+                                   OR (COALESCE(:repeatDates, FALSE) = TRUE AND ar.last_enquiry_at IS NOT NULL
+                                       AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.last_enquiry_at >= CAST(:submittedFrom AS timestamp))
+                                       AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.last_enquiry_at <= CAST(:submittedTo AS timestamp))))
                               -- "How many did I work / call in the last 24h / 7d" -- deliberately
                               -- INDEPENDENT of submitted_at, which answers when the lead arrived,
                               -- not when the counsellor last touched it. Two separate windows:
@@ -1447,6 +1531,12 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                                    AND lfp.is_closed = FALSE
                                                    AND lfp.is_priority = TRUE)
                                    THEN 0 ELSE 1 END ASC,
+                              -- Date of the latest enquiry (repeatDates lists, see AudienceService),
+                              -- walked through idx_audience_response_latest_enquiry (V676).
+                              CASE WHEN :sortBy = 'LATEST_ENQUIRY' AND :sortDirection = 'ASC'
+                                   THEN COALESCE(ar.last_enquiry_at, ar.submitted_at) END ASC,
+                              CASE WHEN :sortBy = 'LATEST_ENQUIRY' AND (:sortDirection IS NULL OR :sortDirection = 'DESC')
+                                   THEN COALESCE(ar.last_enquiry_at, ar.submitted_at) END DESC,
                               CASE WHEN :sortBy = 'SUBMITTED_AT' AND :sortDirection = 'ASC'
                                    THEN ar.submitted_at END ASC,
                               CASE WHEN :sortBy = 'SUBMITTED_AT' AND (:sortDirection IS NULL OR :sortDirection = 'DESC')
@@ -1581,10 +1671,46 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND (COALESCE(:leadStatusId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) OR ('__NO_STATUS__' = ANY(STRING_TO_ARRAY(:leadStatusId, ',')) AND ar.lead_status_id IS NULL AND ulp.conversion_status IS NULL))
                               AND (COALESCE(:leadStatusExcludeId, '') = '' OR COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) IS NULL OR NOT (COALESCE((SELECT lst.status_key FROM lead_status lst WHERE lst.id = ar.lead_status_id), ulp.conversion_status) = ANY(STRING_TO_ARRAY(:leadStatusExcludeId, ','))))
+                              -- Disposition marked filter. Keeps a lead when its status history has a change
+                              -- INTO one of the given status keys inside the window. Matches the move itself,
+                              -- not the current status, so a lead marked Sales Won in October still matches
+                              -- after it moves on. Index idx_lead_status_history_lead covers the lookup.
+                              AND ((COALESCE(:statusMarkedKeys, '') = '' AND CAST(:statusMarkedFrom AS timestamp) IS NULL AND CAST(:statusMarkedTo AS timestamp) IS NULL)
+                                   OR EXISTS (SELECT 1 FROM lead_status_history lsh
+                                              JOIN lead_status lsm ON lsm.id = lsh.to_status_id
+                                              WHERE lsh.audience_response_id = ar.id
+                                                AND (COALESCE(:statusMarkedKeys, '') = '' OR lsm.status_key = ANY(STRING_TO_ARRAY(:statusMarkedKeys, ',')))
+                                                AND (CAST(:statusMarkedFrom AS timestamp) IS NULL OR lsh.changed_at >= CAST(:statusMarkedFrom AS timestamp))
+                                                AND (CAST(:statusMarkedTo AS timestamp) IS NULL OR lsh.changed_at <= CAST(:statusMarkedTo AS timestamp))))
                               AND (COALESCE(:followUpPending, FALSE) = FALSE OR EXISTS (SELECT 1 FROM lead_followup lf WHERE lf.audience_response_id = ar.id AND lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf.schedule_time >= CAST(:followUpFrom AS timestamp)) AND (CAST(:followUpTo AS timestamp) IS NULL OR lf.schedule_time < CAST(:followUpTo AS timestamp))))
-                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE) OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE))
-                              AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
-                              AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp))
+                              -- The same open follow-ups again, as a list of lead ids looked up once. Redundant
+                              -- with the EXISTS above, which stays. Under a custom plan the switch folds away and the
+                              -- leads are fetched by primary key from the open follow-ups of the institute (about 20k at
+                              -- most) instead of probing lead_followup once per lead of the institute (185k for I2CAN).
+                              -- Needs per-call planning (AudienceService.getLeads sets it): a generic plan keeps the OR
+                              -- and checks the whole id array for every lead.
+                              AND (COALESCE(:followUpPending, FALSE) = FALSE
+                                   OR ar.id = ANY(ARRAY(SELECT lf0.audience_response_id FROM lead_followup lf0
+                                                        WHERE lf0.institute_id = :instituteId
+                                                          AND lf0.is_closed = FALSE AND lf0.schedule_time IS NOT NULL
+                                                          AND (CAST(:followUpFrom AS timestamp) IS NULL OR lf0.schedule_time >= CAST(:followUpFrom AS timestamp))
+                                                          AND (CAST(:followUpTo AS timestamp) IS NULL OR lf0.schedule_time < CAST(:followUpTo AS timestamp)))))
+                              AND (COALESCE(:duplicateFilter, '') = '' OR (:duplicateFilter = 'EXCLUDE' AND COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(ar.is_duplicate, FALSE) = TRUE
+                                       -- With repeatDates on, a duplicate that came before its lead is the earlier
+                                       -- enquiry, not a repeat. Its lead is listed below instead (V677 precedes_lead).
+                                       AND (COALESCE(:repeatDates, FALSE) = FALSE OR COALESCE(ar.precedes_lead, FALSE) = FALSE))
+                                   -- With repeatDates on, Duplicate Leads also lists a lead that repeats an earlier enquiry
+                                   -- (a closed lead whose repeat took its place). V676 first_enquiry_at marks it.
+                                   OR (:duplicateFilter = 'ONLY' AND COALESCE(:repeatDates, FALSE) = TRUE
+                                       AND ar.first_enquiry_at IS NOT NULL AND COALESCE(ar.is_duplicate, FALSE) = FALSE))
+                              AND (((CAST(:submittedFrom AS timestamp) IS NULL OR ar.submitted_at >= CAST(:submittedFrom AS timestamp))
+                                    AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.submitted_at <= CAST(:submittedTo AS timestamp)))
+                                   -- With repeatDates on, a lead also matches when it enquired again inside the window
+                                   -- (V676 last_enquiry_at, the newest later duplicate). Off = folds away, as before.
+                                   OR (COALESCE(:repeatDates, FALSE) = TRUE AND ar.last_enquiry_at IS NOT NULL
+                                       AND (CAST(:submittedFrom AS timestamp) IS NULL OR ar.last_enquiry_at >= CAST(:submittedFrom AS timestamp))
+                                       AND (CAST(:submittedTo AS timestamp) IS NULL OR ar.last_enquiry_at <= CAST(:submittedTo AS timestamp))))
                               -- "How many did I work / call in the last 24h / 7d" -- deliberately
                               -- INDEPENDENT of submitted_at, which answers when the lead arrived,
                               -- not when the counsellor last touched it. Two separate windows:
@@ -1898,6 +2024,10 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("calledTo") Timestamp calledTo,
                         @Param("activityFrom") Timestamp activityFrom,
                         @Param("activityTo") Timestamp activityTo,
+                        @Param("statusMarkedKeys") String statusMarkedKeys,
+                        @Param("statusMarkedFrom") Timestamp statusMarkedFrom,
+                        @Param("statusMarkedTo") Timestamp statusMarkedTo,
+                        @Param("repeatDates") Boolean repeatDates,
                         Pageable pageable);
 
         /**
@@ -2469,8 +2599,10 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("last10") String last10);
 
         /**
-         * Owner of the most recent active, owned lead with this phone. Blank
-         * {@code audienceIdsCsv} = whole institute. At most one row.
+         * Owner of the most recent active, owned lead with this phone that is not LOST
+         * (Discarded): a discarded lead no longer belongs to the counsellor who discarded
+         * it, so another counsellor may add it again. Blank {@code audienceIdsCsv} = whole
+         * institute. At most one row.
          */
         @Query(value = """
                             SELECT ulp.assigned_counselor_id   AS "counsellorId",
@@ -2478,6 +2610,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                             AND (COALESCE(:audienceIdsCsv, '') = '' OR ar.audience_id = ANY(STRING_TO_ARRAY(:audienceIdsCsv, ',')))
                             AND ar.parent_mobile IS NOT NULL
@@ -2485,6 +2618,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             AND (ar.is_duplicate IS NULL OR ar.is_duplicate = false)
                             AND ar.audience_status = 'ACTIVE'
                             AND COALESCE(ulp.assigned_counselor_id, '') <> ''
+                            AND COALESCE(UPPER(COALESCE(ls.status_key, ulp.conversion_status)), '') <> 'LOST'
                             ORDER BY ar.created_at DESC
                             LIMIT 1
                         """, nativeQuery = true)
@@ -2995,9 +3129,11 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * RESPONSE EVENT definition on {@link #findCounselorActionsByResponseIds}, so the report
          * agrees with the leads list badge. tatMinutes = 0 (or null) makes tat_met never match;
          * the service surfaces tatMetCount as null when TAT is disabled.
+         * <p>first_acts is MATERIALIZED so the per-lead timeline lookup runs once per lead; inlined,
+         * Postgres repeats it for every aggregate that reads first_action_at (2x the work).
          */
         @Query(value = """
-                            WITH first_acts AS (
+                            WITH first_acts AS MATERIALIZED (
                                 SELECT ar.id            AS lead_id,
                                        ar.submitted_at  AS submitted_at,
                                        ar.tat_due_override_at AS tat_due_override_at,
@@ -3208,12 +3344,125 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("excludeConverted") boolean excludeConverted);
 
         /**
+         * Every figure of the Lead Reports summary in one pass: the same lead set as
+         * {@link #findReportTotals}, {@link #findReportResponseStats}, {@link #findReportStatusBreakdown},
+         * {@link #findReportSourceBreakdown}, {@link #findReportTierBreakdown} and
+         * {@link #findReportDailyTrend} (identical joins and filters), read ONCE into a materialized
+         * CTE instead of six times. One row per figure, tagged by {@code kind}:
+         * <ul>
+         *   <li>TOTALS: n1 total, n2 converted, n3 lost, n4 active, n5 overdue</li>
+         *   <li>STATUS / TIER: groupKey, n1 count</li>
+         *   <li>SOURCE: groupKey source, flag from campaign type, n1 total, n2 converted</li>
+         *   <li>DAY: groupKey yyyy-MM-dd, n1 submitted, n2 converted</li>
+         *   <li>RESPONSE: n1 responded, n2 TAT met, d1 average and d2 median minutes</li>
+         * </ul>
+         * Keep the lead-set predicate identical to the six queries above when changing either.
+         */
+        @Query(value = """
+                            WITH base AS MATERIALIZED (
+                                SELECT ar.id, ar.user_id, ar.student_user_id, ar.submitted_at,
+                                       ar.tat_due_override_at, ar.tat_reminder_stage,
+                                       COALESCE(lst.status_key, ulp.conversion_status) AS status_key,
+                                       (CASE WHEN NULLIF(TRIM(a.campaign_type), '') IS NOT NULL THEN TRIM(a.campaign_type) ELSE COALESCE(ar.source_type, 'UNKNOWN') END) AS source_key,
+                                       (NULLIF(TRIM(a.campaign_type), '') IS NOT NULL) AS from_campaign_type,
+                                       COALESCE(NULLIF(ulp.lead_tier, ''),
+                                                (SELECT lt.tier_key FROM lead_tier lt
+                                             WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
+                                               AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
+                                             ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
+                                           CASE WHEN ulp.best_score >= 80 THEN 'HOT'
+                                                     WHEN ulp.best_score >= 50 THEN 'WARM'
+                                                     WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                                     ELSE 'UNCLASSIFIED' END) AS tier,
+                                       DATE((ar.submitted_at AT TIME ZONE 'UTC') AT TIME ZONE :zone) AS day
+                                FROM audience_response ar
+                                JOIN audience a ON a.id = ar.audience_id
+                                LEFT JOIN LATERAL (
+                                    SELECT lu.user_id FROM linked_users lu
+                                    WHERE lu.source='ENQUIRY' AND lu.source_id = ar.enquiry_id
+                                    ORDER BY lu.created_at DESC LIMIT 1
+                                ) lu ON true
+                                LEFT JOIN user_lead_profile ulp
+                                    ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                                LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
+                                WHERE a.institute_id = :instituteId
+                                  AND ar.submitted_at >= CAST(:fromTs AS timestamp)
+                                  AND ar.submitted_at <  CAST(:toTs   AS timestamp)
+                                  AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
+                                  AND ar.audience_status = 'ACTIVE'
+                                  AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                  AND (:excludeConverted = false OR ulp.conversion_status IS NULL OR ulp.conversion_status != 'CONVERTED')
+                                  AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                                  AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
+                                  AND (:sourceType IS NULL OR ar.source_type = :sourceType)
+                            ),
+                            first_acts AS MATERIALIZED (
+                                SELECT b.submitted_at, b.tat_due_override_at,
+                                       (SELECT MIN(te.created_at) FROM timeline_event te
+                                          WHERE (te.category = 'ACTIVITY' OR te.action_type = 'REACHOUT' OR (te.action_type IN ('STATUS_CHANGED','LEAD_CONVERTED','LEAD_LOST','COUNSELOR_ASSIGNED','COUNSELOR_UNASSIGNED','MANUAL_SCORE_UPDATE') AND te.actor_id IS NOT NULL))
+                                            AND te.created_at >= b.submitted_at
+                                            AND ( (te.type='AUDIENCE_RESPONSE' AND te.type_id = b.id)
+                                                  OR (b.user_id IS NOT NULL AND te.student_user_id = b.user_id)
+                                                  OR (b.student_user_id IS NOT NULL AND te.student_user_id = b.student_user_id) )
+                                       ) AS first_action_at
+                                FROM base b
+                            )
+                            SELECT 'TOTALS' AS kind, CAST(NULL AS text) AS groupKey, CAST(NULL AS boolean) AS flag,
+                                   COUNT(*) AS n1,
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END) AS n2,
+                                   SUM(CASE WHEN status_key = 'LOST' THEN 1 ELSE 0 END) AS n3,
+                                   SUM(CASE WHEN status_key IS NULL OR status_key NOT IN ('CONVERTED','LOST') THEN 1 ELSE 0 END) AS n4,
+                                   SUM(CASE WHEN tat_reminder_stage IN ('TAT_OVERDUE','FOLLOW_UP_OVERDUE')
+                                              AND (status_key IS NULL OR status_key NOT IN ('CONVERTED','LOST')) THEN 1 ELSE 0 END) AS n5,
+                                   CAST(NULL AS double precision) AS d1, CAST(NULL AS double precision) AS d2
+                            FROM base
+                            UNION ALL
+                            SELECT 'STATUS', COALESCE(status_key, '__NO_STATUS__'), NULL, COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'SOURCE', source_key, BOOL_OR(from_campaign_type), COUNT(*),
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END), NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'TIER', tier, NULL, COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY 2
+                            UNION ALL
+                            SELECT 'DAY', CAST(day AS text), NULL, COUNT(*),
+                                   SUM(CASE WHEN status_key = 'CONVERTED' THEN 1 ELSE 0 END), NULL, NULL, NULL, NULL, NULL
+                            FROM base GROUP BY day
+                            UNION ALL
+                            SELECT 'RESPONSE', NULL, NULL,
+                                   COUNT(first_action_at),
+                                   SUM(CASE WHEN first_action_at IS NOT NULL
+                                                 AND first_action_at <= COALESCE(tat_due_override_at, lead_sla_due_at(submitted_at, :tatMinutes, CAST(:tatRule AS jsonb)))
+                                                THEN 1 ELSE 0 END),
+                                   NULL, NULL, NULL,
+                                   AVG(EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0),
+                                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0)
+                            FROM first_acts
+                        """, nativeQuery = true)
+        List<LeadReportProjections.SummaryAggregateProjection> findReportSummaryAggregates(
+                        @Param("instituteId") String instituteId,
+                        @Param("fromTs") String fromTs,
+                        @Param("toTs") String toTs,
+                        @Param("zone") String zone,
+                        @Param("tatMinutes") Integer tatMinutes,
+                        @Param("tatRule") String tatRule,
+                        @Param("scopeUsersCsv") String scopeUsersCsv,
+                        @Param("audienceId") String audienceId,
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates,
+                        @Param("excludeConverted") boolean excludeConverted);
+
+        /**
          * Per-counsellor aggregate row. Counsellor resolution mirrors the leads list filter.
          * "first_response_at" = MIN(response event on this lead) — the RESPONSE EVENT definition
          * on {@link #findCounselorActionsByResponseIds}, so per-counsellor numbers match the list.
+         * <p>lead_meta is MATERIALIZED so the per-lead timeline lookup runs once per lead; inlined,
+         * Postgres repeats it for every aggregate that reads first_response_at (4x the work).
          */
         @Query(value = """
-                            WITH lead_meta AS (
+                            WITH lead_meta AS MATERIALIZED (
                                 SELECT ar.id            AS lead_id,
                                        ar.submitted_at  AS submitted_at,
                                        ar.tat_due_override_at AS tat_due_override_at,
@@ -3333,6 +3582,72 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         """, nativeQuery = true)
         int markDuplicateOf(@Param("id") String id,
                         @Param("primaryResponseId") String primaryResponseId);
+
+        /**
+         * A closed lead's repeat takes its place: the old lead, and every duplicate that
+         * pointed at it, become duplicates of the repeat, so the lists show the person once,
+         * as the new enquiry. Column-only, like {@link #markDuplicateOf}.
+         *
+         * @return rows changed; 0 when the old lead no longer exists
+         */
+        @Modifying
+        @Transactional
+        @Query(value = """
+                            UPDATE audience_response
+                               SET is_duplicate = true,
+                                   primary_response_id = :newPrimaryId
+                             WHERE id <> :newPrimaryId
+                               AND (id = :oldPrimaryId
+                                    OR (is_duplicate = true AND primary_response_id = :oldPrimaryId))
+                        """, nativeQuery = true)
+        int foldLeadUnderRepeat(@Param("oldPrimaryId") String oldPrimaryId,
+                        @Param("newPrimaryId") String newPrimaryId);
+
+        /**
+         * Re-reads this lead's enquiry dates from its live duplicates (V676): last_enquiry_at =
+         * the newest one after it, first_enquiry_at = the oldest one before it, NULL when none.
+         * Lists that hide duplicates sort and date-filter on last_enquiry_at, and Duplicate Leads
+         * lists a lead with first_enquiry_at (it repeats an earlier enquiry). Column-only, like
+         * {@link #markDuplicateOf}. Its own transaction: the caller runs it after the intake
+         * commits, where a joined transaction would never commit.
+         */
+        @Modifying
+        @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+        @Query(value = """
+                            UPDATE audience_response p
+                               SET last_enquiry_at = (SELECT MAX(d.submitted_at)
+                                                        FROM audience_response d
+                                                       WHERE d.primary_response_id = p.id
+                                                         AND d.is_duplicate = TRUE
+                                                         AND d.audience_status = 'ACTIVE'
+                                                         AND d.submitted_at > p.submitted_at),
+                                   first_enquiry_at = (SELECT MIN(d.submitted_at)
+                                                         FROM audience_response d
+                                                        WHERE d.primary_response_id = p.id
+                                                          AND d.is_duplicate = TRUE
+                                                          AND d.audience_status = 'ACTIVE'
+                                                          AND d.submitted_at < p.submitted_at)
+                             WHERE p.id = :id
+                        """, nativeQuery = true)
+        int refreshEnquiryDates(@Param("id") String id);
+
+        /**
+         * Marks which of this lead's duplicates came before it (V677 precedes_lead), so a
+         * Duplicate Leads tab on latest-enquiry dates lists the lead, not those earlier enquiries.
+         * Run with {@link #refreshEnquiryDates}. Its own transaction for the same reason.
+         */
+        @Modifying
+        @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+        @Query(value = """
+                            UPDATE audience_response d
+                               SET precedes_lead = CASE WHEN d.submitted_at < p.submitted_at THEN TRUE END
+                              FROM audience_response p
+                             WHERE p.id = :id
+                               AND d.primary_response_id = p.id
+                               AND d.is_duplicate = TRUE
+                               AND d.precedes_lead IS DISTINCT FROM (CASE WHEN d.submitted_at < p.submitted_at THEN TRUE END)
+                        """, nativeQuery = true)
+        int refreshDuplicateOrder(@Param("id") String id);
 
         /**
          * Move one enquiry to {@code toStatusId} only while its status is still

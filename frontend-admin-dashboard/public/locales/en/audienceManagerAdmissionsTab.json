@@ -1,6 +1,23 @@
 {
     "title": "Admissions",
     "empty": "No admissions in this period.",
+    "students": {
+        "title": "Students",
+        "hint": "See every admission in this period with the student's details, courses, fees, paid and due. A course package is one row.",
+        "show": "Show students",
+        "showMore": "Show more ({{shown}} of {{total}})",
+        "truncated": "Showing the latest {{count}} admissions. Narrow the date range to see the rest.",
+        "courseCount": "{{count}} courses",
+        "column": {
+            "student": "Student",
+            "phone": "Phone",
+            "email": "Email",
+            "admissionDate": "Admission date",
+            "courses": "Courses",
+            "courseCount": "No. of courses",
+            "mainCourse": "Main course"
+        }
+    },
     "column": {
         "admissions": "Admissions",
         "fees": "Fees",

@@ -66,6 +66,11 @@
             "all": "Doublons : tous",
             "only": "Doublons uniquement",
             "exclude": "Masquer les doublons"
+        },
+        "statusMarked": {
+            "label": "Marqué comme",
+            "placeholder": "Marqué durant",
+            "any": "Marqué : à tout moment"
         }
     },
     "toolbar": {
@@ -107,7 +112,10 @@
         "pinnedTitle": "Épinglé par cet onglet — impossible de le retirer ici",
         "statusExcluded": "Statut différent de : {{statuses}}",
         "duplicatesOnly": "Doublons uniquement",
-        "duplicatesExcluded": "Doublons masqués"
+        "duplicatesExcluded": "Doublons masqués",
+        "statusMarked": "Marqué {{statuses}} : {{window}}",
+        "statusMarkedAnyStatus": "tout statut",
+        "statusMarkedAnyTime": "à tout moment"
     },
     "search": {
         "placeholder": "Rechercher des prospects",
@@ -191,7 +199,8 @@
             "owner": "Responsable et source",
             "activity": "Activité",
             "campaign": "Liens de campagne",
-            "custom": "Champs personnalisés"
+            "custom": "Champs personnalisés",
+            "statusMarked": "Disposition marquée"
         }
     }
 }

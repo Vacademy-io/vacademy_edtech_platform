@@ -39,19 +39,6 @@ public class PackageSessionEnrolmentService {
     private final SubOrgAdminService subOrgAdminService;
 
     /**
-     * Scheduled function to process all ACTIVE UserPlans.
-     * Operates on UserPlan entities first, then finds associated mappings.
-     */
-    @Transactional
-    public void processActiveEnrollments() {
-        log.info("Starting processing of ACTIVE UserPlans");
-
-        // Find all ACTIVE UserPlans
-        List<UserPlan> activeUserPlans = userPlanRepository.findAllByStatusIn(List.of(UserPlanStatusEnum.ACTIVE.name(),UserPlanStatusEnum.CANCELED.name()));
-        processPlans(activeUserPlans);
-    }
-
-    /**
      * Institute-gated variant used by the daily renewal scheduler: loads only
      * the plans of institutes that opted in via
      * PAYMENT_SETTING.packageSessionRenewalSchedulerEnabled, instead of the

@@ -429,6 +429,26 @@ public class AdminCoreServiceClient {
         }
     }
 
+    /**
+     * What a learner email needs from the institute: its name, theme code, public logo URL and
+     * learner portal domain. Any field may be null; the whole value is null when admin_core
+     * cannot be reached (not cached, so the next send retries).
+     */
+    public record LearnerMailInstitute(String name, String themeCode, String logoUrl, String learnerPortalUrl) {
+    }
+
+    @Cacheable(value = "reportBranding", key = "'learnerMail:' + #instituteId", unless = "#result == null")
+    public LearnerMailInstitute getLearnerMailInstitute(String instituteId) {
+        if (!StringUtils.hasText(instituteId)) return null;
+        Map<String, Object> institute = getInstituteInfo(instituteId);
+        if (institute == null) return null;
+        return new LearnerMailInstitute(
+                firstNonBlank(institute, "institute_name", "instituteName", "name"),
+                firstNonBlank(institute, "institute_theme_code", "instituteThemeCode"),
+                firstNonBlank(institute, "institute_logo_url", "instituteLogoUrl"),
+                firstNonBlank(institute, "learner_portal_url", "learnerPortalUrl"));
+    }
+
     /** Institute display name for report headers; null when it cannot be read. */
     @Cacheable(value = "reportBranding", key = "'name:' + #instituteId", unless = "#result == null")
     public String getInstituteName(String instituteId) {

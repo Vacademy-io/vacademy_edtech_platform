@@ -402,4 +402,73 @@ class UserAccountAccessGuardTest {
         role("gone", A, "TEACHER", "DELETED");
         assertThrows(VacademyException.class, () -> guard.requireCanResendLogin(caller("admin"), A, "gone"));
     }
+
+    // ---- commerce (shop staff) roles ------------------------------------------------------
+
+    @Test
+    void commerceOnlyUserIsNotGeneralStaff() {
+        role("cashier", A, "COMMERCE_POS_CASHIER");
+        role("shopTeam", A, "COMMERCE_STORE_MANAGER");
+        role("shopTeam", A, "COMMERCE_ACCOUNTANT");
+        role("learner", A, "STUDENT");
+        // No inviting users or adding roles, and no reading or setting a learner's login.
+        assertThrows(VacademyException.class, () -> guard.requireStaffOf(caller("cashier"), A));
+        assertThrows(VacademyException.class, () -> guard.requireStaffOf(caller("shopTeam"), A));
+        assertThrows(VacademyException.class, () -> guard.requireCanViewCredentials(caller("cashier"), "learner"));
+        assertThrows(VacademyException.class, () -> guard.requireCanChangeCredentials(caller("shopTeam"), "learner"));
+        assertEquals(Set.of(), guard.loginsCallerMayView(caller("cashier"), List.of("learner")));
+        assertThrows(VacademyException.class,
+                () -> guard.requireCanChangeRoleStatus(caller("cashier"), A, List.of("learner"), "INACTIVE"));
+        // Still a member of the institute, and still free to manage their own account.
+        assertDoesNotThrow(() -> guard.requireMemberOf(caller("cashier"), A));
+        assertDoesNotThrow(() -> guard.requireCanEditAccount(caller("cashier"), "cashier"));
+    }
+
+    @Test
+    void commerceRoleDoesNotTakeStaffAwayFromATeacherOrGiveItToALearner() {
+        role("teacher", A, "TEACHER");
+        role("teacher", A, "COMMERCE_WAREHOUSE_STAFF");
+        role("learner", A, "STUDENT");
+        role("learner", A, "COMMERCE_POS_CASHIER");
+        role("mixedCase", A, "commerce_pos_cashier");
+        assertDoesNotThrow(() -> guard.requireStaffOf(caller("teacher"), A));
+        assertThrows(VacademyException.class, () -> guard.requireStaffOf(caller("learner"), A));
+        assertThrows(VacademyException.class, () -> guard.requireStaffOf(caller("mixedCase"), A));
+    }
+
+    @Test
+    void cashierCannotAddRolesToThemselves() {
+        role("cashier", A, "COMMERCE_POS_CASHIER");
+        assertThrows(VacademyException.class, () -> guard.requireCanUpdateDetails(caller("cashier"), A, "cashier",
+                () -> false, List.of("COMMERCE_STORE_MANAGER"), null));
+        assertThrows(VacademyException.class, () -> guard.requireCanUpdateDetails(caller("cashier"), A, "cashier",
+                () -> false, List.of("TEACHER"), null));
+    }
+
+    @Test
+    void onlyAnAdminChangesACommerceStaffMembersRolesOrAccess() {
+        role("teacher", A, "TEACHER");
+        role("admin", A, "ADMIN");
+        String cashierRow = role("cashier", A, "COMMERCE_POS_CASHIER");
+        // A teacher is staff, but each of these routes can take the commerce role away.
+        assertThrows(VacademyException.class,
+                () -> guard.requireCanUpdateInvitation(caller("teacher"), A, "cashier", () -> false));
+        assertThrows(VacademyException.class, () -> guard.requireCanUpdateDetails(caller("teacher"), A, "cashier",
+                () -> false, null, List.of(cashierRow)));
+        assertThrows(VacademyException.class,
+                () -> guard.requireCanChangeRoleStatus(caller("teacher"), A, List.of("cashier"), "DELETED"));
+        assertDoesNotThrow(() -> guard.requireCanUpdateInvitation(caller("admin"), A, "cashier", () -> false));
+        assertDoesNotThrow(() -> guard.requireCanUpdateDetails(caller("admin"), A, "cashier",
+                () -> false, null, List.of(cashierRow)));
+        assertDoesNotThrow(
+                () -> guard.requireCanChangeRoleStatus(caller("admin"), A, List.of("cashier"), "DELETED"));
+    }
+
+    @Test
+    void aRemovedCommerceRoleNoLongerNeedsAnAdmin() {
+        role("teacher", A, "TEACHER");
+        role("member", A, "COUNSELLOR");
+        role("member", A, "COMMERCE_POS_CASHIER", "DELETED");
+        assertDoesNotThrow(() -> guard.requireCanUpdateInvitation(caller("teacher"), A, "member", () -> false));
+    }
 }

@@ -674,10 +674,38 @@ def _is_suborg(db: Session, iid: str) -> bool:
         return False
 
 
+#: Segment every institute of a product (institutes.product, set by self sign-up) belongs to,
+#: e.g. "product_evalezy" (a valid segment key, so the super-admin audience APIs accept it).
+#: Lets a product's plans and storefront reach new sign-ups by rule.
+PRODUCT_SEGMENT_PREFIX = "product_"
+
+
+def _product_segment(db: Session, iid: str) -> Optional[str]:
+    # Read-only, never fatal: no institutes table (tests) -> None; to_jsonb reads NULL when the
+    # product column is missing. A savepoint keeps any error from rolling back the caller's work
+    # (storefront_access also runs inside checkout / change transactions).
+    try:
+        with db.begin_nested():
+            if not db.execute(text("SELECT to_regclass('institutes') IS NOT NULL")).scalar():
+                return None
+            product = db.execute(text("SELECT to_jsonb(i) ->> 'product' FROM institutes i WHERE i.id = :i"),
+                                 {"i": iid}).scalar()
+    except Exception:  # noqa: BLE001
+        logger.warning("product segment lookup failed for %s", iid, exc_info=True)
+        return None
+    product = re.sub(r"[^a-z0-9_-]", "", str(product or "").strip().lower())
+    return f"{PRODUCT_SEGMENT_PREFIX}{product}"[:48] if product else None
+
+
 def institute_segments(db: Session, iid: str) -> List[str]:
-    """The institute's segment keys (ai_institute_segment, filled by hand in the portal)."""
-    return sorted({str(r["segment_key"]) for r in pa.rows(
-        db, "SELECT segment_key FROM ai_institute_segment WHERE institute_id = :i", {"i": iid}) if r.get("segment_key")})
+    """The institute's segment keys: the ones filled by hand in the portal (ai_institute_segment)
+    plus its product's, "product_<key>", which nobody has to maintain."""
+    segs = {str(r["segment_key"]) for r in pa.rows(
+        db, "SELECT segment_key FROM ai_institute_segment WHERE institute_id = :i", {"i": iid}) if r.get("segment_key")}
+    product = _product_segment(db, iid)
+    if product:
+        segs.add(product)
+    return sorted(segs)
 
 
 def _audience_hits(db: Session, plan_id: Optional[str], iid: str, segs: List[str]) -> Dict[str, bool]:

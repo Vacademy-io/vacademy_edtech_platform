@@ -28,6 +28,8 @@ public class ProductConfigDTO {
     private String contactEmail;
     private String themeColor;
     private String logoUrl;
+    /** Public https PNG/JPG for mails (SVG does not show in Gmail). Empty: mails use an initial tile. */
+    private String emailLogoUrl;
     private String appPath;
     /** The login link in the welcome mail; none keeps the platform's. */
     private String loginUrl;

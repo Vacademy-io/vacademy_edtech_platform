@@ -673,13 +673,21 @@
     outline-offset: 2px;
   }
 
+  /* --catalogue-btn-bg / --catalogue-btn-ink: a section's own button colour
+     (website builder → Style → Buttons), set on the section wrapper. Unset
+     → the site's primary colour, exactly as before. */
   .catalogue-btn-primary {
-    background-color: hsl(var(--primary-500));
-    color: hsl(var(--catalogue-btn-primary-ink, var(--primary-foreground)));
+    background-color: var(--catalogue-btn-bg, hsl(var(--primary-500)));
+    color: var(--catalogue-btn-ink, hsl(var(--catalogue-btn-primary-ink, var(--primary-foreground))));
   }
 
   .catalogue-btn-primary:hover {
-    background-color: hsl(var(--primary-400));
+    background-color: var(--catalogue-btn-bg, hsl(var(--primary-400)));
+  }
+
+  /* A custom colour has no lighter step to hover to — dim it a touch. */
+  [style*="--catalogue-btn-bg"] .catalogue-btn-primary:hover {
+    filter: brightness(0.93);
   }
 
   .catalogue-btn-secondary {

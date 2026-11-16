@@ -18,6 +18,7 @@ import { AssessmentDetailsSearchComponent } from './SearchComponent';
 import { MyFilterOption } from '@/types/assessments/my-filter';
 import { ScheduleTestFilters } from '@/routes/assessment/assessment-list/-components/ScheduleTestFilters';
 import { MyButton } from '@/components/design-system/button';
+import { UsersThree } from '@phosphor-icons/react';
 
 export interface AssessmentParticipantsInterface {
     name: string;
@@ -162,15 +163,16 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
     };
 
     return (
-        <Dialog>
+        // Fetch on open, not on the label's own click: a click beside the text opened the
+        // dialog without loading anything, which read as "no learners".
+        <Dialog
+            onOpenChange={(open) => {
+                if (open) handleGetParticipantsDetails();
+            }}
+        >
             <DialogTrigger>
                 <div className="flex items-center">
-                    <span
-                        className="text-sm text-primary-500"
-                        onClick={handleGetParticipantsDetails}
-                    >
-                        {t('trigger.viewList')}
-                    </span>
+                    <span className="text-sm text-primary-500">{t('trigger.viewList')}</span>
                 </div>
             </DialogTrigger>
             <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
@@ -203,28 +205,48 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                                 handleResetFilters={handleResetFilters}
                             />
                         </div>
-                        <MyTable
-                            data={{
-                                content: getAssessmentStep3ParticipantsListWithBatchName(
-                                    participantsData.content,
-                                    initData?.batches_for_sessions || []
-                                ),
-                                total_pages: participantsData.total_pages,
-                                page_no: pageNo,
-                                page_size: 10,
-                                total_elements: participantsData.total_elements,
-                                last: participantsData.last,
-                            }}
-                            columns={step3ParticipantsListColumn || []}
-                            rowSelection={currentPageSelection}
-                            onRowSelectionChange={handleRowSelectionChange}
-                            currentPage={pageNo}
-                        />
-                        <MyPagination
-                            currentPage={pageNo}
-                            totalPages={participantsData.total_pages}
-                            onPageChange={handlePageChange}
-                        />
+                        {participantsData.content.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-neutral-300 px-4 py-12 text-center">
+                                <UsersThree size={32} className="text-neutral-400" />
+                                <p className="text-sm font-medium text-neutral-700">
+                                    {searchText || selectedFilter.gender.length > 0
+                                        ? t('empty.noMatch')
+                                        : t('empty.title')}
+                                </p>
+                                {!searchText && selectedFilter.gender.length === 0 && (
+                                    <p className="max-w-md text-sm text-neutral-500">
+                                        {t('empty.openTestHint')}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <MyTable
+                                    data={{
+                                        content: getAssessmentStep3ParticipantsListWithBatchName(
+                                            participantsData.content,
+                                            initData?.batches_for_sessions || []
+                                        ),
+                                        total_pages: participantsData.total_pages,
+                                        page_no: pageNo,
+                                        page_size: 10,
+                                        total_elements: participantsData.total_elements,
+                                        last: participantsData.last,
+                                    }}
+                                    columns={step3ParticipantsListColumn || []}
+                                    rowSelection={currentPageSelection}
+                                    onRowSelectionChange={handleRowSelectionChange}
+                                    currentPage={pageNo}
+                                />
+                                {participantsData.total_pages > 1 && (
+                                    <MyPagination
+                                        currentPage={pageNo}
+                                        totalPages={participantsData.total_pages}
+                                        onPageChange={handlePageChange}
+                                    />
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
             </DialogContent>

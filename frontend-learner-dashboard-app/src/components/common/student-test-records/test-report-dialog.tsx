@@ -66,6 +66,8 @@ import {
   SectionQuestions,
 } from "./question-response-renderer";
 import { getTerminology } from "../layout-container/sidebar/utils";
+import { reportVisibility } from "@/lib/report-visibility";
+import { getInstituteId } from "@/constants/helper";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 type TestMarks = {
@@ -79,12 +81,15 @@ const fetchQuestionsData = async (
   sectionIds: string[]
 ) => {
   try {
+    // instituteId picks this institute's report settings for what may be sent.
+    const instituteId = await getInstituteId().catch(() => undefined);
     const response = await authenticatedAxiosInstance.get(
       GET_QUESTIONS_OF_SECTIONS,
       {
         params: {
           assessmentId,
           sectionIds: sectionIds.join(","),
+          instituteId,
         },
       }
     );
@@ -111,6 +116,8 @@ export const TestReportDialog = ({
   evaluationType,
 }: TestReportDialogProps) => {
   const { t } = useTranslation("testRecords");
+  // What this assessment lets the student see per question (report_options).
+  const visibility = reportVisibility(testReport);
   const report = useRouter();
   const [instituteDetails, setInstituteDetails] =
     useState<InstituteDetails | null>(null);
@@ -837,7 +844,8 @@ export const TestReportDialog = ({
             </div>
           </Tabs>
 
-          {/* Answer Review Section */}
+          {/* Answer Review Section — left out when the assessment hides question-wise data */}
+          {visibility.questionWise && (
           <Card className="border-slate-200 shadow-lg">
             <CardHeader className="border-b border-slate-100">
               <div className="flex items-center justify-between flex-wrap gap-4">
@@ -905,13 +913,15 @@ export const TestReportDialog = ({
                             }`}
                         >
                           <AlertDescription className="text-sm text-slate-700">
-                            {renderStudentResponse(review, questionsData, t)}
+                            {visibility.yourAnswer
+                              ? renderStudentResponse(review, questionsData, t)
+                              : t("common.hiddenByInstitute")}
                           </AlertDescription>
                         </Alert>
                       </div>
 
                       {/* Correct Answer */}
-                      {review.answer_status !== "CORRECT" && (
+                      {visibility.correctAnswer && review.answer_status !== "CORRECT" && (
                         <div className="space-y-2">
                           <span className="text-sm font-semibold text-slate-700">{t("testReportDialog.correctAnswerLabel")}</span>
                           <Alert className="border-s-4 border-s-emerald-500 bg-emerald-50/50 border-emerald-200">
@@ -923,7 +933,7 @@ export const TestReportDialog = ({
                       )}
 
                       {/* Explanation */}
-                      {review.explanation && (
+                      {visibility.explanation && review.explanation && (
                         <div className="space-y-2 pt-2 border-t border-slate-100">
                           <span className="text-sm font-semibold text-slate-700">{t("common.explanation")}</span>
                           <div className="text-sm text-slate-600 bg-slate-50 rounded-lg p-4 leading-relaxed">
@@ -956,6 +966,7 @@ export const TestReportDialog = ({
               )}
             </CardContent>
           </Card>
+          )}
         </div>
 
         {/* Mobile Export Button */}

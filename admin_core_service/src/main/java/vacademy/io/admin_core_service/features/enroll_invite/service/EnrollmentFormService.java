@@ -67,6 +67,8 @@ public class EnrollmentFormService {
     @Autowired
     private LiveActivityRecorder liveActivityRecorder;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard commerceLegacyGuard;
 
     @Transactional
     public EnrollmentFormSubmitResponseDTO submitEnrollmentForm(EnrollmentFormSubmitDTO request) {
@@ -75,6 +77,8 @@ public class EnrollmentFormService {
 
         // Step 1: Validate EnrollInvite
         EnrollInvite enrollInvite = validateEnrollInvite(request.getEnrollInviteId(), request.getInstituteId());
+        // A shop variant's invite is not an enrolment link (see LearnerEnrollRequestService).
+        commerceLegacyGuard.refuseCommerceInvites(java.util.List.of(enrollInvite.getId()), "enrol through this link");
 
         // Step 2: Create or update user. The form's custom field values ride along so the
         // institute's username strategy can use one of them (e.g. roll number).

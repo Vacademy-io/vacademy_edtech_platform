@@ -1,23 +1,36 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "@tanstack/react-router";
 import { FunButton } from "@/components/design-system/fun/FunButton";
-import { getResumeForCourse, resumeSearchParams, RESUME_ROUTE, useResumeScope } from "@/services/resume-thread";
+
+/** The slide the course outline marks as current, as the side card needs it. */
+export interface FunCurrentSlide {
+  slideId: string;
+  title: string;
+  chapterName: string;
+  /** The slide's type in words ("Video", "PDF"); empty when unknown. */
+  typeLabel: string;
+  /** True when it is this device's resume point, false for the first unfinished slide. */
+  fromResume: boolean;
+  /** Opens the slide through the outline's own handler (payment and access rules included). */
+  open: () => void;
+}
 
 /**
- * Laptop side card: this device's resume point in the course, when there is one.
- * Resume is per device, so the card names the slide, never "the last one you
- * opened". With no entry it draws nothing; the outline's current row then marks
- * the first unfinished slide.
+ * Laptop side card: the same slide the outline marks as current, with its own
+ * Continue. That is this device's resume point while it is unfinished and can
+ * open, else the first unfinished slide that can open. Resume is per device,
+ * so the card names the slide, never "the last one you opened", and the
+ * eyebrow changes when the slide is not a resume point. Nothing current (all
+ * done, or not loaded yet) draws nothing.
  */
-export function FunPickUpCard({ courseId }: { courseId: string }) {
+export function FunPickUpCard({ current }: { current: FunCurrentSlide | null }) {
   const { t } = useTranslation("funCourse");
-  const scope = useResumeScope();
-  const entry = useMemo(() => (courseId ? getResumeForCourse(scope, courseId) : null), [scope, courseId]);
-  if (!entry || !entry.slideTitle) return null;
+  if (!current || !current.title) return null;
+  const meta = [current.chapterName, current.typeLabel].filter((part) => part.trim() !== "").join(" · ");
   return (
-    <section className="fun-pickup" aria-labelledby="fun-pickup-title">
-      <p className="fun-pickup__eyebrow">{t("course.pickUpEyebrow")}</p>
+    <section className="fun-pickup" aria-labelledby="fun-pickup-title" data-fun-pickup={current.slideId}>
+      <p className="fun-pickup__eyebrow">
+        {current.fromResume ? t("course.pickUpEyebrow") : t("course.nextUpEyebrow")}
+      </p>
       <div className="fun-pickup__row">
         <span className="fun-pickup__play" aria-hidden="true">
           <svg viewBox="0 0 16 18">
@@ -26,15 +39,13 @@ export function FunPickUpCard({ courseId }: { courseId: string }) {
         </span>
         <div className="fun-pickup__text">
           <h2 id="fun-pickup-title" className="fun-pickup__title">
-            {entry.slideTitle}
+            {current.title}
           </h2>
-          {entry.chapterName ? <p className="fun-pickup__meta">{entry.chapterName}</p> : null}
+          {meta ? <p className="fun-pickup__meta">{meta}</p> : null}
         </div>
       </div>
-      <FunButton asChild block className="fun-pickup__cta">
-        <Link to={RESUME_ROUTE} search={resumeSearchParams(entry) as never}>
-          {t("course.pickUpCta")}
-        </Link>
+      <FunButton block className="fun-pickup__cta" onClick={current.open}>
+        {t("course.pickUpCta")}
       </FunButton>
     </section>
   );

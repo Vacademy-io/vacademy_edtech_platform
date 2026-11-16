@@ -194,7 +194,20 @@
     },
     "answered": "تمت الإجابة",
     "notAnswered": "لم تتم الإجابة",
-    "incorrectTryAgain": "غير صحيح. حاول مرة أخرى."
+    "incorrectTryAgain": "غير صحيح. حاول مرة أخرى.",
+    "instantFeedback": {
+      "checkAnswer": "تحقق من الإجابة",
+      "checking": "جارٍ التحقق…",
+      "correct": "صحيح!",
+      "incorrect": "غير صحيح",
+      "compare": "قارن إجابتك بالإجابة النموذجية",
+      "correctAnswer": "الإجابة الصحيحة",
+      "correctAnswers": "الإجابات الصحيحة",
+      "modelAnswer": "الإجابة النموذجية",
+      "explanation": "الشرح",
+      "noKey": "لا يوجد مفتاح إجابة لهذا السؤال. تم حفظ إجابتك.",
+      "checkFailed": "تعذر التحقق من هذه الإجابة. حاول مرة أخرى."
+    }
   },
   "scormSlide": {
     "errors": {

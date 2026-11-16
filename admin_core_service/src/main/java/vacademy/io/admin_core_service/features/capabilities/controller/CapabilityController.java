@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.capabilities.service.CapabilityQueryService;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -17,8 +18,8 @@ import java.util.Map;
 
 /**
  * Tenant capability reads for the admin app (INSTITUTE_MODULES_AND_CONFIG_SPEC.md §12.2).
- * {@code /catalog}: any signed-in user. {@code /me}: staff of that institute (clientId header
- * must name it; no root bypass — learners are root users).
+ * {@code /catalog}: any signed-in user. {@code /me}: staff or commerce staff of that institute
+ * (clientId header must name it; the root flag is not consulted).
  */
 @RestController
 @RequestMapping("/admin-core-service/capabilities/v1")
@@ -39,7 +40,11 @@ public class CapabilityController {
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> me(@RequestAttribute("user") CustomUserDetails user,
                                                   @RequestParam("instituteId") String instituteId) {
-        instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        // Shop staff are refused by the general staff test, but the admin app needs /me to
+        // draw their Commerce rail.
+        if (!CommerceAccessGuard.holdsCommerceRole(user, instituteId)) {
+            instituteAccessValidator.requireInstituteStaff(user, instituteId);
+        }
         return ResponseEntity.ok(queryService.me(instituteId));
     }
 }

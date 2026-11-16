@@ -21,5 +21,10 @@
         "minutesBeforeLive_other": "{{count}} Mins",
         "whenLive": "When Assessment goes live:",
         "whenReportsGenerated": "When assessment reports are generated:"
-    }
+    },
+    "externalParticipants": {
+        "count_one": "{{count}} participant (External – open registration)",
+        "count_other": "{{count}} participants (External – open registration)"
+    },
+    "empty": "No participants yet. Learners who register through the join link below will appear here."
 }

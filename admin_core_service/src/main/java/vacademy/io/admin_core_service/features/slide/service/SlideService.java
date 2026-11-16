@@ -1241,6 +1241,7 @@ public class SlideService {
             newQuizSlide.setPassPercentage(quizSlide.getPassPercentage());
             newQuizSlide.setPartialMarking(Boolean.TRUE.equals(quizSlide.getPartialMarking()));
             newQuizSlide.setReAttemptCount(quizSlide.getReAttemptCount());
+            newQuizSlide.setShowAnswerAfterEachQuestion(Boolean.TRUE.equals(quizSlide.getShowAnswerAfterEachQuestion()));
             if (quizSlide.getDescriptionRichText() != null) {
                 newQuizSlide.setDescriptionRichText(copyRichText(quizSlide.getDescriptionRichText()));
             }

@@ -22,6 +22,7 @@ import {
 import { Route } from '../..';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import QuizQuestionDialogAddPreview from './QuizQuestionDialog';
+import { toleranceEntry } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
 import {
     buildAppendReorderPayload,
     getNextSlideOrder,
@@ -312,7 +313,14 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
                             return JSON.stringify({ correctAnswers: question.validAnswers });
                         }
                     } else if (question.validAnswers && question.validAnswers.length > 0) {
-                        return JSON.stringify({ correctAnswers: question.validAnswers });
+                        const isNumeric =
+                            question.questionType === 'NUMERIC' ||
+                            question.questionType === 'CNUMERIC';
+                        return JSON.stringify({
+                            correctAnswers: question.validAnswers,
+                            // Optional ± tolerance; left out when unset so other keys stay as they were.
+                            ...(isNumeric ? toleranceEntry(question.numericTolerance) : {}),
+                        });
                     }
                     return '';
                 };

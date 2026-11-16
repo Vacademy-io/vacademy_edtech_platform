@@ -89,26 +89,10 @@ const testAccessSchema = z.object({
     select_batch: z.object({
         checked: z.boolean(),
         batch_details: z.record(z.array(z.string())),
-    }).superRefine((data, ctx) => {
-        if (data.checked && Object.keys(data.batch_details).length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Please select at least one batch when choosing batch selection.',
-                path: ['batch_details'],
-            });
-        }
     }),
     select_individually: z.object({
         checked: z.boolean(),
         student_details: z.array(studentSchema),
-    }).superRefine((data, ctx) => {
-        if (data.checked && data.student_details.length === 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Please select at least one student when choosing individual selection.',
-                path: ['student_details'],
-            });
-        }
     }),
     join_link: z.string(),
     show_leaderboard: z.boolean(),
@@ -126,6 +110,31 @@ const testAccessSchema = z.object({
         when_student_finishes_test: z.boolean(),
         when_assessment_report_generated: z.boolean(),
     }),
+}).superRefine((data, ctx) => {
+    /**
+     * A closed test reaches learners only through the batches or learners picked here, so it
+     * needs at least one. An open test is joined through its link: picking learners up front
+     * is optional. One of the two tabs is always "checked" (it is just the tab on screen), so
+     * this used to demand a batch or a learner for every open test too.
+     */
+    if (data.open_test.checked) return;
+    if (data.select_batch.checked && Object.keys(data.select_batch.batch_details).length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Please select at least one batch when choosing batch selection.',
+            path: ['select_batch', 'batch_details'],
+        });
+    }
+    if (
+        data.select_individually.checked &&
+        data.select_individually.student_details.length === 0
+    ) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Please select at least one student when choosing individual selection.',
+            path: ['select_individually', 'student_details'],
+        });
+    }
 });
 
 export default testAccessSchema;

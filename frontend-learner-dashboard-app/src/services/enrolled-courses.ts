@@ -15,6 +15,8 @@ export interface EnrolledCourse {
   packageSessionId: string;
   name: string;
   levelName: string;
+  /** The batch's session name ("" for a placeholder): tells two batches of one course apart. */
+  sessionName?: string;
   previewImageId: string;
   percentComplete: number;
   readTimeInMinutes: number;
@@ -196,6 +198,7 @@ const toEnrolledCourse = (c: CoursePackage): EnrolledCourse => {
     packageSessionId: c.package_session_id ?? "",
     name: c.package_name ?? "",
     levelName: meaningfulName(c.level_name),
+    sessionName: meaningfulName((c as CoursePackage & { session_name?: string | null }).session_name),
     previewImageId: c.course_preview_image_media_id || c.thumbnail_file_id || "",
     percentComplete: percent,
     readTimeInMinutes: c.read_time_in_minutes ?? 0,

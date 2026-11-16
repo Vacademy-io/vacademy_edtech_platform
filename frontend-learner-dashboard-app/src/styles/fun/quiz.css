@@ -48,13 +48,58 @@ html.ui-fun .fun-quiz .rich-text-content p {
 }
 html.ui-fun .fun-quiz .rich-text-content p + p { margin-top: 0.5em; }
 html.ui-fun .fun-quiz .rich-text-content img { max-width: 100%; height: auto; }
+/* On a phone the lesson viewer already sets its content 12px in from the screen
+   edge (the layout's m-3), so the quiz adds 8px: its column then starts 20px
+   from the edge and is 350px wide at 390, as on the boards. */
+@media (max-width: 767.98px) {
+  html.ui-fun .m-3 .fun-quiz { padding-inline: 8px; }
+}
+/* The page wrappers above the lesson clip sideways with overflow-x: hidden,
+   which also makes each a scroll box that never scrolls, so a sticky row would
+   stick to them and never to the screen. overflow-x: clip cuts the same
+   overflow without making a scroll box. Only on a page showing a Fun quiz;
+   without :has() support the row simply stays in the page. */
+html.ui-fun .overflow-x-hidden:has(.fun-quiz) { overflow-x: clip; }
+/* The app's top bar is sticky, and on this page the wrapper above used to keep
+   it from sticking; clip would let it, so here it keeps scrolling away with the
+   page as on every other lesson. A wrapper that means its top bar to stick
+   (overflow-x-clip in its classes) is left alone. */
+html.ui-fun .overflow-x-hidden:not([class*="overflow-x-clip"]):has(.fun-quiz) > .navbar { position: relative; }
+/* While the question or result is on screen the lesson viewer leaves out its own
+   bars (lesson-screen-context.ts), so no room is kept for its phone bar. */
+@media (max-width: 639px) {
+  html.ui-fun .fun-lesson-content--own { padding-bottom: 0; }
+}
+
+/* The close control at the start of the question and result headers. */
+html.ui-fun .fun-quiz__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fun-touch);
+  height: var(--fun-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--fun-radius-badge);
+  background: transparent;
+  color: var(--fun-muted);
+  cursor: pointer;
+}
+html.ui-fun .fun-quiz__close > svg { width: 22px; height: 22px; }
+html.ui-fun .fun-quiz__close:hover { color: var(--fun-ink); }
+html.ui-fun .fun-quiz__close:focus-visible { outline: 3px solid var(--fun-ink); outline-offset: -3px; }
 
 /* ── Question screen (A-Quiz) ─────────────────────────────────────── */
-html.ui-fun .fun-quiz__head {
+/* The close control sits 8px out into the gutter, so the text starts 60px from
+   the screen edge on a phone, as on the board. */
+html.ui-fun .fun-quiz__head,
+html.ui-fun .fun-quiz-result__head {
   display: flex;
   align-items: center;
-  gap: var(--fun-space-3);
+  gap: 4px;
   min-height: var(--fun-touch);
+  margin-inline-start: -8px;
 }
 html.ui-fun .fun-quiz__head-text { flex: 1; min-width: 0; }
 html.ui-fun .fun-quiz__eyebrow {
@@ -81,21 +126,22 @@ html.ui-fun .fun-quiz__title {
 }
 /* The quiz's own timer, as a pill: info blue, amber in its last two minutes. */
 html.ui-fun .fun-quiz__timer { flex: none; }
-html.ui-fun .fun-quiz__timer > div {
+html.ui-fun .fun-quiz__clock {
+  display: flex;
+  align-items: center;
   height: 40px;
   padding: 0 12px;
   gap: 6px;
-  border: 0;
   border-radius: 20px;
   background: var(--fun-info-tint);
   color: var(--fun-info);
-  font-family: var(--fun-font-family);
   font-size: 1rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-html.ui-fun .fun-quiz__timer > div > svg { width: 18px; height: 18px; stroke-width: 2.6; }
-html.ui-fun .fun-quiz__timer > div.bg-orange-50 { background: var(--fun-test-tint); color: var(--fun-test-text); }
+html.ui-fun .fun-quiz__clock > svg { flex: none; width: 18px; height: 18px; }
+html.ui-fun .fun-quiz__clock[data-warning="true"] { background: var(--fun-test-tint); color: var(--fun-test-text); }
 
 html.ui-fun .fun-quiz__bar {
   margin-top: 14px;
@@ -305,11 +351,12 @@ html.ui-fun .fun-quiz__wrong {
 }
 html.ui-fun .fun-quiz__wrong > svg { flex: none; width: 20px; height: 20px; color: var(--fun-live); }
 
-/* Previous and Next stay in reach at the foot of the screen. */
+/* Previous and Next (and the result's buttons) stay in reach at the foot of the
+   screen, just above any bar the page pins there (the app's bottom bar).
+   foot-pin.ts sets data-foot="pin" and --fun-quiz-foot only while that leaves
+   two thirds of the screen free; with large text the row stays in the page. */
 html.ui-fun .fun-quiz__nav,
 html.ui-fun .fun-quiz-result__actions {
-  position: sticky;
-  bottom: 0;
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
@@ -317,6 +364,34 @@ html.ui-fun .fun-quiz-result__actions {
   margin-top: var(--fun-space-6);
   padding: var(--fun-space-3) 0 var(--fun-space-6);
   background: var(--fun-ground);
+}
+html.ui-fun .fun-quiz[data-foot="pin"] :is(.fun-quiz__nav, .fun-quiz-result__actions) {
+  position: sticky;
+  bottom: var(--fun-quiz-foot, 0px);
+  /* 24px to the screen edge, as on the boards; 12px above the page's own bar;
+     never inside the home-indicator area when no bar is pinned below. */
+  padding-bottom: max(
+    var(--fun-space-3),
+    calc(var(--fun-space-6) - var(--fun-quiz-foot, 0px)),
+    calc(env(safe-area-inset-bottom, 0px) + var(--fun-space-3) - var(--fun-quiz-foot, 0px))
+  );
+}
+/* Phones: a short question fills the screen, so Previous / Next sit at its foot
+   as on A-Quiz, and the page does not scroll. The viewer's wrapper keeps its
+   12px top margin (m-3) but drops the bottom one, and the sidebar wrapper inside
+   it stops asking for a full screen on top of that margin. While the reader types
+   (the soft keyboard is up) the row follows the answer instead. */
+@media (max-width: 639px) {
+  html.ui-fun .overflow-x-hidden.m-3:has(.fun-quiz[data-foot="pin"]) { margin-bottom: 0; }
+  html.ui-fun .overflow-x-hidden.m-3:has(.fun-quiz[data-foot="pin"]) .group\/sidebar-wrapper { min-height: calc(100svh - 0.75rem); }
+  html.ui-fun .fun-quiz[data-foot="pin"]:not(.fun-quiz-result) {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - var(--fun-quiz-top, 0px) - var(--fun-quiz-foot, 0px));
+  }
+  html.ui-fun .fun-quiz[data-foot="pin"]:not(.fun-quiz-result) > .fun-quiz__main { flex: 1 0 auto; }
+  html.ui-fun .fun-quiz[data-foot="pin"]:not(.fun-quiz-result):has(:is(input, textarea):focus) { min-height: 0; }
+  html.ui-fun .fun-quiz[data-foot="pin"]:has(:is(input, textarea):focus) :is(.fun-quiz__nav, .fun-quiz-result__actions) { position: static; }
 }
 html.ui-fun .fun-quiz__nav .fun-btn,
 html.ui-fun .fun-quiz-result__actions .fun-btn { min-height: 3.5rem; }
@@ -484,6 +559,8 @@ html.ui-fun .fun-quiz-warning .fun-quiz-state__title { font-size: 1.375rem; line
 
 /* ── Result (A-Result, A-ResultFail) ──────────────────────────────── */
 html.ui-fun .fun-quiz-result__where {
+  flex: 1;
+  min-width: 0;
   display: -webkit-box;
   min-height: var(--fun-touch);
   padding-block: 12px;
@@ -828,8 +905,10 @@ html.ui-fun .fun-quiz-result__past-notes { color: var(--fun-info-text); }
 html.ui-fun .fun-quiz-result__past-date { margin-inline-start: auto; font-size: 0.8125rem; line-height: calc(1.0625rem * var(--fun-leading)); font-weight: 700; color: var(--fun-muted); }
 html.ui-fun .fun-quiz-result__past-note .fun-quiz-result__past-date { margin-inline-start: 0; color: var(--fun-info-text); }
 
-html.ui-fun .fun-quiz-result__secondary { flex: 0 1 auto; min-width: 7.5rem; padding: 0 var(--fun-space-4); white-space: normal; }
-html.ui-fun .fun-quiz-result__primary { flex: 1 1 9rem; white-space: normal; }
+/* The filled button always takes the larger share (188 / 150 at 390, as on the
+   board); with large text each takes its own line. */
+html.ui-fun .fun-quiz-result__secondary { flex: 1 1 7.5rem; min-width: 0; padding: 0 var(--fun-space-4); white-space: normal; }
+html.ui-fun .fun-quiz-result__primary { flex: 1.5 1 9rem; min-width: 0; white-space: normal; }
 html.ui-fun .fun-quiz-result__primary-stack { display: flex; flex-direction: column; align-items: center; }
 html.ui-fun .fun-quiz-result__primary-sub { font-size: 0.8125rem; line-height: calc(1rem * var(--fun-leading)); font-weight: 800; }
 

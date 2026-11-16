@@ -23,6 +23,12 @@ public class SelfSignupRequest {
     private String state;
     private Integer teachers;
 
+    /**
+     * "Buy <plan>" on the website: the account is made to pay for that plan, so it gets no free
+     * trial and no opening credits; the app stays on the plan screen until the plan is paid.
+     */
+    private String buy;
+
     /** Where the visitor came from, for the funnel. */
     private String plan;
     private String source;

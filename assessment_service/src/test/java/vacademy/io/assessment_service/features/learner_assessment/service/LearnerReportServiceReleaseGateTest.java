@@ -101,4 +101,53 @@ class LearnerReportServiceReleaseGateTest {
                 attempt("MANUAL", "PENDING"))).isTrue();
         assertThat(LearnerReportService.isHeldManualResult(null, attempt("MANUAL", null))).isFalse();
     }
+    private static StudentAttempt afterEnd(String playMode, java.util.Date end, String releaseStatus) {
+        StudentAttempt sa = attempt("AUTO_AFTER_ASSESSMENT_END", releaseStatus);
+        sa.getRegistration().getAssessment().setPlayMode(playMode);
+        sa.getRegistration().getAssessment().setBoundEndTime(end);
+        return sa;
+    }
+
+    private static boolean heldAt(StudentAttempt sa, java.util.Date now) {
+        return LearnerReportService.isHeldUntilAssessmentEnd(sa.getRegistration().getAssessment(), sa, now);
+    }
+
+    @Test
+    void afterEndResultIsRefusedWhileTheAssessmentIsStillOpen() {
+        // Submitted before the end date: the report must not open until the window closes.
+        java.util.Date end = new java.util.Date(System.currentTimeMillis() + 3_600_000L);
+        assertThatThrownBy(() -> access(afterEnd("EXAM", end, null)))
+                .isInstanceOfSatisfying(VacademyException.class,
+                        e -> assertThat(e.getStatus()).isEqualTo(org.springframework.http.HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void afterEndResultIsServedOnceTheEndDatePasses() {
+        // Before the hourly release job has run - the status is still NULL.
+        java.util.Date end = new java.util.Date(System.currentTimeMillis() - 1000L);
+        access(afterEnd("EXAM", end, null));
+    }
+
+    @Test
+    void afterEndHoldRule() {
+        java.util.Date end = new java.util.Date(1_800_000_000_000L);
+        java.util.Date before = new java.util.Date(end.getTime() - 60_000L);
+        java.util.Date after = new java.util.Date(end.getTime() + 1000L);
+
+        assertThat(heldAt(afterEnd("EXAM", end, null), before)).isTrue();
+        assertThat(heldAt(afterEnd("EXAM", end, null), after)).isFalse();
+        // Released early by the admin: shown.
+        assertThat(heldAt(afterEnd("EXAM", end, "RELEASED"), before)).isFalse();
+        // Mock and practice are released on submission - they never end.
+        assertThat(heldAt(afterEnd("MOCK", end, null), before)).isFalse();
+        assertThat(heldAt(afterEnd("practice", end, null), before)).isFalse();
+        // No end date, or the 9999 sentinel: nothing to wait for.
+        assertThat(heldAt(afterEnd("EXAM", null, null), before)).isFalse();
+        java.util.Date sentinel = java.util.Date.from(java.time.Instant.parse("9999-12-31T23:59:59Z"));
+        assertThat(heldAt(afterEnd("EXAM", sentinel, null), before)).isFalse();
+        // Other result types are untouched by this rule.
+        StudentAttempt submission = attempt("AUTO_AFTER_SUBMISSION", null);
+        assertThat(LearnerReportService.isHeldUntilAssessmentEnd(
+                submission.getRegistration().getAssessment(), submission, before)).isFalse();
+    }
 }

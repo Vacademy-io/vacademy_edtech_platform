@@ -414,6 +414,37 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
 
     if (isLoading || handleSubmitStep2Form.status === 'pending') return <DashboardLoader />;
 
+    // What still keeps Next disabled, in words. The button used to just grey out
+    // with nothing on screen saying which field was missing (usually the
+    // section's Marks Per Question, far below the question list's header).
+    const missingItems: string[] = [];
+    if (assessmentId === 'defaultId') {
+        if (examType !== 'SURVEY' && examType !== 'PRACTICE' && isAssessmentDurationMissing) {
+            missingItems.push(t('missing.duration'));
+        }
+        allSections.forEach((section, index) => {
+            const sectionLabel =
+                section.sectionName?.trim() || t('sectionDefaultName', { number: index + 1 });
+            const isBlankTime = (time?: { hrs?: string; min?: string }) =>
+                (!time?.hrs || time.hrs === '0') && (!time?.min || time.min === '0');
+
+            if ((section.adaptive_marking_for_each_question ?? []).length === 0) {
+                missingItems.push(t('missing.questions', { section: sectionLabel }));
+            }
+            if (examType === 'SURVEY') return;
+            if (!section.marks_per_question || section.marks_per_question === '0') {
+                missingItems.push(t('missing.marks', { section: sectionLabel }));
+            }
+            if (examType === 'PRACTICE') return;
+            if (isSectionWiseCheck && isBlankTime(section.section_duration)) {
+                missingItems.push(t('missing.sectionDuration', { section: sectionLabel }));
+            }
+            if (isQuestionWiseCheck && isBlankTime(section.question_duration)) {
+                missingItems.push(t('missing.questionDuration', { section: sectionLabel }));
+            }
+        });
+    }
+
     return (
         <FormProvider {...form}>
             <form className="flex flex-col gap-6">
@@ -438,59 +469,7 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                 scale="large"
                                 buttonType="primary"
                                 className="group gap-2 shadow-sm hover:shadow-md"
-                                disable={
-                                    assessmentId === 'defaultId'
-                                        ? allSections.some((section) => {
-                                              // Check if section duration fields are valid based on durationDistribution
-                                              const isSectionDurationMissing =
-                                                  isSectionWiseCheck &&
-                                                  (!section.section_duration?.hrs ||
-                                                      section.section_duration?.hrs === '0') &&
-                                                  (!section.section_duration?.min ||
-                                                      section.section_duration?.min === '0');
-
-                                              // Check if question duration fields are valid based on durationDistribution
-                                              const isQuestionDurationMissing =
-                                                  isQuestionWiseCheck &&
-                                                  (!section.question_duration?.hrs ||
-                                                      section.question_duration?.hrs === '0') &&
-                                                  (!section.question_duration?.min ||
-                                                      section.question_duration?.min === '0');
-
-                                              // Check if marks per question is provided
-                                              const isMarksPerQuestionMissing =
-                                                  section.marks_per_question === '0' ||
-                                                  !section.marks_per_question
-                                                      ? true
-                                                      : false;
-
-                                              // Check if the question paper is uploaded
-                                              const isQuestionPaperMissing =
-                                                  section.adaptive_marking_for_each_question
-                                                      .length > 0
-                                                      ? false
-                                                      : true;
-                                              if (examType === 'SURVEY')
-                                                  return isQuestionPaperMissing;
-                                              if (examType === 'PRACTICE') {
-                                                  // Return true if any of the above conditions are true
-                                                  return (
-                                                      isQuestionPaperMissing ||
-                                                      isMarksPerQuestionMissing
-                                                  );
-                                              }
-
-                                              // Return true if any of the above conditions are true
-                                              return (
-                                                  isAssessmentDurationMissing ||
-                                                  isQuestionPaperMissing ||
-                                                  isSectionDurationMissing ||
-                                                  isQuestionDurationMissing ||
-                                                  isMarksPerQuestionMissing
-                                              );
-                                          })
-                                        : false
-                                }
+                                disable={missingItems.length > 0}
                                 onClick={handleSubmit(onSubmit, onInvalid)}
                             >
                                 {assessmentId !== 'defaultId' ? t('header.update') : t('header.next')}
@@ -501,6 +480,22 @@ const Step2AddingQuestions: React.FC<StepContentProps> = ({
                                 />
                             </MyButton>
                         </div>
+                        {missingItems.length > 0 && (
+                            <div
+                                role="status"
+                                className="flex items-start gap-2 rounded-md border border-info-200 bg-info-50 p-3 text-sm text-info-700"
+                            >
+                                <WarningCircle size={18} className="mt-px shrink-0" />
+                                <div>
+                                    <p className="font-semibold">{t('missing.heading')}</p>
+                                    <ul className="ms-4 list-disc">
+                                        {missingItems.map((item) => (
+                                            <li key={item}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
                         {nonMcqsCount > 0 && (
                             <div
                                 role="alert"

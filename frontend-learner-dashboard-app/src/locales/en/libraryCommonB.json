@@ -182,7 +182,20 @@
     },
     "answered": "Answered",
     "notAnswered": "Not answered",
-    "incorrectTryAgain": "Incorrect. Try again."
+    "incorrectTryAgain": "Incorrect. Try again.",
+    "instantFeedback": {
+      "checkAnswer": "Check answer",
+      "checking": "Checking…",
+      "correct": "Correct!",
+      "incorrect": "Incorrect",
+      "compare": "Compare your answer with the model answer",
+      "correctAnswer": "Correct answer",
+      "correctAnswers": "Correct answers",
+      "modelAnswer": "Model answer",
+      "explanation": "Explanation",
+      "noKey": "This question has no answer key. Your answer is saved.",
+      "checkFailed": "Couldn’t check this answer. Please try again."
+    }
   },
   "scormSlide": {
     "errors": {
@@ -250,6 +263,7 @@
       "submittedSuccessfully": "Answer submitted successfully.",
       "correctWellDone": "Correct! Well done.",
       "incorrectAnswerIs": "Incorrect. The correct answer is: {{answer}}",
+      "incorrectAnswerWithin": "Incorrect. The correct answer is: {{answer}} (± {{tolerance}} accepted)",
       "notFound": "Not found",
       "correctAllSelected": "Correct! You selected all the right answers.",
       "incorrectAnswersAre": "Incorrect. The correct answers are: {{answers}}",

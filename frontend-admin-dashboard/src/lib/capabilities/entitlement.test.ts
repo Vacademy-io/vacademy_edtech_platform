@@ -26,6 +26,7 @@ import {
     toAppPath,
 } from './entitlement';
 import { canAllExcept, canForModules, CRM_ONLY_MODULES, loadRealCatalog } from './test-support';
+import { COMMERCE_NAV, isCommerceRoleName } from '@/lib/commerce/commerce-access';
 
 const catalog = loadRealCatalog();
 const staticItems = getSidebarItemsData();
@@ -34,9 +35,9 @@ const allIds = (pick: (g: (typeof catalog.modules)[0]['features'][0]['governs'])
     Array.from(new Set(catalog.modules.flatMap((m) => m.features.flatMap((f) => pick(f.governs)))));
 
 describe('catalogue', () => {
-    it('normalizes the real catalogue (13 modules, 54 features)', () => {
-        expect(catalog.modules).toHaveLength(13);
-        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(54);
+    it('normalizes the real catalogue (14 modules, 59 features)', () => {
+        expect(catalog.modules).toHaveLength(14);
+        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(59);
     });
 
     it('rejects malformed bodies (fail open = no catalogue)', () => {
@@ -60,8 +61,15 @@ describe('catalogue', () => {
 /**
  * Sidebar entries deliberately outside the catalogue (always available). A new
  * sidebar tab must either be governed in catalog.json or be listed here (§4).
+ *
+ * The ten commerce tabs are listed because their gate is not the catalogue: it
+ * is the fail-closed commerce reader, in every mode (lib/commerce/
+ * commerce-access.ts, tested in commerce-access.test.ts), and two of them (Home,
+ * Settings) open on ANY commerce feature, which `governs.nav` cannot express
+ * (several features there mean ALL). The catalogue entry still ships with empty
+ * `governs.nav`; when the backend fills it, drop the governed ids from here.
  */
-const UNGOVERNED_NAV_IDS: string[] = [];
+const UNGOVERNED_NAV_IDS: string[] = COMMERCE_NAV.map((rule) => rule.id);
 
 describe('catalogue coverage (spec §4)', () => {
     it('every built-in sidebar tab is governed (tab-level or every sub-tab) or listed as ungoverned', () => {
@@ -148,15 +156,62 @@ describe('LEGACY regression — nothing is ever gated', () => {
                 catalog_version: 1,
                 modules: {},
                 features: allOff,
+                opt_in_modules: ['commerce'],
                 display_settings_version: null,
             },
         };
         const can = (k: string) => resolveCan(snapshot, 'inst-1', k);
         // Even if a catalogue were applied, LEGACY's can() keeps everything entitled.
+        // Opt-in modules are the one exception (next test): their tabs and routes
+        // are left out here so this stays true once the catalogue governs them.
+        const optIn = (key: string) => key.startsWith('commerce');
         const e = createEntitlement({ catalog, can, staticItems });
-        navIds.forEach(([tab, sub]) => expect(e.isNavItemEntitled(tab, sub)).toBe(true));
+        navIds
+            .filter(([tab]) => !optIn(tab))
+            .forEach(([tab, sub]) => expect(e.isNavItemEntitled(tab, sub)).toBe(true));
         allIds((g) => g.widgets).forEach((id) => expect(e.isWidgetEntitled(id)).toBe(true));
-        allIds((g) => g.routes).forEach((r) => expect(e.isPathEntitled(r)).toBe(true));
+        allIds((g) => g.routes)
+            .filter((r) => !r.startsWith('/commerce'))
+            .forEach((r) => expect(e.isPathEntitled(r)).toBe(true));
+    });
+
+    it('LEGACY /me can() is false for an opt-in module the server reports off', () => {
+        const commerceKeys = catalog.modules
+            .filter((m) => m.key === 'commerce')
+            .flatMap((m) => m.features.map((f) => f.key));
+        expect(commerceKeys).toEqual([
+            'commerce.catalogue',
+            'commerce.orders',
+            'commerce.stock',
+            'commerce.pos',
+            'commerce.tax_reports',
+        ]);
+        const snapshot = (features: Record<string, boolean>) => ({
+            instituteId: 'inst-1',
+            status: 'loaded' as const,
+            data: {
+                mode: 'LEGACY' as const,
+                catalog_version: 1,
+                modules: {},
+                features,
+                opt_in_modules: ['commerce'],
+                display_settings_version: null,
+            },
+        });
+        const off = snapshot(Object.fromEntries(commerceKeys.map((k) => [k, false])));
+        commerceKeys.forEach((k) => expect(resolveCan(off, 'inst-1', k)).toBe(false));
+        const on = snapshot(Object.fromEntries(commerceKeys.map((k) => [k, true])));
+        commerceKeys.forEach((k) => expect(resolveCan(on, 'inst-1', k)).toBe(true));
+    });
+
+    it('the four commerce role names are the ones the backend seeds', () => {
+        [
+            'COMMERCE_STORE_MANAGER',
+            'COMMERCE_WAREHOUSE_STAFF',
+            'COMMERCE_POS_CASHIER',
+            'COMMERCE_ACCOUNTANT',
+        ].forEach((name) => expect(isCommerceRoleName(name)).toBe(true));
+        expect(isCommerceRoleName('ADMIN')).toBe(false);
     });
 });
 

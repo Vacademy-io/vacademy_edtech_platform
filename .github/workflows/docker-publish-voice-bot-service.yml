@@ -256,6 +256,8 @@ jobs:
           RUMIK_API_KEY: ${{ secrets.RUMIK_API_KEY }}
           SMALLEST_API_KEY: ${{ secrets.SMALLEST_API_KEY }}
           NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
+          # A second Sarvam ACCOUNT's key, STT only (providers.SarvamKeyPool).
+          SARVAM_API_KEY_2: ${{ secrets.SARVAM_API_KEY_2 }}
           HOST: ${{ vars.VOICE_BOT_MUMBAI_HOST }}
           ECR_REGISTRY: public.ecr.aws/e0x1f4p4
           REPOSITORY: voice-bot-service/voice-bot-service-repo
@@ -280,6 +282,10 @@ jobs:
              if [ -n '$NAVANA_API_KEY' ]; then \
                sed -i '/^NAVANA_API_KEY=/d' .env; \
                echo 'NAVANA_API_KEY=$NAVANA_API_KEY' >> .env; \
+             fi; \
+             if [ -n '$SARVAM_API_KEY_2' ]; then \
+               sed -i '/^SARVAM_API_KEY_2=/d' .env; \
+               echo 'SARVAM_API_KEY_2=$SARVAM_API_KEY_2' >> .env; \
              fi; \
              docker compose pull -q voice-bot; \
              for i in \$(seq 1 120); do \

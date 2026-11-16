@@ -7,6 +7,7 @@
  * resolution are read from the existing code and passed in.
  */
 import { coursePercentOf } from "@/lib/learner-state/course-progress";
+import { distinctPartsFirst } from "@/components/design-system/fun/distinct-first";
 
 /** A slide row's state on the course page. */
 export type SlideRowState = "done" | "inProgress" | "notStarted";
@@ -38,7 +39,30 @@ export function serverProgress(percent: number | null | undefined): ServerProgre
   const value = coursePercentOf(percent);
   if (value === null || value <= 0) return { kind: "notStarted" };
   if (value >= 100) return { kind: "done" };
-  return { kind: "percent", percent: Math.round(value) };
+  return { kind: "percent", percent: shownPercent(value) };
+}
+
+/**
+ * A percent as the Fun lists print it, one whole number that both the words and
+ * the tick read: 0 only when nothing has started, 100 only when it is finished.
+ * Anything in between stays within 1-99, so 0.3% never reads "0% done" and
+ * 99.6% never reads "100% done" without the tick.
+ */
+export function shownPercent(value: number | null | undefined): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  if (n >= 100) return 100;
+  return Math.min(99, Math.max(1, Math.round(n)));
+}
+
+/**
+ * A course row's percent on the Learn list: finished where the home tiles call it
+ * finished (rounds to 100, enrolled-courses.ts), else shownPercent. So 99.6% shows
+ * the tick and Review on both screens, and 99.4% reads "99% done" on both.
+ */
+export function listRowPercent(value: number | null | undefined): number {
+  const n = Number(value);
+  return Number.isFinite(n) && Math.round(n) >= 100 ? 100 : shownPercent(n);
 }
 
 interface CourseInitProgress {
@@ -47,26 +71,44 @@ interface CourseInitProgress {
 }
 
 /**
+ * The percent a course list row put in the link, when it can be trusted. The
+ * In progress and Completed tabs list only courses the learner is in; the All
+ * tab writes 0 for every course without progress, joined or not, so a 0 from
+ * there says nothing (the Learn row shows no progress for it either).
+ */
+export function listSnapshotPercent(tab: string | null | undefined, value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const enrolledTab = tab === "PROGRESS" || tab === "COMPLETED";
+  return enrolledTab || value > 0 ? coursePercentOf(value) : null;
+}
+
+/**
  * The course page header's percent: this batch's own number, read on every entry
  * path (the default skin shows it only from the In progress tab). Same precedence
  * as the certificate hook: this batch, then the course-level number, then the
- * snapshot the list carried in the URL. Null when none says, which hides the bar.
+ * snapshot the list carried in the URL (pass it through listSnapshotPercent).
+ * Null when none says, which hides the bar. A 0 for a course the learner has not
+ * joined is not progress, so it hides the bar too.
  */
 export function courseHeaderPercent(
   courseInit: unknown,
   packageSessionId: string | null | undefined,
   searchPercent?: number | null,
+  enrolled = true,
 ): number | null {
   const data = (courseInit ?? null) as CourseInitProgress | null;
   const batches = data?.package_sessions ?? [];
   const hasPerBatch = batches.some((ps) => typeof ps.percentage_completed === "number");
-  if (packageSessionId && hasPerBatch) {
-    const thisBatch = batches.find((ps) => ps.id === packageSessionId);
-    if (thisBatch) return coursePercentOf(thisBatch.percentage_completed ?? 0);
+  let value: number | null = null;
+  const thisBatch =
+    packageSessionId && hasPerBatch ? batches.find((ps) => ps.id === packageSessionId) : undefined;
+  if (thisBatch) {
+    value = coursePercentOf(thisBatch.percentage_completed ?? 0);
+  } else {
+    value = coursePercentOf(data?.course?.percentage_completed) ?? coursePercentOf(searchPercent);
   }
-  const fromCourse = coursePercentOf(data?.course?.percentage_completed);
-  if (fromCourse !== null) return fromCourse;
-  return coursePercentOf(searchPercent);
+  if (value !== null && value <= 0 && !enrolled) return null;
+  return value;
 }
 
 export type CountKind = "subjects" | "modules" | "chapters" | "slides";
@@ -105,8 +147,10 @@ export function totalSlides(rows: ReadonlyArray<{ slide_count?: number | null }>
 
 /**
  * The row drawn as "current" (filled, with a lip): this device's resume point in
- * the course, else the first slide, in outline order, that is not done and can be
- * opened. Only loaded chapters are looked at; null when nothing qualifies.
+ * the course while that slide is unfinished and can be opened, else the first
+ * slide, in outline order, that is not done and can be opened. Only loaded
+ * chapters are looked at; null when nothing qualifies. A resume slide not found
+ * yet is kept while some chapter is still loading, so the row does not jump.
  */
 export function pickCurrentSlideId<S extends { id: string; percentage_completed?: number | null }>({
   chapterOrder,
@@ -121,7 +165,17 @@ export function pickCurrentSlideId<S extends { id: string; percentage_completed?
   threshold: number;
   resumeSlideId?: string | null;
 }): string | null {
-  if (resumeSlideId) return resumeSlideId;
+  if (resumeSlideId) {
+    let found = false;
+    for (const chapterId of chapterOrder) {
+      const slide = (slidesByChapter[chapterId] ?? []).find((item) => item.id === resumeSlideId);
+      if (!slide) continue;
+      found = true;
+      if (Number(slide.percentage_completed ?? 0) < threshold && canOpen(slide, chapterId)) return resumeSlideId;
+      break;
+    }
+    if (!found && chapterOrder.some((chapterId) => slidesByChapter[chapterId] === undefined)) return resumeSlideId;
+  }
   for (const chapterId of chapterOrder) {
     for (const slide of slidesByChapter[chapterId] ?? []) {
       if (Number(slide.percentage_completed ?? 0) < threshold && canOpen(slide, chapterId)) return slide.id;
@@ -200,6 +254,58 @@ export function levelSessionLine(level?: string | null, session?: string | null)
     .filter((part): part is string => !isPlaceholderName(part))
     .map((part) => part.trim())
     .join(" · ");
+}
+
+/** One row of a course list, as far as telling two rows apart goes. */
+export interface CourseListRowNames {
+  name?: string | null;
+  level?: string | null;
+  session?: string | null;
+  /** The batch (package session) name, when the list carries it. */
+  batch?: string | null;
+}
+
+/**
+ * The line under each row of a course list. A course the learner is in through
+ * two batches shows up twice under one name, so rows that share a name also
+ * name their batch when the level and session alone would read the same.
+ * Placeholder ("default") names are never shown, and a part is not repeated.
+ * Among rows of one name, the part that differs comes first, so a narrow row that
+ * cuts the line still shows it.
+ */
+export function courseListMetas(rows: ReadonlyArray<CourseListRowNames>): string[] {
+  const key = (text: string | null | undefined) => (text ?? "").trim().toLocaleLowerCase();
+  const byName = new Map<string, number>();
+  rows.forEach((row) => byName.set(key(row.name), (byName.get(key(row.name)) ?? 0) + 1));
+  const base = rows.map((row) => levelSessionLine(row.level, row.session));
+  const baseCount = new Map<string, number>();
+  rows.forEach((row, i) => {
+    const k = `${key(row.name)}|${key(base[i])}`;
+    baseCount.set(k, (baseCount.get(k) ?? 0) + 1);
+  });
+  const partsOf = (row: CourseListRowNames, i: number): string[] => {
+    const sameLine = (baseCount.get(`${key(row.name)}|${key(base[i])}`) ?? 0) > 1;
+    const parts: string[] = [];
+    for (const part of sameLine ? [row.level, row.session, row.batch] : [row.level, row.session]) {
+      if (isPlaceholderName(part)) continue;
+      const text = part!.trim();
+      if (!parts.some((p) => p.toLocaleLowerCase() === text.toLocaleLowerCase())) parts.push(text);
+    }
+    return parts;
+  };
+  const out = rows.map((_, i) => base[i]!);
+  const groups = new Map<string, number[]>();
+  rows.forEach((row, i) => {
+    if ((byName.get(key(row.name)) ?? 0) < 2) return;
+    groups.set(key(row.name), [...(groups.get(key(row.name)) ?? []), i]);
+  });
+  for (const indexes of groups.values()) {
+    const ordered = distinctPartsFirst(indexes.map((i) => partsOf(rows[i]!, i)));
+    indexes.forEach((rowIndex, at) => {
+      out[rowIndex] = (ordered[at] ?? []).join(" · ");
+    });
+  }
+  return out;
 }
 
 /** A chapter's progress as the viewer computes it: the mean of its slides, each capped at 100. */

@@ -49,6 +49,14 @@ public class SelfSignupRateLimiter {
         check("signup-ip:" + ip, 5, ONE_DAY, "Too many sign-ups from this network today. Please contact support.");
     }
 
+    /**
+     * Demo attempts from one network, counted before the email check so the form cannot be used to
+     * probe which emails have accounts. Accounts created still count against {@link #checkSignup}.
+     */
+    public void checkDemoAttempt(String ip) {
+        check("demo-ip:" + ip, 20, TEN_MINUTES, "Too many attempts from this network. Try again in a few minutes.");
+    }
+
     private void check(String key, int limit, long windowMillis, String message) {
         long now = System.currentTimeMillis();
         if (hits.size() > MAX_TRACKED_KEYS) {

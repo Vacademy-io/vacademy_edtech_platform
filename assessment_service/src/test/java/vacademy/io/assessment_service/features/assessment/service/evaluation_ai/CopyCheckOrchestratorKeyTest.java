@@ -95,6 +95,16 @@ class CopyCheckOrchestratorKeyTest {
                 assertThat(service.correctAnswerFor(
                                 question("NUMERIC", "{\"type\":\"NUMERIC\",\"data\":{\"validAnswers\":[4,\"4.0\"]}}"),
                                 List.of())).isEqualTo("4 or 4.0");
+                // A ± tolerance reaches the grader; none, 0 or negative leaves the key as it was.
+                assertThat(service.correctAnswerFor(
+                                question("NUMERIC", "{\"type\":\"NUMERIC\",\"data\":{\"validAnswers\":[1250],\"tolerance\":1.50}}"),
+                                List.of())).isEqualTo("1250 (any answer within ± 1.5 of this is also correct)");
+                assertThat(service.correctAnswerFor(
+                                question("NUMERIC", "{\"type\":\"NUMERIC\",\"data\":{\"validAnswers\":[1250],\"tolerance\":0}}"),
+                                List.of())).isEqualTo("1250");
+                assertThat(service.correctAnswerFor(
+                                question("NUMERIC", "{\"type\":\"NUMERIC\",\"data\":{\"validAnswers\":[1250],\"tolerance\":-2}}"),
+                                List.of())).isEqualTo("1250");
                 // Written answers are graded on the rubric alone, as they always were —
                 // a stored reference answer must not turn into a "correct answer" the
                 // grader compares wording against.

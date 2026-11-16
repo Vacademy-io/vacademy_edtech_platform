@@ -36,6 +36,12 @@ public class AssessmentAddParticipantsDetail extends IStep {
                 .filter(r -> !UserRegistrationSources.COPY_CHECK_ONLY.name().equals(r.getSource()))
                 .count();
         savedData.put(ParticipantsCreationEnum.PRE_USER_REGISTRATIONS.name().toLowerCase(), (int) userRegistrations);
+        // pre_user_registrations stays the total (the Submissions tab picks its mode from it);
+        // this lets the Participants tab split it into Internal and External.
+        long openRegistrations = assessment.get().getUserRegistrations().stream()
+                .filter(r -> UserRegistrationSources.OPEN_REGISTRATION.name().equals(r.getSource()))
+                .count();
+        savedData.put(ParticipantsCreationEnum.OPEN_USER_REGISTRATIONS.name().toLowerCase(), (int) openRegistrations);
         Hibernate.initialize(assessment.get().getAssessmentCustomFields());
         savedData.put(ParticipantsCreationEnum.REGISTRATION_FORM_FIELDS.name().toLowerCase(), assessment.get().getAssessmentCustomFields());
         savedData.put(ParticipantsCreationEnum.REGISTRATION_OPEN_DATE.name().toLowerCase(), assessment.get().getRegistrationOpenDate());

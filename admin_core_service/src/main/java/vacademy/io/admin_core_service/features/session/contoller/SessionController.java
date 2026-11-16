@@ -47,8 +47,10 @@ public class SessionController {
 
     @DeleteMapping("/delete-sessions")
     public ResponseEntity<String> deleteSessions(@RequestBody List<String> sessionIds,
+                                                 @RequestHeader(value = "clientId", required = false) String instituteId,
                                                  @RequestAttribute("user") CustomUserDetails user) {
-        String response = sessionService.deleteSessions(sessionIds, user);
+        // The institute is the clientId header: the principal's roles are loaded for exactly it.
+        String response = sessionService.deleteSessions(sessionIds, instituteId, user);
         return ResponseEntity.ok(response);
     }
 

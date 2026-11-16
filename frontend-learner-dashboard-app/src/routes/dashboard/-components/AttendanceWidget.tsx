@@ -188,7 +188,12 @@ export function AttendanceWidget() {
       : null;
 
   // No streak framing: attendance has no streak of its own any more.
-  const emptyTitle = t("attendance.emptyTitleNoStreak", { liveClass: liveClassTerm });
+  // English reads the plural (an institute's own singular can be a clipped plural);
+  // the other languages keep their singular.
+  const emptyTitle = t("attendance.emptyTitleNoStreak", {
+    liveClass: liveClassTerm,
+    liveClasses: liveClassPluralTerm,
+  });
   const emptyBody = t("attendance.emptyBodyNoStreak");
   const statGridClass = "grid-cols-3";
 

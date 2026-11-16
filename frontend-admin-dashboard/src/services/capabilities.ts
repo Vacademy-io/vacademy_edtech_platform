@@ -30,6 +30,11 @@ export interface CapabilitiesMe {
     catalog_version: number | null;
     modules: Record<string, boolean>;
     features: Record<string, boolean>;
+    /**
+     * Modules that are off until granted, in EVERY mode (commerce). The server
+     * reports their features from the entitlement rows even for LEGACY institutes.
+     */
+    opt_in_modules: string[];
     display_settings_version: string | null;
 }
 
@@ -67,6 +72,9 @@ export function normalizeCapabilitiesMe(raw: unknown): CapabilitiesMe | null {
         catalog_version: typeof r.catalog_version === 'number' ? r.catalog_version : null,
         modules: isBoolMap(r.modules) ? r.modules : {},
         features: isBoolMap(r.features) ? r.features : {},
+        opt_in_modules: Array.isArray(r.opt_in_modules)
+            ? r.opt_in_modules.filter((m): m is string => typeof m === 'string' && !!m)
+            : [],
         display_settings_version:
             typeof version === 'string' && version.length > 0 ? version : null,
     };
@@ -96,8 +104,33 @@ export function shouldBustDisplaySettingsCache(args: {
 }
 
 /**
- * can(featureKey): true unless capabilities are loaded for the CURRENT institute,
- * the institute is MANAGED, and the server explicitly reports the feature off.
+ * Opt-in modules the app knows about without asking the server. The server's
+ * `opt_in_modules` list is added to this, never used instead of it: before /me
+ * answers (or when it fails, or an old backend omits the field) these modules
+ * must already read as off.
+ */
+export const KNOWN_OPT_IN_MODULES: readonly string[] = ['commerce'];
+
+const moduleOf = (featureKey: string) => featureKey.split('.')[0] ?? featureKey;
+
+/** True for a feature of a module that is off until granted (fail-closed reader). */
+export function isOptInFeature(
+    featureKey: string,
+    data?: Pick<CapabilitiesMe, 'opt_in_modules'> | null
+): boolean {
+    const module = moduleOf(featureKey);
+    return KNOWN_OPT_IN_MODULES.includes(module) || !!data?.opt_in_modules?.includes(module);
+}
+
+/**
+ * can(featureKey), two readers:
+ *  - Ordinary features fail OPEN: true unless capabilities are loaded for the
+ *    CURRENT institute, the institute is MANAGED, and the server explicitly
+ *    reports the feature off.
+ *  - Features of an opt-in module (commerce) fail CLOSED, in every mode: true
+ *    only when capabilities are loaded for the CURRENT institute and the server
+ *    explicitly reports the feature on. A LEGACY institute, a loading or failed
+ *    call and an unknown key all read as off.
  */
 export function resolveCan(
     snapshot: CapabilitiesSnapshot,
@@ -105,8 +138,12 @@ export function resolveCan(
     featureKey: string
 ): boolean {
     const { status, data, instituteId } = snapshot;
-    if (status !== 'loaded' || !data) return true;
-    if (!currentInstituteId || instituteId !== currentInstituteId) return true;
+    const loadedForCurrent =
+        status === 'loaded' && !!data && !!currentInstituteId && instituteId === currentInstituteId;
+    if (isOptInFeature(featureKey, loadedForCurrent ? data : null)) {
+        return loadedForCurrent && data.features[featureKey] === true;
+    }
+    if (!loadedForCurrent) return true;
     if (data.mode !== 'MANAGED') return true;
     return data.features[featureKey] !== false;
 }
@@ -200,9 +237,10 @@ export function syncCapabilitiesOnce(
 }
 
 /**
- * Capability resolver for the current institute. Fails OPEN: `can()` is true in
- * LEGACY mode, before the call resolves and when it failed. Not wired into any
- * gating yet (Phase 2).
+ * Capability resolver for the current institute. Fails OPEN for ordinary
+ * features: `can()` is true in LEGACY mode, before the call resolves and when it
+ * failed. Features of opt-in modules (commerce) fail CLOSED instead; see
+ * resolveCan.
  */
 export function useCapabilities(): {
     mode: CapabilityMode;
