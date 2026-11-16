@@ -53,6 +53,7 @@ import {
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyPagination } from '@/components/design-system/pagination';
 import { useCourseListStateStore } from '../-stores/course-list-state-store';
+import { DuplicateCourseDialog } from './duplicate-course-dialog';
 
 interface PackageEntity {
     id: string;
@@ -853,6 +854,14 @@ export const AuthoredCoursesTab: React.FC<AuthoredCoursesTabProps> = ({
                                                     {t('copyToEdit')}
                                                 </Button>
                                             )}
+
+                                        {/* Duplicate: admins only (a teacher's copy would skip course approval) */}
+                                        {Boolean(isAdmin) && (
+                                            <DuplicateCourseDialog
+                                                courseId={course.packageId}
+                                                courseName={course.packageName}
+                                            />
+                                        )}
 
                                         {/* Delete Button */}
                                         {showDelete && (

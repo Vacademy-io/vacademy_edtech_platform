@@ -24,7 +24,8 @@ export interface DuplicateCourseVariables {
     newCourseName: string;
 }
 
-export const DUPLICATE_NAME_MAX_LENGTH = 255;
+/** Matches the server cap: package_name is 255 wide, minus room for a " (2)" clash suffix. */
+export const DUPLICATE_NAME_MAX_LENGTH = 245;
 
 /** The name the dialog starts with: "<name> (Copy)", matching the backend default. */
 export const defaultDuplicateName = (sourceName: string | null | undefined, copySuffix: string) => {
@@ -74,6 +75,8 @@ export const useDuplicateCourse = () => {
             queryClient.invalidateQueries({ queryKey: ['allCourses'] });
             queryClient.invalidateQueries({ queryKey: ['authoredCourses'] });
             queryClient.invalidateQueries({ queryKey: ['my-courses'] });
+            // The Authored tab (the default tab) lists the caller's own courses, the copy included.
+            queryClient.invalidateQueries({ queryKey: ['my-courses-authored'] });
             // New package sessions: the course page reads them from the institute details.
             await invalidateInstituteDetails(queryClient);
         },

@@ -21,6 +21,8 @@ import vacademy.io.admin_core_service.features.packages.repository.PackageSessio
 import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
 import vacademy.io.admin_core_service.features.session.dto.AddNewSessionDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Group;
 import vacademy.io.common.institute.entity.Level;
@@ -340,6 +342,24 @@ class CourseDuplicateServiceTest {
     }
 
     @Test
+    @DisplayName("a teacher who is not an admin is refused (the copy would skip course approval); admins pass")
+    void teacherOnlyIsRefused() {
+        doReturn(List.of(new SimpleGrantedAuthority("TEACHER"))).when(user).getAuthorities();
+        assertThrows(ForbiddenException.class, () -> service.duplicate(INSTITUTE, SOURCE_ID, null, user));
+        verify(courseService, never()).addCourse(any(), any(), any());
+
+        Session s = session("sess-1", "2026");
+        Level l = level("lvl-1", "Class 11");
+        when(packageSessionRepository.findByPackageEntityId(SOURCE_ID))
+                .thenReturn(List.of(batch("src-a", s, l, null, "ACTIVE", null, 1)));
+        when(packageSessionRepository.findByPackageEntityId(NEW_ID))
+                .thenReturn(List.of(batch("new-a", s, l, null, "ACTIVE", null, 2)));
+        doReturn(List.of(new SimpleGrantedAuthority("teacher"), new SimpleGrantedAuthority("ADMIN")))
+                .when(user).getAuthorities();
+        assertEquals(NEW_ID, service.duplicate(INSTITUTE, SOURCE_ID, null, user).getCourseId());
+    }
+
+    @Test
     @DisplayName("refuses a commerce product before writing anything")
     void refusesCommerceProduct() {
         doThrow(new VacademyException("refused")).when(commerceLegacyGuard).refuseProduct(source, "duplicate");
@@ -348,13 +368,16 @@ class CourseDuplicateServiceTest {
     }
 
     @Test
-    @DisplayName("default name is '<name> (Copy)', and long names are capped to the column size")
+    @DisplayName("default name is '<name> (Copy)', and long names are capped below the column size")
     void nameRules() {
         assertEquals("Maths (Copy)", CourseDuplicateService.resolveName(null, "Maths"));
         assertEquals("Maths (Copy)", CourseDuplicateService.resolveName("   ", " Maths "));
         assertEquals("New", CourseDuplicateService.resolveName(" New ", "Maths"));
         assertEquals("Course (Copy)", CourseDuplicateService.resolveName(null, null));
         String longName = "x".repeat(300);
-        assertEquals(255, CourseDuplicateService.resolveName(longName, "Maths").length());
+        String capped = CourseDuplicateService.resolveName(longName, "Maths");
+        assertEquals(CourseDuplicateService.MAX_NAME_LENGTH, capped.length());
+        // Room is left for the " (50)" the create path may add on a name clash (column is 255).
+        assertTrue((capped + " (50)").length() <= 255);
     }
 }

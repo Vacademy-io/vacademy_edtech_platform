@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.course.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.commerce.common.CommerceLegacyGuard;
@@ -20,6 +21,7 @@ import vacademy.io.admin_core_service.features.packages.repository.PackageSessio
 import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
 import vacademy.io.admin_core_service.features.session.dto.AddNewSessionDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.PackageEntity;
 import vacademy.io.common.institute.entity.session.PackageSession;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +67,11 @@ import java.util.stream.Collectors;
 public class CourseDuplicateService {
 
     static final String COPY_SUFFIX = " (Copy)";
-    static final int MAX_NAME_LENGTH = 255;
+    /**
+     * package_name is 255 wide, and on a name clash the create path appends " (2)" .. " (50)".
+     * Capping below the column leaves room for that suffix so a long clashing name still saves.
+     */
+    static final int MAX_NAME_LENGTH = 245;
 
     /** Batch statuses that are recreated on the copy. INVITED and DELETED rows are not batches to copy. */
     static final Set<String> COPIED_BATCH_STATUSES = Set.of(
@@ -86,6 +93,7 @@ public class CourseDuplicateService {
         if (!StringUtils.hasText(courseId)) {
             throw new VacademyException("courseId is required");
         }
+        refuseTeacherOnly(user);
         PackageEntity source = packageRepository.findById(courseId)
                 .orElseThrow(() -> new VacademyException("Course not found"));
         if (PackageStatusEnum.DELETED.name().equalsIgnoreCase(source.getStatus())
@@ -167,7 +175,27 @@ public class CourseDuplicateService {
         return response;
     }
 
-    /** "&lt;requested&gt;" when given, else "&lt;source&gt; (Copy)"; trimmed and capped to the column size. */
+    /**
+     * A TEACHER without ADMIN may not duplicate: the copy is created ACTIVE, which would skip the
+     * teacher course-approval flow (teachers use "Copy to edit", which makes a DRAFT). Same rule as
+     * the dashboard, which hides the Duplicate button for a teacher who is not also an admin.
+     */
+    static void refuseTeacherOnly(CustomUserDetails user) {
+        if (user == null || user.getAuthorities() == null) {
+            return;
+        }
+        Set<String> names = new HashSet<>();
+        for (GrantedAuthority authority : user.getAuthorities()) {
+            if (authority != null && authority.getAuthority() != null) {
+                names.add(authority.getAuthority().trim().toUpperCase());
+            }
+        }
+        if (names.contains("TEACHER") && !names.contains("ADMIN")) {
+            throw new ForbiddenException("Access denied: only institute admins can duplicate a course");
+        }
+    }
+
+    /** "&lt;requested&gt;" when given, else "&lt;source&gt; (Copy)"; trimmed and capped below the column size. */
     static String resolveName(String requestedName, String sourceName) {
         String name = StringUtils.hasText(requestedName)
                 ? requestedName.trim()

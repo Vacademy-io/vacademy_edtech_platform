@@ -74,6 +74,8 @@ export const DuplicateCourseDialog = ({
     };
 
     const handleDuplicate = () => {
+        // A quick second Enter must not start a second copy.
+        if (isPending || !name.trim()) return;
         duplicate.mutate(
             { courseId, newCourseName: name },
             {
