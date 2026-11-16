@@ -9,6 +9,7 @@ import {
     type NavigationKind,
     type ScrollPositions,
 } from '../logic/scroll';
+import { holdZoomableViewport } from '../logic/viewport';
 import { useCommerceSite } from './site';
 
 const FONT_LINK_ID = 'commerce-fonts';
@@ -181,4 +182,112 @@ export const useOnline = (): boolean => {
         };
     }, []);
     return online;
+};
+
+/** Pinch-zoom allowed while a shop root is on screen (logic/viewport.ts). */
+export const useZoomableViewport = (): void => {
+    useEffect(() => holdZoomableViewport(), []);
+};
+
+/* ── header fold (category bar) ───────────────────────────────────── */
+
+/** Below this scroll offset the logo row is always shown. */
+const FOLD_MIN_Y = 160;
+/** Downward travel since the last turn that folds the logo row. */
+const FOLD_DOWN = 12;
+/** Upward travel since the last turn that brings it back. */
+const FOLD_UP = 24;
+
+/**
+ * The fixed site header with the category bar: keeps --cmx-pin-top on <html> at the header's
+ * visible bottom (the sticky Filter·Sort bar and anchors read it) and, when `collapse` is on,
+ * folds the logo row away on scroll-down on phones and tablets. The fold is a transform on the
+ * fixed header, so nothing in the page moves. The bar itself never hides.
+ */
+export const useHeaderFold = (rowRef: React.RefObject<HTMLElement | null>, collapse: boolean, paused: boolean): void => {
+    const pausedRef = useRef(paused);
+    const unfoldRef = useRef<(() => void) | null>(null);
+    pausedRef.current = paused;
+
+    useEffect(() => {
+        const row = rowRef.current;
+        const header = row?.closest('header');
+        if (!row || !header || typeof window === 'undefined') return;
+        const root = document.documentElement;
+        const narrow = window.matchMedia ? window.matchMedia('(max-width: 1023.98px)') : null;
+        let folded = false;
+        let lastY = window.scrollY;
+        let anchorY = lastY;
+        let direction = 0;
+        let frame = 0;
+
+        const apply = (next: boolean) => {
+            folded = next;
+            const height = header.getBoundingClientRect().height;
+            const bar = row.getBoundingClientRect().height;
+            header.style.setProperty('--cmx-fold', `${Math.max(0, Math.round(height - bar))}px`);
+            header.toggleAttribute('data-cmx-folded', next);
+            root.style.setProperty('--cmx-pin-top', `${Math.round(next ? bar : height)}px`);
+        };
+        const unfold = () => {
+            if (folded) apply(false);
+        };
+        unfoldRef.current = unfold;
+        header.setAttribute('data-cmx-bar', '');
+        apply(false);
+
+        const canFold = () =>
+            collapse &&
+            !!narrow?.matches &&
+            !pausedRef.current &&
+            // A drawer, sheet or search overlay is open (Radix locks the page scroll).
+            !document.body.hasAttribute('data-scroll-locked') &&
+            // A short page never folds.
+            root.scrollHeight >= window.innerHeight * 2;
+
+        const onScroll = () => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                const y = window.scrollY;
+                const dy = y - lastY;
+                lastY = y;
+                if (!canFold() || y < FOLD_MIN_Y) {
+                    unfold();
+                    anchorY = y;
+                    return;
+                }
+                if (dy === 0) return;
+                const turn = dy > 0 ? 1 : -1;
+                if (turn !== direction) {
+                    direction = turn;
+                    anchorY = y - dy;
+                }
+                if (turn > 0 && !folded && y - anchorY >= FOLD_DOWN) apply(true);
+                else if (turn < 0 && folded && anchorY - y >= FOLD_UP) apply(false);
+            });
+        };
+        const onResize = () => apply(folded && canFold());
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize);
+        header.addEventListener('focusin', unfold);
+        narrow?.addEventListener?.('change', onResize);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onResize);
+            header.removeEventListener('focusin', unfold);
+            narrow?.removeEventListener?.('change', onResize);
+            header.removeAttribute('data-cmx-folded');
+            header.removeAttribute('data-cmx-bar');
+            header.style.removeProperty('--cmx-fold');
+            root.style.removeProperty('--cmx-pin-top');
+            unfoldRef.current = null;
+        };
+    }, [rowRef, collapse]);
+
+    // The menu opening brings the logo row back (its toggle lives there).
+    useEffect(() => {
+        if (paused) unfoldRef.current?.();
+    }, [paused]);
 };

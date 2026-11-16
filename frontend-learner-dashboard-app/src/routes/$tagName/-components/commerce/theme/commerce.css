@@ -238,6 +238,9 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 @media (max-width: 767.98px) { .cmx-tiles--rail.cmx-tiles--compact { grid-auto-columns: 30%; } }
 .cmx-tile { display: block; border-radius: var(--cmx-radius-card); overflow: hidden; border: 1px solid var(--cmx-line); background: var(--cmx-surface); }
 .cmx-tile__name { display: block; padding: 10px 12px; font-weight: 600; font-size: 0.9375em; }
+/* Every label is two lines tall (clamped), so tiles are equal and nothing moves when long names arrive. */
+.cmx-tile__name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; min-height: calc(2.8em + 20px); }
+.cmx-tiles--compact .cmx-tile__name { min-height: calc(2.6em + 16px); }
 .cmx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 
 /* ── category bar ───────────────────────────────────────────────── */
@@ -246,7 +249,7 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 .cmx-catbar__row::-webkit-scrollbar { display: none; }
 .cmx-catbar__item { position: relative; flex: none; }
 .cmx-catbar__link {
-    display: inline-flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 12px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: var(--cmx-tap); min-height: 48px; padding: 0 12px;
     font-size: 0.9375em; font-weight: 500; white-space: nowrap; border-bottom: 2px solid transparent;
 }
 .cmx-catbar__link:hover, .cmx-catbar__link[aria-current="page"] { border-bottom-color: var(--cmx-primary); }
@@ -261,6 +264,51 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 }
 .cmx-catbar__menu a { display: block; padding: 8px 12px; border-radius: 6px; font-size: 0.9375em; }
 .cmx-catbar__menu a:hover { background: var(--cmx-band); }
+
+/* ── category bar in the site header (commerce.categoryBar) ─────── */
+/* A 48px second row of the fixed header; the header's own background shows through. */
+.cmx-hbar { box-sizing: border-box; height: 48px; border-top: 1px solid var(--cmx-line); background: transparent; }
+.cmx-hbar .cmx-shell { height: 100%; }
+.cmx-hbar__row {
+    display: flex; align-items: center; gap: 8px; height: 100%; margin: 0 -16px; padding: 0 16px; list-style: none;
+    overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.cmx-hbar__row::-webkit-scrollbar { display: none; }
+.cmx-hbar__row > li { scroll-snap-align: start; }
+.cmx-hbar--tabs .cmx-hbar__row { gap: 0; }
+.cmx-hbar--tabs .cmx-catbar__link { min-height: 46px; }
+/* The edge that has more chips fades out. */
+.cmx-hbar--fade-end .cmx-hbar__row { -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent); mask-image: linear-gradient(to right, black calc(100% - 24px), transparent); }
+.cmx-hbar--fade-start .cmx-hbar__row { -webkit-mask-image: linear-gradient(to right, transparent, black 24px); mask-image: linear-gradient(to right, transparent, black 24px); }
+.cmx-hbar--fade-start.cmx-hbar--fade-end .cmx-hbar__row { -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent); mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent); }
+/* A chip is a 44px tap target around a 36px pill. */
+.cmx-hbar__chip { display: inline-flex; align-items: center; gap: 4px; min-width: var(--cmx-tap); min-height: var(--cmx-tap); -webkit-tap-highlight-color: transparent; }
+.cmx-hbar__pill {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 36px; padding: 0 14px; border-radius: var(--cmx-radius-chip);
+    border: 1px solid var(--cmx-line-strong); background: var(--cmx-surface); color: var(--cmx-ink); font-size: 0.9375em; font-weight: 500; white-space: nowrap;
+    transition: background-color var(--cmx-dur) var(--cmx-ease), border-color var(--cmx-dur) var(--cmx-ease), transform 120ms var(--cmx-ease);
+}
+.cmx-hbar__chip:active .cmx-hbar__pill { transform: scale(0.96); }
+.cmx-hbar__chip:hover .cmx-hbar__pill { border-color: var(--cmx-ink); }
+.cmx-hbar__chip[aria-current="page"] .cmx-hbar__pill { background: var(--cmx-primary); border-color: var(--cmx-primary); color: var(--cmx-on-primary); font-weight: 600; }
+.cmx-hbar__chip[aria-current="true"] .cmx-hbar__pill { border-color: var(--cmx-primary); color: var(--cmx-primary); font-weight: 600; box-shadow: inset 0 0 0 1px var(--cmx-primary); }
+.cmx-hbar--tabs .cmx-catbar__link[aria-current="true"] { border-bottom-color: var(--cmx-line-strong); }
+.cmx-hbar__skel { display: block; width: 64px; height: 20px; }
+.cmx-hbar__chip .cmx-hbar__skel { height: 36px; border-radius: var(--cmx-radius-chip); }
+@media (min-width: 1024px) {
+    /* The second level opens on hover and focus, below the bar. */
+    .cmx-hbar__row { overflow: visible; }
+    .cmx-hbar .cmx-catbar__menu { top: calc(100% - 2px); }
+}
+/* The fixed header with the bar: the logo row folds away on scroll-down (a transform: nothing moves). */
+header[data-cmx-bar] { transition: transform 200ms ease-out; }
+@media (max-width: 1023.98px) {
+    header[data-cmx-folded] { transform: translateY(calc(-1 * var(--cmx-fold, 64px))); }
+}
+@media (prefers-reduced-motion: reduce) {
+    header[data-cmx-bar] { transition: none; }
+    .cmx-hbar__chip:active .cmx-hbar__pill { transform: none; }
+}
 
 /* ── header slot ────────────────────────────────────────────────── */
 .cmx-slot { display: inline-flex; align-items: center; gap: 2px; color: inherit; }
@@ -304,6 +352,22 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 .cmx-listing { display: grid; gap: 24px; }
 @media (min-width: 1024px) { .cmx-listing--sidebar { grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: start; } }
 .cmx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* templates.collection.stickyToolbar: one row pinned under the header (and its category bar). */
+.cmx-toolbar--sticky {
+    position: sticky; top: var(--cmx-pin-top, 64px); z-index: 20; flex-wrap: nowrap; margin: 0 -16px; padding: 3px 16px;
+    background: var(--cmx-bg); border-bottom: 1px solid var(--cmx-line); transition: top 200ms ease-out;
+}
+@media (max-width: 1023.98px) {
+    .cmx-toolbar--sticky .cmx-toolbar__actions { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+    .cmx-toolbar--sticky .cmx-toolbar__filter, .cmx-toolbar--sticky .cmx-toolbar__sort, .cmx-toolbar--sticky .cmx-select { width: 100%; min-width: 0; }
+    .cmx-toolbar--sticky .cmx-toolbar__filter { padding: 0 12px; }
+    /* The count is said once, in the page's header line; it stays a live region. */
+    .cmx-toolbar--nocount .cmx-toolbar__count {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+}
+@media (min-width: 1024px) { .cmx-toolbar--sticky { margin: 0; padding: 8px 0; } }
+@media (prefers-reduced-motion: reduce) { .cmx-toolbar--sticky { transition: none; } }
 .cmx-select { min-height: var(--cmx-tap); padding: 0 36px 0 12px; border-radius: var(--cmx-radius-btn); border: 1px solid var(--cmx-line-strong); background: var(--cmx-surface); color: inherit; font: inherit; font-size: 0.9375em; }
 .cmx-facet { border-bottom: 1px solid var(--cmx-line); padding: 12px 0; }
 .cmx-facet > summary { display: flex; align-items: center; justify-content: space-between; min-height: var(--cmx-tap); cursor: pointer; font-weight: 600; list-style: none; }
@@ -317,6 +381,7 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 .cmx-scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; list-style: none; }
 .cmx-scroll-x::-webkit-scrollbar { display: none; }
 .cmx-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cmx-clamp--2 { -webkit-line-clamp: 2; }
 
 /* ── states ─────────────────────────────────────────────────────── */
 .cmx-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 48px 16px; max-width: 480px; margin: 0 auto; }
@@ -328,8 +393,17 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 
 /* ── product page ───────────────────────────────────────────────── */
 .cmx-pdp { display: grid; gap: 24px; padding-top: 12px; }
-@media (min-width: 1024px) { .cmx-pdp { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; padding-top: 24px; align-items: start; } .cmx-pdp__media { position: sticky; top: 96px; } }
+@media (min-width: 1024px) { .cmx-pdp { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; padding-top: 24px; align-items: start; } .cmx-pdp__media { position: sticky; top: calc(var(--cmx-pin-top, 80px) + 16px); } }
 .cmx-pdp__info { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.cmx-pdp__summary { display: flex; flex-direction: column; align-items: flex-start; }
+/* Compact phone layout (the site's category bar is on): a square photo (the full one is a tap
+   away), the tax note beside the price and tighter rows, so price and button share screen one. */
+@media (max-width: 1023.98px) {
+    .cmx-pdp--compact { gap: 16px; padding-top: 0; }
+    .cmx-pdp--compact .cmx-gallery__stage .cmx-img { aspect-ratio: 1 / 1; }
+    .cmx-pdp--compact .cmx-pdp__info { gap: 16px; }
+    .cmx-pdp--compact .cmx-pdp__price { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+}
 .cmx-gallery { display: grid; gap: 12px; }
 @media (min-width: 1024px) { .cmx-gallery { grid-template-columns: 72px minmax(0, 1fr); } .cmx-gallery__thumbs { order: -1; } }
 .cmx-gallery__stage { position: relative; margin: 0 -16px; }
@@ -539,6 +613,9 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 }
 .cmx-preset-heritage .cmx-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--cmx-chrome); font-weight: 600; }
 .cmx-preset-heritage .cmx-eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--cmx-gold); }
+/* Badges readable on a phone: 13px, 14px in Devanagari. */
+.cmx-preset-heritage .cmx-badge { font-size: 13px; line-height: 18px; }
+.cmx-preset-heritage:lang(hi) .cmx-badge, .cmx-preset-heritage:lang(mr) .cmx-badge { font-size: 14px; }
 
 /* ── content blocks ─────────────────────────────────────────────── */
 .cmx-stack { display: flex; flex-direction: column; gap: 12px; }
@@ -550,8 +627,17 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 
 /* announcement */
 .cmx-announce { background: var(--cmx-chrome, var(--cmx-ink)); color: var(--cmx-on-chrome, var(--cmx-bg)); font-size: 0.875em; line-height: 1.4; text-align: center; }
-.cmx-announce__in { display: flex; align-items: center; justify-content: center; min-height: 36px; padding: 6px 16px; }
+.cmx-announce__in { display: flex; align-items: center; justify-content: center; min-height: var(--cmx-tap); padding: 6px 16px; }
 .cmx-announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+/* The whole strip is the link: one 44px tap target. */
+.cmx-announce a.cmx-announce__link { text-decoration: none; }
+.cmx-announce a.cmx-announce__link .cmx-announce__text { text-decoration: underline; text-underline-offset: 3px; }
+.cmx-announce__text { min-width: 0; }
+/* One line on a phone (ellipsis): a late web font cannot re-wrap it and push the page down. */
+@media (max-width: 479.98px) {
+    .cmx-announce__in { height: var(--cmx-tap); padding-block: 0; }
+    .cmx-announce__text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+}
 
 /* hero */
 .cmx-hero { display: grid; gap: 20px; }
@@ -560,6 +646,13 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 @media (min-width: 640px) { .cmx-hero__media { margin: 0; } }
 @media (min-width: 1024px) { .cmx-hero__media { order: 2; aspect-ratio: 5 / 4; } }
 .cmx-hero__media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* compactOnPhone: a wide photo and no figures row on a phone, so products follow on screen one. */
+@media (max-width: 639.98px) {
+    .cmx-section:has(> .cmx-shell > .cmx-hero--compact) { padding-top: 16px; }
+    .cmx-hero--compact { gap: 16px; }
+    .cmx-hero--compact .cmx-hero__media { aspect-ratio: 16 / 9; }
+    .cmx-hero--compact .cmx-stats { display: none; }
+}
 .cmx-hero__caption { position: absolute; inset-inline-start: 10px; bottom: 10px; padding: 2px 10px; border-radius: 999px; background: hsl(0 0% 0% / 0.55); color: hsl(0 0% 100%); font-size: 12px; line-height: 20px; }
 .cmx-hero__body { display: flex; flex-direction: column; gap: 14px; }
 .cmx-stats { display: flex; flex-wrap: wrap; gap: 8px 24px; list-style: none; margin: 4px 0 0; padding: 12px 0 0; border-top: 1px solid var(--cmx-line); }
@@ -655,6 +748,10 @@ textarea.cmx-input { min-height: 96px; resize: vertical; }
 /* floating WhatsApp */
 .cmx-fab, .cmx a.cmx-fab { position: fixed; inset-inline-end: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 45; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 999px; background: hsl(142 70% 49%); color: hsl(141 50% 11%); box-shadow: 0 6px 20px hsl(0 0% 0% / 0.2); }
 .cmx-fab:hover { filter: brightness(0.95); }
+.cmx-fab { transition: opacity var(--cmx-dur) var(--cmx-ease), visibility var(--cmx-dur); }
+/* Stepped aside while the page scrolls down or while a button is under it. */
+.cmx-fab--away, .cmx a.cmx-fab--away { opacity: 0; visibility: hidden; pointer-events: none; }
+@media (max-width: 767.98px) { .cmx-fab, .cmx a.cmx-fab { width: 48px; height: 48px; } .cmx-fab svg { width: 26px; height: 26px; } }
 
 /* not found */
 .cmx-404 { display: grid; gap: 20px; justify-items: center; text-align: center; max-width: 640px; margin: 0 auto; }

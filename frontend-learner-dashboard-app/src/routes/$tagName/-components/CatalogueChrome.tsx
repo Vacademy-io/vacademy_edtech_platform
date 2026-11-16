@@ -10,6 +10,7 @@ import { siteUsesDevanagari } from "../-utils/catalogue-site-language";
 import { collectConfigFontFamilies, ensureFontsLoaded } from "../-utils/catalogue-fonts";
 import { buildSiteThemeVars } from "../-utils/catalogue-palette";
 import { headerOffsetClass } from "./header/header-chrome";
+import { isCategoryBarOnFor } from "./commerce/lazy";
 import { DEVANAGARI_FALLBACK_FAMILY, withArabicFallback, withDevanagariFallback } from "@/utils/branding";
 
 /** The catalogue home's body font when the site sets none (CourseCataloguePage). */
@@ -40,6 +41,12 @@ interface CatalogueChromeProps {
    * purchase the visitor is midway through.
    */
   showFooter?: boolean;
+  /**
+   * The shop route on screen ("product", "collection"…), from the shop's own
+   * pages: its category bar (commerce.categoryBar, off by default) makes the
+   * fixed header 48px taller, and the offset below follows.
+   */
+  pageKey?: string;
   children: React.ReactNode;
 }
 
@@ -47,6 +54,7 @@ export const CatalogueChrome: React.FC<CatalogueChromeProps> = ({
   tagName,
   instituteId,
   showFooter = true,
+  pageKey,
   children,
 }) => {
   const themeRootRef = useRef<HTMLDivElement>(null);
@@ -164,7 +172,7 @@ export const CatalogueChrome: React.FC<CatalogueChromeProps> = ({
           and the child page starts underneath the header, its first heading
           hidden. CourseCataloguePage's <main> and CourseDetailsPage reserve the
           same offset; mirror it here. */}
-      <div className={headerEnabled ? headerOffsetClass(header?.props) : ""}>{children}</div>
+      <div className={headerEnabled ? headerOffsetClass(header?.props, undefined, { categoryBar: !!pageKey && isCategoryBarOnFor(globalSettings, pageKey) }) : ""}>{children}</div>
 
       {showFooter && footer && footer.enabled !== false && renderBlock("footer", footer)}
       {audienceForm && (

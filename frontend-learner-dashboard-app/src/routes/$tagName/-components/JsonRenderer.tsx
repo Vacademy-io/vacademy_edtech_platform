@@ -20,7 +20,7 @@ import {
 import { SectionDecorations, hasDecorations } from "../-utils/catalogue-decorations";
 import { blockTypeLabel } from "../-utils/preview-bridge";
 import { CatalogueLink } from "./CatalogueLink";
-import { CommerceSectionSlot, isCommerceSectionType } from "./commerce/lazy";
+import { CommerceSectionSlot, isCategoryBarOnFor, isCommerceSectionType } from "./commerce/lazy";
 import PhoneInput from "react-phone-input-2";
 // Same stylesheet every other phone field in the app imports. Mixing this with
 // react-phone-input-2's other skins in one bundle stacks the flag on top of the
@@ -847,7 +847,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
 
   return (
     <div
-      className={`page w-full ${hasHeader ? headerOffsetClass(pageHeaderProps) : ''}`}
+      className={`page w-full ${hasHeader ? headerOffsetClass(pageHeaderProps, undefined, { categoryBar: isCategoryBarOnFor(globalSettings, page.route) }) : ''}`}
       data-page-id={page.id}
     >
       {page.components.map((component) => withVisibleWhen(component, renderTopLevel(component)))}

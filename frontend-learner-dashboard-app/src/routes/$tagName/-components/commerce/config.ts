@@ -42,6 +42,35 @@ export interface CommerceTemplateSwitches {
     [section: string]: boolean;
 }
 
+/** One chip of the category bar when a site names them itself ("सब" → shop, "₹999 तक उपहार" → c/gifts-under-999). */
+export interface CommerceCategoryBarItem {
+    label: string;
+    /** Site-relative address ("shop", "c/<slug>"). */
+    route: string;
+}
+
+/**
+ * The category bar in the site header (globalSettings.commerce.categoryBar). Off unless a site
+ * sets enabled: true; then it shows on the listed pages only, never on the buying pages.
+ */
+export interface CommerceCategoryBar {
+    /** Page keys: "home", an authored page's route ("shop"), or a fixed route ("collection", "product", "search", "cart", "scan"). */
+    pages: string[];
+    /** "tabs" = underlined text links (the shop's in-page bar); "chips" = pills. */
+    style: 'chips' | 'tabs';
+    /** "auto" = the menu categories; otherwise the site's own list. */
+    items: 'auto' | CommerceCategoryBarItem[];
+    /** A leading "All" chip that opens the shop page. */
+    showAll: boolean;
+    /** Phones and tablets: the logo row folds away on scroll-down; the bar stays. */
+    collapseHeaderOnScroll: boolean;
+}
+
+/** Pages that never show the category bar, whatever the site lists: the shopper stays on the form. */
+export const CATEGORY_BAR_NEVER = ['checkout', 'order', 'track', 'track-order', 'account'] as const;
+
+export const DEFAULT_CATEGORY_BAR_PAGES = ['home', 'shop', 'collection', 'search', 'product'];
+
 export interface CommerceConfig {
     enabled: boolean;
     /** Publishable Catalogue API key (vak_pub_...). Meant to be visible in page source. */
@@ -69,6 +98,8 @@ export interface CommerceConfig {
     announcement: CommerceAnnouncement | null;
     /** A floating WhatsApp button on the shop's fixed pages (never on checkout). */
     floatingWhatsApp: boolean;
+    /** The category bar in the site header; null = off (the default). */
+    categoryBar: CommerceCategoryBar | null;
     /** Per template, sections switched off ({ product: { pincode: false } }). */
     templates: Record<string, CommerceTemplateSwitches>;
     /** The checkout pages exist for this site (a later package turns it on). */
@@ -96,6 +127,29 @@ const locale = (value: unknown): string | null => {
 
 const RATIOS: CommerceImageRatio[] = ['1:1', '4:5', '3:4'];
 
+const PAGE_KEY = /^[a-z0-9][a-z0-9-]{0,59}$/;
+
+const parseCategoryBar = (value: unknown): CommerceCategoryBar | null => {
+    if (!isRecord(value) || value.enabled !== true) return null;
+    const pages = Array.isArray(value.pages)
+        ? value.pages.map((p) => text(p, 60).toLowerCase()).filter((p) => PAGE_KEY.test(p))
+        : DEFAULT_CATEGORY_BAR_PAGES;
+    const items = Array.isArray(value.items)
+        ? value.items
+              .filter(isRecord)
+              .map((item) => ({ label: text(item.label, 60), route: text(item.route, 120).replace(/^\/+/, '') }))
+              .filter((item) => item.label && item.route && !/^[a-z][a-z0-9+.-]*:/i.test(item.route))
+              .slice(0, 16)
+        : [];
+    return {
+        pages: Array.from(new Set(pages)),
+        style: value.style === 'chips' ? 'chips' : 'tabs',
+        items: items.length > 0 ? items : 'auto',
+        showAll: value.showAll === true,
+        collapseHeaderOnScroll: value.collapseHeaderOnScroll === true,
+    };
+};
+
 export const DEFAULT_COMMERCE_LOCALES = ['hi', 'en'];
 export const DEFAULT_PAGE_SIZE = 24;
 
@@ -114,6 +168,7 @@ const disabled = (): CommerceConfig => ({
     theme: { imageRatio: '4:5', displayFont: '', textFont: '', preset: '' },
     announcement: null,
     floatingWhatsApp: false,
+    categoryBar: null,
     templates: {},
     checkout: false,
     redirects: false,
@@ -200,6 +255,7 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
                   }
                 : null,
         floatingWhatsApp: raw.floatingWhatsApp === true,
+        categoryBar: parseCategoryBar(raw.categoryBar),
         templates,
         checkout: raw.checkout === true,
         redirects: raw.redirects === true,
@@ -210,6 +266,21 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
 /** The one question the route files and the header ask before loading the shop's code. */
 export const isCommerceEnabled = (globalSettings: unknown): boolean =>
     parseCommerceConfig(globalSettings).enabled;
+
+/**
+ * True when the site's category bar shows on this page ("home", "shop", "collection"…). Never on
+ * the buying pages, never on a site whose shop is off.
+ */
+export const categoryBarOn = (config: Pick<CommerceConfig, 'enabled' | 'categoryBar'>, pageKey: string | null | undefined): boolean => {
+    const key = (pageKey || '').toLowerCase();
+    if (!config.enabled || !config.categoryBar || !key) return false;
+    if ((CATEGORY_BAR_NEVER as readonly string[]).includes(key)) return false;
+    return config.categoryBar.pages.includes(key);
+};
+
+/** Listings keep Filter·Sort pinned under the header (templates.collection.stickyToolbar). Off by default. */
+export const stickyListingToolbar = (config: Pick<CommerceConfig, 'templates'>): boolean =>
+    config.templates.collection?.stickyToolbar === true;
 
 /** Built-in sections of a template in order, minus the ones the site switched off. */
 export const templateSections = <T extends string>(

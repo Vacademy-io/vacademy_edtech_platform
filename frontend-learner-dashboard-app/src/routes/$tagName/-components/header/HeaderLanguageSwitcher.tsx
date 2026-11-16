@@ -19,7 +19,9 @@ export const HeaderLanguageSwitcher: React.FC<{
   className?: string;
   /** Absent = the original pill. "segmented" / "footer" = the design's bordered control (opt-in header / brand footer). */
   variant?: LanguageSwitcherVariant;
-}> = ({ authoredLocales, className, variant }) => {
+  /** 44px tall buttons (a shop's site: full tap targets on a phone). Off = today's sizes. */
+  tall?: boolean;
+}> = ({ authoredLocales, className, variant, tall = false }) => {
   const { t } = useTranslation("coursePlayerB");
   const { enabled, locales, locale, baseLocale, setLocale } = useCatalogueLocale();
   if (!enabled || locales.length < 2) return null;
@@ -45,8 +47,8 @@ export const HeaderLanguageSwitcher: React.FC<{
             }}
             className={
               styled
-                ? styled.button(active)
-                : cn(
+                ? cn(styled.button(active), tall && "min-h-11 min-w-11")
+                : cn(tall && "min-h-11 min-w-11",
                     "rounded-full px-2.5 py-1 text-xs font-semibold leading-none transition-colors duration-200",
                     active
                       ? "bg-primary-500 text-white"

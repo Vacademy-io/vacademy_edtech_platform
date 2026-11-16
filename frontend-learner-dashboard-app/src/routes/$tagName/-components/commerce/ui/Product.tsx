@@ -452,7 +452,32 @@ const ProductSkeleton: React.FC = () => {
     );
 };
 
-export const ProductTemplate: React.FC<{ slug: string; sections: readonly string[] }> = ({ slug, sections }) => {
+/**
+ * The product's short description under the buy area: two lines and "Read more", so a long
+ * spec list never pushes the price and the button below the first screen.
+ */
+const ShortDescription: React.FC<{ text: string }> = ({ text }) => {
+    const { t } = useCommerceSite();
+    const [open, setOpen] = useState(false);
+    const long = text.length > 90 || text.includes('\n');
+    return (
+        <div className="cmx-pdp__summary">
+            <p className={cn('cmx-body m-0', long && !open && 'cmx-clamp cmx-clamp--2')}>{text}</p>
+            {long && (
+                <button type="button" className="cmx-link cmx-small" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+                    {open ? t('listing.readLess') : t('listing.readMore')}
+                </button>
+            )}
+        </div>
+    );
+};
+
+export const ProductTemplate: React.FC<{
+    slug: string;
+    sections: readonly string[];
+    /** The site's category bar is in the header: the back link is left to it on phones and tablets. */
+    categoryBar?: boolean;
+}> = ({ slug, sections, categoryBar = false }) => {
     const { t, config, absoluteUrl, siteT } = useCommerceSite();
     const query = useProduct(slug);
     const product = query.data;
@@ -622,13 +647,18 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                 canonical={absoluteUrl(`p/${product.slug}`)}
                 head={head}
             />
-            <article className="cmx-pdp">
+            {/* With the site's category bar on, a phone gets the compact layout: the price and the
+                button on the first screen (theme/commerce.css .cmx-pdp--compact). */}
+            <article className={cn('cmx-pdp', categoryBar && 'cmx-pdp--compact')}>
                 <div className="cmx-pdp__media">
                     {has('gallery') && <Gallery media={gallery} name={product.name} resetKey={`${product.id}:${options.length > 0 ? variant?.id || '' : ''}`} />}
                 </div>
                 <div className="cmx-pdp__info">
                     {has('backLink') && category && (
-                        <ShopLink to={apiPathTo(category.path) || `c/${category.slug}`} className="cmx-small cmx-muted cmx-tap inline-flex items-center gap-1 self-start">
+                        <ShopLink
+                            to={apiPathTo(category.path) || `c/${category.slug}`}
+                            className={cn('cmx-small cmx-muted cmx-tap items-center gap-1 self-start', categoryBar ? 'hidden lg:inline-flex' : 'inline-flex')}
+                        >
                             <CaretLeft size={14} aria-hidden="true" />
                             {category.name ? t('product.back', { name: category.name }) : t('common.back')}
                         </ShopLink>
@@ -636,16 +666,17 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                     {has('title') && (
                         <header className="flex flex-col gap-2">
                             <h1 className="cmx-h1">{product.name}</h1>
-                            {product.short_description && <p className="cmx-body">{product.short_description}</p>}
                             {/* Cloth is priced per metre here; the length picker below shows the amount for a length. */}
-                            <PriceText
-                                price={price ? { ...price, from: !variant && !!price.from } : price}
-                                scale={scale}
-                                unit={product.unit}
-                                large
-                                showOff
-                            />
-                            <p className="cmx-small cmx-muted">{t('price.inclTax')}</p>
+                            <div className="cmx-pdp__price flex flex-col gap-2">
+                                <PriceText
+                                    price={price ? { ...price, from: !variant && !!price.from } : price}
+                                    scale={scale}
+                                    unit={product.unit}
+                                    large
+                                    showOff
+                                />
+                                <p className="cmx-small cmx-muted">{t('price.inclTax')}</p>
+                            </div>
                         </header>
                     )}
                     {has('badges') && (badges.length > 0 || view.kind !== 'unknown') && (
@@ -693,6 +724,8 @@ export const ProductTemplate: React.FC<{ slug: string; sections: readonly string
                             )}
                         </div>
                     )}
+                    {/* After the buy area: the price and the button come first on a phone's first screen. */}
+                    {has('title') && product.short_description && <ShortDescription text={product.short_description} />}
                     {has('pincode') && <PincodeCheck />}
                     {has('reassurance') && (
                         <div>

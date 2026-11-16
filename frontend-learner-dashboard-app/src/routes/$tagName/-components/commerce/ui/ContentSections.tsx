@@ -5,7 +5,7 @@
  * links all come from the page JSON, in the site's base language, translated by the site
  * dictionary like every other section.
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CaretDown, EnvelopeSimple, MagnifyingGlass, MapPin, Phone, Play, Storefront, WhatsappLogo } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { isSpamSubmission, submitWebsiteLead } from '../../../-utils/website-lead';
@@ -134,9 +134,18 @@ export const AnnouncementBar: React.FC<{ props: Props }> = ({ props }) => {
     const text = tx(props.text, 200);
     if (!text || !withinDates(Date.now(), str(props.startDate), str(props.endDate))) return null;
     const route = str(props.route, 300);
+    // One line of fixed height (ellipsis on a phone): a late web font cannot re-wrap it and push
+    // the page down. With a link, the whole strip is the tap target.
+    const line = <span className="cmx-announce__text">{text}</span>;
     return (
         <div className="cmx-announce">
-            <p className="cmx-announce__in m-0">{route ? <ActionLink to={route}>{text}</ActionLink> : text}</p>
+            {route && linkKind(route) !== 'invalid' ? (
+                <ActionLink to={route} className="cmx-announce__in cmx-announce__link">
+                    {line}
+                </ActionLink>
+            ) : (
+                <p className="cmx-announce__in m-0">{line}</p>
+            )}
         </div>
     );
 };
@@ -145,7 +154,9 @@ export const AnnouncementBar: React.FC<{ props: Props }> = ({ props }) => {
 
 /**
  * commerceHero: { eyebrow, title, text, image, imageAlt, caption, primary {label, route},
- * secondary {label, route}, stats [{ value, label }] }. The page's one H1; the photo loads first.
+ * secondary {label, route}, stats [{ value, label }], compactOnPhone }. The page's one H1; the photo
+ * loads first. compactOnPhone (default off): on a phone a wide 16:9 photo and no figures row, so the
+ * first products follow on the first screen.
  */
 const Hero: Section = ({ props }) => {
     const tx = useText();
@@ -154,7 +165,7 @@ const Hero: Section = ({ props }) => {
     const image = str(props.image, 600);
     const stats = records(props.stats, 4).filter((s) => str(s.value) && str(s.label));
     return (
-        <div className="cmx-hero">
+        <div className={cn('cmx-hero', props.compactOnPhone === true && 'cmx-hero--compact')}>
             {image && (
                 <div className="cmx-hero__media">
                     <Img src={image} alt={tx(props.imageAlt, 200)} eager width={1200} height={900} />
@@ -887,13 +898,86 @@ const LeadForm: Section = ({ props }) => {
 /* ── floating WhatsApp, not found ─────────────────────────────────── */
 
 /** commerceWhatsAppButton: { message }. A round button at the bottom corner; no section of its own. */
+/** What the floating button must never sit on: anything a shopper taps. */
+const TAPPABLE = 'button, select, input, textarea, .cmx-btn, .cmx-chip, [role="button"]';
+
+/**
+ * The floating button steps aside while the page scrolls down and whenever a button, a field or
+ * a chip is under it (a card's "Add to cart" in the right column); it comes back on scroll-up or
+ * at rest when nothing is beneath it.
+ */
+const useFabAway = (ref: React.RefObject<HTMLElement | null>, on: boolean): boolean => {
+    const [away, setAway] = useState(false);
+    useEffect(() => {
+        if (!on || typeof window === 'undefined' || typeof document.elementsFromPoint !== 'function') return;
+        let lastY = window.scrollY;
+        let frame = 0;
+        let rest = 0;
+        const covers = (): boolean => {
+            const fab = ref.current;
+            if (!fab) return false;
+            // Hidden, the button only fades: its box is where it shows.
+            const box = fab.getBoundingClientRect();
+            const size = box.width || 48;
+            const right = box.right;
+            const bottom = box.bottom;
+            const points: Array<[number, number]> = [
+                [right - size / 2, bottom - size / 2],
+                [right - 4, bottom - 4],
+                [right - size + 4, bottom - 4],
+                [right - 4, bottom - size + 4],
+                [right - size + 4, bottom - size + 4],
+            ];
+            return points.some(([x, y]) =>
+                document.elementsFromPoint(x, y).some((el) => !fab.contains(el) && (el as Element).matches?.(TAPPABLE))
+            );
+        };
+        const settle = () => setAway(covers());
+        const onScroll = () => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                const y = window.scrollY;
+                const down = y > lastY && y > 120;
+                lastY = y;
+                if (down) setAway(true);
+                else setAway(covers());
+                window.clearTimeout(rest);
+                rest = window.setTimeout(settle, 180);
+            });
+        };
+        settle();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', settle);
+        return () => {
+            if (frame) cancelAnimationFrame(frame);
+            window.clearTimeout(rest);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', settle);
+        };
+    }, [ref, on]);
+    return away;
+};
+
 export const WhatsAppButton: React.FC<{ props: Props }> = ({ props }) => {
     const { t, config } = useCommerceSite();
     const tx = useText();
     const href = whatsappLink(config.whatsappNumber, tx(props.message, 300) || 'Namaste');
+    const ref = useRef<HTMLAnchorElement>(null);
+    const away = useFabAway(ref, !!href);
     if (!href) return null;
     return (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="cmx-fab" aria-label={t('content.chat')} onClick={contact('whatsapp', 'floating')}>
+        <a
+            ref={ref}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn('cmx-fab', away && 'cmx-fab--away')}
+            aria-label={t('content.chat')}
+            aria-hidden={away || undefined}
+            tabIndex={away ? -1 : undefined}
+            onClick={contact('whatsapp', 'floating')}
+        >
             <WhatsappLogo size={30} weight="fill" aria-hidden="true" />
         </a>
     );

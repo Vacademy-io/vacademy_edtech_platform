@@ -869,3 +869,54 @@ describe("language switch", () => {
     expect(container.querySelector('[role="group"]')).toBeNull();
   });
 });
+
+describe("a shop's category bar row (commerce.categoryBar, off by default)", () => {
+  const KEY = `vak_pub_${"a1".repeat(24)}`;
+  const shop = (categoryBar?: unknown) => ({
+    commerce: { enabled: true, publishableKey: KEY, ...(categoryBar ? { categoryBar } : {}) },
+  });
+  const NAV = [{ label: "About", route: "about" }];
+  const at = (pathname: string) => {
+    mocks.location = { pathname, searchStr: "", search: {}, href: pathname, hash: "" };
+  };
+  const row = () => container.querySelector("header > .h-12, header > nav.cmx-hbar");
+  const toggle = () => buttons().find((b) => b.getAttribute("aria-label") === "header.toggleMenu");
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", async () => new Response("{}", { status: 404, headers: { "content-type": "application/json" } }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("adds the row to the fixed header on a listed page only, never on checkout", async () => {
+    at("/new/c/sarees");
+    await render(header({ navigation: NAV, globalSettings: shop({ enabled: true, pages: ["collection", "checkout"] }) }));
+    expect(row()).not.toBeNull();
+    await act(async () => root.unmount());
+    container.remove();
+    at("/new/checkout");
+    await render(header({ navigation: NAV, globalSettings: shop({ enabled: true, pages: ["collection", "checkout"] }) }));
+    expect(row()).toBeNull();
+    await act(async () => root.unmount());
+    container.remove();
+    at("/new/about");
+    await render(header({ navigation: NAV, globalSettings: shop({ enabled: true, pages: ["collection"] }) }));
+    expect(row()).toBeNull();
+  });
+
+  it("adds nothing to a shop without the setting; its menu toggle is a 44px target", async () => {
+    at("/new/c/sarees");
+    await render(header({ navigation: NAV, globalSettings: shop() }));
+    expect(row()).toBeNull();
+    expect(toggle()?.className).toContain("min-h-11 min-w-11");
+  });
+
+  it("leaves a site without a shop exactly as before (no row, the original toggle)", async () => {
+    at("/new/c/sarees");
+    await render(header({ navigation: NAV, globalSettings: {} }));
+    expect(row()).toBeNull();
+    expect(toggle()?.className).not.toContain("min-h-11");
+    expect(container.querySelector("header")?.hasAttribute("data-cmx-bar")).toBe(false);
+  });
+});

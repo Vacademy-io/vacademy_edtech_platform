@@ -6,12 +6,15 @@
  * triggers the import of the chunk, so the course pages' bundle does not grow.
  */
 import React, { Suspense, lazy } from 'react';
-import { isCommerceEnabled } from './config';
+import { RouteMatcher } from '../../-services/route-matcher';
+import { categoryBarOn, isCommerceEnabled, parseCommerceConfig } from './config';
+import { commercePageKey, siteSegments } from './routes';
 
 const entry = () => import('./entry');
 
 const LazyCommerceSection = lazy(() => entry().then((m) => ({ default: m.CommerceSection })));
 const LazyCommerceHeaderSlot = lazy(() => entry().then((m) => ({ default: m.CommerceHeaderSlot })));
+const LazyCommerceHeaderRow = lazy(() => entry().then((m) => ({ default: m.CommerceHeaderRow })));
 
 interface SiteProps {
     instituteId: string;
@@ -23,7 +26,12 @@ interface SiteProps {
 export const isCommerceSectionType = (type: unknown): type is string =>
     typeof type === 'string' && /^commerce[A-Z]/.test(type);
 
-const FALLBACK_HEIGHT: Record<string, string> = { commerceTrustStrip: 'min-h-24', commerceAnnouncementBar: 'min-h-9', commerceWhatsAppButton: '' };
+const FALLBACK_HEIGHT: Record<string, string> = {
+    commerceTrustStrip: 'min-h-24',
+    commerceAnnouncementBar: 'min-h-11',
+    commerceWhatsAppButton: '',
+    commerceProductGrid: 'min-h-screen',
+};
 
 /** A `commerce*` section of an authored page. Renders nothing on a site without a shop. */
 export const CommerceSectionSlot: React.FC<SiteProps & { type: string; props: Record<string, unknown> }> = (props) => {
@@ -44,6 +52,38 @@ export const CommerceHeaderSlot: React.FC<SiteProps & { showLanguage?: boolean; 
         // Two 44 px buttons' worth of room, so the header does not shift when they arrive.
         <Suspense fallback={<span className="inline-block h-11 w-24" aria-hidden="true" />}>
             <LazyCommerceHeaderSlot {...props} />
+        </Suspense>
+    );
+};
+
+/**
+ * True when the site's category bar shows on the page at this browser path. Worked out from the
+ * settings and the address alone, so the header and the page offset agree at the first paint.
+ * False on every site without commerce.categoryBar.enabled.
+ */
+export const isCategoryBarOn = (globalSettings: unknown, tagName: string | null | undefined, pathname: string): boolean => {
+    const config = parseCommerceConfig(globalSettings);
+    if (!config.enabled || !config.categoryBar) return false;
+    const tag = tagName || '';
+    return categoryBarOn(config, commercePageKey(siteSegments(pathname, tag ? RouteMatcher.basePath(tag) : '', tag)));
+};
+
+/** True when the bar is on for an authored page's route ("homepage", "shop") or a fixed route's kind ("product"). */
+export const isCategoryBarOnFor = (globalSettings: unknown, pageRoute: string | null | undefined): boolean => {
+    const config = parseCommerceConfig(globalSettings);
+    if (!config.enabled || !config.categoryBar) return false;
+    return categoryBarOn(config, commercePageKey((pageRoute || '').split('/')));
+};
+
+/**
+ * The category bar, a second row of the fixed site header. Its 48 px are held while the shop's
+ * code loads, so nothing under the header moves. The caller renders it only when isCategoryBarOn.
+ */
+export const CommerceHeaderRow: React.FC<SiteProps & { menuOpen?: boolean }> = (props) => {
+    if (!props.instituteId || !isCommerceEnabled(props.globalSettings)) return null;
+    return (
+        <Suspense fallback={<div className="h-12" aria-hidden="true" />}>
+            <LazyCommerceHeaderRow {...props} />
         </Suspense>
     );
 };

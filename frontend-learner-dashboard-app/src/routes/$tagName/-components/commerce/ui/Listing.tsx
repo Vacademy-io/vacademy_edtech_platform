@@ -24,6 +24,7 @@ import {
     type FacetState,
 } from '../state/facet-url';
 import { withQuery } from '../routes';
+import { stickyListingToolbar } from '../config';
 import { ShopHead, useEdgePage } from './Head';
 import { EmptyState, ErrorState, GridSkeleton, Layer, isNotFound, useIsNarrow } from './primitives';
 import { ProductGrid } from './ProductCard';
@@ -215,10 +216,14 @@ export const ListingView: React.FC<{
     searchTerm?: string;
     /** The name of the collection, for the WhatsApp question about a sold-out piece. */
     soldOutAbout?: string;
-}> = ({ collection, empty, onTotal, onProducts, listId, listName, searchTerm, soldOutAbout }) => {
+    /** The page's header line already says how many: the pinned bar does not repeat it on a phone. */
+    countInHeader?: boolean;
+}> = ({ collection, empty, onTotal, onProducts, listId, listName, searchTerm, soldOutAbout, countInHeader = false }) => {
     const { t, config } = useCommerceSite();
     const [state, setState] = useFacetUrl();
     const narrow = useIsNarrow();
+    // templates.collection.stickyToolbar: Filter·Sort is one row pinned under the header.
+    const sticky = stickyListingToolbar(config);
     const [sheetOpen, setSheetOpen] = useState(false);
     const params = useMemo(
         () => facetStateToParams(state, { collection, pageSize: config.pageSize, facets: true }),
@@ -289,15 +294,16 @@ export const ListingView: React.FC<{
                 </aside>
             )}
             <div className="flex min-w-0 flex-col gap-4">
-                <div className="cmx-toolbar">
-                    <p className="cmx-small cmx-muted" role="status" aria-live="polite">
+                <div className={cn('cmx-toolbar', sticky && 'cmx-toolbar--sticky', sticky && countInHeader && 'cmx-toolbar--nocount')}>
+                    {/* With the pinned bar the count is said once, in the page's header line; it stays a live region. */}
+                    <p className="cmx-small cmx-muted cmx-toolbar__count" role="status" aria-live="polite">
                         {loading ? t('common.loading') : t('search.count', { count: total })}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="cmx-toolbar__actions flex items-center gap-2">
                         {hasFilters && (
                             <button
                                 type="button"
-                                className="cmx-btn cmx-btn--outline cmx-small lg:hidden"
+                                className="cmx-btn cmx-btn--outline cmx-small cmx-toolbar__filter lg:hidden"
                                 onClick={() => setSheetOpen(true)}
                                 aria-haspopup="dialog"
                                 aria-label={active > 0 ? t('listing.filtersActive', { count: active }) : t('listing.filters')}
@@ -307,7 +313,7 @@ export const ListingView: React.FC<{
                                 {active > 0 && <span className="cmx-badge">{active}</span>}
                             </button>
                         )}
-                        <label className="flex items-center gap-2">
+                        <label className="cmx-toolbar__sort flex items-center gap-2">
                             <span className="cmx-sr">{t('listing.sort')}</span>
                             <select
                                 className="cmx-select"
@@ -405,14 +411,14 @@ const Breadcrumb: React.FC<{ parents: Category[]; current: string }> = ({ parent
         <nav aria-label={t('nav.breadcrumb')} className="cmx-small cmx-muted">
             <ol className="flex flex-wrap items-center gap-1">
                 <li>
-                    <ShopLink to="" className="cmx-tap inline-flex items-center hover:underline">
+                    <ShopLink to="" className="cmx-tap inline-flex min-w-11 items-center hover:underline">
                         {t('nav.home')}
                     </ShopLink>
                 </li>
                 {parents.map((parent) => (
                     <li key={parent.slug} className="flex items-center gap-1">
                         <CaretRight size={10} aria-hidden="true" />
-                        <ShopLink to={`c/${parent.slug}`} className="cmx-tap inline-flex items-center hover:underline">
+                        <ShopLink to={`c/${parent.slug}`} className="cmx-tap inline-flex min-w-11 items-center hover:underline">
                             {parent.name || parent.slug}
                         </ShopLink>
                     </li>
@@ -458,7 +464,14 @@ export const CollectionTemplate: React.FC<{ slug: string; sections: readonly str
             {/* An unknown collection has no header: the listing below says it is not available. */}
             {has('header') && (tree.isLoading || found) && (
                 <header className="flex flex-col gap-2">
-                    {found ? <Breadcrumb parents={found.parents} current={name} /> : <div className="cmx-skel h-4 w-40" aria-hidden="true" />}
+                    {found ? (
+                        <Breadcrumb parents={found.parents} current={name} />
+                    ) : (
+                        // As tall as the breadcrumb's 44px links, so the page does not move when it arrives.
+                        <div className="flex min-h-11 items-center" aria-hidden="true">
+                            <div className="cmx-skel h-4 w-40" />
+                        </div>
+                    )}
                     {tree.isLoading ? <div className="cmx-skel h-9 w-2/3" aria-hidden="true" /> : <h1 className="cmx-h1">{name || slug}</h1>}
                     <p className="cmx-small cmx-muted">
                         {counts && counts.inStock !== null ? t('listing.inStockCount', { count: counts.inStock }) : '\u00a0'}
@@ -493,6 +506,7 @@ export const CollectionTemplate: React.FC<{ slug: string; sections: readonly str
             {has('grid') && (
                 <ListingView
                     collection={slug}
+                    countInHeader={has('header')}
                     onTotal={onTotal}
                     onProducts={setListed}
                     listId={`c/${slug}`}
@@ -522,6 +536,9 @@ export const CollectionTemplate: React.FC<{ slug: string; sections: readonly str
 export const SearchTemplate: React.FC<{ sections: readonly string[] }> = ({ sections }) => {
     const { t, config } = useCommerceSite();
     const [state] = useFacetUrl();
+    const sticky = stickyListingToolbar(config);
+    const [found, setFound] = useState<number | null>(null);
+    const onTotal = useCallback((total: number) => setFound(total), []);
     const navigate = useShopNavigate();
     const tree = useCategoryTree();
     const [text, setText] = useState(state.q);
@@ -537,6 +554,8 @@ export const SearchTemplate: React.FC<{ sections: readonly string[] }> = ({ sect
             {sections.includes('header') && (
                 <header className="flex flex-col gap-4">
                     <h1 className="cmx-h1">{state.q ? t('search.resultsFor', { q: state.q }) : t('search.title')}</h1>
+                    {/* With the pinned Filter·Sort bar the count lives here, said once. */}
+                    {sticky && <p className="cmx-small cmx-muted m-0">{found !== null ? t('search.count', { count: found }) : '\u00a0'}</p>}
                     <form
                         role="search"
                         className="flex max-w-xl gap-2"
@@ -567,6 +586,8 @@ export const SearchTemplate: React.FC<{ sections: readonly string[] }> = ({ sect
             {sections.includes('grid') && (
                 <ListingView
                     listId="search"
+                    countInHeader={sections.includes('header')}
+                    onTotal={sticky ? onTotal : undefined}
                     searchTerm={state.q || undefined}
                     empty={
                         <EmptyState

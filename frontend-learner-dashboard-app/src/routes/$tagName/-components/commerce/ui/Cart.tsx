@@ -367,8 +367,30 @@ export const CartSummary: React.FC<{ view: ReturnType<typeof useCartView>; onNav
 /** Something to buy on an empty cart page: the newest products in stock. */
 const EmptyCartRail: React.FC = () => {
     const { t } = useCommerceSite();
-    const { data } = useProductRail({ sort: 'newest', inStock: true, pageSize: 4 });
+    const { data, isPending } = useProductRail({ sort: 'newest', inStock: true, pageSize: 4 });
     const products = data?.data || [];
+    if (isPending) {
+        // The rail's room is held while it loads, so the footer does not jump down when it arrives.
+        return (
+            <section className="cmx-section" aria-hidden="true">
+                <div className="cmx-head">
+                    <div className="cmx-skel h-7 w-40" />
+                </div>
+                <ul className="cmx-rail">
+                    {Array.from({ length: 4 }, (_, i) => (
+                        <li key={i} className="cmx-card">
+                            <div className="cmx-img cmx-skel" />
+                            <div className="cmx-card__body">
+                                <div className="cmx-skel h-4 w-11/12" />
+                                <div className="cmx-skel h-5 w-1/3" />
+                                <div className="cmx-skel cmx-card__quick h-11 w-full" />
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        );
+    }
     if (products.length === 0) return null;
     return (
         <section className="cmx-section" aria-labelledby="cmx-cart-rail">

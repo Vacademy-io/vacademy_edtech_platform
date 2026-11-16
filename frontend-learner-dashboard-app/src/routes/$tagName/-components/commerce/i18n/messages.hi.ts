@@ -24,6 +24,7 @@ export const hi: Record<MessageKey, string> = {
     'nav.language': 'भाषा',
     'nav.home': 'होम',
     'nav.more': '{name} में और',
+    'nav.all': 'सब',
 
     'search.placeholder': 'उत्पाद खोजें',
     'search.label': 'दुकान में खोजें',
@@ -216,6 +217,7 @@ export const hi: Record<MessageKey, string> = {
     'scan.notFound.body': 'इसकी जगह उत्पाद खोजें।',
 
     'rail.viewAll': 'सभी देखें',
+    'grid.title': 'सारे उत्पाद',
     'trust.more': 'और जानें',
 
     'buy.error.later': 'अभी यह काम नहीं कर रहा। कुछ मिनट बाद फिर कोशिश करें।',

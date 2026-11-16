@@ -3,18 +3,22 @@
  * a count and the language text switch for the site header, the search overlay with
  * suggestions, the cart drawer, and the category bar fed by /categories.
  */
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from '@tanstack/react-router';
 import { CaretDown, MagnifyingGlass, ShoppingBagOpen, WhatsappLogo, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Category } from '../api/types';
 import { cartCount } from '../state/cart-logic';
 import { useCommerceCart } from '../state/cart-store';
 import { localeLabel } from '../i18n';
-import { apiPathTo, withQuery } from '../routes';
+import { apiPathTo, parseCommerceRoute, commercePageKey, siteSegments, withQuery } from '../routes';
+import { RouteMatcher } from '../../../-services/route-matcher';
+import { activeBarChip, barChips, type BarChip } from '../logic/category-bar';
+import { useHeaderFold } from './hooks';
 import { thumbUrl } from '../logic/media';
 import { CartDrawer } from './Cart';
-import { Layer, PriceText, useCommerceThemeVars } from './primitives';
-import { menuCategories, useCategoryTree, useSuggestions } from './queries';
+import { Layer, PriceText, useCommerceThemeVars, usePresetClass } from './primitives';
+import { menuCategories, useCategoryTree, useProduct, useSuggestions } from './queries';
 import { ShopLink, useCommerceSite, useShopNavigate, whatsappLink } from './site';
 
 const OPEN_SEARCH_EVENT = 'commerce:open-search';
@@ -338,6 +342,122 @@ export const CategoryBar: React.FC<{ current?: string | null }> = ({ current = n
                               </li>
                           ))
                         : categories.map((node) => <CategoryItem key={node.slug} node={node} current={current} />)}
+                </ul>
+            </div>
+        </nav>
+    );
+};
+
+/* ── category bar in the site header (commerce.categoryBar) ────────── */
+
+const HeaderChip: React.FC<{ chip: BarChip; chips: boolean; current?: 'page' | 'true' }> = ({ chip, chips, current }) => {
+    const { t } = useCommerceSite();
+    return (
+        // data-chip finds the active chip for centring.
+        <li className="cmx-catbar__item" data-chip={chip.key}>
+            <ShopLink to={chip.to} className={chips ? 'cmx-hbar__chip' : 'cmx-catbar__link'} aria-current={current}>
+                {chips ? <span className="cmx-hbar__pill">{chip.label}</span> : chip.label}
+                {chip.children.length > 0 && <CaretDown size={12} aria-hidden="true" className="hidden lg:inline" />}
+            </ShopLink>
+            {chip.children.length > 0 && (
+                <ul className="cmx-catbar__menu" aria-label={t('nav.more', { name: chip.label })}>
+                    {chip.children.map((child) => (
+                        <li key={child.slug}>
+                            <ShopLink to={`c/${child.slug}`}>{child.label}</ShopLink>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+};
+
+/**
+ * The shop's categories as the second row of the fixed site header: one 48 px row that swipes
+ * sideways on a phone, the active chip centred, a fade on the edge that has more. On phones and
+ * tablets the logo row above it folds away on scroll-down (collapseHeaderOnScroll); the bar
+ * itself never hides. Its height is the same while the categories load.
+ */
+export const CategoryHeaderRow: React.FC<{ menuOpen?: boolean }> = ({ menuOpen = false }) => {
+    const { t, siteT, config, tagName, locale } = useCommerceSite();
+    const bar = config.categoryBar;
+    const preset = usePresetClass();
+    const themeVars = useCommerceThemeVars();
+    const pathname = useLocation({ select: (l) => l.pathname });
+    const segments = useMemo(() => siteSegments(pathname, RouteMatcher.basePath(tagName), tagName), [pathname, tagName]);
+    const route = parseCommerceRoute(segments);
+    const pageKey = commercePageKey(segments);
+    const tree = useCategoryTree();
+    // On a product page the product is already in the cache (the page asked for it): its category.
+    const product = useProduct(route?.kind === 'product' ? route.slug : '');
+    const productCategory = (product.data?.collections || []).find((c) => (c.kind || '').toUpperCase() === 'CATEGORY')?.slug || null;
+    const menu = useMemo(() => menuCategories(tree.data?.data, config.minInStock), [tree.data, config.minInStock]);
+    const chips = useMemo(
+        () => (bar ? barChips(bar, menu, { all: t('nav.all'), translate: (text) => siteT(text) }) : []),
+        [bar, menu, t, siteT]
+    );
+    const active = activeBarChip(
+        chips,
+        { key: pageKey, slug: route?.kind === 'collection' ? route.slug : null, productCategory },
+        tree.data?.data
+    );
+    const rowRef = useRef<HTMLUListElement>(null);
+    const navRef = useRef<HTMLElement>(null);
+    const [fade, setFade] = useState({ start: false, end: false });
+    useHeaderFold(navRef, !!bar?.collapseHeaderOnScroll, menuOpen);
+
+    const loading = tree.isLoading && bar?.items === 'auto';
+    // Centre the active chip in the row (the row scrolls, never the page).
+    useLayoutEffect(() => {
+        const row = rowRef.current;
+        if (!row) return;
+        const chip = active ? Array.from(row.querySelectorAll<HTMLElement>('[data-chip]')).find((el) => el.dataset.chip === active.key) : null;
+        if (chip) row.scrollLeft = Math.max(0, chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
+        else row.scrollLeft = 0;
+        // Centred once per page and when the chips arrive, not on every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [active?.key, loading]);
+    useEffect(() => {
+        const row = rowRef.current;
+        if (!row) return;
+        const update = () => {
+            const max = row.scrollWidth - row.clientWidth;
+            const start = Math.abs(row.scrollLeft) > 2;
+            const end = max - Math.abs(row.scrollLeft) > 2;
+            setFade((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+        };
+        update();
+        row.addEventListener('scroll', update, { passive: true });
+        window.addEventListener('resize', update);
+        return () => {
+            row.removeEventListener('scroll', update);
+            window.removeEventListener('resize', update);
+        };
+    }, [chips.length, loading]);
+
+    if (!bar) return null;
+    const pills = bar.style === 'chips';
+    return (
+        <nav
+            ref={navRef}
+            className={cn('cmx cmx-hbar', pills ? 'cmx-hbar--chips' : 'cmx-hbar--tabs', preset, fade.start && 'cmx-hbar--fade-start', fade.end && 'cmx-hbar--fade-end')}
+            aria-label={t('nav.categories')}
+            lang={locale}
+            style={themeVars}
+        >
+            <div className="cmx-shell">
+                <ul ref={rowRef} className="cmx-hbar__row">
+                    {loading
+                        ? Array.from({ length: 5 }, (_, i) => (
+                              <li key={i} className="cmx-catbar__item" aria-hidden="true">
+                                  <span className={pills ? 'cmx-hbar__chip' : 'cmx-catbar__link'}>
+                                      <span className="cmx-skel cmx-hbar__skel" />
+                                  </span>
+                              </li>
+                          ))
+                        : chips.map((chip) => (
+                              <HeaderChip key={chip.key} chip={chip} chips={pills} current={active?.key === chip.key ? active.current : undefined} />
+                          ))}
                 </ul>
             </div>
         </nav>

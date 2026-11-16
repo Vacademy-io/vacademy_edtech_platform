@@ -24,6 +24,7 @@ export const en = {
     'nav.language': 'Language',
     'nav.home': 'Home',
     'nav.more': 'More in {name}',
+    'nav.all': 'All',
 
     'search.placeholder': 'Search products',
     'search.label': 'Search the shop',
@@ -216,6 +217,7 @@ export const en = {
     'scan.notFound.body': 'Search for the product instead.',
 
     'rail.viewAll': 'View all',
+    'grid.title': 'All products',
     'trust.more': 'Know more',
 
     'buy.error.later': 'This is not working right now. Please try again in a few minutes.',

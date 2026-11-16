@@ -3,14 +3,15 @@
  * product rail, trust strip, collection grid and occasion banner. Each takes its source in
  * its props, so it can sit on any page.
  */
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { Category } from '../api/types';
 import { findCategory } from '../edge/commerce-edge';
 import { withinDates } from '../logic/dates';
 import { ratioClass } from '../logic/media';
 import { BARE_SECTIONS, CONTENT_SECTIONS } from './ContentSections';
-import { ErrorState, useCommerceThemeVars, usePresetClass } from './primitives';
+import { EmptyState, ErrorState, useCommerceThemeVars, usePresetClass } from './primitives';
+import { ListingView } from './Listing';
 import { ProductRail } from './ProductCard';
 import { ReassuranceRows } from './Product';
 import { menuCategories, useCategoryTree, usePageProduct, useProductRail } from './queries';
@@ -32,7 +33,7 @@ const SectionHead: React.FC<{ title: string; to?: string; cta?: string }> = ({ t
         <div className="cmx-head">
             {title && <h2 className="cmx-h2">{title}</h2>}
             {to && (
-                <ShopLink to={to} className="cmx-link cmx-small shrink-0">
+                <ShopLink to={to} className="cmx-link cmx-small cmx-tap inline-flex min-w-11 shrink-0 items-center justify-end">
                     {cta || t('rail.viewAll')}
                 </ShopLink>
             )}
@@ -214,10 +215,41 @@ const OccasionBanner: React.FC<{ props: Props }> = ({ props }) => {
     );
 };
 
+/**
+ * commerceProductGrid ("shop all"): props { title, collection }. Every product of the shop (or
+ * of one collection) in a grid with the count, Filter·Sort and "Show more", the same listing the
+ * category pages use; filters and sort live in the address.
+ */
+const ProductGridSection: React.FC<{ props: Props }> = ({ props }) => {
+    const { siteT, t } = useCommerceSite();
+    const collection = str(props.collection).toLowerCase();
+    const slug = /^[a-z0-9][a-z0-9-]{0,159}$/.test(collection) ? collection : undefined;
+    const title = siteT(str(props.title)) || t('grid.title');
+    const [total, setTotal] = useState<number | null>(null);
+    const onTotal = useCallback((count: number) => setTotal(count), []);
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+                <h2 className="cmx-h2">{title}</h2>
+                <p className="cmx-small cmx-muted m-0">{total !== null ? t('search.count', { count: total }) : '\u00a0'}</p>
+            </div>
+            <ListingView
+                collection={slug}
+                countInHeader
+                onTotal={onTotal}
+                listId={slug ? `grid:c/${slug}` : 'grid:all'}
+                listName={title}
+                empty={<EmptyState title={t('listing.empty.title')} body={t('listing.empty.body')} />}
+            />
+        </div>
+    );
+};
+
 const SECTIONS: Record<string, React.FC<{ props: Props }>> = {
     commerceCategoryRail: CategoryRail,
     commerceCollectionGrid: CollectionGrid,
     commerceProductRail: ProductRailSection,
+    commerceProductGrid: ProductGridSection,
     commerceTrustStrip: TrustStrip,
     commerceOccasionBanner: OccasionBanner,
     ...CONTENT_SECTIONS,
