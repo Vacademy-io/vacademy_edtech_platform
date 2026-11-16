@@ -22,6 +22,7 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -279,11 +280,47 @@ class CommerceShipmentServiceTest {
     }
 
     @Test
+    void aStaffOrderRtoVoidsWhatIsStillOnCreditAndCancelsTheUnpaidPlansWithNoRefusal() {
+        f.order().setStatus("SHIPPED");
+        f.order().setChannel("ADMIN");
+        f.order().setPaymentMethod("OFFLINE");
+        f.order().setPaymentStatus("PARTIALLY_PAID");
+        f.order().setCustomerPhone("919876500002");
+        f.order().setAmountPaid(new BigDecimal("400.00"));
+        CommerceOrderTender cash = f.tender("CASH", "RECEIVED", "400.00");
+        CommerceOrderTender onCredit = f.tender("CREDIT", "PENDING", "660.00");
+        f.shipment("SHIPPED");
+        status(ShipmentDtos.StatusRequest.builder().to("RTO").rtoReason("UNREACHABLE"));
+
+        assertEquals("RTO", f.order().getStatus());
+        assertEquals("VOID", onCredit.getStatus(), "nothing is left to collect for goods that came back");
+        assertEquals("RECEIVED", cash.getStatus());
+        verify(f.legacyRepository()).cancelPendingPlans(List.of("plan-l1"));
+        verify(f.orderRepository(), never()).incrementCodRefusals(anyString(), anyString());
+        assertTrue(f.posted().isEmpty());
+    }
+
+    @Test
+    void aPaidStaffOrderRtoLeavesItsMoneyAndPlansAlone() {
+        f.order().setStatus("SHIPPED");
+        f.order().setChannel("ADMIN");
+        f.order().setPaymentMethod("OFFLINE");
+        f.order().setPaymentStatus("PAID");
+        CommerceOrderTender cash = f.tender("CASH", "RECEIVED", "1060.00");
+        f.shipment("SHIPPED");
+        status(ShipmentDtos.StatusRequest.builder().to("RTO").rtoReason("UNREACHABLE"));
+        assertEquals("RECEIVED", cash.getStatus());
+        verify(f.legacyRepository(), never()).cancelPendingPlans(anyList());
+        verify(f.orderRepository(), never()).incrementCodRefusals(anyString(), anyString());
+    }
+
+    @Test
     void aPrepaidRtoTouchesNoMoneyYet() {
         f.order().setStatus("SHIPPED");
         f.shipment("SHIPPED");
         status(ShipmentDtos.StatusRequest.builder().to("RTO").rtoReason("UNREACHABLE"));
         verify(f.orderRepository(), never()).incrementCodRefusals(anyString(), anyString());
+        verify(f.legacyRepository(), never()).cancelPendingPlans(anyList());
         verify(f.refundHook(), never()).refundDue(any(), any(), any(), any(), any(), any(), any());
         assertEquals(0, f.order().getRefundDue().signum());
     }
@@ -415,5 +452,48 @@ class CommerceShipmentServiceTest {
         assertEquals(1, f.posted().size());
         assertEquals("SALE:shl-l1:1", f.posted().get(0).getIdempotencyKey());
         verify(f.invoiceService()).issue(eq(INST), any());
+    }
+
+    @Test
+    void aHandOverOfOneOfAKindStockReservesAndSellsTheNamedPieces() {
+        f.facts("ps-l1", "TRACKED", "PIECE");
+        PieceRow p1 = piece("pc-1", "PC-0001", "IN_STOCK");
+        PieceRow p2 = piece("pc-2", "PC-0002", "IN_STOCK");
+        when(f.pieceRepository().findRow(INST, "pc-1")).thenReturn(Optional.of(p1));
+        when(f.pieceRepository().findRowByCode(INST, "PC-0002")).thenReturn(Optional.of(p2));
+        when(f.pieceRepository().reserveForLine(eq(INST), anyString(), eq("loc-1"), eq("l1"))).thenReturn(1);
+        PieceRow r1 = piece("pc-1", "PC-0001", "RESERVED");
+        PieceRow r2 = piece("pc-2", "PC-0002", "RESERVED");
+        when(f.pieceRepository().findRowsByOrderLine(INST, "l1")).thenReturn(List.of(r1, r2));
+
+        service.handOverInside(f.order(), f.lines(), Map.of("ref-l1",
+                new CommerceShipmentService.PackLine(2, List.of("pc-1"), List.of("pc-0002"))), "user-1");
+
+        verify(f.pieceRepository()).reserveForLine(INST, "pc-1", "loc-1", "l1");
+        verify(f.pieceRepository()).reserveForLine(INST, "pc-2", "loc-1", "l1");
+        assertEquals("DELIVERED", f.order().getStatus());
+        assertEquals("HANDOVER", f.shipment().getCarrierCode());
+        assertEquals(2, f.posted().size(), "one SALE row per piece");
+        assertEquals("SALE:shl-l1:pc-1:1", f.posted().get(0).getIdempotencyKey());
+        assertEquals("SALE:shl-l1:pc-2:1", f.posted().get(1).getIdempotencyKey());
+    }
+
+    @Test
+    void aHandOverRefusesOneOfAKindStockWithoutItsPiecesAndPiecesOfALineItDoesNotHave() {
+        f.facts("ps-l1", "TRACKED", "PIECE");
+        assertEquals("PIECE_SCAN_REQUIRED", code(assertThrows(ConflictException.class,
+                () -> service.handOverInside(f.order(), f.lines(), "user-1"))));
+        assertEquals("PIECE_SCAN_REQUIRED", code(assertThrows(ConflictException.class,
+                () -> service.handOverInside(f.order(), f.lines(), Map.of("ref-l1",
+                        new CommerceShipmentService.PackLine(2, List.of(), List.of())), "user-1"))));
+        assertThrows(InvalidRequestException.class, () -> service.handOverInside(f.order(), f.lines(),
+                Map.of("ref-nope", new CommerceShipmentService.PackLine(1, List.of("pc-9"), List.of())),
+                "user-1"));
+        f.facts("ps-l1", "TRACKED", "QUANTITY");
+        assertThrows(InvalidRequestException.class, () -> service.handOverInside(f.order(), f.lines(),
+                Map.of("ref-l1", new CommerceShipmentService.PackLine(2, List.of("pc-1", "pc-2"),
+                        List.of())), "user-1"));
+        assertEquals("CONFIRMED", f.order().getStatus());
+        verify(f.invoiceService(), never()).issue(anyString(), any());
     }
 }

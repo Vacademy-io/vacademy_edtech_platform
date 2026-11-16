@@ -120,7 +120,14 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
                                                        @Param("locationId") String locationId,
                                                        @Param("packageSessionId") String packageSessionId);
 
-    /** Orders past their invoice point with no live commerce document, oldest first. */
+    /**
+     * Orders past their invoice point that never had a commerce document, oldest first: no
+     * invoice row of the order that is not cancelled, live or credited. An order whose invoice
+     * was credited in full (an unpack before a re-pack, an RTO, a credit note by hand) is never
+     * listed: the backlog repairs a missed issue, it never bills again what was reversed. Only
+     * orders changed within the lookback ({@code since}) and not deferred by an earlier failed
+     * try ({@code sweep_retry_after}) are read.
+     */
     @Query(value = """
             SELECT o.id FROM commerce_order o
             WHERE (o.status IN ('PACKED', 'SHIPPED', 'DELIVERED')
@@ -129,15 +136,29 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
                         WHERE ts.institute_id = o.institute_id AND ts.invoice_at = 'CONFIRMED')))
               AND o.channel <> 'POS'
               AND o.updated_at < :before
+              AND o.updated_at >= :since
+              AND (o.sweep_retry_after IS NULL OR o.sweep_retry_after <= :now)
               AND NOT EXISTS (
                   SELECT 1 FROM invoice i
-                  WHERE i.commerce_order_id = o.id AND i.cancelled_at IS NULL
-                    AND i.total_amount > COALESCE((SELECT SUM(cn.total) FROM commerce_credit_note cn
-                                                   WHERE cn.invoice_id = i.id), 0))
-            ORDER BY o.updated_at ASC
+                  WHERE i.commerce_order_id = o.id AND i.cancelled_at IS NULL)
+            ORDER BY o.updated_at ASC, o.id ASC
             LIMIT :maxRows
             """, nativeQuery = true)
-    java.util.List<String> findOrderIdsMissingInvoice(@Param("before") Date before, @Param("maxRows") int maxRows);
+    java.util.List<String> findOrderIdsMissingInvoice(@Param("before") Date before, @Param("since") Date since,
+                                                      @Param("now") Date now, @Param("maxRows") int maxRows);
+
+    /** The order's invoice rows that are not cancelled (live or credited); 0 = it never had one. */
+    @Query(value = "SELECT COUNT(*) FROM invoice i WHERE i.commerce_order_id = :orderId AND i.cancelled_at IS NULL",
+            nativeQuery = true)
+    long countInvoicesEver(@Param("orderId") String orderId);
+
+    /**
+     * A background sweep failed on the order: the sweeps leave it alone until {@code until}.
+     * Runs in its own transaction after the failed one rolled back.
+     */
+    @Modifying
+    @Query(value = "UPDATE commerce_order SET sweep_retry_after = :until WHERE id = :orderId", nativeQuery = true)
+    int deferSweep(@Param("orderId") String orderId, @Param("until") Date until);
 
     /**
      * The staff order list with its filters. Every filter is optional (null = any). {@code queue}

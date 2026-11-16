@@ -42,6 +42,7 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -294,6 +295,8 @@ public class CommerceLineCancelService {
         }
         if (CartPriceRequest.COD.equals(order.getPaymentMethod())) {
             order.setCodAmount(total);
+            // A packed parcel collects the new amount too.
+            desk.syncPackedCodAmount(order);
         }
         if (paid.signum() > 0 && paid.compareTo(total) >= 0) {
             // What was received already covers the smaller order: it is paid, the rest is due back.
@@ -350,7 +353,12 @@ public class CommerceLineCancelService {
         shipmentLineRepository.flush();
     }
 
-    /** Credits {@code quantity} units of the line on the live invoice, if there is one. */
+    /**
+     * Credits {@code quantity} units of the line on the live invoice, if there is one. A set line
+     * has one invoice line per part, each holding {@code units × per-unit count} of that part; the
+     * per-unit count of each invoice line is read from its own quantity (never from the order of
+     * the rows), so every part is credited for exactly the cancelled units.
+     */
     private void creditUnits(CommerceOrder order, List<CommerceOrderLine> lines, CommerceOrderLine line,
                              List<TaxLineResult> taxLines, int quantity, String key, String reason, String actor) {
         Invoice invoice = desk.liveInvoice(order, lines);
@@ -363,15 +371,52 @@ public class CommerceLineCancelService {
                 mine.add(item);
             }
         }
+        int[] per = perUnitCounts(mine, taxLines, line.getQuantity());
         List<CreditNoteLineRequest> credit = new ArrayList<>();
         for (int i = 0; i < mine.size(); i++) {
-            TaxLineResult taxLine = taxLines.isEmpty() ? null
-                    : taxLines.get(mine.size() == taxLines.size() ? i : 0);
-            int per = taxLine == null ? 1 : CommerceOrderRemainder.unitsPerLineUnit(taxLine, line.getQuantity());
             credit.add(CreditNoteLineRequest.builder().invoiceLineItemId(mine.get(i).getId())
-                    .quantity(quantity * per).build());
+                    .quantity(quantity * per[i]).build());
         }
         desk.creditLines(order, lines, key, reason, actor, credit);
+    }
+
+    /**
+     * How many units of each invoice line one unit of the order line is. Every invoice line of the
+     * order line was issued for the same number of order-line units U, so line i holds
+     * {@code U × per_i}, and Σ invoice quantities = U × Σ per of the placement tax lines. U comes
+     * from those sums and {@code per_i = quantity_i / U}. A single line (the common case) is 1 per
+     * unit as the tax line says. Anything that does not divide falls back to 1.
+     */
+    static int[] perUnitCounts(List<InvoiceLineItem> invoiceLines, List<TaxLineResult> taxLines, int lineQuantity) {
+        int[] per = new int[invoiceLines.size()];
+        Arrays.fill(per, 1);
+        if (invoiceLines.isEmpty() || taxLines.isEmpty()) {
+            return per;
+        }
+        int perSum = 0;
+        for (TaxLineResult taxLine : taxLines) {
+            perSum += CommerceOrderRemainder.unitsPerLineUnit(taxLine, lineQuantity);
+        }
+        if (taxLines.size() == 1 || invoiceLines.size() != taxLines.size()) {
+            // One part (or rows that do not pair up): every invoice line is the one tax line's count.
+            Arrays.fill(per, taxLines.size() == 1 ? perSum : 1);
+            return per;
+        }
+        int quantitySum = 0;
+        for (InvoiceLineItem item : invoiceLines) {
+            quantitySum += item.getQuantity() == null ? 0 : item.getQuantity();
+        }
+        if (perSum <= 0 || quantitySum <= 0 || quantitySum % perSum != 0) {
+            return per;
+        }
+        int units = quantitySum / perSum;
+        for (int i = 0; i < invoiceLines.size(); i++) {
+            Integer q = invoiceLines.get(i).getQuantity();
+            if (q != null && q > 0 && q % units == 0) {
+                per[i] = q / units;
+            }
+        }
+        return per;
     }
 
     private static List<String> pieceIds(List<String> raw) {

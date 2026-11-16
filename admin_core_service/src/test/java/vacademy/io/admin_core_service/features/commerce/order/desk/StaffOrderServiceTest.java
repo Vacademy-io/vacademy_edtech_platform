@@ -29,6 +29,7 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -162,7 +163,7 @@ class StaffOrderServiceTest {
                 eq("l1"), anyString(), anyString(), any());
         verify(f.accessGuard).require(manager, INST, CommerceFeature.ORDERS, Set.of(CommerceRole.STORE_MANAGER));
         verify(f.accessGuard).require(manager, INST, CommerceFeature.ORDERS, Set.of(CommerceRole.STORE_MANAGER), LOC);
-        verify(shipments, never()).handOverInside(any(), any(), any());
+        verify(shipments, never()).handOverInside(any(), any(), any(), any());
     }
 
     @Test
@@ -208,11 +209,47 @@ class StaffOrderServiceTest {
     void aHandOverPacksShipsAndDeliversInTheSameTransaction() {
         service.create(manager, INST, request().shippingAddress(null).chargeShipping(null)
                 .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build());
-        verify(shipments).handOverInside(f.order, f.lines, "user-1");
+        verify(shipments).handOverInside(f.order, f.lines, Map.of(), "user-1");
         ArgumentCaptor<CommerceOrderService.StaffPricing> pricing =
                 ArgumentCaptor.forClass(CommerceOrderService.StaffPricing.class);
         verify(orderService).priceCart(eq(INST), any(), pricing.capture());
         assertFalse(pricing.getValue().chargeShipping(), "no address, no delivery charge");
+    }
+
+    @Test
+    void aHandOverNamesThePiecesOfAOneOfAKindLineOnThatLine() {
+        service.create(manager, INST, request().shippingAddress(null).chargeShipping(null)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(2)
+                        .pieceIds(List.of(" pc-1 ")).pieceCodes(List.of("PC-0002")).build()))
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build());
+        ArgumentCaptor<Map<String, CommerceShipmentService.PackLine>> pieces = ArgumentCaptor.forClass(Map.class);
+        verify(shipments).handOverInside(eq(f.order), eq(f.lines), pieces.capture(), eq("user-1"));
+        assertEquals(Set.of("L1"), pieces.getValue().keySet(), "keyed by the line's ref");
+        assertEquals(List.of("pc-1"), pieces.getValue().get("L1").pieceIds());
+        assertEquals(List.of("PC-0002"), pieces.getValue().get("L1").pieceCodes());
+        assertEquals(2, pieces.getValue().get("L1").quantity());
+    }
+
+    @Test
+    void piecesAreNamedOnlyForAHandOverAndOnePerUnit() {
+        assertThrows(InvalidRequestException.class, () -> service.create(manager, INST, request()
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(1)
+                        .pieceIds(List.of("pc-1")).build()))
+                .tenders(List.of(tender("CASH", "1060"))).build()), "no hand-over: pack the order instead");
+        assertThrows(InvalidRequestException.class, () -> service.create(manager, INST, request()
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(2)
+                        .pieceIds(List.of("pc-1")).build()))
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build()), "two units, one piece");
+        assertThrows(InvalidRequestException.class, () -> service.create(manager, INST, request()
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(2)
+                        .pieceIds(List.of("pc-1", "pc-1")).build()))
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build()), "a piece named twice");
+        assertThrows(InvalidRequestException.class, () -> service.create(manager, INST, request()
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(1)
+                        .pieceIds(List.of("x".repeat(37))).build()))
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build()), "an id too long");
+        verify(f.writer, never()).writeStaff(any());
+        verify(f.accessGuard, never()).require(any(), any(), any(), any());
     }
 
     @Test

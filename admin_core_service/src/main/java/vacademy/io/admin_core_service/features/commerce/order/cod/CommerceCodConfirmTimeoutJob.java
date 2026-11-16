@@ -24,14 +24,17 @@ import java.util.List;
  * locked and read again, and only an order still COD_PENDING_CONFIRMATION and due is cancelled
  * (row 2 of the desk table, reason COD_NOT_CONFIRMED, no actor): its stock goes back on sale in
  * that transaction, the COD tender is voided, the plans are cancelled and the coupon use given
- * back. One order that fails does not stop the others. The ShedLock keeps the pods from running
- * the same sweep.
+ * back. One order that fails does not stop the others, and it is left alone for
+ * {@value #RETRY_AFTER_MINUTES} minutes ({@code sweep_retry_after}), so orders that always fail
+ * never fill the batch ahead of the orders of other shops. The ShedLock keeps the pods from
+ * running the same sweep.
  */
 @Slf4j
 @Component
 public class CommerceCodConfirmTimeoutJob {
 
     static final int BATCH = 100;
+    static final int RETRY_AFTER_MINUTES = 60;
 
     private final CommerceCodRemittanceRepository queries;
     private final CommerceOrderRepository orderRepository;
@@ -72,12 +75,23 @@ public class CommerceCodConfirmTimeoutJob {
             } catch (Exception e) {
                 log.error("COMMERCE_ALERT COD order {} is past its confirmation time and could not be cancelled: {}",
                         orderId, e.getMessage(), e);
+                deferQuietly(orderId, now);
             }
         }
         if (cancelled > 0) {
             log.info("Commerce COD confirmation timeout: {} order(s) cancelled", cancelled);
         }
         return cancelled;
+    }
+
+    /** The failed order is left alone for a while; a failure to note that changes nothing else. */
+    private void deferQuietly(String orderId, Date now) {
+        try {
+            Date until = new Date(now.getTime() + RETRY_AFTER_MINUTES * 60L * 1000);
+            ownTransaction.executeWithoutResult(status -> orderRepository.deferSweep(orderId, until));
+        } catch (RuntimeException e) {
+            log.warn("COD order {}: could not defer the confirmation timeout retry: {}", orderId, e.getMessage());
+        }
     }
 
     /** Inside the order's transaction: cancelled only when still waiting and still due. */

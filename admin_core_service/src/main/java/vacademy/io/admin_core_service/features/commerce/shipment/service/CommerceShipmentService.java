@@ -23,7 +23,6 @@ import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceReque
 import vacademy.io.admin_core_service.features.commerce.order.dto.StaffOrderDtos;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrder;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderLine;
-import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderTender;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CommerceOrderStatus;
 import vacademy.io.admin_core_service.features.commerce.order.enums.ReturnCondition;
 import vacademy.io.admin_core_service.features.commerce.order.enums.RtoReason;
@@ -644,40 +643,33 @@ public class CommerceShipmentService {
     }
 
     /**
-     * Row 11. The parcel is coming back. No stock moves (the holds closed at ship). A COD order:
-     * its pending COD tender is voided, its unpaid plans cancelled, and the phone gets one more
-     * refusal. The invoice is credited in full; its lines carry the cost of the goods.
+     * Row 11. The parcel is coming back. No stock moves (the holds closed at ship). An order not
+     * paid through the gateway (cash on delivery, or a staff order with money still on credit)
+     * and not PAID: its pending tenders are voided and its unpaid plans cancelled, so nothing is
+     * left to collect for goods that came back. A COD order's phone also gets one more refusal.
+     * The invoice is credited in full; its lines carry the cost of the goods.
      */
     public void rtoInside(CommerceOrder order, List<CommerceOrderLine> lines, CommerceShipment shipment,
                           RtoReason reason, String actor, String note) {
         requireShipment(order, shipment, CommerceShipmentStatus.SHIPPED);
         requireOrderStatus(order, CommerceOrderStatus.SHIPPED, CommerceOrderStatus.RTO);
         boolean cod = CartPriceRequest.COD.equals(order.getPaymentMethod());
-        if (cod) {
-            for (CommerceOrderTender tender : tenderRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())) {
-                if (CommerceOrderTender.MODE_COD.equals(tender.getMode())
-                        && CommerceOrderTender.STATUS_PENDING.equals(tender.getStatus())
-                        && tenderRepository.settleOne(tender.getId(), CommerceOrderTender.STATUS_VOID, null, null) == 1) {
-                    String instituteId = order.getInstituteId();
-                    String orderId = order.getId();
-                    String tenderId = tender.getId();
-                    BigDecimal amount = tender.getAmount();
-                    desk.afterCommitMoney(hook -> hook.tenderVoided(instituteId, orderId, tenderId,
-                            CommerceOrderTender.MODE_COD, amount));
-                }
-            }
+        boolean gateway = order.getPaymentMethod() == null
+                || CartPriceRequest.PREPAID.equals(order.getPaymentMethod());
+        if (!gateway && !CommerceOrderWriter.PAYMENT_PAID.equals(order.getPaymentStatus())) {
+            desk.voidPendingTenders(order);
             List<String> planIds = new ArrayList<>();
             for (CommerceOrderLine line : lines) {
                 if (StringUtils.hasText(line.getUserPlanId())) {
                     planIds.add(line.getUserPlanId());
                 }
             }
-            if (!planIds.isEmpty() && !"PAID".equals(order.getPaymentStatus())) {
+            if (!planIds.isEmpty()) {
                 legacyRepository.cancelPendingPlans(planIds);
             }
-            if (StringUtils.hasText(order.getCustomerPhone())) {
-                orderRepository.incrementCodRefusals(order.getInstituteId(), order.getCustomerPhone());
-            }
+        }
+        if (cod && StringUtils.hasText(order.getCustomerPhone())) {
+            orderRepository.incrementCodRefusals(order.getInstituteId(), order.getCustomerPhone());
         }
         CreditNoteDTO note2 = desk.creditRest(order, lines, "RTO:" + shipment.getId(), "Returned to sender", actor);
         desk.setCreditCosts(order.getInstituteId(), note2, costsByInvoiceLine(order, lines, note2));
@@ -848,16 +840,70 @@ public class CommerceShipmentService {
 
     /**
      * The hand-over of a staff order to a buyer at the shop: pack every line, ship with carrier
-     * HANDOVER and deliver today, in the caller's transaction.
+     * HANDOVER and deliver today, in the caller's transaction. One-of-a-kind stock is refused
+     * here (no pieces named); see the overload.
      */
     public void handOverInside(CommerceOrder order, List<CommerceOrderLine> lines, String actor) {
-        CommerceShipment shipment = packInside(order, lines, openLines(order, lines), null, actor);
+        handOverInside(order, lines, Map.of(), actor);
+    }
+
+    /**
+     * As above, with the pieces of the one-of-a-kind lines named by the staff order, keyed by the
+     * order line's {@code line_ref}: they are reserved at pack exactly as on {@code POST
+     * /shipments} (same piece checks), then sold at ship.
+     */
+    public void handOverInside(CommerceOrder order, List<CommerceOrderLine> lines,
+                               Map<String, PackLine> piecesByLineRef, String actor) {
+        CommerceShipment shipment = packInside(order, lines, handOverLines(order, lines, piecesByLineRef), null,
+                actor);
         shipInside(order, lines, shipment, new CarrierAdapter.Booked(CommerceShipment.CARRIER_HANDOVER,
                 "Handed over", null, null, null), null, actor, true);
         deliverInside(order, shipment, null, actor, "Handed over at the shop");
     }
 
     // ================================================================== helpers
+
+    /**
+     * Every open item line at its open quantity, with the pieces the staff order named for it.
+     * A one-of-a-kind line with no piece named is refused (PIECE_SCAN_REQUIRED); pieces named
+     * for a line the order does not have are refused (400).
+     */
+    private Map<String, PackLine> handOverLines(CommerceOrder order, List<CommerceOrderLine> lines,
+                                                Map<String, PackLine> piecesByLineRef) {
+        Map<String, PackLine> pieces = piecesByLineRef == null ? Map.of() : piecesByLineRef;
+        Set<String> open = new LinkedHashSet<>();
+        for (CommerceOrderLine line : CommerceOrderDeskService.items(lines)) {
+            if (line.openQuantity() > 0 && line.getLineRef() != null) {
+                open.add(line.getLineRef());
+            }
+        }
+        for (Map.Entry<String, PackLine> entry : pieces.entrySet()) {
+            PackLine named = entry.getValue();
+            if (named != null && (!named.pieceIds().isEmpty() || !named.pieceCodes().isEmpty())
+                    && !open.contains(entry.getKey())) {
+                throw validation("pieces are named for a line the order does not have");
+            }
+        }
+        Map<String, PackLine> all = new LinkedHashMap<>();
+        for (CommerceOrderLine line : CommerceOrderDeskService.items(lines)) {
+            if (line.openQuantity() <= 0) {
+                continue;
+            }
+            PackLine named = line.getLineRef() == null ? null : pieces.get(line.getLineRef());
+            if (named != null && (!named.pieceIds().isEmpty() || !named.pieceCodes().isEmpty())) {
+                all.put(line.getId(), new PackLine(line.openQuantity(), named.pieceIds(), named.pieceCodes()));
+                continue;
+            }
+            VariantFacts facts = facts(order, line);
+            if (facts != null && StockMode.PIECE.name().equals(facts.getStockMode())
+                    && StockPolicy.TRACKED.name().equals(facts.getStockPolicy())) {
+                throw new ConflictException("PIECE_SCAN_REQUIRED: line " + line.getLineNo()
+                        + " is a one-of-a-kind item; name its piece(s) on the line (piece_ids or piece_codes)");
+            }
+            all.put(line.getId(), new PackLine(line.openQuantity(), List.of(), List.of()));
+        }
+        return all;
+    }
 
     /** Every open item line at its open quantity, refusing one-of-a-kind stock (it must be scanned). */
     private Map<String, PackLine> openLines(CommerceOrder order, List<CommerceOrderLine> lines) {
@@ -913,7 +959,8 @@ public class CommerceShipmentService {
         return locationId;
     }
 
-    private void requirePeriodOpen(String instituteId) {
+    /** Refused (when a stock period guard exists) while today's stock period is closed. */
+    public void requirePeriodOpen(String instituteId) {
         periodGuard.ifAvailable(guard -> guard.assertOpen(instituteId, clock.today(instituteId)));
     }
 

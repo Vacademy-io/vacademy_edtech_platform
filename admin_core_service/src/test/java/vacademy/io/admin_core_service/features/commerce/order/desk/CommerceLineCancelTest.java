@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import vacademy.io.admin_core_service.features.commerce.document.dto.CreditNoteRequest;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.OrderDeskDtos;
+import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceSnapshot;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderLine;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderTender;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
+import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxLineResult;
 import vacademy.io.admin_core_service.features.invoice.entity.Invoice;
 import vacademy.io.admin_core_service.features.invoice.entity.InvoiceLineItem;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -22,6 +24,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -136,6 +139,135 @@ class CommerceLineCancelTest {
         assertEquals(new BigDecimal("1560.00"), f.order.getCodAmount());
         assertTrue(f.tenders.stream().anyMatch(t -> "COD".equals(t.getMode()) && "PENDING".equals(t.getStatus())
                 && t.getAmount().compareTo(new BigDecimal("1560.00")) == 0));
+    }
+
+    @Test
+    void aCodOrderCancelledAtPackedCollectsTheNewTotalOnItsParcelToo() {
+        f.order.setChannel("ONLINE");
+        f.order.setPaymentMethod("COD");
+        f.order.setCodAmount(new BigDecimal("2060.00"));
+        f.tenders.get(0).setMode("COD");
+        f.order.setStatus("PACKED");
+        f.shipment("PACKED");
+        f.shipment.setCodAmount(new BigDecimal("2060.00"));
+        f.shipmentLine(a, 3);
+        f.shipmentLine(b, 1);
+
+        cancel("l1", 1);
+
+        assertEquals(new BigDecimal("1560.00"), f.order.getCodAmount());
+        assertEquals(new BigDecimal("1560.00"), f.shipment.getCodAmount(), "the parcel collects the new total");
+        verify(f.shipmentRepository).save(f.shipment);
+        assertEquals("PACKED", f.shipment.getStatus());
+    }
+
+    @Test
+    void aPrepaidOrStaffOrderCancelledAtPackedLeavesTheParcelWithNoCashToCollect() {
+        f.order.setStatus("PACKED");
+        f.shipment("PACKED");
+        f.shipmentLine(a, 3);
+        f.shipmentLine(b, 1);
+        cancel("l1", 1);
+        assertNull(f.shipment.getCodAmount());
+        verify(f.shipmentRepository, never()).save(f.shipment);
+    }
+
+    /** One invoice line of a set part: {@code quantity} units of the part. */
+    private static InvoiceLineItem part(String id, String sourceId, int quantity) {
+        InvoiceLineItem item = new InvoiceLineItem();
+        item.setId(id);
+        item.setSourceId(sourceId);
+        item.setQuantity(quantity);
+        return item;
+    }
+
+    private static TaxLineResult partTax(String lineRef, String componentRef, int quantity) {
+        return TaxLineResult.builder().lineRef(lineRef).componentRef(componentRef).quantity(quantity).build();
+    }
+
+    @Test
+    void aSetLineCreditsEachPartByItsOwnPerUnitCountWhateverOrderTheInvoiceRowsComeIn() {
+        // A set line of 2 units: part A is 1 per unit (2 on the invoice), part B 2 per unit (4).
+        List<TaxLineResult> tax = List.of(partTax("ref-l1", "A", 2), partTax("ref-l1", "B", 4));
+        InvoiceLineItem invA = part("il-a", "ref-l1", 2);
+        InvoiceLineItem invB = part("il-b", "ref-l1", 4);
+
+        int[] asStored = CommerceLineCancelService.perUnitCounts(List.of(invA, invB), tax, 2);
+        assertEquals(1, asStored[0]);
+        assertEquals(2, asStored[1]);
+        // The rows read back B first: B still gets 2 per unit and A 1 (not A credited in full).
+        int[] reversed = CommerceLineCancelService.perUnitCounts(List.of(invB, invA), tax, 2);
+        assertEquals(2, reversed[0]);
+        assertEquals(1, reversed[1]);
+
+        // Invoiced after one unit was cancelled (1 unit left: A 1, B 2): same counts.
+        int[] afterCancel = CommerceLineCancelService.perUnitCounts(List.of(part("il-b", "ref-l1", 2),
+                part("il-a", "ref-l1", 1)), tax, 2);
+        assertEquals(2, afterCancel[0]);
+        assertEquals(1, afterCancel[1]);
+
+        // A plain line: 1 per unit; rows that do not pair with the tax lines fall back to 1.
+        assertEquals(1, CommerceLineCancelService.perUnitCounts(List.of(part("il-1", "ref-l1", 3)),
+                List.of(partTax("ref-l1", null, 3)), 3)[0]);
+        int[] unpaired = CommerceLineCancelService.perUnitCounts(List.of(invA), tax, 2);
+        assertEquals(1, unpaired[0]);
+    }
+
+    @Test
+    void aSetLineCancelAtPackedCreditsEachPartOnTheInvoiceByItsOwnCount() {
+        // l1 becomes a set of 3 units: part A 1 per unit, part B 2 per unit.
+        TaxLineResult partA = setPart("A", 3, "600.00", "571.43", "14.28", "14.29");
+        TaxLineResult partB = setPart("B", 6, "900.00", "857.14", "21.43", "21.43");
+        setSnapshotLines(partA, partB);
+        f.order.setStatus("PACKED");
+        f.shipment("PACKED");
+        f.shipmentLine(a, 3);
+        f.shipmentLine(b, 1);
+        Invoice invoice = new Invoice();
+        invoice.setId("inv-1");
+        when(f.invoiceService.liveDocument(eq(INST), anyList())).thenReturn(Optional.of(invoice));
+        // The rows come back B first.
+        when(f.invoiceLineItemRepository.findByInvoiceId("inv-1")).thenReturn(List.of(part("il-b", "ref-l1", 6),
+                part("il-a", "ref-l1", 3), part("il-2", "ref-l2", 1)));
+
+        cancel("l1", 1);
+
+        ArgumentCaptor<CreditNoteRequest> note = ArgumentCaptor.forClass(CreditNoteRequest.class);
+        verify(f.creditNoteService).issue(eq(INST), eq("user-1"), note.capture());
+        assertEquals(2, note.getValue().getLines().size());
+        assertEquals("il-b", note.getValue().getLines().get(0).getInvoiceLineItemId());
+        assertEquals(2, note.getValue().getLines().get(0).getQuantity(), "part B: 2 per unit");
+        assertEquals("il-a", note.getValue().getLines().get(1).getInvoiceLineItemId());
+        assertEquals(1, note.getValue().getLines().get(1).getQuantity(), "part A: 1 per unit");
+    }
+
+    private static TaxLineResult setPart(String componentRef, int quantity, String net, String taxable, String cgst,
+                                         String sgst) {
+        BigDecimal zero = BigDecimal.ZERO.setScale(2);
+        return TaxLineResult.builder().lineRef("ref-l1").componentRef(componentRef)
+                .lineType(vacademy.io.admin_core_service.features.commerce.tax.enums.TaxLineType.ITEM)
+                .quantity(quantity).qtyScale(1).gross(new BigDecimal(net)).lineDiscount(zero).orderDiscount(zero)
+                .net(new BigDecimal(net)).ratePercent(new BigDecimal("5")).cessPercent(BigDecimal.ZERO)
+                .taxableValue(new BigDecimal(taxable)).cgst(new BigDecimal(cgst)).sgst(new BigDecimal(sgst))
+                .igst(zero).cess(zero).taxAmount(new BigDecimal(cgst).add(new BigDecimal(sgst))).build();
+    }
+
+    /** Replaces l1's tax line in the placement snapshot by the parts given. */
+    private void setSnapshotLines(TaxLineResult... parts) {
+        try {
+            CartPriceSnapshot snapshot = f.objectMapper.readValue(f.order.getPriceSnapshotJson(),
+                    CartPriceSnapshot.class);
+            List<TaxLineResult> lines = new java.util.ArrayList<>(List.of(parts));
+            for (TaxLineResult line : snapshot.getTax().getLines()) {
+                if (!"ref-l1".equals(line.getLineRef())) {
+                    lines.add(line);
+                }
+            }
+            snapshot.getTax().setLines(lines);
+            f.order.setPriceSnapshotJson(f.objectMapper.writeValueAsString(snapshot));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Test

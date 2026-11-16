@@ -49,6 +49,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -131,7 +132,8 @@ public class CommerceStaffOrderService {
                  Map<String, Object> shippingAddress, Map<String, Object> billingAddress, String buyerGstin,
                  List<CartPriceRequest.Line> lines, Map<String, BigDecimal> overrides, String couponCode,
                  boolean chargeShipping, List<CommerceOrderWriter.StaffTender> tenders, boolean restOnCredit,
-                 boolean handOverNow, String customerNote) {
+                 boolean handOverNow, String customerNote,
+                 Map<String, CommerceShipmentService.PackLine> handOverPieces) {
 
         BigDecimal received() {
             return tenders.stream().map(CommerceOrderWriter.StaffTender::amount).reduce(BigDecimal.ZERO.setScale(2),
@@ -232,7 +234,7 @@ public class CommerceStaffOrderService {
             }
         }
         if (clean.handOverNow()) {
-            shipmentService.getObject().handOverInside(order, lines, actor);
+            shipmentService.getObject().handOverInside(order, lines, clean.handOverPieces(), actor);
         }
         events.afterCommit(desk.event(CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
         log.info("Commerce staff order {} ({}) created for institute {}: {} line(s), total {} {}, {}",
@@ -374,8 +376,10 @@ public class CommerceStaffOrderService {
         if (asked == null || asked.isEmpty() || asked.size() > MAX_LINES) {
             throw CommerceOrderDeskService.validation("lines holds 1 to " + MAX_LINES + " lines");
         }
+        boolean handOverNow = Boolean.TRUE.equals(request.getHandOverNow());
         List<CartPriceRequest.Line> lines = new ArrayList<>();
         Map<String, BigDecimal> overrides = new LinkedHashMap<>();
+        Map<String, CommerceShipmentService.PackLine> handOverPieces = new LinkedHashMap<>();
         int no = 0;
         for (StaffOrderRequest.Line line : asked) {
             no++;
@@ -399,6 +403,20 @@ public class CommerceStaffOrderService {
                 }
                 overrides.put(ref, price.setScale(2, RoundingMode.UNNECESSARY));
             }
+            List<String> pieceIds = pieces(line.getPieceIds(), no, "piece_ids", 36);
+            List<String> pieceCodes = pieces(line.getPieceCodes(), no, "piece_codes", 64);
+            if (!pieceIds.isEmpty() || !pieceCodes.isEmpty()) {
+                if (!handOverNow) {
+                    throw CommerceOrderDeskService.validation("piece_ids and piece_codes are named only for a "
+                            + "hand-over (hand_over_now); pack the order to name its pieces");
+                }
+                if (pieceIds.size() + pieceCodes.size() != line.getQuantity()) {
+                    throw CommerceOrderDeskService.validation("line " + no + " names " + line.getQuantity()
+                            + " piece(s), one per unit");
+                }
+                handOverPieces.put(ref, new CommerceShipmentService.PackLine(line.getQuantity(), pieceIds,
+                        pieceCodes));
+            }
         }
 
         List<StaffOrderRequest.Tender> askedTenders = request.getTenders() == null ? List.of() : request.getTenders();
@@ -418,8 +436,27 @@ public class CommerceStaffOrderService {
         boolean chargeShipping = request.getChargeShipping() != null ? request.getChargeShipping() : shipping != null;
         return new Clean(key, phone, name, email, shipping, billing, gstin, lines, overrides,
                 CommerceOrderDeskService.text(request.getCouponCode(), "coupon_code", 64), chargeShipping, tenders,
-                Boolean.TRUE.equals(request.getRestOnCredit()), Boolean.TRUE.equals(request.getHandOverNow()),
-                CommerceOrderDeskService.text(request.getCustomerNote(), "customer_note", 500));
+                Boolean.TRUE.equals(request.getRestOnCredit()), handOverNow,
+                CommerceOrderDeskService.text(request.getCustomerNote(), "customer_note", 500), handOverPieces);
+    }
+
+    /** Piece ids or scan codes of one line: trimmed, distinct, at most {@code maxLength} characters each. */
+    private static List<String> pieces(List<String> raw, int lineNo, String field, int maxLength) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        if (raw.size() > 1000) {
+            throw CommerceOrderDeskService.validation(field + " of line " + lineNo + " holds at most 1000 pieces");
+        }
+        Set<String> out = new LinkedHashSet<>();
+        for (String value : raw) {
+            String v = value == null ? "" : value.trim();
+            if (v.isEmpty() || v.length() > maxLength || !out.add(v)) {
+                throw CommerceOrderDeskService.validation(field + " of line " + lineNo + " are distinct values of "
+                        + "at most " + maxLength + " characters");
+            }
+        }
+        return new ArrayList<>(out);
     }
 
     /** An address as the order stores it: snake_case keys, trimmed, capped, validated. */

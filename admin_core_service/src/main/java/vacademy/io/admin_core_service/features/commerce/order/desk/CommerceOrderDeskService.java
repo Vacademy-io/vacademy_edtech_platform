@@ -476,6 +476,8 @@ public class CommerceOrderDeskService {
         if (shipment == null || CommerceShipmentStatus.of(shipment.getStatus()) != CommerceShipmentStatus.SHIPPED) {
             throw new ConflictException(SHIPMENT_STATE_CHANGED + ": the parcel of this order is not in transit");
         }
+        // The reversals post stock movements today: refused in a closed stock period, as ship is.
+        shipmentService.getObject().requirePeriodOpen(order.getInstituteId());
         List<CommerceShipmentLine> shipped = shipmentLineRepository.findByShipmentIdOrderByCreatedAtAscIdAsc(
                 shipment.getId());
         List<StockPosting> reversals = new ArrayList<>();
@@ -618,6 +620,25 @@ public class CommerceOrderDeskService {
         return id.map(shipmentId -> lockShipment(order.getInstituteId(), shipmentId)).orElse(null);
     }
 
+    /**
+     * A cash-on-delivery order whose amount changed while its parcel is PACKED (a line cancel):
+     * the parcel collects the order's new {@code cod_amount}. The caller holds the order lock.
+     */
+    public void syncPackedCodAmount(CommerceOrder order) {
+        if (!"COD".equals(order.getPaymentMethod())) {
+            return;
+        }
+        CommerceShipment shipment = liveShipment(order);
+        if (shipment == null || CommerceShipmentStatus.of(shipment.getStatus()) != CommerceShipmentStatus.PACKED) {
+            return;
+        }
+        if (shipment.getCodAmount() == null || order.getCodAmount() == null
+                || shipment.getCodAmount().compareTo(order.getCodAmount()) != 0) {
+            shipment.setCodAmount(order.getCodAmount());
+            shipmentRepository.save(shipment);
+        }
+    }
+
     /** A shipment of the institute locked FOR UPDATE and read again; 404 otherwise. */
     public CommerceShipment lockShipment(String instituteId, String shipmentId) {
         if (shipmentRepository.lockId(shipmentId, instituteId).isEmpty()) {
@@ -690,11 +711,21 @@ public class CommerceOrderDeskService {
     }
 
     /**
-     * Issues the order's invoice now (pack; the backlog), from the remaining tax, with every
-     * payment log of the order. An order whose earlier invoice was credited in full when it was
-     * unpacked gets a new one. Returns the live invoice.
+     * Issues the order's invoice now (pack), from the remaining tax, with every payment log of
+     * the order. An order whose earlier invoice was credited in full when it was unpacked gets a
+     * new one. Returns the live invoice.
      */
     public Invoice issueInvoice(CommerceOrder order, List<CommerceOrderLine> lines, String actor) {
+        return issueInvoice(order, lines, actor, true);
+    }
+
+    /**
+     * As {@link #issueInvoice(CommerceOrder, List, String)}; with {@code allowAfterFullCredit}
+     * false (the invoice backlog) an order whose invoice was credited in full is refused
+     * (INVOICE_FULLY_CREDITED) instead of billed again.
+     */
+    public Invoice issueInvoice(CommerceOrder order, List<CommerceOrderLine> lines, String actor,
+                                boolean allowAfterFullCredit) {
         TaxResult tax = remainingTax(order, lines);
         List<CommerceInvoiceLineExtra> extras = new ArrayList<>();
         for (CommerceOrderLine line : items(lines)) {
@@ -718,7 +749,7 @@ public class CommerceOrderDeskService {
                 .lineExtras(extras)
                 .paymentLogIds(logIds(lines))
                 .actorUserId(actor)
-                .allowAfterFullCredit(true)
+                .allowAfterFullCredit(allowAfterFullCredit)
                 .build();
         return invoiceService.issue(order.getInstituteId(), request).invoice();
     }

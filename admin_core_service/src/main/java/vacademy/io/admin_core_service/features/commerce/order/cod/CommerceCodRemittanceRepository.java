@@ -73,10 +73,15 @@ public interface CommerceCodRemittanceRepository extends JpaRepository<CommerceC
     int markRemitted(@Param("instituteId") String instituteId, @Param("orderId") String orderId,
                      @Param("remittanceId") String remittanceId, @Param("collectedAt") Date collectedAt);
 
-    /** COD orders past their staff-confirmation time, oldest due first ({@code idx_commerce_order_cod_confirm}). */
+    /**
+     * COD orders past their staff-confirmation time, oldest due first ({@code
+     * idx_commerce_order_cod_confirm}), leaving out an order whose cancel failed a short while ago
+     * ({@code sweep_retry_after} still ahead).
+     */
     @Query(value = """
             SELECT o.id FROM commerce_order o
             WHERE o.status = 'COD_PENDING_CONFIRMATION' AND o.cod_confirm_due_at <= :now
+              AND (o.sweep_retry_after IS NULL OR o.sweep_retry_after <= :now)
             ORDER BY o.cod_confirm_due_at ASC, o.id ASC
             LIMIT :maxRows
             """, nativeQuery = true)

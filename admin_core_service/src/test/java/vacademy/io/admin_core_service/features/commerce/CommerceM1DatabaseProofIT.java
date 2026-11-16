@@ -641,9 +641,10 @@ class CommerceM1DatabaseProofIT {
                 "SELECT contype::text AS kind, count(*) FROM pg_constraint WHERE conrelid::regclass::text LIKE 'commerce\\_%' GROUP BY 1 ORDER BY 1");
         sql("unique indexes on the commerce tables",
                 "SELECT tablename, indexname FROM pg_indexes WHERE tablename LIKE 'commerce\\_%' AND indexdef LIKE 'CREATE UNIQUE%' ORDER BY 1, 2");
-        assertEquals(42, tables, "the 16 commerce tables of M1, the 13 of stock, tax and documents, "
-                + "the shipping rule, the 3 of the import, the 6 of orders and customers (V685) "
-                + "and the gateway order, OTP challenge and payment exception (V686)");
+        assertEquals(46, tables, "the 16 commerce tables of M1, the 13 of stock, tax and documents, "
+                + "the shipping rule, the 3 of the import, the 6 of orders and customers (V685), "
+                + "the gateway order, OTP challenge and payment exception (V686) "
+                + "and the 4 of the order desk and COD (V688)");
         assertTrue(wrong.isEmpty(), "entity and migration disagree: " + wrong);
     }
 

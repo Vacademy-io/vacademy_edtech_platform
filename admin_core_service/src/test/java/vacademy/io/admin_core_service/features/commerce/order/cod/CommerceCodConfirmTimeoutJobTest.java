@@ -35,13 +35,14 @@ class CommerceCodConfirmTimeoutJobTest {
     private CommerceCodRemittanceRepository queries;
     private CommerceOrderDeskService desk;
     private CommerceCodConfirmTimeoutJob job;
+    private CommerceOrderRepository orderRepository;
     private final Map<String, CommerceOrder> orders = new HashMap<>();
     private final List<CommerceOrderLine> lines = List.of(new CommerceOrderLine());
 
     @BeforeEach
     void setUp() {
         queries = mock(CommerceCodRemittanceRepository.class);
-        CommerceOrderRepository orderRepository = mock(CommerceOrderRepository.class);
+        orderRepository = mock(CommerceOrderRepository.class);
         desk = mock(CommerceOrderDeskService.class);
         job = new CommerceCodConfirmTimeoutJob(queries, orderRepository, desk, mock(PlatformTransactionManager.class));
         when(orderRepository.findById(anyString())).thenAnswer(call -> Optional.ofNullable(orders.get(call.getArgument(0))));
@@ -90,6 +91,23 @@ class CommerceCodConfirmTimeoutJobTest {
 
         assertEquals(1, job.sweep(NOW));
         verify(desk).cancel(eq(good), eq(lines), eq(CancelReason.COD_NOT_CONFIRMED), isNull(), anyString());
+        // The failed order is left alone for an hour, so it cannot head every later batch.
+        verify(orderRepository).deferSweep("o-1", new Date(NOW.getTime() + 60L * 60 * 1000));
+        verify(orderRepository, never()).deferSweep(eq("o-2"), any());
+    }
+
+    @Test
+    void aFailureToDeferAnOrderDoesNotStopTheRun() {
+        CommerceOrder bad = order("o-1", "COD_PENDING_CONFIRMATION", new Date(NOW.getTime() - 1));
+        CommerceOrder good = order("o-2", "COD_PENDING_CONFIRMATION", new Date(NOW.getTime() - 1));
+        when(queries.findOrdersPastConfirmation(NOW, CommerceCodConfirmTimeoutJob.BATCH))
+                .thenReturn(List.of("o-1", "o-2"));
+        doThrow(new IllegalStateException("STOCK_NOT_SETTLED")).when(desk).cancel(eq(bad), any(), any(), any(), any());
+        when(orderRepository.deferSweep(anyString(), any())).thenThrow(new IllegalStateException("db busy"));
+
+        assertEquals(1, job.sweep(NOW));
+        verify(desk).cancel(eq(good), eq(lines), eq(CancelReason.COD_NOT_CONFIRMED), isNull(), anyString());
+        assertEquals(60, CommerceCodConfirmTimeoutJob.RETRY_AFTER_MINUTES);
     }
 
     @Test

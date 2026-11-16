@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature
 import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockMovement;
 import vacademy.io.admin_core_service.features.commerce.stock.enums.StockMovementType;
+import vacademy.io.admin_core_service.features.commerce.stock.service.StockPeriodGuard;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockPosting;
 import vacademy.io.admin_core_service.features.invoice.entity.Invoice;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -26,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -242,6 +245,32 @@ class CommerceOrderDeskServiceTest {
         verify(f.auditService).record(eq(INST), eq("user-1"), eq(LOC), eq("SHIP_UNDONE"), eq("SHIPMENT"), eq("sh-1"),
                 any(), anyString(), any());
         verify(f.creditNoteService, never()).issue(anyString(), any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void row8_undoShippedIsRefusedInAClosedStockPeriodAsShipIs() {
+        f.order.setStatus("SHIPPED");
+        f.shipment("SHIPPED");
+        f.shipmentLine(a, 2);
+        a.setQtyShipped(2);
+        when(f.movementRepository.findByInstituteIdAndReferenceTypeAndReferenceIdInOrderByCreatedAtAsc(eq(INST),
+                eq("SHIPMENT_LINE"), any(Collection.class))).thenReturn(List.of(sale("mv-now", "SALE:shl-l1:1")));
+        StockPeriodGuard guard = org.mockito.Mockito.mock(StockPeriodGuard.class);
+        doThrow(new ConflictException("PERIOD_LOCKED: the stock period is closed")).when(guard)
+                .assertOpen(INST, f.today);
+        doAnswer(call -> {
+            ((Consumer<StockPeriodGuard>) call.getArgument(0)).accept(guard);
+            return null;
+        }).when(f.periodGuard).ifAvailable(any());
+
+        assertEquals("PERIOD_LOCKED", code(assertThrows(ConflictException.class, () -> move("SHIPPED", "PACKED"))));
+        verify(guard).assertOpen(INST, f.today);
+        assertTrue(f.posted.isEmpty(), "no reversal is posted into a closed period");
+        verify(f.stockHoldService, never()).reopenShipped(anyString(), anyString());
+        assertEquals("SHIPPED", f.order.getStatus());
+        assertEquals("SHIPPED", f.shipment.getStatus());
+        assertEquals(2, a.getQtyShipped());
     }
 
     private static StockMovement sale(String id, String key) {

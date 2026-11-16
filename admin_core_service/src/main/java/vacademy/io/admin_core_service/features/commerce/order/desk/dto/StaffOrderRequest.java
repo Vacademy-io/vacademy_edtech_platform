@@ -63,6 +63,12 @@ public class StaffOrderRequest {
         private String sku;
         private Integer quantity;
         private BigDecimal unitPriceOverride;
+        /**
+         * Hand-over only ({@code hand_over_now}): the pieces of a one-of-a-kind line, by id or by
+         * scan code, one per unit, reserved and sold in the same request.
+         */
+        private List<String> pieceIds;
+        private List<String> pieceCodes;
     }
 
     @Data

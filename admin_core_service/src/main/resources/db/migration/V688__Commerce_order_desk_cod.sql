@@ -134,6 +134,9 @@ CREATE INDEX IF NOT EXISTS idx_commerce_cod_remittance_received
 -- refund_due: money of a paid order that must go back (cancel, line cancel, RTO); the refund
 -- work package turns it into refund rows. stock_short: open units of the order are no longer on
 -- the shelf (damage, count, receipt reversal), set after that posting commits.
+-- sweep_retry_after: a background sweep (the invoice backlog, the COD confirmation timer) failed
+-- on this order; the sweeps leave it alone until then, so one failing order never holds up the
+-- orders behind it. Written by the sweeps only, never by the entity.
 ALTER TABLE commerce_order
     ADD COLUMN IF NOT EXISTS refund_due          NUMERIC(12, 2) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS stock_short         BOOLEAN        NOT NULL DEFAULT FALSE,
@@ -141,7 +144,8 @@ ALTER TABLE commerce_order
     ADD COLUMN IF NOT EXISTS packed_at           TIMESTAMP,
     ADD COLUMN IF NOT EXISTS shipped_at          TIMESTAMP,
     ADD COLUMN IF NOT EXISTS delivered_at        TIMESTAMP,
-    ADD COLUMN IF NOT EXISTS cod_confirm_due_at  TIMESTAMP;
+    ADD COLUMN IF NOT EXISTS cod_confirm_due_at  TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS sweep_retry_after   TIMESTAMP;
 
 DO $$
 BEGIN

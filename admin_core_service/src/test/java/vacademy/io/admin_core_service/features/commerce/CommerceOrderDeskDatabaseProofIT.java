@@ -29,7 +29,10 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductReq
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductTranslationDTO;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.VariantRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.service.CommerceProductService;
+import vacademy.io.admin_core_service.features.commerce.document.dto.CreditNoteRequest;
 import vacademy.io.admin_core_service.features.commerce.document.dto.DocumentSeriesDTO;
+import vacademy.io.admin_core_service.features.commerce.document.job.CommerceInvoiceRetryJob;
+import vacademy.io.admin_core_service.features.commerce.document.service.CommerceCreditNoteService;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentSeriesService;
 import vacademy.io.admin_core_service.features.commerce.media.CommerceRenditionClient;
 import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceCheckoutService;
@@ -71,6 +74,7 @@ import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.UserServiceDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.ConflictException;
+import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
 import vacademy.io.common.payment.dto.PaymentResponseDTO;
 
@@ -103,6 +107,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -173,6 +178,8 @@ class CommerceOrderDeskDatabaseProofIT {
     @Autowired private CommerceReceiptService receipts;
     @Autowired private CommerceStaffOrderService staffOrders;
     @Autowired private StockReconciliationJob reconciliationJob;
+    @Autowired private CommerceCreditNoteService creditNotes;
+    @Autowired private CommerceInvoiceRetryJob invoiceRetryJob;
     @Autowired private ObjectMapper objectMapper;
     @LocalServerPort private int port;
 
@@ -202,6 +209,7 @@ class CommerceOrderDeskDatabaseProofIT {
     private String credit;   // 10 in stock, 500.00: staff orders
     private String raceV;    // 10 in stock, 300.00: races
     private String shortV;   // 3 in stock, 400.00: stock short
+    private String pieceC;   // 2 pieces, 700.00: undo shipped of a piece; a hand-over at the counter
 
     private CustomUserDetails admin;
 
@@ -492,12 +500,14 @@ class CommerceOrderDeskDatabaseProofIT {
         credit = variant("credit", "CR", "500.00", false);
         raceV = variant("race", "RV", "300.00", false);
         shortV = variant("short", "SV", "400.00", false);
+        pieceC = variant("piece-c", "PC", "700.00", true);
         receive(qtyA, 20);
         receive(pieceA, 2);
         receive(pieceB, 2);
         receive(credit, 10);
         receive(raceV, 10);
         receive(shortV, 3);
+        receive(pieceC, 2);
         db.update("INSERT INTO institute_payment_gateway_mapping (id, vendor, institute_id, payment_gateway_specific_data, "
                         + "status) VALUES (?, 'RAZORPAY', ?, ?, 'ACTIVE')", UUID.randomUUID().toString(), inst,
                 "{\"apiKey\":\"" + KEY_ID + "\",\"apiSecret\":\"" + KEY_SECRET + "\",\"keySecret\":\"" + KEY_SECRET
@@ -668,6 +678,50 @@ class CommerceOrderDeskDatabaseProofIT {
         assertEquals(2, count("SELECT qty_shipped FROM commerce_order_line WHERE id = ?", line));
         assertEquals(maxSeats - 2, seats(qtyA));
         noDrift("ship again");
+
+        // The same with one-of-a-kind stock: the piece goes SOLD, RESERVED again, then SOLD, and
+        // every ship posts its own SALE row for that piece, keyed with the ship count.
+        String pieceOrder = paidOrder(Map.of(pieceC, 1));
+        pack(pieceOrder, pieceCodes(pieceC, 1));
+        String pieceLine = lineOf(pieceOrder);
+        String piece = text("SELECT id FROM commerce_piece WHERE order_line_id = ?", pieceLine);
+        int pieceSlots = slots(pieceC);
+        int pieceSeats = seats(pieceC);
+        int pieceShelf = onHand(pieceC);
+        ship(pieceOrder, key());
+        String pieceShipmentLine = text("SELECT id FROM commerce_shipment_line WHERE order_line_id = ?", pieceLine);
+        assertEquals("SOLD", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE idempotency_key = ? AND piece_id = ? "
+                + "AND quantity_delta = -1", "SALE:" + pieceShipmentLine + ":" + piece + ":1", piece));
+        assertEquals(pieceShelf - 1, onHand(pieceC));
+        assertEquals(pieceSeats - 1, seats(pieceC));
+
+        move(pieceOrder, "SHIPPED", "PACKED");
+        assertEquals("PACKED", status(pieceOrder));
+        assertEquals("RESERVED", text("SELECT status FROM commerce_piece WHERE id = ?", piece), "back in the parcel");
+        assertEquals(pieceLine, text("SELECT order_line_id FROM commerce_piece WHERE id = ?", piece));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE institute_id = ? AND reason = 'SHIP_UNDO' "
+                + "AND piece_id = ? AND quantity_delta = 1 AND reverses_movement_id IS NOT NULL", inst, piece));
+        assertEquals(pieceShelf, onHand(pieceC));
+        assertEquals(pieceSeats, seats(pieceC));
+        assertEquals(pieceSlots, slots(pieceC));
+        assertEquals(1, count("SELECT count(*) FROM stock_hold h JOIN commerce_order_line l ON l.user_plan_id = "
+                + "h.user_plan_id WHERE l.id = ? AND h.status = 'SOLD'", pieceLine), "the hold is SOLD again");
+        noDrift("undo shipped, piece");
+
+        ship(pieceOrder, key());
+        assertEquals("SOLD", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE idempotency_key = ? AND piece_id = ?",
+                "SALE:" + pieceShipmentLine + ":" + piece + ":2", piece), "a second ship posts a new key for the piece");
+        assertEquals(2, count("SELECT count(*) FROM stock_movement WHERE type = 'SALE' AND piece_id = ? "
+                + "AND reverses_movement_id IS NULL AND reference_id = ?", piece, pieceShipmentLine),
+                "two SALE keys of that piece, one per ship");
+        assertEquals(-1, count("SELECT COALESCE(SUM(quantity_delta), 0) FROM stock_movement WHERE type = 'SALE' "
+                + "AND piece_id = ? AND reference_id = ?", piece, pieceShipmentLine), "net SALE of the piece = -1");
+        assertEquals(pieceShelf - 1, onHand(pieceC));
+        assertEquals(pieceSeats - 1, seats(pieceC));
+        assertEquals(1, count("SELECT qty_shipped FROM commerce_order_line WHERE id = ?", pieceLine));
+        noDrift("ship again, piece");
     }
 
     // ------------------------------------------------------------------ cancel at PACKED; unpack, re-pack
@@ -935,5 +989,89 @@ class CommerceOrderDeskDatabaseProofIT {
                 Boolean.class, orderId));
         assertEquals(1, count("SELECT count(*) FROM commerce_audit WHERE reference_id = ? AND kind = "
                 + "'STOCK_SHORT_CLEARED'", orderId));
+    }
+
+    // ------------------------------------------------------------------ hand-over of a piece
+
+    @Test
+    @Order(11)
+    void aHandOverAtTheCounterSellsTheNamedPieceInTheSameRequest() {
+        String code = pieceCodes(pieceC, 1).get(0);
+        String piece = text("SELECT id FROM commerce_piece WHERE code = ? AND package_session_id = ?", code, pieceC);
+        int available = slots(pieceC);
+        int shelf = onHand(pieceC);
+        StaffOrderDtos.StaffOrderDetail created = staffOrders.create(admin, inst, staffOrder(1)
+                .shippingAddress(null)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(pieceC).quantity(1)
+                        .pieceCodes(List.of(code)).build()))
+                .restOnCredit(true).handOverNow(true).build()).detail();
+        String orderId = created.getOrder().getId();
+        String line = lineOf(orderId);
+        assertEquals("DELIVERED", status(orderId));
+        assertEquals("HANDOVER", text("SELECT carrier_code FROM commerce_shipment WHERE order_id = ?", orderId));
+        assertEquals("SOLD", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
+        assertEquals(line, text("SELECT order_line_id FROM commerce_piece WHERE id = ?", piece));
+        String shipmentLine = text("SELECT id FROM commerce_shipment_line WHERE order_line_id = ?", line);
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE idempotency_key = ? AND piece_id = ?",
+                "SALE:" + shipmentLine + ":" + piece + ":1", piece));
+        assertEquals(1, liveInvoices(orderId));
+        assertEquals(available - 1, slots(pieceC));
+        assertEquals(shelf - 1, onHand(pieceC));
+        noDrift("hand-over of a piece");
+
+        // Pieces without a hand-over are refused before anything is written.
+        long orders = count("SELECT count(*) FROM commerce_order WHERE institute_id = ?", inst);
+        assertThrows(InvalidRequestException.class, () -> staffOrders.create(admin, inst, staffOrder(1)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(pieceC).quantity(1)
+                        .pieceCodes(List.of(code)).build()))
+                .restOnCredit(true).build()));
+        assertEquals(orders, count("SELECT count(*) FROM commerce_order WHERE institute_id = ?", inst));
+    }
+
+    // ------------------------------------------------------------------ invoice backlog
+
+    @Test
+    @Order(12)
+    void theInvoiceBacklogNeverBillsAgainAnOrderCreditedInFullByHand() {
+        String orderId = paidOrder(Map.of(qtyA, 1));
+        pack(orderId, null);
+        ship(orderId, key());
+        toStatus(orderId, ShipmentDtos.StatusRequest.builder().to("DELIVERED"));
+        assertEquals("DELIVERED", status(orderId));
+        String invoiceId = text("SELECT id FROM invoice WHERE commerce_order_id = ?", orderId);
+
+        // The goods came back by hand: a full credit note through the documents route's service.
+        creditNotes.issue(inst, actor, CreditNoteRequest.builder().clientRequestId(key()).invoiceId(invoiceId)
+                .full(true).reason("goods returned at the counter").build());
+        assertEquals(0, liveInvoices(orderId));
+        assertEquals("DELIVERED", status(orderId), "a credit note does not move the order");
+        long invoices = count("SELECT count(*) FROM invoice WHERE commerce_order_id = ?", orderId);
+        // Past the grace the backlog leaves every order to its own transaction.
+        db.update("UPDATE commerce_order SET updated_at = now() - interval '20 minutes' WHERE id = ?", orderId);
+
+        // A control: a delivered order whose only invoice row was cancelled has never had a
+        // document and is repaired by the same run.
+        String control = paidOrder(Map.of(qtyA, 1));
+        pack(control, null);
+        ship(control, key());
+        toStatus(control, ShipmentDtos.StatusRequest.builder().to("DELIVERED"));
+        db.update("UPDATE invoice SET cancelled_at = now() WHERE commerce_order_id = ?", control);
+        db.update("UPDATE commerce_order SET updated_at = now() - interval '20 minutes' WHERE id = ?", control);
+        assertEquals(0, liveInvoices(control));
+
+        int[] done = invoiceRetryJob.runOnce();
+
+        assertEquals(invoices, count("SELECT count(*) FROM invoice WHERE commerce_order_id = ?", orderId),
+                "no new invoice for an order credited in full");
+        assertEquals(0, liveInvoices(orderId));
+        assertEquals(1, liveInvoices(control), "the control got its invoice from the backlog");
+        assertTrue(done[0] >= 1, "the run repaired the control");
+        assertEquals(2, count("SELECT count(*) FROM invoice WHERE commerce_order_id = ?", control));
+
+        // A second run changes nothing.
+        invoiceRetryJob.runOnce();
+        assertEquals(invoices, count("SELECT count(*) FROM invoice WHERE commerce_order_id = ?", orderId));
+        assertEquals(2, count("SELECT count(*) FROM invoice WHERE commerce_order_id = ?", control));
+        noDrift("invoice backlog");
     }
 }
