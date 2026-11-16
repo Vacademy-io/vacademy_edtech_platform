@@ -38,7 +38,9 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                 // the toggle genuinely per-role rather than institute-wide.
                 item.id !== 'live-activity' &&
                 // AI Course/Program Creator ships hidden; admins opt in via Display Settings.
-                item.id !== 'ai-copilot-tab'
+                item.id !== 'ai-copilot-tab' &&
+                // Learner home builder: institute ADMIN only (its API refuses teachers).
+                item.id !== 'learner-home'
                     ? true
                     : false,
             subTabs:

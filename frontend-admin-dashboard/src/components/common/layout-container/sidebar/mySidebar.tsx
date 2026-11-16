@@ -86,6 +86,8 @@ import {
 } from '@/lib/capabilities/nav-access';
 import { filterCommerceSidebar } from '@/lib/commerce/commerce-access';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
+import { filterLearnerHomeSidebar } from '@/lib/learner-home/learner-home-access';
+import { useCapabilities } from '@/services/capabilities';
 // Sidebar sub-items under "Assessments and Tests" that deep-link into the
 // create-assessment wizard. Hidden together with the Create Assessment button.
 const ASSESSMENT_CREATE_SUB_ITEM_IDS = new Set([
@@ -224,6 +226,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // commerce roles. Reads the /capabilities/me the entitlement already loaded:
     // no extra request.
     const commerceAccess = useCommerceAccess();
+    const { can: canCapability } = useCapabilities();
 
     useEffect(() => {
         setIsVoltSubdomain(
@@ -459,9 +462,13 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // Then the institute's plan. In LEGACY this returns roleSidebarItems itself.
     // Then the commerce gates: no commerce tab without its feature and a role that
     // sees it, and shop-only staff (a cashier) get nothing but the shop.
-    const entitledItems = filterCommerceSidebar(
-        filterSidebarByEntitlement(roleSidebarItems, entitlement),
-        commerceAccess
+    // Learner home is an opt-in module too: no tab until the feature is on.
+    const entitledItems = filterLearnerHomeSidebar(
+        filterCommerceSidebar(
+            filterSidebarByEntitlement(roleSidebarItems, entitlement),
+            commerceAccess
+        ),
+        canCapability
     );
     // Shop-only staff: the rail draws only categories with something to show,
     // exactly as it does for a MANAGED plan, so a cashier sees one icon, not four

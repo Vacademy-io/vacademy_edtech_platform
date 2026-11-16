@@ -66,6 +66,10 @@ import {
 } from '@/types/student-display-settings';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MultiSelect } from '@/components/design-system/multi-select';
+import {
+    LearnerHomeManagedNotice,
+    useLearnerHomeIsLive,
+} from '@/routes/learner-home/-components/LearnerHomeManagedNotice';
 import { cn } from '@/lib/utils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useQuery } from '@tanstack/react-query';
@@ -215,6 +219,7 @@ export default function StudentDisplaySettings(): JSX.Element {
         setHasChanges(true);
     };
 
+    const learnerHomeLive = useLearnerHomeIsLive();
     const { instituteDetails } = useInstituteDetailsStore();
     const courseTagOptions = Array.from(new Set(instituteDetails?.tags ?? [])).map((tag) => ({
         label: tag,
@@ -736,6 +741,13 @@ export default function StudentDisplaySettings(): JSX.Element {
                     <CardTitle>{t('widgets.cardTitle')}</CardTitle>
                     <CardDescription>{t('widgets.cardDescription')}</CardDescription>
                 </CardHeader>
+                {/* A published learner home owns the dashboard: the list is set
+                    aside so two editors never fight over one home. */}
+                {learnerHomeLive ? (
+                    <div className="p-4 pt-0">
+                        <LearnerHomeManagedNotice />
+                    </div>
+                ) : (
                 <div className="space-y-2 p-4 pt-0">
                     <div className="mb-3 flex items-center gap-2">
                         <Button
@@ -807,6 +819,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                         });
                     })()}
                 </div>
+                )}
             </Card>
             </section>
 

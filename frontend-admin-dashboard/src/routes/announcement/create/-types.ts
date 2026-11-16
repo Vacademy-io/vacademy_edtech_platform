@@ -55,15 +55,8 @@ export interface AudienceRule {
     exclusions: RuleExclusion[];
 }
 
-export interface BatchOption {
-    id: string;
-    label: string;
-    packageName: string;
-    levelName: string;
-    sessionName: string;
-    status?: string;
-    isOrgAssociated: boolean;
-}
+/** Shared with other batch pickers; see lib/batch-options. */
+export type { BatchOption } from '@/lib/batch-options';
 
 export interface CustomFieldOption {
     id: string;

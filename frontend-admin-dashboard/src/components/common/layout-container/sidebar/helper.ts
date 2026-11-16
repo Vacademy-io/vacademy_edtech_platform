@@ -54,6 +54,7 @@ const ALWAYS_ADMIN_ONLY_TAB_IDS = [
     'learner-insights', // Learner Live Activities
     'settings', // Settings — institute configuration
     'admin-activity-logs', // Admin audit trail — institute ADMIN only
+    'learner-home', // Learner home builder — its API refuses everyone but ADMIN
 ];
 
 /**

@@ -40,6 +40,7 @@ import { Route as LoginIndexRouteImport } from "./routes/login/index"
 import { Route as LmsDashboardIndexRouteImport } from "./routes/lms-dashboard/index"
 import { Route as LiveActivityIndexRouteImport } from "./routes/live-activity/index"
 import { Route as LearnerInsightsIndexRouteImport } from "./routes/learner-insights/index"
+import { Route as LearnerHomeIndexRouteImport } from "./routes/learner-home/index"
 import { Route as KnowledgeBaseIndexRouteImport } from "./routes/knowledge-base/index"
 import { Route as InstructorCopilotIndexRouteImport } from "./routes/instructor-copilot/index"
 import { Route as InstitutePulseIndexRouteImport } from "./routes/institute-pulse/index"
@@ -493,6 +494,13 @@ const LearnerInsightsIndexRoute = LearnerInsightsIndexRouteImport.update({
   getParentRoute: () => LearnerInsightsLazyRoute,
 } as any).lazy(() =>
   import("./routes/learner-insights/index.lazy").then((d) => d.Route),
+)
+const LearnerHomeIndexRoute = LearnerHomeIndexRouteImport.update({
+  id: "/learner-home/",
+  path: "/learner-home/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/learner-home/index.lazy").then((d) => d.Route),
 )
 const KnowledgeBaseIndexRoute = KnowledgeBaseIndexRouteImport.update({
   id: "/knowledge-base/",
@@ -2477,6 +2485,7 @@ export interface FileRoutesByFullPath {
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
   "/knowledge-base/": typeof KnowledgeBaseIndexRoute
+  "/learner-home/": typeof LearnerHomeIndexRoute
   "/learner-insights/": typeof LearnerInsightsIndexRoute
   "/live-activity/": typeof LiveActivityIndexRoute
   "/lms-dashboard/": typeof LmsDashboardIndexRoute
@@ -2755,6 +2764,7 @@ export interface FileRoutesByTo {
   "/institute-pulse": typeof InstitutePulseIndexRoute
   "/instructor-copilot": typeof InstructorCopilotIndexRoute
   "/knowledge-base": typeof KnowledgeBaseIndexRoute
+  "/learner-home": typeof LearnerHomeIndexRoute
   "/learner-insights": typeof LearnerInsightsIndexRoute
   "/live-activity": typeof LiveActivityIndexRoute
   "/lms-dashboard": typeof LmsDashboardIndexRoute
@@ -3036,6 +3046,7 @@ export interface FileRoutesById {
   "/institute-pulse/": typeof InstitutePulseIndexRoute
   "/instructor-copilot/": typeof InstructorCopilotIndexRoute
   "/knowledge-base/": typeof KnowledgeBaseIndexRoute
+  "/learner-home/": typeof LearnerHomeIndexRoute
   "/learner-insights/": typeof LearnerInsightsIndexRoute
   "/live-activity/": typeof LiveActivityIndexRoute
   "/lms-dashboard/": typeof LmsDashboardIndexRoute
@@ -3318,6 +3329,7 @@ export interface FileRouteTypes {
     | "/institute-pulse/"
     | "/instructor-copilot/"
     | "/knowledge-base/"
+    | "/learner-home/"
     | "/learner-insights/"
     | "/live-activity/"
     | "/lms-dashboard/"
@@ -3596,6 +3608,7 @@ export interface FileRouteTypes {
     | "/institute-pulse"
     | "/instructor-copilot"
     | "/knowledge-base"
+    | "/learner-home"
     | "/learner-insights"
     | "/live-activity"
     | "/lms-dashboard"
@@ -3876,6 +3889,7 @@ export interface FileRouteTypes {
     | "/institute-pulse/"
     | "/instructor-copilot/"
     | "/knowledge-base/"
+    | "/learner-home/"
     | "/learner-insights/"
     | "/live-activity/"
     | "/lms-dashboard/"
@@ -4149,6 +4163,7 @@ export interface RootRouteChildren {
   InstitutePulseIndexRoute: typeof InstitutePulseIndexRoute
   InstructorCopilotIndexRoute: typeof InstructorCopilotIndexRoute
   KnowledgeBaseIndexRoute: typeof KnowledgeBaseIndexRoute
+  LearnerHomeIndexRoute: typeof LearnerHomeIndexRoute
   LiveActivityIndexRoute: typeof LiveActivityIndexRoute
   LmsDashboardIndexRoute: typeof LmsDashboardIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
@@ -4613,6 +4628,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/learner-insights/"
       preLoaderRoute: typeof LearnerInsightsIndexRouteImport
       parentRoute: typeof LearnerInsightsLazyRoute
+    }
+    "/learner-home/": {
+      id: "/learner-home/"
+      path: "/learner-home"
+      fullPath: "/learner-home/"
+      preLoaderRoute: typeof LearnerHomeIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     "/knowledge-base/": {
       id: "/knowledge-base/"
@@ -6409,6 +6431,7 @@ const rootRouteChildren: RootRouteChildren = {
   InstitutePulseIndexRoute: InstitutePulseIndexRoute,
   InstructorCopilotIndexRoute: InstructorCopilotIndexRoute,
   KnowledgeBaseIndexRoute: KnowledgeBaseIndexRoute,
+  LearnerHomeIndexRoute: LearnerHomeIndexRoute,
   LiveActivityIndexRoute: LiveActivityIndexRoute,
   LmsDashboardIndexRoute: LmsDashboardIndexRoute,
   LoginIndexRoute: LoginIndexRoute,

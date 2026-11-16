@@ -109,7 +109,7 @@ export function shouldBustDisplaySettingsCache(args: {
  * answers (or when it fails, or an old backend omits the field) these modules
  * must already read as off.
  */
-export const KNOWN_OPT_IN_MODULES: readonly string[] = ['commerce'];
+export const KNOWN_OPT_IN_MODULES: readonly string[] = ['commerce', 'learner_home'];
 
 const moduleOf = (featureKey: string) => featureKey.split('.')[0] ?? featureKey;
 
