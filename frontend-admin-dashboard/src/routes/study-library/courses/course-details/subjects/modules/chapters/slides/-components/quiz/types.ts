@@ -92,6 +92,7 @@ export interface Slide {
         marks_per_question?: number;
         negative_marking?: number;
         partial_marking?: boolean | null;
+        show_answer_after_each_question?: boolean | null;
         questions?: BackendQuestion[];
     } | null;
     is_loaded: boolean;

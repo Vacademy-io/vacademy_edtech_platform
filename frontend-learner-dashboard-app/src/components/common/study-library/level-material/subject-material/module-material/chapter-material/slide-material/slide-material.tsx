@@ -1025,6 +1025,7 @@ export const SlideMaterial = ({
                 marks_per_question?: number;
                 negative_marking?: number;
                 partial_marking?: boolean | null;
+                show_answer_after_each_question?: boolean | null;
               }
             | undefined;
           const questions = Array.isArray(quizSlide?.questions)
@@ -1087,6 +1088,7 @@ export const SlideMaterial = ({
               partialMarking={quizSlide?.partial_marking === true}
               passPercentage={(quizSlide as any)?.pass_percentage ?? null}
               reAttemptCount={(quizSlide as any)?.re_attempt_count ?? null}
+              showAnswerAfterEachQuestion={quizSlide?.show_answer_after_each_question === true}
               onAnswer={async (_questionId, selectedOptionId) => {
                 // Send/save answer data here if needed
                 await handleQuestionSubmit(String(selectedOptionId));

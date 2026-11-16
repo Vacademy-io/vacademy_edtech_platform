@@ -182,7 +182,20 @@
     },
     "answered": "Answered",
     "notAnswered": "Not answered",
-    "incorrectTryAgain": "Incorrect. Try again."
+    "incorrectTryAgain": "Incorrect. Try again.",
+    "instantFeedback": {
+      "checkAnswer": "Check answer",
+      "checking": "Checking…",
+      "correct": "Correct!",
+      "incorrect": "Incorrect",
+      "compare": "Compare your answer with the model answer",
+      "correctAnswer": "Correct answer",
+      "correctAnswers": "Correct answers",
+      "modelAnswer": "Model answer",
+      "explanation": "Explanation",
+      "noKey": "This question has no answer key. Your answer is saved.",
+      "checkFailed": "Couldn’t check this answer. Please try again."
+    }
   },
   "scormSlide": {
     "errors": {

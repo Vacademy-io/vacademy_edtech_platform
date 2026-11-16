@@ -114,6 +114,10 @@ public class QuizSlideService {
             quizSlide.setPartialMarking(dto.getPartialMarking());
         }
         quizSlide.setReAttemptCount(dto.getReAttemptCount());
+        // Null = an older payload builder that does not know this setting: keep what is stored.
+        if (dto.getShowAnswerAfterEachQuestion() != null) {
+            quizSlide.setShowAnswerAfterEachQuestion(dto.getShowAnswerAfterEachQuestion());
+        }
         addOrUpdateQuestionsInBulk(quizSlide, dto.getQuestions());
     }
 
@@ -301,6 +305,7 @@ public class QuizSlideService {
         newQuizSlide.setPassPercentage(originalQuizSlide.getPassPercentage());
         newQuizSlide.setPartialMarking(Boolean.TRUE.equals(originalQuizSlide.getPartialMarking()));
         newQuizSlide.setReAttemptCount(originalQuizSlide.getReAttemptCount());
+        newQuizSlide.setShowAnswerAfterEachQuestion(Boolean.TRUE.equals(originalQuizSlide.getShowAnswerAfterEachQuestion()));
 
         // Copy description RichTextData if it exists
         if (originalQuizSlide.getDescriptionRichText() != null) {

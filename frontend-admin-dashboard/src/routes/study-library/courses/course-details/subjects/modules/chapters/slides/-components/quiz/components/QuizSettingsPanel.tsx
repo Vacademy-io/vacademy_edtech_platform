@@ -13,6 +13,8 @@ export interface QuizSettings {
     passPercentage: number;
     reAttemptCountEnabled: boolean;
     reAttemptCount: number;
+    /** Study mode: learners check each answer and see the key before moving on. Off by default. */
+    showAnswerAfterEachQuestion: boolean;
 }
 
 interface QuizSettingsPanelProps {
@@ -170,6 +172,25 @@ const QuizSettingsPanel = ({ settings, onChange, onSave, isSaving }: QuizSetting
                         inputPlaceholder="3"
                     />
                 )}
+            </div>
+
+            <div className="h-4 w-px bg-neutral-300" />
+
+            {/* Study mode — learners check each answer and see the key and explanation before moving on */}
+            <div className="flex items-center gap-2" title={t('showAnswerAfterEachQuestionHint')}>
+                <input
+                    type="checkbox"
+                    id="qs-show-answer-each"
+                    className="accent-primary-500"
+                    checked={settings.showAnswerAfterEachQuestion}
+                    onChange={(e) => update({ showAnswerAfterEachQuestion: e.target.checked })}
+                />
+                <label
+                    htmlFor="qs-show-answer-each"
+                    className="cursor-pointer select-none font-medium text-neutral-700"
+                >
+                    {t('showAnswerAfterEachQuestion')}
+                </label>
             </div>
 
             <div className="ml-auto">

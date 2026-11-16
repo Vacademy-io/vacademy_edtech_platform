@@ -43,6 +43,10 @@ export interface FunQuizQuestionProps {
   onNext: () => void;
   /** The running clock (the quiz's own timer drawing FunQuizTimer); absent on an untimed quiz. */
   timer?: React.ReactNode;
+  /** Study-mode quizzes: the checked question's feedback, drawn under the answer. */
+  feedback?: React.ReactNode;
+  /** Study-mode quizzes: the primary button's label while the question is still to be checked. */
+  nextLabel?: string;
 }
 
 const PASSAGE_LIMIT = 200;
@@ -88,6 +92,8 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
     onPrev,
     onNext,
     timer,
+    feedback,
+    nextLabel,
   } = props;
   const { t } = useTranslation("funQuiz");
   const { t: tq } = useTranslation("libraryCommonB");
@@ -255,6 +261,8 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
             {tq("quizViewer.incorrectTryAgain")}
           </p>
         )}
+
+        {feedback}
       </div>
 
       <div ref={navRef} className="fun-quiz__nav">
@@ -263,12 +271,14 @@ export function FunQuizQuestion(props: FunQuizQuestionProps) {
           {tq("quizViewer.buttons.previous")}
         </FunButton>
         <FunButton className="fun-quiz__next" disabled={!answered || submitting} onClick={onNext}>
-          {submitting
-            ? tq("quizViewer.buttons.submitting")
-            : isLast
-              ? tq("quizViewer.buttons.finish")
-              : tq("quizViewer.buttons.next")}
-          {!isLast && !submitting && <CaretRight aria-hidden="true" weight="bold" />}
+          {nextLabel
+            ? nextLabel
+            : submitting
+              ? tq("quizViewer.buttons.submitting")
+              : isLast
+                ? tq("quizViewer.buttons.finish")
+                : tq("quizViewer.buttons.next")}
+          {!isLast && !submitting && !nextLabel && <CaretRight aria-hidden="true" weight="bold" />}
         </FunButton>
       </div>
     </div>

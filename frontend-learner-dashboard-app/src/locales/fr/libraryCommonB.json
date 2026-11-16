@@ -185,7 +185,20 @@
         },
         "answered": "Répondu",
         "notAnswered": "Sans réponse",
-        "incorrectTryAgain": "Incorrect. Réessayez."
+        "incorrectTryAgain": "Incorrect. Réessayez.",
+        "instantFeedback": {
+            "checkAnswer": "Vérifier la réponse",
+            "checking": "Vérification…",
+            "correct": "Correct !",
+            "incorrect": "Incorrect",
+            "compare": "Comparez votre réponse avec la réponse modèle",
+            "correctAnswer": "Bonne réponse",
+            "correctAnswers": "Bonnes réponses",
+            "modelAnswer": "Réponse modèle",
+            "explanation": "Explication",
+            "noKey": "Cette question n’a pas de corrigé. Votre réponse est enregistrée.",
+            "checkFailed": "Impossible de vérifier cette réponse. Veuillez réessayer."
+        }
     },
     "scormSlide": {
         "errors": {

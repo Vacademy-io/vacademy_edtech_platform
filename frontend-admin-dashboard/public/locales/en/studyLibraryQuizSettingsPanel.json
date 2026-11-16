@@ -7,6 +7,8 @@
     "partialMarkingHint": "Multiple-correct questions: picking only some of the correct options (and no wrong one) earns that share of the marks",
     "passPercentage": "🎯 Pass %",
     "attempts": "Attempts",
+    "showAnswerAfterEachQuestion": "👁 Show answer after each question",
+    "showAnswerAfterEachQuestionHint": "Study mode: after answering, learners press Check answer to see right or wrong, the correct answer and the explanation, then move on. The answer is locked once checked.",
     "savingEllipsis": "Saving…",
     "saveSettings": "Save Settings"
 }

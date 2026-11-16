@@ -182,7 +182,20 @@
     },
     "answered": "उत्तर दिया गया",
     "notAnswered": "उत्तर नहीं दिया गया",
-    "incorrectTryAgain": "गलत। फिर से प्रयास करें।"
+    "incorrectTryAgain": "गलत। फिर से प्रयास करें।",
+    "instantFeedback": {
+      "checkAnswer": "उत्तर जाँचें",
+      "checking": "जाँच हो रही है…",
+      "correct": "सही!",
+      "incorrect": "गलत",
+      "compare": "अपने उत्तर की तुलना मॉडल उत्तर से करें",
+      "correctAnswer": "सही उत्तर",
+      "correctAnswers": "सही उत्तर",
+      "modelAnswer": "मॉडल उत्तर",
+      "explanation": "व्याख्या",
+      "noKey": "इस प्रश्न की कोई उत्तर कुंजी नहीं है। आपका उत्तर सहेज लिया गया है।",
+      "checkFailed": "यह उत्तर जाँचा नहीं जा सका। कृपया फिर से कोशिश करें।"
+    }
   },
   "scormSlide": {
     "errors": {

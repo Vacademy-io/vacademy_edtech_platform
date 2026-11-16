@@ -274,6 +274,8 @@ export const urlInstructor = `${BASE_URL}/admin-core-service/open/institute/v1/f
 export const FEEDBACK_URL = `${BASE_URL}/admin-core-service/rating`;
 
 export const SUBMIT_QUIZ_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/add-or-update-quiz-slide-activity-log`;
+// One quiz answer checked without recording anything (study-mode quizzes return the key and explanation).
+export const QUIZ_CHECK_ANSWER = `${BASE_URL}/admin-core-service/learner-tracking/quiz-attempt/v1/check-answer`;
 export const GET_QUIZ_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/quiz-slide-activity-logs`;
 export const SUBMIT_ASSESSMENT_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assessment-slide/add-or-update-assessment-slide-activity-log`;
 export const CODING_SUBMISSIONS = `${BASE_URL}/admin-core-service/coding/submissions`;

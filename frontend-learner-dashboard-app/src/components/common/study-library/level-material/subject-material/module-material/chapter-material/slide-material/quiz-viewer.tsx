@@ -42,6 +42,16 @@ import { QUESTION_SETTLE_MS } from "./press-settle";
 import { useFunTheme } from "@/hooks/use-fun-theme";
 import { FunQuizQuestion, FunQuizTimer } from "./fun-quiz/FunQuizQuestion";
 import { FunQuizEmpty, FunQuizTimeWarning } from "./fun-quiz/FunQuizCards";
+import {
+  checkAnswerRequestBody,
+  feedbackFromLocalKey,
+  feedbackFromServer,
+  isNumericQuestion,
+  optionFeedbackState,
+  type InstantFeedback,
+} from "./quiz-instant-feedback";
+import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
+import { checkQuizAnswer } from "@/services/study-library/tracking-api/check-quiz-answer";
 
 interface Option {
   id: string;
@@ -70,6 +80,12 @@ interface Question {
   auto_evaluation_json?: string;
   marks?: number | null;
   negative_marking?: number | null;
+  /** The author's explanation, shown by study-mode quizzes once a question is checked. */
+  explanation_text?: {
+    id?: string;
+    type?: string;
+    content?: string;
+  };
 }
 
 export interface ScoreCard {
@@ -97,6 +113,11 @@ interface QuizViewerProps {
   partialMarking?: boolean;
   passPercentage?: number | null;
   reAttemptCount?: number | null;
+  /**
+   * Study mode ("show answer after each question"): the learner checks each answer and
+   * sees right or wrong, the correct answer and the explanation; the answer then locks.
+   */
+  showAnswerAfterEachQuestion?: boolean;
 }
 
 const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> => ({
@@ -221,6 +242,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   partialMarking = false,
   passPercentage,
   reAttemptCount,
+  showAnswerAfterEachQuestion = false,
 }) => {
   const { t } = useTranslation("libraryCommonB");
   // The Fun skin draws its own question screen and result; every other skin is unchanged.
@@ -257,6 +279,12 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     submittedAnswers ?? session?.answers ?? {}
   );
   const [numericErrors, setNumericErrors] = useState<{ [questionId: string]: string }>({});
+  // Study mode: questions checked in this attempt (their answers are locked) and what each showed.
+  const [checkedIds, setCheckedIds] = useState<string[]>(() =>
+    submittedAnswers ? [] : session?.checked ?? []
+  );
+  const [feedbackById, setFeedbackById] = useState<Record<string, InstantFeedback>>({});
+  const [checking, setChecking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showFullPassage, setShowFullPassage] = useState(false);
   const [showReview, setShowReview] = useState(!!submittedAnswers);
@@ -302,6 +330,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         setAnswers({});
         setCurrent(0);
         setTimeUp(null);
+        setCheckedIds([]);
+        setFeedbackById({});
       }
     });
     // Once per viewer: each slide mounts its own.
@@ -349,9 +379,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         answers,
         current,
         spentMs: Date.now() - activityStartRef.current,
+        ...(showAnswerAfterEachQuestion && { checked: checkedIds }),
       });
     }
-  }, [session, answers, current, slideId]);
+  }, [session, answers, current, slideId, showAnswerAfterEachQuestion, checkedIds]);
 
   // Take over an attempt that is already running on this device. It keeps its
   // own clock and its own id, wherever it was started.
@@ -361,6 +392,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     timerExpiredRef.current = false;
     setShowReview(false);
     setAnswers(running.answers);
+    setCheckedIds(running.checked ?? []);
+    setFeedbackById({});
     setCurrent(Math.min(running.current, Math.max((questions?.length ?? 1) - 1, 0)));
     setSession(running);
     if (
@@ -715,6 +748,37 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     );
   }, [answers, correctAnswers, currentQuestion]);
 
+  // Study mode: mark from the key the app holds; ask the server only when it was withheld.
+  const resolveFeedback = useCallback(
+    async (q: Question, answer: AnswerValue): Promise<InstantFeedback> => {
+      const local = feedbackFromLocalKey(q, answer);
+      if (local) return local;
+      const response = await checkQuizAnswer(
+        checkAnswerRequestBody(slideId, q.id, q.question_type, answer)
+      );
+      return feedbackFromServer(q.question_type, answer, response);
+    },
+    [slideId]
+  );
+
+  // A resumed attempt knows which questions were checked but not what they showed.
+  useEffect(() => {
+    if (!showAnswerAfterEachQuestion || !currentQuestion) return;
+    const id = currentQuestion.id;
+    if (!checkedIds.includes(id) || feedbackById[id]) return;
+    let cancelled = false;
+    resolveFeedback(currentQuestion, answersRef.current[id])
+      .then((feedback) => {
+        if (!cancelled) setFeedbackById((prev) => ({ ...prev, [id]: feedback }));
+      })
+      .catch(() => {
+        // The answer stays locked; Next still works without the feedback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showAnswerAfterEachQuestion, currentQuestion, checkedIds, feedbackById, resolveFeedback]);
+
   if (!questions || questions.length === 0) {
     if (isFun) return <FunQuizEmpty />;
     return (
@@ -895,6 +959,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         setShowReview(false);
         setCurrent(0);
         setAnswers({});
+        setCheckedIds([]);
+        setFeedbackById({});
         setScoreCard(null);
         setPassed(null);
         timerExpiredRef.current = false;
@@ -1015,19 +1081,27 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     });
   };
 
+  // Study mode: a checked question's answer is locked.
+  const currentLocked =
+    showAnswerAfterEachQuestion && !!currentQuestion && checkedIds.includes(currentQuestion.id);
+  const currentFeedback = currentLocked ? feedbackById[currentQuestion.id] : undefined;
+
   const handleOptionSelect = (optionId: string) => {
+    if (currentLocked) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
     onAnswer(currentQuestion.id, optionId);
     setShowIncorrectNotice(false);
   };
 
   const handleTextInput = (value: string) => {
+    if (currentLocked) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
     onAnswer(currentQuestion.id, value);
     setShowIncorrectNotice(false);
   };
 
   const handleNumericInput = (value: string) => {
+    if (currentLocked) return;
     // Check if the input is a valid number
     const isNumeric = /^\d*\.?\d*$/.test(value);
     
@@ -1050,6 +1124,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   // For MCQM (multiple choice, multiple answers)
   const handleMultiOptionSelect = (optionId: string) => {
+    if (currentLocked) return;
     let current = Array.isArray(answers[currentQuestion.id]) ? [...(answers[currentQuestion.id] as string[])] : [];
     if (current.includes(optionId)) {
       current = current.filter((id) => id !== optionId);
@@ -1065,10 +1140,34 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     if (current > 0) setCurrent(current - 1);
   };
 
+  // Study mode: show right or wrong, the key and the explanation, and lock the answer.
+  const handleCheckAnswer = async () => {
+    if (!currentQuestion || checking || currentLocked) return;
+    const id = currentQuestion.id;
+    setChecking(true);
+    try {
+      const feedback = await resolveFeedback(currentQuestion, answers[id]);
+      setFeedbackById((prev) => ({ ...prev, [id]: feedback }));
+      setCheckedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setShowIncorrectNotice(false);
+    } catch {
+      toast.error(t("quizViewer.instantFeedback.checkFailed"));
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleNext = async () => {
     // When showReportAndCorrectAnswers is on, don't block on wrong answers —
     // correct answers will be shown in the final report after the quiz.
-    if (!showReportAndCorrectAnswers && moveOnlyOnCorrectAnswer && !isCurrentAnswerCorrect) {
+    // Study mode never blocks either: the learner has seen the answer and cannot
+    // change a checked one, so the move-on-when-correct gate would trap them.
+    if (
+      !showAnswerAfterEachQuestion &&
+      !showReportAndCorrectAnswers &&
+      moveOnlyOnCorrectAnswer &&
+      !isCurrentAnswerCorrect
+    ) {
       setShowIncorrectNotice(true);
       toast.error(t("quizViewer.toast.incorrectAnswer"));
       return;
@@ -1318,6 +1417,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           localStorage.removeItem(`quiz_answers_${slideId}_${getUrlParams().chapterId}`);
           setShowReview(false);
           setAnswers({});
+          setCheckedIds([]);
+          setFeedbackById({});
           setCurrent(0);
           // Saved now, not after the next render, so another tab cannot miss it.
           const started: QuizSession = {
@@ -1381,6 +1482,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     ? passageHtml
     : getPlainText(passageHtml).slice(0, PASSAGE_LIMIT) + "...";
 
+  // Study mode: once checked, the keyed options turn green and a wrong pick red.
+  const optionTone = (optionId: string, selected: boolean): string | null => {
+    if (!currentLocked) return null;
+    const state = optionFeedbackState(currentFeedback, optionId, selected);
+    if (state === "correct") return "border-success-500 bg-success-50 text-success-700";
+    if (state === "wrong") return "border-danger-500 bg-danger-50 text-danger-700";
+    return selected ? "border-primary-500 text-primary-500" : "border-primary-100 text-neutral-700";
+  };
+
   // Render input based on question type
   const renderInput = () => {
     const currentAnswer = answers[currentQuestion.id];
@@ -1396,6 +1506,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               onChangeFunction={(e) => handleNumericInput(e.target.value)}
               inputPlaceholder={t("quizViewer.placeholders.numeric")}
               inputMode="numeric"
+              disabled={currentLocked}
               className={`text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500 ${
                 numericErrors[currentQuestion.id] ? "border-danger-600 focus:border-danger-600 focus:ring-danger-600" : ""
               }`}
@@ -1418,6 +1529,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               input={String(currentAnswer || "")}
               onChangeFunction={(e) => handleTextInput(e.target.value)}
               inputPlaceholder={t("quizViewer.placeholders.text")}
+              disabled={currentLocked}
               className="text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1433,6 +1545,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               value={currentAnswer || ""}
               onChange={(e) => handleTextInput(e.target.value)}
               placeholder={t("quizViewer.placeholders.longAnswer")}
+              disabled={currentLocked}
               className="min-h-reg-150 sm:min-h-reg-200 text-sm w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1459,9 +1572,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                   key={option.id}
                   onClick={() => handleMultiOptionSelect(option.id)}
                   className={`flex items-center space-x-3 rounded-md border p-3 w-full cursor-pointer transition-all duration-200 select-none
-                    ${selected
+                    ${optionTone(option.id, selected) ?? (selected
                       ? "border-primary-500 text-primary-700"
-                      : "border-primary-100 hover:border-primary-500 text-neutral-700"}
+                      : "border-primary-100 hover:border-primary-500 text-neutral-700")}
                   `}
                   style={{ userSelect: "none" }}
                 >
@@ -1499,9 +1612,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                   key={option.id}
                   onClick={() => handleOptionSelect(option.id)}
                   className={`flex items-center space-x-3 rounded-md border p-3 w-full cursor-pointer transition-all duration-200 select-none
-                    ${selected
+                    ${optionTone(option.id, selected) ?? (selected
                       ? "border-primary-500 text-primary-700"
-                      : "border-primary-100 hover:border-primary-500 text-neutral-700"}
+                      : "border-primary-100 hover:border-primary-500 text-neutral-700")}
                   `}
                   style={{ userSelect: "none" }}
                 >
@@ -1553,6 +1666,42 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     }
   };
 
+  // Study mode: the primary button checks the answer first, then moves on.
+  const needsCheck = showAnswerAfterEachQuestion && !currentLocked;
+  const primaryAction = needsCheck ? handleCheckAnswer : handleNext;
+  const checkLabel = checking
+    ? t("quizViewer.instantFeedback.checking")
+    : t("quizViewer.instantFeedback.checkAnswer");
+  const escapeText = (text: string) => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  const renderFeedbackPanel = (feedback: InstantFeedback) => {
+    const answerHtml =
+      feedback.correctOptionIds.length > 0
+        ? feedback.correctOptionIds.flatMap((id) => {
+            const option = currentQuestion.options.find((o) => o.id === id);
+            return option ? [renderHtmlWithMath(option.text.content)] : [];
+          })
+        : feedback.correctAnswerText
+          ? [
+              questionType === "LONG_ANSWER"
+                ? renderHtmlWithMath(feedback.correctAnswerText)
+                : escapeText(feedback.correctAnswerText),
+            ]
+          : [];
+    return (
+      <QuizInstantFeedbackPanel
+        verdict={feedback.verdict}
+        answerHtml={answerHtml}
+        answerKind={feedback.verdict === "compare" && !isNumericQuestion(questionType) ? "model" : "key"}
+        explanationHtml={feedback.explanationHtml ? renderHtmlWithMath(feedback.explanationHtml) : null}
+      />
+    );
+  };
+  const feedbackPanel = currentFeedback ? renderFeedbackPanel(currentFeedback) : null;
+
   if (isFun) {
     return (
       <>
@@ -1575,13 +1724,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           numericError={numericErrors[currentQuestion.id] || undefined}
           incorrectNotice={showIncorrectNotice}
           answered={isAnswered()}
-          submitting={isSubmitting}
+          submitting={isSubmitting || checking}
           onSelect={handleOptionSelect}
           onToggle={handleMultiOptionSelect}
           onText={handleTextInput}
           onNumeric={handleNumericInput}
           onPrev={handlePrev}
-          onNext={handleNext}
+          onNext={primaryAction}
+          nextLabel={needsCheck ? checkLabel : undefined}
+          feedback={feedbackPanel ?? undefined}
           timer={
             session && timeLimitSeconds > 0 ? (
               <QuizTimer
@@ -1671,6 +1822,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         )}
 
         {renderInput()}
+        {feedbackPanel}
       </div>
 
       {/* Navigation */}
@@ -1701,12 +1853,12 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         <MyButton
           buttonType="primary"
           scale="medium"
-          disable={!isAnswered() || isSubmitting}
-          onClick={handleNext}
+          disable={!isAnswered() || isSubmitting || checking}
+          onClick={primaryAction}
           className="flex items-center justify-center min-w-reg-120 space-x-2"
         >
-          <span>{isSubmitting ? t("quizViewer.buttons.submitting") : current === total - 1 ? t("quizViewer.buttons.finish") : t("quizViewer.buttons.next")}</span>
-          {current !== total - 1 && !isSubmitting && <span>→</span>}
+          <span>{needsCheck ? checkLabel : isSubmitting ? t("quizViewer.buttons.submitting") : current === total - 1 ? t("quizViewer.buttons.finish") : t("quizViewer.buttons.next")}</span>
+          {!needsCheck && current !== total - 1 && !isSubmitting && <span>→</span>}
         </MyButton>
       </div>
     </div>

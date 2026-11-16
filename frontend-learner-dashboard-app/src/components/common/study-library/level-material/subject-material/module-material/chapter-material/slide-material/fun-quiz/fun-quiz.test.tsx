@@ -383,6 +383,23 @@ describe("FunQuizQuestion", () => {
     expect(text(el.querySelector(".fun-quiz__wrong"))).toBe("libraryCommonB:quizViewer.incorrectTryAgain");
   });
 
+  it("study mode: the main button checks first, and the feedback sits under the answer", async () => {
+    const onNext = vi.fn();
+    const el = await render(
+      <FunQuizQuestion {...qbase} answer="q2c" answered nextLabel="Check answer" onNext={onNext} />
+    );
+    const next = el.querySelector(".fun-quiz__next") as HTMLButtonElement;
+    expect(text(next)).toBe("Check answer");
+    await act(async () => next.click());
+    expect(onNext).toHaveBeenCalledTimes(1);
+
+    await act(async () => root!.render(
+      <FunQuizQuestion {...qbase} answer="q2c" answered feedback={<p className="study-feedback">Incorrect</p>} />
+    ));
+    expect(text(el.querySelector(".fun-quiz__main .study-feedback"))).toBe("Incorrect");
+    expect(text(el.querySelector(".fun-quiz__next"))).toBe("libraryCommonB:quizViewer.buttons.next");
+  });
+
   it("shows the timer only when the quiz gives one", async () => {
     let el = await render(<FunQuizQuestion {...qbase} />);
     expect(el.querySelector('[role="timer"]')).toBeNull();

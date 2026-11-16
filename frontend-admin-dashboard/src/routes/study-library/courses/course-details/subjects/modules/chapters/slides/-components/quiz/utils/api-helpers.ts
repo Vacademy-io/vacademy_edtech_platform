@@ -289,6 +289,7 @@ export interface QuizSettings {
     partialMarking?: boolean;
     passPercentage?: number | null;
     reAttemptCount?: number | null;
+    showAnswerAfterEachQuestion?: boolean;
 }
 
 // Helper function to create quiz slide payload for API
@@ -345,6 +346,11 @@ export const createQuizSlidePayload = (
                 settings?.reAttemptCount !== undefined
                     ? settings.reAttemptCount
                     : ((activeItem.quiz_slide as any)?.re_attempt_count ?? null),
+            // null = "unchanged": the server keeps the stored setting
+            show_answer_after_each_question:
+                settings?.showAnswerAfterEachQuestion !== undefined
+                    ? settings.showAnswerAfterEachQuestion
+                    : activeItem.quiz_slide?.show_answer_after_each_question ?? null,
             questions: transformedQuestions,
         },
         is_loaded: true,

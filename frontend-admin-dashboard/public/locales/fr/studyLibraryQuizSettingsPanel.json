@@ -7,6 +7,8 @@
     "partialMarkingHint": "Questions à réponses multiples : choisir seulement une partie des bonnes réponses (sans mauvaise) rapporte cette part des points",
     "passPercentage": "🎯 % de réussite",
     "attempts": "Tentatives",
+    "showAnswerAfterEachQuestion": "👁 Afficher la réponse après chaque question",
+    "showAnswerAfterEachQuestionHint": "Mode révision : après avoir répondu, l’apprenant appuie sur Vérifier pour voir si c’est juste, la bonne réponse et l’explication, puis continue. La réponse est verrouillée après vérification.",
     "savingEllipsis": "Enregistrement…",
     "saveSettings": "Enregistrer les paramètres"
 }

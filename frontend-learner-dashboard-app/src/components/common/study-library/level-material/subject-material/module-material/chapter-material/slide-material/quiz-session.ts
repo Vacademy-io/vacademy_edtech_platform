@@ -17,6 +17,8 @@ export interface QuizSession {
   spentMs: number;
   answers: QuizAnswers;
   current: number;
+  /** Study-mode quizzes: questions already checked, whose answers are locked. */
+  checked?: string[];
 }
 
 type QuizSessionStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -39,6 +41,9 @@ export const readQuizSession = (
       spentMs: Number.isFinite(parsed.spentMs) && parsed.spentMs > 0 ? parsed.spentMs : 0,
       answers: parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {},
       current: Number.isInteger(parsed.current) && parsed.current >= 0 ? parsed.current : 0,
+      ...(Array.isArray(parsed.checked) && {
+        checked: parsed.checked.filter((id: unknown): id is string => typeof id === "string"),
+      }),
     };
   } catch {
     return null;

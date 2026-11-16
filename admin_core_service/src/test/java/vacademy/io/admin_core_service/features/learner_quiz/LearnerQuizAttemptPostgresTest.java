@@ -721,6 +721,24 @@ class LearnerQuizAttemptPostgresTest {
     }
 
     @Test
+    @DisplayName("a quiz in study mode returns the key and the explanation once answered")
+    void quizStudyModeCheck() {
+        QuizAnswerCheckRequest check = new QuizAnswerCheckRequest();
+        check.setSlideId(slide);
+        check.setQuestionId(q1);
+        check.setSelectedOptionIds(List.of("A2"));
+        assertThatThrownBy(() -> service.checkAnswer(check, user(learner), institute))
+                .as("off by default: closed under the default institute settings")
+                .isInstanceOf(ForbiddenException.class);
+
+        jdbc.update("UPDATE quiz_slide SET show_answer_after_each_question = true WHERE id = ?", quiz);
+        QuizAnswerCheckResponse wrong = service.checkAnswer(check, user(learner), institute);
+        assertThat(wrong.getCorrect()).isFalse();
+        assertThat(wrong.getCorrectOptionIds()).containsExactly("A1");
+        assertThat(wrong.getExplanation()).isEqualTo("Because one");
+    }
+
+    @Test
     @DisplayName("a question slide check returns its guidance")
     void questionSlideCheck() {
         String qs = id();

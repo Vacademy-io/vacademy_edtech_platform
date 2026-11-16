@@ -13,7 +13,11 @@ import java.util.List;
 public class QuizAnswerCheckResponse {
     /** Null when this question cannot be marked automatically. */
     private Boolean correct;
-    /** Video and question slides only: quiz questions report the verdict and nothing more. */
+    /**
+     * Video slides, and quizzes in study mode ("show answer after each question"). Other quiz
+     * questions report the verdict and nothing more. On a numeric question these are the
+     * accepted values rather than option ids.
+     */
     private List<String> correctOptionIds;
     private String correctAnswerText;
     private String explanation;

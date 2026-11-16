@@ -30,6 +30,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.repository.Activ
 import vacademy.io.admin_core_service.features.learner_tracking.repository.QuizSlideQuestionTrackedRepository;
 import vacademy.io.admin_core_service.features.learner_tracking.service.LearnerTrackingAsyncService;
 import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluationScorer;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.core.i18n.LocaleRegistry;
 import vacademy.io.common.exceptions.ConflictException;
@@ -504,7 +505,9 @@ public class LearnerQuizAttemptService {
     /**
      * Whether one answer is right, without recording anything. Quiz questions answer only
      * while the institute uses "move on only after a correct answer", and say nothing past
-     * the verdict. Question slides get the verdict and the explanation they have always shown
+     * the verdict, unless the quiz itself is in study mode ("show answer after each
+     * question"): then the learner who has answered also gets the correct answer and the
+     * explanation. Question slides get the verdict and the explanation they have always shown
      * straight after answering. Video questions also get the correct option, because the
      * overlay shows it after one guess.
      */
@@ -531,9 +534,15 @@ public class LearnerQuizAttemptService {
 
     private QuizAnswerCheckResponse checkQuizAnswer(QuizAnswerCheckRequest request, String slideId,
             LearnerQuizAccessService.Access access, String responseJson, CustomUserDetails user) {
-        QuizReviewPolicy.QuizSettings settings = reviewPolicy.settingsOf(access.instituteId());
-        if (settings.showReportAndCorrectAnswers() || !settings.moveOnlyOnCorrectAnswer()) {
-            throw new ForbiddenException("Answers are checked when the quiz is submitted");
+        // Read from the stored quiz, never from the request: only the author turns study mode on.
+        boolean studyMode = repository.findQuizBySlideId(slideId)
+                .map(meta -> Boolean.TRUE.equals(meta.getShowAnswerAfterEachQuestion()))
+                .orElse(false);
+        if (!studyMode) {
+            QuizReviewPolicy.QuizSettings settings = reviewPolicy.settingsOf(access.instituteId());
+            if (settings.showReportAndCorrectAnswers() || !settings.moveOnlyOnCorrectAnswer()) {
+                throw new ForbiddenException("Answers are checked when the quiz is submitted");
+            }
         }
         LoadedQuiz quiz = quizLoader.load(slideId)
                 .orElseThrow(() -> new ResourceNotFoundException("Slide not found"));
@@ -548,7 +557,40 @@ public class LearnerQuizAttemptService {
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         AutoEvaluationScorer.Verdict verdict = scorer.evaluateForQuestionType(question.questionType(),
                 question.autoEvaluationJson(), responseJson, question::optionIds);
-        return QuizAnswerCheckResponse.builder().correct(verdictToBoolean(verdict)).build();
+        if (!studyMode) {
+            return QuizAnswerCheckResponse.builder().correct(verdictToBoolean(verdict)).build();
+        }
+        return studyModeFeedback(question, verdict, hasAnswer(request));
+    }
+
+    /**
+     * What a study-mode quiz shows once a question is answered: the verdict, the correct
+     * option ids (or the numeric value), the author's model answer for typed questions, and
+     * the explanation. Nothing past the verdict before an answer is given, and never a
+     * spreadsheet or written-response key, which stays on the server.
+     */
+    private QuizAnswerCheckResponse studyModeFeedback(QuizGrader.Question question, AutoEvaluationScorer.Verdict verdict,
+            boolean answered) {
+        if (!answered) {
+            return QuizAnswerCheckResponse.builder().correct(Boolean.FALSE).build();
+        }
+        QuizAnswerCheckResponse.QuizAnswerCheckResponseBuilder out = QuizAnswerCheckResponse.builder()
+                .correct(verdictToBoolean(verdict))
+                .explanation(question.explanation());
+        if (CbeConfigSecrets.isCbe(question.questionType(), question.autoEvaluationJson())) {
+            return out.build();
+        }
+        return out
+                .correctOptionIds(new ArrayList<>(scorer.correctAnswerIdsForQuestionType(question.questionType(),
+                        question.autoEvaluationJson(), question::optionIds)))
+                .correctAnswerText(scorer.modelAnswerText(question.autoEvaluationJson()))
+                .build();
+    }
+
+    private static boolean hasAnswer(QuizAnswerCheckRequest request) {
+        return StringUtils.hasText(request.getTextAnswer())
+                || (request.getSelectedOptionIds() != null
+                        && request.getSelectedOptionIds().stream().anyMatch(StringUtils::hasText));
     }
 
     private QuizAnswerCheckResponse checkSlideAnswer(QuizAnswerCheckRequest request, String slideId, String sourceType,
