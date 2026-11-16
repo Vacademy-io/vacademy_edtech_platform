@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -70,11 +70,14 @@ export const AddSpreadsheetDialog = ({
     const [error, setError] = useState<string | null>(null);
     const [reading, setReading] = useState(false);
     const [saving, setSaving] = useState(false);
+    // Title last filled in from a file name (so a re-pick can replace it).
+    const autoTitleRef = useRef('');
 
     useEffect(() => {
         if (open) return;
         setPicked(null);
         setTitle('');
+        autoTitleRef.current = '';
         setError(null);
         setReading(false);
         setSaving(false);
@@ -90,7 +93,11 @@ export const AddSpreadsheetDialog = ({
             try {
                 const converted = await convertSpreadsheetFile(file);
                 setPicked({ file, converted });
-                setTitle((prev) => prev || spreadsheetTitleFromFileName(file.name));
+                // Follow the new file's name unless the admin typed their own title.
+                const nextAuto = spreadsheetTitleFromFileName(file.name);
+                const prevAuto = autoTitleRef.current;
+                autoTitleRef.current = nextAuto;
+                setTitle((current) => (!current || current === prevAuto ? nextAuto : current));
             } catch (err) {
                 setError(spreadsheetErrorMessage(t, i18n.language, err));
             } finally {
@@ -193,11 +200,13 @@ export const AddSpreadsheetDialog = ({
         <MyDialog
             trigger={<></>}
             heading={tMenu('dialogs.uploadSpreadsheet')}
-            dialogWidth="min-w-slide-dialog-sm w-auto"
+            // Full width on phones; the usual add-slide dialog width from sm up.
+            dialogWidth="max-w-lg sm:min-w-slide-dialog-sm"
             open={open}
             onOpenChange={(next) => !saving && onOpenChange(next)}
         >
-            <div className="flex flex-col gap-5 p-6">
+            {/* MyDialog already pads its body. */}
+            <div className="flex flex-col gap-5">
                 <div
                     {...getRootProps()}
                     className={cn(
