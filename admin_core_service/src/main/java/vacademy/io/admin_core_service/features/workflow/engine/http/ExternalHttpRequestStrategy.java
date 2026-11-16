@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.admin_core_service.features.workflow.dto.HttpRequestNodeConfigDTO;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,10 +72,22 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
                 }
             }
 
+            // Query values are bound as URI variables so they are strictly percent-encoded on
+            // expansion. Appending them raw let a value containing '#', '&' or '+' corrupt the
+            // request: a Moodle password with '#' turned everything after it (firstname,
+            // lastname, email) into a URL fragment, so core_user_create_users failed with
+            // "Missing required key ... firstname" and the learner got no account or email.
+            Map<String, Object> queryVars = new HashMap<>();
             if (cfg.getQueryParams() != null && cfg.getQueryParams().isObject()) {
                 cfg.getQueryParams().fields().forEachRemaining(entry -> {
                     String val = httpHelperUtils.evaluateSpel(entry.getValue().asText(), context, String.class, "");
-                    uriBuilder.queryParam(entry.getKey(), val);
+                    if (val == null) {
+                        uriBuilder.queryParam(entry.getKey());
+                        return;
+                    }
+                    String var = "qp" + queryVars.size();
+                    uriBuilder.queryParam(entry.getKey(), "{" + var + "}");
+                    queryVars.put(var, val);
                 });
             }
 
@@ -83,7 +96,9 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
                 requestBody = httpHelperUtils.evaluateBodyExpressions(cfg.getBody(), context);
             }
 
-            String finalUrl = uriBuilder.build().toUriString();
+            // Passed to RestTemplate as a URI, not a String, so it is not encoded a second time.
+            URI finalUri = uriBuilder.encode().buildAndExpand(queryVars).toUri();
+            String finalUrl = finalUri.toString();
             HttpEntity<?> entity = new HttpEntity<>(requestBody, headers);
 
             logCurl(method, finalUrl, entity);
@@ -91,7 +106,7 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
             log.info("Executing EXTERNAL HTTP {} → {}", method, finalUrl);
             if (requestBody != null) log.debug("Request body: {}", requestBody);
 
-            ResponseEntity<String> response = restTemplate.exchange(finalUrl, method, entity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(finalUri, method, entity, String.class);
             result.putAll(httpHelperUtils.processResponse(response));
 
         } catch (HttpClientErrorException e) {
