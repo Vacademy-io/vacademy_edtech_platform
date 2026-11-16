@@ -134,33 +134,6 @@ public class RenewalChargeService {
     }
 
     /**
-     * TEST-ONLY: force a renewal charge for a single plan NOW, bypassing the
-     * next_charge_at date filter, so autopay can be verified on demand instead of
-     * waiting for the trial/cycle to elapse. Runs the exact same processOne path
-     * the scheduler uses. Remove/secure the calling endpoint before prod.
-     */
-    public String chargeNow(String userPlanId) {
-        java.util.List<UserPlan> plans = userPlanRepository.findByIdsWithoutPaymentLogs(java.util.List.of(userPlanId));
-        if (plans.isEmpty()) {
-            return "PLAN_NOT_FOUND: " + userPlanId;
-        }
-        UserPlan plan = plans.get(0);
-        // processOne's atomic claim needs next_charge_at to be set; arm it to now
-        // if the caller is testing a plan whose charge date hasn't arrived yet.
-        if (plan.getNextChargeAt() == null) {
-            plan.setNextChargeAt(new Date());
-            userPlanRepository.save(plan);
-        }
-        try {
-            Outcome o = processOne(plan, new Date());
-            return "userPlan=" + userPlanId + " outcome=" + o;
-        } catch (Exception e) {
-            log.error("[RenewalCharge] chargeNow failed for {}: {}", userPlanId, e.getMessage(), e);
-            return "ERROR: " + e.getMessage();
-        }
-    }
-
-    /**
      * True when a fixed-term subscription has run its full duration. The term is
      * AUTOPAY_SETTING.TOTAL_DURATION_MONTHS on the invite, measured from the plan's
      * start_date. Open-ended (no/invalid setting) always returns false.
