@@ -66,6 +66,15 @@ const InstructionPage = () => {
       let Assessment = AssessmentData.value
         ? JSON.parse(AssessmentData.value)
         : null;
+      // A key left behind by another assessment must not answer for this one
+      // (e.g. a learner-home link opens /assessment/examination/<id> directly).
+      if (
+        assessmentId &&
+        Assessment?.assessment_id &&
+        Assessment.assessment_id !== assessmentId
+      ) {
+        Assessment = null;
+      }
 
       // First-load / public-link fallback: resolve from backend when storage key
       // is absent (direct link, race with navigation source's write).

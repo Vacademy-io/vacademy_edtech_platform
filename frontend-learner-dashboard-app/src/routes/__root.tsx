@@ -71,6 +71,7 @@ import { applyAppSkinClass } from "@/lib/app-skin";
 import { useFunSkinRuntime } from "@/components/design-system/fun/use-fun-skin-runtime";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
 import { clearArrivalTokens, readArrivalTokens } from "@/lib/auth/arrival-tokens";
+import { isReaderBlockedPath } from "@/lib/reader-blocked-paths";
 import {
   installStudentPreviewBridge,
   notifyStudentPreviewRoute,
@@ -113,6 +114,10 @@ const PUBLIC_ROUTES = [
   "/pay/invoice", // Shareable invoice payment links
   "/leaderboard", // Public shareable course leaderboard
   "/site-assistant-embed", // Site Assistant iframe on institutes' own websites
+  // Learner home builder preview. Renders only inside the admin's named
+  // preview frame with a draft from an allowed admin origin; anywhere else it
+  // redirects to /dashboard. It carries no data of its own.
+  "/home-preview",
 ];
 
 // Marketplace / external-payment route prefixes that are hidden when the app
@@ -121,25 +126,8 @@ const PUBLIC_ROUTES = [
 // These overlap with PUBLIC_ROUTES, so the reader-mode guard in beforeLoad
 // must run BEFORE the public-route bypass. The dynamic catalogue routes
 // (/{tagName}, /{tagName}/{courseId}) are guarded at the component level
-// instead to avoid path-matching false positives.
-const READER_BLOCKED_PATH_PREFIXES = [
-  "/courses",
-  "/product-pages",
-  "/admission/payment",
-  "/pay",
-  "/payment-result",
-  // Sub-org self-registration ends in a Razorpay/Cashfree checkout wizard
-  // (and /sub-org-registration/payment-result) — an external-gateway purchase.
-  "/sub-org-registration",
-  // Parent portal "Payment" tab embeds Razorpay for admission/fee payment.
-  // Only the payment sub-route is blocked; the rest of /parent stays reachable.
-  "/parent/payment",
-];
-
-const isReaderBlockedPath = (pathname: string): boolean =>
-  READER_BLOCKED_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+// instead to avoid path-matching false positives. The list itself lives in
+// lib/reader-blocked-paths (shared with the learner home's link resolver).
 
 // Shared with the per-route guards that need the same check (see
 // lib/auth/session-guard) so "is this learner signed in?" has one definition.

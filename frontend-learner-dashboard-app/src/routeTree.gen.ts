@@ -36,6 +36,7 @@ import { Route as LiveClassGuestIndexRouteImport } from './routes/live-class-gue
 import { Route as LearnerInvitationResponseIndexRouteImport } from './routes/learner-invitation-response/index'
 import { Route as KycCompleteIndexRouteImport } from './routes/kyc-complete/index'
 import { Route as InstituteSelectionIndexRouteImport } from './routes/institute-selection/index'
+import { Route as HomePreviewIndexRouteImport } from './routes/home-preview/index'
 import { Route as EnquiryResponseIndexRouteImport } from './routes/enquiry-response/index'
 import { Route as EngagementIndexRouteImport } from './routes/engagement/index'
 import { Route as DownloadsIndexRouteImport } from './routes/downloads/index'
@@ -266,6 +267,11 @@ const KycCompleteIndexRoute = KycCompleteIndexRouteImport.update({
 const InstituteSelectionIndexRoute = InstituteSelectionIndexRouteImport.update({
   id: '/institute-selection/',
   path: '/institute-selection/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomePreviewIndexRoute = HomePreviewIndexRouteImport.update({
+  id: '/home-preview/',
+  path: '/home-preview/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EnquiryResponseIndexRoute = EnquiryResponseIndexRouteImport.update({
@@ -820,6 +826,7 @@ export interface FileRoutesByFullPath {
   '/downloads': typeof DownloadsIndexRoute
   '/engagement': typeof EngagementIndexRoute
   '/enquiry-response': typeof EnquiryResponseIndexRoute
+  '/home-preview': typeof HomePreviewIndexRoute
   '/institute-selection': typeof InstituteSelectionIndexRoute
   '/kyc-complete': typeof KycCompleteIndexRoute
   '/learner-invitation-response': typeof LearnerInvitationResponseIndexRoute
@@ -943,6 +950,7 @@ export interface FileRoutesByTo {
   '/downloads': typeof DownloadsIndexRoute
   '/engagement': typeof EngagementIndexRoute
   '/enquiry-response': typeof EnquiryResponseIndexRoute
+  '/home-preview': typeof HomePreviewIndexRoute
   '/institute-selection': typeof InstituteSelectionIndexRoute
   '/kyc-complete': typeof KycCompleteIndexRoute
   '/learner-invitation-response': typeof LearnerInvitationResponseIndexRoute
@@ -1067,6 +1075,7 @@ export interface FileRoutesById {
   '/downloads/': typeof DownloadsIndexRoute
   '/engagement/': typeof EngagementIndexRoute
   '/enquiry-response/': typeof EnquiryResponseIndexRoute
+  '/home-preview/': typeof HomePreviewIndexRoute
   '/institute-selection/': typeof InstituteSelectionIndexRoute
   '/kyc-complete/': typeof KycCompleteIndexRoute
   '/learner-invitation-response/': typeof LearnerInvitationResponseIndexRoute
@@ -1193,6 +1202,7 @@ export interface FileRouteTypes {
     | '/downloads'
     | '/engagement'
     | '/enquiry-response'
+    | '/home-preview'
     | '/institute-selection'
     | '/kyc-complete'
     | '/learner-invitation-response'
@@ -1316,6 +1326,7 @@ export interface FileRouteTypes {
     | '/downloads'
     | '/engagement'
     | '/enquiry-response'
+    | '/home-preview'
     | '/institute-selection'
     | '/kyc-complete'
     | '/learner-invitation-response'
@@ -1439,6 +1450,7 @@ export interface FileRouteTypes {
     | '/downloads/'
     | '/engagement/'
     | '/enquiry-response/'
+    | '/home-preview/'
     | '/institute-selection/'
     | '/kyc-complete/'
     | '/learner-invitation-response/'
@@ -1564,6 +1576,7 @@ export interface RootRouteChildren {
   DownloadsIndexRoute: typeof DownloadsIndexRoute
   EngagementIndexRoute: typeof EngagementIndexRoute
   EnquiryResponseIndexRoute: typeof EnquiryResponseIndexRoute
+  HomePreviewIndexRoute: typeof HomePreviewIndexRoute
   InstituteSelectionIndexRoute: typeof InstituteSelectionIndexRoute
   KycCompleteIndexRoute: typeof KycCompleteIndexRoute
   LearnerInvitationResponseIndexRoute: typeof LearnerInvitationResponseIndexRoute
@@ -1847,6 +1860,13 @@ declare module '@tanstack/react-router' {
       path: '/institute-selection'
       fullPath: '/institute-selection'
       preLoaderRoute: typeof InstituteSelectionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-preview/': {
+      id: '/home-preview/'
+      path: '/home-preview'
+      fullPath: '/home-preview'
+      preLoaderRoute: typeof HomePreviewIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/enquiry-response/': {
@@ -2580,6 +2600,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadsIndexRoute: DownloadsIndexRoute,
   EngagementIndexRoute: EngagementIndexRoute,
   EnquiryResponseIndexRoute: EnquiryResponseIndexRoute,
+  HomePreviewIndexRoute: HomePreviewIndexRoute,
   InstituteSelectionIndexRoute: InstituteSelectionIndexRoute,
   KycCompleteIndexRoute: KycCompleteIndexRoute,
   LearnerInvitationResponseIndexRoute: LearnerInvitationResponseIndexRoute,
