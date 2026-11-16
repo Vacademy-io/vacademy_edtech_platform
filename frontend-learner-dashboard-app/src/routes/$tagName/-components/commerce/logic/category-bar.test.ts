@@ -38,6 +38,29 @@ describe('barChips', () => {
     });
 });
 
+describe('barChips photos ("image" style)', () => {
+    const withPhotos = [
+        { ...node('sarees', 'साड़ियाँ'), image_url: 'https://media.example/c-sarees.webp' },
+        { ...node('bags', 'बैग'), image_url: null },
+        { ...node('gifts', 'उपहार'), image_url: 'javascript:alert(1)' },
+    ] as Category[];
+
+    it("carries each collection's photo, none for All, a missing or unsafe one, or a page", () => {
+        const chips = barChips({ items: 'auto', showAll: true }, withPhotos, labels);
+        expect(chips.map((c) => c.image)).toEqual([null, 'https://media.example/c-sarees.webp', null, null]);
+    });
+
+    it("finds the photo of a site's own collection item in the tree", () => {
+        const chips = barChips(
+            { items: [{ label: 'साड़ी', route: 'c/sarees' }, { label: 'कहानी', route: 'our-story' }], showAll: false },
+            [],
+            labels,
+            withPhotos
+        );
+        expect(chips.map((c) => c.image)).toEqual(['https://media.example/c-sarees.webp', null]);
+    });
+});
+
 describe('activeBarChip', () => {
     const chips = barChips({ items: 'auto', showAll: true }, TREE, labels);
 

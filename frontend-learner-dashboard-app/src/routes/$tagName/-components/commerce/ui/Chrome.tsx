@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from '@tanstack/react-router';
-import { CaretDown, MagnifyingGlass, ShoppingBagOpen, WhatsappLogo, X } from '@phosphor-icons/react';
+import { CaretDown, MagnifyingGlass, ShoppingBagOpen, SquaresFour, WhatsappLogo, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Category } from '../api/types';
 import { cartCount } from '../state/cart-logic';
@@ -13,8 +13,9 @@ import { useCommerceCart } from '../state/cart-store';
 import { localeLabel } from '../i18n';
 import { apiPathTo, parseCommerceRoute, commercePageKey, siteSegments, withQuery } from '../routes';
 import { RouteMatcher } from '../../../-services/route-matcher';
+import { categoryBarPhotosOn } from '../config';
 import { activeBarChip, barChips, type BarChip } from '../logic/category-bar';
-import { useHeaderFold } from './hooks';
+import { PHOTO_ROW_COLLAPSE_Y, useHeaderBottom, useHeaderFold } from './hooks';
 import { thumbUrl } from '../logic/media';
 import { CartDrawer } from './Cart';
 import { Layer, PriceText, useCommerceThemeVars, usePresetClass } from './primitives';
@@ -253,6 +254,9 @@ export const HeaderSlot: React.FC<{ showLanguage?: boolean; className?: string }
     const openDrawer = useCommerceCart((s) => s.openDrawer);
     const [searchOpen, setSearchOpen] = useState(false);
     const count = hydrated ? cartCount(cart) : 0;
+    // Where the fixed header ends, for the rows pinned under it (--cmx-head-bottom).
+    const slotRef = useRef<HTMLSpanElement>(null);
+    useHeaderBottom(slotRef);
     const [bump, setBump] = useState(false);
     const previous = useRef(count);
     useEffect(() => {
@@ -270,7 +274,7 @@ export const HeaderSlot: React.FC<{ showLanguage?: boolean; className?: string }
         return () => window.removeEventListener(OPEN_SEARCH_EVENT, open);
     }, []);
     return (
-        <span className={cn('cmx cmx-slot', className)} lang={locale} style={themeVars}>
+        <span ref={slotRef} className={cn('cmx cmx-slot', className)} lang={locale} style={themeVars}>
             <button type="button" className="cmx-icon-btn" onClick={() => setSearchOpen(true)} aria-label={t('nav.search')} aria-haspopup="dialog">
                 <MagnifyingGlass size={22} aria-hidden="true" />
             </button>
@@ -357,7 +361,7 @@ const HeaderChip: React.FC<{ chip: BarChip; chips: boolean; current?: 'page' | '
         <li className="cmx-catbar__item" data-chip={chip.key}>
             <ShopLink to={chip.to} className={chips ? 'cmx-hbar__chip' : 'cmx-catbar__link'} aria-current={current}>
                 {chips ? <span className="cmx-hbar__pill">{chip.label}</span> : chip.label}
-                {chip.children.length > 0 && <CaretDown size={12} aria-hidden="true" className="hidden lg:inline" />}
+                {chip.children.length > 0 && <CaretDown size={12} aria-hidden="true" className="cmx-hbar__caret hidden lg:inline" />}
             </ShopLink>
             {chip.children.length > 0 && (
                 <ul className="cmx-catbar__menu" aria-label={t('nav.more', { name: chip.label })}>
@@ -372,11 +376,59 @@ const HeaderChip: React.FC<{ chip: BarChip; chips: boolean; current?: 'page' | '
     );
 };
 
+/** The photos load first for the tiles a phone shows at once; the rest when scrolled to. */
+const EAGER_PHOTOS = 5;
+/** The photo's box (56px on a phone, 64px from 768px; the attributes give the shape before it loads). */
+const PHOTO_SIZE = 64;
+
+/**
+ * One tile of the photo row: a round photo with the name under it, or, for a collection without a
+ * photo, its name as a chip. "All" is a round tile with a grid mark.
+ */
+const PhotoTile: React.FC<{ chip: BarChip; index: number; current?: 'page' | 'true' }> = ({ chip, index, current }) => {
+    const all = chip.slug === null && chip.to.toLowerCase() === 'shop';
+    if (!chip.image && !all) {
+        return (
+            <li data-chip={chip.key}>
+                <ShopLink to={chip.to} className="cmx-hbar__tile cmx-hbar__tile--text" aria-current={current}>
+                    <span className="cmx-hbar__pill">{chip.label}</span>
+                </ShopLink>
+            </li>
+        );
+    }
+    return (
+        <li data-chip={chip.key}>
+            <ShopLink to={chip.to} className="cmx-hbar__tile" aria-current={current}>
+                <span className={cn('cmx-hbar__thumb', !chip.image && 'cmx-hbar__thumb--all')} aria-hidden="true">
+                    {chip.image ? (
+                        <img
+                            src={chip.image}
+                            alt=""
+                            width={PHOTO_SIZE}
+                            height={PHOTO_SIZE}
+                            loading={index < EAGER_PHOTOS ? 'eager' : 'lazy'}
+                            decoding="async"
+                        />
+                    ) : (
+                        <SquaresFour size={26} weight="duotone" />
+                    )}
+                </span>
+                <span className="cmx-hbar__label">{chip.label}</span>
+            </ShopLink>
+        </li>
+    );
+};
+
 /**
  * The shop's categories as the second row of the fixed site header: one 48 px row that swipes
  * sideways on a phone, the active chip centred, a fade on the edge that has more. On phones and
  * tablets the logo row above it folds away on scroll-down (collapseHeaderOnScroll); the bar
  * itself never hides. Its height is the same while the categories load.
+ *
+ * The "image" style adds a photo row: at the top of the page a round photo of each category with
+ * its name under it (96 px, the page reserves it), which folds into the chip row once the page
+ * scrolls, so what stays pinned is the same 48 px row. The photo row hangs over the chip row and
+ * below the header's box, and folds with opacity and a transform only: nothing is laid out again.
  */
 export const CategoryHeaderRow: React.FC<{ menuOpen?: boolean }> = ({ menuOpen = false }) => {
     const { t, siteT, config, tagName, locale } = useCommerceSite();
@@ -393,27 +445,34 @@ export const CategoryHeaderRow: React.FC<{ menuOpen?: boolean }> = ({ menuOpen =
     const productCategory = (product.data?.collections || []).find((c) => (c.kind || '').toUpperCase() === 'CATEGORY')?.slug || null;
     const menu = useMemo(() => menuCategories(tree.data?.data, config.minInStock), [tree.data, config.minInStock]);
     const chips = useMemo(
-        () => (bar ? barChips(bar, menu, { all: t('nav.all'), translate: (text) => siteT(text) }) : []),
-        [bar, menu, t, siteT]
+        () => (bar ? barChips(bar, menu, { all: t('nav.all'), translate: (text) => siteT(text) }, tree.data?.data) : []),
+        [bar, menu, t, siteT, tree.data]
     );
     const active = activeBarChip(
         chips,
         { key: pageKey, slug: route?.kind === 'collection' ? route.slug : null, productCategory },
         tree.data?.data
     );
+    const chipsSignature = chips.map((chip) => `${chip.key}\u0000${chip.label}`).join('\u0001');
     const rowRef = useRef<HTMLUListElement>(null);
+    const tilesRef = useRef<HTMLUListElement>(null);
     const navRef = useRef<HTMLElement>(null);
-    const [fade, setFade] = useState({ start: false, end: false });
-    useHeaderFold(navRef, !!bar?.collapseHeaderOnScroll, menuOpen);
+    const [fade, setFade] = useState({ start: false, end: false, over: false });
+    // Style "image": the photo row on the pages the site picked (all of the bar's pages by default).
+    const photos = categoryBarPhotosOn(config, pageKey);
+    // The photo row is open at the first paint at the top of the page (the hook keeps it after).
+    const [openAtFirstPaint] = useState(() => photos && (typeof window === 'undefined' || window.scrollY < PHOTO_ROW_COLLAPSE_Y));
+    useHeaderFold(navRef, !!bar?.collapseHeaderOnScroll, menuOpen, photos);
 
     const loading = tree.isLoading && bar?.items === 'auto';
-    // Centre the active chip in the row (the row scrolls, never the page).
+    // Centre the active chip (and its photo) in its row (the row scrolls, never the page).
     useLayoutEffect(() => {
-        const row = rowRef.current;
-        if (!row) return;
-        const chip = active ? Array.from(row.querySelectorAll<HTMLElement>('[data-chip]')).find((el) => el.dataset.chip === active.key) : null;
-        if (chip) row.scrollLeft = Math.max(0, chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
-        else row.scrollLeft = 0;
+        for (const row of [rowRef.current, tilesRef.current]) {
+            if (!row) continue;
+            const chip = active ? Array.from(row.querySelectorAll<HTMLElement>('[data-chip]')).find((el) => el.dataset.chip === active.key) : null;
+            if (chip) row.scrollLeft = Math.max(0, chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
+            else row.scrollLeft = 0;
+        }
         // Centred once per page and when the chips arrive, not on every render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [active?.key, loading]);
@@ -424,26 +483,44 @@ export const CategoryHeaderRow: React.FC<{ menuOpen?: boolean }> = ({ menuOpen =
             const max = row.scrollWidth - row.clientWidth;
             const start = Math.abs(row.scrollLeft) > 2;
             const end = max - Math.abs(row.scrollLeft) > 2;
-            setFade((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+            const over = max > 2;
+            setFade((prev) => (prev.start === start && prev.end === end && prev.over === over ? prev : { start, end, over }));
         };
         update();
         row.addEventListener('scroll', update, { passive: true });
         window.addEventListener('resize', update);
+        // A web font arriving widens the chips without a resize.
+        // The over state never changes a chip's width (a hidden caret keeps its room), so this
+        // cannot feed itself.
+        const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+        if (observer) Array.from(row.children).forEach((chip) => observer.observe(chip));
         return () => {
             row.removeEventListener('scroll', update);
             window.removeEventListener('resize', update);
+            observer?.disconnect();
         };
-    }, [chips.length, loading]);
+        // Re-attached whenever the chips change (new labels after a language switch are new chips).
+    }, [chipsSignature, loading]);
 
     if (!bar) return null;
-    const pills = bar.style === 'chips';
+    const pills = bar.style !== 'tabs';
     return (
         <nav
             ref={navRef}
-            className={cn('cmx cmx-hbar', pills ? 'cmx-hbar--chips' : 'cmx-hbar--tabs', preset, fade.start && 'cmx-hbar--fade-start', fade.end && 'cmx-hbar--fade-end')}
+            className={cn(
+                'cmx cmx-hbar',
+                pills ? 'cmx-hbar--chips' : 'cmx-hbar--tabs',
+                photos && 'cmx-hbar--image',
+                preset,
+                fade.start && 'cmx-hbar--fade-start',
+                fade.end && 'cmx-hbar--fade-end',
+                // More chips than a desktop row holds: it scrolls, without the hover menus it would clip.
+                fade.over && 'cmx-hbar--over'
+            )}
             aria-label={t('nav.categories')}
             lang={locale}
             style={themeVars}
+            data-cmx-expanded={openAtFirstPaint ? '' : undefined}
         >
             <div className="cmx-shell">
                 <ul ref={rowRef} className="cmx-hbar__row">
@@ -460,6 +537,26 @@ export const CategoryHeaderRow: React.FC<{ menuOpen?: boolean }> = ({ menuOpen =
                           ))}
                 </ul>
             </div>
+            {photos && (
+                <div className="cmx-hbar__panel">
+                    <div className="cmx-shell">
+                        <ul ref={tilesRef} className="cmx-hbar__tiles">
+                            {loading
+                                ? Array.from({ length: 5 }, (_, i) => (
+                                      <li key={i} aria-hidden="true">
+                                          <span className="cmx-hbar__tile">
+                                              <span className="cmx-skel cmx-hbar__thumb" />
+                                              <span className="cmx-skel cmx-hbar__skel cmx-hbar__skel--label" />
+                                          </span>
+                                      </li>
+                                  ))
+                                : chips.map((chip, i) => (
+                                      <PhotoTile key={chip.key} chip={chip} index={i} current={active?.key === chip.key ? active.current : undefined} />
+                                  ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

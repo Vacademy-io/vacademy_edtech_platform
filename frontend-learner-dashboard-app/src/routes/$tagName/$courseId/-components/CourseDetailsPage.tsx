@@ -117,6 +117,7 @@ import { CourseCartActions, CourseCartPending } from "./CourseCartActions";
 import { EbookDetailsView } from "./EbookDetailsView";
 import { HostedSiteAssistant } from "@/components/site-assistant/HostedSiteAssistant";
 import { headerOffsetClass } from "../../-components/header/header-chrome";
+import { categoryBarOffsetAt } from "../../-components/commerce/lazy";
 import {
   BookOpen,
   CaretDown,
@@ -2074,7 +2075,12 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
               (catalogueData.globalSettings as any).layout?.header &&
               (catalogueData.globalSettings as any).layout?.header?.enabled !==
                 false
-                ? headerOffsetClass((catalogueData.globalSettings as any).layout?.header?.props)
+                ? headerOffsetClass(
+                    catalogueData.globalSettings.layout?.header?.props,
+                    undefined,
+                    // The header decides its category bar (commerce.categoryBar) from the address: so does the offset.
+                    categoryBarOffsetAt(catalogueData.globalSettings, tagName, router.state?.location?.pathname ?? ""),
+                  )
                 : ""
             }
           >

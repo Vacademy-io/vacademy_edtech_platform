@@ -105,6 +105,9 @@ const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: bo
     );
 };
 
+/** An address the Img below will draw: an absolute http(s) URL or a site path. */
+const isPicture = (src: string): boolean => /^https?:\/\//i.test(src) || (src.startsWith('/') && !src.startsWith('//'));
+
 const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boolean; width?: number; height?: number }> = ({
     src,
     alt = '',
@@ -113,7 +116,7 @@ const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boo
     width = 800,
     height = 1000,
 }) =>
-    /^https?:\/\//i.test(src) || (src.startsWith('/') && !src.startsWith('//')) ? (
+    isPicture(src) ? (
         <img
             src={src}
             alt={alt}
@@ -134,8 +137,8 @@ export const AnnouncementBar: React.FC<{ props: Props }> = ({ props }) => {
     const text = tx(props.text, 200);
     if (!text || !withinDates(Date.now(), str(props.startDate), str(props.endDate))) return null;
     const route = str(props.route, 300);
-    // One line of fixed height (ellipsis on a phone): a late web font cannot re-wrap it and push
-    // the page down. With a link, the whole strip is the tap target.
+    // At most two lines on a phone (ellipsis after); a short strip is one 44px line. With a link,
+    // the whole strip is the tap target.
     const line = <span className="cmx-announce__text">{text}</span>;
     return (
         <div className="cmx-announce">
@@ -505,24 +508,56 @@ const PartnerTracks: Section = ({ props }) => {
     );
 };
 
-/** commerceSteps: { eyebrow, title, text, items [{ title, text }] }. Numbered, in order. */
+/**
+ * commerceSteps: { eyebrow, title, text, items [{ title, text, image, imageAlt }] }. Numbered, in
+ * order. With a photo on any item the cards carry it on top (4:3, two cards a row on a phone);
+ * without photos the block is as it always was.
+ */
 const Steps: Section = ({ props }) => {
     const tx = useText();
     const items = records(props.items, 8).filter((item) => str(item.title));
     if (items.length === 0) return null;
+    const photos = items.some((item) => isPicture(str(item.image, 600)));
+    const columns = photos && items.length % 3 === 0 ? 'cmx-cards--3' : items.length >= 4 ? 'cmx-cards--4' : 'cmx-cards--3';
     return (
         <>
             <Intro props={props} />
-            <ol className={cn('cmx-cards', items.length >= 4 ? 'cmx-cards--4' : 'cmx-cards--3')}>
-                {items.map((item, i) => (
-                    <li key={i} className="cmx-panel">
+            <ol className={cn('cmx-cards', columns, photos && 'cmx-cards--photos')}>
+                {items.map((item, i) => {
+                    const number = (
                         <span className="cmx-step__num" aria-hidden="true">
                             {i + 1}
                         </span>
-                        <h3 className="cmx-h3">{tx(item.title, 120)}</h3>
-                        {str(item.text) && <p className="cmx-p cmx-small">{tx(item.text, 400)}</p>}
-                    </li>
-                ))}
+                    );
+                    const words = (
+                        <>
+                            <h3 className="cmx-h3">{tx(item.title, 120)}</h3>
+                            {str(item.text) && <p className="cmx-p cmx-small">{tx(item.text, 400)}</p>}
+                        </>
+                    );
+                    if (!photos) {
+                        return (
+                            <li key={i} className="cmx-panel">
+                                {number}
+                                {words}
+                            </li>
+                        );
+                    }
+                    const image = str(item.image, 600);
+                    return (
+                        <li key={i} className="cmx-panel cmx-panel--media">
+                            {isPicture(image) && (
+                                <div className="cmx-img cmx-step__img">
+                                    <Img src={image} alt={tx(item.imageAlt, 200)} width={800} height={600} />
+                                </div>
+                            )}
+                            <div className="cmx-panel__body">
+                                {number}
+                                {words}
+                            </div>
+                        </li>
+                    );
+                })}
             </ol>
         </>
     );
@@ -897,7 +932,6 @@ const LeadForm: Section = ({ props }) => {
 
 /* ── floating WhatsApp, not found ─────────────────────────────────── */
 
-/** commerceWhatsAppButton: { message }. A round button at the bottom corner; no section of its own. */
 /** What the floating button must never sit on: anything a shopper taps. */
 const TAPPABLE = 'button, select, input, textarea, .cmx-btn, .cmx-chip, [role="button"]';
 
@@ -959,6 +993,7 @@ const useFabAway = (ref: React.RefObject<HTMLElement | null>, on: boolean): bool
     return away;
 };
 
+/** commerceWhatsAppButton: { message }. A round button at the bottom corner; no section of its own. */
 export const WhatsAppButton: React.FC<{ props: Props }> = ({ props }) => {
     const { t, config } = useCommerceSite();
     const tx = useText();

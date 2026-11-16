@@ -7,7 +7,7 @@
  */
 import React, { Suspense, lazy } from 'react';
 import { RouteMatcher } from '../../-services/route-matcher';
-import { categoryBarOn, isCommerceEnabled, parseCommerceConfig } from './config';
+import { categoryBarOn, categoryBarPhotosOn, isCommerceEnabled, parseCommerceConfig } from './config';
 import { commercePageKey, siteSegments } from './routes';
 
 const entry = () => import('./entry');
@@ -56,24 +56,46 @@ export const CommerceHeaderSlot: React.FC<SiteProps & { showLanguage?: boolean; 
     );
 };
 
+/** The bar's page key at a browser path ("home", "collection", "shop"…). */
+const pageKeyAt = (tagName: string | null | undefined, pathname: string): string => {
+    const tag = tagName || '';
+    return commercePageKey(siteSegments(pathname, tag ? RouteMatcher.basePath(tag) : '', tag));
+};
+
+/** The bar's page key of an authored page's route ("homepage", "shop") or a fixed route's kind ("product"). */
+const pageKeyFor = (pageRoute: string | null | undefined): string => commercePageKey((pageRoute || '').split('/'));
+
+/** What the page offset under the fixed header needs: the bar on, and its 96 px photo row open (style "image"). */
+export interface CategoryBarOffset {
+    categoryBar: boolean;
+    categoryPhotos: boolean;
+}
+
+const offsetAt = (globalSettings: unknown, pageKey: string): CategoryBarOffset => {
+    const config = parseCommerceConfig(globalSettings);
+    if (!config.enabled || !config.categoryBar) return { categoryBar: false, categoryPhotos: false };
+    return { categoryBar: categoryBarOn(config, pageKey), categoryPhotos: categoryBarPhotosOn(config, pageKey) };
+};
+
 /**
  * True when the site's category bar shows on the page at this browser path. Worked out from the
  * settings and the address alone, so the header and the page offset agree at the first paint.
  * False on every site without commerce.categoryBar.enabled.
  */
-export const isCategoryBarOn = (globalSettings: unknown, tagName: string | null | undefined, pathname: string): boolean => {
-    const config = parseCommerceConfig(globalSettings);
-    if (!config.enabled || !config.categoryBar) return false;
-    const tag = tagName || '';
-    return categoryBarOn(config, commercePageKey(siteSegments(pathname, tag ? RouteMatcher.basePath(tag) : '', tag)));
-};
+export const isCategoryBarOn = (globalSettings: unknown, tagName: string | null | undefined, pathname: string): boolean =>
+    offsetAt(globalSettings, pageKeyAt(tagName, pathname)).categoryBar;
 
 /** True when the bar is on for an authored page's route ("homepage", "shop") or a fixed route's kind ("product"). */
-export const isCategoryBarOnFor = (globalSettings: unknown, pageRoute: string | null | undefined): boolean => {
-    const config = parseCommerceConfig(globalSettings);
-    if (!config.enabled || !config.categoryBar) return false;
-    return categoryBarOn(config, commercePageKey((pageRoute || '').split('/')));
-};
+export const isCategoryBarOnFor = (globalSettings: unknown, pageRoute: string | null | undefined): boolean =>
+    offsetAt(globalSettings, pageKeyFor(pageRoute)).categoryBar;
+
+/** The page offset's view of the bar at a browser path (headerOffsetClass's third argument). */
+export const categoryBarOffsetAt = (globalSettings: unknown, tagName: string | null | undefined, pathname: string): CategoryBarOffset =>
+    offsetAt(globalSettings, pageKeyAt(tagName, pathname));
+
+/** The page offset's view of the bar for an authored page's route or a fixed route's kind. */
+export const categoryBarOffsetFor = (globalSettings: unknown, pageRoute: string | null | undefined): CategoryBarOffset =>
+    offsetAt(globalSettings, pageKeyFor(pageRoute));
 
 /**
  * The category bar, a second row of the fixed site header. Its 48 px are held while the shop's

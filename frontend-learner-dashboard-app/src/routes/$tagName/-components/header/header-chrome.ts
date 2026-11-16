@@ -42,10 +42,13 @@ export const hasHeaderChrome = (c: ResolvedHeaderChrome): boolean => Object.valu
 export const headerOffsetClass = (
   headerProps: HeaderChromeProps | null | undefined,
   legacy = "pt-16 md:pt-20",
-  opts?: { categoryBar?: boolean },
+  opts?: { categoryBar?: boolean; categoryPhotos?: boolean },
 ): string => {
   // A shop's category bar (commerce.categoryBar) is a 48px second row of the
   // fixed header: 64 + 48 = 112px (80 + 48 = 128px from md on a full bar).
+  // Its "image" style opens a 96px photo row at the top of the page instead:
+  // 64 + 96 = 160px (80 + 96 = 176px from md).
+  if (opts?.categoryBar && opts.categoryPhotos) return headerProps?.barSize === "compact" ? "pt-40" : "pt-40 md:pt-44";
   if (opts?.categoryBar) return headerProps?.barSize === "compact" ? "pt-28" : "pt-28 md:pt-32";
   return headerProps?.barSize === "compact" ? "pt-16" : legacy;
 };

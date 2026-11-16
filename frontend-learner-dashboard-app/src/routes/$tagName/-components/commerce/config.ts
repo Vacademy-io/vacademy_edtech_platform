@@ -56,8 +56,17 @@ export interface CommerceCategoryBarItem {
 export interface CommerceCategoryBar {
     /** Page keys: "home", an authored page's route ("shop"), or a fixed route ("collection", "product", "search", "cart", "scan"). */
     pages: string[];
-    /** "tabs" = underlined text links (the shop's in-page bar); "chips" = pills. */
-    style: 'chips' | 'tabs';
+    /**
+     * "tabs" = underlined text links (the shop's in-page bar); "chips" = pills; "image" = a round
+     * photo of each category with its name under it at the top of the page, folding into the
+     * chip row once the page scrolls (a category without a photo shows as a chip).
+     */
+    style: 'chips' | 'tabs' | 'image';
+    /**
+     * With style "image": the page keys that open the photo row; the bar's other pages show the
+     * chip row only (a product page keeps its buy button high). null = every page of the bar.
+     */
+    imagePages: string[] | null;
     /** "auto" = the menu categories; otherwise the site's own list. */
     items: 'auto' | CommerceCategoryBarItem[];
     /** A leading "All" chip that opens the shop page. */
@@ -143,7 +152,10 @@ const parseCategoryBar = (value: unknown): CommerceCategoryBar | null => {
         : [];
     return {
         pages: Array.from(new Set(pages)),
-        style: value.style === 'chips' ? 'chips' : 'tabs',
+        style: value.style === 'chips' || value.style === 'image' ? value.style : 'tabs',
+        imagePages: Array.isArray(value.imagePages)
+            ? Array.from(new Set(value.imagePages.map((p) => text(p, 60).toLowerCase()).filter((p) => PAGE_KEY.test(p))))
+            : null,
         items: items.length > 0 ? items : 'auto',
         showAll: value.showAll === true,
         collapseHeaderOnScroll: value.collapseHeaderOnScroll === true,
@@ -276,6 +288,16 @@ export const categoryBarOn = (config: Pick<CommerceConfig, 'enabled' | 'category
     if (!config.enabled || !config.categoryBar || !key) return false;
     if ((CATEGORY_BAR_NEVER as readonly string[]).includes(key)) return false;
     return config.categoryBar.pages.includes(key);
+};
+
+/**
+ * True when the bar on this page opens its photo row: style "image", the bar on here, and the
+ * page among imagePages when the site lists them. Elsewhere an "image" bar is the chip row.
+ */
+export const categoryBarPhotosOn = (config: Pick<CommerceConfig, 'enabled' | 'categoryBar'>, pageKey: string | null | undefined): boolean => {
+    const bar = config.categoryBar;
+    if (!bar || bar.style !== 'image' || !categoryBarOn(config, pageKey)) return false;
+    return bar.imagePages === null || bar.imagePages.includes((pageKey || '').toLowerCase());
 };
 
 /** Listings keep Filter·Sort pinned under the header (templates.collection.stickyToolbar). Off by default. */

@@ -44,7 +44,7 @@ import { CaretUp } from "@phosphor-icons/react";
 import { ensureFontsLoaded, collectConfigFontFamilies } from "../-utils/catalogue-fonts";
 import { shouldShowMobileGetStarted } from "../-utils/catalogue-cta";
 import { headerOffsetClass } from "./header/header-chrome";
-import { isCategoryBarOn } from "./commerce/lazy";
+import { categoryBarOffsetAt, categoryBarOffsetFor } from "./commerce/lazy";
 import { PreviewPathProvider } from "../-utils/preview-path";
 import { blogPostSlugFor } from "../-utils/blog-route";
 import { jobSlugFor, pageHasJob } from "../-utils/job-openings";
@@ -792,11 +792,16 @@ export const CourseCataloguePage: React.FC<CourseCataloguePageProps> = ({
     return { ...page, components: [blog, ...below] };
   };
   const hidesSiteChrome = !!(activePage as { hideSiteChrome?: boolean } | undefined)?.hideSiteChrome;
-  // The space under the fixed site header: 48px more where the shop's category bar shows (commerce.categoryBar).
+  // The space under the fixed site header: more where the shop's category bar shows (commerce.categoryBar).
+  // The editor previews every page at the site root: there the page it shows decides, as in the header.
   const siteHeaderProps = catalogueData.globalSettings.layout?.header?.props;
+  const barPreviewPath = isPreviewMode ? previewPath : undefined;
+  const categoryBar = barPreviewPath !== undefined
+    ? categoryBarOffsetFor(catalogueData.globalSettings, barPreviewPath)
+    : categoryBarOffsetAt(catalogueData.globalSettings, tagName, location.pathname);
   const mainOffset = hidesSiteChrome
     ? ''
-    : headerOffsetClass(siteHeaderProps, undefined, { categoryBar: isCategoryBarOn(catalogueData.globalSettings, tagName, location.pathname) });
+    : headerOffsetClass(siteHeaderProps, undefined, categoryBar);
 
   return (
     // Site language (?lang=, remembered per tag): authored props, live data

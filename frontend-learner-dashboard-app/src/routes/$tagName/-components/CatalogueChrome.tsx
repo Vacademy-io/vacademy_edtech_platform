@@ -10,7 +10,7 @@ import { siteUsesDevanagari } from "../-utils/catalogue-site-language";
 import { collectConfigFontFamilies, ensureFontsLoaded } from "../-utils/catalogue-fonts";
 import { buildSiteThemeVars } from "../-utils/catalogue-palette";
 import { headerOffsetClass } from "./header/header-chrome";
-import { isCategoryBarOnFor } from "./commerce/lazy";
+import { categoryBarOffsetFor } from "./commerce/lazy";
 import { DEVANAGARI_FALLBACK_FAMILY, withArabicFallback, withDevanagariFallback } from "@/utils/branding";
 
 /** The catalogue home's body font when the site sets none (CourseCataloguePage). */
@@ -172,7 +172,7 @@ export const CatalogueChrome: React.FC<CatalogueChromeProps> = ({
           and the child page starts underneath the header, its first heading
           hidden. CourseCataloguePage's <main> and CourseDetailsPage reserve the
           same offset; mirror it here. */}
-      <div className={headerEnabled ? headerOffsetClass(header?.props, undefined, { categoryBar: !!pageKey && isCategoryBarOnFor(globalSettings, pageKey) }) : ""}>{children}</div>
+      <div className={headerEnabled ? headerOffsetClass(header?.props, undefined, pageKey ? categoryBarOffsetFor(globalSettings, pageKey) : undefined) : ""}>{children}</div>
 
       {showFooter && footer && footer.enabled !== false && renderBlock("footer", footer)}
       {audienceForm && (

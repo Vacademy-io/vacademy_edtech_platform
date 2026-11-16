@@ -296,9 +296,66 @@ button.cmx-link { display: inline-flex; align-items: center; min-height: var(--c
 .cmx-hbar__skel { display: block; width: 64px; height: 20px; }
 .cmx-hbar__chip .cmx-hbar__skel { height: 36px; border-radius: var(--cmx-radius-chip); }
 @media (min-width: 1024px) {
-    /* The second level opens on hover and focus, below the bar. */
-    .cmx-hbar__row { overflow: visible; }
+    /* The second level opens on hover and focus, below the bar, when every chip fits the row. */
+    .cmx-hbar:not(.cmx-hbar--over) .cmx-hbar__row { overflow: visible; -webkit-mask-image: none; mask-image: none; }
     .cmx-hbar .cmx-catbar__menu { top: calc(100% - 2px); }
+    /* More chips than the row holds: it scrolls, so a menu would be clipped by it (and its links
+       reachable by Tab while unseen): no menus, the chips still open their pages. Stronger than the
+       :hover / :focus-within rule above. The caret only hides (it keeps its room), so this state
+       never changes a chip's width and cannot switch itself back. */
+    .cmx-hbar.cmx-hbar--over .cmx-catbar__item > .cmx-catbar__menu { display: none; }
+    .cmx-hbar--over .cmx-hbar__caret { visibility: hidden; }
+}
+/* style "image": a 96px photo row at the top of the page. It hangs over the chip row (and 48px
+   below the header's box: the page reserves them) and folds into the chip row once the page
+   scrolls: opacity and a transform only, so nothing is laid out again. */
+.cmx-hbar--image { position: relative; }
+.cmx-hbar__panel {
+    position: absolute; inset-inline: 0; top: 0; z-index: 1; box-sizing: border-box; height: 95px;
+    background: var(--cmx-hbar-bg, var(--cmx-bg)); border-bottom: 1px solid var(--cmx-line);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity 180ms ease-out, visibility 0s linear 180ms;
+}
+.cmx-hbar--image[data-cmx-expanded] .cmx-hbar__panel { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 180ms ease-out; }
+/* Under the open photos the chip row is out of reach (and of the screen reader). */
+.cmx-hbar--image[data-cmx-expanded] .cmx-hbar__row { visibility: hidden; transition: visibility 0s linear 180ms; }
+.cmx-hbar .cmx-hbar__panel .cmx-shell { height: 100%; }
+.cmx-hbar__tiles {
+    display: flex; gap: 4px; height: 100%; margin: 0 -16px; padding: 4px 16px 0; list-style: none;
+    overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+    transform-origin: 50% 0; transition: transform 180ms ease-out;
+}
+.cmx-hbar__tiles::-webkit-scrollbar { display: none; }
+.cmx-hbar__tiles > li { flex: none; scroll-snap-align: start; }
+.cmx-hbar--image:not([data-cmx-expanded]) .cmx-hbar__tiles { transform: translateY(-8px) scale(0.96); }
+.cmx-hbar__tile { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 72px; padding-top: 6px; -webkit-tap-highlight-color: transparent; }
+.cmx-hbar__thumb {
+    display: block; flex: none; width: 56px; height: 56px; border-radius: 999px; overflow: hidden; background: var(--cmx-band);
+    box-shadow: 0 0 0 1px var(--cmx-line); transition: box-shadow var(--cmx-dur) var(--cmx-ease), transform 120ms var(--cmx-ease);
+}
+.cmx-hbar__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cmx-hbar__thumb--all { display: inline-flex; align-items: center; justify-content: center; color: var(--cmx-primary); }
+.cmx-hbar__label { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 18px; color: var(--cmx-ink); }
+.cmx-hbar__tile:active .cmx-hbar__thumb { transform: scale(0.96); }
+.cmx-hbar__tile:hover .cmx-hbar__thumb { box-shadow: 0 0 0 1px var(--cmx-ink); }
+/* The open category: a maroon ring (filled page: 2px; a product's category: 1px). */
+.cmx-hbar__tile[aria-current="page"] .cmx-hbar__thumb { box-shadow: 0 0 0 2px var(--cmx-hbar-bg, var(--cmx-bg)), 0 0 0 4px var(--cmx-primary); }
+.cmx-hbar__tile[aria-current="true"] .cmx-hbar__thumb { box-shadow: 0 0 0 2px var(--cmx-hbar-bg, var(--cmx-bg)), 0 0 0 3px var(--cmx-primary); }
+.cmx-hbar__tile[aria-current] .cmx-hbar__label { color: var(--cmx-primary); font-weight: 600; }
+/* A collection without a photo: its name as a chip, on the photos' line. */
+.cmx-hbar__tile--text { width: auto; padding-top: 16px; }
+.cmx-hbar__tile--text[aria-current="page"] .cmx-hbar__pill { background: var(--cmx-primary); border-color: var(--cmx-primary); color: var(--cmx-on-primary); font-weight: 600; }
+.cmx-hbar__tile--text[aria-current="true"] .cmx-hbar__pill { border-color: var(--cmx-primary); color: var(--cmx-primary); font-weight: 600; box-shadow: inset 0 0 0 1px var(--cmx-primary); }
+.cmx-hbar__skel--label { width: 48px; height: 12px; margin-top: 3px; }
+@media (min-width: 768px) {
+    .cmx-hbar__tiles { padding-top: 0; }
+    .cmx-hbar__tile { width: 84px; padding-top: 6px; }
+    .cmx-hbar__thumb { width: 64px; height: 64px; }
+    .cmx-hbar__tile--text { padding-top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cmx-hbar__panel, .cmx-hbar--image[data-cmx-expanded] .cmx-hbar__panel, .cmx-hbar__tiles { transition: none; }
+    .cmx-hbar--image:not([data-cmx-expanded]) .cmx-hbar__tiles, .cmx-hbar__tile:active .cmx-hbar__thumb { transform: none; }
 }
 /* The fixed header with the bar: the logo row folds away on scroll-down (a transform: nothing moves). */
 header[data-cmx-bar] { transition: transform 200ms ease-out; }
@@ -354,9 +411,12 @@ header[data-cmx-bar] { transition: transform 200ms ease-out; }
 .cmx-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 /* templates.collection.stickyToolbar: one row pinned under the header (and its category bar). */
 .cmx-toolbar--sticky {
-    position: sticky; top: var(--cmx-pin-top, 64px); z-index: 20; flex-wrap: nowrap; margin: 0 -16px; padding: 3px 16px;
-    background: var(--cmx-bg); border-bottom: 1px solid var(--cmx-line); transition: top 200ms ease-out;
+    position: sticky; top: var(--cmx-head-bottom, 64px); z-index: 20; flex-wrap: nowrap; margin: 0 -16px; padding: 3px 16px;
+    background: var(--cmx-bg); border-bottom: 1px solid var(--cmx-line);
+    /* With the logo row folded the row rides up under the bar: a transform, never `top` (no relayout, no shift). */
+    transform: translateY(var(--cmx-pin-shift, 0px));
 }
+.cmx-toolbar--sticky.cmx-pin--anim { transition: transform 200ms ease-out; }
 @media (max-width: 1023.98px) {
     .cmx-toolbar--sticky .cmx-toolbar__actions { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
     .cmx-toolbar--sticky .cmx-toolbar__filter, .cmx-toolbar--sticky .cmx-toolbar__sort, .cmx-toolbar--sticky .cmx-select { width: 100%; min-width: 0; }
@@ -367,7 +427,7 @@ header[data-cmx-bar] { transition: transform 200ms ease-out; }
     }
 }
 @media (min-width: 1024px) { .cmx-toolbar--sticky { margin: 0; padding: 8px 0; } }
-@media (prefers-reduced-motion: reduce) { .cmx-toolbar--sticky { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .cmx-toolbar--sticky.cmx-pin--anim { transition: none; } }
 .cmx-select { min-height: var(--cmx-tap); padding: 0 36px 0 12px; border-radius: var(--cmx-radius-btn); border: 1px solid var(--cmx-line-strong); background: var(--cmx-surface); color: inherit; font: inherit; font-size: 0.9375em; }
 .cmx-facet { border-bottom: 1px solid var(--cmx-line); padding: 12px 0; }
 .cmx-facet > summary { display: flex; align-items: center; justify-content: space-between; min-height: var(--cmx-tap); cursor: pointer; font-weight: 600; list-style: none; }
@@ -633,10 +693,9 @@ header[data-cmx-bar] { transition: transform 200ms ease-out; }
 .cmx-announce a.cmx-announce__link { text-decoration: none; }
 .cmx-announce a.cmx-announce__link .cmx-announce__text { text-decoration: underline; text-underline-offset: 3px; }
 .cmx-announce__text { min-width: 0; }
-/* One line on a phone (ellipsis): a late web font cannot re-wrap it and push the page down. */
+/* At most two lines on a phone (a short strip stays one 44px line); a longer text ends in an ellipsis. */
 @media (max-width: 479.98px) {
-    .cmx-announce__in { height: var(--cmx-tap); padding-block: 0; }
-    .cmx-announce__text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .cmx-announce__text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 }
 
 /* hero */
@@ -684,6 +743,11 @@ header[data-cmx-bar] { transition: transform 200ms ease-out; }
 .cmx-points { margin: 0; padding-inline-start: 20px; color: var(--cmx-body); }
 .cmx-points li + li { margin-top: 4px; }
 .cmx-step__num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: var(--cmx-primary); color: var(--cmx-on-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* commerceSteps with photos: the photo is the top of each card (4:3), two cards a row on a phone. */
+.cmx-step__img { aspect-ratio: 4 / 3; border-radius: 0; }
+.cmx-cards--photos .cmx-panel__body { gap: 6px; padding: 12px 14px 14px; }
+.cmx-cards--photos .cmx-step__num { width: 28px; height: 28px; font-size: 0.875em; }
+@media (max-width: 767.98px) { .cmx-cards--photos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
 .cmx-stars { color: var(--cmx-gold); letter-spacing: 2px; }
 
 /* locations */

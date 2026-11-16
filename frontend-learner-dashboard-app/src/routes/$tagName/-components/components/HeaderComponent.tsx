@@ -35,7 +35,7 @@ import { MegaMenuNavItem } from "../header/MegaMenuNavItem";
 import { MobileMegaMenu } from "../header/MobileMegaMenu";
 import { HeaderSearch } from "../header/HeaderSearch";
 import { HeaderLanguageSwitcher } from "../header/HeaderLanguageSwitcher";
-import { CommerceHeaderRow, CommerceHeaderSlot, isCategoryBarOn } from "../commerce/lazy";
+import { CommerceHeaderRow, CommerceHeaderSlot, isCategoryBarOn, isCategoryBarOnFor } from "../commerce/lazy";
 import { isCommerceEnabled } from "../commerce/config";
 import { DesktopNavDropdown, MobileNavDropdown } from "./header/NavDropdown";
 import { dropdownHasActive } from "./header/nav-dropdown";
@@ -224,7 +224,13 @@ export const HeaderComponent: React.FC<HeaderProps & {
     const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart || showCommerce;
     // The shop's category bar: a second row of this header on the pages the
     // site lists (commerce.categoryBar, off by default). False on every other site.
-    const showCategoryBar = showCommerce && !!resolvedInstituteId && isCategoryBarOn(resolvedGlobalSettings, effectiveTagName, location.pathname);
+    // The editor previews every page at the site root: the page it shows decides.
+    const showCategoryBar =
+      showCommerce &&
+      !!resolvedInstituteId &&
+      (previewPath !== undefined
+        ? isCategoryBarOnFor(resolvedGlobalSettings, previewPath)
+        : isCategoryBarOn(resolvedGlobalSettings, effectiveTagName, location.pathname));
     // A shop's menu toggle is a full 44px tap target (other sites keep their 36px button).
     const shopToggle = showCommerce ? ' inline-flex min-h-11 min-w-11 items-center justify-center' : '';
     // Opt-in looks of the design (site-chrome-types.ts); all off when absent.

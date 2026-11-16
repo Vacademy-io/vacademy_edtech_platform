@@ -912,6 +912,22 @@ describe("a shop's category bar row (commerce.categoryBar, off by default)", () 
     expect(toggle()?.className).toContain("min-h-11 min-w-11");
   });
 
+  it("in the editor preview (every page shown at the site root) follows the page shown, not the address", async () => {
+    at("/new");
+    const bar = { enabled: true, pages: ["home"] };
+    await render(header({ navigation: NAV, globalSettings: shop(bar), previewPath: "our-story" }));
+    expect(row()).toBeNull();
+    await act(async () => root.unmount());
+    container.remove();
+    await render(header({ navigation: NAV, globalSettings: shop(bar), previewPath: "" }));
+    expect(row()).not.toBeNull();
+    await act(async () => root.unmount());
+    container.remove();
+    // Outside the editor the address decides, as before.
+    await render(header({ navigation: NAV, globalSettings: shop(bar) }));
+    expect(row()).not.toBeNull();
+  });
+
   it("leaves a site without a shop exactly as before (no row, the original toggle)", async () => {
     at("/new/c/sarees");
     await render(header({ navigation: NAV, globalSettings: {} }));

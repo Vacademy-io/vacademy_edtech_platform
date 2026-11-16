@@ -15,21 +15,31 @@ export interface BarChip {
     slug: string | null;
     /** Second level, shown on hover and focus on a desktop. */
     children: Array<{ slug: string; label: string }>;
+    /** The collection's photo (its image_url), for the "image" style; null = none. */
+    image: string | null;
 }
+
+/** Only an absolute http(s) address or a site path is used as a picture. */
+const picture = (url: string | null | undefined): string | null => {
+    const value = (url || '').trim();
+    return /^https?:\/\//i.test(value) || (value.startsWith('/') && !value.startsWith('//')) ? value : null;
+};
 
 const COLLECTION_ROUTE = /^c\/([a-z0-9][a-z0-9-]{0,159})$/;
 
 /**
  * The chips in order: "All" first when the site asks for it, then the site's own list, or the
- * menu categories (`menu`, already filtered by stock and sorted) when the list is "auto".
+ * menu categories (`menu`, already filtered by stock and sorted) when the list is "auto". A
+ * chip's photo is its collection's image_url (from `tree` for a site's own list).
  */
 export const barChips = (
     bar: Pick<CommerceCategoryBar, 'items' | 'showAll'>,
     menu: readonly Category[],
-    labels: { all: string; translate(text: string): string }
+    labels: { all: string; translate(text: string): string },
+    tree?: readonly Category[] | null
 ): BarChip[] => {
     const chips: BarChip[] = [];
-    if (bar.showAll) chips.push({ key: 'all', label: labels.all, to: 'shop', slug: null, children: [] });
+    if (bar.showAll) chips.push({ key: 'all', label: labels.all, to: 'shop', slug: null, children: [], image: null });
     if (bar.items === 'auto') {
         for (const node of menu) {
             chips.push({
@@ -40,6 +50,7 @@ export const barChips = (
                 children: (node.children || [])
                     .filter((child) => child.product_count > 0)
                     .map((child) => ({ slug: child.slug, label: child.name || child.slug })),
+                image: picture(node.image_url),
             });
         }
     } else {
@@ -51,7 +62,8 @@ export const barChips = (
                 chips[0] = { ...chips[0]!, label: labels.translate(item.label) };
                 continue;
             }
-            chips.push({ key: `i:${route}`, label: labels.translate(item.label), to: item.route, slug, children: [] });
+            const image = slug ? picture(findCategory(tree ?? menu, slug)?.node.image_url) : null;
+            chips.push({ key: `i:${route}`, label: labels.translate(item.label), to: item.route, slug, children: [], image });
         }
     }
     return chips;

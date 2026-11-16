@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryBarOn, isCommerceEnabled, parseCommerceConfig, resolveCommerceLocale, stickyListingToolbar, templateSections } from './config';
+import { categoryBarOn, categoryBarPhotosOn, isCommerceEnabled, parseCommerceConfig, resolveCommerceLocale, stickyListingToolbar, templateSections } from './config';
 
 const KEY = `vak_pub_${'a1'.repeat(24)}`;
 
@@ -152,6 +152,7 @@ describe('the category bar setting (commerce.categoryBar)', () => {
         expect(bar).toEqual({
             pages: ['home', 'shop', 'collection', 'search', 'product'],
             style: 'tabs',
+            imagePages: null,
             items: 'auto',
             showAll: false,
             collapseHeaderOnScroll: false,
@@ -169,6 +170,26 @@ describe('the category bar setting (commerce.categoryBar)', () => {
         expect(custom.items).toEqual([{ label: 'सब', route: 'shop' }, { label: '₹999 तक', route: 'c/gifts-under-999' }]);
         expect(custom.showAll).toBe(true);
         expect(custom.collapseHeaderOnScroll).toBe(true);
+    });
+
+    it('takes the "image" style; anything else unknown is the text default', () => {
+        expect(shop({ enabled: true, style: 'image' }).categoryBar!.style).toBe('image');
+        expect(shop({ enabled: true, style: 'photos' }).categoryBar!.style).toBe('tabs');
+        expect(shop({ enabled: true, style: 'IMAGE' }).categoryBar!.style).toBe('tabs');
+    });
+
+    it('takes imagePages: the pages that open the photo row (all of the bar by default)', () => {
+        const bar = shop({ enabled: true, style: 'image', imagePages: ['Home', 'collection', 'bad page', 'home'] });
+        expect(bar.categoryBar!.imagePages).toEqual(['home', 'collection']);
+        expect(categoryBarPhotosOn(bar, 'home')).toBe(true);
+        expect(categoryBarPhotosOn(bar, 'collection')).toBe(true);
+        expect(categoryBarPhotosOn(bar, 'product')).toBe(false);
+        expect(categoryBarPhotosOn(bar, 'checkout')).toBe(false);
+        const all = shop({ enabled: true, style: 'image' });
+        expect(all.categoryBar!.imagePages).toBeNull();
+        expect(categoryBarPhotosOn(all, 'product')).toBe(true);
+        expect(categoryBarPhotosOn(shop({ enabled: true, style: 'chips', imagePages: ['home'] }), 'home')).toBe(false);
+        expect(categoryBarPhotosOn(shop(undefined), 'home')).toBe(false);
     });
 
     it('shows only on the listed pages and never on the buying pages, nor on a shop that is off', () => {
