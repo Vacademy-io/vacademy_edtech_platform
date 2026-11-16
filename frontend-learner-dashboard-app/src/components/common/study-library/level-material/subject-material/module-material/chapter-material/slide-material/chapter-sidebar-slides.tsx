@@ -26,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BookOpen, ChatsCircle, Code, GameController } from "@phosphor-icons/react";
+import { BookOpen, ChatsCircle, Code, FileXls, GameController } from "@phosphor-icons/react";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import { useEffect, useMemo, useState } from "react";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
@@ -174,6 +174,13 @@ export const getIcon = (slide: Slide, size?: string): React.ReactNode => {
               weight="duotone"
             />
           );
+        case "SPREADSHEET":
+          return (
+            <FileXls
+              className={`${iconClass} text-success-600`}
+              weight="duotone"
+            />
+          );
         default:
           return (
             <FileText
@@ -250,6 +257,9 @@ export const getSlideTypeDisplay = (slide: Slide): string => {
             break;
           case "DISCUSSION":
             baseType = i18n.t("studyContent:slideType.discussion");
+            break;
+          case "SPREADSHEET":
+            baseType = i18n.t("studyContent:slideType.spreadsheet");
             break;
           default:
             baseType = i18n.t("studyContent:slideType.document");

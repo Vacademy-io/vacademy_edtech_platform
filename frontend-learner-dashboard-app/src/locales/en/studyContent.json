@@ -30,7 +30,15 @@
         "assignment": "Assignment",
         "scormModule": "SCORM Module",
         "content": "Content",
-        "discussion": "Discussion"
+        "discussion": "Discussion",
+        "spreadsheet": "Spreadsheet"
+    },
+    "spreadsheet": {
+        "readOnly": "Read-only",
+        "download": "Download .{{ext}}",
+        "downloadFailed": "Couldn’t download the file. Please try again.",
+        "empty": "This spreadsheet is empty.",
+        "unavailable": "This spreadsheet can’t be shown right now."
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",

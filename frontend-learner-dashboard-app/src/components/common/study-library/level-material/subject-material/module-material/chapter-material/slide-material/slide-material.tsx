@@ -38,6 +38,7 @@ import { CodeEditorSlide } from "./code-editor-slide";
 import { JupyterNotebookSlide } from "./jupyter-notebook-slide";
 import { ScratchProjectSlide } from "./scratch-project-slide";
 import { DiscussionSlide } from "./discussion/discussion-slide";
+import { SpreadsheetSlide } from "./spreadsheet/spreadsheet-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import QuizViewer from "./quiz-viewer";
@@ -1379,6 +1380,17 @@ export const SlideMaterial = ({
             setContent(
               <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
                 <DiscussionSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "SPREADSHEET") {
+            // Read-only workbook grid (all tabs) + download of the original file.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <SpreadsheetSlide
+                  key={activeItem.id}
+                  slide={activeItem}
+                  completionContext={completionContext}
+                />
               </div>
             );
           }

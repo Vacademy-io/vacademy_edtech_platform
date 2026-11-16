@@ -192,7 +192,9 @@ export function useNonAdminSlides(chapterId: string) {
                     } else if (
                         docType === 'CODE' ||
                         docType === 'JUPYTER' ||
-                        docType === 'SCRATCH'
+                        docType === 'SCRATCH' ||
+                        // Spreadsheet JSON lives in slide state; the doc editor is empty.
+                        docType === 'SPREADSHEET'
                     ) {
                         // For interactive slides, always persist JSON from slide state, not HTML
                         currentData = slide.document_slide?.data || '';

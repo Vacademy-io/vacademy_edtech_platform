@@ -1,0 +1,42 @@
+{
+    "dialog": {
+        "dropzoneHint": "Drop an Excel file here, or click to choose one",
+        "dropzoneFormats": ".xlsx, .xls or .csv — up to {{maxMb}} MB and {{maxCells}} filled cells",
+        "reading": "Reading the workbook…",
+        "summary": "Tabs: {{tabs}} · Filled cells: {{cells}}",
+        "chooseAnother": "Click or drop to choose a different file",
+        "titleLabel": "Slide title",
+        "note": "Learners see a read-only copy of every tab and can download the original file. Formulas show their saved values; charts and pictures aren’t shown.",
+        "cancel": "Cancel",
+        "create": "Add spreadsheet",
+        "saving": "Adding…",
+        "created": "Spreadsheet slide added",
+        "createFailed": "Couldn’t add the spreadsheet slide. Please try again.",
+        "uploadFailed": "Couldn’t upload the original file. Please try again."
+    },
+    "errors": {
+        "empty": "This file has no filled cells.",
+        "unsupportedType": "Choose an Excel (.xlsx or .xls) or CSV file.",
+        "fileTooLarge": "This file is {{size}} MB. The limit is {{max}} MB.",
+        "tooManyTabs": "This workbook has {{tabs}} tabs. The limit is {{max}}.",
+        "tooManyCells": "This workbook has {{cells}} filled cells. The limit is {{max}}. Remove unused sheets or rows and try again.",
+        "tabTooLarge": "The tab “{{tab}}” spans {{cells}} cells (rows × columns). The limit is {{max}}. Delete stray content far below or to the right and try again.",
+        "dataTooLarge": "This workbook is too large to show on a slide. Remove unused sheets or rows and try again.",
+        "unreadable": "We couldn’t read this file. Save it again in Excel as .xlsx and try again."
+    },
+    "editor": {
+        "heading": "Spreadsheet",
+        "statusDraft": "Draft — learners can’t see this spreadsheet until you publish.",
+        "statusLive": "Live for learners.",
+        "statusUnsync": "Saved changes are not live yet — Publish to share them.",
+        "statusUnsaved": "Unsaved changes — use Save Draft or Publish above.",
+        "replace": "Replace file",
+        "replaced": "File replaced. Use Save Draft or Publish to keep it.",
+        "download": "Download original",
+        "downloadFailed": "Couldn’t get the original file. Please try again.",
+        "allowDownload": "Let learners download the original file",
+        "noFile": "The original file wasn’t kept, so learners only see the grid.",
+        "invalid": "This spreadsheet slide has no readable data. Replace the file to fix it.",
+        "emptyGrid": "This spreadsheet is empty."
+    }
+}

@@ -77,6 +77,8 @@ import { JupyterNotebookSlide } from './jupyter-notebook-slide';
 import { ScratchProjectSlide } from './scratch-project-slide';
 import { DiscussionSlideEditor } from './discussion/discussion-slide-editor';
 import { DISCUSSION_DOC_TYPE } from './discussion/discussion-types';
+import { SpreadsheetSlideEditor } from './spreadsheet/spreadsheet-slide-editor';
+import { SPREADSHEET_DOC_TYPE } from './spreadsheet/spreadsheet-slide-data';
 import { CodeEditorSlide } from './code-editor-slide';
 import { SplitScreenSlide } from './split-screen-slide';
 import { getTokenFromCookie, getTokenDecodedData, getUserRoles } from '@/lib/auth/sessionUtility';
@@ -2677,6 +2679,19 @@ export const SlideMaterial = ({
                 return;
             }
 
+            if (documentType === SPREADSHEET_DOC_TYPE) {
+                // Read-only grid + original file id live in document_slide.data (JSON).
+                // Replace / download toggle update activeItem; header Save / Publish persist.
+                setContent(
+                    <SpreadsheetSlideEditor
+                        key={`spreadsheet-${activeItem.id}-${historyRestoreNonce}`}
+                        slide={activeItem}
+                        isEditable={!isLearnerView}
+                    />
+                );
+                return;
+            }
+
             if (documentType === 'SCRATCH') {
                 try {
                     // Fallback: first check data field, then published_data for published slides
@@ -3648,6 +3663,7 @@ export const SlideMaterial = ({
                     activeItem?.document_slide?.type == 'JUPYTER' ||
                     activeItem?.document_slide?.type == 'SCRATCH' ||
                     activeItem?.document_slide?.type == DISCUSSION_DOC_TYPE ||
+                    activeItem?.document_slide?.type == SPREADSHEET_DOC_TYPE ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 try {
@@ -3673,6 +3689,8 @@ export const SlideMaterial = ({
                                     ? 'Scratch Project'
                                     : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
                                       ? 'Discussion'
+                                    : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
+                                      ? 'Spreadsheet'
                                     : activeItem.document_slide.type?.startsWith('SPLIT_')
                                       ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                       : 'Interactive Slide';
@@ -3711,6 +3729,8 @@ export const SlideMaterial = ({
                                 ? 'Scratch Project'
                                 : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
                                   ? 'Discussion'
+                                : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
+                                  ? 'Spreadsheet'
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4044,6 +4064,7 @@ export const SlideMaterial = ({
                     activeItem?.document_slide?.type === 'JUPYTER' ||
                     activeItem?.document_slide?.type === 'SCRATCH' ||
                     activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
+                    activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
                     activeItem?.document_slide?.type?.startsWith('SPLIT_'))
             ) {
                 // For interactive slides, check if we have valid data
@@ -4064,6 +4085,8 @@ export const SlideMaterial = ({
                                 ? 'Scratch Project'
                                 : activeItem.document_slide.type === DISCUSSION_DOC_TYPE
                                   ? 'Discussion'
+                                : activeItem.document_slide.type === SPREADSHEET_DOC_TYPE
+                                  ? 'Spreadsheet'
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
@@ -4631,6 +4654,7 @@ export const SlideMaterial = ({
                                             activeItem?.document_slide?.type === 'JUPYTER' ||
                                             activeItem?.document_slide?.type === 'SCRATCH' ||
                                             activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
+                                            activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
                                             activeItem?.source_type === 'QUESTION' ||
                                             activeItem?.source_type === 'ASSIGNMENT' ||
                                             activeItem?.source_type === 'QUIZ' ||
@@ -4993,6 +5017,8 @@ export const SlideMaterial = ({
                               // settings and the responses list; let the
                               // outer page-scroll reveal all of it.
                               activeItem?.document_slide?.type === DISCUSSION_DOC_TYPE ||
+                              // SPREADSHEET: toolbar + tall grid; page-scroll reveals it.
+                              activeItem?.document_slide?.type === SPREADSHEET_DOC_TYPE ||
                               activeItem?.source_type === 'ASSIGNMENT' ||
                               // VIDEO / HTML_VIDEO stack the player on top of a
                               // timeline, add-question form and questions list
