@@ -1,4 +1,4 @@
-import { loginLogo } from '@/lib/evalezy-mode';
+import { loginLogo } from '@/lib/product-host';
 import { motion } from 'framer-motion';
 import { LanguageDropdown } from '../../../../../components/common/localization/language-dropdown';
 import { SplashScreenProps } from '@/routes/login/-types/loginTypes';

@@ -65,6 +65,7 @@ import { Route as VimWaitlistRouteImport } from "./routes/vim/waitlist"
 import { Route as VimLoginRouteImport } from "./routes/vim/login"
 import { Route as VimDashboardRouteImport } from "./routes/vim/dashboard"
 import { Route as TelleoSetupRouteImport } from "./routes/telleo/setup"
+import { Route as TelleoPlanRouteImport } from "./routes/telleo/plan"
 import { Route as SignupStartRouteImport } from "./routes/signup/start"
 import { Route as McpAuthorizeRouteImport } from "./routes/mcp/authorize"
 import { Route as KnowledgeBasePublishRouteImport } from "./routes/knowledge-base/publish"
@@ -660,6 +661,11 @@ const VimDashboardRoute = VimDashboardRouteImport.update({
 const TelleoSetupRoute = TelleoSetupRouteImport.update({
   id: "/telleo/setup",
   path: "/telleo/setup",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelleoPlanRoute = TelleoPlanRouteImport.update({
+  id: "/telleo/plan",
+  path: "/telleo/plan",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupStartRoute = SignupStartRouteImport.update({
@@ -2459,6 +2465,7 @@ export interface FileRoutesByFullPath {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/plan": typeof TelleoPlanRoute
   "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
@@ -2738,6 +2745,7 @@ export interface FileRoutesByTo {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/plan": typeof TelleoPlanRoute
   "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
@@ -3020,6 +3028,7 @@ export interface FileRoutesById {
   "/knowledge-base/publish": typeof KnowledgeBasePublishRoute
   "/mcp/authorize": typeof McpAuthorizeRoute
   "/signup/start": typeof SignupStartRoute
+  "/telleo/plan": typeof TelleoPlanRoute
   "/telleo/setup": typeof TelleoSetupRoute
   "/vim/dashboard": typeof VimDashboardRoute
   "/vim/login": typeof VimLoginRoute
@@ -3303,6 +3312,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/plan"
     | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
@@ -3582,6 +3592,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/plan"
     | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
@@ -3863,6 +3874,7 @@ export interface FileRouteTypes {
     | "/knowledge-base/publish"
     | "/mcp/authorize"
     | "/signup/start"
+    | "/telleo/plan"
     | "/telleo/setup"
     | "/vim/dashboard"
     | "/vim/login"
@@ -4138,6 +4150,7 @@ export interface RootRouteChildren {
   KnowledgeBasePublishRoute: typeof KnowledgeBasePublishRoute
   McpAuthorizeRoute: typeof McpAuthorizeRoute
   SignupStartRoute: typeof SignupStartRoute
+  TelleoPlanRoute: typeof TelleoPlanRoute
   TelleoSetupRoute: typeof TelleoSetupRoute
   VimDashboardRoute: typeof VimDashboardRoute
   VimLoginRoute: typeof VimLoginRoute
@@ -4800,6 +4813,13 @@ declare module "@tanstack/react-router" {
       path: "/telleo/setup"
       fullPath: "/telleo/setup"
       preLoaderRoute: typeof TelleoSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/telleo/plan": {
+      id: "/telleo/plan"
+      path: "/telleo/plan"
+      fullPath: "/telleo/plan"
+      preLoaderRoute: typeof TelleoPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/signup/start": {
@@ -6406,6 +6426,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeBasePublishRoute: KnowledgeBasePublishRoute,
   McpAuthorizeRoute: McpAuthorizeRoute,
   SignupStartRoute: SignupStartRoute,
+  TelleoPlanRoute: TelleoPlanRoute,
   TelleoSetupRoute: TelleoSetupRoute,
   VimDashboardRoute: VimDashboardRoute,
   VimLoginRoute: VimLoginRoute,

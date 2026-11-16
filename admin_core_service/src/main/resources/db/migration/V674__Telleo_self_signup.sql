@@ -46,7 +46,9 @@ SELECT 'product.telleo',
            -- PNG over https: the code and invoice mails show it (Gmail drops SVG).
            'email_logo_url', 'https://telleo.ai/icon-192.png',
            'app_path', '/telleo/setup',
-           'login_url', 'https://dash.vacademy.io/login',
+           -- Telleo's own host, like evalezy.vacademy.io: an extra domain of the dashboard
+           -- deployment with no routing row, so it wears the Telleo brand (product-host.ts).
+           'login_url', 'https://telleo.vacademy.io/login',
            'trial_days', 7,
            -- 50 credits = 10 minutes of AI calling at 5 credits a minute (ai_call_out).
            'demo_credits', 50,
