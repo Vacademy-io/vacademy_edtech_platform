@@ -1168,7 +1168,6 @@
       "description": "Design the learner home: banners, shortcuts, course shelves, notices and events, with targeting and results.",
       "rail": "LMS",
       "core": false,
-      "opt_in": true,
       "features": [
         {
           "key": "learner_home.builder",
